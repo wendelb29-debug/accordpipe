@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Copy, Check, X, Tag, Link2, Palette, Loader2 } from "lucide-react";
+import { Plus, Copy, Check, X, Tag, Link2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -16,6 +19,12 @@ interface CrmTag {
   name: string;
   color: string;
   servidor_id: string;
+}
+
+interface Servidor {
+  id: string;
+  razao_social: string;
+  nome_fantasia: string | null;
 }
 
 interface FormLinkDialogProps {
@@ -30,7 +39,10 @@ const PRESET_COLORS = [
 
 export function FormLinkDialog({ open, onOpenChange }: FormLinkDialogProps) {
   const { activeCompanyId, profile, isMaster } = useAuth();
-  const servidorId = activeCompanyId || profile?.company_id;
+  const defaultServidorId = activeCompanyId || profile?.company_id;
+  const [selectedServidorId, setSelectedServidorId] = useState<string | null>(null);
+  const [servidores, setServidores] = useState<Servidor[]>([]);
+  const servidorId = selectedServidorId || defaultServidorId;
 
   const [tags, setTags] = useState<CrmTag[]>([]);
   const [loading, setLoading] = useState(false);
@@ -40,8 +52,28 @@ export function FormLinkDialog({ open, onOpenChange }: FormLinkDialogProps) {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    if (open && isMaster && !defaultServidorId) {
+      fetchServidores();
+    }
     if (open && servidorId) fetchTags();
   }, [open, servidorId]);
+
+  useEffect(() => {
+    if (!open) {
+      setSelectedServidorId(null);
+      setSelectedTags([]);
+    }
+  }, [open]);
+
+  const fetchServidores = async () => {
+    const { data } = await supabase
+      .from("companies")
+      .select("id, razao_social, nome_fantasia")
+      .is("servidor_id", null)
+      .in("status", ["active", "teste"])
+      .order("razao_social");
+    if (data) setServidores(data);
+  };
 
   const fetchTags = async () => {
     if (!servidorId) return;
@@ -119,6 +151,25 @@ export function FormLinkDialog({ open, onOpenChange }: FormLinkDialogProps) {
         </DialogHeader>
 
         <div className="space-y-5 py-2">
+          {/* Servidor selector for master without default */}
+          {isMaster && !defaultServidorId && (
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Selecione o Servidor</Label>
+              <Select value={selectedServidorId || ""} onValueChange={setSelectedServidorId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Escolha um servidor..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {servidores.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.nome_fantasia || s.razao_social}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Create new tag */}
           <div className="space-y-2">
             <Label className="flex items-center gap-1.5 text-sm font-semibold">
