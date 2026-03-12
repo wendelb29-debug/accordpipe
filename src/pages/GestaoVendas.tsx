@@ -258,7 +258,7 @@ export default function GestaoVendas() {
           {/* Sales table */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">{selectedMentor ? "Vendas do Mentor" : "Últimas Vendas"}</CardTitle>
+              <CardTitle className="text-base">{selectedMentor ? "Vendas do Site" : "Últimas Vendas"}</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
