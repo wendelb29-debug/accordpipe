@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Search, User, Moon, Sun, Building2, ChevronDown } from "lucide-react";
+import { Search, User, Moon, Sun } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,64 +23,14 @@ const roleLabels = {
 };
 
 export function Header() {
-  const { profile, role, signOut, isMaster, isCeo, isAdmin, companies, activeCompany, activeCompanyId, setActiveCompanyId } = useAuth();
+  const { profile, role, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
 
-  const showSwitcher = (isMaster || isCeo) && companies.length > 0;
-
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border/50 bg-background/80 backdrop-blur-xl px-6">
-      {/* Company Switcher + Search */}
+      {/* Search */}
       <div className="flex items-center gap-4 flex-1">
-        {showSwitcher && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2 max-w-[280px] h-10 rounded-xl">
-                <Building2 className="h-4 w-4 text-primary shrink-0" />
-                <span className="truncate text-sm">
-                  {activeCompany
-                    ? (activeCompany.nome_fantasia || activeCompany.razao_social)
-                    : "Todas as empresas"}
-                </span>
-                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[300px] rounded-xl max-h-[400px] overflow-y-auto">
-              <DropdownMenuLabel className="text-xs text-muted-foreground">Selecionar empresa</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {(isMaster || isCeo) && (
-                <DropdownMenuItem
-                  className="rounded-lg gap-2"
-                  onClick={() => setActiveCompanyId(null)}
-                >
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">Todas as empresas</p>
-                    <p className="text-xs text-muted-foreground">Visão Master</p>
-                  </div>
-                  {!activeCompanyId && <Badge variant="secondary" className="ml-auto text-[10px]">Ativo</Badge>}
-                </DropdownMenuItem>
-              )}
-              {(isMaster || isCeo) && <DropdownMenuSeparator />}
-              {companies.map((company) => (
-                <DropdownMenuItem
-                  key={company.id}
-                  className="rounded-lg gap-2"
-                  onClick={() => setActiveCompanyId(company.id)}
-                >
-                  <Building2 className="h-4 w-4 text-primary" />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate">{company.nome_fantasia || company.razao_social}</p>
-                    <p className="text-xs text-muted-foreground font-mono">{company.cnpj}</p>
-                  </div>
-                  {activeCompanyId === company.id && <Badge variant="secondary" className="ml-auto text-[10px]">Ativo</Badge>}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-
         <div className="relative w-full max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
           <Input
@@ -93,7 +43,6 @@ export function Header() {
 
       {/* Actions */}
       <div className="flex items-center gap-1.5">
-        {/* Dark Mode Toggle */}
         <Button
           variant="ghost"
           size="icon"
@@ -103,10 +52,8 @@ export function Header() {
           {theme === "dark" ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
         </Button>
 
-        {/* Notifications */}
         <NotificationBell />
 
-        {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="rounded-xl h-10 gap-2 px-2.5">

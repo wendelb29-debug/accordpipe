@@ -7,7 +7,7 @@ import { CrmLeadActivity } from "./useCrmLeads";
 export function useCrmActivities(leadId: string | null) {
   const [activities, setActivities] = useState<CrmLeadActivity[]>([]);
   const [loading, setLoading] = useState(false);
-  const { profile, activeCompanyId } = useAuth();
+  const { profile } = useAuth();
 
   const fetchActivities = useCallback(async () => {
     if (!leadId) return;
@@ -31,16 +31,15 @@ export function useCrmActivities(leadId: string | null) {
 
   const addActivity = async (data: { type: string; title: string; description?: string; metadata?: any; servidor_id?: string }) => {
     if (!leadId) return null;
-    const servidorId = data.servidor_id || activeCompanyId || profile?.company_id;
+    let servidorId = data.servidor_id || profile?.company_id;
     if (!servidorId) {
-      // Try to get servidor_id from the lead itself
+      // Get servidor_id from the lead itself
       const { data: leadData } = await supabase.from("crm_leads").select("servidor_id").eq("id", leadId).maybeSingle();
-      const fallbackServidorId = leadData?.servidor_id;
-      if (!fallbackServidorId) {
-        toast.error("Não foi possível identificar o servidor deste registro");
+      servidorId = leadData?.servidor_id;
+      if (!servidorId) {
+        toast.error("Erro ao identificar registro");
         return null;
       }
-      return insertActivity(data, fallbackServidorId);
     }
     return insertActivity(data, servidorId);
   };
