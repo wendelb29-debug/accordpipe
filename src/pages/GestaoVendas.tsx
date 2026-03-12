@@ -265,7 +265,7 @@ export default function GestaoVendas() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      {!selectedMentor && <TableHead>Mentor</TableHead>}
+                      {!selectedMentor && <TableHead>Site</TableHead>}
                       <TableHead>Aluno</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Produto</TableHead>
