@@ -26,6 +26,7 @@ export interface CrmLead {
   forecast_date: string | null;
   lead_status: string;
   lost_reason: string | null;
+  tags?: string[] | null;
 }
 
 export interface CrmLeadActivity {
@@ -56,20 +57,15 @@ export const STAGES = [
 export function useCrmLeads() {
   const [leads, setLeads] = useState<CrmLead[]>([]);
   const [loading, setLoading] = useState(true);
-  const { activeCompanyId, profile, isMaster } = useAuth();
+  const { profile } = useAuth();
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
-    let query = supabase.from("crm_leads").select("*").order("created_at", { ascending: false });
+    const { data, error } = await supabase
+      .from("crm_leads")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-    // Master without activeCompanyId sees all leads
-    if (activeCompanyId) {
-      query = query.eq("servidor_id", activeCompanyId);
-    } else if (!isMaster && profile?.company_id) {
-      query = query.eq("servidor_id", profile.company_id);
-    }
-
-    const { data, error } = await query;
     if (error) {
       console.error("Error fetching leads:", error);
       toast.error("Erro ao carregar leads");
@@ -77,17 +73,28 @@ export function useCrmLeads() {
       setLeads((data as CrmLead[]) || []);
     }
     setLoading(false);
-  }, [activeCompanyId, profile?.company_id, isMaster]);
+  }, []);
 
   useEffect(() => {
     fetchLeads();
   }, [fetchLeads]);
 
+  const getServidorId = async () => {
+    // Get first available company to use as servidor_id
+    if (profile?.company_id) return profile.company_id;
+    const { data } = await supabase
+      .from("companies")
+      .select("id")
+      .is("servidor_id", null)
+      .limit(1)
+      .maybeSingle();
+    return data?.id || null;
+  };
+
   const createLead = async (lead: Partial<CrmLead>) => {
-    // Allow servidor_id override from lead data (master selecting different servidor)
-    const servidorId = (lead as any).servidor_id || activeCompanyId || profile?.company_id;
+    const servidorId = (lead as any).servidor_id || await getServidorId();
     if (!servidorId) {
-      toast.error("Selecione um servidor para criar a oportunidade");
+      toast.error("Erro ao criar oportunidade - empresa não encontrada");
       return null;
     }
     const { data, error } = await supabase
@@ -133,7 +140,7 @@ export function useCrmLeads() {
     const newStageName = newStage ? `${newStage.title}${newStage.daysLimit ? ` (${newStage.daysLimit})` : ""}` : stage;
     const success = await updateLead(id, { stage, stage_entered_at: new Date().toISOString() } as any);
     if (success && lead) {
-      const servidorId = activeCompanyId || profile?.company_id || lead.servidor_id;
+      const servidorId = lead.servidor_id;
       if (servidorId) {
         await supabase.from("crm_lead_activities").insert({
           lead_id: id,
@@ -149,7 +156,6 @@ export function useCrmLeads() {
     return success;
   };
 
-  // Computed stats
   const totalLeads = leads.length;
   const totalPS = leads.reduce((s, l) => s + (l.value_ps || 0), 0);
   const totalMRR = leads.reduce((s, l) => s + (l.value_mrr || 0), 0);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Building2, User, Mail, Phone, DollarSign, StickyNote, Save, Trash2, Tag, Server } from "lucide-react";
+import { Building2, User, Mail, Phone, DollarSign, StickyNote, Save, Trash2, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,15 +14,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { CrmLead, STAGES } from "@/hooks/useCrmLeads";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-
-interface Servidor {
-  id: string;
-  razao_social: string;
-  nome_fantasia: string | null;
-  cnpj: string;
-}
 
 interface CrmLeadDialogProps {
   lead: CrmLead | null;
@@ -34,10 +25,6 @@ interface CrmLeadDialogProps {
 }
 
 export function CrmLeadDialog({ lead, open, onOpenChange, onSave, onDelete, isNew }: CrmLeadDialogProps) {
-  const { isMaster, activeCompanyId, profile } = useAuth();
-  const [servidores, setServidores] = useState<Servidor[]>([]);
-  const [selectedServidorId, setSelectedServidorId] = useState("");
-
   const [form, setForm] = useState({
     source: "Manual",
     company_name: "",
@@ -49,21 +36,6 @@ export function CrmLeadDialog({ lead, open, onOpenChange, onSave, onDelete, isNe
     stage: "standby",
     notes: "",
   });
-
-  // Fetch servidores for master user
-  useEffect(() => {
-    if (!open || !isMaster) return;
-    const fetchServidores = async () => {
-      const { data } = await supabase
-        .from("companies")
-        .select("id, razao_social, nome_fantasia, cnpj")
-        .is("servidor_id", null)
-        .in("status", ["active", "teste"])
-        .order("razao_social");
-      setServidores(data || []);
-    };
-    fetchServidores();
-  }, [open, isMaster]);
 
   useEffect(() => {
     if (lead && !isNew) {
@@ -78,21 +50,14 @@ export function CrmLeadDialog({ lead, open, onOpenChange, onSave, onDelete, isNe
         stage: lead.stage || "standby",
         notes: lead.notes || "",
       });
-      setSelectedServidorId(lead.servidor_id || "");
     } else if (isNew) {
       setForm({ source: "Manual", company_name: "", contact_name: "", email: "", phone: "", value_ps: 0, value_mrr: 0, stage: "standby", notes: "" });
-      setSelectedServidorId(activeCompanyId || profile?.company_id || "");
     }
-  }, [lead, isNew, open, activeCompanyId, profile?.company_id]);
+  }, [lead, isNew, open]);
 
   const handleSave = () => {
     if (!form.company_name.trim()) return;
-    const data: Partial<CrmLead> = { ...form };
-    // If master selected a different servidor, pass it along
-    if (isMaster && selectedServidorId) {
-      (data as any).servidor_id = selectedServidorId;
-    }
-    onSave(data);
+    onSave({ ...form });
     onOpenChange(false);
   };
 
@@ -107,23 +72,6 @@ export function CrmLeadDialog({ lead, open, onOpenChange, onSave, onDelete, isNe
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          {/* Servidor selector - only for master */}
-          {isMaster && (
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1.5"><Server className="h-3.5 w-3.5" /> Servidor</Label>
-              <Select value={selectedServidorId} onValueChange={setSelectedServidorId}>
-                <SelectTrigger><SelectValue placeholder="Selecione o servidor" /></SelectTrigger>
-                <SelectContent>
-                  {servidores.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.nome_fantasia || s.razao_social} - {s.cnpj}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="flex items-center gap-1.5"><Tag className="h-3.5 w-3.5" /> Origem</Label>

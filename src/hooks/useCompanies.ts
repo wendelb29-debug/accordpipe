@@ -41,26 +41,14 @@ export interface CompanyInsert {
 export function useCompanies() {
   const [companies, setCompanies] = useState<CompanyRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, profile, isMaster, activeCompanyId } = useAuth();
+  const { user, profile } = useAuth();
 
   const fetchCompanies = async () => {
     setLoading(true);
-    let query = supabase
+    const { data, error } = await supabase
       .from("companies")
       .select("*")
-      .not("servidor_id", "is", null) // Only show child companies (not servidores)
       .order("created_at", { ascending: false });
-
-    // If not master, filter by user's company (servidor)
-    if (!isMaster && profile?.company_id) {
-      query = query.eq("servidor_id", profile.company_id);
-    } else if (isMaster && activeCompanyId) {
-      // Master viewing specific servidor
-      query = query.eq("servidor_id", activeCompanyId);
-    }
-    // If master with no activeCompanyId, show all child companies
-
-    const { data, error } = await query;
 
     if (error) {
       toast.error("Erro ao carregar empresas");
@@ -73,16 +61,12 @@ export function useCompanies() {
 
   useEffect(() => {
     if (user) fetchCompanies();
-  }, [user, activeCompanyId]);
+  }, [user]);
 
   const addCompany = async (company: CompanyInsert) => {
-    // Determine servidor_id: non-master uses their own company_id, master uses activeCompanyId
-    const servidorId = isMaster ? activeCompanyId : profile?.company_id;
-    
     const { error } = await supabase.from("companies").insert({
       ...company,
       created_by: user?.id,
-      servidor_id: servidorId || undefined,
     });
     if (error) {
       if (error.code === "23505") {
@@ -128,10 +112,6 @@ export function useCompanies() {
   };
 
   const deleteCompany = async (id: string) => {
-    if (!profile?.is_master) {
-      toast.error("Apenas o usuário master pode excluir empresas");
-      return false;
-    }
     const { error } = await supabase.from("companies").delete().eq("id", id);
     if (error) {
       toast.error("Erro ao excluir empresa");

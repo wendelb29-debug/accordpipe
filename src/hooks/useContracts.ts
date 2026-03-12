@@ -46,69 +46,32 @@ export interface ContractRow {
 export function useContracts() {
   const [contracts, setContracts] = useState<ContractRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, isMaster, activeCompanyId, profile } = useAuth();
+  const { user } = useAuth();
 
   const fetchContracts = async () => {
     setLoading(true);
-    
-    // Determine the servidor to filter by
-    const servidorId = isMaster ? activeCompanyId : profile?.company_id;
-    
-    if (servidorId) {
-      // First get company IDs belonging to this servidor
-      const { data: childCompanies } = await supabase
-        .from("companies")
-        .select("id")
-        .eq("servidor_id", servidorId);
-      
-      const companyIds = (childCompanies || []).map(c => c.id);
-      // Include the servidor itself as a company_id
-      companyIds.push(servidorId);
+    const { data, error } = await supabase
+      .from("contracts")
+      .select("*, companies(razao_social, nome_fantasia, cnpj, responsavel, endereco, numero, bairro, cidade, estado, cep, complemento)")
+      .order("created_at", { ascending: false });
 
-      const { data, error } = await supabase
-        .from("contracts")
-        .select("*, companies(razao_social, nome_fantasia, cnpj, responsavel, endereco, numero, bairro, cidade, estado, cep, complemento)")
-        .in("company_id", companyIds)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        toast.error("Erro ao carregar contratos");
-        console.error(error);
-      } else {
-        setContracts(
-          (data || []).map((c: any) => ({
-            ...c,
-            company: c.companies,
-          }))
-        );
-      }
-    } else if (isMaster) {
-      // Master with no active filter - show all
-      const { data, error } = await supabase
-        .from("contracts")
-        .select("*, companies(razao_social, nome_fantasia, cnpj, responsavel, endereco, numero, bairro, cidade, estado, cep, complemento)")
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        toast.error("Erro ao carregar contratos");
-        console.error(error);
-      } else {
-        setContracts(
-          (data || []).map((c: any) => ({
-            ...c,
-            company: c.companies,
-          }))
-        );
-      }
+    if (error) {
+      toast.error("Erro ao carregar contratos");
+      console.error(error);
     } else {
-      setContracts([]);
+      setContracts(
+        (data || []).map((c: any) => ({
+          ...c,
+          company: c.companies,
+        }))
+      );
     }
     setLoading(false);
   };
 
   useEffect(() => {
     if (user) fetchContracts();
-  }, [user, activeCompanyId]);
+  }, [user]);
 
   const generateContractContent = (company: CompanyRow, foro: string, matrizNome: string) => {
     const addressParts = [
@@ -252,7 +215,6 @@ ${company.responsavel || "[RESPONSÁVEL]"}`;
     linkValidityDays: number,
     proposalClause?: string
   ) => {
-    // Fetch company data
     const { data: company, error: companyError } = await supabase
       .from("companies")
       .select("*")
@@ -266,9 +228,7 @@ ${company.responsavel || "[RESPONSÁVEL]"}`;
 
     let content = generateContractContent(company as CompanyRow, foro, matrizNome);
 
-    // Append proposal clause if provided
     if (proposalClause) {
-      // Insert before the final signature block
       const sigBlock = "\nE por estarem justas e contratadas";
       const idx = content.indexOf(sigBlock);
       if (idx > 0) {
@@ -283,7 +243,7 @@ ${company.responsavel || "[RESPONSÁVEL]"}`;
     expiresAt.setDate(expiresAt.getDate() + linkValidityDays);
 
     const { error } = await supabase.from("contracts").insert({
-      code: "TEMP", // Will be overwritten by trigger
+      code: "TEMP",
       company_id: companyId,
       contract_type: "new",
       signature_type: signatureType,
@@ -338,7 +298,6 @@ ${company.responsavel || "[RESPONSÁVEL]"}`;
         .eq("id", contractId);
       if (updateErr) throw updateErr;
 
-      // Save signed contract as document
       const contract = contracts.find(c => c.id === contractId);
       if (contract) {
         const contractBlob = new Blob([contract.contract_content || ""], { type: "text/plain" });
