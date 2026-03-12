@@ -87,7 +87,7 @@ export function useCrmLeads() {
     // Allow servidor_id override from lead data (master selecting different servidor)
     const servidorId = (lead as any).servidor_id || activeCompanyId || profile?.company_id;
     if (!servidorId) {
-      toast.error("Selecione um servidor");
+      toast.error("Selecione um servidor para criar a oportunidade");
       return null;
     }
     const { data, error } = await supabase
