@@ -56,7 +56,7 @@ export const STAGES = [
 export function useCrmLeads() {
   const [leads, setLeads] = useState<CrmLead[]>([]);
   const [loading, setLoading] = useState(true);
-  const { activeCompanyId, profile } = useAuth();
+  const { activeCompanyId, profile, isMaster } = useAuth();
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
