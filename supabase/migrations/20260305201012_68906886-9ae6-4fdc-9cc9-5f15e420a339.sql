@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Public can view contracts by signing token" ON public.contracts;
