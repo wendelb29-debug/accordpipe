@@ -95,7 +95,7 @@ export default function GestaoVendas() {
   };
 
   const exportCSV = () => {
-    const headers = ["Mentor", "Aluno", "Email", "Produto", "Valor", "Data da Venda", "Gateway", "Transação ID"];
+    const headers = ["Site", "Aluno", "Email", "Produto", "Valor", "Data da Venda", "Gateway", "Transação ID"];
     const rows = filteredVendas.map((v) => [
       v.mentor_nome, v.aluno_nome, v.aluno_email, v.produto,
       String(v.valor), format(new Date(v.data_venda), "dd/MM/yyyy HH:mm"), v.gateway, v.transacao_id,
