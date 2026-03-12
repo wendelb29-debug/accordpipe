@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { Building2, User, Mail, Phone, StickyNote, Send, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,8 @@ import orbitLogo from "@/assets/orbit-logo.png";
 
 export default function CapturaLead() {
   const { servidorId } = useParams<{ servidorId: string }>();
+  const [searchParams] = useSearchParams();
+  const urlTags = searchParams.get("tags")?.split(",").filter(Boolean) || [];
   const [servidor, setServidor] = useState<{ nome_fantasia: string | null; razao_social: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -62,6 +64,7 @@ export default function CapturaLead() {
           phone: form.phone,
           notes: form.notes,
           source: "Formulário Web",
+          tags: urlTags.length > 0 ? urlTags : undefined,
         },
       });
 

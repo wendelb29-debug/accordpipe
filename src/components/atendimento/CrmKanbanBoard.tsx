@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   Clock, Users, MessageSquare, Phone, RefreshCw, FileSignature, GripVertical,
   MoreVertical, Trash2, Edit, Building2, Mail, PhoneCall, Loader2,
-  Plus, TrendingUp, Sparkles, Link2, Check
+  Plus, TrendingUp, Sparkles, Link2, Check, Tag
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { CrmLeadDialog } from "./CrmLeadDialog";
 import { CrmLeadDetailView } from "./CrmLeadDetailView";
+import { FormLinkDialog } from "./FormLinkDialog";
 import { useCrmLeads, CrmLead, STAGES } from "@/hooks/useCrmLeads";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -46,6 +47,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const [isNew, setIsNew] = useState(false);
   const [detailLead, setDetailLead] = useState<CrmLead | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [formLinkOpen, setFormLinkOpen] = useState(false);
 
   const servidorId = activeCompanyId || profile?.company_id;
 
@@ -152,9 +154,13 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setFormLinkOpen(true)} className="gap-1.5 text-xs">
+            <Tag className="h-3.5 w-3.5" />
+            Link + Tags
+          </Button>
           <Button size="sm" variant="outline" onClick={copyFormLink} className="gap-1.5 text-xs">
             {linkCopied ? <Check className="h-3.5 w-3.5" /> : <Link2 className="h-3.5 w-3.5" />}
-            {linkCopied ? "Copiado!" : "Link Formulário"}
+            {linkCopied ? "Copiado!" : "Link Rápido"}
           </Button>
           <Button size="sm" onClick={openNew} className="gap-1.5">
             <Plus className="h-4 w-4" /> Oportunidade
@@ -292,6 +298,16 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
         onDelete={deleteLead}
         isNew={isNew}
       />
+
+      <CrmLeadDialog
+        lead={selectedLead}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSave={handleSave}
+        onDelete={deleteLead}
+        isNew={isNew}
+      />
+      <FormLinkDialog open={formLinkOpen} onOpenChange={setFormLinkOpen} />
     </>
   );
 }

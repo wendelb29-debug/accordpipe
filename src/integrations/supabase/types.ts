@@ -311,6 +311,7 @@ export type Database = {
           source: string
           stage: string
           stage_entered_at: string
+          tags: string[] | null
           updated_at: string
           value_mrr: number
           value_ps: number
@@ -335,6 +336,7 @@ export type Database = {
           source?: string
           stage?: string
           stage_entered_at?: string
+          tags?: string[] | null
           updated_at?: string
           value_mrr?: number
           value_ps?: number
@@ -359,6 +361,7 @@ export type Database = {
           source?: string
           stage?: string
           stage_entered_at?: string
+          tags?: string[] | null
           updated_at?: string
           value_mrr?: number
           value_ps?: number
@@ -373,6 +376,38 @@ export type Database = {
           },
           {
             foreignKeyName: "crm_leads_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_tags: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          servidor_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          servidor_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          servidor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_tags_servidor_id_fkey"
             columns: ["servidor_id"]
             isOneToOne: false
             referencedRelation: "companies"
