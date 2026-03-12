@@ -154,9 +154,13 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setFormLinkOpen(true)} className="gap-1.5 text-xs">
+            <Tag className="h-3.5 w-3.5" />
+            Link + Tags
+          </Button>
           <Button size="sm" variant="outline" onClick={copyFormLink} className="gap-1.5 text-xs">
             {linkCopied ? <Check className="h-3.5 w-3.5" /> : <Link2 className="h-3.5 w-3.5" />}
-            {linkCopied ? "Copiado!" : "Link Formulário"}
+            {linkCopied ? "Copiado!" : "Link Rápido"}
           </Button>
           <Button size="sm" onClick={openNew} className="gap-1.5">
             <Plus className="h-4 w-4" /> Oportunidade
