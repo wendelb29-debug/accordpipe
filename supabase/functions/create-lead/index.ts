@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { company_name, contact_name, email, phone, source, notes, servidor_id } = body;
+    const { company_name, contact_name, email, phone, source, notes, servidor_id, tags } = body;
 
     // Validation
     if (!company_name || typeof company_name !== "string" || company_name.trim().length === 0) {
