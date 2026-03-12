@@ -151,6 +151,25 @@ export function FormLinkDialog({ open, onOpenChange }: FormLinkDialogProps) {
         </DialogHeader>
 
         <div className="space-y-5 py-2">
+          {/* Servidor selector for master without default */}
+          {isMaster && !defaultServidorId && (
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Selecione o Servidor</Label>
+              <Select value={selectedServidorId || ""} onValueChange={setSelectedServidorId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Escolha um servidor..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {servidores.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.nome_fantasia || s.razao_social}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Create new tag */}
           <div className="space-y-2">
             <Label className="flex items-center gap-1.5 text-sm font-semibold">
