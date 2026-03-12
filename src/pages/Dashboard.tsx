@@ -4,7 +4,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { InvoiceStatusChart } from "@/components/dashboard/InvoiceStatusChart";
 import { RecentInvoices } from "@/components/dashboard/RecentInvoices";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+
 
 export default function Dashboard() {
   const [stats, setStats] = useState({ active: 0, overdue: 0, cancelled: 0, openAmount: 0 });
