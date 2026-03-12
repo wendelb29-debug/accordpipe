@@ -298,6 +298,16 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
         onDelete={deleteLead}
         isNew={isNew}
       />
+
+      <CrmLeadDialog
+        lead={selectedLead}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSave={handleSave}
+        onDelete={deleteLead}
+        isNew={isNew}
+      />
+      <FormLinkDialog open={formLinkOpen} onOpenChange={setFormLinkOpen} />
     </>
   );
 }
