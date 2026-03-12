@@ -52,8 +52,28 @@ export function FormLinkDialog({ open, onOpenChange }: FormLinkDialogProps) {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    if (open && isMaster && !defaultServidorId) {
+      fetchServidores();
+    }
     if (open && servidorId) fetchTags();
   }, [open, servidorId]);
+
+  useEffect(() => {
+    if (!open) {
+      setSelectedServidorId(null);
+      setSelectedTags([]);
+    }
+  }, [open]);
+
+  const fetchServidores = async () => {
+    const { data } = await supabase
+      .from("companies")
+      .select("id, razao_social, nome_fantasia")
+      .is("servidor_id", null)
+      .in("status", ["active", "teste"])
+      .order("razao_social");
+    if (data) setServidores(data);
+  };
 
   const fetchTags = async () => {
     if (!servidorId) return;
