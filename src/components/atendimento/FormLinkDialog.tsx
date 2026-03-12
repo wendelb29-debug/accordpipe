@@ -106,7 +106,8 @@ export function FormLinkDialog({ open, onOpenChange }: FormLinkDialogProps) {
   };
 
   const generatedLink = (() => {
-    if (!companyId) return "";
+    if (loading) return "";
+    if (!companyId) return "⚠ Nenhuma empresa cadastrada. Cadastre uma empresa primeiro.";
     const base = `${window.location.origin}/captura/${companyId}`;
     const selected = tags.filter((t) => selectedTags.includes(t.id));
     if (selected.length === 0) return base;
