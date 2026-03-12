@@ -64,6 +64,7 @@ export default function CapturaLead() {
           phone: form.phone,
           notes: form.notes,
           source: "Formulário Web",
+          tags: urlTags.length > 0 ? urlTags : undefined,
         },
       });
 
