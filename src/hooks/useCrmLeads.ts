@@ -77,7 +77,7 @@ export function useCrmLeads() {
       setLeads((data as CrmLead[]) || []);
     }
     setLoading(false);
-  }, [activeCompanyId, profile?.company_id]);
+  }, [activeCompanyId, profile?.company_id, isMaster]);
 
   useEffect(() => {
     fetchLeads();
