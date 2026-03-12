@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { CrmLeadDialog } from "./CrmLeadDialog";
 import { CrmLeadDetailView } from "./CrmLeadDetailView";
+import { FormLinkDialog } from "./FormLinkDialog";
 import { useCrmLeads, CrmLead, STAGES } from "@/hooks/useCrmLeads";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
