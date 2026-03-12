@@ -30,7 +30,6 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "operador", "leitura", "ceo"] },
   { name: "Orbit Sales", href: "/atendimento", icon: MessageSquare, roles: ["admin", "operador", "ceo"] },
   { name: "Atividades", href: "/atividades", icon: CalendarCheck, roles: ["admin", "operador", "ceo"] },
-  { name: "Empresas", href: "/empresas", icon: Building2, roles: ["admin", "operador", "ceo"] },
   { name: "Pagamentos", href: "/boletos", icon: Receipt, roles: ["admin", "operador", "ceo"] },
   { name: "Documentos", href: "/documentos", icon: FileText, roles: ["admin", "operador", "ceo"] },
   { name: "Relatórios", href: "/relatorios", icon: BarChart3, roles: ["admin", "operador", "leitura", "ceo"] },
