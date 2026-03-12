@@ -62,9 +62,10 @@ export function useCrmLeads() {
     setLoading(true);
     let query = supabase.from("crm_leads").select("*").order("created_at", { ascending: false });
 
+    // Master without activeCompanyId sees all leads
     if (activeCompanyId) {
       query = query.eq("servidor_id", activeCompanyId);
-    } else if (profile?.company_id) {
+    } else if (!isMaster && profile?.company_id) {
       query = query.eq("servidor_id", profile.company_id);
     }
 
