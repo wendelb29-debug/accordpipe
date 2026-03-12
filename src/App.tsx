@@ -182,6 +182,16 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/gestao-vendas"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <AppLayout>
+                    <GestaoVendas />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
             <Route path="/assinar/:token" element={<AssinarContrato />} />
             <Route path="/captura/:servidorId" element={<CapturaLead />} />
             <Route path="/reset-password" element={<ResetPassword />} />

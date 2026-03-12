@@ -36,6 +36,7 @@ const navigation = [
   { name: "Relatórios", href: "/relatorios", icon: BarChart3, roles: ["admin", "operador", "leitura", "ceo"] },
   { name: "Contratos", href: "/contratos", icon: FileSignature, roles: ["admin", "operador", "ceo"] },
   { name: "Cancelamentos", href: "/cancelamentos", icon: XCircle, roles: ["admin", "ceo"] },
+  { name: "Gestão de Vendas", href: "/gestao-vendas", icon: Webhook, roles: ["admin", "ceo"] },
 ];
 
 const configNavigation = [

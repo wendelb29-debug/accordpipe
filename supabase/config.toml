@@ -1,1 +1,19 @@
 project_id = "avwzgxemxcymgxezouns"
+
+[functions.vendas-webhook]
+verify_jwt = false
+
+[functions.kiwify-webhook]
+verify_jwt = false
+
+[functions.zapi-webhook]
+verify_jwt = false
+
+[functions.create-lead]
+verify_jwt = false
+
+[functions.get-contract-by-token]
+verify_jwt = false
+
+[functions.sign-contract]
+verify_jwt = false
