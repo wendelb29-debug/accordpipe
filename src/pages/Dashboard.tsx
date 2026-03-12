@@ -9,25 +9,13 @@ import { useAuth } from "@/contexts/AuthContext";
 export default function Dashboard() {
   const [stats, setStats] = useState({ active: 0, overdue: 0, cancelled: 0, openAmount: 0 });
   const [loading, setLoading] = useState(true);
-  const { activeCompanyId, isMaster } = useAuth();
 
   useEffect(() => {
     const fetchStats = async () => {
       setLoading(true);
-      let companiesQuery = supabase.from("companies").select("status");
-      let paymentsQuery = supabase.from("payments").select("status, valor");
-
-      // Only filter when a specific company is selected, master sees all
-      if (activeCompanyId) {
-        companiesQuery = companiesQuery.eq("servidor_id", activeCompanyId);
-        paymentsQuery = paymentsQuery.eq("company_id", activeCompanyId);
-      } else if (!isMaster) {
-        // Non-master users are already scoped by RLS
-      }
-
       const [companiesRes, paymentsRes] = await Promise.all([
-        companiesQuery,
-        paymentsQuery,
+        supabase.from("companies").select("status"),
+        supabase.from("payments").select("status, valor"),
       ]);
 
       const companies = (companiesRes.data as any[]) || [];
@@ -44,7 +32,7 @@ export default function Dashboard() {
       setLoading(false);
     };
     fetchStats();
-  }, [activeCompanyId]);
+  }, []);
 
   if (loading) {
     return (
