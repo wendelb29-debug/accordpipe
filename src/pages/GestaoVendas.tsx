@@ -337,7 +337,7 @@ export default function GestaoVendas() {
                   <p className="text-sm font-mono"><span className="text-primary">x-orbit-token:</span> SEU_TOKEN_AQUI</p>
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Cada mentor receberá um token exclusivo. Enviar no header <code className="bg-muted px-1 rounded">x-orbit-token</code>.
+                  Cada site receberá um token exclusivo. Enviar no header <code className="bg-muted px-1 rounded">x-orbit-token</code>.
                 </p>
               </div>
 
