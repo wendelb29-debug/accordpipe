@@ -205,7 +205,7 @@ export default function GestaoVendas() {
                   <Users className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Mentores</p>
+                  <p className="text-sm text-muted-foreground">Sites</p>
                   <p className="text-2xl font-bold text-foreground">{totalMentores}</p>
                 </div>
               </CardContent>
