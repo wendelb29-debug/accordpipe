@@ -33,9 +33,20 @@ export function useCrmActivities(leadId: string | null) {
     if (!leadId) return null;
     const servidorId = data.servidor_id || activeCompanyId || profile?.company_id;
     if (!servidorId) {
-      toast.error("Não foi possível identificar o servidor deste registro");
-      return null;
+      // Try to get servidor_id from the lead itself
+      const { data: leadData } = await supabase.from("crm_leads").select("servidor_id").eq("id", leadId).maybeSingle();
+      const fallbackServidorId = leadData?.servidor_id;
+      if (!fallbackServidorId) {
+        toast.error("Não foi possível identificar o servidor deste registro");
+        return null;
+      }
+      return insertActivity(data, fallbackServidorId);
     }
+    return insertActivity(data, servidorId);
+  };
+
+  const insertActivity = async (data: { type: string; title: string; description?: string; metadata?: any }, servidorId: string) => {
+    if (!leadId) return null;
 
     const { data: activity, error } = await supabase
       .from("crm_lead_activities")
