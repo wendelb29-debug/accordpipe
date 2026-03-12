@@ -75,6 +75,11 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Sanitize tags
+    const sanitizedTags = Array.isArray(tags) 
+      ? tags.filter((t: any) => typeof t === "string" && t.trim().length > 0).map((t: string) => t.trim().substring(0, 50))
+      : [];
+
     // Create the lead
     const { data: lead, error: leadError } = await supabaseAdmin
       .from("crm_leads")
@@ -86,6 +91,7 @@ Deno.serve(async (req) => {
         email: email ? email.trim().substring(0, 255) : null,
         phone: phone ? phone.trim().substring(0, 30) : null,
         notes: notes ? notes.trim().substring(0, 1000) : null,
+        tags: sanitizedTags.length > 0 ? sanitizedTags : [],
         stage: "novos",
         created_by_name: contact_name.trim().substring(0, 200),
       })
