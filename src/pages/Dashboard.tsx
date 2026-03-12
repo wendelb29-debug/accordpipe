@@ -17,9 +17,12 @@ export default function Dashboard() {
       let companiesQuery = supabase.from("companies").select("status");
       let paymentsQuery = supabase.from("payments").select("status, valor");
 
+      // Only filter when a specific company is selected, master sees all
       if (activeCompanyId) {
-        companiesQuery = companiesQuery.eq("id", activeCompanyId);
+        companiesQuery = companiesQuery.eq("servidor_id", activeCompanyId);
         paymentsQuery = paymentsQuery.eq("company_id", activeCompanyId);
+      } else if (!isMaster) {
+        // Non-master users are already scoped by RLS
       }
 
       const [companiesRes, paymentsRes] = await Promise.all([
