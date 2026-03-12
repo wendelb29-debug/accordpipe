@@ -56,15 +56,16 @@ export const STAGES = [
 export function useCrmLeads() {
   const [leads, setLeads] = useState<CrmLead[]>([]);
   const [loading, setLoading] = useState(true);
-  const { activeCompanyId, profile } = useAuth();
+  const { activeCompanyId, profile, isMaster } = useAuth();
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     let query = supabase.from("crm_leads").select("*").order("created_at", { ascending: false });
 
+    // Master without activeCompanyId sees all leads
     if (activeCompanyId) {
       query = query.eq("servidor_id", activeCompanyId);
-    } else if (profile?.company_id) {
+    } else if (!isMaster && profile?.company_id) {
       query = query.eq("servidor_id", profile.company_id);
     }
 
@@ -76,7 +77,7 @@ export function useCrmLeads() {
       setLeads((data as CrmLead[]) || []);
     }
     setLoading(false);
-  }, [activeCompanyId, profile?.company_id]);
+  }, [activeCompanyId, profile?.company_id, isMaster]);
 
   useEffect(() => {
     fetchLeads();
@@ -86,7 +87,7 @@ export function useCrmLeads() {
     // Allow servidor_id override from lead data (master selecting different servidor)
     const servidorId = (lead as any).servidor_id || activeCompanyId || profile?.company_id;
     if (!servidorId) {
-      toast.error("Selecione um servidor");
+      toast.error("Selecione um servidor para criar a oportunidade");
       return null;
     }
     const { data, error } = await supabase
@@ -132,7 +133,7 @@ export function useCrmLeads() {
     const newStageName = newStage ? `${newStage.title}${newStage.daysLimit ? ` (${newStage.daysLimit})` : ""}` : stage;
     const success = await updateLead(id, { stage, stage_entered_at: new Date().toISOString() } as any);
     if (success && lead) {
-      const servidorId = activeCompanyId || profile?.company_id;
+      const servidorId = activeCompanyId || profile?.company_id || lead.servidor_id;
       if (servidorId) {
         await supabase.from("crm_lead_activities").insert({
           lead_id: id,
