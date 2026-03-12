@@ -15,8 +15,9 @@ import { CrmLeadDialog } from "./CrmLeadDialog";
 import { CrmLeadDetailView } from "./CrmLeadDetailView";
 import { FormLinkDialog } from "./FormLinkDialog";
 import { useCrmLeads, CrmLead, STAGES } from "@/hooks/useCrmLeads";
-import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const stageIcons: Record<string, React.ElementType> = {
   "novos": Sparkles,
@@ -39,7 +40,7 @@ const formatCurrency = (v: number) =>
 
 export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const { leads, loading, createLead, updateLead, deleteLead, moveToStage, totalLeads, totalPS, totalMRR, stageStats } = useCrmLeads();
-  const { activeCompanyId, profile } = useAuth();
+  const { profile } = useAuth();
   const [draggedLead, setDraggedLead] = useState<CrmLead | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [selectedLead, setSelectedLead] = useState<CrmLead | null>(null);
@@ -49,14 +50,23 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const [linkCopied, setLinkCopied] = useState(false);
   const [formLinkOpen, setFormLinkOpen] = useState(false);
 
-  const servidorId = activeCompanyId || profile?.company_id;
-
-  const copyFormLink = () => {
-    if (!servidorId) {
-      toast.error("Selecione um servidor primeiro");
+  const copyFormLink = async () => {
+    let companyId = profile?.company_id;
+    if (!companyId) {
+      const { data } = await supabase
+        .from("companies")
+        .select("id")
+        .is("servidor_id", null)
+        .in("status", ["active", "teste"])
+        .limit(1)
+        .maybeSingle();
+      companyId = data?.id || null;
+    }
+    if (!companyId) {
+      toast.error("Nenhuma empresa encontrada");
       return;
     }
-    const url = `${window.location.origin}/captura/${servidorId}`;
+    const url = `${window.location.origin}/captura/${companyId}`;
     navigator.clipboard.writeText(url);
     setLinkCopied(true);
     toast.success("Link do formulário copiado!");
@@ -119,9 +129,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
     );
   }
 
-  // If detail view is active, show it instead of kanban
   if (detailLead) {
-    // Find the latest version of the lead from the leads array
     const currentLead = leads.find((l) => l.id === detailLead.id) || detailLead;
     return (
       <CrmLeadDetailView
@@ -289,15 +297,6 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
           );
         })}
       </div>
-
-      <CrmLeadDialog
-        lead={selectedLead}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onSave={handleSave}
-        onDelete={deleteLead}
-        isNew={isNew}
-      />
 
       <CrmLeadDialog
         lead={selectedLead}

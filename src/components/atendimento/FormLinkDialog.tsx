@@ -7,9 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -19,12 +16,6 @@ interface CrmTag {
   name: string;
   color: string;
   servidor_id: string;
-}
-
-interface Servidor {
-  id: string;
-  razao_social: string;
-  nome_fantasia: string | null;
 }
 
 interface FormLinkDialogProps {
@@ -38,11 +29,7 @@ const PRESET_COLORS = [
 ];
 
 export function FormLinkDialog({ open, onOpenChange }: FormLinkDialogProps) {
-  const { activeCompanyId, profile, isMaster } = useAuth();
-  const defaultServidorId = activeCompanyId || profile?.company_id;
-  const [selectedServidorId, setSelectedServidorId] = useState<string | null>(null);
-  const [servidores, setServidores] = useState<Servidor[]>([]);
-  const servidorId = selectedServidorId || defaultServidorId;
+  const { profile } = useAuth();
 
   const [tags, setTags] = useState<CrmTag[]>([]);
   const [loading, setLoading] = useState(false);
@@ -50,48 +37,48 @@ export function FormLinkDialog({ open, onOpenChange }: FormLinkDialogProps) {
   const [newTagColor, setNewTagColor] = useState("#3b82f6");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
+  const [companyId, setCompanyId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (open && isMaster && !defaultServidorId) {
-      fetchServidores();
-    }
-    if (open && servidorId) fetchTags();
-  }, [open, servidorId]);
-
-  useEffect(() => {
-    if (!open) {
-      setSelectedServidorId(null);
+    if (open) {
+      fetchCompanyAndTags();
+    } else {
       setSelectedTags([]);
     }
   }, [open]);
 
-  const fetchServidores = async () => {
-    const { data } = await supabase
-      .from("companies")
-      .select("id, razao_social, nome_fantasia")
-      .is("servidor_id", null)
-      .in("status", ["active", "teste"])
-      .order("razao_social");
-    if (data) setServidores(data);
-  };
-
-  const fetchTags = async () => {
-    if (!servidorId) return;
+  const fetchCompanyAndTags = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("crm_tags")
-      .select("*")
-      .eq("servidor_id", servidorId)
-      .order("name");
-    if (!error) setTags((data as CrmTag[]) || []);
+    // Get first company to use as the form link target
+    let cId = profile?.company_id;
+    if (!cId) {
+      const { data } = await supabase
+        .from("companies")
+        .select("id")
+        .is("servidor_id", null)
+        .in("status", ["active", "teste"])
+        .limit(1)
+        .maybeSingle();
+      cId = data?.id || null;
+    }
+    setCompanyId(cId);
+
+    if (cId) {
+      const { data, error } = await supabase
+        .from("crm_tags")
+        .select("*")
+        .eq("servidor_id", cId)
+        .order("name");
+      if (!error) setTags((data as CrmTag[]) || []);
+    }
     setLoading(false);
   };
 
   const handleCreateTag = async () => {
-    if (!newTagName.trim() || !servidorId) return;
+    if (!newTagName.trim() || !companyId) return;
     const { data, error } = await supabase
       .from("crm_tags")
-      .insert({ name: newTagName.trim(), color: newTagColor, servidor_id: servidorId } as any)
+      .insert({ name: newTagName.trim(), color: newTagColor, servidor_id: companyId } as any)
       .select()
       .single();
     if (error) {
@@ -119,8 +106,8 @@ export function FormLinkDialog({ open, onOpenChange }: FormLinkDialogProps) {
   };
 
   const generatedLink = (() => {
-    if (!servidorId) return "";
-    const base = `${window.location.origin}/captura/${servidorId}`;
+    if (!companyId) return "";
+    const base = `${window.location.origin}/captura/${companyId}`;
     const selected = tags.filter((t) => selectedTags.includes(t.id));
     if (selected.length === 0) return base;
     const tagNames = selected.map((t) => t.name).join(",");
@@ -129,7 +116,7 @@ export function FormLinkDialog({ open, onOpenChange }: FormLinkDialogProps) {
 
   const copyLink = () => {
     if (!generatedLink) {
-      toast.error("Selecione um servidor primeiro");
+      toast.error("Nenhuma empresa encontrada");
       return;
     }
     navigator.clipboard.writeText(generatedLink);
@@ -151,25 +138,6 @@ export function FormLinkDialog({ open, onOpenChange }: FormLinkDialogProps) {
         </DialogHeader>
 
         <div className="space-y-5 py-2">
-          {/* Servidor selector for master without default */}
-          {isMaster && !defaultServidorId && (
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold">Selecione o Servidor</Label>
-              <Select value={selectedServidorId || ""} onValueChange={setSelectedServidorId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Escolha um servidor..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {servidores.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.nome_fantasia || s.razao_social}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
           {/* Create new tag */}
           <div className="space-y-2">
             <Label className="flex items-center gap-1.5 text-sm font-semibold">
@@ -257,7 +225,7 @@ export function FormLinkDialog({ open, onOpenChange }: FormLinkDialogProps) {
             </p>
             <div className="flex items-center gap-2">
               <code className="flex-1 bg-muted px-3 py-2 rounded-md text-xs font-mono break-all max-h-20 overflow-y-auto">
-                {generatedLink || "Selecione um servidor"}
+                {generatedLink || "Carregando..."}
               </code>
               <Button size="sm" onClick={copyLink} disabled={!generatedLink} className="gap-1.5 shrink-0">
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
