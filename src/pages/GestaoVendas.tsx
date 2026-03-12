@@ -366,8 +366,8 @@ export default function GestaoVendas() {
                   </TableHeader>
                   <TableBody>
                     {[
-                      ["mentor_id", "string", "Sim", "ID único do mentor"],
-                      ["mentor_nome", "string", "Sim", "Nome do mentor"],
+                      ["mentor_id", "string", "Sim", "ID único do site"],
+                      ["mentor_nome", "string", "Sim", "Nome do site"],
                       ["aluno_nome", "string", "Sim", "Nome do aluno"],
                       ["aluno_email", "string", "Sim", "Email do aluno"],
                       ["produto", "string", "Sim", "Nome do produto"],
