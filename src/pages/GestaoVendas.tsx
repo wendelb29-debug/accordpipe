@@ -215,7 +215,7 @@ export default function GestaoVendas() {
           {/* Mentor cards */}
           {!selectedMentor && mentors.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold text-foreground mb-3">Vendas por Mentor</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-3">Vendas por Site</h2>
               <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {mentors.map((m) => (
                   <Card key={m.id} className="cursor-pointer hover:shadow-md transition-shadow border-border" onClick={() => setSelectedMentor(m.id)}>
