@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   Clock, Users, MessageSquare, Phone, RefreshCw, FileSignature, GripVertical,
   MoreVertical, Trash2, Edit, Building2, Mail, PhoneCall, Loader2,
-  Plus, TrendingUp, Sparkles, Link2, Check
+  Plus, TrendingUp, Sparkles, Link2, Check, Tag
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
