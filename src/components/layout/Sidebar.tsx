@@ -47,15 +47,12 @@ export function Sidebar() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [overdueCount, setOverdueCount] = useState(0);
-  const { role, signOut, profile, activeCompanyId } = useAuth();
+  const { role, signOut, profile } = useAuth();
 
   const fetchOverdueActivities = useCallback(async () => {
-    const servidorId = activeCompanyId || profile?.company_id;
-    if (!servidorId) return;
     const { data, error } = await supabase
       .from("crm_lead_activities")
       .select("id, metadata")
-      .eq("servidor_id", servidorId)
       .in("type", ["activity", "meeting", "call", "email", "internal", "whatsapp"]);
     if (error || !data) return;
     const now = new Date();
@@ -66,7 +63,7 @@ export function Sidebar() {
       return new Date(meta.scheduled_at) < now;
     });
     setOverdueCount(overdue.length);
-  }, [activeCompanyId, profile?.company_id]);
+  }, []);
 
   useEffect(() => {
     fetchOverdueActivities();
