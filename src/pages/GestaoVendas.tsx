@@ -95,7 +95,7 @@ export default function GestaoVendas() {
   };
 
   const exportCSV = () => {
-    const headers = ["Mentor", "Aluno", "Email", "Produto", "Valor", "Data da Venda", "Gateway", "Transação ID"];
+    const headers = ["Site", "Aluno", "Email", "Produto", "Valor", "Data da Venda", "Gateway", "Transação ID"];
     const rows = filteredVendas.map((v) => [
       v.mentor_nome, v.aluno_nome, v.aluno_email, v.produto,
       String(v.valor), format(new Date(v.data_venda), "dd/MM/yyyy HH:mm"), v.gateway, v.transacao_id,
@@ -205,7 +205,7 @@ export default function GestaoVendas() {
                   <Users className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Mentores</p>
+                  <p className="text-sm text-muted-foreground">Sites</p>
                   <p className="text-2xl font-bold text-foreground">{totalMentores}</p>
                 </div>
               </CardContent>
@@ -215,7 +215,7 @@ export default function GestaoVendas() {
           {/* Mentor cards */}
           {!selectedMentor && mentors.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold text-foreground mb-3">Vendas por Mentor</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-3">Vendas por Site</h2>
               <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {mentors.map((m) => (
                   <Card key={m.id} className="cursor-pointer hover:shadow-md transition-shadow border-border" onClick={() => setSelectedMentor(m.id)}>
@@ -240,7 +240,7 @@ export default function GestaoVendas() {
             <CardContent>
               <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                 {!selectedMentor && (
-                  <Input placeholder="Filtrar por mentor..." value={filterMentor} onChange={(e) => setFilterMentor(e.target.value)} />
+                  <Input placeholder="Filtrar por site..." value={filterMentor} onChange={(e) => setFilterMentor(e.target.value)} />
                 )}
                 <Input placeholder="Filtrar por produto..." value={filterProduto} onChange={(e) => setFilterProduto(e.target.value)} />
                 <div className="flex items-center gap-2">
@@ -258,14 +258,14 @@ export default function GestaoVendas() {
           {/* Sales table */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">{selectedMentor ? "Vendas do Mentor" : "Últimas Vendas"}</CardTitle>
+              <CardTitle className="text-base">{selectedMentor ? "Vendas do Site" : "Últimas Vendas"}</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      {!selectedMentor && <TableHead>Mentor</TableHead>}
+                      {!selectedMentor && <TableHead>Site</TableHead>}
                       <TableHead>Aluno</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Produto</TableHead>
@@ -337,7 +337,7 @@ export default function GestaoVendas() {
                   <p className="text-sm font-mono"><span className="text-primary">x-orbit-token:</span> SEU_TOKEN_AQUI</p>
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Cada mentor receberá um token exclusivo. Enviar no header <code className="bg-muted px-1 rounded">x-orbit-token</code>.
+                  Cada site receberá um token exclusivo. Enviar no header <code className="bg-muted px-1 rounded">x-orbit-token</code>.
                 </p>
               </div>
 
@@ -366,8 +366,8 @@ export default function GestaoVendas() {
                   </TableHeader>
                   <TableBody>
                     {[
-                      ["mentor_id", "string", "Sim", "ID único do mentor"],
-                      ["mentor_nome", "string", "Sim", "Nome do mentor"],
+                      ["mentor_id", "string", "Sim", "ID único do site"],
+                      ["mentor_nome", "string", "Sim", "Nome do site"],
                       ["aluno_nome", "string", "Sim", "Nome do aluno"],
                       ["aluno_email", "string", "Sim", "Email do aluno"],
                       ["produto", "string", "Sim", "Nome do produto"],
