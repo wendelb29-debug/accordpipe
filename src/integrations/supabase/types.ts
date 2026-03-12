@@ -614,6 +614,45 @@ export type Database = {
         }
         Relationships: []
       }
+      vendas_webhook: {
+        Row: {
+          created_at: string
+          data_venda: string
+          email_aluno: string
+          id: string
+          mentor_id: string
+          mentor_nome: string
+          nome_aluno: string
+          origem: string
+          produto: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          data_venda?: string
+          email_aluno: string
+          id?: string
+          mentor_id: string
+          mentor_nome: string
+          nome_aluno: string
+          origem?: string
+          produto: string
+          valor?: number
+        }
+        Update: {
+          created_at?: string
+          data_venda?: string
+          email_aluno?: string
+          id?: string
+          mentor_id?: string
+          mentor_nome?: string
+          nome_aluno?: string
+          origem?: string
+          produto?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       whatsapp_automations: {
         Row: {
           company_id: string
