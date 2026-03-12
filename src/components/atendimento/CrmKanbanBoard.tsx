@@ -47,6 +47,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const [isNew, setIsNew] = useState(false);
   const [detailLead, setDetailLead] = useState<CrmLead | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [formLinkOpen, setFormLinkOpen] = useState(false);
 
   const servidorId = activeCompanyId || profile?.company_id;
 
