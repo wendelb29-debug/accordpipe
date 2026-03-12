@@ -3,6 +3,9 @@ project_id = "avwzgxemxcymgxezouns"
 [functions.vendas-webhook]
 verify_jwt = false
 
+[functions.orbit-vendas-webhook]
+verify_jwt = false
+
 [functions.kiwify-webhook]
 verify_jwt = false
 

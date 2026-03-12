@@ -614,6 +614,48 @@ export type Database = {
         }
         Relationships: []
       }
+      vendas_orbit: {
+        Row: {
+          aluno_email: string
+          aluno_nome: string
+          created_at: string
+          data_venda: string
+          gateway: string
+          id: string
+          mentor_id: string
+          mentor_nome: string
+          produto: string
+          transacao_id: string
+          valor: number
+        }
+        Insert: {
+          aluno_email: string
+          aluno_nome: string
+          created_at?: string
+          data_venda?: string
+          gateway?: string
+          id?: string
+          mentor_id: string
+          mentor_nome: string
+          produto: string
+          transacao_id: string
+          valor?: number
+        }
+        Update: {
+          aluno_email?: string
+          aluno_nome?: string
+          created_at?: string
+          data_venda?: string
+          gateway?: string
+          id?: string
+          mentor_id?: string
+          mentor_nome?: string
+          produto?: string
+          transacao_id?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       vendas_webhook: {
         Row: {
           created_at: string
