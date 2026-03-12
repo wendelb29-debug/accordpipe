@@ -26,6 +26,7 @@ import CapturaLead from "./pages/CapturaLead";
 import Atividades from "./pages/Atividades";
 import Perfil from "./pages/Perfil";
 import OrbitStack from "./pages/OrbitStack";
+import GestaoVendas from "./pages/GestaoVendas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
