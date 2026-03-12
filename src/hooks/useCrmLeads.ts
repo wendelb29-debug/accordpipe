@@ -133,7 +133,7 @@ export function useCrmLeads() {
     const newStageName = newStage ? `${newStage.title}${newStage.daysLimit ? ` (${newStage.daysLimit})` : ""}` : stage;
     const success = await updateLead(id, { stage, stage_entered_at: new Date().toISOString() } as any);
     if (success && lead) {
-      const servidorId = activeCompanyId || profile?.company_id;
+      const servidorId = activeCompanyId || profile?.company_id || lead.servidor_id;
       if (servidorId) {
         await supabase.from("crm_lead_activities").insert({
           lead_id: id,
