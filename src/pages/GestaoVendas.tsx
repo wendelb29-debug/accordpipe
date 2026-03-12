@@ -240,7 +240,7 @@ export default function GestaoVendas() {
             <CardContent>
               <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                 {!selectedMentor && (
-                  <Input placeholder="Filtrar por mentor..." value={filterMentor} onChange={(e) => setFilterMentor(e.target.value)} />
+                  <Input placeholder="Filtrar por site..." value={filterMentor} onChange={(e) => setFilterMentor(e.target.value)} />
                 )}
                 <Input placeholder="Filtrar por produto..." value={filterProduto} onChange={(e) => setFilterProduto(e.target.value)} />
                 <div className="flex items-center gap-2">
