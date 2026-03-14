@@ -23,6 +23,7 @@ import Atendimento from "./pages/Atendimento";
 import AssinarContrato from "./pages/AssinarContrato";
 import ResetPassword from "./pages/ResetPassword";
 import CapturaLead from "./pages/CapturaLead";
+import FormularioContato from "./pages/FormularioContato";
 import Atividades from "./pages/Atividades";
 import Perfil from "./pages/Perfil";
 import OrbitStack from "./pages/OrbitStack";
