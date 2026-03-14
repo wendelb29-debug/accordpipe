@@ -106,16 +106,18 @@ Deno.serve(async (req) => {
     const { data: lead, error: leadError } = await supabaseAdmin
       .from("crm_leads")
       .insert({
-        servidor_id: company.id,
+        servidor_id: resolvedServidorId,
         source: (origem || "Landing Page").substring(0, 100),
         company_name: (empresa || nome).trim().substring(0, 200),
         contact_name: nome.trim().substring(0, 200),
         email: email ? String(email).trim().substring(0, 255) : null,
         phone: telefone.trim().substring(0, 30),
+        cidade: cidade ? String(cidade).trim().substring(0, 100) : null,
         notes: fullNotes,
-        tags: ["landing-page"],
+        tags: resolvedFormId ? ["formulario"] : ["landing-page"],
         stage: "novos",
         created_by_name: nome.trim().substring(0, 200),
+        form_id: resolvedFormId,
       })
       .select("id")
       .single();
