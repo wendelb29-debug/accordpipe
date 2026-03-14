@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
     const { data: admins } = await supabaseAdmin
       .from("profiles")
       .select("user_id")
-      .eq("company_id", company.id)
+      .eq("company_id", resolvedServidorId)
       .eq("is_active", true);
 
     if (admins && admins.length > 0) {
