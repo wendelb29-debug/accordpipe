@@ -35,8 +35,7 @@ export default function FormularioContato() {
     telefone: "",
     email: "",
     empresa: "",
-    colaboradores: "",
-    mensagem: "",
+    cnpj: "",
     _honeypot: "", // anti-spam
   });
 
