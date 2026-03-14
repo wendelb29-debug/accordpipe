@@ -23,6 +23,7 @@ import Atendimento from "./pages/Atendimento";
 import AssinarContrato from "./pages/AssinarContrato";
 import ResetPassword from "./pages/ResetPassword";
 import CapturaLead from "./pages/CapturaLead";
+import FormularioContato from "./pages/FormularioContato";
 import Atividades from "./pages/Atividades";
 import Perfil from "./pages/Perfil";
 import OrbitStack from "./pages/OrbitStack";
@@ -194,6 +195,7 @@ const App = () => (
             />
             <Route path="/assinar/:token" element={<AssinarContrato />} />
             <Route path="/captura/:servidorId" element={<CapturaLead />} />
+            <Route path="/contato" element={<FormularioContato />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
