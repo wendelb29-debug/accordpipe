@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Clock, Users, MessageSquare, Phone, RefreshCw, FileSignature, GripVertical,
   MoreVertical, Trash2, Edit, Building2, Mail, PhoneCall, Loader2,
@@ -41,6 +42,7 @@ const formatCurrency = (v: number) =>
 export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const { leads, loading, createLead, updateLead, deleteLead, moveToStage, totalLeads, totalPS, totalMRR, stageStats } = useCrmLeads();
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [draggedLead, setDraggedLead] = useState<CrmLead | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [selectedLead, setSelectedLead] = useState<CrmLead | null>(null);
@@ -166,9 +168,9 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
             <Tag className="h-3.5 w-3.5" />
             Link + Tags
           </Button>
-          <Button size="sm" variant="outline" onClick={copyFormLink} className="gap-1.5 text-xs">
-            {linkCopied ? <Check className="h-3.5 w-3.5" /> : <Link2 className="h-3.5 w-3.5" />}
-            {linkCopied ? "Copiado!" : "Link Rápido"}
+          <Button size="sm" variant="outline" onClick={() => navigate("/contato")} className="gap-1.5 text-xs">
+            <Link2 className="h-3.5 w-3.5" />
+            Link Rápido
           </Button>
           <Button size="sm" onClick={openNew} className="gap-1.5">
             <Plus className="h-4 w-4" /> Oportunidade
