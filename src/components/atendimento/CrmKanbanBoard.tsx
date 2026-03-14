@@ -42,6 +42,7 @@ const formatCurrency = (v: number) =>
 export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const { leads, loading, createLead, updateLead, deleteLead, moveToStage, totalLeads, totalPS, totalMRR, stageStats } = useCrmLeads();
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [draggedLead, setDraggedLead] = useState<CrmLead | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [selectedLead, setSelectedLead] = useState<CrmLead | null>(null);
