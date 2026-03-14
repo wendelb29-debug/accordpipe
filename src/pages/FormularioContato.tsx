@@ -1,11 +1,9 @@
 import { useState, useRef } from "react";
-import { User, Phone, Mail, Building2, Users, MessageSquare, Send, CheckCircle2, Loader2, AlertCircle, Shield } from "lucide-react";
+import { User, Phone, Mail, Building2, FileText, Send, CheckCircle2, Loader2, AlertCircle, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import orbitLogo from "@/assets/orbit-logo.png";
 
@@ -14,6 +12,15 @@ const formatPhone = (value: string) => {
   if (digits.length <= 2) return digits;
   if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+};
+
+const formatCnpj = (value: string) => {
+  const digits = value.replace(/\D/g, "").substring(0, 14);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+  if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
+  if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
 };
 
 export default function FormularioContato() {
@@ -27,8 +34,7 @@ export default function FormularioContato() {
     telefone: "",
     email: "",
     empresa: "",
-    colaboradores: "",
-    mensagem: "",
+    cnpj: "",
     _honeypot: "", // anti-spam
   });
 
@@ -54,8 +60,7 @@ export default function FormularioContato() {
           telefone: form.telefone.trim(),
           email: form.email.trim() || undefined,
           empresa: form.empresa.trim() || undefined,
-          colaboradores: form.colaboradores || undefined,
-          mensagem: form.mensagem.trim() || undefined,
+          colaboradores: form.cnpj.replace(/\D/g, "") || undefined,
           origem: "Landing Page",
           _honeypot: form._honeypot,
           _timestamp: timestampRef.current,
@@ -175,34 +180,16 @@ export default function FormularioContato() {
               </div>
               <div className="space-y-1.5">
                 <Label className="flex items-center gap-1.5 text-sm font-medium">
-                  <Users className="h-3.5 w-3.5 text-primary" /> Colaboradores
+                  <FileText className="h-3.5 w-3.5 text-primary" /> CNPJ
                 </Label>
-                <Select value={form.colaboradores} onValueChange={(v) => setForm({ ...form, colaboradores: v })}>
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1-10">1 a 10</SelectItem>
-                    <SelectItem value="11-50">11 a 50</SelectItem>
-                    <SelectItem value="51-200">51 a 200</SelectItem>
-                    <SelectItem value="201-500">201 a 500</SelectItem>
-                    <SelectItem value="500+">Mais de 500</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input
+                  maxLength={18}
+                  value={form.cnpj}
+                  onChange={(e) => setForm({ ...form, cnpj: formatCnpj(e.target.value) })}
+                  placeholder="00.000.000/0000-00"
+                  className="h-11"
+                />
               </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="flex items-center gap-1.5 text-sm font-medium">
-                <MessageSquare className="h-3.5 w-3.5 text-primary" /> Mensagem / Necessidade
-              </Label>
-              <Textarea
-                maxLength={500}
-                value={form.mensagem}
-                onChange={(e) => setForm({ ...form, mensagem: e.target.value })}
-                placeholder="Conte-nos como podemos ajudar..."
-                rows={3}
-              />
             </div>
 
             {error && (
