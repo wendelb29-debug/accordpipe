@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { nome, telefone, email, empresa, colaboradores, mensagem, origem, _honeypot, _timestamp } = body;
+    const { nome, telefone, email, empresa, colaboradores, mensagem, origem, _honeypot, _timestamp, form_id, servidor_id: bodyServidorId, cidade } = body;
 
     // Anti-spam: honeypot check
     if (_honeypot) {
@@ -59,17 +59,36 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Find the default company (servidor) to associate the lead
-    const { data: company } = await supabaseAdmin
-      .from("companies")
-      .select("id, status")
-      .is("servidor_id", null)
-      .in("status", ["active", "teste"])
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+    // Resolve servidor_id: from body, from form, or default company
+    let resolvedServidorId = bodyServidorId || null;
+    let resolvedFormId = form_id || null;
 
-    if (!company) {
+    if (!resolvedServidorId && resolvedFormId) {
+      const { data: formData } = await supabaseAdmin
+        .from("crm_forms")
+        .select("servidor_id, is_active")
+        .eq("id", resolvedFormId)
+        .maybeSingle();
+      if (formData?.is_active) {
+        resolvedServidorId = formData.servidor_id;
+      } else {
+        resolvedFormId = null; // form inactive or not found
+      }
+    }
+
+    if (!resolvedServidorId) {
+      const { data: company } = await supabaseAdmin
+        .from("companies")
+        .select("id, status")
+        .is("servidor_id", null)
+        .in("status", ["active", "teste"])
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      resolvedServidorId = company?.id || null;
+    }
+
+    if (!resolvedServidorId) {
       console.error("No active company found for lead creation");
       return new Response(JSON.stringify({ error: "Sistema indisponível" }), {
         status: 503,
@@ -87,16 +106,18 @@ Deno.serve(async (req) => {
     const { data: lead, error: leadError } = await supabaseAdmin
       .from("crm_leads")
       .insert({
-        servidor_id: company.id,
+        servidor_id: resolvedServidorId,
         source: (origem || "Landing Page").substring(0, 100),
         company_name: (empresa || nome).trim().substring(0, 200),
         contact_name: nome.trim().substring(0, 200),
         email: email ? String(email).trim().substring(0, 255) : null,
         phone: telefone.trim().substring(0, 30),
+        cidade: cidade ? String(cidade).trim().substring(0, 100) : null,
         notes: fullNotes,
-        tags: ["landing-page"],
+        tags: resolvedFormId ? ["formulario"] : ["landing-page"],
         stage: "novos",
         created_by_name: nome.trim().substring(0, 200),
+        form_id: resolvedFormId,
       })
       .select("id")
       .single();
@@ -113,7 +134,7 @@ Deno.serve(async (req) => {
     const { data: admins } = await supabaseAdmin
       .from("profiles")
       .select("user_id")
-      .eq("company_id", company.id)
+      .eq("company_id", resolvedServidorId)
       .eq("is_active", true);
 
     if (admins && admins.length > 0) {

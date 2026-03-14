@@ -29,6 +29,8 @@ import Perfil from "./pages/Perfil";
 import OrbitStack from "./pages/OrbitStack";
 import GestaoVendas from "./pages/GestaoVendas";
 import NotFound from "./pages/NotFound";
+import Formularios from "./pages/Formularios";
+import FormPublico from "./pages/FormPublico";
 
 const queryClient = new QueryClient();
 
@@ -193,9 +195,20 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/formularios"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "operador"]}>
+                  <AppLayout>
+                    <Formularios />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
             <Route path="/assinar/:token" element={<AssinarContrato />} />
             <Route path="/captura/:servidorId" element={<CapturaLead />} />
             <Route path="/contato" element={<FormularioContato />} />
+            <Route path="/form/:formId" element={<FormPublico />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
