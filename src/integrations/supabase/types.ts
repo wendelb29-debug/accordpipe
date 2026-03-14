@@ -236,6 +236,56 @@ export type Database = {
           },
         ]
       }
+      crm_forms: {
+        Row: {
+          created_at: string
+          created_by_name: string | null
+          created_by_user_id: string | null
+          description: string | null
+          fields: Json
+          id: string
+          is_active: boolean
+          name: string
+          servidor_id: string
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_name?: string | null
+          created_by_user_id?: string | null
+          description?: string | null
+          fields?: Json
+          id?: string
+          is_active?: boolean
+          name: string
+          servidor_id: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_name?: string | null
+          created_by_user_id?: string | null
+          description?: string | null
+          fields?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          servidor_id?: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_forms_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_lead_activities: {
         Row: {
           created_at: string
@@ -302,6 +352,7 @@ export type Database = {
           email: string | null
           estado: string | null
           forecast_date: string | null
+          form_id: string | null
           id: string
           lead_status: string
           lost_reason: string | null
@@ -327,6 +378,7 @@ export type Database = {
           email?: string | null
           estado?: string | null
           forecast_date?: string | null
+          form_id?: string | null
           id?: string
           lead_status?: string
           lost_reason?: string | null
@@ -352,6 +404,7 @@ export type Database = {
           email?: string | null
           estado?: string | null
           forecast_date?: string | null
+          form_id?: string | null
           id?: string
           lead_status?: string
           lost_reason?: string | null
@@ -372,6 +425,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_leads_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "crm_forms"
             referencedColumns: ["id"]
           },
           {
