@@ -195,6 +195,7 @@ const App = () => (
             />
             <Route path="/assinar/:token" element={<AssinarContrato />} />
             <Route path="/captura/:servidorId" element={<CapturaLead />} />
+            <Route path="/contato" element={<FormularioContato />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
