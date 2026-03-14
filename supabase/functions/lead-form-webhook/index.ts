@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { nome, telefone, email, empresa, colaboradores, mensagem, origem, _honeypot, _timestamp } = body;
+    const { nome, telefone, email, empresa, colaboradores, mensagem, origem, _honeypot, _timestamp, form_id, servidor_id: bodyServidorId, cidade } = body;
 
     // Anti-spam: honeypot check
     if (_honeypot) {
