@@ -29,6 +29,8 @@ import Perfil from "./pages/Perfil";
 import OrbitStack from "./pages/OrbitStack";
 import GestaoVendas from "./pages/GestaoVendas";
 import NotFound from "./pages/NotFound";
+import Formularios from "./pages/Formularios";
+import FormPublico from "./pages/FormPublico";
 
 const queryClient = new QueryClient();
 
