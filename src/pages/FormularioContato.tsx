@@ -79,8 +79,8 @@ export default function FormularioContato() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/10 p-4">
         <Card className="max-w-md w-full text-center shadow-xl border-0 bg-card/95 backdrop-blur">
           <CardContent className="p-10">
-            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-100 flex items-center justify-center">
-              <CheckCircle2 className="h-10 w-10 text-green-600" />
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-primary/10 flex items-center justify-center">
+              <CheckCircle2 className="h-10 w-10 text-primary" />
             </div>
             <h2 className="text-2xl font-bold mb-3 text-foreground">Recebemos seu contato!</h2>
             <p className="text-muted-foreground text-base leading-relaxed">
