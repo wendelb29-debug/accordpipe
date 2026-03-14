@@ -181,34 +181,16 @@ export default function FormularioContato() {
               </div>
               <div className="space-y-1.5">
                 <Label className="flex items-center gap-1.5 text-sm font-medium">
-                  <Users className="h-3.5 w-3.5 text-primary" /> Colaboradores
+                  <FileText className="h-3.5 w-3.5 text-primary" /> CNPJ
                 </Label>
-                <Select value={form.colaboradores} onValueChange={(v) => setForm({ ...form, colaboradores: v })}>
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1-10">1 a 10</SelectItem>
-                    <SelectItem value="11-50">11 a 50</SelectItem>
-                    <SelectItem value="51-200">51 a 200</SelectItem>
-                    <SelectItem value="201-500">201 a 500</SelectItem>
-                    <SelectItem value="500+">Mais de 500</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input
+                  maxLength={18}
+                  value={form.cnpj}
+                  onChange={(e) => setForm({ ...form, cnpj: formatCnpj(e.target.value) })}
+                  placeholder="00.000.000/0000-00"
+                  className="h-11"
+                />
               </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="flex items-center gap-1.5 text-sm font-medium">
-                <MessageSquare className="h-3.5 w-3.5 text-primary" /> Mensagem / Necessidade
-              </Label>
-              <Textarea
-                maxLength={500}
-                value={form.mensagem}
-                onChange={(e) => setForm({ ...form, mensagem: e.target.value })}
-                placeholder="Conte-nos como podemos ajudar..."
-                rows={3}
-              />
             </div>
 
             {error && (
