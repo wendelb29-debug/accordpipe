@@ -59,17 +59,36 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Find the default company (servidor) to associate the lead
-    const { data: company } = await supabaseAdmin
-      .from("companies")
-      .select("id, status")
-      .is("servidor_id", null)
-      .in("status", ["active", "teste"])
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+    // Resolve servidor_id: from body, from form, or default company
+    let resolvedServidorId = bodyServidorId || null;
+    let resolvedFormId = form_id || null;
 
-    if (!company) {
+    if (!resolvedServidorId && resolvedFormId) {
+      const { data: formData } = await supabaseAdmin
+        .from("crm_forms")
+        .select("servidor_id, is_active")
+        .eq("id", resolvedFormId)
+        .maybeSingle();
+      if (formData?.is_active) {
+        resolvedServidorId = formData.servidor_id;
+      } else {
+        resolvedFormId = null; // form inactive or not found
+      }
+    }
+
+    if (!resolvedServidorId) {
+      const { data: company } = await supabaseAdmin
+        .from("companies")
+        .select("id, status")
+        .is("servidor_id", null)
+        .in("status", ["active", "teste"])
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      resolvedServidorId = company?.id || null;
+    }
+
+    if (!resolvedServidorId) {
       console.error("No active company found for lead creation");
       return new Response(JSON.stringify({ error: "Sistema indisponível" }), {
         status: 503,
