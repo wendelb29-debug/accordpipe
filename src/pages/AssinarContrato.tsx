@@ -179,10 +179,6 @@ export default function AssinarContrato() {
       toast.error("Tire a foto e permita a localização antes de assinar");
       return;
     }
-    if (!signerNameInput.trim()) {
-      toast.error("Informe o nome do signatário");
-      return;
-    }
     setSigning(true);
     try {
       const formData = new FormData();
