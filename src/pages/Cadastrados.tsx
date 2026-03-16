@@ -112,10 +112,18 @@ export default function Cadastrados() {
     doc_pendente: registrations.filter((r) => r.status === "doc_pendente").length,
   };
 
-  const InfoRow = ({ label, value }: { label: string; value: string }) => (
-    <div className="grid grid-cols-3 gap-2 py-1.5">
+  const InfoRow = ({ label, value, field }: { label: string; value: string; field?: string }) => (
+    <div className="grid grid-cols-3 gap-2 py-1.5 items-center">
       <span className="text-sm font-medium text-muted-foreground">{label}</span>
-      <span className="text-sm text-foreground col-span-2">{value || "—"}</span>
+      {editing && field ? (
+        <Input
+          className="col-span-2 h-8 text-sm"
+          value={editData[field] || ""}
+          onChange={(e) => setEditData((prev: any) => ({ ...prev, [field]: e.target.value }))}
+        />
+      ) : (
+        <span className="text-sm text-foreground col-span-2">{value || "—"}</span>
+      )}
     </div>
   );
 
