@@ -551,7 +551,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
         const { data: latestContract } = await supabase
           .from("contracts")
           .select("signature_link")
-          .eq("company_id", lead.company_id)
+          .eq("company_id", companyId)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
