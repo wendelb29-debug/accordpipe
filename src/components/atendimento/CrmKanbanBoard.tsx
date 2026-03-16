@@ -179,7 +179,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
       </div>
 
       {/* Kanban Columns */}
-      <div className="flex gap-3 p-4 h-[calc(100%-3.5rem)] overflow-x-auto">
+      <div className="flex gap-2 p-3 h-[calc(100%-3.5rem)] overflow-x-auto">
         {stageStats.map((stage) => {
           const Icon = stageIcons[stage.id] || Clock;
           const stageLeads = filteredLeads.filter((l) => l.stage === stage.id);
