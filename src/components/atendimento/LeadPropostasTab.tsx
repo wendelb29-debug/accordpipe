@@ -105,7 +105,17 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false }: {
   useEffect(() => {
     fetchProposals();
     fetchCompanyAndServidor();
+    fetchRegistrationData();
   }, [lead.id]);
+
+  const fetchRegistrationData = async () => {
+    const { data } = await supabase
+      .from("crm_client_registrations")
+      .select("*")
+      .eq("lead_id", lead.id)
+      .maybeSingle();
+    if (data) setRegistrationData(data);
+  };
 
   const fetchCompanyAndServidor = async () => {
     // Fetch lead's company data if company_id exists
