@@ -31,6 +31,7 @@ import GestaoVendas from "./pages/GestaoVendas";
 import NotFound from "./pages/NotFound";
 import Formularios from "./pages/Formularios";
 import FormPublico from "./pages/FormPublico";
+import Cadastrados from "./pages/Cadastrados";
 
 const queryClient = new QueryClient();
 
@@ -201,6 +202,16 @@ const App = () => (
                 <ProtectedRoute allowedRoles={["admin", "operador", "administrativo", "comercial"]}>
                   <AppLayout>
                     <Formularios />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cadastrados"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "administrativo"]}>
+                  <AppLayout>
+                    <Cadastrados />
                   </AppLayout>
                 </ProtectedRoute>
               }
