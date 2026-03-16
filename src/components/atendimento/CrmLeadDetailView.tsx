@@ -26,8 +26,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { CrmLead, STAGES } from "@/hooks/useCrmLeads";
+import { CrmLead, STAGES, ADMIN_STAGES, ALL_STAGES } from "@/hooks/useCrmLeads";
 import { useCrmActivities } from "@/hooks/useCrmActivities";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 const formatCurrency = (v: number) =>
