@@ -356,41 +356,59 @@ export default function Cadastrados() {
                 )}
               </div>
 
-              {/* Contratos */}
+              {/* Contrato do Cliente */}
               <div>
                 <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                  <FileSignature className="h-4 w-4" /> Contratos
+                  <FileSignature className="h-4 w-4" /> Contrato do Cliente
                 </h3>
                 {contracts.length > 0 ? (
                   <div className="space-y-2">
-                    {contracts.map((c) => (
-                      <Card key={c.id}>
-                        <CardContent className="p-3 flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-medium text-foreground">{c.code}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {c.signature_status === "signed" ? "✅ Assinado" : "⏳ Pendente"} · {new Date(c.created_at).toLocaleDateString("pt-BR")}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {c.signature_photo_url && (
-                              <Button size="sm" variant="ghost" asChild title="Ver assinatura">
-                                <a href={c.signature_photo_url} target="_blank" rel="noreferrer">
-                                  <Eye className="h-4 w-4" />
-                                </a>
-                              </Button>
-                            )}
-                            {c.signature_link && (
-                              <Button size="sm" variant="outline" asChild className="gap-1">
-                                <a href={c.signature_link} target="_blank" rel="noreferrer">
-                                  <FileSignature className="h-4 w-4" /> Contrato
-                                </a>
-                              </Button>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                    {contracts.map((c: any) => {
+                      const statusMap: Record<string, { label: string; emoji: string }> = {
+                        pendente: { label: "Pendente", emoji: "🟡" },
+                        assinado: { label: "Assinado", emoji: "🟢" },
+                        cancelado: { label: "Cancelado", emoji: "🔴" },
+                      };
+                      const st = statusMap[c.contract_status] || statusMap.pendente;
+                      return (
+                        <Card key={c.id}>
+                          <CardContent className="p-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-medium text-foreground">
+                                  {st.emoji} {st.label}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Gerado em: {new Date(c.created_at).toLocaleDateString("pt-BR")}
+                                  {c.signed_at && ` · Assinado em: ${new Date(c.signed_at).toLocaleDateString("pt-BR")}`}
+                                </p>
+                              </div>
+                              <div className="flex gap-1">
+                                {c.signature_photo_url && (
+                                  <Button size="sm" variant="ghost" asChild title="Ver assinatura">
+                                    <a href={c.signature_photo_url} target="_blank" rel="noreferrer">
+                                      <Eye className="h-4 w-4" />
+                                    </a>
+                                  </Button>
+                                )}
+                                {c.signing_token && c.contract_status === "pendente" && (
+                                  <Button size="sm" variant="outline" className="gap-1" asChild>
+                                    <a href={`/assinar/${c.signing_token}`} target="_blank" rel="noreferrer">
+                                      <FileSignature className="h-4 w-4" /> Assinar
+                                    </a>
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                            {/* Contract details */}
+                            <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                              {c.plan_name && <div>Plano: <strong className="text-foreground">{c.plan_name}</strong></div>}
+                              {c.monthly_value > 0 && <div>Valor: <strong className="text-foreground">R$ {Number(c.monthly_value).toFixed(2)}</strong></div>}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">Nenhum contrato vinculado.</p>
