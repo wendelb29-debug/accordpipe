@@ -290,13 +290,25 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     }
   };
 
-  const handleLost = async () => {
+  const handleLost = () => {
+    setShowLostDialog(true);
+  };
+
+  const confirmLost = async () => {
+    if (!selectedLostReason) {
+      toast.error("Selecione um motivo");
+      return;
+    }
     if (saving) return;
     setSaving(true);
+    const reason = LOST_REASONS.find(r => r.value === selectedLostReason);
+    const reasonText = reason ? `${reason.label}: ${reason.description}` : selectedLostReason;
     try {
-      await onUpdate(lead.id, { lead_status: "lost" } as any);
-      await addActivity({ type: "lost", title: "Oportunidade perdida", description: "Lead marcado como perdido." });
+      await onUpdate(lead.id, { lead_status: "lost", lost_reason: reasonText } as any);
+      await addActivity({ type: "lost", title: "Oportunidade perdida", description: `Motivo: ${reasonText}` });
       toast.info("Oportunidade marcada como perdida");
+      setShowLostDialog(false);
+      setSelectedLostReason("");
     } catch (error) {
       console.error("Error marking lost:", error);
       toast.error("Erro ao marcar como perdido");
