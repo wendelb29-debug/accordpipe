@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  ArrowLeft, Building2, User, Mail, Phone as PhoneIcon, MapPin, Calendar,
+  ArrowLeft, Building2, User, Mail, Phone as PhoneIcon, MapPin, Calendar, Calculator,
   DollarSign, Clock, Tag, StickyNote, CheckCircle, XCircle, Plus,
   MessageSquare, PhoneCall, FileText, Activity, Trash2, Send, Loader2,
   FileSignature, Eye, Download, Copy, Image as ImageIcon,
@@ -12,6 +12,7 @@ import { downloadContractPdf } from "@/lib/generateContractPdf";
 import { LeadAtividadesTab } from "./LeadAtividadesTab";
 import { LeadPropostasTab } from "./LeadPropostasTab";
 import { LeadContratosTab } from "./LeadContratosTab";
+import { LeadSimulacaoTab } from "./LeadSimulacaoTab";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -487,6 +488,9 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               <TabsTrigger value="assinatura" className="text-xs gap-1.5">
                 <FileSignature className="h-3.5 w-3.5" /> Assinatura
               </TabsTrigger>
+              <TabsTrigger value="simulacao" className="text-xs gap-1.5">
+                <Calculator className="h-3.5 w-3.5" /> Simulação
+              </TabsTrigger>
             </TabsList>
 
             {/* Histórico - all activities */}
@@ -680,6 +684,11 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             {/* Assinatura - select accepted proposal to send for signature */}
             <TabsContent value="assinatura" className="flex-1 overflow-y-auto p-4 mt-0">
               <LeadPropostasTab lead={lead} addActivity={addActivity} signatureMode />
+            </TabsContent>
+
+            {/* Simulação */}
+            <TabsContent value="simulacao" className="flex-1 overflow-y-auto p-4 mt-0">
+              <LeadSimulacaoTab lead={lead} addActivity={addActivity} />
             </TabsContent>
           </Tabs>
         </div>
