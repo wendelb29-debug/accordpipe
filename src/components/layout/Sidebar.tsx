@@ -7,7 +7,7 @@ import {
   FileText,
   BarChart3,
   FileSignature,
-  XCircle,
+  
   Users,
   LogOut,
   MessageSquare,
