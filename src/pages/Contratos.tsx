@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import {
-  Plus, Search, FileSignature, Eye, Clock, CheckCircle2, AlertCircle, Loader2, Copy, Camera, MapPin, User, X, Download, ShieldAlert, Building2,
+  Plus, Search, FileSignature, Eye, Clock, CheckCircle2, AlertCircle, Loader2, Copy, Camera, MapPin, User, X, Download, ShieldAlert, Building2, Users, Link2,
 } from "lucide-react";
 import { downloadContractPdf, generateContractPdf } from "@/lib/generateContractPdf";
 import { Button } from "@/components/ui/button";
@@ -58,6 +58,26 @@ const statusConfig: Record<string, { label: string; icon: any; className: string
   },
 };
 
+const roleLabels: Record<string, string> = {
+  matriz: "Representante da Matriz",
+  revendedor: "Revendedor / Contratante",
+  colaborador: "Colaborador",
+};
+
+interface ContractSignature {
+  id: string;
+  contract_id: string;
+  signer_role: string;
+  signer_name: string | null;
+  signer_document: string | null;
+  signing_token: string | null;
+  signed_at: string | null;
+  signature_photo_url: string | null;
+  signature_latitude: number | null;
+  signature_longitude: number | null;
+  signature_address: string | null;
+}
+
 export default function Contratos() {
   const { isMaster, isCeo, isAdmin } = useAuth();
 
@@ -72,6 +92,10 @@ export default function Contratos() {
   const [linkValidity, setLinkValidity] = useState("7");
   const [generating, setGenerating] = useState(false);
 
+  // Signatures state
+  const [contractSignatures, setContractSignatures] = useState<Record<string, ContractSignature[]>>({});
+  const [linksDialogContract, setLinksDialogContract] = useState<ContractRow | null>(null);
+
   // Camera / signing state
   const [cameraOpen, setCameraOpen] = useState(false);
   const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
@@ -83,6 +107,26 @@ export default function Contratos() {
 
   const { contracts, loading, createContract, signContract: signContractFn } = useContracts();
   const { companies } = useCompanies();
+
+  // Fetch signatures for all contracts
+  useEffect(() => {
+    if (contracts.length === 0) return;
+    const fetchSigs = async () => {
+      const { data } = await (await import("@/integrations/supabase/client")).supabase
+        .from("contract_signatures")
+        .select("*")
+        .in("contract_id", contracts.map(c => c.id));
+      if (data) {
+        const grouped: Record<string, ContractSignature[]> = {};
+        (data as any[]).forEach(s => {
+          if (!grouped[s.contract_id]) grouped[s.contract_id] = [];
+          grouped[s.contract_id].push(s);
+        });
+        setContractSignatures(grouped);
+      }
+    };
+    fetchSigs();
+  }, [contracts]);
 
   // Camera functions
   const getLocation = useCallback(() => {
@@ -134,10 +178,10 @@ export default function Contratos() {
     }
   };
 
-  const handleCopyLink = (contract: ContractRow) => {
-    const link = contract.signature_link || `https://orbitclient.lovable.app/assinar/${contract.signing_token}`;
+  const handleCopyLink = (sigToken: string, role: string) => {
+    const link = `${window.location.origin}/assinar/${sigToken}`;
     navigator.clipboard.writeText(link);
-    toast.success("Link de assinatura copiado!");
+    toast.success(`Link de ${roleLabels[role] || role} copiado!`);
   };
 
 
@@ -294,45 +338,105 @@ export default function Contratos() {
             <p className="text-muted-foreground p-4">Conteúdo não disponível</p>
           )}
 
-          {viewContract?.signature_status === "signed" && (
+          {/* Multi-signer signatures */}
+          {viewContract && contractSignatures[viewContract.id]?.length > 0 && (
+            <div className="border-t pt-4 space-y-4">
+              <h3 className="font-semibold text-foreground flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                Assinaturas ({contractSignatures[viewContract.id].filter(s => s.signed_at).length}/{contractSignatures[viewContract.id].length})
+              </h3>
+              <div className="grid gap-3">
+                {contractSignatures[viewContract.id].map((sig) => (
+                  <Card key={sig.id} className="p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <User className="h-4 w-4 text-primary" />
+                        {roleLabels[sig.signer_role] || sig.signer_role}
+                      </div>
+                      {sig.signed_at ? (
+                        <Badge className="bg-status-paid/10 text-status-paid border-status-paid/30">
+                          <CheckCircle2 className="h-3 w-3 mr-1" /> Assinado
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">Pendente</Badge>
+                      )}
+                    </div>
+                    {sig.signer_name && <p className="text-sm text-muted-foreground">{sig.signer_name}</p>}
+                    {sig.signer_document && <p className="text-sm font-mono text-muted-foreground">{sig.signer_document}</p>}
+                    {sig.signed_at && (
+                      <p className="text-xs text-muted-foreground">Assinado em: {new Date(sig.signed_at).toLocaleString("pt-BR")}</p>
+                    )}
+                    {sig.signature_address && (
+                      <div className="flex items-start gap-1 text-xs text-muted-foreground">
+                        <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                        <span>{sig.signature_address}</span>
+                      </div>
+                    )}
+                    {sig.signature_photo_url && (
+                      <img src={sig.signature_photo_url} alt="Foto" className="max-w-[200px] rounded-lg border mt-2" />
+                    )}
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Legacy single signature fallback */}
+          {viewContract && (!contractSignatures[viewContract.id] || contractSignatures[viewContract.id].length === 0) && viewContract.signature_status === "signed" && (
             <div className="border-t pt-4 space-y-4">
               <h3 className="font-semibold text-foreground flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-primary" />
                 Dados da Assinatura
               </h3>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Card className="p-4 space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <User className="h-4 w-4 text-primary" /> Signatário
-                  </div>
-                  <p className="text-sm text-muted-foreground">{viewContract.signer_name || viewContract.company?.responsavel || "-"}</p>
-                  <p className="text-sm font-mono text-muted-foreground">{viewContract.signer_document || viewContract.company?.cnpj || "-"}</p>
-                  {viewContract.signed_at && (
-                    <p className="text-xs text-muted-foreground">Assinado em: {new Date(viewContract.signed_at).toLocaleString("pt-BR")}</p>
-                  )}
-                </Card>
-                <Card className="p-4 space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <MapPin className="h-4 w-4 text-primary" /> Localização
-                  </div>
-                  <p className="text-sm text-muted-foreground">{viewContract.signature_address || "-"}</p>
-                  {viewContract.signature_latitude && viewContract.signature_longitude && (
-                    <p className="text-xs font-mono text-muted-foreground">
-                      ({viewContract.signature_latitude.toFixed(6)}, {viewContract.signature_longitude.toFixed(6)})
-                    </p>
-                  )}
-                </Card>
-              </div>
+              <Card className="p-4 space-y-2">
+                <p className="text-sm text-muted-foreground">{viewContract.signer_name || viewContract.company?.responsavel || "-"}</p>
+                <p className="text-sm font-mono text-muted-foreground">{viewContract.signer_document || viewContract.company?.cnpj || "-"}</p>
+                {viewContract.signed_at && (
+                  <p className="text-xs text-muted-foreground">Assinado em: {new Date(viewContract.signed_at).toLocaleString("pt-BR")}</p>
+                )}
+              </Card>
               {viewContract.signature_photo_url && (
-                <Card className="p-4 space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <Camera className="h-4 w-4 text-primary" /> Foto de Assinatura
-                  </div>
-                  <img src={viewContract.signature_photo_url} alt="Foto de assinatura" className="max-w-xs rounded-lg border" />
-                </Card>
+                <img src={viewContract.signature_photo_url} alt="Foto" className="max-w-xs rounded-lg border" />
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Links Dialog */}
+      <Dialog open={!!linksDialogContract} onOpenChange={(open) => !open && setLinksDialogContract(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 className="h-5 w-5 text-primary" />
+              Links de Assinatura - {linksDialogContract?.code}
+            </DialogTitle>
+            <DialogDescription>Copie e envie o link correspondente para cada signatário</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {linksDialogContract && contractSignatures[linksDialogContract.id]?.map((sig) => (
+              <Card key={sig.id} className="p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{roleLabels[sig.signer_role] || sig.signer_role}</p>
+                    {sig.signer_name && <p className="text-xs text-muted-foreground">{sig.signer_name}</p>}
+                  </div>
+                  {sig.signed_at ? (
+                    <Badge className="bg-status-paid/10 text-status-paid border-status-paid/30 text-xs">
+                      <CheckCircle2 className="h-3 w-3 mr-1" /> Assinado
+                    </Badge>
+                  ) : sig.signing_token ? (
+                    <Button size="sm" variant="outline" className="gap-1" onClick={() => handleCopyLink(sig.signing_token!, sig.signer_role)}>
+                      <Copy className="h-3 w-3" /> Copiar Link
+                    </Button>
+                  ) : null}
+                </div>
+              </Card>
+            ))}
+            {linksDialogContract && (!contractSignatures[linksDialogContract.id] || contractSignatures[linksDialogContract.id].length === 0) && (
+              <p className="text-sm text-muted-foreground text-center py-4">Nenhum link de assinatura encontrado. Este contrato pode ter sido criado antes do sistema multi-assinatura.</p>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -544,11 +648,9 @@ export default function Contratos() {
                               <FileSignature className="h-4 w-4" />
                               Assinar
                             </Button>
-                            {contract.signing_token && (
-                              <Button variant="ghost" size="icon" title="Copiar link de assinatura" onClick={() => handleCopyLink(contract)}>
-                                <Copy className="h-4 w-4" />
-                              </Button>
-                            )}
+                            <Button variant="ghost" size="icon" title="Links de assinatura" onClick={() => setLinksDialogContract(contract)}>
+                              <Link2 className="h-4 w-4" />
+                            </Button>
                           </>
                         )}
                       </div>

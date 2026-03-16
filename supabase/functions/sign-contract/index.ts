@@ -28,7 +28,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate photo is an image
     if (!photo.type.startsWith("image/")) {
       return new Response(
         JSON.stringify({ error: "Invalid file type" }),
@@ -36,7 +35,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Limit file size to 5MB
     if (photo.size > 5 * 1024 * 1024) {
       return new Response(
         JSON.stringify({ error: "File too large" }),
@@ -49,60 +47,134 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Verify contract exists and is pending
-    const { data: contract, error: fetchErr } = await supabase
-      .from("contracts")
-      .select("id, signature_status")
+    // Check contract_signatures table first (new multi-signer flow)
+    const { data: sigRecord, error: sigErr } = await supabase
+      .from("contract_signatures")
+      .select("id, contract_id, signer_role, signed_at")
       .eq("signing_token", token)
-      .eq("signature_status", "pending")
       .maybeSingle();
 
-    if (fetchErr || !contract) {
-      return new Response(
-        JSON.stringify({ error: "Contract not found or already signed" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    let contractId: string;
 
-    // Upload photo
-    const fileName = `${contract.id}_${Date.now()}.jpg`;
-    const arrayBuffer = await photo.arrayBuffer();
-    const { error: uploadErr } = await supabase.storage
-      .from("signatures")
-      .upload(fileName, arrayBuffer, { contentType: photo.type });
+    if (sigRecord) {
+      // New multi-signer flow
+      if (sigRecord.signed_at) {
+        return new Response(
+          JSON.stringify({ error: "This signature has already been completed" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
-    if (uploadErr) {
-      return new Response(
-        JSON.stringify({ error: "Failed to upload photo" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+      contractId = sigRecord.contract_id;
 
-    const { data: urlData } = supabase.storage
-      .from("signatures")
-      .getPublicUrl(fileName);
+      // Upload photo
+      const fileName = `${contractId}_${sigRecord.signer_role}_${Date.now()}.jpg`;
+      const arrayBuffer = await photo.arrayBuffer();
+      const { error: uploadErr } = await supabase.storage
+        .from("signatures")
+        .upload(fileName, arrayBuffer, { contentType: photo.type });
 
-    // Update contract
-    const { error: updateErr } = await supabase
-      .from("contracts")
-      .update({
-        signature_status: "signed",
-        signed_at: new Date().toISOString(),
-        signature_photo_url: urlData.publicUrl,
-        signature_latitude: latitude,
-        signature_longitude: longitude,
-        signature_address: address,
-        signer_name: signerName || null,
-        signer_document: signerDocument || null,
-      })
-      .eq("signing_token", token)
-      .eq("signature_status", "pending");
+      if (uploadErr) {
+        return new Response(
+          JSON.stringify({ error: "Failed to upload photo" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
-    if (updateErr) {
-      return new Response(
-        JSON.stringify({ error: "Failed to update contract" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
+
+      // Update the signature record
+      const { error: updateErr } = await supabase
+        .from("contract_signatures")
+        .update({
+          signed_at: new Date().toISOString(),
+          signature_photo_url: urlData.publicUrl,
+          signature_latitude: latitude,
+          signature_longitude: longitude,
+          signature_address: address,
+          signer_name: signerName || null,
+          signer_document: signerDocument || null,
+        })
+        .eq("id", sigRecord.id);
+
+      if (updateErr) {
+        return new Response(
+          JSON.stringify({ error: "Failed to update signature" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check if all signatures are now complete
+      const { data: allSigs } = await supabase
+        .from("contract_signatures")
+        .select("signed_at")
+        .eq("contract_id", contractId);
+
+      const allSigned = allSigs && allSigs.every((s: any) => s.signed_at !== null);
+
+      if (allSigned) {
+        await supabase
+          .from("contracts")
+          .update({
+            signature_status: "signed",
+            signed_at: new Date().toISOString(),
+          })
+          .eq("id", contractId);
+      }
+    } else {
+      // Legacy single-signer flow
+      const { data: contract, error: fetchErr } = await supabase
+        .from("contracts")
+        .select("id, signature_status")
+        .eq("signing_token", token)
+        .eq("signature_status", "pending")
+        .maybeSingle();
+
+      if (fetchErr || !contract) {
+        return new Response(
+          JSON.stringify({ error: "Contract not found or already signed" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      contractId = contract.id;
+
+      const fileName = `${contract.id}_${Date.now()}.jpg`;
+      const arrayBuffer = await photo.arrayBuffer();
+      const { error: uploadErr } = await supabase.storage
+        .from("signatures")
+        .upload(fileName, arrayBuffer, { contentType: photo.type });
+
+      if (uploadErr) {
+        return new Response(
+          JSON.stringify({ error: "Failed to upload photo" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
+
+      const { error: updateErr } = await supabase
+        .from("contracts")
+        .update({
+          signature_status: "signed",
+          signed_at: new Date().toISOString(),
+          signature_photo_url: urlData.publicUrl,
+          signature_latitude: latitude,
+          signature_longitude: longitude,
+          signature_address: address,
+          signer_name: signerName || null,
+          signer_document: signerDocument || null,
+        })
+        .eq("signing_token", token)
+        .eq("signature_status", "pending");
+
+      if (updateErr) {
+        return new Response(
+          JSON.stringify({ error: "Failed to update contract" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     return new Response(
