@@ -26,35 +26,75 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { data, error } = await supabase
-      .from("contracts")
-      .select(
-        "id, code, contract_content, signature_status, signing_token, signed_at, signature_photo_url, companies(razao_social, nome_fantasia, cnpj, responsavel, endereco, numero, bairro, cidade, estado, cep)"
-      )
+    // First try to find by contract signing_token (legacy)
+    let contractData = null;
+    let signerRole = null;
+
+    // Check contract_signatures table first (new multi-signer flow)
+    const { data: sigData } = await supabase
+      .from("contract_signatures")
+      .select("contract_id, signer_role, signer_name, signer_document, signed_at")
       .eq("signing_token", token)
       .maybeSingle();
 
-    if (error || !data) {
+    if (sigData) {
+      signerRole = sigData.signer_role;
+      const { data, error } = await supabase
+        .from("contracts")
+        .select(
+          "id, code, contract_content, signature_status, signed_at, companies(razao_social, nome_fantasia, cnpj, responsavel, endereco, numero, bairro, cidade, estado, cep)"
+        )
+        .eq("id", sigData.contract_id)
+        .maybeSingle();
+
+      if (!error && data) {
+        contractData = {
+          ...data,
+          signer_role: sigData.signer_role,
+          signer_signed_at: sigData.signed_at,
+          signer_name: sigData.signer_name,
+          signer_document: sigData.signer_document,
+        };
+      }
+    } else {
+      // Fallback: legacy single-signer token on contracts table
+      const { data, error } = await supabase
+        .from("contracts")
+        .select(
+          "id, code, contract_content, signature_status, signing_token, signed_at, signature_photo_url, companies(razao_social, nome_fantasia, cnpj, responsavel, endereco, numero, bairro, cidade, estado, cep)"
+        )
+        .eq("signing_token", token)
+        .maybeSingle();
+
+      if (!error && data) {
+        contractData = { ...data, signer_role: "revendedor" };
+      }
+    }
+
+    if (!contractData) {
       return new Response(
         JSON.stringify({ error: "Contract not found" }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    return new Response(JSON.stringify(data), {
+    // Also fetch all signatures for this contract
+    const { data: allSigs } = await supabase
+      .from("contract_signatures")
+      .select("signer_role, signer_name, signed_at, signature_photo_url, signature_address")
+      .eq("contract_id", contractData.id)
+      .order("created_at");
+
+    contractData.signatures = allSigs || [];
+
+    return new Response(JSON.stringify(contractData), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     return new Response(
       JSON.stringify({ error: "Internal error" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
