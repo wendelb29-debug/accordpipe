@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Save, CheckCircle, Loader2, Upload, User, Users } from "lucide-react";
+import { Plus, Trash2, Save, CheckCircle, Loader2, Upload, User, Users, Paperclip, Eye, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
