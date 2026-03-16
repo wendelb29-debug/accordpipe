@@ -308,7 +308,7 @@ export default function AssinarContrato() {
         <Card className="p-5 space-y-3">
           <div className="flex items-center gap-2 text-foreground font-semibold">
             <User className="h-5 w-5 text-primary" />
-            Dados da Empresa
+            Dados Pessoais
           </div>
           <div className="grid gap-2 text-sm">
             <div className="flex justify-between"><span className="text-muted-foreground">Razão Social:</span><span className="font-medium text-foreground">{company?.razao_social || "-"}</span></div>
