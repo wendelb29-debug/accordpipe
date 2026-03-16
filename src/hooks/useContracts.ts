@@ -242,7 +242,7 @@ ${company.responsavel || "[RESPONSÁVEL]"}`;
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + linkValidityDays);
 
-    const { error } = await supabase.from("contracts").insert({
+    const { data: insertedContract, error } = await supabase.from("contracts").insert({
       code: "TEMP",
       company_id: companyId,
       contract_type: "new",
@@ -254,12 +254,30 @@ ${company.responsavel || "[RESPONSÁVEL]"}`;
       signing_token: signingToken,
       signature_link: `${window.location.origin}/assinar/${signingToken}`,
       created_by: user?.id,
-    } as any);
+    } as any).select("id").maybeSingle();
 
-    if (error) {
+    if (error || !insertedContract) {
       toast.error("Erro ao gerar contrato");
       console.error(error);
       return null;
+    }
+
+    // Create 3 signature records (Matriz, Revendedor, Colaborador)
+    const roles = ["matriz", "revendedor", "colaborador"];
+    const signatureRecords = roles.map((role) => {
+      const token = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+      return {
+        contract_id: insertedContract.id,
+        signer_role: role,
+        signing_token: token,
+        signer_name: role === "revendedor" ? (company as any).responsavel : null,
+        signer_document: role === "revendedor" ? (company as any).cnpj : null,
+      };
+    });
+
+    const { error: sigError } = await supabase.from("contract_signatures").insert(signatureRecords as any);
+    if (sigError) {
+      console.error("Erro ao criar assinaturas:", sigError);
     }
 
     toast.success("Contrato gerado com sucesso!");
