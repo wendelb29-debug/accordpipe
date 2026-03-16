@@ -69,6 +69,12 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false }: {
   const [showSignatureSelect, setShowSignatureSelect] = useState(signatureMode);
   const [selectedSignProposal, setSelectedSignProposal] = useState<string | null>(null);
 
+  // Contract preview state
+  const [contractPreview, setContractPreview] = useState<string | null>(null);
+  const [contractPreviewProposal, setContractPreviewProposal] = useState<any | null>(null);
+  const [generatedContractLink, setGeneratedContractLink] = useState<string | null>(null);
+  const [registrationData, setRegistrationData] = useState<any>(null);
+
   // In signature mode, always show the selection panel
   useEffect(() => {
     if (signatureMode) setShowSignatureSelect(true);
