@@ -172,6 +172,12 @@ export function LeadSimulacaoTab({ lead, addActivity }: LeadSimulacaoTabProps) {
         },
       });
 
+      // 3. Update lead values with proposal amounts
+      await supabase
+        .from("crm_leads")
+        .update({ value_mrr: result.valorMensal } as any)
+        .eq("id", lead.id);
+
       toast.success("Simulação salva e proposta comercial gerada!");
       setResult(null);
       setParentesco(0);
