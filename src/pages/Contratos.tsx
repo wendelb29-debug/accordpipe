@@ -178,10 +178,10 @@ export default function Contratos() {
     }
   };
 
-  const handleCopyLink = (contract: ContractRow) => {
-    const link = contract.signature_link || `https://orbitclient.lovable.app/assinar/${contract.signing_token}`;
+  const handleCopyLink = (sigToken: string, role: string) => {
+    const link = `${window.location.origin}/assinar/${sigToken}`;
     navigator.clipboard.writeText(link);
-    toast.success("Link de assinatura copiado!");
+    toast.success(`Link de ${roleLabels[role] || role} copiado!`);
   };
 
 
