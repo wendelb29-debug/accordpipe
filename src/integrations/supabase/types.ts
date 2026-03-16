@@ -61,6 +61,138 @@ export type Database = {
           },
         ]
       }
+      client_contract_history: {
+        Row: {
+          action: string
+          contract_id: string
+          created_at: string
+          created_by_name: string | null
+          description: string | null
+          id: string
+        }
+        Insert: {
+          action: string
+          contract_id: string
+          created_at?: string
+          created_by_name?: string | null
+          description?: string | null
+          id?: string
+        }
+        Update: {
+          action?: string
+          contract_id?: string
+          created_at?: string
+          created_by_name?: string | null
+          description?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_contract_history_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "client_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_contracts: {
+        Row: {
+          client_cpf: string | null
+          client_name: string
+          contract_content: string | null
+          contract_status: string
+          created_at: string
+          created_by_name: string | null
+          created_by_user_id: string | null
+          id: string
+          lead_id: string | null
+          monthly_value: number | null
+          plan_name: string | null
+          registration_id: string
+          servidor_id: string
+          signature_address: string | null
+          signature_latitude: number | null
+          signature_longitude: number | null
+          signature_photo_url: string | null
+          signed_at: string | null
+          signer_document: string | null
+          signer_name: string | null
+          signing_token: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_cpf?: string | null
+          client_name: string
+          contract_content?: string | null
+          contract_status?: string
+          created_at?: string
+          created_by_name?: string | null
+          created_by_user_id?: string | null
+          id?: string
+          lead_id?: string | null
+          monthly_value?: number | null
+          plan_name?: string | null
+          registration_id: string
+          servidor_id: string
+          signature_address?: string | null
+          signature_latitude?: number | null
+          signature_longitude?: number | null
+          signature_photo_url?: string | null
+          signed_at?: string | null
+          signer_document?: string | null
+          signer_name?: string | null
+          signing_token?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_cpf?: string | null
+          client_name?: string
+          contract_content?: string | null
+          contract_status?: string
+          created_at?: string
+          created_by_name?: string | null
+          created_by_user_id?: string | null
+          id?: string
+          lead_id?: string | null
+          monthly_value?: number | null
+          plan_name?: string | null
+          registration_id?: string
+          servidor_id?: string
+          signature_address?: string | null
+          signature_latitude?: number | null
+          signature_longitude?: number | null
+          signature_photo_url?: string | null
+          signed_at?: string | null
+          signer_document?: string | null
+          signer_name?: string | null
+          signing_token?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_contracts_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_contracts_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "crm_client_registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_contracts_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           bairro: string | null
