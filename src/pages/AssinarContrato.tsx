@@ -246,9 +246,7 @@ export default function AssinarContrato() {
 
         <Card className="p-5">
           <h2 className="font-semibold text-foreground mb-3">Conteúdo do Contrato</h2>
-          <ScrollArea className="max-h-[400px] border rounded-md p-4 bg-muted/30">
-            <pre className="whitespace-pre-wrap text-sm leading-relaxed font-sans text-foreground">{contract.contract_content || "Conteúdo não disponível"}</pre>
-          </ScrollArea>
+          <ContractPdfEmbed content={contract.contract_content || ""} code={contract.code} companyName={company?.razao_social || ""} />
         </Card>
 
         <Card className="p-5 space-y-4">
