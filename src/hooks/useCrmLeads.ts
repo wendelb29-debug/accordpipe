@@ -42,10 +42,10 @@ export interface CrmLeadActivity {
   created_at: string;
 }
 
+// Commercial pipeline stages
 export const STAGES = [
   { id: "novos", title: "Novos Leads", daysLimit: "1d", color: "bg-emerald-500" },
   { id: "standby", title: "StandBy", daysLimit: "90d", color: "bg-gray-500" },
-  
   { id: "primeiro-contato", title: "1º Contato", daysLimit: "5d", color: "bg-yellow-500" },
   { id: "call-negocio", title: "Call/Negócio", daysLimit: "3d", color: "bg-orange-500" },
   { id: "follow-up-1", title: "Follow-up 1", daysLimit: "15d", color: "bg-purple-500" },
@@ -54,16 +54,30 @@ export const STAGES = [
   { id: "contrato-fechado", title: "Contrato Fechado", daysLimit: "", color: "bg-green-500" },
 ] as const;
 
-export function useCrmLeads() {
+// Admin pipeline stages (Cadastro de Clientes)
+export const ADMIN_STAGES = [
+  { id: "cadastro-pendente", title: "Cadastro Pendente", daysLimit: "", color: "bg-amber-500" },
+  { id: "dados-em-analise", title: "Dados em Análise", daysLimit: "", color: "bg-blue-500" },
+  { id: "cadastro-concluido", title: "Cadastro Concluído", daysLimit: "", color: "bg-green-500" },
+  { id: "documentacao-pendente", title: "Doc. Pendente", daysLimit: "", color: "bg-red-500" },
+] as const;
+
+export const ALL_STAGES = [...STAGES, ...ADMIN_STAGES];
+
+export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial") {
   const [leads, setLeads] = useState<CrmLead[]>([]);
   const [loading, setLoading] = useState(true);
-  const { profile } = useAuth();
+  const { profile, role } = useAuth();
+
+  const activeStages = pipelineType === "admin" ? ADMIN_STAGES : STAGES;
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
+    const stageIds = activeStages.map(s => s.id);
     const { data, error } = await supabase
       .from("crm_leads")
       .select("*")
+      .in("stage", stageIds)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -73,14 +87,13 @@ export function useCrmLeads() {
       setLeads((data as CrmLead[]) || []);
     }
     setLoading(false);
-  }, []);
+  }, [pipelineType]);
 
   useEffect(() => {
     fetchLeads();
   }, [fetchLeads]);
 
   const getServidorId = async () => {
-    // Get first available company to use as servidor_id
     if (profile?.company_id) return profile.company_id;
     const { data } = await supabase
       .from("companies")
@@ -134,8 +147,9 @@ export function useCrmLeads() {
 
   const moveToStage = async (id: string, stage: string) => {
     const lead = leads.find((l) => l.id === id);
-    const oldStage = STAGES.find((s) => s.id === lead?.stage);
-    const newStage = STAGES.find((s) => s.id === stage);
+    const allStages = [...STAGES, ...ADMIN_STAGES];
+    const oldStage = allStages.find((s) => s.id === lead?.stage);
+    const newStage = allStages.find((s) => s.id === stage);
     const oldStageName = oldStage ? `${oldStage.title}${oldStage.daysLimit ? ` (${oldStage.daysLimit})` : ""}` : lead?.stage || "";
     const newStageName = newStage ? `${newStage.title}${newStage.daysLimit ? ` (${newStage.daysLimit})` : ""}` : stage;
     const success = await updateLead(id, { stage, stage_entered_at: new Date().toISOString() } as any);
@@ -156,11 +170,81 @@ export function useCrmLeads() {
     return success;
   };
 
+  // Mark as WON and transfer to admin pipeline
+  const markAsWonAndTransfer = async (id: string) => {
+    const lead = leads.find((l) => l.id === id);
+    if (!lead) return false;
+
+    // Update lead: status won, move to admin pipeline stage
+    const success = await updateLead(id, {
+      lead_status: "won",
+      stage: "cadastro-pendente",
+      stage_entered_at: new Date().toISOString(),
+    } as any);
+
+    if (success) {
+      // Log activity
+      await supabase.from("crm_lead_activities").insert({
+        lead_id: id,
+        servidor_id: lead.servidor_id,
+        type: "won",
+        title: "Oportunidade ganha! Transferida para Cadastro.",
+        description: "Lead marcado como ganho e transferido para o pipeline Administrativo (Cadastro Pendente).",
+        created_by_user_id: profile?.user_id || null,
+        created_by_name: profile?.name || null,
+      } as any);
+
+      // Create registration record
+      await supabase.from("crm_client_registrations" as any).insert({
+        lead_id: id,
+        servidor_id: lead.servidor_id,
+        nome_completo: lead.contact_name || "",
+        email: lead.email || "",
+        created_by_user_id: profile?.user_id || null,
+        created_by_name: profile?.name || null,
+      });
+
+      // Notify administrativo users
+      const { data: adminProfiles } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("company_id", lead.servidor_id)
+        .eq("is_active", true);
+
+      if (adminProfiles) {
+        for (const ap of adminProfiles) {
+          const { data: roleData } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", ap.user_id)
+            .maybeSingle();
+
+          if (roleData?.role === "administrativo" || roleData?.role === "admin") {
+            await supabase.rpc("create_notification", {
+              _user_id: ap.user_id,
+              _title: "Novo cadastro pendente",
+              _message: `A oportunidade "${lead.company_name}" foi marcada como ganha e aguarda cadastro.`,
+              _type: "cadastro_pendente",
+            });
+          }
+        }
+      }
+
+      // Remove from local state (it moved to admin pipeline)
+      if (pipelineType === "commercial") {
+        setLeads((prev) => prev.filter((l) => l.id !== id));
+      }
+
+      toast.success("🎉 Oportunidade ganha! Transferida para cadastro.");
+    }
+    return success;
+  };
+
   const totalLeads = leads.length;
   const totalPS = leads.reduce((s, l) => s + (l.value_ps || 0), 0);
   const totalMRR = leads.reduce((s, l) => s + (l.value_mrr || 0), 0);
 
-  const stageStats = STAGES.map((stage) => {
+  const stageStats = activeStages.map((stage) => {
     const stageLeads = leads.filter((l) => l.stage === stage.id);
     return {
       ...stage,
@@ -177,10 +261,12 @@ export function useCrmLeads() {
     updateLead,
     deleteLead,
     moveToStage,
+    markAsWonAndTransfer,
     refetch: fetchLeads,
     totalLeads,
     totalPS,
     totalMRR,
     stageStats,
+    activeStages,
   };
 }
