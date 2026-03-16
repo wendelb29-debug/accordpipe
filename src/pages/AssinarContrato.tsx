@@ -386,11 +386,9 @@ export default function AssinarContrato() {
           Assinar
         </Button>
 
-        {(!photoBlob || !location || !signerNameInput.trim()) && (
+        {(!photoBlob || !location) && (
           <p className="text-center text-sm text-muted-foreground">
-            {!signerNameInput.trim()
-              ? "Informe o nome do signatário"
-              : !photoBlob && !location
+            {!photoBlob && !location
               ? "Tire uma foto e permita a localização para assinar"
               : !photoBlob
               ? "Tire uma foto para assinar"
