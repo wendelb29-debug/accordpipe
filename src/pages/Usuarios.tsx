@@ -680,6 +680,9 @@ export default function Usuarios() {
                         <SelectItem value="admin">Administrador</SelectItem>
                         <SelectItem value="ceo">CEO</SelectItem>
                         <SelectItem value="operador">Operador</SelectItem>
+                        <SelectItem value="administrativo">Administrativo</SelectItem>
+                        <SelectItem value="financeiro">Financeiro</SelectItem>
+                        <SelectItem value="comercial">Comercial</SelectItem>
                         <SelectItem value="leitura">Leitura</SelectItem>
                       </SelectContent>
                     </Select>
