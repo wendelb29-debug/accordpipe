@@ -496,6 +496,11 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               <TabsTrigger value="simulacao" className="text-xs gap-1.5">
                 <Calculator className="h-3.5 w-3.5" /> Simulação
               </TabsTrigger>
+              {(isAdminPipeline || role === "administrativo" || role === "admin") && (
+                <TabsTrigger value="cadastro" className="text-xs gap-1.5">
+                  <ClipboardList className="h-3.5 w-3.5" /> Cadastro
+                </TabsTrigger>
+              )}
             </TabsList>
 
             {/* Histórico - all activities */}
