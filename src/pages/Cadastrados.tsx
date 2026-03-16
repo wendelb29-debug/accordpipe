@@ -25,7 +25,9 @@ export default function Cadastrados() {
   const [loading, setLoading] = useState(true);
   const [selectedReg, setSelectedReg] = useState<any | null>(null);
   const [contracts, setContracts] = useState<any[]>([]);
-
+  const [editing, setEditing] = useState(false);
+  const [editData, setEditData] = useState<any>({});
+  const [saving, setSaving] = useState(false);
   useEffect(() => {
     fetchRegistrations();
   }, [profile]);
