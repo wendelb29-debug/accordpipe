@@ -236,6 +236,131 @@ export type Database = {
           },
         ]
       }
+      crm_client_dependents: {
+        Row: {
+          created_at: string
+          data_nascimento: string | null
+          grau_parentesco: string | null
+          id: string
+          nome_completo: string
+          registration_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_nascimento?: string | null
+          grau_parentesco?: string | null
+          id?: string
+          nome_completo: string
+          registration_id: string
+        }
+        Update: {
+          created_at?: string
+          data_nascimento?: string | null
+          grau_parentesco?: string | null
+          id?: string
+          nome_completo?: string
+          registration_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_client_dependents_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "crm_client_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_client_registrations: {
+        Row: {
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
+          comprovante_url: string | null
+          cpf: string | null
+          created_at: string
+          created_by_name: string | null
+          created_by_user_id: string | null
+          data_nascimento: string | null
+          email: string | null
+          endereco: string | null
+          estado: string | null
+          id: string
+          lead_id: string
+          nome_completo: string | null
+          nome_mae: string | null
+          nome_pai: string | null
+          numero: string | null
+          rg: string | null
+          servidor_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          comprovante_url?: string | null
+          cpf?: string | null
+          created_at?: string
+          created_by_name?: string | null
+          created_by_user_id?: string | null
+          data_nascimento?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          lead_id: string
+          nome_completo?: string | null
+          nome_mae?: string | null
+          nome_pai?: string | null
+          numero?: string | null
+          rg?: string | null
+          servidor_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          comprovante_url?: string | null
+          cpf?: string | null
+          created_at?: string
+          created_by_name?: string | null
+          created_by_user_id?: string | null
+          data_nascimento?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          lead_id?: string
+          nome_completo?: string | null
+          nome_mae?: string | null
+          nome_pai?: string | null
+          numero?: string | null
+          rg?: string | null
+          servidor_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_client_registrations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_client_registrations_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_forms: {
         Row: {
           created_at: string
