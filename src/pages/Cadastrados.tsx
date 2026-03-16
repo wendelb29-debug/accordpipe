@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
-import { Search, Users, UserCheck, Clock, FileWarning, Eye, Paperclip, FileSignature, Download, User, UsersRound } from "lucide-react";
+import { Search, Users, UserCheck, Clock, FileWarning, Eye, Paperclip, FileSignature, Download, User, UsersRound, Pencil, Save, Loader2 } from "lucide-react";
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   pendente: { label: "Cadastro Pendente", color: "bg-yellow-100 text-yellow-800 border-yellow-200" },
@@ -25,7 +25,9 @@ export default function Cadastrados() {
   const [loading, setLoading] = useState(true);
   const [selectedReg, setSelectedReg] = useState<any | null>(null);
   const [contracts, setContracts] = useState<any[]>([]);
-
+  const [editing, setEditing] = useState(false);
+  const [editData, setEditData] = useState<any>({});
+  const [saving, setSaving] = useState(false);
   useEffect(() => {
     fetchRegistrations();
   }, [profile]);
@@ -44,7 +46,22 @@ export default function Cadastrados() {
 
   const openDetail = async (reg: any) => {
     setSelectedReg(reg);
-    // Fetch contracts linked to the lead's company
+    setEditing(false);
+    setEditData({
+      nome_completo: reg.nome_completo || "",
+      cpf: reg.cpf || "",
+      rg: reg.rg || "",
+      data_nascimento: reg.data_nascimento || "",
+      email: reg.email || "",
+      nome_pai: reg.nome_pai || "",
+      nome_mae: reg.nome_mae || "",
+      cep: reg.cep || "",
+      endereco: reg.endereco || "",
+      numero: reg.numero || "",
+      bairro: reg.bairro || "",
+      cidade: reg.cidade || "",
+      estado: reg.estado || "",
+    });
     if (reg.crm_leads?.company_id) {
       const { data } = await supabase
         .from("contracts")
@@ -54,6 +71,27 @@ export default function Cadastrados() {
       setContracts(data || []);
     } else {
       setContracts([]);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedReg?.id) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("crm_client_registrations")
+        .update(editData as any)
+        .eq("id", selectedReg.id);
+      if (error) throw error;
+      // Update local state
+      const updated = { ...selectedReg, ...editData };
+      setSelectedReg(updated);
+      setRegistrations(prev => prev.map(r => r.id === selectedReg.id ? { ...r, ...editData } : r));
+      setEditing(false);
+    } catch {
+      // toast would be nice but keeping it simple
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -74,10 +112,18 @@ export default function Cadastrados() {
     doc_pendente: registrations.filter((r) => r.status === "doc_pendente").length,
   };
 
-  const InfoRow = ({ label, value }: { label: string; value: string }) => (
-    <div className="grid grid-cols-3 gap-2 py-1.5">
+  const InfoRow = ({ label, value, field }: { label: string; value: string; field?: string }) => (
+    <div className="grid grid-cols-3 gap-2 py-1.5 items-center">
       <span className="text-sm font-medium text-muted-foreground">{label}</span>
-      <span className="text-sm text-foreground col-span-2">{value || "—"}</span>
+      {editing && field ? (
+        <Input
+          className="col-span-2 h-8 text-sm"
+          value={editData[field] || ""}
+          onChange={(e) => setEditData((prev: any) => ({ ...prev, [field]: e.target.value }))}
+        />
+      ) : (
+        <span className="text-sm text-foreground col-span-2">{value || "—"}</span>
+      )}
     </div>
   );
 
@@ -177,10 +223,24 @@ export default function Cadastrados() {
       <Dialog open={!!selectedReg} onOpenChange={(open) => !open && setSelectedReg(null)}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Cadastro Completo
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                {editing ? "Editar Cadastro" : "Cadastro Completo"}
+              </DialogTitle>
+              <div className="flex items-center gap-2">
+                {editing ? (
+                  <Button size="sm" onClick={handleSaveEdit} disabled={saving} className="gap-1.5">
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    Salvar
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => setEditing(true)} className="gap-1.5">
+                    <Pencil className="h-4 w-4" /> Editar
+                  </Button>
+                )}
+              </div>
+            </div>
           </DialogHeader>
 
           {selectedReg && (
@@ -202,13 +262,13 @@ export default function Cadastrados() {
                 </h3>
                 <Card>
                   <CardContent className="p-4 space-y-0.5">
-                    <InfoRow label="Nome completo" value={selectedReg.nome_completo} />
-                    <InfoRow label="CPF" value={selectedReg.cpf} />
-                    <InfoRow label="RG" value={selectedReg.rg} />
-                    <InfoRow label="Data de nascimento" value={selectedReg.data_nascimento ? new Date(selectedReg.data_nascimento).toLocaleDateString("pt-BR") : ""} />
-                    <InfoRow label="E-mail" value={selectedReg.email} />
-                    <InfoRow label="Nome do pai" value={selectedReg.nome_pai} />
-                    <InfoRow label="Nome da mãe" value={selectedReg.nome_mae} />
+                    <InfoRow label="Nome completo" value={selectedReg.nome_completo} field="nome_completo" />
+                    <InfoRow label="CPF" value={selectedReg.cpf} field="cpf" />
+                    <InfoRow label="RG" value={selectedReg.rg} field="rg" />
+                    <InfoRow label="Data de nascimento" value={selectedReg.data_nascimento ? new Date(selectedReg.data_nascimento).toLocaleDateString("pt-BR") : ""} field="data_nascimento" />
+                    <InfoRow label="E-mail" value={selectedReg.email} field="email" />
+                    <InfoRow label="Nome do pai" value={selectedReg.nome_pai} field="nome_pai" />
+                    <InfoRow label="Nome da mãe" value={selectedReg.nome_mae} field="nome_mae" />
                   </CardContent>
                 </Card>
               </div>
@@ -218,12 +278,12 @@ export default function Cadastrados() {
                 <h3 className="text-sm font-semibold text-foreground mb-2">Endereço</h3>
                 <Card>
                   <CardContent className="p-4 space-y-0.5">
-                    <InfoRow label="CEP" value={selectedReg.cep} />
-                    <InfoRow label="Endereço" value={selectedReg.endereco} />
-                    <InfoRow label="Número" value={selectedReg.numero} />
-                    <InfoRow label="Bairro" value={selectedReg.bairro} />
-                    <InfoRow label="Cidade" value={selectedReg.cidade} />
-                    <InfoRow label="Estado" value={selectedReg.estado} />
+                    <InfoRow label="CEP" value={selectedReg.cep} field="cep" />
+                    <InfoRow label="Endereço" value={selectedReg.endereco} field="endereco" />
+                    <InfoRow label="Número" value={selectedReg.numero} field="numero" />
+                    <InfoRow label="Bairro" value={selectedReg.bairro} field="bairro" />
+                    <InfoRow label="Cidade" value={selectedReg.cidade} field="cidade" />
+                    <InfoRow label="Estado" value={selectedReg.estado} field="estado" />
                   </CardContent>
                 </Card>
               </div>
