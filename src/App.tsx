@@ -31,6 +31,7 @@ import GestaoVendas from "./pages/GestaoVendas";
 import NotFound from "./pages/NotFound";
 import Formularios from "./pages/Formularios";
 import FormPublico from "./pages/FormPublico";
+import Cadastrados from "./pages/Cadastrados";
 
 const queryClient = new QueryClient();
 
