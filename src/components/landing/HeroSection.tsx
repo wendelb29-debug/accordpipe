@@ -15,7 +15,7 @@ export function HeroSection() {
         <div className="mx-auto max-w-3xl text-center">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary">
             <Zap className="h-3.5 w-3.5" />
-            ERP completo para sua operação
+            Plataforma completa para sua operação
           </div>
           <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
             Transforme seu atendimento e pagamentos num{" "}
