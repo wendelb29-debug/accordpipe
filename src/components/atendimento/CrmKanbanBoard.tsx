@@ -186,7 +186,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
       <div className="px-4 py-3 border-b bg-card flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <h2 className="text-sm font-semibold text-foreground">
-            {totalLeads} oportunidades
+            {filteredLeads.length} oportunidades
           </h2>
           <span className="text-xs text-muted-foreground">
             Total de P&S: <strong className="text-foreground">{formatCurrency(totalPS)}</strong>
@@ -196,6 +196,22 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          {(isAdminOrMaster || teamMembers.length > 0) && teamMembers.length > 0 && (
+            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+              <SelectTrigger className="h-8 w-48 text-xs">
+                <Users className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+                <SelectValue placeholder="Colaborador" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">Todos os colaboradores</SelectItem>
+                {teamMembers.map((m) => (
+                  <SelectItem key={m.user_id} value={m.user_id} className="text-xs">
+                    {m.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Button size="sm" variant="outline" onClick={() => setFormLinkOpen(true)} className="gap-1.5 text-xs">
             <Tag className="h-3.5 w-3.5" />
             Link + Tags
