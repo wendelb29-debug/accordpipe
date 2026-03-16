@@ -34,6 +34,7 @@ import FormPublico from "./pages/FormPublico";
 import Cadastrados from "./pages/Cadastrados";
 import Financeiro from "./pages/Financeiro";
 import Clientes from "./pages/Clientes";
+import Descarte from "./pages/Descarte";
 
 const queryClient = new QueryClient();
 
