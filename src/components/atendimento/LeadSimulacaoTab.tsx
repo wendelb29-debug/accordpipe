@@ -189,46 +189,173 @@ export function LeadSimulacaoTab({ lead, addActivity }: LeadSimulacaoTabProps) {
     const { default: jsPDF } = await import("jspdf");
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const pageWidth = pdf.internal.pageSize.getWidth();
-    const mL = 15;
-    const mR = 15;
-    const usable = pageWidth - mL - mR;
-    let y = 20;
+    const pageHeight = pdf.internal.pageSize.getHeight();
 
-    // Header
+    // Colors
+    const navy = { r: 15, g: 23, b: 42 };       // dark navy
+    const gold = { r: 212, g: 175, b: 55 };      // gold accent
+    const white = { r: 255, g: 255, b: 255 };
+    const lightGray = { r: 180, g: 190, b: 210 };
+    const cardBg = { r: 25, g: 35, b: 60 };
+
+    // Full page dark background
+    pdf.setFillColor(navy.r, navy.g, navy.b);
+    pdf.rect(0, 0, pageWidth, pageHeight, "F");
+
+    let y = 20;
+    const mL = 18;
+    const mR = 18;
+    const usable = pageWidth - mL - mR;
+
+    // === HEADER: Gold line + Title ===
+    pdf.setDrawColor(gold.r, gold.g, gold.b);
+    pdf.setLineWidth(0.8);
+    pdf.line(mL, y, pageWidth - mR, y);
+    y += 10;
+
+    pdf.setTextColor(gold.r, gold.g, gold.b);
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(16);
+    pdf.setFontSize(22);
     pdf.text("PROPOSTA COMERCIAL", pageWidth / 2, y, { align: "center" });
     y += 10;
 
-    pdf.setDrawColor(200);
-    pdf.setLineWidth(0.5);
+    pdf.setTextColor(white.r, white.g, white.b);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(10);
+    pdf.text(`${planLabel} — Assistência Familiar`, pageWidth / 2, y, { align: "center" });
+    y += 12;
+
+    pdf.setDrawColor(gold.r, gold.g, gold.b);
+    pdf.setLineWidth(0.3);
     pdf.line(mL, y, pageWidth - mR, y);
-    y += 8;
-
-    // Client info
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(11);
-    pdf.text("Cliente:", mL, y);
-    pdf.setFont("helvetica", "normal");
-    pdf.text(sim.clientName, mL + 20, y);
-    y += 6;
-
-    pdf.setFont("helvetica", "bold");
-    pdf.text("Data:", mL, y);
-    pdf.setFont("helvetica", "normal");
-    pdf.text(new Date(sim.createdAt).toLocaleDateString("pt-BR"), mL + 20, y);
     y += 10;
 
-    // Plan details
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(12);
-    pdf.text("Detalhes do Plano", mL, y);
-    y += 7;
-
-    pdf.setDrawColor(220);
+    // === SECTION: Client Info ===
+    // Card background
+    const clientCardH = 28;
+    pdf.setFillColor(cardBg.r, cardBg.g, cardBg.b);
+    pdf.roundedRect(mL, y, usable, clientCardH, 3, 3, "F");
+    pdf.setDrawColor(gold.r, gold.g, gold.b);
     pdf.setLineWidth(0.3);
+    pdf.roundedRect(mL, y, usable, clientCardH, 3, 3, "S");
 
-    const rows = [
+    const cy = y + 7;
+    pdf.setTextColor(gold.r, gold.g, gold.b);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(9);
+    pdf.text("CLIENTE", mL + 6, cy);
+    pdf.setTextColor(white.r, white.g, white.b);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(11);
+    pdf.text(sim.clientName, mL + 6, cy + 7);
+
+    pdf.setTextColor(gold.r, gold.g, gold.b);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(9);
+    pdf.text("DATA", pageWidth - mR - 50, cy);
+    pdf.setTextColor(white.r, white.g, white.b);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(11);
+    pdf.text(new Date(sim.createdAt).toLocaleDateString("pt-BR"), pageWidth - mR - 50, cy + 7);
+
+    pdf.setTextColor(gold.r, gold.g, gold.b);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(9);
+    pdf.text("VALIDADE", pageWidth - mR - 6, cy, { align: "right" });
+    pdf.setTextColor(white.r, white.g, white.b);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(11);
+    pdf.text("15 dias", pageWidth - mR - 6, cy + 7, { align: "right" });
+
+    y += clientCardH + 10;
+
+    // === SECTION: "O que está incluso?" ===
+    pdf.setTextColor(gold.r, gold.g, gold.b);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(14);
+    pdf.text("O que está incluso?", mL, y);
+    y += 3;
+
+    pdf.setTextColor(lightGray.r, lightGray.g, lightGray.b);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(9);
+    pdf.text("Proteção completa para toda a família com os melhores serviços.", mL, y + 5);
+    y += 14;
+
+    // Service items in 2-column grid with icon circles
+    const services = [
+      { icon: "♡", title: "Cobertura funeral completa", desc: "Atendimento ao plano, particular e convênios." },
+      { icon: "☎", title: "Atendimento 24h", desc: "Suporte a qualquer hora do dia ou da noite." },
+      { icon: "💊", title: "Telemedicina 24h", desc: "Consultas médicas online sem sair de casa." },
+      { icon: "💰", title: "Descontos em farmácias", desc: "Economia em medicamentos para toda a família." },
+      { icon: "🚗", title: "Translado", desc: "Transporte aéreo ou terrestre conforme necessidade." },
+      { icon: "🌸", title: "Ornamentação", desc: "Coroa de flores e ornamentação de urnas." },
+      { icon: "🏛", title: "Memoriais", desc: "Locação de salas de velório e cerimônias." },
+      { icon: "📋", title: "Documentação e registros", desc: "Apoio em toda a burocracia funerária." },
+    ];
+
+    const colW = (usable - 6) / 2;
+    const cardH = 22;
+
+    for (let i = 0; i < services.length; i++) {
+      const col = i % 2;
+      const row = Math.floor(i / 2);
+      const cx = mL + col * (colW + 6);
+      const cardY = y + row * (cardH + 4);
+
+      if (cardY + cardH > pageHeight - 30) {
+        pdf.addPage();
+        pdf.setFillColor(navy.r, navy.g, navy.b);
+        pdf.rect(0, 0, pageWidth, pageHeight, "F");
+        y = 20;
+      }
+
+      // Card bg
+      pdf.setFillColor(cardBg.r, cardBg.g, cardBg.b);
+      pdf.roundedRect(cx, cardY, colW, cardH, 2, 2, "F");
+      pdf.setDrawColor(gold.r, gold.g, gold.b);
+      pdf.setLineWidth(0.2);
+      pdf.roundedRect(cx, cardY, colW, cardH, 2, 2, "S");
+
+      // Gold circle icon
+      const circleX = cx + 10;
+      const circleY = cardY + cardH / 2;
+      pdf.setDrawColor(gold.r, gold.g, gold.b);
+      pdf.setLineWidth(0.5);
+      pdf.circle(circleX, circleY, 5, "S");
+
+      // Title
+      pdf.setTextColor(gold.r, gold.g, gold.b);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(8);
+      pdf.text(services[i].title.toUpperCase(), cx + 19, cardY + 8);
+
+      // Desc
+      pdf.setTextColor(lightGray.r, lightGray.g, lightGray.b);
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(7);
+      const descLines = pdf.splitTextToSize(services[i].desc, colW - 24);
+      pdf.text(descLines, cx + 19, cardY + 13);
+    }
+
+    y += Math.ceil(services.length / 2) * (cardH + 4) + 8;
+
+    // === SECTION: Detalhes do Plano ===
+    if (y + 70 > pageHeight - 20) {
+      pdf.addPage();
+      pdf.setFillColor(navy.r, navy.g, navy.b);
+      pdf.rect(0, 0, pageWidth, pageHeight, "F");
+      y = 20;
+    }
+
+    pdf.setTextColor(gold.r, gold.g, gold.b);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(14);
+    pdf.text("Detalhes do Plano", mL, y);
+    y += 10;
+
+    // Plan detail rows
+    const planRows = [
       ["Tipo de Plano", planLabel],
       ["Valor base", sim.planType === "individual" ? "R$ 42,90" : "R$ 80,90"],
       ["Dependentes com parentesco", `${sim.parentesco} pessoa(s) × R$ 9,40`],
@@ -236,57 +363,77 @@ export function LeadSimulacaoTab({ lead, addActivity }: LeadSimulacaoTabProps) {
       ["Total de vidas", `${sim.totalVidas}`],
     ];
 
-    pdf.setFontSize(10);
-    for (const [label, value] of rows) {
+    for (let i = 0; i < planRows.length; i++) {
+      const rowBg = i % 2 === 0 ? cardBg : navy;
+      pdf.setFillColor(rowBg.r, rowBg.g, rowBg.b);
+      pdf.rect(mL, y, usable, 8, "F");
+
+      pdf.setTextColor(white.r, white.g, white.b);
       pdf.setFont("helvetica", "normal");
-      pdf.text(label, mL, y);
-      pdf.text(value, pageWidth - mR, y, { align: "right" });
-      y += 6;
+      pdf.setFontSize(9);
+      pdf.text(planRows[i][0], mL + 4, y + 5.5);
+      pdf.setFont("helvetica", "bold");
+      pdf.text(planRows[i][1], pageWidth - mR - 4, y + 5.5, { align: "right" });
+      y += 8;
     }
 
-    y += 4;
-    pdf.setDrawColor(200);
-    pdf.setLineWidth(0.5);
-    pdf.line(mL, y, pageWidth - mR, y);
-    y += 8;
-
-    // Total
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(14);
-    pdf.text("Valor Mensal Total:", mL, y);
-    pdf.text(formatCurrency(sim.valorMensal), pageWidth - mR, y, { align: "right" });
-    y += 7;
-
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(10);
-    pdf.text(`Custo por pessoa: ${formatCurrency(sim.custoPorPessoa)}`, mL, y);
-    y += 12;
-
-    // Conditions
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(11);
-    pdf.text("Condições:", mL, y);
     y += 6;
 
+    // === TOTAL BOX ===
+    const totalBoxH = 22;
+    pdf.setFillColor(gold.r, gold.g, gold.b);
+    pdf.roundedRect(mL, y, usable, totalBoxH, 3, 3, "F");
+
+    pdf.setTextColor(navy.r, navy.g, navy.b);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(10);
+    pdf.text("VALOR MENSAL TOTAL", mL + 8, y + 9);
+
+    pdf.setFontSize(16);
+    pdf.text(formatCurrency(sim.valorMensal), pageWidth - mR - 8, y + 10, { align: "right" });
+
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(9);
+    pdf.setFontSize(8);
+    pdf.text(`Custo por pessoa: ${formatCurrency(sim.custoPorPessoa)}`, mL + 8, y + 17);
+
+    y += totalBoxH + 10;
+
+    // === Conditions ===
+    pdf.setTextColor(gold.r, gold.g, gold.b);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(10);
+    pdf.text("Condições", mL, y);
+    y += 6;
+
+    pdf.setTextColor(lightGray.r, lightGray.g, lightGray.b);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8);
     const conditions = [
       "• Validade desta proposta: 15 dias",
       "• Forma de pagamento: Boleto bancário",
       sim.planType === "familiar" ? "• O Plano Familiar inclui até 5 pessoas com parentesco no valor base" : null,
       "• Valores sujeitos a reajuste anual conforme política da empresa",
+      "• Assistência nacional com rede de parceiros",
     ].filter(Boolean) as string[];
 
-    for (const cond of conditions) {
-      pdf.text(cond, mL, y);
+    for (const c of conditions) {
+      pdf.text(c, mL + 4, y);
       y += 5;
     }
 
-    // Footer
-    pdf.setFont("helvetica", "italic");
-    pdf.setFontSize(7);
-    pdf.setTextColor(150);
-    pdf.text("Proposta gerada automaticamente", pageWidth / 2, 287, { align: "center" });
+    // === Footer ===
+    const totalPages = pdf.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      pdf.setPage(i);
+      pdf.setDrawColor(gold.r, gold.g, gold.b);
+      pdf.setLineWidth(0.3);
+      pdf.line(mL, pageHeight - 14, pageWidth - mR, pageHeight - 14);
+      pdf.setTextColor(lightGray.r, lightGray.g, lightGray.b);
+      pdf.setFont("helvetica", "italic");
+      pdf.setFontSize(7);
+      pdf.text("Proposta gerada automaticamente • Assistência Familiar", mL, pageHeight - 9);
+      pdf.text(`Página ${i} de ${totalPages}`, pageWidth - mR, pageHeight - 9, { align: "right" });
+    }
 
     pdf.save(`Proposta_${sim.clientName.replace(/\s+/g, "_")}_${planLabel.replace(/\s+/g, "_")}.pdf`);
     toast.success("Proposta PDF baixada!");
