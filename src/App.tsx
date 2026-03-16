@@ -68,7 +68,7 @@ const App = () => (
             <Route
               path="/empresas"
               element={
-                <ProtectedRoute allowedRoles={["admin", "operador"]}>
+                <ProtectedRoute allowedRoles={["admin", "operador", "administrativo"]}>
                   <AppLayout>
                     <Empresas />
                   </AppLayout>
@@ -78,7 +78,7 @@ const App = () => (
             <Route
               path="/empresas/:id"
               element={
-                <ProtectedRoute allowedRoles={["admin", "operador"]}>
+                <ProtectedRoute allowedRoles={["admin", "operador", "administrativo"]}>
                   <AppLayout>
                     <CompanyDetail />
                   </AppLayout>
@@ -88,7 +88,7 @@ const App = () => (
             <Route
               path="/boletos"
               element={
-                <ProtectedRoute allowedRoles={["admin", "operador"]}>
+                <ProtectedRoute allowedRoles={["admin", "operador", "financeiro"]}>
                   <AppLayout>
                     <Boletos />
                   </AppLayout>
@@ -98,7 +98,7 @@ const App = () => (
             <Route
               path="/documentos"
               element={
-                <ProtectedRoute allowedRoles={["admin", "operador"]}>
+                <ProtectedRoute allowedRoles={["admin", "operador", "administrativo", "financeiro"]}>
                   <AppLayout>
                     <Documentos />
                   </AppLayout>
