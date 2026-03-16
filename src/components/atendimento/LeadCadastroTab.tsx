@@ -214,8 +214,26 @@ export function LeadCadastroTab({ lead, onUpdate }: LeadCadastroTabProps) {
   };
 
   const handleFinalize = async () => {
-    if (!registration.nome_completo || !registration.cpf) {
-      toast.error("Preencha pelo menos o nome e CPF do titular para finalizar.");
+    const requiredFields: { field: keyof Registration; label: string }[] = [
+      { field: "nome_completo", label: "Nome completo" },
+      { field: "cpf", label: "CPF" },
+      { field: "rg", label: "RG" },
+      { field: "data_nascimento", label: "Data de nascimento" },
+      { field: "email", label: "E-mail" },
+      { field: "nome_pai", label: "Nome do pai" },
+      { field: "nome_mae", label: "Nome da mãe" },
+      { field: "cep", label: "CEP" },
+      { field: "endereco", label: "Endereço" },
+      { field: "numero", label: "Número" },
+      { field: "bairro", label: "Bairro" },
+      { field: "cidade", label: "Cidade" },
+      { field: "estado", label: "Estado" },
+      { field: "comprovante_url", label: "Comprovante de endereço" },
+    ];
+
+    const missing = requiredFields.filter(f => !registration[f.field]?.trim());
+    if (missing.length > 0) {
+      toast.error(`Preencha os campos obrigatórios: ${missing.map(f => f.label).join(", ")}`);
       return;
     }
 
