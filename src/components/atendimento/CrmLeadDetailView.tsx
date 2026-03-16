@@ -112,9 +112,11 @@ interface CrmLeadDetailViewProps {
   onUpdate: (id: string, updates: Partial<CrmLead>) => Promise<boolean>;
   onMoveStage: (id: string, stage: string) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
+  isAdminPipeline?: boolean;
 }
 
-export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelete }: CrmLeadDetailViewProps) {
+export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelete, isAdminPipeline }: CrmLeadDetailViewProps) {
+  const { role } = useAuth();
   const { activities, loading: activitiesLoading, addActivity, refetch: refetchActivities } = useCrmActivities(lead.id);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ ...lead });
