@@ -25,6 +25,21 @@ import { useCompanies } from "@/hooks/useCompanies";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
+function ContractPdfViewer({ content, code, companyName }: { content: string; code: string; companyName: string }) {
+  const pdfUrl = useMemo(() => {
+    const blob = generateContractPdf({ content, code, companyName });
+    return URL.createObjectURL(blob);
+  }, [content, code, companyName]);
+
+  useEffect(() => {
+    return () => URL.revokeObjectURL(pdfUrl);
+  }, [pdfUrl]);
+
+  return (
+    <iframe src={pdfUrl} className="w-full h-[65vh] rounded-md border" title="Visualização do contrato" />
+  );
+}
+
 const statusConfig: Record<string, { label: string; icon: any; className: string }> = {
   pending: {
     label: "Aguardando Assinatura",
