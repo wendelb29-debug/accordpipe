@@ -220,6 +220,19 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
   const handleWon = async () => {
     if (saving) return;
+
+    // Validate required fields before allowing "Ganho"
+    const missingFields: string[] = [];
+    if (!lead.company_name?.trim()) missingFields.push("Empresa");
+    if (!lead.contact_name?.trim()) missingFields.push("Contato");
+    if (!lead.phone?.trim()) missingFields.push("Telefone");
+    if (!lead.email?.trim()) missingFields.push("Email");
+
+    if (missingFields.length > 0) {
+      toast.error(`Preencha os campos obrigatórios antes de marcar como Ganho: ${missingFields.join(", ")}`);
+      return;
+    }
+
     setSaving(true);
     try {
       // Transfer to admin pipeline (cadastro-pendente)
