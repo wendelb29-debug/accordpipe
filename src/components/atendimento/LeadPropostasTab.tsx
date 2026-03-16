@@ -3,7 +3,7 @@ import {
   ArrowLeft, Building2, User, Mail, PhoneCall, MapPin, Calendar,
   DollarSign, FileSpreadsheet, Plus, Loader2, Send, Download,
   Edit, Trash2, MoreVertical, ThumbsUp, ThumbsDown, XCircle,
-  Eye, CopyPlus, Link2, Briefcase, Hash, FileSignature,
+  Eye, CopyPlus, Link2, Briefcase, Hash, FileSignature, Copy, MessageSquare,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
