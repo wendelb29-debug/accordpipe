@@ -92,6 +92,10 @@ export default function Contratos() {
   const [linkValidity, setLinkValidity] = useState("7");
   const [generating, setGenerating] = useState(false);
 
+  // Signatures state
+  const [contractSignatures, setContractSignatures] = useState<Record<string, ContractSignature[]>>({});
+  const [linksDialogContract, setLinksDialogContract] = useState<ContractRow | null>(null);
+
   // Camera / signing state
   const [cameraOpen, setCameraOpen] = useState(false);
   const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
@@ -103,6 +107,26 @@ export default function Contratos() {
 
   const { contracts, loading, createContract, signContract: signContractFn } = useContracts();
   const { companies } = useCompanies();
+
+  // Fetch signatures for all contracts
+  useEffect(() => {
+    if (contracts.length === 0) return;
+    const fetchSigs = async () => {
+      const { data } = await (await import("@/integrations/supabase/client")).supabase
+        .from("contract_signatures")
+        .select("*")
+        .in("contract_id", contracts.map(c => c.id));
+      if (data) {
+        const grouped: Record<string, ContractSignature[]> = {};
+        (data as any[]).forEach(s => {
+          if (!grouped[s.contract_id]) grouped[s.contract_id] = [];
+          grouped[s.contract_id].push(s);
+        });
+        setContractSignatures(grouped);
+      }
+    };
+    fetchSigs();
+  }, [contracts]);
 
   // Camera functions
   const getLocation = useCallback(() => {
