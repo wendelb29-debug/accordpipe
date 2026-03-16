@@ -179,10 +179,6 @@ export default function AssinarContrato() {
       toast.error("Tire a foto e permita a localização antes de assinar");
       return;
     }
-    if (!signerNameInput.trim()) {
-      toast.error("Informe o nome do signatário");
-      return;
-    }
     setSigning(true);
     try {
       const formData = new FormData();
@@ -308,7 +304,7 @@ export default function AssinarContrato() {
         <Card className="p-5 space-y-3">
           <div className="flex items-center gap-2 text-foreground font-semibold">
             <User className="h-5 w-5 text-primary" />
-            Dados da Empresa
+            Dados Pessoais
           </div>
           <div className="grid gap-2 text-sm">
             <div className="flex justify-between"><span className="text-muted-foreground">Razão Social:</span><span className="font-medium text-foreground">{company?.razao_social || "-"}</span></div>
@@ -322,33 +318,6 @@ export default function AssinarContrato() {
           <ContractPdfEmbed content={contract.contract_content || ""} code={contract.code} companyName={company?.razao_social || ""} />
         </Card>
 
-        {/* Signer Info */}
-        <Card className="p-5 space-y-3">
-          <div className="flex items-center gap-2 text-foreground font-semibold">
-            <User className="h-5 w-5 text-primary" />
-            Dados do Signatário ({roleLabels[signerRole]})
-          </div>
-          <div className="grid gap-3">
-            <div className="grid gap-1">
-              <label className="text-sm text-muted-foreground">Nome Completo *</label>
-              <input
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                value={signerNameInput}
-                onChange={(e) => setSignerNameInput(e.target.value)}
-                placeholder="Nome completo do signatário"
-              />
-            </div>
-            <div className="grid gap-1">
-              <label className="text-sm text-muted-foreground">CPF / CNPJ</label>
-              <input
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                value={signerDocInput}
-                onChange={(e) => setSignerDocInput(e.target.value)}
-                placeholder="Documento do signatário"
-              />
-            </div>
-          </div>
-        </Card>
 
         <Card className="p-5 space-y-3">
           <div className="flex items-center gap-2 text-foreground font-semibold">
@@ -406,18 +375,16 @@ export default function AssinarContrato() {
         <Button
           size="lg"
           className="w-full gap-2 text-lg py-6"
-          disabled={!photoBlob || !location || signing || !signerNameInput.trim()}
+          disabled={!photoBlob || !location || signing}
           onClick={handleSign}
         >
           {signing ? <Loader2 className="h-5 w-5 animate-spin" /> : <FileSignature className="h-5 w-5" />}
-          Assinar como {roleLabels[signerRole]}
+          Assinar
         </Button>
 
-        {(!photoBlob || !location || !signerNameInput.trim()) && (
+        {(!photoBlob || !location) && (
           <p className="text-center text-sm text-muted-foreground">
-            {!signerNameInput.trim()
-              ? "Informe o nome do signatário"
-              : !photoBlob && !location
+            {!photoBlob && !location
               ? "Tire uma foto e permita a localização para assinar"
               : !photoBlob
               ? "Tire uma foto para assinar"
