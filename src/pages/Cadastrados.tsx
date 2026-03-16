@@ -215,10 +215,24 @@ export default function Cadastrados() {
       <Dialog open={!!selectedReg} onOpenChange={(open) => !open && setSelectedReg(null)}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Cadastro Completo
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                {editing ? "Editar Cadastro" : "Cadastro Completo"}
+              </DialogTitle>
+              <div className="flex items-center gap-2">
+                {editing ? (
+                  <Button size="sm" onClick={handleSaveEdit} disabled={saving} className="gap-1.5">
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    Salvar
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => setEditing(true)} className="gap-1.5">
+                    <Pencil className="h-4 w-4" /> Editar
+                  </Button>
+                )}
+              </div>
+            </div>
           </DialogHeader>
 
           {selectedReg && (
