@@ -233,7 +233,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                       draggedLead?.id === lead.id && "opacity-50"
                     )}
                   >
-                    <CardContent className="p-2.5 space-y-1.5">
+                    <CardContent className="p-2 space-y-1">
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-1.5 min-w-0">
                           <GripVertical className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
