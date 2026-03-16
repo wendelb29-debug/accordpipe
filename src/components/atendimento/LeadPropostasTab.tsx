@@ -3,7 +3,7 @@ import {
   ArrowLeft, Building2, User, Mail, PhoneCall, MapPin, Calendar,
   DollarSign, FileSpreadsheet, Plus, Loader2, Send, Download,
   Edit, Trash2, MoreVertical, ThumbsUp, ThumbsDown, XCircle,
-  Eye, CopyPlus, Link2, Briefcase, Hash, FileSignature,
+  Eye, CopyPlus, Link2, Briefcase, Hash, FileSignature, Copy, MessageSquare,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -69,6 +69,12 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false }: {
   const [showSignatureSelect, setShowSignatureSelect] = useState(signatureMode);
   const [selectedSignProposal, setSelectedSignProposal] = useState<string | null>(null);
 
+  // Contract preview state
+  const [contractPreview, setContractPreview] = useState<string | null>(null);
+  const [contractPreviewProposal, setContractPreviewProposal] = useState<any | null>(null);
+  const [generatedContractLink, setGeneratedContractLink] = useState<string | null>(null);
+  const [registrationData, setRegistrationData] = useState<any>(null);
+
   // In signature mode, always show the selection panel
   useEffect(() => {
     if (signatureMode) setShowSignatureSelect(true);
@@ -99,7 +105,17 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false }: {
   useEffect(() => {
     fetchProposals();
     fetchCompanyAndServidor();
+    fetchRegistrationData();
   }, [lead.id]);
+
+  const fetchRegistrationData = async () => {
+    const { data } = await supabase
+      .from("crm_client_registrations")
+      .select("*")
+      .eq("lead_id", lead.id)
+      .maybeSingle();
+    if (data) setRegistrationData(data);
+  };
 
   const fetchCompanyAndServidor = async () => {
     // Fetch lead's company data if company_id exists
@@ -451,46 +467,101 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false }: {
     await fetchProposals();
   };
 
-  const handleSendToSignature = async (proposal: any) => {
-    if (!lead.company_id) {
-      toast.error("Lead sem empresa vinculada. Vincule uma empresa para gerar o contrato.");
-      return;
-    }
-    setSendingToSign(true);
-    try {
-      const meta = (proposal.metadata as any) || {};
-      const payLabels: Record<string, string> = { boleto: "Boleto", pix: "PIX", cartao: "Cartão", transferencia: "Transferência" };
+  const buildProposalClause = (proposal: any) => {
+    const meta = (proposal.metadata as any) || {};
+    const payLabels: Record<string, string> = { boleto: "Boleto", pix: "PIX", cartao: "Cartão", transferencia: "Transferência" };
 
-      // Build proposal values clause
-      const proposalClause = `CLÁUSULA ADICIONAL – CONDIÇÕES COMERCIAIS DA PROPOSTA
+    // Auto-fill from registration data if available
+    const clientName = registrationData?.nome_completo || lead.contact_name || lead.company_name;
+    const clientCpf = registrationData?.cpf || "";
+
+    return `CLÁUSULA ADICIONAL – CONDIÇÕES COMERCIAIS DA PROPOSTA
 Este contrato incorpora as condições comerciais aceitas na proposta ${meta.sigla || ""}, conforme detalhado abaixo:
 
+• Cliente: ${clientName}
+${clientCpf ? `• CPF: ${clientCpf}` : ""}
 ${meta.value_ps ? `• Valor de Prestação de Serviço (P&S): ${fmtCur(meta.value_ps)}` : ""}
 ${meta.value_mrr ? `• Valor de Mensalidade Recorrente (MRR): ${fmtCur(meta.value_mrr)}` : ""}
 ${meta.payment_method ? `• Forma de Pagamento: ${payLabels[meta.payment_method] || meta.payment_method}` : ""}
 ${meta.first_payment_date ? `• Data do 1º Pagamento: ${meta.first_payment_date}` : ""}
 ${meta.due_day ? `• Dia de Vencimento: ${meta.due_day}` : ""}
+• Data da contratação: ${new Date().toLocaleDateString("pt-BR")}
 ${meta.items ? `\nItens contratados:\n${meta.items.split("\n").filter(Boolean).map((i: string) => `• ${i}`).join("\n")}` : ""}
 `.trim();
+  };
+
+  const handlePreviewContract = async (proposal: any) => {
+    if (!lead.company_id) {
+      toast.error("Lead sem empresa vinculada.");
+      return;
+    }
+    // Fetch company data to generate preview content
+    const { data: company } = await supabase.from("companies").select("*").eq("id", lead.company_id).maybeSingle();
+    if (!company) { toast.error("Empresa não encontrada"); return; }
+
+    const clause = buildProposalClause(proposal);
+    // Generate preview content (same logic as useContracts.generateContractContent but inline for preview)
+    const addressParts = [company.endereco, company.numero && `nº ${company.numero}`, company.complemento, company.bairro, company.cidade && company.estado && `${company.cidade}/${company.estado}`, company.cep && `CEP: ${company.cep}`].filter(Boolean).join(", ");
+    const matrizNome = "Save Car Brasil Tecnologia e Serviços Ltda";
+    const currentDate = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+
+    let content = `CONTRATO DE PARCERIA COMERCIAL – REVENDEDOR AUTORIZADO
+
+Pelo presente instrumento particular, de um lado ${matrizNome}, doravante denominada MATRIZ; e, de outro lado, ${company.razao_social}${company.nome_fantasia ? `, nome fantasia ${company.nome_fantasia},` : ""} inscrito no CNPJ sob nº ${company.cnpj}, com endereço em ${addressParts || "[ENDEREÇO NÃO INFORMADO]"}, neste ato representada por ${company.responsavel || "[RESPONSÁVEL]"}, doravante denominado REVENDEDOR AUTORIZADO.
+
+${clause}
+
+${company.cidade || "[LOCAL]"}, ${currentDate}`;
+
+    setContractPreview(content);
+    setContractPreviewProposal(proposal);
+    setGeneratedContractLink(null);
+  };
+
+  const handleConfirmAndGenerate = async () => {
+    if (!contractPreviewProposal || !lead.company_id) return;
+    setSendingToSign(true);
+    try {
+      const clause = buildProposalClause(contractPreviewProposal);
+      const meta = (contractPreviewProposal.metadata as any) || {};
 
       const result = await createContract(
         lead.company_id,
-        "",  // foro - will use default
+        "",
         "Save Car Brasil Tecnologia e Serviços Ltda",
         "manual",
         7,
-        proposalClause
+        clause
       );
 
       if (result) {
-        downloadContractPdf(result);
+        // Get the generated contract to retrieve the link
+        const { data: latestContract } = await supabase
+          .from("contracts")
+          .select("signature_link")
+          .eq("company_id", lead.company_id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const link = latestContract?.signature_link || "";
+        setGeneratedContractLink(link);
+
         await addActivity({
           type: "signature",
-          title: `Contrato gerado a partir da proposta ${meta.sigla || proposal.title}`,
-          description: `Proposta aceita convertida em contrato para assinatura. Link de assinatura gerado.`,
+          title: `Contrato gerado a partir da proposta ${meta.sigla || contractPreviewProposal.title}`,
+          description: `Proposta aceita convertida em contrato para assinatura. Link: ${link}`,
           servidor_id: lead.servidor_id,
         });
-        toast.success("Contrato gerado e disponível na página de Contratos e na aba Contratos!");
+
+        await addActivity({
+          type: "signature_link",
+          title: "Contrato enviado para assinatura",
+          description: `Link de assinatura gerado e disponível para envio ao cliente.`,
+          servidor_id: lead.servidor_id,
+        });
+
+        toast.success("Contrato gerado com sucesso!");
       }
     } catch (err) {
       console.error("Error creating contract from proposal:", err);
@@ -500,8 +571,98 @@ ${meta.items ? `\nItens contratados:\n${meta.items.split("\n").filter(Boolean).m
     }
   };
 
+  const handleCopySignatureLink = () => {
+    if (!generatedContractLink) return;
+    navigator.clipboard.writeText(generatedContractLink);
+    toast.success("Link copiado!");
+    addActivity({ type: "signature_link", title: "Link de assinatura copiado", description: `Link copiado para área de transferência.`, servidor_id: lead.servidor_id });
+  };
+
+  const handleSendWhatsApp = () => {
+    if (!generatedContractLink) return;
+    const clientName = registrationData?.nome_completo || lead.contact_name || lead.company_name;
+    const message = `Olá ${clientName},\nsegue o link para assinatura do seu contrato.\n\n${generatedContractLink}\n\nApós a assinatura o sistema confirmará automaticamente.`;
+    const phone = lead.phone?.replace(/\D/g, "") || "";
+    const url = `https://wa.me/${phone.startsWith("55") ? phone : "55" + phone}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank");
+    addActivity({ type: "signature_link", title: "Contrato enviado via WhatsApp", description: `Link de assinatura enviado para ${clientName} via WhatsApp.`, servidor_id: lead.servidor_id });
+  };
+
+  const handleSendToSignature = async (proposal: any) => {
+    // Now we show preview first instead of generating directly
+    await handlePreviewContract(proposal);
+  };
+
   if (loading) {
     return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  }
+
+  // ---- CONTRACT PREVIEW MODE ----
+  if (contractPreview) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <FileSignature className="h-4 w-4 text-primary" />
+            {generatedContractLink ? "Contrato Gerado" : "Visualizar Contrato"}
+          </h3>
+          <Button variant="ghost" size="sm" className="text-xs" onClick={() => { setContractPreview(null); setContractPreviewProposal(null); setGeneratedContractLink(null); }}>
+            Voltar
+          </Button>
+        </div>
+
+        <div className="rounded-lg border border-border bg-muted/20 p-4 max-h-[400px] overflow-y-auto">
+          <pre className="whitespace-pre-wrap text-xs leading-relaxed font-sans text-foreground">{contractPreview}</pre>
+        </div>
+
+        <div className="rounded-lg border border-border p-3 space-y-1">
+          <p className="text-xs font-semibold text-foreground">Dados do Cliente</p>
+          <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground">
+            <span>Nome: {registrationData?.nome_completo || lead.contact_name || "—"}</span>
+            <span>CPF: {registrationData?.cpf || "—"}</span>
+            <span>Empresa: {lead.company_name}</span>
+            <span>Telefone: {lead.phone || "—"}</span>
+          </div>
+        </div>
+
+        {!generatedContractLink ? (
+          <div className="flex justify-end gap-2">
+            <Button size="sm" variant="outline" className="text-xs gap-1.5" onClick={() => { setContractPreview(null); setContractPreviewProposal(null); }}>
+              <Edit className="h-3.5 w-3.5" /> Editar dados
+            </Button>
+            <Button size="sm" className="text-xs gap-1.5" onClick={handleConfirmAndGenerate} disabled={sendingToSign}>
+              {sendingToSign ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileSignature className="h-3.5 w-3.5" />}
+              Confirmar contrato
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+              <p className="text-xs font-semibold text-foreground mb-1">✅ Contrato gerado com sucesso!</p>
+              <p className="text-xs text-muted-foreground mb-2">Status: Contrato enviado para assinatura</p>
+              <div className="flex items-center gap-2 p-2 rounded bg-muted text-xs font-mono break-all">
+                {generatedContractLink}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" className="text-xs gap-1.5 flex-1" onClick={handleCopySignatureLink}>
+                <Copy className="h-3.5 w-3.5" /> Copiar link
+              </Button>
+              <Button size="sm" className="text-xs gap-1.5 flex-1 bg-green-600 hover:bg-green-700 text-white" onClick={handleSendWhatsApp}>
+                <MessageSquare className="h-3.5 w-3.5" /> Enviar via WhatsApp
+              </Button>
+            </div>
+            <Button size="sm" variant="outline" className="text-xs gap-1.5 w-full" onClick={() => {
+              if (contractPreview) {
+                downloadContractPdf({ content: contractPreview, code: "Contrato", companyName: lead.company_name });
+              }
+            }}>
+              <Download className="h-3.5 w-3.5" /> Baixar contrato em PDF
+            </Button>
+          </div>
+        )}
+      </div>
+    );
   }
 
   // ---- SIGNATURE MODE: only show selection panel ----
@@ -554,12 +715,11 @@ ${meta.items ? `\nItens contratados:\n${meta.items.split("\n").filter(Boolean).m
               const proposal = proposals.find(p => p.id === selectedSignProposal);
               if (proposal) {
                 await handleSendToSignature(proposal);
-                setSelectedSignProposal(null);
               }
             }}
           >
-            {sendingToSign ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileSignature className="h-3.5 w-3.5" />}
-            Enviar para Assinatura
+            {sendingToSign ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
+            Visualizar contrato
           </Button>
         </div>
       </div>
