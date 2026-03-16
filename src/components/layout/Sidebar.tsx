@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import orbitLogo from "@/assets/orbit-logo.png";
+import orbitLogo from "@/assets/orbit-logo-new.png";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { OrbitStackDialog } from "./OrbitStackDialog";
 
