@@ -5,7 +5,7 @@ import {
   MessageSquare, PhoneCall, FileText, Activity, Trash2, Send, Loader2,
   FileSignature, Eye, Download, Copy, Image as ImageIcon,
   FileSpreadsheet, Edit, MoreVertical, ThumbsUp, ThumbsDown,
-  Link2, CopyPlus
+  Link2, CopyPlus, ClipboardList
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadContractPdf } from "@/lib/generateContractPdf";
@@ -13,6 +13,7 @@ import { LeadAtividadesTab } from "./LeadAtividadesTab";
 import { LeadPropostasTab } from "./LeadPropostasTab";
 import { LeadContratosTab } from "./LeadContratosTab";
 import { LeadSimulacaoTab } from "./LeadSimulacaoTab";
+import { LeadCadastroTab } from "./LeadCadastroTab";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
