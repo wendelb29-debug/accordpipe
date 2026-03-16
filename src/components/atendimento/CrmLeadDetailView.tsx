@@ -137,7 +137,8 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     }
   }, [lead, editing]);
 
-  const currentStageIndex = STAGES.findIndex((s) => s.id === lead.stage);
+  const pipelineStages = isAdminPipeline ? ADMIN_STAGES : STAGES;
+  const currentStageIndex = pipelineStages.findIndex((s) => s.id === lead.stage);
 
   const getDaysInStage = () => {
     const entered = new Date(lead.stage_entered_at);
