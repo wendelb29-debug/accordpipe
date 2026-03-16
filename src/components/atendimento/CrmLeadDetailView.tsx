@@ -222,9 +222,43 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     if (saving) return;
     setSaving(true);
     try {
-      await onUpdate(lead.id, { lead_status: "won", stage: "contrato-fechado" } as any);
-      await addActivity({ type: "won", title: "Oportunidade ganha!", description: "Lead marcado como ganho." });
-      toast.success("🎉 Oportunidade marcada como ganha!");
+      // Transfer to admin pipeline (cadastro-pendente)
+      await onUpdate(lead.id, { lead_status: "won", stage: "cadastro-pendente", stage_entered_at: new Date().toISOString() } as any);
+      await addActivity({ type: "won", title: "Oportunidade ganha! Transferida para Cadastro.", description: "Lead marcado como ganho e transferido para o pipeline Administrativo." });
+      
+      // Create registration record
+      await supabase.from("crm_client_registrations" as any).insert({
+        lead_id: lead.id,
+        servidor_id: lead.servidor_id,
+        nome_completo: lead.contact_name || "",
+        email: lead.email || "",
+      } as any);
+
+      // Notify administrativo users
+      const { data: adminProfiles } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("company_id", lead.servidor_id)
+        .eq("is_active", true);
+      if (adminProfiles) {
+        for (const ap of adminProfiles) {
+          const { data: roleData } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", ap.user_id)
+            .maybeSingle();
+          if (roleData?.role === "administrativo" || roleData?.role === "admin") {
+            await supabase.rpc("create_notification", {
+              _user_id: ap.user_id,
+              _title: "Novo cadastro pendente",
+              _message: `A oportunidade "${lead.company_name}" foi marcada como ganha e aguarda cadastro.`,
+              _type: "cadastro_pendente",
+            });
+          }
+        }
+      }
+
+      toast.success("🎉 Oportunidade ganha! Transferida para cadastro.");
     } catch (error) {
       console.error("Error marking won:", error);
       toast.error("Erro ao marcar como ganho");
