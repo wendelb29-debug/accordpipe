@@ -449,7 +449,14 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               </>
             )}
             {lead.lead_status === "lost" && (
-              <Badge variant="destructive">✕ Perdido</Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="destructive">✕ Perdido</Badge>
+                {lead.lost_reason && (
+                  <span className="text-[10px] text-muted-foreground max-w-48 truncate" title={lead.lost_reason}>
+                    {lead.lost_reason.split(":")[0]}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </div>
