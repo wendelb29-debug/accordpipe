@@ -276,11 +276,13 @@ export type Database = {
           bairro: string | null
           cep: string | null
           cidade: string | null
+          client_status: string
           comprovante_url: string | null
           cpf: string | null
           created_at: string
           created_by_name: string | null
           created_by_user_id: string | null
+          data_adesao: string | null
           data_nascimento: string | null
           email: string | null
           endereco: string | null
@@ -291,20 +293,24 @@ export type Database = {
           nome_mae: string | null
           nome_pai: string | null
           numero: string | null
+          plano_contratado: string | null
           rg: string | null
           servidor_id: string
           status: string
           updated_at: string
+          valor_mensal: number | null
         }
         Insert: {
           bairro?: string | null
           cep?: string | null
           cidade?: string | null
+          client_status?: string
           comprovante_url?: string | null
           cpf?: string | null
           created_at?: string
           created_by_name?: string | null
           created_by_user_id?: string | null
+          data_adesao?: string | null
           data_nascimento?: string | null
           email?: string | null
           endereco?: string | null
@@ -315,20 +321,24 @@ export type Database = {
           nome_mae?: string | null
           nome_pai?: string | null
           numero?: string | null
+          plano_contratado?: string | null
           rg?: string | null
           servidor_id: string
           status?: string
           updated_at?: string
+          valor_mensal?: number | null
         }
         Update: {
           bairro?: string | null
           cep?: string | null
           cidade?: string | null
+          client_status?: string
           comprovante_url?: string | null
           cpf?: string | null
           created_at?: string
           created_by_name?: string | null
           created_by_user_id?: string | null
+          data_adesao?: string | null
           data_nascimento?: string | null
           email?: string | null
           endereco?: string | null
@@ -339,10 +349,12 @@ export type Database = {
           nome_mae?: string | null
           nome_pai?: string | null
           numero?: string | null
+          plano_contratado?: string | null
           rg?: string | null
           servidor_id?: string
           status?: string
           updated_at?: string
+          valor_mensal?: number | null
         }
         Relationships: [
           {
@@ -641,6 +653,88 @@ export type Database = {
           {
             foreignKeyName: "documents_company_id_fkey"
             columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by_name: string | null
+          created_by_user_id: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          lead_id: string | null
+          notes: string | null
+          paid_at: string | null
+          payment_method: string | null
+          reference: string | null
+          registration_id: string | null
+          servidor_id: string
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          created_by_name?: string | null
+          created_by_user_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          reference?: string | null
+          registration_id?: string | null
+          servidor_id: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by_name?: string | null
+          created_by_user_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          reference?: string | null
+          registration_id?: string | null
+          servidor_id?: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_transactions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "crm_client_registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_servidor_id_fkey"
+            columns: ["servidor_id"]
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
