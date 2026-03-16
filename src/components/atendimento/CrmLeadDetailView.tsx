@@ -700,6 +700,15 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             <TabsContent value="simulacao" className="flex-1 overflow-y-auto p-4 mt-0">
               <LeadSimulacaoTab lead={lead} addActivity={addActivity} />
             </TabsContent>
+
+            {/* Cadastro do Cliente */}
+            {(isAdminPipeline || role === "administrativo" || role === "admin") && (
+              <TabsContent value="cadastro" className="flex-1 overflow-y-auto p-4 mt-0">
+                <LeadCadastroTab lead={lead} onUpdate={onUpdate} />
+              </TabsContent>
+            )}
+              <LeadSimulacaoTab lead={lead} addActivity={addActivity} />
+            </TabsContent>
           </Tabs>
         </div>
       </div>
