@@ -499,18 +499,29 @@ ${meta.items ? `\nItens contratados:\n${meta.items.split("\n").filter(Boolean).m
     }
 
     const clause = buildProposalClause(proposal);
-    // Generate preview content (same logic as useContracts.generateContractContent but inline for preview)
-    const addressParts = [company.endereco, company.numero && `nº ${company.numero}`, company.complemento, company.bairro, company.cidade && company.estado && `${company.cidade}/${company.estado}`, company.cep && `CEP: ${company.cep}`].filter(Boolean).join(", ");
     const matrizNome = "Save Car Brasil Tecnologia e Serviços Ltda";
     const currentDate = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
 
-    let content = `CONTRATO DE PARCERIA COMERCIAL – REVENDEDOR AUTORIZADO
+    let content: string;
+    if (company) {
+      const addressParts = [company.endereco, company.numero && `nº ${company.numero}`, company.complemento, company.bairro, company.cidade && company.estado && `${company.cidade}/${company.estado}`, company.cep && `CEP: ${company.cep}`].filter(Boolean).join(", ");
+      content = `CONTRATO DE PARCERIA COMERCIAL – REVENDEDOR AUTORIZADO
 
 Pelo presente instrumento particular, de um lado ${matrizNome}, doravante denominada MATRIZ; e, de outro lado, ${company.razao_social}${company.nome_fantasia ? `, nome fantasia ${company.nome_fantasia},` : ""} inscrito no CNPJ sob nº ${company.cnpj}, com endereço em ${addressParts || "[ENDEREÇO NÃO INFORMADO]"}, neste ato representada por ${company.responsavel || "[RESPONSÁVEL]"}, doravante denominado REVENDEDOR AUTORIZADO.
 
 ${clause}
 
 ${company.cidade || "[LOCAL]"}, ${currentDate}`;
+    } else {
+      const clientName = registrationData?.nome_completo || lead.contact_name || lead.company_name;
+      content = `CONTRATO DE PRESTAÇÃO DE SERVIÇOS
+
+Pelo presente instrumento particular, de um lado ${matrizNome}, doravante denominada CONTRATADA; e, de outro lado, ${clientName}, doravante denominado(a) CONTRATANTE.
+
+${clause}
+
+${lead.cidade || "[LOCAL]"}, ${currentDate}`;
+    }
 
     setContractPreview(content);
     setContractPreviewProposal(proposal);
