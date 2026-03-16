@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -115,6 +116,14 @@ interface CrmLeadDetailViewProps {
   isAdminPipeline?: boolean;
 }
 
+const LOST_REASONS = [
+  { value: "dados_incorretos", label: "DADOS INCORRETOS", description: "Os dados fornecidos não são do cliente ou não são verídicos" },
+  { value: "desistiu", label: "DESISTIU", description: "Cliente desistiu do negócio após um prazo de negociação ou adiou o investimento" },
+  { value: "parou_responder", label: "PAROU DE RESPONDER", description: "Cliente chegou a atender, mas após alguns contatos deixou de responder" },
+  { value: "preco_contrato", label: "PREÇO CONTRATO", description: "Cliente desistiu do negócio devido ao preço do contrato" },
+  { value: "sem_contato", label: "SEM CONTATO", description: "Não obteve sucesso em nenhum dos contatos" },
+];
+
 export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelete, isAdminPipeline }: CrmLeadDetailViewProps) {
   const { role } = useAuth();
   const { activities, loading: activitiesLoading, addActivity, refetch: refetchActivities } = useCrmActivities(lead.id);
@@ -123,6 +132,8 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const [newActivity, setNewActivity] = useState({ type: "note", title: "", description: "" });
   const [showActivityForm, setShowActivityForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showLostDialog, setShowLostDialog] = useState(false);
+  const [selectedLostReason, setSelectedLostReason] = useState("");
 
   // Note compose state
   const [noteText, setNoteText] = useState("");
@@ -280,13 +291,25 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     }
   };
 
-  const handleLost = async () => {
+  const handleLost = () => {
+    setShowLostDialog(true);
+  };
+
+  const confirmLost = async () => {
+    if (!selectedLostReason) {
+      toast.error("Selecione um motivo");
+      return;
+    }
     if (saving) return;
     setSaving(true);
+    const reason = LOST_REASONS.find(r => r.value === selectedLostReason);
+    const reasonText = reason ? `${reason.label}: ${reason.description}` : selectedLostReason;
     try {
-      await onUpdate(lead.id, { lead_status: "lost" } as any);
-      await addActivity({ type: "lost", title: "Oportunidade perdida", description: "Lead marcado como perdido." });
+      await onUpdate(lead.id, { lead_status: "lost", lost_reason: reasonText } as any);
+      await addActivity({ type: "lost", title: "Oportunidade perdida", description: `Motivo: ${reasonText}` });
       toast.info("Oportunidade marcada como perdida");
+      setShowLostDialog(false);
+      setSelectedLostReason("");
     } catch (error) {
       console.error("Error marking lost:", error);
       toast.error("Erro ao marcar como perdido");
@@ -426,7 +449,14 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               </>
             )}
             {lead.lead_status === "lost" && (
-              <Badge variant="destructive">✕ Perdido</Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="destructive">✕ Perdido</Badge>
+                {lead.lost_reason && (
+                  <span className="text-[10px] text-muted-foreground max-w-48 truncate" title={lead.lost_reason}>
+                    {lead.lost_reason.split(":")[0]}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -789,6 +819,33 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
           </Tabs>
         </div>
       </div>
+      {/* Lost reason dialog */}
+      <Dialog open={showLostDialog} onOpenChange={setShowLostDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl">Negócio Perdido</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">Por favor informe o motivo da perda do negócio:</p>
+            <Select value={selectedLostReason} onValueChange={setSelectedLostReason}>
+              <SelectTrigger><SelectValue placeholder="Selecione um motivo" /></SelectTrigger>
+              <SelectContent>
+                {LOST_REASONS.map(r => (
+                  <SelectItem key={r.value} value={r.value} className="text-xs">
+                    <span className="font-semibold">{r.label}:</span> {r.description}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowLostDialog(false); setSelectedLostReason(""); }}>Cancelar</Button>
+            <Button variant="destructive" onClick={confirmLost} disabled={!selectedLostReason || saving}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

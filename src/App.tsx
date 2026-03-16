@@ -34,6 +34,7 @@ import FormPublico from "./pages/FormPublico";
 import Cadastrados from "./pages/Cadastrados";
 import Financeiro from "./pages/Financeiro";
 import Clientes from "./pages/Clientes";
+import Descarte from "./pages/Descarte";
 
 const queryClient = new QueryClient();
 
@@ -234,6 +235,16 @@ const App = () => (
                 <ProtectedRoute allowedRoles={["admin", "ceo", "administrativo", "financeiro"]}>
                   <AppLayout>
                     <Clientes />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/descarte"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "ceo"]}>
+                  <AppLayout>
+                    <Descarte />
                   </AppLayout>
                 </ProtectedRoute>
               }
