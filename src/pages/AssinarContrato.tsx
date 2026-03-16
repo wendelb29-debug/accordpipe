@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Camera, CheckCircle2, MapPin, User, FileSignature, AlertCircle, X } from "lucide-react";
 import { toast } from "sonner";
+import { generateContractPdf } from "@/lib/generateContractPdf";
 
 interface ContractData {
   id: string;
