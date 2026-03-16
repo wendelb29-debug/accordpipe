@@ -327,7 +327,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             <div>
               <h2 className="text-sm font-bold text-foreground">{lead.source} - {lead.contact_name || lead.company_name}</h2>
               <p className="text-xs text-muted-foreground">
-                Etapa atual: <strong>{STAGES.find((s) => s.id === lead.stage)?.title}</strong>
+                Etapa atual: <strong>{pipelineStages.find((s) => s.id === lead.stage)?.title || ALL_STAGES.find((s) => s.id === lead.stage)?.title}</strong>
                 {" · "}{getDaysInStage()} dia(s) nesta etapa
               </p>
             </div>
