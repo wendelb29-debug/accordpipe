@@ -45,7 +45,7 @@ export interface CrmLeadActivity {
 export const STAGES = [
   { id: "novos", title: "Novos Leads", daysLimit: "1d", color: "bg-emerald-500" },
   { id: "standby", title: "StandBy", daysLimit: "90d", color: "bg-gray-500" },
-  { id: "candidatos", title: "Candidatos", daysLimit: "1d", color: "bg-blue-500" },
+  
   { id: "primeiro-contato", title: "1º Contato", daysLimit: "5d", color: "bg-yellow-500" },
   { id: "call-negocio", title: "Call/Negócio", daysLimit: "3d", color: "bg-orange-500" },
   { id: "follow-up-1", title: "Follow-up 1", daysLimit: "15d", color: "bg-purple-500" },
