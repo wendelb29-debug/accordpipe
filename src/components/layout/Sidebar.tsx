@@ -27,21 +27,21 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { OrbitStackDialog } from "./OrbitStackDialog";
 
 const navigation = [
-  { name: "Início", href: "/home", icon: Home, roles: ["admin", "operador", "leitura", "ceo"] },
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "operador", "leitura", "ceo"] },
-  { name: "Orbit Sales", href: "/atendimento", icon: MessageSquare, roles: ["admin", "operador", "ceo"] },
-  { name: "Formulários", href: "/formularios", icon: ClipboardList, roles: ["admin", "operador", "ceo"] },
-  { name: "Atividades", href: "/atividades", icon: CalendarCheck, roles: ["admin", "operador", "ceo"] },
-  { name: "Pagamentos", href: "/boletos", icon: Receipt, roles: ["admin", "operador", "ceo"] },
-  { name: "Documentos", href: "/documentos", icon: FileText, roles: ["admin", "operador", "ceo"] },
-  { name: "Relatórios", href: "/relatorios", icon: BarChart3, roles: ["admin", "operador", "leitura", "ceo"] },
-  { name: "Contratos", href: "/contratos", icon: FileSignature, roles: ["admin", "operador", "ceo"] },
-  { name: "Cancelamentos", href: "/cancelamentos", icon: XCircle, roles: ["admin", "ceo"] },
+  { name: "Início", href: "/home", icon: Home, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
+  { name: "Orbit Sales", href: "/atendimento", icon: MessageSquare, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
+  { name: "Formulários", href: "/formularios", icon: ClipboardList, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
+  { name: "Atividades", href: "/atividades", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
+  { name: "Pagamentos", href: "/boletos", icon: Receipt, roles: ["admin", "operador", "ceo", "financeiro"] },
+  { name: "Documentos", href: "/documentos", icon: FileText, roles: ["admin", "operador", "ceo", "administrativo", "financeiro"] },
+  { name: "Relatórios", href: "/relatorios", icon: BarChart3, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro"] },
+  { name: "Contratos", href: "/contratos", icon: FileSignature, roles: ["admin", "operador", "ceo", "financeiro"] },
+  { name: "Cancelamentos", href: "/cancelamentos", icon: XCircle, roles: ["admin", "ceo", "financeiro"] },
   { name: "Gestão de Vendas", href: "/gestao-vendas", icon: Webhook, roles: ["admin", "ceo"] },
 ];
 
 const configNavigation = [
-  { name: "Usuários", href: "/configuracoes/usuarios", icon: Users, roles: ["admin", "ceo"] },
+  { name: "Usuários", href: "/configuracoes/usuarios", icon: Users, roles: ["admin", "ceo", "administrativo"] },
 ];
 
 export function Sidebar() {

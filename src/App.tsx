@@ -68,7 +68,7 @@ const App = () => (
             <Route
               path="/empresas"
               element={
-                <ProtectedRoute allowedRoles={["admin", "operador"]}>
+                <ProtectedRoute allowedRoles={["admin", "operador", "administrativo"]}>
                   <AppLayout>
                     <Empresas />
                   </AppLayout>
@@ -78,7 +78,7 @@ const App = () => (
             <Route
               path="/empresas/:id"
               element={
-                <ProtectedRoute allowedRoles={["admin", "operador"]}>
+                <ProtectedRoute allowedRoles={["admin", "operador", "administrativo"]}>
                   <AppLayout>
                     <CompanyDetail />
                   </AppLayout>
@@ -88,7 +88,7 @@ const App = () => (
             <Route
               path="/boletos"
               element={
-                <ProtectedRoute allowedRoles={["admin", "operador"]}>
+                <ProtectedRoute allowedRoles={["admin", "operador", "financeiro"]}>
                   <AppLayout>
                     <Boletos />
                   </AppLayout>
@@ -98,7 +98,7 @@ const App = () => (
             <Route
               path="/documentos"
               element={
-                <ProtectedRoute allowedRoles={["admin", "operador"]}>
+                <ProtectedRoute allowedRoles={["admin", "operador", "administrativo", "financeiro"]}>
                   <AppLayout>
                     <Documentos />
                   </AppLayout>
@@ -118,7 +118,7 @@ const App = () => (
             <Route
               path="/contratos"
               element={
-                <ProtectedRoute allowedRoles={["admin", "operador"]}>
+                <ProtectedRoute allowedRoles={["admin", "operador", "financeiro"]}>
                   <AppLayout>
                     <Contratos />
                   </AppLayout>
@@ -128,7 +128,7 @@ const App = () => (
             <Route
               path="/cancelamentos"
               element={
-                <ProtectedRoute allowedRoles={["admin"]}>
+                <ProtectedRoute allowedRoles={["admin", "financeiro"]}>
                   <AppLayout>
                     <Cancelamentos />
                   </AppLayout>
@@ -138,7 +138,7 @@ const App = () => (
             <Route
               path="/configuracoes/usuarios"
               element={
-                <ProtectedRoute allowedRoles={["admin"]}>
+                <ProtectedRoute allowedRoles={["admin", "administrativo"]}>
                   <AppLayout>
                     <Usuarios />
                   </AppLayout>
@@ -148,7 +148,7 @@ const App = () => (
             <Route
               path="/atendimento"
               element={
-                <ProtectedRoute allowedRoles={["admin", "operador"]}>
+                <ProtectedRoute allowedRoles={["admin", "operador", "administrativo", "comercial"]}>
                   <AppLayout>
                     <Atendimento />
                   </AppLayout>
@@ -158,7 +158,7 @@ const App = () => (
             <Route
               path="/atividades"
               element={
-                <ProtectedRoute allowedRoles={["admin", "operador", "ceo"]}>
+                <ProtectedRoute allowedRoles={["admin", "operador", "ceo", "administrativo", "comercial"]}>
                   <AppLayout>
                     <Atividades />
                   </AppLayout>
@@ -198,7 +198,7 @@ const App = () => (
             <Route
               path="/formularios"
               element={
-                <ProtectedRoute allowedRoles={["admin", "operador"]}>
+                <ProtectedRoute allowedRoles={["admin", "operador", "administrativo", "comercial"]}>
                   <AppLayout>
                     <Formularios />
                   </AppLayout>
