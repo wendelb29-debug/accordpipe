@@ -58,6 +58,26 @@ const statusConfig: Record<string, { label: string; icon: any; className: string
   },
 };
 
+const roleLabels: Record<string, string> = {
+  matriz: "Representante da Matriz",
+  revendedor: "Revendedor / Contratante",
+  colaborador: "Colaborador",
+};
+
+interface ContractSignature {
+  id: string;
+  contract_id: string;
+  signer_role: string;
+  signer_name: string | null;
+  signer_document: string | null;
+  signing_token: string | null;
+  signed_at: string | null;
+  signature_photo_url: string | null;
+  signature_latitude: number | null;
+  signature_longitude: number | null;
+  signature_address: string | null;
+}
+
 export default function Contratos() {
   const { isMaster, isCeo, isAdmin } = useAuth();
 
