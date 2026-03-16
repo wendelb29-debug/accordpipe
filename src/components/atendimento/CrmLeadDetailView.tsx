@@ -354,7 +354,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
         {/* Pipeline Progress Bar */}
         <div className="flex gap-0.5">
-          {STAGES.map((stage, i) => {
+          {pipelineStages.map((stage, i) => {
             const isActive = i === currentStageIndex;
             const isPast = i < currentStageIndex;
             return (
