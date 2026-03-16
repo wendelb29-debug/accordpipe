@@ -12,6 +12,7 @@ import { downloadContractPdf } from "@/lib/generateContractPdf";
 import { LeadAtividadesTab } from "./LeadAtividadesTab";
 import { LeadPropostasTab } from "./LeadPropostasTab";
 import { LeadContratosTab } from "./LeadContratosTab";
+import { LeadSimulacaoTab } from "./LeadSimulacaoTab";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
