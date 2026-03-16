@@ -252,7 +252,7 @@ ${company.responsavel || "[RESPONSÁVEL]"}`;
       contract_content: content,
       link_expires_at: expiresAt.toISOString(),
       signing_token: signingToken,
-      signature_link: `https://orbitclient.lovable.app/assinar/${signingToken}`,
+      signature_link: `${window.location.origin}/assinar/${signingToken}`,
       created_by: user?.id,
     } as any);
 
