@@ -335,6 +335,14 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                         <span className="text-muted-foreground">↺ {formatCurrency(lead.value_mrr)}</span>
                       </div>
 
+                      {lead.lead_status === "won" && (
+                        <div className="pt-1">
+                          <Badge variant="outline" className="text-[9px] bg-green-500/10 text-green-700 border-green-300">
+                            ✅ Ganho
+                          </Badge>
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between text-[10px] text-muted-foreground/70">
                         <span>📅 {new Date(lead.created_at).toLocaleDateString("pt-BR")}</span>
                         <span>🕐 {new Date(lead.updated_at).toLocaleDateString("pt-BR")}</span>

@@ -32,6 +32,8 @@ import NotFound from "./pages/NotFound";
 import Formularios from "./pages/Formularios";
 import FormPublico from "./pages/FormPublico";
 import Cadastrados from "./pages/Cadastrados";
+import Financeiro from "./pages/Financeiro";
+import Clientes from "./pages/Clientes";
 
 const queryClient = new QueryClient();
 
@@ -212,6 +214,26 @@ const App = () => (
                 <ProtectedRoute allowedRoles={["admin", "ceo", "administrativo"]}>
                   <AppLayout>
                     <Cadastrados />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/financeiro"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "ceo", "financeiro"]}>
+                  <AppLayout>
+                    <Financeiro />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/clientes"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "ceo", "administrativo", "financeiro"]}>
+                  <AppLayout>
+                    <Clientes />
                   </AppLayout>
                 </ProtectedRoute>
               }
