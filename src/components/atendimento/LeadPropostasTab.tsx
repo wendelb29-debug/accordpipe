@@ -529,7 +529,9 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
   };
 
   const handleConfirmAndGenerate = async () => {
-    if (!contractPreviewProposal || !lead.company_id) return;
+    if (!contractPreviewProposal) return;
+    const companyId = lead.company_id || lead.servidor_id;
+    if (!companyId) { toast.error("Nenhuma empresa vinculada ao lead"); return; }
     setSendingToSign(true);
     try {
       const clause = buildProposalClause(contractPreviewProposal);
