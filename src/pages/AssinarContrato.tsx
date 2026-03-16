@@ -379,11 +379,11 @@ export default function AssinarContrato() {
         <Button
           size="lg"
           className="w-full gap-2 text-lg py-6"
-          disabled={!photoBlob || !location || signing || !signerNameInput.trim()}
+          disabled={!photoBlob || !location || signing}
           onClick={handleSign}
         >
           {signing ? <Loader2 className="h-5 w-5 animate-spin" /> : <FileSignature className="h-5 w-5" />}
-          Assinar como {roleLabels[signerRole]}
+          Assinar
         </Button>
 
         {(!photoBlob || !location || !signerNameInput.trim()) && (
