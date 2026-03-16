@@ -52,6 +52,35 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const [detailLead, setDetailLead] = useState<CrmLead | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [formLinkOpen, setFormLinkOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string>("all");
+  const [teamMembers, setTeamMembers] = useState<{ user_id: string; name: string }[]>([]);
+
+  const isAdminOrMaster = profile?.is_master || false;
+
+  // Fetch team members for admin/master
+  useEffect(() => {
+    if (!isAdminOrMaster || !profile?.company_id) return;
+    const fetchTeam = async () => {
+      // Check if user has admin role
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", profile.user_id)
+        .maybeSingle();
+      
+      const hasAdminRole = roleData?.role === "admin" || roleData?.role === "ceo";
+      if (!profile.is_master && !hasAdminRole) return;
+
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, name")
+        .eq("company_id", profile.company_id)
+        .eq("is_active", true)
+        .order("name");
+      if (data) setTeamMembers(data);
+    };
+    fetchTeam();
+  }, [isAdminOrMaster, profile?.company_id, profile?.user_id, profile?.is_master]);
 
   const copyFormLink = async () => {
     let companyId = profile?.company_id;
