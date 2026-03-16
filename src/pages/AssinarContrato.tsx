@@ -3,9 +3,24 @@ import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, Camera, CheckCircle2, MapPin, User, FileSignature, AlertCircle, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, Camera, CheckCircle2, MapPin, User, FileSignature, AlertCircle, X, Users } from "lucide-react";
 import { toast } from "sonner";
 import { generateContractPdf } from "@/lib/generateContractPdf";
+
+const roleLabels: Record<string, string> = {
+  matriz: "Representante da Matriz",
+  revendedor: "Revendedor / Contratante",
+  colaborador: "Colaborador",
+};
+
+interface SignatureInfo {
+  signer_role: string;
+  signer_name: string | null;
+  signed_at: string | null;
+  signature_photo_url: string | null;
+  signature_address: string | null;
+}
 
 interface ContractData {
   id: string;
@@ -13,7 +28,11 @@ interface ContractData {
   contract_content: string | null;
   signature_status: string;
   signed_at: string | null;
-  signature_photo_url: string | null;
+  signer_role?: string;
+  signer_signed_at?: string | null;
+  signer_name?: string | null;
+  signer_document?: string | null;
+  signatures?: SignatureInfo[];
   company: {
     razao_social: string;
     nome_fantasia: string | null;
@@ -27,6 +46,7 @@ interface ContractData {
     cep: string | null;
   } | null;
 }
+
 function ContractPdfEmbed({ content, code, companyName }: { content: string; code: string; companyName: string }) {
   const pdfUrl = useMemo(() => {
     if (!content) return null;
@@ -54,6 +74,8 @@ export default function AssinarContrato() {
   const [location, setLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
   const [signing, setSigning] = useState(false);
   const [signed, setSigned] = useState(false);
+  const [signerNameInput, setSignerNameInput] = useState("");
+  const [signerDocInput, setSignerDocInput] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -77,7 +99,18 @@ export default function AssinarContrato() {
       }
 
       const contractData: ContractData = { ...data, company: data.companies };
-      if (contractData.signature_status === "signed") setSigned(true);
+      
+      // Check if this specific signer already signed
+      if (contractData.signer_signed_at) {
+        setSigned(true);
+      } else if (contractData.signature_status === "signed" && !contractData.signer_role) {
+        setSigned(true);
+      }
+      
+      // Pre-fill signer info
+      if (contractData.signer_name) setSignerNameInput(contractData.signer_name);
+      if (contractData.signer_document) setSignerDocInput(contractData.signer_document);
+      
       setContract(contractData);
     } catch {
       setError("Erro ao carregar contrato.");
@@ -146,6 +179,10 @@ export default function AssinarContrato() {
       toast.error("Tire a foto e permita a localização antes de assinar");
       return;
     }
+    if (!signerNameInput.trim()) {
+      toast.error("Informe o nome do signatário");
+      return;
+    }
     setSigning(true);
     try {
       const formData = new FormData();
@@ -154,16 +191,13 @@ export default function AssinarContrato() {
       formData.append("latitude", location.lat.toString());
       formData.append("longitude", location.lng.toString());
       formData.append("address", location.address);
-      formData.append("signer_name", contract.company?.responsavel || "");
-      formData.append("signer_document", contract.company?.cnpj || "");
+      formData.append("signer_name", signerNameInput);
+      formData.append("signer_document", signerDocInput);
 
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/sign-contract`,
-        {
-          method: "POST",
-          body: formData,
-        }
+        { method: "POST", body: formData }
       );
 
       const result = await response.json();
@@ -172,7 +206,7 @@ export default function AssinarContrato() {
       }
 
       setSigned(true);
-      toast.success("Contrato assinado com sucesso!");
+      toast.success("Assinatura registrada com sucesso!");
     } catch (e: any) {
       toast.error("Erro ao assinar: " + (e.message || "tente novamente"));
     }
@@ -204,14 +238,30 @@ export default function AssinarContrato() {
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="max-w-md w-full p-8 text-center space-y-4">
           <CheckCircle2 className="h-16 w-16 text-primary mx-auto" />
-          <h1 className="text-2xl font-bold text-foreground">Contrato Assinado!</h1>
+          <h1 className="text-2xl font-bold text-foreground">Assinatura Registrada!</h1>
           <p className="text-muted-foreground">
+            {contract.signer_role && (
+              <span className="block mb-1">
+                <Badge variant="secondary">{roleLabels[contract.signer_role] || contract.signer_role}</Badge>
+              </span>
+            )}
             O contrato <span className="font-mono font-semibold">{contract.code}</span> foi assinado com sucesso.
           </p>
-          {contract.signed_at && (
-            <p className="text-sm text-muted-foreground">
-              Assinado em: {new Date(contract.signed_at).toLocaleString("pt-BR")}
-            </p>
+          {/* Signatures status */}
+          {contract.signatures && contract.signatures.length > 0 && (
+            <div className="text-left space-y-2 pt-4 border-t">
+              <p className="text-sm font-semibold text-foreground flex items-center gap-2"><Users className="h-4 w-4" /> Status das Assinaturas</p>
+              {contract.signatures.map((sig, i) => (
+                <div key={i} className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{roleLabels[sig.signer_role] || sig.signer_role}</span>
+                  {sig.signed_at ? (
+                    <Badge className="bg-status-paid/10 text-status-paid border-status-paid/30"><CheckCircle2 className="h-3 w-3 mr-1" /> Assinado</Badge>
+                  ) : (
+                    <Badge variant="outline">Pendente</Badge>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </Card>
       </div>
@@ -219,7 +269,7 @@ export default function AssinarContrato() {
   }
 
   const company = contract.company;
-  const addressParts = [company?.endereco, company?.numero && `nº ${company.numero}`, company?.bairro, company?.cidade && company?.estado && `${company.cidade}/${company.estado}`, company?.cep && `CEP: ${company.cep}`].filter(Boolean).join(", ");
+  const signerRole = contract.signer_role || "revendedor";
 
   return (
     <div className="min-h-screen bg-background">
@@ -228,26 +278,82 @@ export default function AssinarContrato() {
           <FileSignature className="h-10 w-10 text-primary mx-auto" />
           <h1 className="text-2xl font-bold text-foreground">Assinatura de Contrato</h1>
           <p className="font-mono text-muted-foreground">{contract.code}</p>
+          <Badge variant="secondary" className="text-sm">{roleLabels[signerRole] || signerRole}</Badge>
         </div>
+
+        {/* Signatures progress */}
+        {contract.signatures && contract.signatures.length > 0 && (
+          <Card className="p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
+              <Users className="h-4 w-4 text-primary" /> Assinaturas do Contrato
+            </div>
+            <div className="space-y-2">
+              {contract.signatures.map((sig, i) => (
+                <div key={i} className="flex items-center justify-between text-sm">
+                  <div>
+                    <span className="text-foreground">{roleLabels[sig.signer_role] || sig.signer_role}</span>
+                    {sig.signer_name && <span className="text-muted-foreground ml-2">({sig.signer_name})</span>}
+                  </div>
+                  {sig.signed_at ? (
+                    <Badge className="bg-status-paid/10 text-status-paid border-status-paid/30"><CheckCircle2 className="h-3 w-3 mr-1" /> Assinado</Badge>
+                  ) : (
+                    <Badge variant="outline">Pendente</Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
 
         <Card className="p-5 space-y-3">
           <div className="flex items-center gap-2 text-foreground font-semibold">
             <User className="h-5 w-5 text-primary" />
-            Dados do Responsável
+            Dados da Empresa
           </div>
           <div className="grid gap-2 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Nome / Razão Social:</span><span className="font-medium text-foreground">{company?.razao_social || "-"}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Razão Social:</span><span className="font-medium text-foreground">{company?.razao_social || "-"}</span></div>
             {company?.nome_fantasia && <div className="flex justify-between"><span className="text-muted-foreground">Nome Fantasia:</span><span className="font-medium text-foreground">{company.nome_fantasia}</span></div>}
-            <div className="flex justify-between"><span className="text-muted-foreground">Responsável:</span><span className="font-medium text-foreground">{company?.responsavel || "-"}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">CNPJ:</span><span className="font-mono font-medium text-foreground">{company?.cnpj || "-"}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Endereço:</span><span className="font-medium text-foreground text-right max-w-[60%]">{addressParts || "-"}</span></div>
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <h2 className="font-semibold text-foreground mb-3">Conteúdo do Contrato</h2>
+          <ContractPdfEmbed content={contract.contract_content || ""} code={contract.code} companyName={company?.razao_social || ""} />
+        </Card>
+
+        {/* Signer Info */}
+        <Card className="p-5 space-y-3">
+          <div className="flex items-center gap-2 text-foreground font-semibold">
+            <User className="h-5 w-5 text-primary" />
+            Dados do Signatário ({roleLabels[signerRole]})
+          </div>
+          <div className="grid gap-3">
+            <div className="grid gap-1">
+              <label className="text-sm text-muted-foreground">Nome Completo *</label>
+              <input
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={signerNameInput}
+                onChange={(e) => setSignerNameInput(e.target.value)}
+                placeholder="Nome completo do signatário"
+              />
+            </div>
+            <div className="grid gap-1">
+              <label className="text-sm text-muted-foreground">CPF / CNPJ</label>
+              <input
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={signerDocInput}
+                onChange={(e) => setSignerDocInput(e.target.value)}
+                placeholder="Documento do signatário"
+              />
+            </div>
           </div>
         </Card>
 
         <Card className="p-5 space-y-3">
           <div className="flex items-center gap-2 text-foreground font-semibold">
             <MapPin className="h-5 w-5 text-primary" />
-            Localização do Signatário
+            Localização
           </div>
           {location ? (
             <div className="text-sm space-y-1">
@@ -259,15 +365,10 @@ export default function AssinarContrato() {
           )}
         </Card>
 
-        <Card className="p-5">
-          <h2 className="font-semibold text-foreground mb-3">Conteúdo do Contrato</h2>
-          <ContractPdfEmbed content={contract.contract_content || ""} code={contract.code} companyName={company?.razao_social || ""} />
-        </Card>
-
         <Card className="p-5 space-y-4">
           <div className="flex items-center gap-2 text-foreground font-semibold">
             <Camera className="h-5 w-5 text-primary" />
-            Foto de Assinatura
+            Foto do Signatário
           </div>
 
           {cameraOpen && (
@@ -305,16 +406,18 @@ export default function AssinarContrato() {
         <Button
           size="lg"
           className="w-full gap-2 text-lg py-6"
-          disabled={!photoBlob || !location || signing}
+          disabled={!photoBlob || !location || signing || !signerNameInput.trim()}
           onClick={handleSign}
         >
           {signing ? <Loader2 className="h-5 w-5 animate-spin" /> : <FileSignature className="h-5 w-5" />}
-          Assinar Contrato
+          Assinar como {roleLabels[signerRole]}
         </Button>
 
-        {(!photoBlob || !location) && (
+        {(!photoBlob || !location || !signerNameInput.trim()) && (
           <p className="text-center text-sm text-muted-foreground">
-            {!photoBlob && !location
+            {!signerNameInput.trim()
+              ? "Informe o nome do signatário"
+              : !photoBlob && !location
               ? "Tire uma foto e permita a localização para assinar"
               : !photoBlob
               ? "Tire uma foto para assinar"
