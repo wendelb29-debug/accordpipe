@@ -192,8 +192,8 @@ export function LeadSimulacaoTab({ lead, addActivity }: LeadSimulacaoTabProps) {
     const pageHeight = pdf.internal.pageSize.getHeight();
 
     // Colors
-    const navy = { r: 15, g: 23, b: 42 };       // dark navy
-    const gold = { r: 212, g: 175, b: 55 };      // gold accent
+    const navy = { r: 15, g: 23, b: 42 };
+    const gold = { r: 212, g: 175, b: 55 };
     const white = { r: 255, g: 255, b: 255 };
     const lightGray = { r: 180, g: 190, b: 210 };
     const cardBg = { r: 25, g: 35, b: 60 };
@@ -202,10 +202,28 @@ export function LeadSimulacaoTab({ lead, addActivity }: LeadSimulacaoTabProps) {
     pdf.setFillColor(navy.r, navy.g, navy.b);
     pdf.rect(0, 0, pageWidth, pageHeight, "F");
 
-    let y = 20;
+    let y = 15;
     const mL = 18;
     const mR = 18;
     const usable = pageWidth - mL - mR;
+
+    // === LOGO ===
+    try {
+      const logoImg = new Image();
+      logoImg.crossOrigin = "anonymous";
+      await new Promise<void>((resolve, reject) => {
+        logoImg.onload = () => resolve();
+        logoImg.onerror = () => reject();
+        logoImg.src = "/images/grupo-zelo-logo.jpg";
+      });
+      const logoW = 30;
+      const logoH = 30;
+      pdf.addImage(logoImg, "JPEG", pageWidth / 2 - logoW / 2, y, logoW, logoH);
+      y += logoH + 5;
+    } catch {
+      // If logo fails, just skip
+      y += 5;
+    }
 
     // === HEADER: Gold line + Title ===
     pdf.setDrawColor(gold.r, gold.g, gold.b);
