@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calculator, Users, UserPlus, Copy, FileText, MessageSquare, Loader2, Trash2, Eye, Edit } from "lucide-react";
+import { Calculator, Users, UserPlus, Copy, FileText, MessageSquare, Loader2, Trash2, Eye, Edit, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { CrmLead } from "@/hooks/useCrmLeads";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SimulationResult {
   planType: string;
