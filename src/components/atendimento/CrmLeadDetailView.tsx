@@ -115,6 +115,14 @@ interface CrmLeadDetailViewProps {
   isAdminPipeline?: boolean;
 }
 
+const LOST_REASONS = [
+  { value: "dados_incorretos", label: "DADOS INCORRETOS", description: "Os dados fornecidos não são do cliente ou não são verídicos" },
+  { value: "desistiu", label: "DESISTIU", description: "Cliente desistiu do negócio após um prazo de negociação ou adiou o investimento" },
+  { value: "parou_responder", label: "PAROU DE RESPONDER", description: "Cliente chegou a atender, mas após alguns contatos deixou de responder" },
+  { value: "preco_contrato", label: "PREÇO CONTRATO", description: "Cliente desistiu do negócio devido ao preço do contrato" },
+  { value: "sem_contato", label: "SEM CONTATO", description: "Não obteve sucesso em nenhum dos contatos" },
+];
+
 export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelete, isAdminPipeline }: CrmLeadDetailViewProps) {
   const { role } = useAuth();
   const { activities, loading: activitiesLoading, addActivity, refetch: refetchActivities } = useCrmActivities(lead.id);
@@ -123,6 +131,8 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const [newActivity, setNewActivity] = useState({ type: "note", title: "", description: "" });
   const [showActivityForm, setShowActivityForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showLostDialog, setShowLostDialog] = useState(false);
+  const [selectedLostReason, setSelectedLostReason] = useState("");
 
   // Note compose state
   const [noteText, setNoteText] = useState("");
