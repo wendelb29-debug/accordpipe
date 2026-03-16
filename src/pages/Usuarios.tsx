@@ -59,6 +59,9 @@ const roleLabels: Record<AppRole, string> = {
   operador: "Operador",
   leitura: "Leitura",
   ceo: "CEO",
+  administrativo: "Administrativo",
+  financeiro: "Financeiro",
+  comercial: "Comercial",
 };
 
 const roleBadgeVariants: Record<AppRole, "default" | "secondary" | "outline"> = {
@@ -66,6 +69,9 @@ const roleBadgeVariants: Record<AppRole, "default" | "secondary" | "outline"> = 
   operador: "secondary",
   leitura: "outline",
   ceo: "default",
+  administrativo: "secondary",
+  financeiro: "secondary",
+  comercial: "secondary",
 };
 
 export default function Usuarios() {
