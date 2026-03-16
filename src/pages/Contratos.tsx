@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import {
-  Plus, Search, FileSignature, Eye, Clock, CheckCircle2, AlertCircle, Loader2, Copy, Camera, MapPin, User, X, Download, ShieldAlert, Building2,
+  Plus, Search, FileSignature, Eye, Clock, CheckCircle2, AlertCircle, Loader2, Copy, Camera, MapPin, User, X, Download, ShieldAlert, Building2, Users, Link2,
 } from "lucide-react";
 import { downloadContractPdf, generateContractPdf } from "@/lib/generateContractPdf";
 import { Button } from "@/components/ui/button";
