@@ -24,7 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const stageIcons: Record<string, React.ElementType> = {
   "novos": Sparkles,
   "standby": Clock,
-  "candidatos": Users,
+  
   "primeiro-contato": MessageSquare,
   "call-negocio": Phone,
   "follow-up-1": RefreshCw,
