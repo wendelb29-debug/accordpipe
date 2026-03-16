@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Camera, CheckCircle2, MapPin, User, FileSignature, AlertCircle, X } from "lucide-react";
 import { toast } from "sonner";
+import { generateContractPdf } from "@/lib/generateContractPdf";
 
 interface ContractData {
   id: string;
@@ -26,6 +26,21 @@ interface ContractData {
     estado: string | null;
     cep: string | null;
   } | null;
+}
+function ContractPdfEmbed({ content, code, companyName }: { content: string; code: string; companyName: string }) {
+  const pdfUrl = useMemo(() => {
+    if (!content) return null;
+    const blob = generateContractPdf({ content, code, companyName });
+    return URL.createObjectURL(blob);
+  }, [content, code, companyName]);
+
+  useEffect(() => {
+    return () => { if (pdfUrl) URL.revokeObjectURL(pdfUrl); };
+  }, [pdfUrl]);
+
+  if (!pdfUrl) return <p className="text-sm text-muted-foreground">Conteúdo não disponível</p>;
+
+  return <iframe src={pdfUrl} className="w-full h-[400px] rounded-md border" title="Contrato PDF" />;
 }
 
 export default function AssinarContrato() {
@@ -246,9 +261,7 @@ export default function AssinarContrato() {
 
         <Card className="p-5">
           <h2 className="font-semibold text-foreground mb-3">Conteúdo do Contrato</h2>
-          <ScrollArea className="max-h-[400px] border rounded-md p-4 bg-muted/30">
-            <pre className="whitespace-pre-wrap text-sm leading-relaxed font-sans text-foreground">{contract.contract_content || "Conteúdo não disponível"}</pre>
-          </ScrollArea>
+          <ContractPdfEmbed content={contract.contract_content || ""} code={contract.code} companyName={company?.razao_social || ""} />
         </Card>
 
         <Card className="p-5 space-y-4">
