@@ -707,8 +707,6 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                 <LeadCadastroTab lead={lead} onUpdate={onUpdate} />
               </TabsContent>
             )}
-              <LeadSimulacaoTab lead={lead} addActivity={addActivity} />
-            </TabsContent>
           </Tabs>
         </div>
       </div>
