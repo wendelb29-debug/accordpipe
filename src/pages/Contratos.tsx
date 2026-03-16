@@ -254,56 +254,70 @@ export default function Contratos() {
 
       {/* View Contract Dialog */}
       <Dialog open={!!viewContract} onOpenChange={(open) => !open && setViewContract(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh]">
+        <DialogContent className="max-w-4xl max-h-[95vh]">
           <DialogHeader>
-            <DialogTitle>Contrato {viewContract?.code}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              Contrato {viewContract?.code}
+              {viewContract?.contract_content && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-auto gap-1"
+                  onClick={() => {
+                    if (!viewContract.contract_content) return;
+                    downloadContractPdf({ content: viewContract.contract_content, code: viewContract.code, companyName: viewContract.company?.razao_social || "" });
+                  }}
+                >
+                  <Download className="h-4 w-4" /> Baixar PDF
+                </Button>
+              )}
+            </DialogTitle>
           </DialogHeader>
-          <ScrollArea className="max-h-[70vh] space-y-4">
-            <pre className="whitespace-pre-wrap text-sm leading-relaxed font-sans p-4">{viewContract?.contract_content || "Conteúdo não disponível"}</pre>
+          {viewContract?.contract_content ? (
+            <ContractPdfViewer content={viewContract.contract_content} code={viewContract.code} companyName={viewContract.company?.razao_social || ""} />
+          ) : (
+            <p className="text-muted-foreground p-4">Conteúdo não disponível</p>
+          )}
 
-            {viewContract?.signature_status === "signed" && (
-              <>
-                <Separator className="my-4" />
-                <div className="p-4 space-y-4">
-                  <h3 className="font-semibold text-foreground flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-primary" />
-                    Dados da Assinatura
-                  </h3>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <Card className="p-4 space-y-2">
-                      <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                        <User className="h-4 w-4 text-primary" /> Signatário
-                      </div>
-                      <p className="text-sm text-muted-foreground">{viewContract.signer_name || viewContract.company?.responsavel || "-"}</p>
-                      <p className="text-sm font-mono text-muted-foreground">{viewContract.signer_document || viewContract.company?.cnpj || "-"}</p>
-                      {viewContract.signed_at && (
-                        <p className="text-xs text-muted-foreground">Assinado em: {new Date(viewContract.signed_at).toLocaleString("pt-BR")}</p>
-                      )}
-                    </Card>
-                    <Card className="p-4 space-y-2">
-                      <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                        <MapPin className="h-4 w-4 text-primary" /> Localização
-                      </div>
-                      <p className="text-sm text-muted-foreground">{viewContract.signature_address || "-"}</p>
-                      {viewContract.signature_latitude && viewContract.signature_longitude && (
-                        <p className="text-xs font-mono text-muted-foreground">
-                          ({viewContract.signature_latitude.toFixed(6)}, {viewContract.signature_longitude.toFixed(6)})
-                        </p>
-                      )}
-                    </Card>
+          {viewContract?.signature_status === "signed" && (
+            <div className="border-t pt-4 space-y-4">
+              <h3 className="font-semibold text-foreground flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+                Dados da Assinatura
+              </h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Card className="p-4 space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <User className="h-4 w-4 text-primary" /> Signatário
                   </div>
-                  {viewContract.signature_photo_url && (
-                    <Card className="p-4 space-y-2">
-                      <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                        <Camera className="h-4 w-4 text-primary" /> Foto de Assinatura
-                      </div>
-                      <img src={viewContract.signature_photo_url} alt="Foto de assinatura" className="max-w-xs rounded-lg border" />
-                    </Card>
+                  <p className="text-sm text-muted-foreground">{viewContract.signer_name || viewContract.company?.responsavel || "-"}</p>
+                  <p className="text-sm font-mono text-muted-foreground">{viewContract.signer_document || viewContract.company?.cnpj || "-"}</p>
+                  {viewContract.signed_at && (
+                    <p className="text-xs text-muted-foreground">Assinado em: {new Date(viewContract.signed_at).toLocaleString("pt-BR")}</p>
                   )}
-                </div>
-              </>
-            )}
-          </ScrollArea>
+                </Card>
+                <Card className="p-4 space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <MapPin className="h-4 w-4 text-primary" /> Localização
+                  </div>
+                  <p className="text-sm text-muted-foreground">{viewContract.signature_address || "-"}</p>
+                  {viewContract.signature_latitude && viewContract.signature_longitude && (
+                    <p className="text-xs font-mono text-muted-foreground">
+                      ({viewContract.signature_latitude.toFixed(6)}, {viewContract.signature_longitude.toFixed(6)})
+                    </p>
+                  )}
+                </Card>
+              </div>
+              {viewContract.signature_photo_url && (
+                <Card className="p-4 space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <Camera className="h-4 w-4 text-primary" /> Foto de Assinatura
+                  </div>
+                  <img src={viewContract.signature_photo_url} alt="Foto de assinatura" className="max-w-xs rounded-lg border" />
+                </Card>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
