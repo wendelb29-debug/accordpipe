@@ -262,13 +262,13 @@ export default function Cadastrados() {
                 </h3>
                 <Card>
                   <CardContent className="p-4 space-y-0.5">
-                    <InfoRow label="Nome completo" value={selectedReg.nome_completo} />
-                    <InfoRow label="CPF" value={selectedReg.cpf} />
-                    <InfoRow label="RG" value={selectedReg.rg} />
-                    <InfoRow label="Data de nascimento" value={selectedReg.data_nascimento ? new Date(selectedReg.data_nascimento).toLocaleDateString("pt-BR") : ""} />
-                    <InfoRow label="E-mail" value={selectedReg.email} />
-                    <InfoRow label="Nome do pai" value={selectedReg.nome_pai} />
-                    <InfoRow label="Nome da mãe" value={selectedReg.nome_mae} />
+                    <InfoRow label="Nome completo" value={selectedReg.nome_completo} field="nome_completo" />
+                    <InfoRow label="CPF" value={selectedReg.cpf} field="cpf" />
+                    <InfoRow label="RG" value={selectedReg.rg} field="rg" />
+                    <InfoRow label="Data de nascimento" value={selectedReg.data_nascimento ? new Date(selectedReg.data_nascimento).toLocaleDateString("pt-BR") : ""} field="data_nascimento" />
+                    <InfoRow label="E-mail" value={selectedReg.email} field="email" />
+                    <InfoRow label="Nome do pai" value={selectedReg.nome_pai} field="nome_pai" />
+                    <InfoRow label="Nome da mãe" value={selectedReg.nome_mae} field="nome_mae" />
                   </CardContent>
                 </Card>
               </div>
