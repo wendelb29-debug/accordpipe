@@ -322,33 +322,6 @@ export default function AssinarContrato() {
           <ContractPdfEmbed content={contract.contract_content || ""} code={contract.code} companyName={company?.razao_social || ""} />
         </Card>
 
-        {/* Signer Info */}
-        <Card className="p-5 space-y-3">
-          <div className="flex items-center gap-2 text-foreground font-semibold">
-            <User className="h-5 w-5 text-primary" />
-            Dados do Signatário ({roleLabels[signerRole]})
-          </div>
-          <div className="grid gap-3">
-            <div className="grid gap-1">
-              <label className="text-sm text-muted-foreground">Nome Completo *</label>
-              <input
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                value={signerNameInput}
-                onChange={(e) => setSignerNameInput(e.target.value)}
-                placeholder="Nome completo do signatário"
-              />
-            </div>
-            <div className="grid gap-1">
-              <label className="text-sm text-muted-foreground">CPF / CNPJ</label>
-              <input
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                value={signerDocInput}
-                onChange={(e) => setSignerDocInput(e.target.value)}
-                placeholder="Documento do signatário"
-              />
-            </div>
-          </div>
-        </Card>
 
         <Card className="p-5 space-y-3">
           <div className="flex items-center gap-2 text-foreground font-semibold">
