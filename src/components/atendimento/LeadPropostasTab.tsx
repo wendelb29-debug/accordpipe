@@ -725,7 +725,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
           <Button
             size="sm"
             className="text-xs gap-1.5"
-            disabled={!selectedSignProposal || sendingToSign || !lead.company_id}
+            disabled={!selectedSignProposal || sendingToSign}
             onClick={async () => {
               const proposal = proposals.find(p => p.id === selectedSignProposal);
               if (proposal) {
