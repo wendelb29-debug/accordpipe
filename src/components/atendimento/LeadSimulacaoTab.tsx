@@ -475,6 +475,9 @@ export function LeadSimulacaoTab({ lead, addActivity }: LeadSimulacaoTabProps) {
                     <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setViewingSim(sim)}>
                       <Eye className="h-3 w-3" />
                     </Button>
+                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleDownloadProposalPdf(sim)} title="Baixar Proposta PDF">
+                      <Download className="h-3 w-3" />
+                    </Button>
                     <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleEditSim(sim, i)}>
                       <Edit className="h-3 w-3" />
                     </Button>
