@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import orbitLogo from "@/assets/orbit-logo.png";
+import orbitLogo from "@/assets/orbit-logo-new.png";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
 import { BenefitsSection } from "@/components/landing/BenefitsSection";
