@@ -62,16 +62,13 @@ export default function Cadastrados() {
       cidade: reg.cidade || "",
       estado: reg.estado || "",
     });
-    if (reg.crm_leads?.company_id) {
-      const { data } = await supabase
-        .from("contracts")
-        .select("*")
-        .eq("company_id", reg.crm_leads.company_id)
-        .order("created_at", { ascending: false });
-      setContracts(data || []);
-    } else {
-      setContracts([]);
-    }
+    // Fetch client contracts from new table
+    const { data: clientContracts } = await supabase
+      .from("client_contracts")
+      .select("*")
+      .eq("registration_id", reg.id)
+      .order("created_at", { ascending: false });
+    setContracts(clientContracts || []);
   };
 
   const handleSaveEdit = async () => {
