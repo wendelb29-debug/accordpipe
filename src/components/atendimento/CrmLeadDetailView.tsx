@@ -488,6 +488,9 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               <TabsTrigger value="assinatura" className="text-xs gap-1.5">
                 <FileSignature className="h-3.5 w-3.5" /> Assinatura
               </TabsTrigger>
+              <TabsTrigger value="simulacao" className="text-xs gap-1.5">
+                <Calculator className="h-3.5 w-3.5" /> Simulação
+              </TabsTrigger>
             </TabsList>
 
             {/* Histórico - all activities */}
