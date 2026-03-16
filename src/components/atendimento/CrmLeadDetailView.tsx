@@ -5,7 +5,7 @@ import {
   MessageSquare, PhoneCall, FileText, Activity, Trash2, Send, Loader2,
   FileSignature, Eye, Download, Copy, Image as ImageIcon,
   FileSpreadsheet, Edit, MoreVertical, ThumbsUp, ThumbsDown,
-  Link2, CopyPlus
+  Link2, CopyPlus, ClipboardList
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadContractPdf } from "@/lib/generateContractPdf";
@@ -13,6 +13,7 @@ import { LeadAtividadesTab } from "./LeadAtividadesTab";
 import { LeadPropostasTab } from "./LeadPropostasTab";
 import { LeadContratosTab } from "./LeadContratosTab";
 import { LeadSimulacaoTab } from "./LeadSimulacaoTab";
+import { LeadCadastroTab } from "./LeadCadastroTab";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,8 +26,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { CrmLead, STAGES } from "@/hooks/useCrmLeads";
+import { CrmLead, STAGES, ADMIN_STAGES, ALL_STAGES } from "@/hooks/useCrmLeads";
 import { useCrmActivities } from "@/hooks/useCrmActivities";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 const formatCurrency = (v: number) =>
@@ -110,9 +112,11 @@ interface CrmLeadDetailViewProps {
   onUpdate: (id: string, updates: Partial<CrmLead>) => Promise<boolean>;
   onMoveStage: (id: string, stage: string) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
+  isAdminPipeline?: boolean;
 }
 
-export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelete }: CrmLeadDetailViewProps) {
+export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelete, isAdminPipeline }: CrmLeadDetailViewProps) {
+  const { role } = useAuth();
   const { activities, loading: activitiesLoading, addActivity, refetch: refetchActivities } = useCrmActivities(lead.id);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ ...lead });
@@ -133,7 +137,8 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     }
   }, [lead, editing]);
 
-  const currentStageIndex = STAGES.findIndex((s) => s.id === lead.stage);
+  const pipelineStages = isAdminPipeline ? ADMIN_STAGES : STAGES;
+  const currentStageIndex = pipelineStages.findIndex((s) => s.id === lead.stage);
 
   const getDaysInStage = () => {
     const entered = new Date(lead.stage_entered_at);
@@ -217,9 +222,43 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     if (saving) return;
     setSaving(true);
     try {
-      await onUpdate(lead.id, { lead_status: "won", stage: "contrato-fechado" } as any);
-      await addActivity({ type: "won", title: "Oportunidade ganha!", description: "Lead marcado como ganho." });
-      toast.success("🎉 Oportunidade marcada como ganha!");
+      // Transfer to admin pipeline (cadastro-pendente)
+      await onUpdate(lead.id, { lead_status: "won", stage: "cadastro-pendente", stage_entered_at: new Date().toISOString() } as any);
+      await addActivity({ type: "won", title: "Oportunidade ganha! Transferida para Cadastro.", description: "Lead marcado como ganho e transferido para o pipeline Administrativo." });
+      
+      // Create registration record
+      await supabase.from("crm_client_registrations" as any).insert({
+        lead_id: lead.id,
+        servidor_id: lead.servidor_id,
+        nome_completo: lead.contact_name || "",
+        email: lead.email || "",
+      } as any);
+
+      // Notify administrativo users
+      const { data: adminProfiles } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("company_id", lead.servidor_id)
+        .eq("is_active", true);
+      if (adminProfiles) {
+        for (const ap of adminProfiles) {
+          const { data: roleData } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", ap.user_id)
+            .maybeSingle();
+          if (roleData?.role === "administrativo" || roleData?.role === "admin") {
+            await supabase.rpc("create_notification", {
+              _user_id: ap.user_id,
+              _title: "Novo cadastro pendente",
+              _message: `A oportunidade "${lead.company_name}" foi marcada como ganha e aguarda cadastro.`,
+              _type: "cadastro_pendente",
+            });
+          }
+        }
+      }
+
+      toast.success("🎉 Oportunidade ganha! Transferida para cadastro.");
     } catch (error) {
       console.error("Error marking won:", error);
       toast.error("Erro ao marcar como ganho");
@@ -322,7 +361,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             <div>
               <h2 className="text-sm font-bold text-foreground">{lead.source} - {lead.contact_name || lead.company_name}</h2>
               <p className="text-xs text-muted-foreground">
-                Etapa atual: <strong>{STAGES.find((s) => s.id === lead.stage)?.title}</strong>
+                Etapa atual: <strong>{pipelineStages.find((s) => s.id === lead.stage)?.title || ALL_STAGES.find((s) => s.id === lead.stage)?.title}</strong>
                 {" · "}{getDaysInStage()} dia(s) nesta etapa
               </p>
             </div>
@@ -349,7 +388,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
         {/* Pipeline Progress Bar */}
         <div className="flex gap-0.5">
-          {STAGES.map((stage, i) => {
+          {pipelineStages.map((stage, i) => {
             const isActive = i === currentStageIndex;
             const isPast = i < currentStageIndex;
             return (
@@ -491,6 +530,11 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               <TabsTrigger value="simulacao" className="text-xs gap-1.5">
                 <Calculator className="h-3.5 w-3.5" /> Simulação
               </TabsTrigger>
+              {(isAdminPipeline || role === "administrativo" || role === "admin") && (
+                <TabsTrigger value="cadastro" className="text-xs gap-1.5">
+                  <ClipboardList className="h-3.5 w-3.5" /> Cadastro
+                </TabsTrigger>
+              )}
             </TabsList>
 
             {/* Histórico - all activities */}
@@ -690,6 +734,13 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             <TabsContent value="simulacao" className="flex-1 overflow-y-auto p-4 mt-0">
               <LeadSimulacaoTab lead={lead} addActivity={addActivity} />
             </TabsContent>
+
+            {/* Cadastro do Cliente */}
+            {(isAdminPipeline || role === "administrativo" || role === "admin") && (
+              <TabsContent value="cadastro" className="flex-1 overflow-y-auto p-4 mt-0">
+                <LeadCadastroTab lead={lead} onUpdate={onUpdate} />
+              </TabsContent>
+            )}
           </Tabs>
         </div>
       </div>
