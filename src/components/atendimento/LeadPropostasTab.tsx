@@ -491,13 +491,12 @@ ${meta.items ? `\nItens contratados:\n${meta.items.split("\n").filter(Boolean).m
   };
 
   const handlePreviewContract = async (proposal: any) => {
-    if (!lead.company_id) {
-      toast.error("Lead sem empresa vinculada.");
-      return;
+    // Fetch company data if available, otherwise use lead data
+    let company: any = null;
+    if (lead.company_id) {
+      const { data } = await supabase.from("companies").select("*").eq("id", lead.company_id).maybeSingle();
+      company = data;
     }
-    // Fetch company data to generate preview content
-    const { data: company } = await supabase.from("companies").select("*").eq("id", lead.company_id).maybeSingle();
-    if (!company) { toast.error("Empresa não encontrada"); return; }
 
     const clause = buildProposalClause(proposal);
     // Generate preview content (same logic as useContracts.generateContractContent but inline for preview)
