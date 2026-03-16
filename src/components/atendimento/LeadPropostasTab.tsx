@@ -597,6 +597,74 @@ ${company.cidade || "[LOCAL]"}, ${currentDate}`;
     return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
 
+  // ---- CONTRACT PREVIEW MODE ----
+  if (contractPreview) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <FileSignature className="h-4 w-4 text-primary" />
+            {generatedContractLink ? "Contrato Gerado" : "Visualizar Contrato"}
+          </h3>
+          <Button variant="ghost" size="sm" className="text-xs" onClick={() => { setContractPreview(null); setContractPreviewProposal(null); setGeneratedContractLink(null); }}>
+            Voltar
+          </Button>
+        </div>
+
+        <div className="rounded-lg border border-border bg-muted/20 p-4 max-h-[400px] overflow-y-auto">
+          <pre className="whitespace-pre-wrap text-xs leading-relaxed font-sans text-foreground">{contractPreview}</pre>
+        </div>
+
+        <div className="rounded-lg border border-border p-3 space-y-1">
+          <p className="text-xs font-semibold text-foreground">Dados do Cliente</p>
+          <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground">
+            <span>Nome: {registrationData?.nome_completo || lead.contact_name || "—"}</span>
+            <span>CPF: {registrationData?.cpf || "—"}</span>
+            <span>Empresa: {lead.company_name}</span>
+            <span>Telefone: {lead.phone || "—"}</span>
+          </div>
+        </div>
+
+        {!generatedContractLink ? (
+          <div className="flex justify-end gap-2">
+            <Button size="sm" variant="outline" className="text-xs gap-1.5" onClick={() => { setContractPreview(null); setContractPreviewProposal(null); }}>
+              <Edit className="h-3.5 w-3.5" /> Editar dados
+            </Button>
+            <Button size="sm" className="text-xs gap-1.5" onClick={handleConfirmAndGenerate} disabled={sendingToSign}>
+              {sendingToSign ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileSignature className="h-3.5 w-3.5" />}
+              Confirmar contrato
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+              <p className="text-xs font-semibold text-foreground mb-1">✅ Contrato gerado com sucesso!</p>
+              <p className="text-xs text-muted-foreground mb-2">Status: Contrato enviado para assinatura</p>
+              <div className="flex items-center gap-2 p-2 rounded bg-muted text-xs font-mono break-all">
+                {generatedContractLink}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" className="text-xs gap-1.5 flex-1" onClick={handleCopySignatureLink}>
+                <Copy className="h-3.5 w-3.5" /> Copiar link
+              </Button>
+              <Button size="sm" className="text-xs gap-1.5 flex-1 bg-green-600 hover:bg-green-700 text-white" onClick={handleSendWhatsApp}>
+                <MessageSquare className="h-3.5 w-3.5" /> Enviar via WhatsApp
+              </Button>
+            </div>
+            <Button size="sm" variant="outline" className="text-xs gap-1.5 w-full" onClick={() => {
+              if (contractPreview) {
+                downloadContractPdf({ content: contractPreview, code: "Contrato", companyName: lead.company_name });
+              }
+            }}>
+              <Download className="h-3.5 w-3.5" /> Baixar contrato em PDF
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // ---- SIGNATURE MODE: only show selection panel ----
   if (signatureMode) {
     const acceptedProposals = proposals.filter(p => (p.metadata as any)?.status === "aceita");
@@ -647,12 +715,11 @@ ${company.cidade || "[LOCAL]"}, ${currentDate}`;
               const proposal = proposals.find(p => p.id === selectedSignProposal);
               if (proposal) {
                 await handleSendToSignature(proposal);
-                setSelectedSignProposal(null);
               }
             }}
           >
-            {sendingToSign ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileSignature className="h-3.5 w-3.5" />}
-            Enviar para Assinatura
+            {sendingToSign ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
+            Visualizar contrato
           </Button>
         </div>
       </div>
