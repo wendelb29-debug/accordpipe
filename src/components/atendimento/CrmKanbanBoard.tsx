@@ -179,7 +179,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
       </div>
 
       {/* Kanban Columns */}
-      <div className="flex gap-3 p-4 h-[calc(100%-3.5rem)] overflow-x-auto">
+      <div className="flex gap-2 p-3 h-[calc(100%-3.5rem)] overflow-x-auto">
         {stageStats.map((stage) => {
           const Icon = stageIcons[stage.id] || Clock;
           const stageLeads = filteredLeads.filter((l) => l.stage === stage.id);
@@ -188,7 +188,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
             <div
               key={stage.id}
               className={cn(
-                "flex-shrink-0 w-72 bg-muted/40 rounded-lg flex flex-col",
+                "flex-shrink-0 w-56 bg-muted/40 rounded-lg flex flex-col",
                 dragOverStage === stage.id && "ring-2 ring-primary"
               )}
               onDragOver={(e) => { e.preventDefault(); setDragOverStage(stage.id); }}
@@ -215,7 +215,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
               </div>
 
               {/* Cards */}
-              <div className="flex-1 p-1.5 space-y-1.5 overflow-y-auto">
+              <div className="flex-1 p-1 space-y-1 overflow-y-auto">
                 {stageLeads.length === 0 && (
                   <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
                     <Icon className="h-8 w-8 mb-2 opacity-30" />
@@ -233,7 +233,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                       draggedLead?.id === lead.id && "opacity-50"
                     )}
                   >
-                    <CardContent className="p-2.5 space-y-1.5">
+                    <CardContent className="p-2 space-y-1">
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-1.5 min-w-0">
                           <GripVertical className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
