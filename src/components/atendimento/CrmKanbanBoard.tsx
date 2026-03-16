@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Clock, Users, MessageSquare, Phone, RefreshCw, FileSignature, GripVertical,
@@ -8,6 +8,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -51,6 +52,35 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const [detailLead, setDetailLead] = useState<CrmLead | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [formLinkOpen, setFormLinkOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string>("all");
+  const [teamMembers, setTeamMembers] = useState<{ user_id: string; name: string }[]>([]);
+
+  const isAdminOrMaster = profile?.is_master || false;
+
+  // Fetch team members for admin/master
+  useEffect(() => {
+    if (!isAdminOrMaster || !profile?.company_id) return;
+    const fetchTeam = async () => {
+      // Check if user has admin role
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", profile.user_id)
+        .maybeSingle();
+      
+      const hasAdminRole = roleData?.role === "admin" || roleData?.role === "ceo";
+      if (!profile.is_master && !hasAdminRole) return;
+
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, name")
+        .eq("company_id", profile.company_id)
+        .eq("is_active", true)
+        .order("name");
+      if (data) setTeamMembers(data);
+    };
+    fetchTeam();
+  }, [isAdminOrMaster, profile?.company_id, profile?.user_id, profile?.is_master]);
 
   const copyFormLink = async () => {
     let companyId = profile?.company_id;
@@ -76,6 +106,8 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   };
 
   const filteredLeads = leads.filter((l) => {
+    // Filter by selected collaborator
+    if (selectedUserId !== "all" && l.created_by_user_id !== selectedUserId) return false;
     if (!searchTerm) return true;
     const s = searchTerm.toLowerCase();
     return (
@@ -154,7 +186,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
       <div className="px-4 py-3 border-b bg-card flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <h2 className="text-sm font-semibold text-foreground">
-            {totalLeads} oportunidades
+            {filteredLeads.length} oportunidades
           </h2>
           <span className="text-xs text-muted-foreground">
             Total de P&S: <strong className="text-foreground">{formatCurrency(totalPS)}</strong>
@@ -164,6 +196,22 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          {(isAdminOrMaster || teamMembers.length > 0) && teamMembers.length > 0 && (
+            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+              <SelectTrigger className="h-8 w-48 text-xs">
+                <Users className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+                <SelectValue placeholder="Colaborador" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">Todos os colaboradores</SelectItem>
+                {teamMembers.map((m) => (
+                  <SelectItem key={m.user_id} value={m.user_id} className="text-xs">
+                    {m.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Button size="sm" variant="outline" onClick={() => setFormLinkOpen(true)} className="gap-1.5 text-xs">
             <Tag className="h-3.5 w-3.5" />
             Link + Tags
