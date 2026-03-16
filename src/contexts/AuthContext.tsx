@@ -185,7 +185,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     profile,
     role,
     loading,
-    isAdmin: role === "admin" || role === "ceo",
+    isAdmin: role === "admin" || role === "ceo" || role === "administrativo",
     isOperador: role === "operador",
     isLeitura: role === "leitura",
     isCeo: isCeo,

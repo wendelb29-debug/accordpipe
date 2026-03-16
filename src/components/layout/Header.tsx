@@ -15,11 +15,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { useTheme } from "next-themes";
 
-const roleLabels = {
+const roleLabels: Record<string, string> = {
   admin: "Administrador",
   operador: "Operador",
   leitura: "Leitura",
   ceo: "CEO",
+  administrativo: "Administrativo",
+  financeiro: "Financeiro",
+  comercial: "Comercial",
 };
 
 export function Header() {
