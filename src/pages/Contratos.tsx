@@ -588,11 +588,9 @@ export default function Contratos() {
                               <FileSignature className="h-4 w-4" />
                               Assinar
                             </Button>
-                            {contract.signing_token && (
-                              <Button variant="ghost" size="icon" title="Copiar link de assinatura" onClick={() => handleCopyLink(contract)}>
-                                <Copy className="h-4 w-4" />
-                              </Button>
-                            )}
+                            <Button variant="ghost" size="icon" title="Links de assinatura" onClick={() => setLinksDialogContract(contract)}>
+                              <Link2 className="h-4 w-4" />
+                            </Button>
                           </>
                         )}
                       </div>
