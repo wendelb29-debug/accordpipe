@@ -3,9 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Users, UserCheck, Clock, FileWarning } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
+import { Search, Users, UserCheck, Clock, FileWarning, Eye, Paperclip, FileSignature, Download, User, UsersRound } from "lucide-react";
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   pendente: { label: "Cadastro Pendente", color: "bg-yellow-100 text-yellow-800 border-yellow-200" },
@@ -19,6 +23,8 @@ export default function Cadastrados() {
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [selectedReg, setSelectedReg] = useState<any | null>(null);
+  const [contracts, setContracts] = useState<any[]>([]);
 
   useEffect(() => {
     fetchRegistrations();
@@ -34,6 +40,21 @@ export default function Cadastrados() {
       .order("created_at", { ascending: false });
     setRegistrations(data || []);
     setLoading(false);
+  };
+
+  const openDetail = async (reg: any) => {
+    setSelectedReg(reg);
+    // Fetch contracts linked to the lead's company
+    if (reg.crm_leads?.company_id) {
+      const { data } = await supabase
+        .from("contracts")
+        .select("*")
+        .eq("company_id", reg.crm_leads.company_id)
+        .order("created_at", { ascending: false });
+      setContracts(data || []);
+    } else {
+      setContracts([]);
+    }
   };
 
   const filtered = registrations.filter((r) => {
@@ -53,6 +74,13 @@ export default function Cadastrados() {
     doc_pendente: registrations.filter((r) => r.status === "doc_pendente").length,
   };
 
+  const InfoRow = ({ label, value }: { label: string; value: string }) => (
+    <div className="grid grid-cols-3 gap-2 py-1.5">
+      <span className="text-sm font-medium text-muted-foreground">{label}</span>
+      <span className="text-sm text-foreground col-span-2">{value || "—"}</span>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <div>
@@ -63,46 +91,26 @@ export default function Cadastrados() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardContent className="flex items-center gap-3 p-4">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Users className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{counts.total}</p>
-              <p className="text-xs text-muted-foreground">Total</p>
-            </div>
+            <div className="p-2 rounded-lg bg-primary/10"><Users className="h-5 w-5 text-primary" /></div>
+            <div><p className="text-2xl font-bold text-foreground">{counts.total}</p><p className="text-xs text-muted-foreground">Total</p></div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 p-4">
-            <div className="p-2 rounded-lg bg-green-500/10">
-              <UserCheck className="h-5 w-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{counts.concluido}</p>
-              <p className="text-xs text-muted-foreground">Concluídos</p>
-            </div>
+            <div className="p-2 rounded-lg bg-green-500/10"><UserCheck className="h-5 w-5 text-green-600" /></div>
+            <div><p className="text-2xl font-bold text-foreground">{counts.concluido}</p><p className="text-xs text-muted-foreground">Concluídos</p></div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 p-4">
-            <div className="p-2 rounded-lg bg-yellow-500/10">
-              <Clock className="h-5 w-5 text-yellow-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{counts.pendente}</p>
-              <p className="text-xs text-muted-foreground">Pendentes</p>
-            </div>
+            <div className="p-2 rounded-lg bg-yellow-500/10"><Clock className="h-5 w-5 text-yellow-600" /></div>
+            <div><p className="text-2xl font-bold text-foreground">{counts.pendente}</p><p className="text-xs text-muted-foreground">Pendentes</p></div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 p-4">
-            <div className="p-2 rounded-lg bg-red-500/10">
-              <FileWarning className="h-5 w-5 text-red-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{counts.doc_pendente}</p>
-              <p className="text-xs text-muted-foreground">Doc. Pendente</p>
-            </div>
+            <div className="p-2 rounded-lg bg-red-500/10"><FileWarning className="h-5 w-5 text-red-600" /></div>
+            <div><p className="text-2xl font-bold text-foreground">{counts.doc_pendente}</p><p className="text-xs text-muted-foreground">Doc. Pendente</p></div>
           </CardContent>
         </Card>
       </div>
@@ -113,12 +121,7 @@ export default function Cadastrados() {
             <CardTitle className="text-lg">Clientes Cadastrados</CardTitle>
             <div className="relative w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nome, CPF, email..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
+              <Input placeholder="Buscar por nome, CPF, email..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
             </div>
           </div>
         </CardHeader>
@@ -139,6 +142,7 @@ export default function Cadastrados() {
                     <TableHead>Dependentes</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Data</TableHead>
+                    <TableHead className="text-center">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -151,14 +155,13 @@ export default function Cadastrados() {
                         <TableCell>{r.cpf || "—"}</TableCell>
                         <TableCell>{r.email || "—"}</TableCell>
                         <TableCell>{r.crm_leads?.company_name || "—"}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{depCount}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={st.color} variant="outline">{st.label}</Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          {new Date(r.created_at).toLocaleDateString("pt-BR")}
+                        <TableCell><Badge variant="outline">{depCount}</Badge></TableCell>
+                        <TableCell><Badge className={st.color} variant="outline">{st.label}</Badge></TableCell>
+                        <TableCell className="text-muted-foreground text-sm">{new Date(r.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                        <TableCell className="text-center">
+                          <Button size="icon" variant="ghost" onClick={() => openDetail(r)} title="Ver cadastro completo">
+                            <Eye className="h-4 w-4 text-primary" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     );
@@ -169,6 +172,155 @@ export default function Cadastrados() {
           )}
         </CardContent>
       </Card>
+
+      {/* Detail Dialog */}
+      <Dialog open={!!selectedReg} onOpenChange={(open) => !open && setSelectedReg(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Cadastro Completo
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedReg && (
+            <div className="space-y-6">
+              {/* Status */}
+              <div className="flex items-center gap-2">
+                <Badge className={(statusLabels[selectedReg.status] || statusLabels.pendente).color} variant="outline">
+                  {(statusLabels[selectedReg.status] || statusLabels.pendente).label}
+                </Badge>
+                <span className="text-xs text-muted-foreground">
+                  Empresa: {selectedReg.crm_leads?.company_name || "—"}
+                </span>
+              </div>
+
+              {/* Dados do Titular */}
+              <div>
+                <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                  <User className="h-4 w-4" /> Dados do Titular
+                </h3>
+                <Card>
+                  <CardContent className="p-4 space-y-0.5">
+                    <InfoRow label="Nome completo" value={selectedReg.nome_completo} />
+                    <InfoRow label="CPF" value={selectedReg.cpf} />
+                    <InfoRow label="RG" value={selectedReg.rg} />
+                    <InfoRow label="Data de nascimento" value={selectedReg.data_nascimento ? new Date(selectedReg.data_nascimento).toLocaleDateString("pt-BR") : ""} />
+                    <InfoRow label="E-mail" value={selectedReg.email} />
+                    <InfoRow label="Nome do pai" value={selectedReg.nome_pai} />
+                    <InfoRow label="Nome da mãe" value={selectedReg.nome_mae} />
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Endereço */}
+              <div>
+                <h3 className="text-sm font-semibold text-foreground mb-2">Endereço</h3>
+                <Card>
+                  <CardContent className="p-4 space-y-0.5">
+                    <InfoRow label="CEP" value={selectedReg.cep} />
+                    <InfoRow label="Endereço" value={selectedReg.endereco} />
+                    <InfoRow label="Número" value={selectedReg.numero} />
+                    <InfoRow label="Bairro" value={selectedReg.bairro} />
+                    <InfoRow label="Cidade" value={selectedReg.cidade} />
+                    <InfoRow label="Estado" value={selectedReg.estado} />
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Documento anexado */}
+              <div>
+                <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                  <Paperclip className="h-4 w-4" /> Documento Anexado
+                </h3>
+                {selectedReg.comprovante_url ? (
+                  <Card>
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Paperclip className="h-5 w-5 text-primary" />
+                        <div>
+                          <p className="text-sm font-medium text-foreground">Comprovante de endereço</p>
+                          <p className="text-xs text-muted-foreground">Documento disponível para download</p>
+                        </div>
+                      </div>
+                      <Button size="sm" variant="outline" asChild className="gap-1.5">
+                        <a href={selectedReg.comprovante_url} target="_blank" rel="noreferrer">
+                          <Download className="h-4 w-4" /> Baixar
+                        </a>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Nenhum documento anexado.</p>
+                )}
+              </div>
+
+              {/* Dependentes */}
+              <div>
+                <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                  <UsersRound className="h-4 w-4" /> Dependentes ({selectedReg.crm_client_dependents?.length || 0})
+                </h3>
+                {selectedReg.crm_client_dependents?.length > 0 ? (
+                  <div className="space-y-2">
+                    {selectedReg.crm_client_dependents.map((dep: any, i: number) => (
+                      <Card key={dep.id || i}>
+                        <CardContent className="p-3 space-y-0.5">
+                          <InfoRow label="Nome" value={dep.nome_completo} />
+                          <InfoRow label="Nascimento" value={dep.data_nascimento ? new Date(dep.data_nascimento).toLocaleDateString("pt-BR") : ""} />
+                          <InfoRow label="Parentesco" value={dep.grau_parentesco} />
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Nenhum dependente cadastrado.</p>
+                )}
+              </div>
+
+              {/* Contratos */}
+              <div>
+                <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                  <FileSignature className="h-4 w-4" /> Contratos
+                </h3>
+                {contracts.length > 0 ? (
+                  <div className="space-y-2">
+                    {contracts.map((c) => (
+                      <Card key={c.id}>
+                        <CardContent className="p-3 flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{c.code}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {c.signature_status === "signed" ? "✅ Assinado" : "⏳ Pendente"} · {new Date(c.created_at).toLocaleDateString("pt-BR")}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {c.signature_photo_url && (
+                              <Button size="sm" variant="ghost" asChild title="Ver assinatura">
+                                <a href={c.signature_photo_url} target="_blank" rel="noreferrer">
+                                  <Eye className="h-4 w-4" />
+                                </a>
+                              </Button>
+                            )}
+                            {c.signature_link && (
+                              <Button size="sm" variant="outline" asChild className="gap-1">
+                                <a href={c.signature_link} target="_blank" rel="noreferrer">
+                                  <FileSignature className="h-4 w-4" /> Contrato
+                                </a>
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Nenhum contrato vinculado.</p>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
