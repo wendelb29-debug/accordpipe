@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calculator, Users, UserPlus, Copy, FileText, MessageSquare, Loader2, Trash2, Eye, Edit } from "lucide-react";
+import { Calculator, Users, UserPlus, Copy, FileText, MessageSquare, Loader2, Trash2, Eye, Edit, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { CrmLead } from "@/hooks/useCrmLeads";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SimulationResult {
   planType: string;
@@ -106,13 +107,72 @@ export function LeadSimulacaoTab({ lead, addActivity }: LeadSimulacaoTabProps) {
     setSaving(true);
     try {
       const planLabel = result.planType === "individual" ? "Plano Individual" : "Plano Familiar";
+
+      // 1. Save simulation activity
       await addActivity({
         type: "simulation",
         title: `Simulação - ${planLabel} - ${formatCurrency(result.valorMensal)}/mês`,
         description: `Cliente: ${result.clientName}\nPlano: ${planLabel}\nTotal de vidas: ${result.totalVidas}\nValor mensal: ${formatCurrency(result.valorMensal)}`,
         metadata: { simulation: result },
       });
-      toast.success("Simulação salva no histórico!");
+
+      // 2. Automatically create a proposal from the simulation
+      const itemsText = [
+        `Plano: ${planLabel}`,
+        `Titular: 1 pessoa`,
+        result.parentesco > 0 ? `Dependentes com parentesco: ${result.parentesco} pessoa(s) × R$ 9,40` : null,
+        result.semParentesco > 0 ? `Dependentes sem parentesco: ${result.semParentesco} pessoa(s) × R$ 11,40` : null,
+        `Total de vidas: ${result.totalVidas}`,
+      ].filter(Boolean).join("\n");
+
+      // Fetch servidor data for proposal snapshot
+      let servidorSnapshot = null;
+      if (lead.servidor_id) {
+        const { data } = await supabase
+          .from("companies")
+          .select("id, razao_social, nome_fantasia, cnpj, responsavel, email, telefone, endereco, numero, bairro, cidade, estado, cep")
+          .eq("id", lead.servidor_id)
+          .maybeSingle();
+        if (data) servidorSnapshot = data;
+      }
+
+      let companySnapshot = null;
+      if (lead.company_id) {
+        const { data } = await supabase
+          .from("companies")
+          .select("id, razao_social, nome_fantasia, cnpj, responsavel, email, telefone, endereco, numero, bairro, cidade, estado, cep")
+          .eq("id", lead.company_id)
+          .maybeSingle();
+        if (data) companySnapshot = data;
+      }
+
+      const validUntil = new Date();
+      validUntil.setDate(validUntil.getDate() + 15);
+
+      await addActivity({
+        type: "proposal",
+        title: `Proposta: ${planLabel} - ${result.clientName}`,
+        description: `Proposta comercial gerada a partir da simulação.\nValor mensal: ${formatCurrency(result.valorMensal)}\nCusto por pessoa: ${formatCurrency(result.custoPorPessoa)}`,
+        metadata: {
+          sigla: `SIM-${Date.now().toString(36).toUpperCase().slice(-4)}`,
+          introduction: `Proposta comercial de plano funerário ${planLabel.toLowerCase()} para ${result.clientName}, contemplando ${result.totalVidas} vida(s).`,
+          items: itemsText,
+          value_ps: 0,
+          value_mrr: result.valorMensal,
+          validity_days: 15,
+          valid_until: validUntil.toISOString(),
+          status: "enviada",
+          total_items: result.totalVidas,
+          payment_method: "boleto",
+          version: "1",
+          oc_number: "",
+          servidor_snapshot: servidorSnapshot,
+          company_snapshot: companySnapshot,
+          simulation: result,
+        },
+      });
+
+      toast.success("Simulação salva e proposta comercial gerada!");
       setResult(null);
       setParentesco(0);
       setSemParentesco(0);
@@ -122,6 +182,114 @@ export function LeadSimulacaoTab({ lead, addActivity }: LeadSimulacaoTabProps) {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDownloadProposalPdf = async (sim: SimulationResult) => {
+    const planLabel = sim.planType === "individual" ? "Plano Individual" : "Plano Familiar";
+    const { default: jsPDF } = await import("jspdf");
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const mL = 15;
+    const mR = 15;
+    const usable = pageWidth - mL - mR;
+    let y = 20;
+
+    // Header
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(16);
+    pdf.text("PROPOSTA COMERCIAL", pageWidth / 2, y, { align: "center" });
+    y += 10;
+
+    pdf.setDrawColor(200);
+    pdf.setLineWidth(0.5);
+    pdf.line(mL, y, pageWidth - mR, y);
+    y += 8;
+
+    // Client info
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(11);
+    pdf.text("Cliente:", mL, y);
+    pdf.setFont("helvetica", "normal");
+    pdf.text(sim.clientName, mL + 20, y);
+    y += 6;
+
+    pdf.setFont("helvetica", "bold");
+    pdf.text("Data:", mL, y);
+    pdf.setFont("helvetica", "normal");
+    pdf.text(new Date(sim.createdAt).toLocaleDateString("pt-BR"), mL + 20, y);
+    y += 10;
+
+    // Plan details
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(12);
+    pdf.text("Detalhes do Plano", mL, y);
+    y += 7;
+
+    pdf.setDrawColor(220);
+    pdf.setLineWidth(0.3);
+
+    const rows = [
+      ["Tipo de Plano", planLabel],
+      ["Valor base", sim.planType === "individual" ? "R$ 42,90" : "R$ 80,90"],
+      ["Dependentes com parentesco", `${sim.parentesco} pessoa(s) × R$ 9,40`],
+      ["Dependentes sem parentesco", `${sim.semParentesco} pessoa(s) × R$ 11,40`],
+      ["Total de vidas", `${sim.totalVidas}`],
+    ];
+
+    pdf.setFontSize(10);
+    for (const [label, value] of rows) {
+      pdf.setFont("helvetica", "normal");
+      pdf.text(label, mL, y);
+      pdf.text(value, pageWidth - mR, y, { align: "right" });
+      y += 6;
+    }
+
+    y += 4;
+    pdf.setDrawColor(200);
+    pdf.setLineWidth(0.5);
+    pdf.line(mL, y, pageWidth - mR, y);
+    y += 8;
+
+    // Total
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(14);
+    pdf.text("Valor Mensal Total:", mL, y);
+    pdf.text(formatCurrency(sim.valorMensal), pageWidth - mR, y, { align: "right" });
+    y += 7;
+
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(10);
+    pdf.text(`Custo por pessoa: ${formatCurrency(sim.custoPorPessoa)}`, mL, y);
+    y += 12;
+
+    // Conditions
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(11);
+    pdf.text("Condições:", mL, y);
+    y += 6;
+
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(9);
+    const conditions = [
+      "• Validade desta proposta: 15 dias",
+      "• Forma de pagamento: Boleto bancário",
+      sim.planType === "familiar" ? "• O Plano Familiar inclui até 5 pessoas com parentesco no valor base" : null,
+      "• Valores sujeitos a reajuste anual conforme política da empresa",
+    ].filter(Boolean) as string[];
+
+    for (const cond of conditions) {
+      pdf.text(cond, mL, y);
+      y += 5;
+    }
+
+    // Footer
+    pdf.setFont("helvetica", "italic");
+    pdf.setFontSize(7);
+    pdf.setTextColor(150);
+    pdf.text("Proposta gerada automaticamente", pageWidth / 2, 287, { align: "center" });
+
+    pdf.save(`Proposta_${sim.clientName.replace(/\s+/g, "_")}_${planLabel.replace(/\s+/g, "_")}.pdf`);
+    toast.success("Proposta PDF baixada!");
   };
 
   const handleWhatsAppText = (sim: SimulationResult) => {
@@ -306,6 +474,9 @@ export function LeadSimulacaoTab({ lead, addActivity }: LeadSimulacaoTabProps) {
                   <div className="flex gap-1">
                     <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setViewingSim(sim)}>
                       <Eye className="h-3 w-3" />
+                    </Button>
+                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleDownloadProposalPdf(sim)} title="Baixar Proposta PDF">
+                      <Download className="h-3 w-3" />
                     </Button>
                     <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleEditSim(sim, i)}>
                       <Edit className="h-3 w-3" />
