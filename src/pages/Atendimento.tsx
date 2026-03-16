@@ -30,6 +30,15 @@ export default function Atendimento() {
     );
   }
 
+  // Only commercial (fallback for users with no specific access)
+  if (!canSeeAdmin) {
+    return (
+      <div className="h-[calc(100vh-4rem)] overflow-hidden flex flex-col">
+        <CrmKanbanBoard searchTerm={crmSearch} />
+      </div>
+    );
+  }
+
   // Both pipelines accessible
   return (
     <div className="h-[calc(100vh-4rem)] overflow-hidden flex flex-col">
