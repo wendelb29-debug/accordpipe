@@ -491,27 +491,37 @@ ${meta.items ? `\nItens contratados:\n${meta.items.split("\n").filter(Boolean).m
   };
 
   const handlePreviewContract = async (proposal: any) => {
-    if (!lead.company_id) {
-      toast.error("Lead sem empresa vinculada.");
-      return;
+    // Fetch company data if available, otherwise use lead data
+    let company: any = null;
+    if (lead.company_id) {
+      const { data } = await supabase.from("companies").select("*").eq("id", lead.company_id).maybeSingle();
+      company = data;
     }
-    // Fetch company data to generate preview content
-    const { data: company } = await supabase.from("companies").select("*").eq("id", lead.company_id).maybeSingle();
-    if (!company) { toast.error("Empresa não encontrada"); return; }
 
     const clause = buildProposalClause(proposal);
-    // Generate preview content (same logic as useContracts.generateContractContent but inline for preview)
-    const addressParts = [company.endereco, company.numero && `nº ${company.numero}`, company.complemento, company.bairro, company.cidade && company.estado && `${company.cidade}/${company.estado}`, company.cep && `CEP: ${company.cep}`].filter(Boolean).join(", ");
     const matrizNome = "Save Car Brasil Tecnologia e Serviços Ltda";
     const currentDate = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
 
-    let content = `CONTRATO DE PARCERIA COMERCIAL – REVENDEDOR AUTORIZADO
+    let content: string;
+    if (company) {
+      const addressParts = [company.endereco, company.numero && `nº ${company.numero}`, company.complemento, company.bairro, company.cidade && company.estado && `${company.cidade}/${company.estado}`, company.cep && `CEP: ${company.cep}`].filter(Boolean).join(", ");
+      content = `CONTRATO DE PARCERIA COMERCIAL – REVENDEDOR AUTORIZADO
 
 Pelo presente instrumento particular, de um lado ${matrizNome}, doravante denominada MATRIZ; e, de outro lado, ${company.razao_social}${company.nome_fantasia ? `, nome fantasia ${company.nome_fantasia},` : ""} inscrito no CNPJ sob nº ${company.cnpj}, com endereço em ${addressParts || "[ENDEREÇO NÃO INFORMADO]"}, neste ato representada por ${company.responsavel || "[RESPONSÁVEL]"}, doravante denominado REVENDEDOR AUTORIZADO.
 
 ${clause}
 
 ${company.cidade || "[LOCAL]"}, ${currentDate}`;
+    } else {
+      const clientName = registrationData?.nome_completo || lead.contact_name || lead.company_name;
+      content = `CONTRATO DE PRESTAÇÃO DE SERVIÇOS
+
+Pelo presente instrumento particular, de um lado ${matrizNome}, doravante denominada CONTRATADA; e, de outro lado, ${clientName}, doravante denominado(a) CONTRATANTE.
+
+${clause}
+
+${lead.cidade || "[LOCAL]"}, ${currentDate}`;
+    }
 
     setContractPreview(content);
     setContractPreviewProposal(proposal);
@@ -519,14 +529,16 @@ ${company.cidade || "[LOCAL]"}, ${currentDate}`;
   };
 
   const handleConfirmAndGenerate = async () => {
-    if (!contractPreviewProposal || !lead.company_id) return;
+    if (!contractPreviewProposal) return;
+    const companyId = lead.company_id || lead.servidor_id;
+    if (!companyId) { toast.error("Nenhuma empresa vinculada ao lead"); return; }
     setSendingToSign(true);
     try {
       const clause = buildProposalClause(contractPreviewProposal);
       const meta = (contractPreviewProposal.metadata as any) || {};
 
       const result = await createContract(
-        lead.company_id,
+        companyId,
         "",
         "Save Car Brasil Tecnologia e Serviços Ltda",
         "manual",
@@ -539,7 +551,7 @@ ${company.cidade || "[LOCAL]"}, ${currentDate}`;
         const { data: latestContract } = await supabase
           .from("contracts")
           .select("signature_link")
-          .eq("company_id", lead.company_id)
+          .eq("company_id", companyId)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -667,7 +679,10 @@ ${company.cidade || "[LOCAL]"}, ${currentDate}`;
 
   // ---- SIGNATURE MODE: only show selection panel ----
   if (signatureMode) {
-    const acceptedProposals = proposals.filter(p => (p.metadata as any)?.status === "aceita");
+    const availableProposals = proposals.filter(p => {
+      const st = (p.metadata as any)?.status;
+      return st !== "cancelada" && st !== "declinada";
+    });
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-2">
@@ -675,12 +690,12 @@ ${company.cidade || "[LOCAL]"}, ${currentDate}`;
           <h3 className="text-sm font-semibold text-foreground">Enviar para Assinatura</h3>
         </div>
         <p className="text-xs text-muted-foreground">
-          Selecione a proposta aceita que deseja converter em contrato para assinatura.
+          Selecione a proposta que deseja converter em contrato para assinatura.
         </p>
         <div className="space-y-2">
-          {acceptedProposals.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-4 text-center">Nenhuma proposta aceita disponível. Aprove uma proposta na aba Propostas primeiro.</p>
-          ) : acceptedProposals.map(p => {
+          {availableProposals.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-4 text-center">Nenhuma proposta disponível. Crie uma proposta na aba Propostas primeiro.</p>
+          ) : availableProposals.map(p => {
             const meta = (p.metadata as any) || {};
             const isSelected = selectedSignProposal === p.id;
             return (
@@ -710,7 +725,7 @@ ${company.cidade || "[LOCAL]"}, ${currentDate}`;
           <Button
             size="sm"
             className="text-xs gap-1.5"
-            disabled={!selectedSignProposal || sendingToSign || !lead.company_id}
+            disabled={!selectedSignProposal || sendingToSign}
             onClick={async () => {
               const proposal = proposals.find(p => p.id === selectedSignProposal);
               if (proposal) {
