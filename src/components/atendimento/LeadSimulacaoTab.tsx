@@ -192,8 +192,8 @@ export function LeadSimulacaoTab({ lead, addActivity }: LeadSimulacaoTabProps) {
     const pageHeight = pdf.internal.pageSize.getHeight();
 
     // Colors
-    const navy = { r: 15, g: 23, b: 42 };       // dark navy
-    const gold = { r: 212, g: 175, b: 55 };      // gold accent
+    const navy = { r: 15, g: 23, b: 42 };
+    const gold = { r: 212, g: 175, b: 55 };
     const white = { r: 255, g: 255, b: 255 };
     const lightGray = { r: 180, g: 190, b: 210 };
     const cardBg = { r: 25, g: 35, b: 60 };
@@ -202,10 +202,28 @@ export function LeadSimulacaoTab({ lead, addActivity }: LeadSimulacaoTabProps) {
     pdf.setFillColor(navy.r, navy.g, navy.b);
     pdf.rect(0, 0, pageWidth, pageHeight, "F");
 
-    let y = 20;
+    let y = 15;
     const mL = 18;
     const mR = 18;
     const usable = pageWidth - mL - mR;
+
+    // === LOGO ===
+    try {
+      const logoImg = new Image();
+      logoImg.crossOrigin = "anonymous";
+      await new Promise<void>((resolve, reject) => {
+        logoImg.onload = () => resolve();
+        logoImg.onerror = () => reject();
+        logoImg.src = "/images/grupo-zelo-logo.jpg";
+      });
+      const logoW = 30;
+      const logoH = 30;
+      pdf.addImage(logoImg, "JPEG", pageWidth / 2 - logoW / 2, y, logoW, logoH);
+      y += logoH + 5;
+    } catch {
+      // If logo fails, just skip
+      y += 5;
+    }
 
     // === HEADER: Gold line + Title ===
     pdf.setDrawColor(gold.r, gold.g, gold.b);
@@ -421,17 +439,53 @@ export function LeadSimulacaoTab({ lead, addActivity }: LeadSimulacaoTabProps) {
       y += 5;
     }
 
+    // === "Plano administrado por" section ===
+    y += 6;
+    if (y + 35 > pageHeight - 20) {
+      pdf.addPage();
+      pdf.setFillColor(navy.r, navy.g, navy.b);
+      pdf.rect(0, 0, pageWidth, pageHeight, "F");
+      y = 20;
+    }
+
+    pdf.setDrawColor(gold.r, gold.g, gold.b);
+    pdf.setLineWidth(0.3);
+    pdf.line(mL, y, pageWidth - mR, y);
+    y += 8;
+
+    pdf.setTextColor(gold.r, gold.g, gold.b);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(10);
+    pdf.text("Plano administrado e prestado por:", mL, y);
+    y += 6;
+
+    pdf.setTextColor(white.r, white.g, white.b);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(13);
+    pdf.text("Grupo Zelo", mL, y);
+    y += 6;
+
+    pdf.setTextColor(lightGray.r, lightGray.g, lightGray.b);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8);
+    const adminText = "Este plano de assistência funerária é administrado e executado pelo Grupo Zelo, sendo a Amparo Familiar Benefícios LTDA responsável pela consultoria comercial, intermediação e suporte ao cliente.";
+    const adminLines = pdf.splitTextToSize(adminText, usable);
+    pdf.text(adminLines, mL, y);
+    y += adminLines.length * 4 + 4;
+
     // === Footer ===
     const totalPages = pdf.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       pdf.setPage(i);
+      pdf.setFillColor(navy.r, navy.g, navy.b);
+      // Ensure background on all pages
       pdf.setDrawColor(gold.r, gold.g, gold.b);
       pdf.setLineWidth(0.3);
       pdf.line(mL, pageHeight - 14, pageWidth - mR, pageHeight - 14);
       pdf.setTextColor(lightGray.r, lightGray.g, lightGray.b);
       pdf.setFont("helvetica", "italic");
       pdf.setFontSize(7);
-      pdf.text("Proposta gerada automaticamente • Assistência Familiar", mL, pageHeight - 9);
+      pdf.text("Grupo Zelo • Assistência Familiar • Proposta gerada automaticamente", mL, pageHeight - 9);
       pdf.text(`Página ${i} de ${totalPages}`, pageWidth - mR, pageHeight - 9, { align: "right" });
     }
 
