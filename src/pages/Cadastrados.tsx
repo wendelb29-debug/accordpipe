@@ -245,7 +245,7 @@ export default function Cadastrados() {
 
           {selectedReg && (
             <div className="space-y-6">
-              {/* Status */}
+              {/* Status do cadastro */}
               <div className="flex items-center gap-2">
                 <Badge className={(statusLabels[selectedReg.status] || statusLabels.pendente).color} variant="outline">
                   {(statusLabels[selectedReg.status] || statusLabels.pendente).label}
@@ -254,6 +254,28 @@ export default function Cadastrados() {
                   Empresa: {selectedReg.crm_leads?.company_name || "—"}
                 </span>
               </div>
+
+              {/* Status do cliente (financeiro) */}
+              <Card className="border-primary/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Status do Cliente</p>
+                      <p className="text-lg font-bold text-foreground mt-0.5">
+                        {selectedReg.client_status === "ativo" ? "🟢 ATIVO" :
+                         selectedReg.client_status === "inadimplente" ? "🔴 INADIMPLENTE" :
+                         selectedReg.client_status === "cancelado" ? "⚫ CANCELADO" :
+                         "🟡 PENDENTE"}
+                      </p>
+                    </div>
+                    <div className="text-right text-xs text-muted-foreground space-y-0.5">
+                      {selectedReg.plano_contratado && <p>Plano: <strong className="text-foreground">{selectedReg.plano_contratado}</strong></p>}
+                      {selectedReg.valor_mensal > 0 && <p>Valor: <strong className="text-foreground">R$ {Number(selectedReg.valor_mensal).toFixed(2)}</strong></p>}
+                      {selectedReg.data_adesao && <p>Adesão: <strong className="text-foreground">{new Date(selectedReg.data_adesao).toLocaleDateString("pt-BR")}</strong></p>}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Dados do Titular */}
               <div>
