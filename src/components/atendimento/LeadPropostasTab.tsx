@@ -538,7 +538,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
       const meta = (contractPreviewProposal.metadata as any) || {};
 
       const result = await createContract(
-        lead.company_id,
+        companyId,
         "",
         "Save Car Brasil Tecnologia e Serviços Ltda",
         "manual",
