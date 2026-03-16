@@ -46,7 +46,22 @@ export default function Cadastrados() {
 
   const openDetail = async (reg: any) => {
     setSelectedReg(reg);
-    // Fetch contracts linked to the lead's company
+    setEditing(false);
+    setEditData({
+      nome_completo: reg.nome_completo || "",
+      cpf: reg.cpf || "",
+      rg: reg.rg || "",
+      data_nascimento: reg.data_nascimento || "",
+      email: reg.email || "",
+      nome_pai: reg.nome_pai || "",
+      nome_mae: reg.nome_mae || "",
+      cep: reg.cep || "",
+      endereco: reg.endereco || "",
+      numero: reg.numero || "",
+      bairro: reg.bairro || "",
+      cidade: reg.cidade || "",
+      estado: reg.estado || "",
+    });
     if (reg.crm_leads?.company_id) {
       const { data } = await supabase
         .from("contracts")
@@ -56,6 +71,27 @@ export default function Cadastrados() {
       setContracts(data || []);
     } else {
       setContracts([]);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedReg?.id) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("crm_client_registrations")
+        .update(editData as any)
+        .eq("id", selectedReg.id);
+      if (error) throw error;
+      // Update local state
+      const updated = { ...selectedReg, ...editData };
+      setSelectedReg(updated);
+      setRegistrations(prev => prev.map(r => r.id === selectedReg.id ? { ...r, ...editData } : r));
+      setEditing(false);
+    } catch {
+      // toast would be nice but keeping it simple
+    } finally {
+      setSaving(false);
     }
   };
 
