@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  ArrowLeft, Building2, User, Mail, Phone as PhoneIcon, MapPin, Calendar,
+  ArrowLeft, Building2, User, Mail, Phone as PhoneIcon, MapPin, Calendar, Calculator,
   DollarSign, Clock, Tag, StickyNote, CheckCircle, XCircle, Plus,
   MessageSquare, PhoneCall, FileText, Activity, Trash2, Send, Loader2,
   FileSignature, Eye, Download, Copy, Image as ImageIcon,
