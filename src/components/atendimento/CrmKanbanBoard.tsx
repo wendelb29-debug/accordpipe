@@ -215,7 +215,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
               </div>
 
               {/* Cards */}
-              <div className="flex-1 p-1.5 space-y-1.5 overflow-y-auto">
+              <div className="flex-1 p-1 space-y-1 overflow-y-auto">
                 {stageLeads.length === 0 && (
                   <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
                     <Icon className="h-8 w-8 mb-2 opacity-30" />
