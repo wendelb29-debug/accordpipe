@@ -27,6 +27,21 @@ interface ContractData {
     cep: string | null;
   } | null;
 }
+function ContractPdfEmbed({ content, code, companyName }: { content: string; code: string; companyName: string }) {
+  const pdfUrl = useMemo(() => {
+    if (!content) return null;
+    const blob = generateContractPdf({ content, code, companyName });
+    return URL.createObjectURL(blob);
+  }, [content, code, companyName]);
+
+  useEffect(() => {
+    return () => { if (pdfUrl) URL.revokeObjectURL(pdfUrl); };
+  }, [pdfUrl]);
+
+  if (!pdfUrl) return <p className="text-sm text-muted-foreground">Conteúdo não disponível</p>;
+
+  return <iframe src={pdfUrl} className="w-full h-[400px] rounded-md border" title="Contrato PDF" />;
+}
 
 export default function AssinarContrato() {
   const { token } = useParams<{ token: string }>();
