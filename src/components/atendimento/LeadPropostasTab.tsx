@@ -467,46 +467,101 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false }: {
     await fetchProposals();
   };
 
-  const handleSendToSignature = async (proposal: any) => {
-    if (!lead.company_id) {
-      toast.error("Lead sem empresa vinculada. Vincule uma empresa para gerar o contrato.");
-      return;
-    }
-    setSendingToSign(true);
-    try {
-      const meta = (proposal.metadata as any) || {};
-      const payLabels: Record<string, string> = { boleto: "Boleto", pix: "PIX", cartao: "Cartão", transferencia: "Transferência" };
+  const buildProposalClause = (proposal: any) => {
+    const meta = (proposal.metadata as any) || {};
+    const payLabels: Record<string, string> = { boleto: "Boleto", pix: "PIX", cartao: "Cartão", transferencia: "Transferência" };
 
-      // Build proposal values clause
-      const proposalClause = `CLÁUSULA ADICIONAL – CONDIÇÕES COMERCIAIS DA PROPOSTA
+    // Auto-fill from registration data if available
+    const clientName = registrationData?.nome_completo || lead.contact_name || lead.company_name;
+    const clientCpf = registrationData?.cpf || "";
+
+    return `CLÁUSULA ADICIONAL – CONDIÇÕES COMERCIAIS DA PROPOSTA
 Este contrato incorpora as condições comerciais aceitas na proposta ${meta.sigla || ""}, conforme detalhado abaixo:
 
+• Cliente: ${clientName}
+${clientCpf ? `• CPF: ${clientCpf}` : ""}
 ${meta.value_ps ? `• Valor de Prestação de Serviço (P&S): ${fmtCur(meta.value_ps)}` : ""}
 ${meta.value_mrr ? `• Valor de Mensalidade Recorrente (MRR): ${fmtCur(meta.value_mrr)}` : ""}
 ${meta.payment_method ? `• Forma de Pagamento: ${payLabels[meta.payment_method] || meta.payment_method}` : ""}
 ${meta.first_payment_date ? `• Data do 1º Pagamento: ${meta.first_payment_date}` : ""}
 ${meta.due_day ? `• Dia de Vencimento: ${meta.due_day}` : ""}
+• Data da contratação: ${new Date().toLocaleDateString("pt-BR")}
 ${meta.items ? `\nItens contratados:\n${meta.items.split("\n").filter(Boolean).map((i: string) => `• ${i}`).join("\n")}` : ""}
 `.trim();
+  };
+
+  const handlePreviewContract = async (proposal: any) => {
+    if (!lead.company_id) {
+      toast.error("Lead sem empresa vinculada.");
+      return;
+    }
+    // Fetch company data to generate preview content
+    const { data: company } = await supabase.from("companies").select("*").eq("id", lead.company_id).maybeSingle();
+    if (!company) { toast.error("Empresa não encontrada"); return; }
+
+    const clause = buildProposalClause(proposal);
+    // Generate preview content (same logic as useContracts.generateContractContent but inline for preview)
+    const addressParts = [company.endereco, company.numero && `nº ${company.numero}`, company.complemento, company.bairro, company.cidade && company.estado && `${company.cidade}/${company.estado}`, company.cep && `CEP: ${company.cep}`].filter(Boolean).join(", ");
+    const matrizNome = "Save Car Brasil Tecnologia e Serviços Ltda";
+    const currentDate = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+
+    let content = `CONTRATO DE PARCERIA COMERCIAL – REVENDEDOR AUTORIZADO
+
+Pelo presente instrumento particular, de um lado ${matrizNome}, doravante denominada MATRIZ; e, de outro lado, ${company.razao_social}${company.nome_fantasia ? `, nome fantasia ${company.nome_fantasia},` : ""} inscrito no CNPJ sob nº ${company.cnpj}, com endereço em ${addressParts || "[ENDEREÇO NÃO INFORMADO]"}, neste ato representada por ${company.responsavel || "[RESPONSÁVEL]"}, doravante denominado REVENDEDOR AUTORIZADO.
+
+${clause}
+
+${company.cidade || "[LOCAL]"}, ${currentDate}`;
+
+    setContractPreview(content);
+    setContractPreviewProposal(proposal);
+    setGeneratedContractLink(null);
+  };
+
+  const handleConfirmAndGenerate = async () => {
+    if (!contractPreviewProposal || !lead.company_id) return;
+    setSendingToSign(true);
+    try {
+      const clause = buildProposalClause(contractPreviewProposal);
+      const meta = (contractPreviewProposal.metadata as any) || {};
 
       const result = await createContract(
         lead.company_id,
-        "",  // foro - will use default
+        "",
         "Save Car Brasil Tecnologia e Serviços Ltda",
         "manual",
         7,
-        proposalClause
+        clause
       );
 
       if (result) {
-        downloadContractPdf(result);
+        // Get the generated contract to retrieve the link
+        const { data: latestContract } = await supabase
+          .from("contracts")
+          .select("signature_link")
+          .eq("company_id", lead.company_id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const link = latestContract?.signature_link || "";
+        setGeneratedContractLink(link);
+
         await addActivity({
           type: "signature",
-          title: `Contrato gerado a partir da proposta ${meta.sigla || proposal.title}`,
-          description: `Proposta aceita convertida em contrato para assinatura. Link de assinatura gerado.`,
+          title: `Contrato gerado a partir da proposta ${meta.sigla || contractPreviewProposal.title}`,
+          description: `Proposta aceita convertida em contrato para assinatura. Link: ${link}`,
           servidor_id: lead.servidor_id,
         });
-        toast.success("Contrato gerado e disponível na página de Contratos e na aba Contratos!");
+
+        await addActivity({
+          type: "signature_link",
+          title: "Contrato enviado para assinatura",
+          description: `Link de assinatura gerado e disponível para envio ao cliente.`,
+          servidor_id: lead.servidor_id,
+        });
+
+        toast.success("Contrato gerado com sucesso!");
       }
     } catch (err) {
       console.error("Error creating contract from proposal:", err);
@@ -514,6 +569,28 @@ ${meta.items ? `\nItens contratados:\n${meta.items.split("\n").filter(Boolean).m
     } finally {
       setSendingToSign(false);
     }
+  };
+
+  const handleCopySignatureLink = () => {
+    if (!generatedContractLink) return;
+    navigator.clipboard.writeText(generatedContractLink);
+    toast.success("Link copiado!");
+    addActivity({ type: "signature_link", title: "Link de assinatura copiado", description: `Link copiado para área de transferência.`, servidor_id: lead.servidor_id });
+  };
+
+  const handleSendWhatsApp = () => {
+    if (!generatedContractLink) return;
+    const clientName = registrationData?.nome_completo || lead.contact_name || lead.company_name;
+    const message = `Olá ${clientName},\nsegue o link para assinatura do seu contrato.\n\n${generatedContractLink}\n\nApós a assinatura o sistema confirmará automaticamente.`;
+    const phone = lead.phone?.replace(/\D/g, "") || "";
+    const url = `https://wa.me/${phone.startsWith("55") ? phone : "55" + phone}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank");
+    addActivity({ type: "signature_link", title: "Contrato enviado via WhatsApp", description: `Link de assinatura enviado para ${clientName} via WhatsApp.`, servidor_id: lead.servidor_id });
+  };
+
+  const handleSendToSignature = async (proposal: any) => {
+    // Now we show preview first instead of generating directly
+    await handlePreviewContract(proposal);
   };
 
   if (loading) {
