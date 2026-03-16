@@ -51,7 +51,7 @@ export function HeroSection() {
             <div className="absolute -inset-4 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 blur-3xl opacity-40" />
             <img
               src={dashboardMockup}
-              alt="Painel do ORBIT HUB ERP"
+              alt="Painel do ORBIT HUB"
               className="relative rounded-2xl border border-border/50 shadow-2xl"
               loading="lazy"
             />
