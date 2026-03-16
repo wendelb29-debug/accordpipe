@@ -391,7 +391,14 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               </>
             )}
             {lead.lead_status === "won" && (
-              <Badge className="bg-green-600 text-white">✓ Ganho</Badge>
+              <>
+                <Badge className="bg-green-600 text-white">✓ Ganho</Badge>
+                {(role === "admin" || role === "administrativo") && (
+                  <Button size="sm" variant="outline" onClick={() => window.location.href = "/cadastrados"} className="gap-1.5">
+                    <ClipboardList className="h-3.5 w-3.5" /> Enviar para Cadastro
+                  </Button>
+                )}
+              </>
             )}
             {lead.lead_status === "lost" && (
               <Badge variant="destructive">✕ Perdido</Badge>

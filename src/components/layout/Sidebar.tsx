@@ -38,6 +38,7 @@ const navigation = [
   { name: "Contratos", href: "/contratos", icon: FileSignature, roles: ["admin", "ceo", "financeiro"] },
   { name: "Cancelamentos", href: "/cancelamentos", icon: XCircle, roles: ["admin", "ceo", "financeiro"] },
   { name: "Gestão de Vendas", href: "/gestao-vendas", icon: Webhook, roles: ["admin", "ceo"] },
+  { name: "Cadastrados", href: "/cadastrados", icon: Users, roles: ["admin", "administrativo"] },
 ];
 
 const configNavigation = [
