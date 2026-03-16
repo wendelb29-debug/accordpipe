@@ -278,12 +278,12 @@ export default function Cadastrados() {
                 <h3 className="text-sm font-semibold text-foreground mb-2">Endereço</h3>
                 <Card>
                   <CardContent className="p-4 space-y-0.5">
-                    <InfoRow label="CEP" value={selectedReg.cep} />
-                    <InfoRow label="Endereço" value={selectedReg.endereco} />
-                    <InfoRow label="Número" value={selectedReg.numero} />
-                    <InfoRow label="Bairro" value={selectedReg.bairro} />
-                    <InfoRow label="Cidade" value={selectedReg.cidade} />
-                    <InfoRow label="Estado" value={selectedReg.estado} />
+                    <InfoRow label="CEP" value={selectedReg.cep} field="cep" />
+                    <InfoRow label="Endereço" value={selectedReg.endereco} field="endereco" />
+                    <InfoRow label="Número" value={selectedReg.numero} field="numero" />
+                    <InfoRow label="Bairro" value={selectedReg.bairro} field="bairro" />
+                    <InfoRow label="Cidade" value={selectedReg.cidade} field="cidade" />
+                    <InfoRow label="Estado" value={selectedReg.estado} field="estado" />
                   </CardContent>
                 </Card>
               </div>
