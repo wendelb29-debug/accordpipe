@@ -16,7 +16,7 @@ export function BeforeAfterSection() {
             Antes e depois do ORBIT
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Veja como sua operação muda com o ORBIT HUB ERP.
+            Veja como sua operação muda com o ORBIT HUB.
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">

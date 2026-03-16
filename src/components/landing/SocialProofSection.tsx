@@ -48,7 +48,7 @@ export function SocialProofSection() {
             Quem usa, recomenda
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Veja o que nossos clientes dizem sobre o ORBIT HUB ERP.
+            Veja o que nossos clientes dizem sobre o ORBIT HUB.
           </p>
         </div>
         <div className="grid gap-8 md:grid-cols-3">

@@ -10,7 +10,7 @@ export function FooterSection() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <img src={orbitLogo} alt="ORBIT" className="h-8 w-auto" />
-              <span className="text-lg font-bold text-foreground">ORBIT HUB ERP</span>
+              <span className="text-lg font-bold text-foreground">ORBIT HUB</span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Tudo gira sob controle. Plataforma completa de gestão operacional para sua empresa.
@@ -51,7 +51,7 @@ export function FooterSection() {
         </div>
 
         <div className="mt-10 border-t border-border/50 pt-6 flex flex-col md:flex-row items-center justify-between gap-2">
-          <p className="text-xs text-muted-foreground">© 2026 ORBIT HUB ERP. Todos os direitos reservados.</p>
+          <p className="text-xs text-muted-foreground">© 2026 ORBIT HUB. Todos os direitos reservados.</p>
           <p className="text-xs text-muted-foreground">Tudo gira sob controle.</p>
         </div>
       </div>
