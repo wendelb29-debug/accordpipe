@@ -41,7 +41,7 @@ const formatCurrency = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
-  const { leads, loading, createLead, updateLead, deleteLead, moveToStage, totalLeads, totalPS, totalMRR, stageStats } = useCrmLeads();
+  const { leads, loading, createLead, updateLead, deleteLead, moveToStage, markAsWonAndTransfer, totalLeads, totalPS, totalMRR, stageStats } = useCrmLeads("commercial");
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [draggedLead, setDraggedLead] = useState<CrmLead | null>(null);
