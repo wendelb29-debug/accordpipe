@@ -667,7 +667,10 @@ ${company.cidade || "[LOCAL]"}, ${currentDate}`;
 
   // ---- SIGNATURE MODE: only show selection panel ----
   if (signatureMode) {
-    const acceptedProposals = proposals.filter(p => (p.metadata as any)?.status === "aceita");
+    const availableProposals = proposals.filter(p => {
+      const st = (p.metadata as any)?.status;
+      return st !== "cancelada" && st !== "declinada";
+    });
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-2">
@@ -675,12 +678,12 @@ ${company.cidade || "[LOCAL]"}, ${currentDate}`;
           <h3 className="text-sm font-semibold text-foreground">Enviar para Assinatura</h3>
         </div>
         <p className="text-xs text-muted-foreground">
-          Selecione a proposta aceita que deseja converter em contrato para assinatura.
+          Selecione a proposta que deseja converter em contrato para assinatura.
         </p>
         <div className="space-y-2">
-          {acceptedProposals.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-4 text-center">Nenhuma proposta aceita disponível. Aprove uma proposta na aba Propostas primeiro.</p>
-          ) : acceptedProposals.map(p => {
+          {availableProposals.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-4 text-center">Nenhuma proposta disponível. Crie uma proposta na aba Propostas primeiro.</p>
+          ) : availableProposals.map(p => {
             const meta = (p.metadata as any) || {};
             const isSelected = selectedSignProposal === p.id;
             return (
