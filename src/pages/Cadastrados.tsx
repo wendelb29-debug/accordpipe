@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
-import { Search, Users, UserCheck, Clock, FileWarning, Eye, Paperclip, FileSignature, Download, User, UsersRound } from "lucide-react";
+import { Search, Users, UserCheck, Clock, FileWarning, Eye, Paperclip, FileSignature, Download, User, UsersRound, Pencil, Save, Loader2 } from "lucide-react";
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   pendente: { label: "Cadastro Pendente", color: "bg-yellow-100 text-yellow-800 border-yellow-200" },
