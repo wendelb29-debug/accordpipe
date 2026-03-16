@@ -239,6 +239,16 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/descarte"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "ceo"]}>
+                  <AppLayout>
+                    <Descarte />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
             <Route path="/assinar/:token" element={<AssinarContrato />} />
             <Route path="/captura/:servidorId" element={<CapturaLead />} />
             <Route path="/contato" element={<FormularioContato />} />

@@ -39,6 +39,7 @@ const navigation = [
   { name: "Contratos", href: "/contratos", icon: FileSignature, roles: ["admin", "ceo", "financeiro"] },
   { name: "Gestão de Vendas", href: "/gestao-vendas", icon: Webhook, roles: ["admin", "ceo"] },
   { name: "Cadastrados", href: "/cadastrados", icon: ClipboardList, roles: ["admin", "ceo", "administrativo"] },
+  { name: "Descarte", href: "/descarte", icon: Trash2, roles: ["admin", "ceo"] },
 ];
 
 const configNavigation = [

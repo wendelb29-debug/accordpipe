@@ -819,6 +819,33 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
           </Tabs>
         </div>
       </div>
+      {/* Lost reason dialog */}
+      <Dialog open={showLostDialog} onOpenChange={setShowLostDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl">Negócio Perdido</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">Por favor informe o motivo da perda do negócio:</p>
+            <Select value={selectedLostReason} onValueChange={setSelectedLostReason}>
+              <SelectTrigger><SelectValue placeholder="Selecione um motivo" /></SelectTrigger>
+              <SelectContent>
+                {LOST_REASONS.map(r => (
+                  <SelectItem key={r.value} value={r.value} className="text-xs">
+                    <span className="font-semibold">{r.label}:</span> {r.description}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowLostDialog(false); setSelectedLostReason(""); }}>Cancelar</Button>
+            <Button variant="destructive" onClick={confirmLost} disabled={!selectedLostReason || saving}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
