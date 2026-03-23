@@ -5,6 +5,7 @@ import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActivityReminders } from "@/hooks/useActivityReminders";
+import { OrbitAIChat } from "@/components/orbit-ai/OrbitAIChat";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -31,6 +32,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         <Header />
         <main className="p-6 max-w-[1600px]">{children}</main>
       </div>
+      <OrbitAIChat />
     </div>
   );
 }
