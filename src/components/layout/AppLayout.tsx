@@ -32,6 +32,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         <Header />
         <main className="p-6 max-w-[1600px]">{children}</main>
       </div>
+      <OrbitAIChat />
     </div>
   );
 }
