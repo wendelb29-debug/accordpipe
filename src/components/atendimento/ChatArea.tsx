@@ -318,6 +318,26 @@ export function ChatArea({ contact, onSendMessage }: ChatAreaProps) {
           <Paperclip className="h-5 w-5" />
         </Button>
 
+        {/* Orbit AI button */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-9 w-9 shrink-0 text-[#25D366] hover:bg-[#25D366]/10"
+              onClick={handleOrbitAI}
+              disabled={orbitLoading}
+            >
+              {orbitLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Bot className="h-5 w-5" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top">Responder com Orbit AI</TooltipContent>
+        </Tooltip>
+
         <div className="flex-1 mx-1">
           <input
             value={inputValue}
