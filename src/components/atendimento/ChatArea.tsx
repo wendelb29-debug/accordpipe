@@ -11,6 +11,8 @@ import {
   Clock,
   AlertCircle,
   ChevronDown,
+  Bot,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
