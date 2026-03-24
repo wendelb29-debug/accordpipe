@@ -147,6 +147,22 @@ export default function Atividades() {
 
       setActivities(enriched);
       setPage(1);
+
+      // Fetch user avatars for all unique created_by_user_id
+      const userIds = [...new Set(enriched.map((a) => a.created_by_user_id).filter(Boolean))] as string[];
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, name, avatar_url")
+          .in("user_id", userIds);
+        if (profiles) {
+          const avatarMap: UserAvatarMap = {};
+          for (const p of profiles) {
+            avatarMap[p.user_id] = { name: p.name, avatar_url: p.avatar_url };
+          }
+          setUserAvatars(avatarMap);
+        }
+      }
     } catch (err) {
       console.error(err);
       toast.error("Erro ao carregar atividades");
