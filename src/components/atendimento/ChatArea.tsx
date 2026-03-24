@@ -63,6 +63,7 @@ export function ChatArea({ contact, onSendMessage }: ChatAreaProps) {
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<WhatsAppMessage[]>([]);
   const [sendChannel, setSendChannel] = useState<Channel>("whatsapp");
+  const [orbitLoading, setOrbitLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
