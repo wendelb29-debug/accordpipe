@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { toast } from "sonner";
 import {
   Send,
   Paperclip,
@@ -11,10 +12,14 @@ import {
   Clock,
   AlertCircle,
   ChevronDown,
+  Bot,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import {
   WhatsAppContact,
   WhatsAppMessage,
@@ -59,6 +64,7 @@ export function ChatArea({ contact, onSendMessage }: ChatAreaProps) {
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<WhatsAppMessage[]>([]);
   const [sendChannel, setSendChannel] = useState<Channel>("whatsapp");
+  const [orbitLoading, setOrbitLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -99,6 +105,33 @@ export function ChatArea({ contact, onSendMessage }: ChatAreaProps) {
         prev.map((m) => (m.id === newMsg.id ? { ...m, status: "read" as const } : m))
       );
     }, 3000);
+  };
+
+  const handleOrbitAI = async () => {
+    if (!contact) return;
+    const lastInbound = [...messages].reverse().find((m) => m.direction === "inbound");
+    if (!lastInbound) {
+      toast.error("Nenhuma mensagem recebida para responder.");
+      return;
+    }
+    setOrbitLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("orbit-ai-chat", {
+        body: {
+          message: `O cliente enviou: "${lastInbound.text}". Gere uma resposta profissional e direta para essa mensagem, como se fosse um atendente.`,
+        },
+      });
+      if (error) throw error;
+      const reply = data?.reply || data?.message || "";
+      if (reply) {
+        setInputValue(reply);
+        toast.success("Resposta do Orbit AI preenchida!");
+      }
+    } catch (err: any) {
+      toast.error("Erro ao gerar resposta com Orbit AI");
+    } finally {
+      setOrbitLoading(false);
+    }
   };
 
   if (!contact) {
@@ -284,6 +317,26 @@ export function ChatArea({ contact, onSendMessage }: ChatAreaProps) {
         <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0 text-[#54656f]">
           <Paperclip className="h-5 w-5" />
         </Button>
+
+        {/* Orbit AI button */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-9 w-9 shrink-0 text-[#25D366] hover:bg-[#25D366]/10"
+              onClick={handleOrbitAI}
+              disabled={orbitLoading}
+            >
+              {orbitLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Bot className="h-5 w-5" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top">Responder com Orbit AI</TooltipContent>
+        </Tooltip>
 
         <div className="flex-1 mx-1">
           <input
