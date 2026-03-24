@@ -88,7 +88,7 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial")
       query = query.eq("created_by_user_id", profile.user_id);
     }
 
-    const { data, error } = query;
+    const { data, error } = await query;
 
     if (error) {
       console.error("Error fetching leads:", error);
