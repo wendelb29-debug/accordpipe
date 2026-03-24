@@ -106,6 +106,33 @@ export function ChatArea({ contact, onSendMessage }: ChatAreaProps) {
     }, 3000);
   };
 
+  const handleOrbitAI = async () => {
+    if (!contact) return;
+    const lastInbound = [...messages].reverse().find((m) => m.direction === "inbound");
+    if (!lastInbound) {
+      toast.error("Nenhuma mensagem recebida para responder.");
+      return;
+    }
+    setOrbitLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("orbit-ai-chat", {
+        body: {
+          message: `O cliente enviou: "${lastInbound.text}". Gere uma resposta profissional e direta para essa mensagem, como se fosse um atendente.`,
+        },
+      });
+      if (error) throw error;
+      const reply = data?.reply || data?.message || "";
+      if (reply) {
+        setInputValue(reply);
+        toast.success("Resposta do Orbit AI preenchida!");
+      }
+    } catch (err: any) {
+      toast.error("Erro ao gerar resposta com Orbit AI");
+    } finally {
+      setOrbitLoading(false);
+    }
+  };
+
   if (!contact) {
     return (
       <div className="flex-1 flex items-center justify-center bg-[#f8f9fa] dark:bg-[#222e35]">
