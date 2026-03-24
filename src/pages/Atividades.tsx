@@ -334,8 +334,15 @@ export default function Atividades() {
                               {activity.description || "--"}
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-1.5">
-                                <UserCircle className="h-4 w-4 text-muted-foreground" />
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-6 w-6">
+                                  {creatorAvatar?.avatar_url ? (
+                                    <AvatarImage src={creatorAvatar.avatar_url} alt={creatorAvatar.name} />
+                                  ) : null}
+                                  <AvatarFallback className="text-[10px] bg-muted">
+                                    {(activity.created_by_name || "S").slice(0, 2).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
                                 <span className="text-sm truncate max-w-[100px]">
                                   {activity.created_by_name || "Sistema"}
                                 </span>
