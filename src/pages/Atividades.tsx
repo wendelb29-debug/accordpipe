@@ -310,8 +310,17 @@ export default function Atividades() {
                         const scheduledTime = meta.scheduled_at ? new Date(meta.scheduled_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : (meta.scheduled_time || meta.time || null);
                         const duration = meta.duration || "--";
 
+                        // Determine if overdue
+                        const scheduledAt = meta.scheduled_at ? new Date(meta.scheduled_at) : (meta.scheduled_date ? new Date(meta.scheduled_date) : null);
+                        const isOverdue = scheduledAt && status !== "concluida" && status !== "no_show" && scheduledAt < new Date();
+
+                        const creatorAvatar = activity.created_by_user_id ? userAvatars[activity.created_by_user_id] : null;
+
                         return (
-                          <TableRow key={activity.id} className="group hover:bg-muted/30">
+                          <TableRow key={activity.id} className={cn("group hover:bg-muted/30 relative", isOverdue && "bg-destructive/5")}>
+                            {isOverdue && (
+                              <td className="absolute left-0 top-0 bottom-0 w-1 bg-destructive rounded-l" />
+                            )}
                             <TableCell><Checkbox /></TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
