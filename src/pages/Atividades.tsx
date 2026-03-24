@@ -56,14 +56,19 @@ interface ActivityRow {
 
 const PER_PAGE_OPTIONS = [20, 50, 100];
 
+interface UserAvatarMap {
+  [userId: string]: { name: string; avatar_url: string | null };
+}
+
 export default function Atividades() {
-  const { profile, isMaster, activeCompanyId } = useAuth();
+  const { profile, isMaster, isAdmin, activeCompanyId, user } = useAuth();
   const [activities, setActivities] = useState<ActivityRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"list" | "agenda">("list");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(20);
   const [dateFilter, setDateFilter] = useState("today");
+  const [userAvatars, setUserAvatars] = useState<UserAvatarMap>({});
 
   useEffect(() => {
     fetchActivities();
