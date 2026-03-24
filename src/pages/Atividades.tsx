@@ -92,6 +92,11 @@ export default function Atividades() {
         query = query.eq("servidor_id", servidorId);
       }
 
+      // User isolation: non-admin/non-master users only see their own activities
+      if (!isMaster && !isAdmin && user?.id) {
+        query = query.eq("created_by_user_id", user.id);
+      }
+
       // Date filter - skip for agenda view (loads all and filters client-side)
       const effectiveFilter = view === "agenda" ? "all" : dateFilter;
       const now = new Date();
