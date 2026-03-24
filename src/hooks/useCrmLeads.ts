@@ -71,14 +71,24 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial")
 
   const activeStages = pipelineType === "admin" ? ADMIN_STAGES : STAGES;
 
+  // Check if user has elevated access (can see all leads)
+  const canSeeAll = role === "admin" || role === "ceo" || profile?.is_master;
+
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     const stageIds = activeStages.map(s => s.id);
-    const { data, error } = await supabase
+    let query = supabase
       .from("crm_leads")
       .select("*")
       .in("stage", stageIds)
       .order("created_at", { ascending: false });
+
+    // User isolation: non-admin/non-master users only see their own leads
+    if (!canSeeAll && profile?.user_id) {
+      query = query.eq("created_by_user_id", profile.user_id);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Error fetching leads:", error);
@@ -87,7 +97,7 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial")
       setLeads((data as CrmLead[]) || []);
     }
     setLoading(false);
-  }, [pipelineType]);
+  }, [pipelineType, canSeeAll, profile?.user_id]);
 
   useEffect(() => {
     fetchLeads();

@@ -2,10 +2,11 @@ import { useState, useEffect, useMemo } from "react";
 import {
   PhoneCall, Mail, Users, Briefcase, MessageSquare, CheckCircle,
   Ban, MoreVertical, Calendar, ListOrdered, Filter, Settings,
-  UserCircle, Plus, Loader2, ChevronLeft, ChevronRight,
+  UserCircle, Plus, Loader2, ChevronLeft, ChevronRight, AlertTriangle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -55,14 +56,19 @@ interface ActivityRow {
 
 const PER_PAGE_OPTIONS = [20, 50, 100];
 
+interface UserAvatarMap {
+  [userId: string]: { name: string; avatar_url: string | null };
+}
+
 export default function Atividades() {
-  const { profile, isMaster, activeCompanyId } = useAuth();
+  const { profile, isMaster, isAdmin, activeCompanyId, user } = useAuth();
   const [activities, setActivities] = useState<ActivityRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"list" | "agenda">("list");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(20);
   const [dateFilter, setDateFilter] = useState("today");
+  const [userAvatars, setUserAvatars] = useState<UserAvatarMap>({});
 
   useEffect(() => {
     fetchActivities();
@@ -84,6 +90,11 @@ export default function Atividades() {
 
       if (servidorId) {
         query = query.eq("servidor_id", servidorId);
+      }
+
+      // User isolation: non-admin/non-master users only see their own activities
+      if (!isMaster && !isAdmin && user?.id) {
+        query = query.eq("created_by_user_id", user.id);
       }
 
       // Date filter - skip for agenda view (loads all and filters client-side)
@@ -136,6 +147,22 @@ export default function Atividades() {
 
       setActivities(enriched);
       setPage(1);
+
+      // Fetch user avatars for all unique created_by_user_id
+      const userIds = [...new Set(enriched.map((a) => a.created_by_user_id).filter(Boolean))] as string[];
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, name, avatar_url")
+          .in("user_id", userIds);
+        if (profiles) {
+          const avatarMap: UserAvatarMap = {};
+          for (const p of profiles) {
+            avatarMap[p.user_id] = { name: p.name, avatar_url: p.avatar_url };
+          }
+          setUserAvatars(avatarMap);
+        }
+      }
     } catch (err) {
       console.error(err);
       toast.error("Erro ao carregar atividades");
@@ -283,8 +310,17 @@ export default function Atividades() {
                         const scheduledTime = meta.scheduled_at ? new Date(meta.scheduled_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : (meta.scheduled_time || meta.time || null);
                         const duration = meta.duration || "--";
 
+                        // Determine if overdue
+                        const scheduledAt = meta.scheduled_at ? new Date(meta.scheduled_at) : (meta.scheduled_date ? new Date(meta.scheduled_date) : null);
+                        const isOverdue = scheduledAt && status !== "concluida" && status !== "no_show" && scheduledAt < new Date();
+
+                        const creatorAvatar = activity.created_by_user_id ? userAvatars[activity.created_by_user_id] : null;
+
                         return (
-                          <TableRow key={activity.id} className="group hover:bg-muted/30">
+                          <TableRow key={activity.id} className={cn("group hover:bg-muted/30 relative", isOverdue && "bg-destructive/5")}>
+                            {isOverdue && (
+                              <td className="absolute left-0 top-0 bottom-0 w-1 bg-destructive rounded-l" />
+                            )}
                             <TableCell><Checkbox /></TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
@@ -298,8 +334,15 @@ export default function Atividades() {
                               {activity.description || "--"}
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-1.5">
-                                <UserCircle className="h-4 w-4 text-muted-foreground" />
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-6 w-6">
+                                  {creatorAvatar?.avatar_url ? (
+                                    <AvatarImage src={creatorAvatar.avatar_url} alt={creatorAvatar.name} />
+                                  ) : null}
+                                  <AvatarFallback className="text-[10px] bg-muted">
+                                    {(activity.created_by_name || "S").slice(0, 2).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
                                 <span className="text-sm truncate max-w-[100px]">
                                   {activity.created_by_name || "Sistema"}
                                 </span>
