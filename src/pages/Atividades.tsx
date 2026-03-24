@@ -2,10 +2,11 @@ import { useState, useEffect, useMemo } from "react";
 import {
   PhoneCall, Mail, Users, Briefcase, MessageSquare, CheckCircle,
   Ban, MoreVertical, Calendar, ListOrdered, Filter, Settings,
-  UserCircle, Plus, Loader2, ChevronLeft, ChevronRight,
+  UserCircle, Plus, Loader2, ChevronLeft, ChevronRight, AlertTriangle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
