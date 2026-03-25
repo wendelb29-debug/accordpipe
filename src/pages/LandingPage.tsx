@@ -65,6 +65,7 @@ export default function LandingPage() {
       <SecuritySection />
       <DemoVideoSection />
       <SocialProofSection />
+      <FAQSection />
       <CTASection />
       <FooterSection />
       <TrialSignupDialog open={trialOpen} onOpenChange={setTrialOpen} />
