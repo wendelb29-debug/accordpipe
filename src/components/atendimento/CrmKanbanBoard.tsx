@@ -478,6 +478,11 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
         isNew={isNew}
       />
       <FormLinkDialog open={formLinkOpen} onOpenChange={setFormLinkOpen} />
+      <CrmSearchDialog
+        open={globalSearchOpen}
+        onOpenChange={setGlobalSearchOpen}
+        onSelectLead={(lead) => openDetail(lead)}
+      />
     </>
   );
 }
