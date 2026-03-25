@@ -251,8 +251,11 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
               onBlur={() => { if (!localSearch) setSearchOpen(false); }}
             />
           )}
-          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setSearchOpen(!searchOpen)}>
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setSearchOpen(!searchOpen)} title="Busca rápida">
             <Search className="h-3 w-3" />
+          </Button>
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setGlobalSearchOpen(true)} title="Pesquisa avançada (inclui perdidos)">
+            <Search className="h-3.5 w-3.5 text-primary" />
           </Button>
           {(isAdminOrMaster || teamMembers.length > 0) && teamMembers.length > 0 && (
             <Select value={selectedUserId} onValueChange={setSelectedUserId}>
