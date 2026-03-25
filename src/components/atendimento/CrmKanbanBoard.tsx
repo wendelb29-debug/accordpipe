@@ -370,10 +370,16 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                     onClick={() => openDetail(lead)}
                     className={cn(
                       "cursor-grab active:cursor-grabbing hover:shadow-md transition-all text-xs",
-                      draggedLead?.id === lead.id && "opacity-50"
+                      draggedLead?.id === lead.id && "opacity-50",
+                      isLeadOverdue(lead, stage.id) && "border-red-500 bg-red-50 dark:bg-red-950/30 shadow-red-200/50 dark:shadow-red-900/20"
                     )}
                   >
                     <CardContent className="p-2 space-y-1">
+                      {isLeadOverdue(lead, stage.id) && (
+                        <div className="flex items-center gap-1 text-[9px] font-semibold text-red-600 dark:text-red-400 mb-0.5">
+                          <Clock className="h-3 w-3" /> Prazo excedido
+                        </div>
+                      )}
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-1.5 min-w-0">
                           <GripVertical className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
