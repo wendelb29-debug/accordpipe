@@ -443,7 +443,17 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
 
                       <div className="flex items-center justify-between text-[10px] text-muted-foreground/70">
                         <span>📅 {new Date(lead.created_at).toLocaleDateString("pt-BR")}</span>
-                        <span>🕐 {new Date(lead.updated_at).toLocaleDateString("pt-BR")}</span>
+                        {(() => {
+                          const days = Math.floor((Date.now() - new Date(lead.stage_entered_at).getTime()) / (1000 * 60 * 60 * 24));
+                          return (
+                            <span className={cn(
+                              "font-medium",
+                              isLeadOverdue(lead, stage.id) ? "text-red-600 dark:text-red-400 font-bold" : ""
+                            )}>
+                              {days}d
+                            </span>
+                          );
+                        })()}
                       </div>
                     </CardContent>
                   </Card>
