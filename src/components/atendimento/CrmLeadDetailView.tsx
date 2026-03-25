@@ -125,7 +125,7 @@ const LOST_REASONS = [
 ];
 
 export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelete, isAdminPipeline }: CrmLeadDetailViewProps) {
-  const { role } = useAuth();
+  const { role, profile } = useAuth();
   const { activities, loading: activitiesLoading, addActivity, refetch: refetchActivities } = useCrmActivities(lead.id);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ ...lead });
