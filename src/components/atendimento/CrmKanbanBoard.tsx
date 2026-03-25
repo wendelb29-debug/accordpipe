@@ -43,6 +43,19 @@ interface CrmKanbanBoardProps {
 const formatCurrency = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+const isLeadOverdue = (lead: CrmLead, stageId: string): boolean => {
+  const stage = STAGES.find((s) => s.id === stageId);
+  if (!stage?.daysLimit || !lead.stage_entered_at) return false;
+  const match = stage.daysLimit.match(/^(\d+)d$/);
+  if (!match) return false;
+  const limitDays = parseInt(match[1], 10);
+  if (limitDays <= 0) return false;
+  const enteredAt = new Date(lead.stage_entered_at);
+  const now = new Date();
+  const diffDays = (now.getTime() - enteredAt.getTime()) / (1000 * 60 * 60 * 24);
+  return diffDays > limitDays;
+};
+
 export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const { leads, loading, createLead, updateLead, deleteLead, moveToStage, markAsWonAndTransfer, totalLeads, totalPS, totalMRR, stageStats } = useCrmLeads("commercial");
   const { profile } = useAuth();
@@ -357,10 +370,16 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                     onClick={() => openDetail(lead)}
                     className={cn(
                       "cursor-grab active:cursor-grabbing hover:shadow-md transition-all text-xs",
-                      draggedLead?.id === lead.id && "opacity-50"
+                      draggedLead?.id === lead.id && "opacity-50",
+                      isLeadOverdue(lead, stage.id) && "border-red-500 bg-red-50 dark:bg-red-950/30 shadow-red-200/50 dark:shadow-red-900/20"
                     )}
                   >
                     <CardContent className="p-2 space-y-1">
+                      {isLeadOverdue(lead, stage.id) && (
+                        <div className="flex items-center gap-1 text-[9px] font-semibold text-red-600 dark:text-red-400 mb-0.5">
+                          <Clock className="h-3 w-3" /> Prazo excedido
+                        </div>
+                      )}
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-1.5 min-w-0">
                           <GripVertical className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
@@ -424,7 +443,17 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
 
                       <div className="flex items-center justify-between text-[10px] text-muted-foreground/70">
                         <span>📅 {new Date(lead.created_at).toLocaleDateString("pt-BR")}</span>
-                        <span>🕐 {new Date(lead.updated_at).toLocaleDateString("pt-BR")}</span>
+                        {(() => {
+                          const days = Math.floor((Date.now() - new Date(lead.stage_entered_at).getTime()) / (1000 * 60 * 60 * 24));
+                          return (
+                            <span className={cn(
+                              "font-medium",
+                              isLeadOverdue(lead, stage.id) ? "text-red-600 dark:text-red-400 font-bold" : ""
+                            )}>
+                              {days}d
+                            </span>
+                          );
+                        })()}
                       </div>
                     </CardContent>
                   </Card>
