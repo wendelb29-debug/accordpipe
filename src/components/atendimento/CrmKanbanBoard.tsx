@@ -111,8 +111,9 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const filteredLeads = leads.filter((l) => {
     // Filter by selected collaborator
     if (selectedUserId !== "all" && l.created_by_user_id !== selectedUserId) return false;
-    if (!searchTerm) return true;
-    const s = searchTerm.toLowerCase();
+    const term = localSearch || searchTerm;
+    if (!term) return true;
+    const s = term.toLowerCase();
     return (
       l.company_name.toLowerCase().includes(s) ||
       l.contact_name?.toLowerCase().includes(s) ||
