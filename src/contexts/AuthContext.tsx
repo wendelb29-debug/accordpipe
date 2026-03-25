@@ -98,8 +98,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    // Auto sign-out when closing the browser tab for security
+    const handleBeforeUnload = () => {
+      // Use sendBeacon to ensure the sign-out request is sent even when the tab is closing
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const accessToken = session?.access_token;
+      if (accessToken && supabaseUrl) {
+        navigator.sendBeacon(
+          `${supabaseUrl}/auth/v1/logout`,
+          new Blob(
+            [JSON.stringify({})],
+            { type: "application/json" }
+          )
+        );
+      }
+      // Clear local storage session data
+      localStorage.removeItem("sb-nglwgzknqgihlbkdnflu-auth-token");
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [session?.access_token]);
 
   const fetchUserData = async (userId: string) => {
     try {
