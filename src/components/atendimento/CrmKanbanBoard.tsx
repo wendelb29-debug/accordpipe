@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Clock, Users, MessageSquare, Phone, RefreshCw, FileSignature, GripVertical,
   MoreVertical, Trash2, Edit, Building2, Mail, PhoneCall, Loader2,
-  Plus, TrendingUp, Sparkles, Link2, Check, Tag, Search
+  Plus, TrendingUp, Sparkles, Link2, Check, Tag, Search, Filter
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
