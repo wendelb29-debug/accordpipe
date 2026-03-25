@@ -201,10 +201,10 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
               autoFocus
               type="search"
               placeholder="Buscar..."
-              value={searchTerm}
-              onChange={(e) => onSearchChange?.(e.target.value)}
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
               className="h-7 w-40 text-xs border-0 bg-muted/50 focus-visible:ring-1"
-              onBlur={() => { if (!searchTerm) setSearchOpen(false); }}
+              onBlur={() => { if (!localSearch) setSearchOpen(false); }}
             />
           )}
           <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setSearchOpen(!searchOpen)}>
