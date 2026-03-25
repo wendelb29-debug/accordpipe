@@ -5,6 +5,8 @@ import {
   MoreVertical, Trash2, Edit, Building2, Mail, PhoneCall, Loader2,
   Plus, TrendingUp, Sparkles, Link2, Check, Tag, Search, Filter
 } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -444,7 +446,21 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                       )}
 
                       <div className="flex items-center justify-between text-[10px] text-muted-foreground/70">
-                        <span>📅 {new Date(lead.created_at).toLocaleDateString("pt-BR")}</span>
+                        <div className="flex items-center gap-1.5">
+                          {lead.created_by_name && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Avatar className="h-4 w-4">
+                                  <AvatarFallback className="text-[7px] bg-primary/15 text-primary font-semibold">
+                                    {lead.created_by_name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom" className="text-xs">{lead.created_by_name}</TooltipContent>
+                            </Tooltip>
+                          )}
+                          <span>📅 {new Date(lead.created_at).toLocaleDateString("pt-BR")}</span>
+                        </div>
                         {(() => {
                           const days = Math.floor((Date.now() - new Date(lead.stage_entered_at).getTime()) / (1000 * 60 * 60 * 24));
                           return (
