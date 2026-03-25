@@ -136,6 +136,11 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const filteredLeads = leads.filter((l) => {
     // Filter by selected collaborator
     if (selectedUserId !== "all" && l.created_by_user_id !== selectedUserId) return false;
+    // Filter by selected tags
+    if (selectedTags.length > 0) {
+      const leadTags = l.tags || [];
+      if (!selectedTags.some((t) => leadTags.includes(t))) return false;
+    }
     const term = localSearch || searchTerm;
     if (!term) return true;
     const s = term.toLowerCase();
