@@ -1,6 +1,7 @@
 import { ReactNode, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { useAuth } from "@/contexts/AuthContext";
