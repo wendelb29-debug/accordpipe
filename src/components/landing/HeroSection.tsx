@@ -24,8 +24,8 @@ export function HeroSection() {
             </span>
           </h1>
           <p className="mt-6 text-lg leading-relaxed text-muted-foreground sm:text-xl">
-            Gestão completa de atendimento, vendas, faturamento e relatórios como nunca antes.
-            Tudo em um só lugar com o ORBIT HUB.
+            CRM, WhatsApp, contratos digitais, faturamento automático, relatórios e
+            Inteligência Artificial integrada. Tudo em um só lugar com o ORBIT HUB.
           </p>
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Button
