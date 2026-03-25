@@ -218,7 +218,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   return (
     <>
       {/* Compact Summary Bar */}
-      <div className="px-3 py-0.5 border-b bg-card/80 flex items-center gap-1.5 text-[10px] text-muted-foreground min-h-[24px]">
+      <div className="px-3 py-0 border-b bg-card/80 flex items-center gap-1.5 text-[10px] text-muted-foreground h-5">
         <span className="font-semibold text-foreground text-[11px]">{filteredLeads.length} oportunidades</span>
         <span className="text-border">|</span>
         <span>Total de P&S: <strong className="text-foreground">{formatCurrency(totalPS)}</strong></span>
