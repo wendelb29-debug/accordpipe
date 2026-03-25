@@ -1,5 +1,5 @@
 import { ReactNode, useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sidebar } from "./Sidebar";
@@ -16,6 +16,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { profile } = useAuth();
   const hasAvatar = !!(profile as any)?.avatar_url;
   useActivityReminders();
+  const location = useLocation();
+  const hideHeader = location.pathname === "/atendimento";
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
 
@@ -38,8 +40,8 @@ export function AppLayout({ children }: AppLayoutProps) {
             Complete seu cadastro — Foto de perfil obrigatória *
           </Link>
         )}
-        <Header />
-        <main className="p-6 max-w-[1600px]">{children}</main>
+        {!hideHeader && <Header />}
+        <main className={cn("max-w-[1600px]", hideHeader ? "p-0" : "p-6")}>{children}</main>
       </div>
       <OrbitAIChat />
     </div>
