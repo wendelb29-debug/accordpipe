@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { CrmLeadDialog } from "./CrmLeadDialog";
 import { CrmLeadDetailView } from "./CrmLeadDetailView";
 import { FormLinkDialog } from "./FormLinkDialog";
+import { CrmSearchDialog } from "./CrmSearchDialog";
 import { useCrmLeads, CrmLead, STAGES } from "@/hooks/useCrmLeads";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
