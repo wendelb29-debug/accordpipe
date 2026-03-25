@@ -917,6 +917,34 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Reopen dialog with user assignment */}
+      <Dialog open={showReopenDialog} onOpenChange={setShowReopenDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl">Reabrir Oportunidade</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">Selecione o vendedor que ficará responsável por esta oportunidade:</p>
+            <Select value={reopenUserId} onValueChange={setReopenUserId}>
+              <SelectTrigger><SelectValue placeholder="Selecione um usuário" /></SelectTrigger>
+              <SelectContent>
+                {reopenUsers.map(u => (
+                  <SelectItem key={u.user_id} value={u.user_id} className="text-xs">
+                    {u.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowReopenDialog(false); setReopenUserId(""); }}>Cancelar</Button>
+            <Button onClick={confirmReopen} disabled={!reopenUserId || saving} className="bg-green-600 hover:bg-green-700 text-white">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Reabrir e Atribuir"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
