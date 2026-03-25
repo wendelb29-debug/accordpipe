@@ -134,6 +134,9 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const [saving, setSaving] = useState(false);
   const [showLostDialog, setShowLostDialog] = useState(false);
   const [selectedLostReason, setSelectedLostReason] = useState("");
+  const [showReopenDialog, setShowReopenDialog] = useState(false);
+  const [reopenUserId, setReopenUserId] = useState("");
+  const [reopenUsers, setReopenUsers] = useState<{ user_id: string; name: string }[]>([]);
 
   // Note compose state
   const [noteText, setNoteText] = useState("");
@@ -292,12 +295,57 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   };
 
   const handleReopen = async () => {
+    // Fetch users for assignment
+    const { data: users } = await supabase
+      .from("profiles")
+      .select("user_id, name")
+      .eq("company_id", lead.servidor_id)
+      .eq("is_active", true)
+      .order("name");
+    
+    if (users) {
+      // Filter to only comercial/operador/admin roles
+      const filteredUsers: { user_id: string; name: string }[] = [];
+      for (const u of users) {
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", u.user_id)
+          .maybeSingle();
+        if (roleData && ["admin", "operador", "comercial", "ceo"].includes(roleData.role)) {
+          filteredUsers.push(u);
+        }
+      }
+      setReopenUsers(filteredUsers);
+    }
+    setReopenUserId("");
+    setShowReopenDialog(true);
+  };
+
+  const confirmReopen = async () => {
+    if (!reopenUserId) {
+      toast.error("Selecione um usuário");
+      return;
+    }
     if (saving) return;
     setSaving(true);
+    const selectedUser = reopenUsers.find(u => u.user_id === reopenUserId);
     try {
-      await onUpdate(lead.id, { lead_status: "open", lost_reason: null, stage: "novos", stage_entered_at: new Date().toISOString() } as any);
-      await addActivity({ type: "stage_change", title: "Oportunidade reaberta", description: "Lead foi reaberto e movido para **Novos Leads**." });
+      await onUpdate(lead.id, { 
+        lead_status: "open", 
+        lost_reason: null, 
+        stage: "novos", 
+        stage_entered_at: new Date().toISOString(),
+        created_by_user_id: reopenUserId,
+        created_by_name: selectedUser?.name || null,
+      } as any);
+      await addActivity({ 
+        type: "stage_change", 
+        title: "Oportunidade reaberta", 
+        description: `Lead foi reaberto e atribuído a **${selectedUser?.name || "usuário"}**, movido para **Novos Leads**.` 
+      });
       toast.success("Oportunidade reaberta com sucesso!");
+      setShowReopenDialog(false);
     } catch (error) {
       console.error("Error reopening lead:", error);
       toast.error("Erro ao reabrir oportunidade");
@@ -865,6 +913,34 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             <Button variant="outline" onClick={() => { setShowLostDialog(false); setSelectedLostReason(""); }}>Cancelar</Button>
             <Button variant="destructive" onClick={confirmLost} disabled={!selectedLostReason || saving}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reopen dialog with user assignment */}
+      <Dialog open={showReopenDialog} onOpenChange={setShowReopenDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl">Reabrir Oportunidade</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">Selecione o vendedor que ficará responsável por esta oportunidade:</p>
+            <Select value={reopenUserId} onValueChange={setReopenUserId}>
+              <SelectTrigger><SelectValue placeholder="Selecione um usuário" /></SelectTrigger>
+              <SelectContent>
+                {reopenUsers.map(u => (
+                  <SelectItem key={u.user_id} value={u.user_id} className="text-xs">
+                    {u.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowReopenDialog(false); setReopenUserId(""); }}>Cancelar</Button>
+            <Button onClick={confirmReopen} disabled={!reopenUserId || saving} className="bg-green-600 hover:bg-green-700 text-white">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Reabrir e Atribuir"}
             </Button>
           </DialogFooter>
         </DialogContent>
