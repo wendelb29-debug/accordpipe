@@ -295,12 +295,57 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   };
 
   const handleReopen = async () => {
+    // Fetch users for assignment
+    const { data: users } = await supabase
+      .from("profiles")
+      .select("user_id, name")
+      .eq("company_id", lead.servidor_id)
+      .eq("is_active", true)
+      .order("name");
+    
+    if (users) {
+      // Filter to only comercial/operador/admin roles
+      const filteredUsers: { user_id: string; name: string }[] = [];
+      for (const u of users) {
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", u.user_id)
+          .maybeSingle();
+        if (roleData && ["admin", "operador", "comercial", "ceo"].includes(roleData.role)) {
+          filteredUsers.push(u);
+        }
+      }
+      setReopenUsers(filteredUsers);
+    }
+    setReopenUserId("");
+    setShowReopenDialog(true);
+  };
+
+  const confirmReopen = async () => {
+    if (!reopenUserId) {
+      toast.error("Selecione um usuário");
+      return;
+    }
     if (saving) return;
     setSaving(true);
+    const selectedUser = reopenUsers.find(u => u.user_id === reopenUserId);
     try {
-      await onUpdate(lead.id, { lead_status: "open", lost_reason: null, stage: "novos", stage_entered_at: new Date().toISOString() } as any);
-      await addActivity({ type: "stage_change", title: "Oportunidade reaberta", description: "Lead foi reaberto e movido para **Novos Leads**." });
+      await onUpdate(lead.id, { 
+        lead_status: "open", 
+        lost_reason: null, 
+        stage: "novos", 
+        stage_entered_at: new Date().toISOString(),
+        created_by_user_id: reopenUserId,
+        created_by_name: selectedUser?.name || null,
+      } as any);
+      await addActivity({ 
+        type: "stage_change", 
+        title: "Oportunidade reaberta", 
+        description: `Lead foi reaberto e atribuído a **${selectedUser?.name || "usuário"}**, movido para **Novos Leads**.` 
+      });
       toast.success("Oportunidade reaberta com sucesso!");
+      setShowReopenDialog(false);
     } catch (error) {
       console.error("Error reopening lead:", error);
       toast.error("Erro ao reabrir oportunidade");
