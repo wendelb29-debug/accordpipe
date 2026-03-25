@@ -125,7 +125,7 @@ const LOST_REASONS = [
 ];
 
 export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelete, isAdminPipeline }: CrmLeadDetailViewProps) {
-  const { role } = useAuth();
+  const { role, profile } = useAuth();
   const { activities, loading: activitiesLoading, addActivity, refetch: refetchActivities } = useCrmActivities(lead.id);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ ...lead });
@@ -286,6 +286,21 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     } catch (error) {
       console.error("Error marking won:", error);
       toast.error("Erro ao marcar como ganho");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleReopen = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await onUpdate(lead.id, { lead_status: "open", lost_reason: null, stage: "novos", stage_entered_at: new Date().toISOString() } as any);
+      await addActivity({ type: "stage_change", title: "Oportunidade reaberta", description: "Lead foi reaberto e movido para **Novos Leads**." });
+      toast.success("Oportunidade reaberta com sucesso!");
+    } catch (error) {
+      console.error("Error reopening lead:", error);
+      toast.error("Erro ao reabrir oportunidade");
     } finally {
       setSaving(false);
     }
@@ -455,6 +470,14 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                   <span className="text-[10px] text-muted-foreground max-w-48 truncate" title={lead.lost_reason}>
                     {lead.lost_reason.split(":")[0]}
                   </span>
+                )}
+                <span className="text-[10px] text-muted-foreground">
+                  em {formatFullDate(lead.updated_at)}
+                </span>
+                {(role === "admin" || role === "ceo" || profile?.is_master) && (
+                  <Button size="sm" variant="outline" onClick={handleReopen} disabled={saving} className="gap-1.5 ml-2">
+                    <Activity className="h-3.5 w-3.5" /> Reabrir
+                  </Button>
                 )}
               </div>
             )}
