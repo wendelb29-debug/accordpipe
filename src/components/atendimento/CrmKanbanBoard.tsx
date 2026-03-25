@@ -69,6 +69,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const [detailLead, setDetailLead] = useState<CrmLead | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [formLinkOpen, setFormLinkOpen] = useState(false);
+  const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string>("all");
   const [teamMembers, setTeamMembers] = useState<{ user_id: string; name: string }[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
