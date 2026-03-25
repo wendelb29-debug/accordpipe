@@ -5,6 +5,7 @@ import {
   MoreVertical, Trash2, Edit, Building2, Mail, PhoneCall, Loader2,
   Plus, TrendingUp, Sparkles, Link2, Check, Tag, Search
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
