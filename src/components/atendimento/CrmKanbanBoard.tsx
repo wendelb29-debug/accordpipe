@@ -54,6 +54,8 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const [formLinkOpen, setFormLinkOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string>("all");
   const [teamMembers, setTeamMembers] = useState<{ user_id: string; name: string }[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [localSearch, setLocalSearch] = useState(searchTerm);
 
   const isAdminOrMaster = profile?.is_master || false;
 
