@@ -54,20 +54,24 @@ export function Sidebar() {
   const { role, signOut, profile } = useAuth();
 
   const fetchOverdueActivities = useCallback(async () => {
+    if (!profile?.user_id) return;
     const { data, error } = await supabase
       .from("crm_lead_activities")
       .select("id, metadata")
+      .eq("created_by_user_id", profile.user_id)
       .in("type", ["activity", "meeting", "call", "email", "internal", "whatsapp"]);
     if (error || !data) return;
     const now = new Date();
     const overdue = data.filter((a: any) => {
       const meta = a.metadata || {};
-      if (meta.activity_status !== "planejada" && meta.activity_status !== undefined) return false;
-      if (!meta.scheduled_at) return false;
-      return new Date(meta.scheduled_at) < now;
+      const status = meta.status || meta.activity_status || "planejada";
+      if (status === "concluida" || status === "no_show") return false;
+      const scheduled = meta.scheduled_at || meta.scheduled_date;
+      if (!scheduled) return false;
+      return new Date(scheduled) < now;
     });
     setOverdueCount(overdue.length);
-  }, []);
+  }, [profile?.user_id]);
 
   useEffect(() => {
     fetchOverdueActivities();

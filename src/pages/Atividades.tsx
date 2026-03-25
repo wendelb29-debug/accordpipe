@@ -137,13 +137,18 @@ export default function Atividades() {
         }
       }
 
-      const enriched: ActivityRow[] = (data || []).map((a) => ({
-        ...a,
-        metadata: a.metadata as any,
-        lead_company_name: leadsMap[a.lead_id]?.company_name || "-",
-        lead_contact_name: leadsMap[a.lead_id]?.contact_name || "-",
-        lead_source: leadsMap[a.lead_id]?.source || "Manual",
-      }));
+      const enriched: ActivityRow[] = (data || [])
+        .filter((a) => {
+          const meta = (a.metadata as any) || {};
+          return meta.status !== "concluida" && meta.status !== "no_show";
+        })
+        .map((a) => ({
+          ...a,
+          metadata: a.metadata as any,
+          lead_company_name: leadsMap[a.lead_id]?.company_name || "-",
+          lead_contact_name: leadsMap[a.lead_id]?.contact_name || "-",
+          lead_source: leadsMap[a.lead_id]?.source || "Manual",
+        }));
 
       setActivities(enriched);
       setPage(1);
