@@ -49,7 +49,13 @@ const configNavigation = [
 
 export function Sidebar() {
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
+
+  const toggleCollapsed = (value: boolean) => {
+    setCollapsed(value);
+    localStorage.setItem("sidebar-collapsed", String(value));
+    window.dispatchEvent(new CustomEvent("sidebar-toggle", { detail: value }));
+  };
   const [overdueCount, setOverdueCount] = useState(0);
   const { role, signOut, profile } = useAuth();
 
@@ -180,7 +186,7 @@ export function Sidebar() {
       {/* Toggle */}
       <div className={cn("flex shrink-0 py-2", collapsed ? "justify-center px-2" : "px-3")}>
         <button
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={() => toggleCollapsed(!collapsed)}
           className="flex h-8 w-8 items-center justify-center rounded-lg text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
         >
           {collapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
