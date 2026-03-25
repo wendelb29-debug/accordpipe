@@ -64,6 +64,27 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
 
   const isAdminOrMaster = profile?.is_master || false;
 
+  // Fetch available tags
+  useEffect(() => {
+    const fetchTags = async () => {
+      const servidorId = profile?.company_id;
+      if (!servidorId) return;
+      const { data } = await supabase
+        .from("crm_tags")
+        .select("id, name, color")
+        .eq("servidor_id", servidorId)
+        .order("name");
+      if (data) setAvailableTags(data);
+    };
+    fetchTags();
+  }, [profile?.company_id]);
+
+  const toggleTag = (tagName: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tagName) ? prev.filter((t) => t !== tagName) : [...prev, tagName]
+    );
+  };
+
   // Fetch team members for admin/master
   useEffect(() => {
     if (!isAdminOrMaster || !profile?.company_id) return;
