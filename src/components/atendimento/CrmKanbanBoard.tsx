@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Clock, Users, MessageSquare, Phone, RefreshCw, FileSignature, GripVertical,
   MoreVertical, Trash2, Edit, Building2, Mail, PhoneCall, Loader2,
-  Plus, TrendingUp, Sparkles, Link2, Check, Tag, Search
+  Plus, TrendingUp, Sparkles, Link2, Check, Tag, Search, Filter
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,8 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { CrmLeadDialog } from "./CrmLeadDialog";
 import { CrmLeadDetailView } from "./CrmLeadDetailView";
@@ -57,8 +59,31 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const [teamMembers, setTeamMembers] = useState<{ user_id: string; name: string }[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [localSearch, setLocalSearch] = useState(searchTerm);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<{ id: string; name: string; color: string }[]>([]);
 
   const isAdminOrMaster = profile?.is_master || false;
+
+  // Fetch available tags
+  useEffect(() => {
+    const fetchTags = async () => {
+      const servidorId = profile?.company_id;
+      if (!servidorId) return;
+      const { data } = await supabase
+        .from("crm_tags")
+        .select("id, name, color")
+        .eq("servidor_id", servidorId)
+        .order("name");
+      if (data) setAvailableTags(data);
+    };
+    fetchTags();
+  }, [profile?.company_id]);
+
+  const toggleTag = (tagName: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tagName) ? prev.filter((t) => t !== tagName) : [...prev, tagName]
+    );
+  };
 
   // Fetch team members for admin/master
   useEffect(() => {
@@ -111,6 +136,11 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const filteredLeads = leads.filter((l) => {
     // Filter by selected collaborator
     if (selectedUserId !== "all" && l.created_by_user_id !== selectedUserId) return false;
+    // Filter by selected tags
+    if (selectedTags.length > 0) {
+      const leadTags = l.tags || [];
+      if (!selectedTags.some((t) => leadTags.includes(t))) return false;
+    }
     const term = localSearch || searchTerm;
     if (!term) return true;
     const s = term.toLowerCase();
@@ -224,6 +254,44 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                 ))}
               </SelectContent>
             </Select>
+          )}
+          {availableTags.length > 0 && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button size="icon" variant={selectedTags.length > 0 ? "default" : "ghost"} className="h-6 w-6 relative">
+                  <Filter className="h-3 w-3" />
+                  {selectedTags.length > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-destructive text-[8px] font-bold text-destructive-foreground px-0.5">
+                      {selectedTags.length}
+                    </span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-48 p-2" align="end">
+                <div className="text-[11px] font-medium text-muted-foreground mb-1.5 px-1">Filtrar por tag</div>
+                {selectedTags.length > 0 && (
+                  <Button variant="ghost" size="sm" className="w-full h-6 text-[11px] mb-1" onClick={() => setSelectedTags([])}>
+                    Limpar filtros
+                  </Button>
+                )}
+                <div className="space-y-0.5 max-h-48 overflow-y-auto">
+                  {availableTags.map((tag) => (
+                    <button
+                      key={tag.id}
+                      onClick={() => toggleTag(tag.name)}
+                      className={cn(
+                        "flex items-center gap-2 w-full rounded px-2 py-1 text-[11px] hover:bg-muted transition-colors",
+                        selectedTags.includes(tag.name) && "bg-muted"
+                      )}
+                    >
+                      <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
+                      <span className="truncate flex-1 text-left">{tag.name}</span>
+                      {selectedTags.includes(tag.name) && <Check className="h-3 w-3 text-primary shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
           )}
           <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setFormLinkOpen(true)}>
             <Tag className="h-3 w-3" />
