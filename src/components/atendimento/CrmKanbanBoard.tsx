@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import {
   Clock, Users, MessageSquare, Phone, RefreshCw, FileSignature, GripVertical,
   MoreVertical, Trash2, Edit, Building2, Mail, PhoneCall, Loader2,
-  Plus, TrendingUp, Sparkles, Link2, Check, Tag
+  Plus, TrendingUp, Sparkles, Link2, Check, Tag, Search
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,8 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const [formLinkOpen, setFormLinkOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string>("all");
   const [teamMembers, setTeamMembers] = useState<{ user_id: string; name: string }[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [localSearch, setLocalSearch] = useState(searchTerm);
 
   const isAdminOrMaster = profile?.is_master || false;
 
@@ -108,8 +111,9 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const filteredLeads = leads.filter((l) => {
     // Filter by selected collaborator
     if (selectedUserId !== "all" && l.created_by_user_id !== selectedUserId) return false;
-    if (!searchTerm) return true;
-    const s = searchTerm.toLowerCase();
+    const term = localSearch || searchTerm;
+    if (!term) return true;
+    const s = term.toLowerCase();
     return (
       l.company_name.toLowerCase().includes(s) ||
       l.contact_name?.toLowerCase().includes(s) ||
@@ -180,30 +184,41 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
     );
   }
 
+
   return (
     <>
-      {/* Summary Bar */}
-      <div className="px-4 py-3 border-b bg-card flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
-          <h2 className="text-sm font-semibold text-foreground">
-            {filteredLeads.length} oportunidades
-          </h2>
-          <span className="text-xs text-muted-foreground">
-            Total de P&S: <strong className="text-foreground">{formatCurrency(totalPS)}</strong>
-          </span>
-          <span className="text-xs text-muted-foreground">
-            Total de MRR: <strong className="text-foreground">{formatCurrency(totalMRR)}</strong>
-          </span>
+      {/* Compact Summary Bar */}
+      <div className="px-3 py-1.5 border-b bg-card flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+          <span className="font-semibold text-foreground">{filteredLeads.length}</span> leads
+          <span className="text-border">|</span>
+          <span>P&S <strong className="text-foreground">{formatCurrency(totalPS)}</strong></span>
+          <span className="text-border">|</span>
+          <span>MRR <strong className="text-foreground">{formatCurrency(totalMRR)}</strong></span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          {searchOpen && (
+            <Input
+              autoFocus
+              type="search"
+              placeholder="Buscar..."
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
+              className="h-7 w-40 text-xs border-0 bg-muted/50 focus-visible:ring-1"
+              onBlur={() => { if (!localSearch) setSearchOpen(false); }}
+            />
+          )}
+          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setSearchOpen(!searchOpen)}>
+            <Search className="h-3.5 w-3.5" />
+          </Button>
           {(isAdminOrMaster || teamMembers.length > 0) && teamMembers.length > 0 && (
             <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-              <SelectTrigger className="h-8 w-48 text-xs">
-                <Users className="h-3.5 w-3.5 mr-1.5 shrink-0" />
-                <SelectValue placeholder="Colaborador" />
+              <SelectTrigger className="h-7 w-36 text-[11px] border-0 bg-muted/50">
+                <Users className="h-3 w-3 mr-1 shrink-0" />
+                <SelectValue placeholder="Equipe" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="text-xs">Todos os colaboradores</SelectItem>
+                <SelectItem value="all" className="text-xs">Todos</SelectItem>
                 {teamMembers.map((m) => (
                   <SelectItem key={m.user_id} value={m.user_id} className="text-xs">
                     {m.name}
@@ -212,16 +227,14 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
               </SelectContent>
             </Select>
           )}
-          <Button size="sm" variant="outline" onClick={() => setFormLinkOpen(true)} className="gap-1.5 text-xs">
+          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setFormLinkOpen(true)}>
             <Tag className="h-3.5 w-3.5" />
-            Link + Tags
           </Button>
-          <Button size="sm" variant="outline" onClick={() => navigate("/contato")} className="gap-1.5 text-xs">
+          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => navigate("/contato")}>
             <Link2 className="h-3.5 w-3.5" />
-            Link Rápido
           </Button>
-          <Button size="sm" onClick={openNew} className="gap-1.5">
-            <Plus className="h-4 w-4" /> Oportunidade
+          <Button size="sm" onClick={openNew} className="h-7 gap-1 text-xs px-2">
+            <Plus className="h-3.5 w-3.5" /> Novo
           </Button>
         </div>
       </div>
