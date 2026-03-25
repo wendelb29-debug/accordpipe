@@ -2,8 +2,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const DEMO_SERVIDOR_ID = "9318147e-3e32-43de-b6dc-e93ec64a647d";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -59,7 +61,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 1. Create the trial company (servidor)
+    // 1. Create the trial company linked to demo servidor
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
@@ -77,6 +79,7 @@ Deno.serve(async (req) => {
         trial_start: now.toISOString(),
         trial_expires_at: expiresAt.toISOString(),
         trial_extensions: 0,
+        servidor_id: DEMO_SERVIDOR_ID,
       })
       .select("id")
       .single();
@@ -130,7 +133,7 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({ 
       success: true, 
-      message: "Conta de teste criada com sucesso! Você já pode fazer login.",
+      message: "Conta de teste criada com sucesso! Você tem 7 dias para explorar todas as funcionalidades.",
       company_id: company.id,
     }), {
       status: 200,
