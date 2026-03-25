@@ -291,6 +291,21 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     }
   };
 
+  const handleReopen = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await onUpdate(lead.id, { lead_status: "open", lost_reason: null, stage: "novos", stage_entered_at: new Date().toISOString() } as any);
+      await addActivity({ type: "stage_change", title: "Oportunidade reaberta", description: "Lead foi reaberto e movido para **Novos Leads**." });
+      toast.success("Oportunidade reaberta com sucesso!");
+    } catch (error) {
+      console.error("Error reopening lead:", error);
+      toast.error("Erro ao reabrir oportunidade");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleLost = () => {
     setShowLostDialog(true);
   };
