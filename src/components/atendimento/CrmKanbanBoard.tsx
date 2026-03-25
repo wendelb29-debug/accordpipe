@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { CrmLeadDialog } from "./CrmLeadDialog";
 import { CrmLeadDetailView } from "./CrmLeadDetailView";
 import { FormLinkDialog } from "./FormLinkDialog";
+import { CrmSearchDialog } from "./CrmSearchDialog";
 import { useCrmLeads, CrmLead, STAGES } from "@/hooks/useCrmLeads";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -68,6 +69,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const [detailLead, setDetailLead] = useState<CrmLead | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [formLinkOpen, setFormLinkOpen] = useState(false);
+  const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string>("all");
   const [teamMembers, setTeamMembers] = useState<{ user_id: string; name: string }[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -249,8 +251,11 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
               onBlur={() => { if (!localSearch) setSearchOpen(false); }}
             />
           )}
-          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setSearchOpen(!searchOpen)}>
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setSearchOpen(!searchOpen)} title="Busca rápida">
             <Search className="h-3 w-3" />
+          </Button>
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setGlobalSearchOpen(true)} title="Pesquisa avançada (inclui perdidos)">
+            <Search className="h-3.5 w-3.5 text-primary" />
           </Button>
           {(isAdminOrMaster || teamMembers.length > 0) && teamMembers.length > 0 && (
             <Select value={selectedUserId} onValueChange={setSelectedUserId}>
@@ -473,6 +478,11 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
         isNew={isNew}
       />
       <FormLinkDialog open={formLinkOpen} onOpenChange={setFormLinkOpen} />
+      <CrmSearchDialog
+        open={globalSearchOpen}
+        onOpenChange={setGlobalSearchOpen}
+        onSelectLead={(lead) => openDetail(lead)}
+      />
     </>
   );
 }
