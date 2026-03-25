@@ -43,12 +43,12 @@ export default function Atendimento() {
   return (
     <div className="h-[calc(100vh-4rem)] overflow-hidden flex flex-col">
       <Tabs defaultValue="comercial" className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="mx-4 mt-2 w-fit">
-          <TabsTrigger value="comercial" className="gap-1.5 text-xs">
-            <MessageSquare className="h-3.5 w-3.5" /> Pipeline Comercial
+        <TabsList className="mx-3 mt-1 mb-0 w-fit h-8">
+          <TabsTrigger value="comercial" className="gap-1 text-[11px] h-7 px-3">
+            <MessageSquare className="h-3 w-3" /> Pipeline Comercial
           </TabsTrigger>
-          <TabsTrigger value="cadastro" className="gap-1.5 text-xs">
-            <ClipboardList className="h-3.5 w-3.5" /> Cadastro de Clientes
+          <TabsTrigger value="cadastro" className="gap-1 text-[11px] h-7 px-3">
+            <ClipboardList className="h-3 w-3" /> Cadastro de Clientes
           </TabsTrigger>
         </TabsList>
         <TabsContent value="comercial" className="flex-1 overflow-hidden mt-0">
