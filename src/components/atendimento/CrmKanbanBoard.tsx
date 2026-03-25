@@ -182,7 +182,6 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
     );
   }
 
-  const [searchOpen, setSearchOpen] = useState(false);
 
   return (
     <>
