@@ -49,7 +49,13 @@ const configNavigation = [
 
 export function Sidebar() {
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
+
+  const toggleCollapsed = (value: boolean) => {
+    setCollapsed(value);
+    localStorage.setItem("sidebar-collapsed", String(value));
+    window.dispatchEvent(new CustomEvent("sidebar-toggle", { detail: value }));
+  };
   const [overdueCount, setOverdueCount] = useState(0);
   const { role, signOut, profile } = useAuth();
 
