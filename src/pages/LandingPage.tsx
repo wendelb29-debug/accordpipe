@@ -13,6 +13,7 @@ import { SecuritySection } from "@/components/landing/SecuritySection";
 import { DemoVideoSection } from "@/components/landing/DemoVideoSection";
 import { SocialProofSection } from "@/components/landing/SocialProofSection";
 import { CTASection } from "@/components/landing/CTASection";
+import { FAQSection } from "@/components/landing/FAQSection";
 import { FooterSection } from "@/components/landing/FooterSection";
 import { TrialSignupDialog } from "@/components/landing/TrialSignupDialog";
 
