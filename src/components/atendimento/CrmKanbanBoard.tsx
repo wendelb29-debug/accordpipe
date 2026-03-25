@@ -188,15 +188,13 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   return (
     <>
       {/* Compact Summary Bar */}
-      <div className="px-3 py-1.5 border-b bg-card flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-          <span className="font-semibold text-foreground">{filteredLeads.length}</span> leads
-          <span className="text-border">|</span>
-          <span>P&S <strong className="text-foreground">{formatCurrency(totalPS)}</strong></span>
-          <span className="text-border">|</span>
-          <span>MRR <strong className="text-foreground">{formatCurrency(totalMRR)}</strong></span>
-        </div>
-        <div className="flex items-center gap-1">
+      <div className="px-3 py-1 border-b bg-card/80 flex items-center gap-2 text-[11px] text-muted-foreground min-h-[28px]">
+        <span className="font-medium text-foreground text-xs">{filteredLeads.length} oportunidades</span>
+        <span>|</span>
+        <span>Total de P&S: <strong className="text-foreground">{formatCurrency(totalPS)}</strong></span>
+        <span>|</span>
+        <span>Total de MRR: <strong className="text-foreground">{formatCurrency(totalMRR)}</strong></span>
+        <div className="ml-auto flex items-center gap-0.5">
           {searchOpen && (
             <Input
               autoFocus
@@ -204,16 +202,16 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
               placeholder="Buscar..."
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
-              className="h-7 w-40 text-xs border-0 bg-muted/50 focus-visible:ring-1"
+              className="h-6 w-36 text-[11px] border-0 bg-muted/50 focus-visible:ring-1 rounded-md"
               onBlur={() => { if (!localSearch) setSearchOpen(false); }}
             />
           )}
-          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setSearchOpen(!searchOpen)}>
-            <Search className="h-3.5 w-3.5" />
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setSearchOpen(!searchOpen)}>
+            <Search className="h-3 w-3" />
           </Button>
           {(isAdminOrMaster || teamMembers.length > 0) && teamMembers.length > 0 && (
             <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-              <SelectTrigger className="h-7 w-36 text-[11px] border-0 bg-muted/50">
+              <SelectTrigger className="h-6 w-32 text-[10px] border-0 bg-muted/50">
                 <Users className="h-3 w-3 mr-1 shrink-0" />
                 <SelectValue placeholder="Equipe" />
               </SelectTrigger>
@@ -227,20 +225,20 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
               </SelectContent>
             </Select>
           )}
-          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setFormLinkOpen(true)}>
-            <Tag className="h-3.5 w-3.5" />
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setFormLinkOpen(true)}>
+            <Tag className="h-3 w-3" />
           </Button>
-          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => navigate("/contato")}>
-            <Link2 className="h-3.5 w-3.5" />
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => navigate("/contato")}>
+            <Link2 className="h-3 w-3" />
           </Button>
-          <Button size="sm" onClick={openNew} className="h-7 gap-1 text-xs px-2">
-            <Plus className="h-3.5 w-3.5" /> Novo
+          <Button size="sm" onClick={openNew} className="h-6 gap-1 text-[11px] px-2">
+            <Plus className="h-3 w-3" /> Novo
           </Button>
         </div>
       </div>
 
       {/* Kanban Columns */}
-      <div className="flex gap-2 p-3 h-[calc(100%-3.5rem)] overflow-x-auto">
+      <div className="flex gap-2 p-2 h-[calc(100%-28px)] overflow-x-auto">
         {stageStats.map((stage) => {
           const Icon = stageIcons[stage.id] || Clock;
           const stageLeads = filteredLeads.filter((l) => l.stage === stage.id);
