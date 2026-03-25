@@ -186,7 +186,7 @@ export function Sidebar() {
       {/* Toggle */}
       <div className={cn("flex shrink-0 py-2", collapsed ? "justify-center px-2" : "px-3")}>
         <button
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={() => toggleCollapsed(!collapsed)}
           className="flex h-8 w-8 items-center justify-center rounded-lg text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
         >
           {collapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}

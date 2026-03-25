@@ -16,10 +16,18 @@ export function AppLayout({ children }: AppLayoutProps) {
   const hasAvatar = !!(profile as any)?.avatar_url;
   useActivityReminders();
 
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
+
+  useEffect(() => {
+    const handler = (e: Event) => setSidebarCollapsed((e as CustomEvent).detail);
+    window.addEventListener("sidebar-toggle", handler);
+    return () => window.removeEventListener("sidebar-toggle", handler);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <div className="pl-64 transition-all duration-300">
+      <div className={cn("transition-all duration-300", sidebarCollapsed ? "pl-[68px]" : "pl-64")}>
         {!hasAvatar && profile && (
           <Link
             to="/perfil"
