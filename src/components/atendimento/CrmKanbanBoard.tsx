@@ -255,6 +255,44 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
               </SelectContent>
             </Select>
           )}
+          {availableTags.length > 0 && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button size="icon" variant={selectedTags.length > 0 ? "default" : "ghost"} className="h-6 w-6 relative">
+                  <Filter className="h-3 w-3" />
+                  {selectedTags.length > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-destructive text-[8px] font-bold text-destructive-foreground px-0.5">
+                      {selectedTags.length}
+                    </span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-48 p-2" align="end">
+                <div className="text-[11px] font-medium text-muted-foreground mb-1.5 px-1">Filtrar por tag</div>
+                {selectedTags.length > 0 && (
+                  <Button variant="ghost" size="sm" className="w-full h-6 text-[11px] mb-1" onClick={() => setSelectedTags([])}>
+                    Limpar filtros
+                  </Button>
+                )}
+                <div className="space-y-0.5 max-h-48 overflow-y-auto">
+                  {availableTags.map((tag) => (
+                    <button
+                      key={tag.id}
+                      onClick={() => toggleTag(tag.name)}
+                      className={cn(
+                        "flex items-center gap-2 w-full rounded px-2 py-1 text-[11px] hover:bg-muted transition-colors",
+                        selectedTags.includes(tag.name) && "bg-muted"
+                      )}
+                    >
+                      <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
+                      <span className="truncate flex-1 text-left">{tag.name}</span>
+                      {selectedTags.includes(tag.name) && <Check className="h-3 w-3 text-primary shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
           <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setFormLinkOpen(true)}>
             <Tag className="h-3 w-3" />
           </Button>
