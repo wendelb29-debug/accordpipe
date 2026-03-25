@@ -456,6 +456,14 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                     {lead.lost_reason.split(":")[0]}
                   </span>
                 )}
+                <span className="text-[10px] text-muted-foreground">
+                  em {formatFullDate(lead.updated_at)}
+                </span>
+                {(role === "admin" || role === "ceo" || profile?.is_master) && (
+                  <Button size="sm" variant="outline" onClick={handleReopen} disabled={saving} className="gap-1.5 ml-2">
+                    <Activity className="h-3.5 w-3.5" /> Reabrir
+                  </Button>
+                )}
               </div>
             )}
           </div>
