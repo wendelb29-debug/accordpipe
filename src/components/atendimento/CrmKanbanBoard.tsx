@@ -43,6 +43,19 @@ interface CrmKanbanBoardProps {
 const formatCurrency = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+const isLeadOverdue = (lead: CrmLead, stageId: string): boolean => {
+  const stage = STAGES.find((s) => s.id === stageId);
+  if (!stage?.daysLimit || !lead.stage_entered_at) return false;
+  const match = stage.daysLimit.match(/^(\d+)d$/);
+  if (!match) return false;
+  const limitDays = parseInt(match[1], 10);
+  if (limitDays <= 0) return false;
+  const enteredAt = new Date(lead.stage_entered_at);
+  const now = new Date();
+  const diffDays = (now.getTime() - enteredAt.getTime()) / (1000 * 60 * 60 * 24);
+  return diffDays > limitDays;
+};
+
 export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const { leads, loading, createLead, updateLead, deleteLead, moveToStage, markAsWonAndTransfer, totalLeads, totalPS, totalMRR, stageStats } = useCrmLeads("commercial");
   const { profile } = useAuth();
