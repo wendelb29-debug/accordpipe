@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CrmKanbanBoard } from "@/components/atendimento/CrmKanbanBoard";
 import { AdminKanbanBoard } from "@/components/atendimento/AdminKanbanBoard";
+import { ImportarPlanilha } from "@/components/atendimento/ImportarPlanilha";
 import { useAuth } from "@/contexts/AuthContext";
-import { MessageSquare, ClipboardList } from "lucide-react";
+import { MessageSquare, ClipboardList, FileSpreadsheet } from "lucide-react";
 
 export default function Atendimento() {
   const [crmSearch] = useState("");
@@ -50,12 +51,18 @@ export default function Atendimento() {
           <TabsTrigger value="cadastro" className="gap-1 text-[11px] h-7 px-3">
             <ClipboardList className="h-3 w-3" /> Cadastro de Clientes
           </TabsTrigger>
+          <TabsTrigger value="importar" className="gap-1 text-[11px] h-7 px-3">
+            <FileSpreadsheet className="h-3 w-3" /> Importar Planilha
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="comercial" className="flex-1 overflow-hidden mt-0">
           <CrmKanbanBoard searchTerm={crmSearch} />
         </TabsContent>
         <TabsContent value="cadastro" className="flex-1 overflow-hidden mt-0">
           <AdminKanbanBoard searchTerm={crmSearch} />
+        </TabsContent>
+        <TabsContent value="importar" className="flex-1 overflow-hidden mt-0">
+          <ImportarPlanilha />
         </TabsContent>
       </Tabs>
     </div>
