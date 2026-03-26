@@ -23,11 +23,12 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Navbar */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-border/30 bg-background/70 backdrop-blur-2xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-          <div className="flex items-center gap-3">
-            <img src={orbitLogo} alt="ORBIT" className="h-9 w-auto" />
-            <span className="text-xl font-bold tracking-tight text-foreground">ORBIT HUB</span>
+          <div className="flex items-center gap-2">
+            <img src={orbitLogo} alt="ORBIT" className="h-8 w-auto" />
+            <span className="text-lg font-black tracking-tight text-foreground" style={{ letterSpacing: "-0.04em" }}>ORBIT</span>
+            <span className="text-lg font-light tracking-tight text-muted-foreground" style={{ letterSpacing: "-0.04em" }}>HUB</span>
           </div>
           <nav className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">

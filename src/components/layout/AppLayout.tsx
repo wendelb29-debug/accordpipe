@@ -30,7 +30,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <div className={cn("transition-all duration-300", sidebarCollapsed ? "pl-[68px]" : "pl-64")}>
+      <div className={cn("transition-all duration-300", sidebarCollapsed ? "pl-[68px]" : "pl-60")}>
         {!hasAvatar && profile && (
           <Link
             to="/perfil"
@@ -41,7 +41,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           </Link>
         )}
         {!hideHeader && <Header />}
-        <main className={cn("max-w-[1600px]", hideHeader ? "p-0" : "p-6")}>{children}</main>
+        <main className={cn("max-w-[1600px] mx-auto", hideHeader ? "p-0" : "p-6 lg:p-8")}>{children}</main>
       </div>
       <OrbitAIChat />
     </div>

@@ -7,7 +7,6 @@ import {
   FileText,
   BarChart3,
   FileSignature,
-  
   Users,
   LogOut,
   MessageSquare,
@@ -23,9 +22,7 @@ import { cn } from "@/lib/utils";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import orbitLogo from "@/assets/orbit-logo-new.png";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { OrbitStackDialog } from "./OrbitStackDialog";
 
 const navigation = [
   { name: "Início", href: "/home", icon: Home, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
@@ -99,15 +96,19 @@ export function Sidebar() {
       <Link
         to={item.href}
         className={cn(
-          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 group relative",
+          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-200 group relative",
           isActive
-            ? "bg-primary text-primary-foreground shadow-sm shadow-primary/25"
-            : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md shadow-sidebar-primary/20"
+            : "text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground"
         )}
       >
+        {/* Active indicator bar */}
+        {isActive && (
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-sidebar-primary-foreground/80" />
+        )}
         <div className="relative shrink-0">
           <item.icon className={cn("h-[18px] w-[18px]", isActive && "drop-shadow-sm")} />
-          {badge > 0 && (
+          {badge > 0 && collapsed && (
             <span className="absolute -top-2 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-0.5">
               {badge}
             </span>
@@ -128,7 +129,7 @@ export function Sidebar() {
       return (
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>{content}</TooltipTrigger>
-          <TooltipContent side="right" className="font-medium">
+          <TooltipContent side="right" className="font-medium text-xs">
             {item.name}
           </TooltipContent>
         </Tooltip>
@@ -142,39 +143,39 @@ export function Sidebar() {
     <aside
       className={cn(
         "fixed left-0 top-0 z-40 h-screen border-r border-sidebar-border bg-sidebar transition-all duration-300 flex flex-col",
-        collapsed ? "w-[68px]" : "w-64"
+        collapsed ? "w-[68px]" : "w-60"
       )}
     >
       {/* Logo */}
-      <div className={cn("flex h-16 items-center border-b border-sidebar-border shrink-0 select-none", collapsed ? "justify-center px-2" : "justify-between px-4")}>
+      <div className={cn("flex h-16 items-center border-b border-sidebar-border/50 shrink-0 select-none", collapsed ? "justify-center px-2" : "justify-between px-5")}>
         {!collapsed && (
-          <div className="flex items-center gap-1 cursor-default" onClick={(e) => e.preventDefault()}>
-            <span className="text-lg font-extrabold tracking-tight text-primary" style={{ fontFamily: "'Inter', system-ui, sans-serif", letterSpacing: "-0.03em" }}>ORBIT</span>
-            <span className="text-lg font-light tracking-tight text-sidebar-foreground/70" style={{ fontFamily: "'Inter', system-ui, sans-serif", letterSpacing: "-0.03em" }}>HUB</span>
+          <div className="flex items-center gap-1.5 cursor-default" onClick={(e) => e.preventDefault()}>
+            <span className="text-lg font-black tracking-tight text-sidebar-primary" style={{ letterSpacing: "-0.04em" }}>ORBIT</span>
+            <span className="text-lg font-light tracking-tight text-sidebar-foreground/50" style={{ letterSpacing: "-0.04em" }}>HUB</span>
           </div>
         )}
         {collapsed && (
-          <span className="text-sm font-extrabold text-primary cursor-default" style={{ fontFamily: "'Inter', system-ui, sans-serif" }} onClick={(e) => e.preventDefault()}>OH</span>
+          <span className="text-sm font-black text-sidebar-primary cursor-default" onClick={(e) => e.preventDefault()}>O</span>
         )}
       </div>
 
       {/* Orbit Stack Button */}
-      <div className={cn("shrink-0", collapsed ? "px-2 py-1" : "px-3 py-1")}>
+      <div className={cn("shrink-0", collapsed ? "px-2 py-2" : "px-3 py-2")}>
         {collapsed ? (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
-              <Link to="/orbit-stack" className="flex w-full h-9 items-center justify-center rounded-xl text-primary hover:bg-sidebar-accent transition-colors">
+              <Link to="/orbit-stack" className="flex w-full h-9 items-center justify-center rounded-xl text-sidebar-primary hover:bg-sidebar-accent transition-colors">
                 <Rocket className="h-4 w-4" />
               </Link>
             </TooltipTrigger>
-            <TooltipContent side="right" className="font-medium">Orbit Stack</TooltipContent>
+            <TooltipContent side="right" className="font-medium text-xs">Orbit Stack</TooltipContent>
           </Tooltip>
         ) : (
           <Link
             to="/orbit-stack"
             className={cn(
-              "flex items-center gap-2 w-full h-9 rounded-xl border border-primary/20 text-primary hover:bg-primary/5 text-xs font-semibold justify-center transition-colors",
-              location.pathname === "/orbit-stack" && "bg-primary text-primary-foreground border-primary shadow-sm"
+              "flex items-center gap-2 w-full h-9 rounded-xl border border-sidebar-primary/20 text-sidebar-primary hover:bg-sidebar-primary/10 text-xs font-semibold justify-center transition-all",
+              location.pathname === "/orbit-stack" && "bg-sidebar-primary text-sidebar-primary-foreground border-sidebar-primary shadow-md shadow-sidebar-primary/20"
             )}
           >
             <Rocket className="h-3.5 w-3.5" />
@@ -184,19 +185,19 @@ export function Sidebar() {
       </div>
 
       {/* Toggle */}
-      <div className={cn("flex shrink-0 py-2", collapsed ? "justify-center px-2" : "px-3")}>
+      <div className={cn("flex shrink-0 py-1", collapsed ? "justify-center px-2" : "px-3")}>
         <button
           onClick={() => toggleCollapsed(!collapsed)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-sidebar-foreground/30 hover:bg-sidebar-accent hover:text-sidebar-foreground/70 transition-colors"
         >
           {collapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
         </button>
       </div>
 
       {/* Navigation */}
-      <nav className={cn("flex-1 space-y-1 overflow-y-auto", collapsed ? "px-2" : "px-3")}>
+      <nav className={cn("flex-1 space-y-0.5 overflow-y-auto py-2", collapsed ? "px-2" : "px-3")}>
         {!collapsed && (
-          <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/30">
+          <p className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-sidebar-foreground/25">
             Menu
           </p>
         )}
@@ -206,11 +207,11 @@ export function Sidebar() {
       </nav>
 
       {/* Config & User */}
-      <div className={cn("shrink-0 border-t border-sidebar-border", collapsed ? "px-2 py-2" : "px-3 py-3")}>
+      <div className={cn("shrink-0 border-t border-sidebar-border/50", collapsed ? "px-2 py-2" : "px-3 py-3")}>
         {filteredConfigNavigation.length > 0 && (
-          <div className="space-y-1 mb-3">
+          <div className="space-y-0.5 mb-3">
             {!collapsed && (
-              <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/30">
+              <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-sidebar-foreground/25">
                 Config
               </p>
             )}
@@ -222,9 +223,9 @@ export function Sidebar() {
 
         {/* User */}
         {!collapsed && profile && (
-          <div className="rounded-xl bg-sidebar-accent/50 p-3 mb-2">
-            <p className="text-sm font-medium text-sidebar-foreground truncate">{profile.name}</p>
-            <p className="text-[11px] text-sidebar-foreground/40 truncate">{profile.email}</p>
+          <div className="rounded-xl bg-sidebar-accent/60 p-3 mb-2 border border-sidebar-border/30">
+            <p className="text-sm font-semibold text-sidebar-foreground truncate">{profile.name}</p>
+            <p className="text-[11px] text-sidebar-foreground/35 truncate mt-0.5">{profile.email}</p>
           </div>
         )}
 
@@ -232,14 +233,14 @@ export function Sidebar() {
           <TooltipTrigger asChild>
             <button
               onClick={signOut}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-sidebar-foreground/50 hover:bg-destructive/10 hover:text-destructive transition-colors"
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-sidebar-foreground/40 hover:bg-destructive/10 hover:text-destructive transition-colors"
             >
               <LogOut className="h-[18px] w-[18px] shrink-0" />
               {!collapsed && <span>Sair</span>}
             </button>
           </TooltipTrigger>
           {collapsed && (
-            <TooltipContent side="right" className="font-medium">Sair</TooltipContent>
+            <TooltipContent side="right" className="font-medium text-xs">Sair</TooltipContent>
           )}
         </Tooltip>
       </div>

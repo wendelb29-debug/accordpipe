@@ -183,8 +183,8 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-        <p className="text-muted-foreground">Visão geral do sistema de gestão</p>
+        <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Dashboard</h1>
+        <p className="text-muted-foreground mt-1">Visão geral da sua operação</p>
       </div>
 
       {/* Filters */}
@@ -222,7 +222,7 @@ export default function Dashboard() {
       </Card>
 
       {/* Cards based on role */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {isOperador && (
           <>
             <StatCard title="Minhas Vendas" value={wonLeads} description="Leads ganhos no período" icon={TrendingUp} variant="success" />
