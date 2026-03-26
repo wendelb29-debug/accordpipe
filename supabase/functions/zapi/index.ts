@@ -1,3 +1,5 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -10,21 +12,43 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const INSTANCE_ID = Deno.env.get("ZAPI_INSTANCE_ID");
-    const TOKEN = Deno.env.get("ZAPI_TOKEN");
-    const CLIENT_TOKEN = Deno.env.get("ZAPI_CLIENT_TOKEN");
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
 
-    console.log("Z-API credentials check:", {
-      instanceId: INSTANCE_ID || "EMPTY",
-      tokenLen: TOKEN?.length || 0,
-      clientTokenLen: CLIENT_TOKEN?.length || 0,
-      url: `https://api.z-api.io/instances/${INSTANCE_ID}/token/${TOKEN}/status`,
-    });
+    const body = await req.json();
+    const { action, phone, message, imageUrl, caption, company_id } = body;
+
+    if (!company_id) {
+      return new Response(
+        JSON.stringify({ error: "company_id is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Fetch Z-API credentials from the company record
+    const { data: company, error: companyError } = await supabase
+      .from("companies")
+      .select("zapi_instance_id, zapi_token, zapi_client_token")
+      .eq("id", company_id)
+      .maybeSingle();
+
+    if (companyError || !company) {
+      return new Response(
+        JSON.stringify({ error: "Company not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const INSTANCE_ID = company.zapi_instance_id;
+    const TOKEN = company.zapi_token;
+    const CLIENT_TOKEN = company.zapi_client_token;
 
     if (!INSTANCE_ID || !TOKEN || !CLIENT_TOKEN) {
       return new Response(
-        JSON.stringify({ error: "Z-API credentials not configured (ZAPI_INSTANCE_ID, ZAPI_TOKEN, ZAPI_CLIENT_TOKEN)" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Z-API não configurada para esta empresa. Configure em Configurações." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -34,21 +58,15 @@ Deno.serve(async (req) => {
       "Client-Token": CLIENT_TOKEN,
     };
 
-    const body = await req.json();
-    const { action, phone, message, imageUrl, caption } = body;
-
     // ── GET QR CODE ──
     if (action === "get-qrcode") {
       const res = await fetch(`${baseUrl}/qr-code/image`, { method: "GET", headers });
       const data = await res.json().catch(() => null);
-
       if (!res.ok) {
         return new Response(JSON.stringify({ success: false, error: "Failed to get QR code", details: data }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-
       return new Response(JSON.stringify({ success: true, data }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -58,15 +76,12 @@ Deno.serve(async (req) => {
     if (action === "status") {
       const res = await fetch(`${baseUrl}/status`, { method: "GET", headers });
       const data = await res.json().catch(() => null);
-
       if (!res.ok) {
         return new Response(
           JSON.stringify({ success: false, error: `Z-API status failed [${res.status}]`, details: data }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-
-      // Z-API returns connected=true with error="You are already connected." which is actually success
       return new Response(JSON.stringify({ success: true, data }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -76,17 +91,13 @@ Deno.serve(async (req) => {
     if (action === "send-text") {
       if (!phone || !message) {
         return new Response(JSON.stringify({ error: "phone and message are required" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-
       const res = await fetch(`${baseUrl}/send-text`, {
-        method: "POST",
-        headers,
+        method: "POST", headers,
         body: JSON.stringify({ phone, message }),
       });
-
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         return new Response(
@@ -94,7 +105,6 @@ Deno.serve(async (req) => {
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-
       return new Response(JSON.stringify({ success: true, data }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -104,17 +114,13 @@ Deno.serve(async (req) => {
     if (action === "send-image") {
       if (!phone || !imageUrl) {
         return new Response(JSON.stringify({ error: "phone and imageUrl are required" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-
       const res = await fetch(`${baseUrl}/send-image`, {
-        method: "POST",
-        headers,
+        method: "POST", headers,
         body: JSON.stringify({ phone, image: imageUrl, caption: caption || "" }),
       });
-
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         return new Response(
@@ -122,7 +128,6 @@ Deno.serve(async (req) => {
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-
       return new Response(JSON.stringify({ success: true, data }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -132,14 +137,12 @@ Deno.serve(async (req) => {
     if (action === "disconnect") {
       const res = await fetch(`${baseUrl}/disconnect`, { method: "GET", headers });
       const data = await res.json().catch(() => null);
-
       if (!res.ok || data?.error) {
         return new Response(
           JSON.stringify({ success: false, error: `Z-API disconnect failed [${res.status}]`, details: data }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-
       return new Response(JSON.stringify({ success: true, data }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
