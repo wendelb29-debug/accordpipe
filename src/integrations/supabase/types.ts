@@ -683,6 +683,7 @@ export type Database = {
           created_at: string
           created_by_name: string | null
           created_by_user_id: string | null
+          documento: string | null
           email: string | null
           estado: string | null
           forecast_date: string | null
@@ -709,6 +710,7 @@ export type Database = {
           created_at?: string
           created_by_name?: string | null
           created_by_user_id?: string | null
+          documento?: string | null
           email?: string | null
           estado?: string | null
           forecast_date?: string | null
@@ -735,6 +737,7 @@ export type Database = {
           created_at?: string
           created_by_name?: string | null
           created_by_user_id?: string | null
+          documento?: string | null
           email?: string | null
           estado?: string | null
           forecast_date?: string | null
@@ -1036,8 +1039,10 @@ export type Database = {
           id: string
           is_active: boolean
           is_master: boolean
+          last_assigned_at: string | null
           name: string
           status: string
+          tags: string[] | null
           updated_at: string
           user_id: string
         }
@@ -1049,8 +1054,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_master?: boolean
+          last_assigned_at?: string | null
           name: string
           status?: string
+          tags?: string[] | null
           updated_at?: string
           user_id: string
         }
@@ -1062,8 +1069,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_master?: boolean
+          last_assigned_at?: string | null
           name?: string
           status?: string
+          tags?: string[] | null
           updated_at?: string
           user_id?: string
         }
