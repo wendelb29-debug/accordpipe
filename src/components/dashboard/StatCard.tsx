@@ -21,6 +21,14 @@ const variantStyles = {
   info: "bg-primary",
 };
 
+const variantBgStyles = {
+  default: "bg-primary/5",
+  success: "bg-status-paid/5",
+  warning: "bg-yellow-500/5",
+  danger: "bg-destructive/5",
+  info: "bg-primary/5",
+};
+
 export function StatCard({
   title,
   value,
@@ -30,11 +38,14 @@ export function StatCard({
   variant = "default",
 }: StatCardProps) {
   return (
-    <div className="group relative overflow-hidden rounded-xl bg-card p-6 shadow-card transition-all duration-300 hover:shadow-card-hover animate-slide-up">
-      <div className="flex items-start justify-between">
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-3xl font-bold tracking-tight text-foreground">
+    <div className="group relative overflow-hidden rounded-2xl bg-card p-6 shadow-card premium-hover animate-slide-up border border-border/50">
+      {/* Subtle gradient accent */}
+      <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 rounded-full opacity-[0.04]" style={{ background: 'var(--gradient-primary)' }} />
+      
+      <div className="relative flex items-start justify-between">
+        <div className="space-y-3">
+          <p className="text-[13px] font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
+          <p className="text-3xl font-extrabold tracking-tight text-foreground">
             {value}
           </p>
           {description && (
@@ -43,18 +54,20 @@ export function StatCard({
           {trend && (
             <div
               className={cn(
-                "inline-flex items-center gap-1 text-xs font-medium",
-                trend.isPositive ? "text-status-paid" : "text-status-overdue"
+                "inline-flex items-center gap-1.5 text-xs font-semibold rounded-full px-2.5 py-1",
+                trend.isPositive 
+                  ? "text-status-paid bg-status-paid/10" 
+                  : "text-status-overdue bg-status-overdue/10"
               )}
             >
               <span>{trend.isPositive ? "↑" : "↓"}</span>
-              <span>{Math.abs(trend.value)}% em relação ao mês anterior</span>
+              <span>{Math.abs(trend.value)}%</span>
             </div>
           )}
         </div>
         <div
           className={cn(
-            "flex h-12 w-12 items-center justify-center rounded-xl text-white transition-transform duration-300 group-hover:scale-110",
+            "flex h-14 w-14 items-center justify-center rounded-2xl text-primary-foreground transition-transform duration-300 group-hover:scale-110 shadow-md",
             variantStyles[variant]
           )}
         >
