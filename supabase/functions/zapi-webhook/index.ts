@@ -14,25 +14,91 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
 
-    // Z-API sends different event structures
-    const eventType =
-      body.event || body.type || body.status || "unknown";
-    const phone =
-      body.phone || body.from || body.chatId || body.sender || null;
-    const messageId =
-      body.messageId || body.ids?.[0] || body.id || null;
+    const eventType = body.event || body.type || body.status || "unknown";
+    const phone = body.phone || body.from || body.chatId || body.sender || null;
+    const messageId = body.messageId || body.ids?.[0] || body.id || null;
+    const instanceId = body.instanceId || null;
+    const messageText = body.text?.message || body.body || body.message || "";
+    const isFromMe = body.fromMe === true;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Log the raw event
     await supabase.from("zapi_webhook_events").insert({
       event_type: eventType,
       phone,
       message_id: messageId,
       payload: body,
     });
+
+    // If it's a received message, map to tenant and store
+    if (eventType === "ReceivedCallback" && phone && !isFromMe) {
+      // Find company by zapi_instance_id
+      let companyId: string | null = null;
+
+      if (instanceId) {
+        const { data: company } = await supabase
+          .from("companies")
+          .select("id")
+          .eq("zapi_instance_id", instanceId)
+          .maybeSingle();
+        companyId = company?.id || null;
+      }
+
+      if (companyId && messageText) {
+        // Clean phone number
+        const cleanPhone = phone.replace(/\D/g, "");
+
+        // Find or create contact
+        let { data: contact } = await supabase
+          .from("whatsapp_contacts")
+          .select("id")
+          .eq("company_id", companyId)
+          .eq("phone", cleanPhone)
+          .maybeSingle();
+
+        if (!contact) {
+          const { data: newContact } = await supabase
+            .from("whatsapp_contacts")
+            .insert({
+              company_id: companyId,
+              phone: cleanPhone,
+              name: body.senderName || cleanPhone,
+              last_message: messageText,
+              last_message_at: new Date().toISOString(),
+            })
+            .select("id")
+            .single();
+          contact = newContact;
+        } else {
+          // Update last message
+          await supabase
+            .from("whatsapp_contacts")
+            .update({
+              last_message: messageText,
+              last_message_at: new Date().toISOString(),
+              name: body.senderName || undefined,
+            })
+            .eq("id", contact.id);
+        }
+
+        if (contact) {
+          await supabase.from("whatsapp_messages").insert({
+            company_id: companyId,
+            contact_id: contact.id,
+            phone: cleanPhone,
+            message: messageText,
+            direction: "inbound",
+            status: "received",
+            message_type: "text",
+            metadata: { zapi_message_id: messageId },
+          });
+        }
+      }
+    }
 
     return new Response(JSON.stringify({ ok: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

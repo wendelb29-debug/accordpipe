@@ -218,6 +218,10 @@ export type Database = {
           trial_extensions: number
           trial_start: string | null
           updated_at: string
+          zapi_client_token: string | null
+          zapi_instance_id: string | null
+          zapi_phone: string | null
+          zapi_token: string | null
         }
         Insert: {
           bairro?: string | null
@@ -243,6 +247,10 @@ export type Database = {
           trial_extensions?: number
           trial_start?: string | null
           updated_at?: string
+          zapi_client_token?: string | null
+          zapi_instance_id?: string | null
+          zapi_phone?: string | null
+          zapi_token?: string | null
         }
         Update: {
           bairro?: string | null
@@ -268,6 +276,10 @@ export type Database = {
           trial_extensions?: number
           trial_start?: string | null
           updated_at?: string
+          zapi_client_token?: string | null
+          zapi_instance_id?: string | null
+          zapi_phone?: string | null
+          zapi_token?: string | null
         }
         Relationships: [
           {

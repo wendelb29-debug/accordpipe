@@ -1,83 +1,82 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useWhatsAppInbox, InboxFilter, InboxContact, InboxMessage } from "@/hooks/useWhatsAppInbox";
 import { toast } from "sonner";
-import { ConversationList } from "@/components/atendimento/ConversationList";
-import { ChatArea } from "@/components/atendimento/ChatArea";
-import { ContactInfo } from "@/components/atendimento/ContactInfo";
-import { mockContacts } from "@/components/atendimento/mock-data";
 import { QrCodeModal } from "@/components/orbit-inbox/QrCodeModal";
 import { InboxHeader } from "@/components/orbit-inbox/InboxHeader";
+import { InboxSidebar } from "@/components/orbit-inbox/InboxSidebar";
+import { InboxChat } from "@/components/orbit-inbox/InboxChat";
+import { TransferDialog } from "@/components/orbit-inbox/TransferDialog";
 
 export default function OrbitStack() {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const {
+    contacts,
+    messages,
+    selectedContactId,
+    selectContact,
+    sendMessage,
+    filter,
+    setFilter,
+    loading,
+    isAdminOrCeo,
+    connectionStatus,
+    generateQrCode,
+    assignContact,
+    transferContact,
+    companyId,
+  } = useWhatsAppInbox();
+
   const [searchTerm, setSearchTerm] = useState("");
-  const [showContactInfo, setShowContactInfo] = useState(false);
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [qrCode, setQrCode] = useState<string | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<
-    "disconnected" | "connecting" | "connected"
-  >("disconnected");
-  const [loading, setLoading] = useState(false);
+  const [qrLoading, setQrLoading] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [transferContactId, setTransferContactId] = useState<string | null>(null);
 
-  const selectedContact = mockContacts.find((c) => c.id === selectedId) || null;
+  const selectedContact = contacts.find(c => c.id === selectedContactId) || null;
 
-  const invokeZapi = useCallback(
-    async (action: string, params: Record<string, any> = {}) => {
-      const { data, error } = await supabase.functions.invoke("zapi", {
-        body: { action, ...params },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return data;
-    },
-    []
+  const filteredContacts = contacts.filter(c =>
+    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.phone.includes(searchTerm)
   );
 
-  const checkConnection = useCallback(async () => {
-    try {
-      const data = await invokeZapi("status");
-      const connected = data?.data?.connected;
-      setConnectionStatus(connected === true ? "connected" : "disconnected");
-    } catch {
-      setConnectionStatus("disconnected");
-    }
-  }, [invokeZapi]);
-
-  useEffect(() => {
-    checkConnection();
-    const interval = setInterval(checkConnection, 10000);
-    return () => clearInterval(interval);
-  }, [checkConnection]);
-
-  const generateQrCode = useCallback(async () => {
-    setLoading(true);
-    setConnectionStatus("connecting");
-    try {
-      const data = await invokeZapi("get-qrcode");
-      const qr = data?.data?.value;
+  const handleConnectClick = async () => {
+    setQrModalOpen(true);
+    if (connectionStatus !== "connected") {
+      setQrLoading(true);
+      const qr = await generateQrCode();
       if (qr) {
-        setQrCode(qr.startsWith("data:") ? qr : `data:image/png;base64,${qr}`);
+        setQrCode(qr);
         toast.success("QR Code gerado! Escaneie com seu WhatsApp.");
-      } else if (data?.data?.connected === true) {
-        setConnectionStatus("connected");
+      } else {
+        // May have connected during the QR generation
         setQrCode(null);
         setQrModalOpen(false);
         toast.success("WhatsApp já conectado!");
-      } else {
-        toast.error("Não foi possível gerar o QR Code.");
-        setConnectionStatus("disconnected");
       }
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao gerar QR Code");
-      setConnectionStatus("disconnected");
-    } finally {
-      setLoading(false);
+      setQrLoading(false);
     }
-  }, [invokeZapi]);
+  };
 
-  const handleConnectClick = () => {
-    setQrModalOpen(true);
-    if (connectionStatus !== "connected") generateQrCode();
+  const handleTransfer = (contactId: string) => {
+    setTransferContactId(contactId);
+    setTransferOpen(true);
+  };
+
+  const handleTransferConfirm = async (userId: string) => {
+    if (transferContactId) {
+      await transferContact(transferContactId, userId);
+      setTransferOpen(false);
+      setTransferContactId(null);
+    }
+  };
+
+  const handleAssignToMe = async (contactId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await assignContact(contactId, user.id);
+    }
   };
 
   return (
@@ -87,32 +86,28 @@ export default function OrbitStack() {
         onConnectClick={handleConnectClick}
       />
 
-      {/* Main chat layout */}
       <div className="flex flex-1 min-h-0 border-b border-border">
-        <div className="w-[340px] shrink-0 border-r border-border">
-          <ConversationList
-            contacts={mockContacts}
-            selectedId={selectedId}
-            onSelect={(id) => {
-              setSelectedId(id);
-              setShowContactInfo(false);
-            }}
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-          />
-        </div>
-
-        <ChatArea
-          contact={selectedContact}
-          onSendMessage={() => {}}
+        <InboxSidebar
+          contacts={filteredContacts}
+          selectedId={selectedContactId}
+          onSelect={selectContact}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          filter={filter}
+          onFilterChange={setFilter}
+          isAdmin={isAdminOrCeo}
+          loading={loading}
         />
 
-        {showContactInfo && selectedContact && (
-          <ContactInfo
-            contact={selectedContact}
-            onClose={() => setShowContactInfo(false)}
-          />
-        )}
+        <InboxChat
+          contact={selectedContact}
+          messages={messages}
+          onSendMessage={sendMessage}
+          onTransfer={handleTransfer}
+          onAssignToMe={handleAssignToMe}
+          isAdmin={isAdminOrCeo}
+          companyId={companyId}
+        />
       </div>
 
       <QrCodeModal
@@ -120,8 +115,20 @@ export default function OrbitStack() {
         onOpenChange={setQrModalOpen}
         qrCode={qrCode}
         connectionStatus={connectionStatus}
-        loading={loading}
-        onGenerateQrCode={generateQrCode}
+        loading={qrLoading}
+        onGenerateQrCode={async () => {
+          setQrLoading(true);
+          const qr = await generateQrCode();
+          if (qr) setQrCode(qr);
+          setQrLoading(false);
+        }}
+      />
+
+      <TransferDialog
+        open={transferOpen}
+        onOpenChange={setTransferOpen}
+        onConfirm={handleTransferConfirm}
+        companyId={companyId}
       />
     </div>
   );
