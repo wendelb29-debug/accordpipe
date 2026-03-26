@@ -4,10 +4,85 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLocation } from "react-router-dom";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/orbit-ai-chat`;
+
+interface QuickAction {
+  label: string;
+  prompt: string;
+}
+
+function getContextForRoute(pathname: string): { pageName: string; quickActions: QuickAction[] } {
+  if (pathname.startsWith("/documentos")) {
+    return {
+      pageName: "Documentos",
+      quickActions: [
+        { label: "✏️ Melhorar texto", prompt: "Melhore o seguinte texto de forma profissional:" },
+        { label: "📝 Reescrever profissional", prompt: "Reescreva o texto abaixo com linguagem profissional e clara:" },
+        { label: "📄 Gerar documento", prompt: "Gere um documento completo para o seguinte contexto:" },
+      ],
+    };
+  }
+  if (pathname.startsWith("/relatorios")) {
+    return {
+      pageName: "Relatórios",
+      quickActions: [
+        { label: "📊 Gerar resumo", prompt: "Gere um resumo executivo dos seguintes dados:" },
+        { label: "🔍 Analisar dados", prompt: "Analise os seguintes dados e destaque os pontos mais importantes:" },
+        { label: "💡 Criar insights", prompt: "Crie insights estratégicos a partir dos seguintes dados:" },
+      ],
+    };
+  }
+  if (pathname.startsWith("/contratos")) {
+    return {
+      pageName: "Contratos",
+      quickActions: [
+        { label: "📑 Gerar contrato", prompt: "Gere um modelo de contrato de adesão com as seguintes informações:" },
+        { label: "🔎 Revisar contrato", prompt: "Revise o contrato abaixo, identificando problemas e sugerindo melhorias:" },
+        { label: "💬 Simplificar linguagem", prompt: "Simplifique a linguagem jurídica do seguinte trecho:" },
+      ],
+    };
+  }
+  if (pathname.startsWith("/gestao-vendas") || pathname.startsWith("/atendimento")) {
+    return {
+      pageName: "Gestão de Vendas",
+      quickActions: [
+        { label: "💰 Criar proposta", prompt: "Crie uma proposta comercial para o seguinte cliente/serviço:" },
+        { label: "📱 Mensagem de venda", prompt: "Gere uma mensagem de venda persuasiva para WhatsApp para o seguinte produto/serviço:" },
+        { label: "🤝 Melhorar negociação", prompt: "Sugira estratégias para melhorar a negociação com o seguinte cenário:" },
+      ],
+    };
+  }
+  if (pathname.startsWith("/cadastrados") || pathname.startsWith("/clientes") || pathname.startsWith("/empresas")) {
+    return {
+      pageName: "Cadastros",
+      quickActions: [
+        { label: "✅ Corrigir cadastro", prompt: "Corrija e padronize os seguintes dados de cadastro:" },
+        { label: "📋 Padronizar dados", prompt: "Padronize as seguintes informações seguindo o padrão brasileiro:" },
+        { label: "🔎 Validar informações", prompt: "Valide os seguintes dados e identifique inconsistências:" },
+      ],
+    };
+  }
+  if (pathname.startsWith("/financeiro") || pathname.startsWith("/boletos")) {
+    return {
+      pageName: "Financeiro",
+      quickActions: [
+        { label: "📊 Resumo financeiro", prompt: "Gere um resumo financeiro com base nos seguintes dados:" },
+        { label: "📝 Gerar cobrança", prompt: "Gere uma mensagem profissional de cobrança para o seguinte cenário:" },
+      ],
+    };
+  }
+  return {
+    pageName: "Sistema",
+    quickActions: [
+      { label: "✏️ Melhorar texto", prompt: "Melhore o seguinte texto de forma profissional:" },
+      { label: "💡 Sugestão inteligente", prompt: "Me ajude com a seguinte tarefa:" },
+    ],
+  };
+}
 
 export function OrbitAIChat() {
   const [open, setOpen] = useState(false);
@@ -16,6 +91,9 @@ export function OrbitAIChat() {
   const [isLoading, setIsLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const { profile, activeCompany } = useAuth();
+  const location = useLocation();
+
+  const { pageName, quickActions } = getContextForRoute(location.pathname);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -24,13 +102,13 @@ export function OrbitAIChat() {
   const getContext = () => ({
     usuario: profile?.name,
     empresa: activeCompany?.razao_social || activeCompany?.nome_fantasia,
+    pagina_atual: pageName,
   });
 
-  const send = async () => {
-    const text = input.trim();
-    if (!text || isLoading) return;
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || isLoading) return;
 
-    const userMsg: Msg = { role: "user", content: text };
+    const userMsg: Msg = { role: "user", content: text.trim() };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setIsLoading(true);
@@ -108,40 +186,69 @@ export function OrbitAIChat() {
     }
   };
 
+  const send = () => sendMessage(input);
+
   return (
     <>
       {/* FAB */}
       <button
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105",
+          "fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 group",
           "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground"
         )}
+        title="✨ Assistente IA"
       >
-        {open ? <X className="h-6 w-6" /> : <Bot className="h-6 w-6" />}
+        {open ? <X className="h-6 w-6" /> : (
+          <div className="relative">
+            <Bot className="h-6 w-6" />
+            <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-green-400 border-2 border-primary animate-pulse" />
+          </div>
+        )}
       </button>
 
       {/* Chat window */}
       {open && (
-        <div className="fixed bottom-24 right-6 z-50 w-[380px] max-h-[520px] rounded-2xl shadow-2xl border border-border bg-background flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="fixed bottom-24 right-6 z-50 w-[400px] max-h-[560px] rounded-2xl shadow-2xl border border-border bg-background flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
             <div className="h-9 w-9 rounded-full bg-white/20 flex items-center justify-center">
               <Sparkles className="h-5 w-5" />
             </div>
-            <div>
-              <p className="font-semibold text-sm">Orbit AI</p>
-              <p className="text-[11px] opacity-80">Assistente inteligente</p>
+            <div className="flex-1">
+              <p className="font-semibold text-sm">✨ Assistente IA</p>
+              <p className="text-[11px] opacity-80">Contexto: {pageName}</p>
             </div>
+            <button
+              onClick={() => { setMessages([]); }}
+              className="text-[10px] opacity-70 hover:opacity-100 bg-white/10 rounded-full px-2 py-0.5 transition-opacity"
+            >
+              Limpar
+            </button>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-[280px] max-h-[360px]">
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-[280px] max-h-[380px]">
             {messages.length === 0 && (
-              <div className="text-center text-muted-foreground text-sm py-8 space-y-2">
-                <Bot className="h-10 w-10 mx-auto opacity-40" />
-                <p>Olá! Sou o Orbit AI.</p>
-                <p className="text-xs">Como posso ajudar você hoje?</p>
+              <div className="space-y-4">
+                <div className="text-center text-muted-foreground text-sm py-4 space-y-2">
+                  <Bot className="h-10 w-10 mx-auto opacity-40" />
+                  <p className="font-medium">Olá! Sou o Orbit AI.</p>
+                  <p className="text-xs">Estou aqui para ajudar com <strong>{pageName}</strong>.</p>
+                </div>
+                {/* Quick Actions */}
+                <div className="space-y-1.5">
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide px-1">Ações rápidas</p>
+                  {quickActions.map((action, i) => (
+                    <button
+                      key={i}
+                      onClick={() => sendMessage(action.prompt)}
+                      className="w-full text-left text-sm px-3 py-2 rounded-xl border border-border hover:bg-muted/60 hover:border-primary/30 transition-colors flex items-center gap-2"
+                    >
+                      <span>{action.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
             {messages.map((msg, i) => (
