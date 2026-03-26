@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CrmKanbanBoard } from "@/components/atendimento/CrmKanbanBoard";
 import { AdminKanbanBoard } from "@/components/atendimento/AdminKanbanBoard";
+import { ImportarPlanilha } from "@/components/atendimento/ImportarPlanilha";
 import { useAuth } from "@/contexts/AuthContext";
-import { MessageSquare, ClipboardList } from "lucide-react";
+import { MessageSquare, ClipboardList, FileSpreadsheet } from "lucide-react";
 
 export default function Atendimento() {
   const [crmSearch] = useState("");
