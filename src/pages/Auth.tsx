@@ -208,35 +208,39 @@ export default function Auth() {
     <div className="flex min-h-screen">
       {/* Left - Branding */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-primary via-primary to-accent">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(255,255,255,0.1),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(255,255,255,0.08),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.05),transparent_50%)]" />
+        {/* Subtle grid pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px]" />
+        
         <div className="relative flex flex-col justify-between p-12 text-primary-foreground">
-          <Link to="/" className="flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground transition-colors w-fit">
+          <Link to="/" className="flex items-center gap-2 text-primary-foreground/60 hover:text-primary-foreground transition-colors w-fit">
             <ArrowLeft className="h-4 w-4" />
             <span className="text-sm font-medium">Voltar ao site</span>
           </Link>
           <div>
-            <img src={orbitLogo} alt="ORBIT" className="h-16 w-auto mb-8 brightness-0 invert" />
-            <h1 className="text-4xl font-bold leading-tight">Tudo gira sob<br />controle.</h1>
-            <p className="mt-4 text-lg text-primary-foreground/70 max-w-md">Gerencie clientes, contratos e recorrências em uma plataforma unificada e intuitiva.</p>
+            <img src={orbitLogo} alt="ORBIT" className="h-14 w-auto mb-10 brightness-0 invert opacity-90" />
+            <h1 className="text-5xl font-black leading-[1.1] tracking-tight">Controle total<br />da sua operação<br />em um só lugar.</h1>
+            <p className="mt-6 text-lg text-primary-foreground/60 max-w-md leading-relaxed">CRM, contratos, WhatsApp e IA integrada para automatizar e escalar sua operação.</p>
           </div>
-          <p className="text-sm text-primary-foreground/40">© 2026 ORBIT HUB</p>
+          <p className="text-xs text-primary-foreground/30 font-medium tracking-wider">© 2026 ORBIT HUB — TODOS OS DIREITOS RESERVADOS</p>
         </div>
       </div>
 
       {/* Right - Form */}
-      <div className="flex flex-1 items-center justify-center p-6 bg-background overflow-y-auto">
-        <div className="w-full max-w-md">
-          <div className="mb-8 lg:hidden text-center">
-            <img src={orbitLogo} alt="ORBIT" className="h-12 w-auto mx-auto mb-4" />
+      <div className="flex flex-1 items-center justify-center p-8 bg-background overflow-y-auto">
+        <div className="w-full max-w-[420px]">
+          <div className="mb-10 lg:hidden text-center">
+            <img src={orbitLogo} alt="ORBIT" className="h-10 w-auto mx-auto mb-4" />
             <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Voltar ao site</Link>
           </div>
 
-          <Card className="border-0 shadow-none lg:border lg:shadow-sm">
-            <CardHeader className="space-y-1 pb-4">
-              <CardTitle className="text-2xl font-bold">
+          <Card className="border-0 shadow-none lg:border lg:border-border/50 lg:shadow-card rounded-2xl">
+            <CardHeader className="space-y-2 pb-6">
+              <CardTitle className="text-2xl font-extrabold tracking-tight">
                 {activeTab === "login" ? "Bem-vindo de volta" : "Crie sua conta"}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-[15px]">
                 {activeTab === "login"
                   ? "Entre com suas credenciais para acessar a plataforma"
                   : "Preencha os dados abaixo para começar"}
