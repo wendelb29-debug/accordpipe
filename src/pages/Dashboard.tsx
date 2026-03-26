@@ -222,7 +222,7 @@ export default function Dashboard() {
       </Card>
 
       {/* Cards based on role */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {isOperador && (
           <>
             <StatCard title="Minhas Vendas" value={wonLeads} description="Leads ganhos no período" icon={TrendingUp} variant="success" />
