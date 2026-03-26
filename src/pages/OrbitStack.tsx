@@ -49,7 +49,8 @@ export default function OrbitStack() {
       if (qr) {
         setQrCode(qr);
         toast.success("QR Code gerado! Escaneie com seu WhatsApp.");
-      } else if (connectionStatus === "connected") {
+      } else {
+        // May have connected during the QR generation
         setQrCode(null);
         setQrModalOpen(false);
         toast.success("WhatsApp já conectado!");
