@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import {
   Upload, Download, FileSpreadsheet, CheckCircle2, Loader2,
-  Users, Tag, CreditCard, AlertCircle,
+  Users, Tag, CreditCard, AlertCircle, UserCheck,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 
@@ -18,10 +19,15 @@ interface ParsedLead {
   empresa: string;
   email: string;
   telefone: string;
-  cpf_cnpj: string;
+  documento: string;
   valor_ps: number;
   valor_mrr: number;
   tags: string;
+}
+
+interface DistributionResult {
+  total: number;
+  perOperator: { name: string; count: number }[];
 }
 
 type DistributionMethod = "round-robin" | "tags" | "cpf-cnpj";
@@ -33,7 +39,7 @@ export function ImportarPlanilha() {
   const [fileName, setFileName] = useState("");
   const [distribMethod, setDistribMethod] = useState<DistributionMethod>("round-robin");
   const [importing, setImporting] = useState(false);
-  const [result, setResult] = useState<{ total: number } | null>(null);
+  const [result, setResult] = useState<DistributionResult | null>(null);
   const [dragOver, setDragOver] = useState(false);
 
   const downloadTemplate = (format: "csv" | "xlsx") => {
@@ -74,13 +80,12 @@ export function ImportarPlanilha() {
           return;
         }
 
-        // Skip header row
         const leads: ParsedLead[] = rows.slice(1).filter(r => r.some(c => c)).map((row) => ({
           nome: String(row[0] || "").trim(),
           empresa: String(row[1] || "").trim(),
           email: String(row[2] || "").trim(),
           telefone: String(row[3] || "").trim(),
-          cpf_cnpj: String(row[4] || "").trim(),
+          documento: String(row[4] || "").trim(),
           valor_ps: Number(row[5]) || 0,
           valor_mrr: Number(row[6]) || 0,
           tags: String(row[7] || "").trim(),
@@ -112,40 +117,96 @@ export function ImportarPlanilha() {
     setImporting(true);
 
     try {
-      // Fetch operators for distribution
+      // Fetch operators with tags and last_assigned_at, ordered for round-robin
       const { data: operators } = await supabase
         .from("profiles")
-        .select("user_id, name")
+        .select("user_id, name, tags, last_assigned_at")
         .eq("company_id", profile.company_id)
-        .eq("is_active", true);
+        .eq("is_active", true)
+        .order("last_assigned_at", { ascending: true, nullsFirst: true });
 
-      const operatorList = operators || [];
-      let opIndex = 0;
+      const operatorList = (operators || []) as { user_id: string; name: string; tags: string[] | null; last_assigned_at: string | null }[];
 
-      const leadsToInsert = parsedData.map((lead) => {
-        let assignedUserId = profile.user_id;
-        let assignedName = profile.name;
+      // For CPF/CNPJ mode: fetch existing leads with documento to find their operator
+      let existingDocMap = new Map<string, { user_id: string; name: string }>();
+      if (distribMethod === "cpf-cnpj") {
+        const docs = parsedData.map(l => l.documento).filter(Boolean);
+        if (docs.length > 0) {
+          const { data: existingLeads } = await supabase
+            .from("crm_leads")
+            .select("documento, created_by_user_id, created_by_name")
+            .eq("servidor_id", profile.company_id)
+            .not("documento", "is", null);
+          
+          if (existingLeads) {
+            for (const el of existingLeads) {
+              const doc = (el as any).documento;
+              if (doc && (el as any).created_by_user_id) {
+                existingDocMap.set(doc.replace(/\D/g, ""), {
+                  user_id: (el as any).created_by_user_id,
+                  name: (el as any).created_by_name || "",
+                });
+              }
+            }
+          }
+        }
+      }
 
-        if (distribMethod === "round-robin" && operatorList.length > 0) {
-          const op = operatorList[opIndex % operatorList.length];
-          assignedUserId = op.user_id;
-          assignedName = op.name;
-          opIndex++;
+      // Track distribution counts
+      const distributionCount = new Map<string, { name: string; count: number }>();
+      let rrIndex = 0;
+
+      const assignLead = (lead: ParsedLead): { userId: string; userName: string } => {
+        const fallback = { userId: profile.user_id, userName: profile.name };
+        if (operatorList.length === 0) return fallback;
+
+        // Round Robin
+        if (distribMethod === "round-robin") {
+          const op = operatorList[rrIndex % operatorList.length];
+          rrIndex++;
+          return { userId: op.user_id, userName: op.name };
         }
 
-        const tagArray = lead.tags
-          ? lead.tags.split(",").map((t) => t.trim()).filter(Boolean)
-          : [];
-
-        if (distribMethod === "tags" && operatorList.length > 0 && tagArray.length > 0) {
-          // Simple tag matching: assign to first operator whose name appears in tags
-          const matched = operatorList.find((op) =>
-            tagArray.some((t) => t.toLowerCase() === op.name.toLowerCase())
-          );
-          if (matched) {
-            assignedUserId = matched.user_id;
-            assignedName = matched.name;
+        // By Tags
+        if (distribMethod === "tags") {
+          const leadTags = lead.tags
+            ? lead.tags.split(",").map(t => t.trim().toLowerCase()).filter(Boolean)
+            : [];
+          if (leadTags.length > 0) {
+            const matched = operatorList.find(op =>
+              (op.tags || []).some(opTag => leadTags.includes(opTag.toLowerCase()))
+            );
+            if (matched) return { userId: matched.user_id, userName: matched.name };
           }
+          // Fallback to round-robin if no tag match
+          const op = operatorList[rrIndex % operatorList.length];
+          rrIndex++;
+          return { userId: op.user_id, userName: op.name };
+        }
+
+        // By CPF/CNPJ
+        if (distribMethod === "cpf-cnpj" && lead.documento) {
+          const cleanDoc = lead.documento.replace(/\D/g, "");
+          const existing = existingDocMap.get(cleanDoc);
+          if (existing) return { userId: existing.user_id, userName: existing.name };
+          // Fallback to round-robin if doc not found
+          const op = operatorList[rrIndex % operatorList.length];
+          rrIndex++;
+          return { userId: op.user_id, userName: op.name };
+        }
+
+        return fallback;
+      };
+
+      const leadsToInsert = parsedData.map((lead) => {
+        const { userId, userName } = assignLead(lead);
+
+        // Track per-operator count
+        const existing = distributionCount.get(userId);
+        if (existing) {
+          existing.count++;
+        } else {
+          distributionCount.set(userId, { name: userName, count: 1 });
         }
 
         return {
@@ -154,14 +215,15 @@ export function ImportarPlanilha() {
           contact_name: lead.nome || null,
           email: lead.email || null,
           phone: lead.telefone || null,
+          documento: lead.documento || null,
           value_ps: lead.valor_ps,
           value_mrr: lead.valor_mrr,
           stage: "novos",
           source: "Planilha",
           lead_status: "open",
-          tags: lead.tags ? lead.tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
-          created_by_user_id: assignedUserId,
-          created_by_name: assignedName,
+          tags: lead.tags ? lead.tags.split(",").map(t => t.trim()).filter(Boolean) : [],
+          created_by_user_id: userId,
+          created_by_name: userName,
         };
       });
 
@@ -172,13 +234,24 @@ export function ImportarPlanilha() {
         const { error } = await supabase.from("crm_leads").insert(batch as any);
         if (error) {
           console.error("Batch insert error:", error);
-          toast.error(`Erro ao importar lote ${Math.floor(i / 50) + 1}`);
+          toast.error(`Erro ao importar lote ${Math.floor(i / 50) + 1}: ${error.message}`);
         } else {
           imported += batch.length;
         }
       }
 
-      setResult({ total: imported });
+      // Update last_assigned_at for operators who received leads (round-robin)
+      if (distribMethod === "round-robin") {
+        for (const [userId] of distributionCount) {
+          await supabase
+            .from("profiles")
+            .update({ last_assigned_at: new Date().toISOString() } as any)
+            .eq("user_id", userId);
+        }
+      }
+
+      const perOperator = Array.from(distributionCount.values()).sort((a, b) => b.count - a.count);
+      setResult({ total: imported, perOperator });
       setParsedData([]);
       setFileName("");
       toast.success(`${imported} leads importados e distribuídos com sucesso!`);
@@ -193,9 +266,9 @@ export function ImportarPlanilha() {
   return (
     <div className="p-4 space-y-5 overflow-y-auto h-full">
       <div>
-        <h2 className="text-lg font-bold text-foreground">Importar Planilha</h2>
+        <h2 className="text-lg font-bold text-foreground">Importar Leads</h2>
         <p className="text-sm text-muted-foreground">
-          Importe leads em massa via planilha CSV ou XLSX
+          Importe leads em massa via planilha CSV ou XLSX e distribua entre operadores
         </p>
       </div>
 
@@ -203,12 +276,12 @@ export function ImportarPlanilha() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
-            <FileSpreadsheet className="h-4 w-4" /> Modelo Padrão
+            <FileSpreadsheet className="h-4 w-4" /> Baixar Planilha Modelo
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-3">
-            Baixe o modelo com as colunas: Nome, Empresa, E-mail, Telefone, CPF/CNPJ, Valor P&S, Valor MRR e Tags.
+            Colunas: Nome, Empresa, E-mail, Telefone, CPF/CNPJ, Valor P&S, Valor MRR, Tags
           </p>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => downloadTemplate("csv")} className="gap-1.5">
@@ -231,9 +304,7 @@ export function ImportarPlanilha() {
         <CardContent>
           <div
             className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${
-              dragOver
-                ? "border-primary bg-primary/5"
-                : "border-border hover:border-primary/50"
+              dragOver ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
             }`}
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
@@ -241,12 +312,8 @@ export function ImportarPlanilha() {
             onClick={() => fileInputRef.current?.click()}
           >
             <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-            <p className="text-sm font-medium text-foreground">
-              Arraste e solte sua planilha aqui
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              ou clique para selecionar (CSV, XLSX)
-            </p>
+            <p className="text-sm font-medium text-foreground">Arraste e solte sua planilha aqui</p>
+            <p className="text-xs text-muted-foreground mt-1">ou clique para selecionar (CSV, XLSX)</p>
             <input
               ref={fileInputRef}
               type="file"
@@ -265,7 +332,7 @@ export function ImportarPlanilha() {
         </CardContent>
       </Card>
 
-      {/* Distribution Method & Import */}
+      {/* Distribution & Preview */}
       {parsedData.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
@@ -273,7 +340,7 @@ export function ImportarPlanilha() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Como distribuir os leads?</Label>
+              <Label className="text-xs text-muted-foreground">Como distribuir os leads entre operadores?</Label>
               <Select value={distribMethod} onValueChange={(v) => setDistribMethod(v as DistributionMethod)}>
                 <SelectTrigger>
                   <SelectValue />
@@ -292,56 +359,49 @@ export function ImportarPlanilha() {
               </Select>
             </div>
 
-            {distribMethod === "round-robin" && (
-              <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
-                <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                Os leads serão distribuídos igualmente entre os operadores ativos.
-              </div>
-            )}
-            {distribMethod === "tags" && (
-              <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
-                <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                Leads serão atribuídos ao operador cujo nome corresponda a uma tag na planilha.
-              </div>
-            )}
-            {distribMethod === "cpf-cnpj" && (
-              <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
-                <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                Leads com CPF/CNPJ já existente serão atribuídos ao operador original.
-              </div>
-            )}
+            <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
+              <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              {distribMethod === "round-robin" && "Distribui sequencialmente entre operadores ativos, priorizando quem recebeu leads há mais tempo."}
+              {distribMethod === "tags" && "Cruza as tags da planilha com as tags dos operadores. Sem correspondência = fallback round-robin."}
+              {distribMethod === "cpf-cnpj" && "Se o CPF/CNPJ já existe na base, atribui ao operador original. Novo documento = fallback round-robin."}
+            </div>
 
-            {/* Preview table */}
-            <div className="max-h-48 overflow-y-auto border rounded-lg">
-              <table className="w-full text-xs">
-                <thead className="bg-muted sticky top-0">
-                  <tr>
-                    <th className="text-left p-2 font-medium">Nome</th>
-                    <th className="text-left p-2 font-medium">Empresa</th>
-                    <th className="text-left p-2 font-medium">E-mail</th>
-                    <th className="text-right p-2 font-medium">P&S</th>
-                    <th className="text-right p-2 font-medium">MRR</th>
-                    <th className="text-left p-2 font-medium">Tags</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {parsedData.slice(0, 20).map((lead, i) => (
-                    <tr key={i} className="border-t border-border">
-                      <td className="p-2">{lead.nome || "—"}</td>
-                      <td className="p-2">{lead.empresa || "—"}</td>
-                      <td className="p-2">{lead.email || "—"}</td>
-                      <td className="p-2 text-right">{lead.valor_ps}</td>
-                      <td className="p-2 text-right">{lead.valor_mrr}</td>
-                      <td className="p-2">{lead.tags || "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {parsedData.length > 20 && (
-                <p className="text-center text-xs text-muted-foreground py-2">
-                  ... e mais {parsedData.length - 20} leads
-                </p>
-              )}
+            {/* Preview */}
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Pré-visualização ({Math.min(parsedData.length, 20)} de {parsedData.length})</p>
+              <div className="max-h-52 overflow-y-auto border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs">Nome</TableHead>
+                      <TableHead className="text-xs">Empresa</TableHead>
+                      <TableHead className="text-xs">E-mail</TableHead>
+                      <TableHead className="text-xs">Documento</TableHead>
+                      <TableHead className="text-xs text-right">P&S</TableHead>
+                      <TableHead className="text-xs text-right">MRR</TableHead>
+                      <TableHead className="text-xs">Tags</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {parsedData.slice(0, 20).map((lead, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="text-xs">{lead.nome || "—"}</TableCell>
+                        <TableCell className="text-xs">{lead.empresa || "—"}</TableCell>
+                        <TableCell className="text-xs">{lead.email || "—"}</TableCell>
+                        <TableCell className="text-xs font-mono">{lead.documento || "—"}</TableCell>
+                        <TableCell className="text-xs text-right">{lead.valor_ps}</TableCell>
+                        <TableCell className="text-xs text-right">{lead.valor_mrr}</TableCell>
+                        <TableCell className="text-xs">{lead.tags || "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {parsedData.length > 20 && (
+                  <p className="text-center text-xs text-muted-foreground py-2">
+                    ... e mais {parsedData.length - 20} leads
+                  </p>
+                )}
+              </div>
             </div>
 
             <Button onClick={handleImport} disabled={importing} className="w-full gap-2">
@@ -357,15 +417,33 @@ export function ImportarPlanilha() {
 
       {/* Result */}
       {result && (
-        <Card className="border-green-500/30 bg-green-500/5">
-          <CardContent className="p-5 flex items-center gap-3">
-            <CheckCircle2 className="h-6 w-6 text-green-600" />
-            <div>
-              <p className="font-semibold text-foreground">Importação concluída!</p>
-              <p className="text-sm text-muted-foreground">
-                {result.total} leads importados e distribuídos com sucesso.
-              </p>
+        <Card className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30">
+          <CardContent className="p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+              <div>
+                <p className="font-semibold text-foreground">Importação concluída!</p>
+                <p className="text-sm text-muted-foreground">
+                  {result.total} leads importados e distribuídos com sucesso.
+                </p>
+              </div>
             </div>
+
+            {result.perOperator.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                  <UserCheck className="h-3.5 w-3.5" /> Distribuição por operador
+                </p>
+                <div className="space-y-1.5">
+                  {result.perOperator.map((op, i) => (
+                    <div key={i} className="flex items-center justify-between text-sm bg-background rounded-lg px-3 py-2 border border-border">
+                      <span className="font-medium text-foreground">{op.name}</span>
+                      <Badge variant="secondary">{op.count} lead{op.count > 1 ? "s" : ""}</Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
