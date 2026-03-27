@@ -460,7 +460,8 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                   const overdue = isLeadOverdue(lead, stage.id);
                   const days = Math.floor((Date.now() - new Date(lead.stage_entered_at).getTime()) / (1000 * 60 * 60 * 24));
                   const hasActivity = leadsWithActivity.has(lead.id);
-                  const noActivity = !hasActivity;
+                  const isNovosLeads = stage.id === "novos";
+                  const noActivity = !hasActivity && !isNovosLeads;
 
                   return (
                     <div
