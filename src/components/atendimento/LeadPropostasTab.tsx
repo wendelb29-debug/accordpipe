@@ -74,8 +74,8 @@ function ContractPdfViewer({ content, companyName }: { content: string; companyN
   );
 }
 
+export function LeadPropostasTab({ lead, addActivity, signatureMode = false }: { lead: CrmLead; addActivity: (data: any) => Promise<any>; signatureMode?: boolean }) {
 
-  const { profile } = useAuth();
   const [proposals, setProposals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
