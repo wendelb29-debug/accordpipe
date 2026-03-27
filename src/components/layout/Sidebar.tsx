@@ -157,7 +157,7 @@ export function Sidebar() {
           </div>
         )}
         {collapsed && (
-          <span className="text-sm font-black text-sidebar-primary cursor-default" onClick={(e) => e.preventDefault()}>O</span>
+          <img src={orbitLogo} alt="O" className="h-7 w-auto cursor-default" onClick={(e) => e.preventDefault()} />
         )}
       </div>
 
