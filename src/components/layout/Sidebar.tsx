@@ -205,9 +205,9 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className={cn("flex-1 space-y-0.5 overflow-y-auto py-3", collapsed ? "px-2" : "px-3")}>
+      <nav className={cn("flex-1 space-y-0.5 overflow-y-auto py-4", collapsed ? "px-2" : "px-3")}>
         {!collapsed && (
-          <p className="px-3 pb-3 pt-1 text-[9px] font-bold uppercase tracking-[0.2em] text-sidebar-foreground/15">
+          <p className="px-3 pb-2 pt-1 text-[10px] font-medium uppercase tracking-[0.15em] text-sidebar-foreground/20">
             Menu
           </p>
         )}

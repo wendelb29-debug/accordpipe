@@ -128,11 +128,22 @@
     font-feature-settings: "rlig" 1, "calt" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.011em;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1 {
+    @apply text-2xl font-semibold tracking-tight;
+    letter-spacing: -0.03em;
+  }
+
+  h2 {
+    @apply text-xl font-semibold;
     letter-spacing: -0.025em;
-    font-weight: 700;
+  }
+
+  h3, h4, h5, h6 {
+    letter-spacing: -0.02em;
+    font-weight: 600;
   }
 }
 
