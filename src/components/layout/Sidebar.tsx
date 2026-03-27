@@ -24,6 +24,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const navigation = [
   { name: "Início", href: "/home", icon: Home, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
@@ -91,6 +92,10 @@ export function Sidebar() {
     (item) => !role || item.roles.includes(role)
   );
 
+  const userInitials = profile?.name
+    ? profile.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()
+    : "?";
+
   const NavItem = ({ item, isActive }: { item: typeof navigation[0]; isActive: boolean }) => {
     const badge = item.href === "/atividades" && overdueCount > 0 ? overdueCount : 0;
     const content = (
@@ -99,18 +104,21 @@ export function Sidebar() {
         className={cn(
           "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-200 group relative",
           isActive
-            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md shadow-sidebar-primary/20"
-            : "text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            ? "bg-gradient-to-r from-sidebar-primary/90 to-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/25"
+            : "text-sidebar-foreground/45 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground/90"
         )}
       >
         {/* Active indicator bar */}
         {isActive && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-sidebar-primary-foreground/80" />
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full bg-sidebar-primary-foreground/90" />
         )}
         <div className="relative shrink-0">
-          <item.icon className={cn("h-[18px] w-[18px]", isActive && "drop-shadow-sm")} />
+          <item.icon className={cn(
+            "h-[18px] w-[18px] transition-colors duration-200",
+            isActive ? "drop-shadow-sm" : "group-hover:text-sidebar-foreground/80"
+          )} />
           {badge > 0 && collapsed && (
-            <span className="absolute -top-2 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-0.5">
+            <span className="absolute -top-2 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-0.5 animate-pulse">
               {badge}
             </span>
           )}
@@ -119,7 +127,7 @@ export function Sidebar() {
           <span className="truncate flex-1">{item.name}</span>
         )}
         {!collapsed && badge > 0 && (
-          <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-1">
+          <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-1 animate-pulse">
             {badge}
           </span>
         )}
@@ -152,8 +160,8 @@ export function Sidebar() {
         {!collapsed && (
           <div className="flex items-center gap-2.5 cursor-default" onClick={(e) => e.preventDefault()}>
             <img src={orbitLogo} alt="ORBIT HUB" className="h-14 w-auto" />
-            <span className="text-lg font-black tracking-tight text-sidebar-primary" style={{ letterSpacing: "-0.04em" }}>ORBIT</span>
-            <span className="text-lg font-light tracking-tight text-sidebar-foreground/50" style={{ letterSpacing: "-0.04em" }}>HUB</span>
+            <span className="text-lg font-black tracking-tight bg-gradient-to-r from-sidebar-primary to-blue-400 bg-clip-text text-transparent" style={{ letterSpacing: "-0.04em" }}>ORBIT</span>
+            <span className="text-base font-light tracking-tight text-sidebar-foreground/30" style={{ letterSpacing: "-0.04em" }}>HUB</span>
           </div>
         )}
         {collapsed && (
@@ -162,7 +170,7 @@ export function Sidebar() {
       </div>
 
       {/* Orbit Stack Button */}
-      <div className={cn("shrink-0", collapsed ? "px-2 py-2" : "px-3 py-2")}>
+      <div className={cn("shrink-0", collapsed ? "px-2 py-3" : "px-3 py-3")}>
         {collapsed ? (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
@@ -177,7 +185,7 @@ export function Sidebar() {
             to="/orbit-stack"
             className={cn(
               "flex items-center gap-2 w-full h-9 rounded-xl border border-sidebar-primary/20 text-sidebar-primary hover:bg-sidebar-primary/10 text-xs font-semibold justify-center transition-all",
-              location.pathname === "/orbit-stack" && "bg-sidebar-primary text-sidebar-primary-foreground border-sidebar-primary shadow-md shadow-sidebar-primary/20"
+              location.pathname === "/orbit-stack" && "bg-gradient-to-r from-sidebar-primary/90 to-sidebar-primary text-sidebar-primary-foreground border-sidebar-primary shadow-lg shadow-sidebar-primary/25"
             )}
           >
             <Rocket className="h-3.5 w-3.5" />
@@ -190,16 +198,16 @@ export function Sidebar() {
       <div className={cn("flex shrink-0 py-1", collapsed ? "justify-center px-2" : "px-3")}>
         <button
           onClick={() => toggleCollapsed(!collapsed)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-sidebar-foreground/30 hover:bg-sidebar-accent hover:text-sidebar-foreground/70 transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-sidebar-foreground/25 hover:bg-sidebar-accent hover:text-sidebar-foreground/60 transition-all duration-200"
         >
           {collapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
         </button>
       </div>
 
       {/* Navigation */}
-      <nav className={cn("flex-1 space-y-0.5 overflow-y-auto py-2", collapsed ? "px-2" : "px-3")}>
+      <nav className={cn("flex-1 space-y-0.5 overflow-y-auto py-3", collapsed ? "px-2" : "px-3")}>
         {!collapsed && (
-          <p className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-sidebar-foreground/25">
+          <p className="px-3 pb-3 pt-1 text-[9px] font-bold uppercase tracking-[0.2em] text-sidebar-foreground/15">
             Menu
           </p>
         )}
@@ -209,11 +217,11 @@ export function Sidebar() {
       </nav>
 
       {/* Config & User */}
-      <div className={cn("shrink-0 border-t border-sidebar-border/50", collapsed ? "px-2 py-2" : "px-3 py-3")}>
+      <div className={cn("shrink-0 border-t border-sidebar-border/50", collapsed ? "px-2 py-3" : "px-3 py-3")}>
         {filteredConfigNavigation.length > 0 && (
-          <div className="space-y-0.5 mb-3">
+          <div className="space-y-0.5 mb-4">
             {!collapsed && (
-              <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-sidebar-foreground/25">
+              <p className="px-3 pb-3 text-[9px] font-bold uppercase tracking-[0.2em] text-sidebar-foreground/15">
                 Config
               </p>
             )}
@@ -223,19 +231,52 @@ export function Sidebar() {
           </div>
         )}
 
-        {/* User */}
+        {/* User Card */}
         {!collapsed && profile && (
-          <div className="rounded-xl bg-sidebar-accent/60 p-3 mb-2 border border-sidebar-border/30">
-            <p className="text-sm font-semibold text-sidebar-foreground truncate">{profile.name}</p>
-            <p className="text-[11px] text-sidebar-foreground/35 truncate mt-0.5">{profile.email}</p>
-          </div>
+          <Link
+            to="/perfil"
+            className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-sidebar-accent/80 to-sidebar-accent/40 p-3 mb-2 border border-sidebar-border/20 hover:from-sidebar-accent hover:to-sidebar-accent/60 transition-all duration-200 group"
+          >
+            <Avatar className="h-8 w-8 shrink-0 ring-2 ring-sidebar-primary/20">
+              {(profile as any)?.avatar_url ? (
+                <img src={(profile as any).avatar_url} alt={profile.name} className="h-full w-full object-cover rounded-full" />
+              ) : (
+                <AvatarFallback className="text-[10px] font-bold bg-sidebar-primary/20 text-sidebar-primary">
+                  {userInitials}
+                </AvatarFallback>
+              )}
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-sidebar-foreground truncate">{profile.name}</p>
+              <p className="text-[10px] text-sidebar-foreground/30 truncate">{profile.email}</p>
+            </div>
+          </Link>
+        )}
+
+        {collapsed && profile && (
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <Link to="/perfil" className="flex justify-center mb-2">
+                <Avatar className="h-8 w-8 ring-2 ring-sidebar-primary/20">
+                  {(profile as any)?.avatar_url ? (
+                    <img src={(profile as any).avatar_url} alt={profile.name} className="h-full w-full object-cover rounded-full" />
+                  ) : (
+                    <AvatarFallback className="text-[10px] font-bold bg-sidebar-primary/20 text-sidebar-primary">
+                      {userInitials}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="text-xs">{profile.name}</TooltipContent>
+          </Tooltip>
         )}
 
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             <button
               onClick={signOut}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-sidebar-foreground/40 hover:bg-destructive/10 hover:text-destructive transition-colors"
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-sidebar-foreground/30 hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
             >
               <LogOut className="h-[18px] w-[18px] shrink-0" />
               {!collapsed && <span>Sair</span>}
