@@ -1,4 +1,4 @@
-import { Phone, Mail, MapPin } from "lucide-react";
+import { Mail, MapPin } from "lucide-react";
 import orbitLogo from "@/assets/orbit-logo.png";
 
 export function FooterSection() {
@@ -33,18 +33,14 @@ export function FooterSection() {
             <h4 className="text-sm font-semibold text-foreground mb-4">Contato</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-primary" />
-                <span>(11) 99999-9999</span>
-              </li>
-              <li className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-primary" />
-                <a href="mailto:contato@orbithub.com.br" className="hover:text-foreground transition-colors">
-                  contato@orbithub.com.br
+                <a href="mailto:suporte@orbitclass.com.br" className="hover:text-foreground transition-colors">
+                  suporte@orbitclass.com.br
                 </a>
               </li>
               <li className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-primary" />
-                <span>São Paulo, SP — Brasil</span>
+                <span>Uberlândia — MG</span>
               </li>
             </ul>
           </div>
