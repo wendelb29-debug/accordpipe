@@ -204,15 +204,66 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial")
         created_by_name: profile?.name || null,
       } as any);
 
-      // Create registration record
-      await supabase.from("crm_client_registrations" as any).insert({
+      // Create registration record with lead data
+      const regResult = await supabase.from("crm_client_registrations" as any).insert({
         lead_id: id,
         servidor_id: lead.servidor_id,
-        nome_completo: lead.contact_name || "",
+        nome_completo: lead.contact_name || lead.company_name || "",
         email: lead.email || "",
         created_by_user_id: profile?.user_id || null,
         created_by_name: profile?.name || null,
-      });
+        plano_contratado: lead.notes?.includes("Plano:") ? lead.notes.split("Plano:")[1]?.trim().split("\n")[0] : null,
+        valor_mensal: lead.value_mrr || 0,
+        cidade: lead.cidade || null,
+        estado: lead.estado || null,
+      }).select("id").single();
+      const regId = (regResult.data as any)?.id;
+
+      // Auto-create contract linked to registration
+      if (regId) {
+        const contractResult = await supabase.from("client_contracts").insert({
+          registration_id: regId,
+          servidor_id: lead.servidor_id,
+          lead_id: id,
+          client_name: lead.contact_name || lead.company_name || "",
+          client_cpf: (lead as any).documento || "",
+          plan_name: lead.notes?.includes("Plano:") ? lead.notes.split("Plano:")[1]?.trim().split("\n")[0] : "Plano Padrão",
+          monthly_value: lead.value_mrr || 0,
+          created_by_user_id: profile?.user_id || null,
+          created_by_name: profile?.name || null,
+        } as any).select("id").single();
+        const contractId = (contractResult.data as any)?.id;
+
+        // Auto-generate first financial transaction (monthly charge)
+        if (lead.value_mrr > 0) {
+          const dueDate = new Date();
+          dueDate.setMonth(dueDate.getMonth() + 1);
+          dueDate.setDate(10); // Default billing day
+
+          await supabase.from("financial_transactions").insert({
+            servidor_id: lead.servidor_id,
+            registration_id: regId,
+            lead_id: id,
+            amount: lead.value_mrr,
+            type: "cobranca",
+            description: `Mensalidade - ${lead.contact_name || lead.company_name}`,
+            status: "pendente",
+            due_date: dueDate.toISOString().split("T")[0],
+            created_by_user_id: profile?.user_id || null,
+            created_by_name: profile?.name || null,
+          } as any);
+        }
+
+        // Log contract creation in history
+        if (contractId) {
+          await supabase.from("client_contract_history").insert({
+            contract_id: contractId,
+            action: "Contrato criado automaticamente",
+            description: `Contrato gerado automaticamente a partir da venda CRM. Vendedor: ${profile?.name || "Sistema"}. Valor: R$ ${(lead.value_mrr || 0).toFixed(2)}/mês`,
+            created_by_name: profile?.name || "Sistema",
+          } as any);
+        }
+      }
 
       // Notify administrativo users
       const { data: adminProfiles } = await supabase
@@ -233,7 +284,7 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial")
             await supabase.rpc("create_notification", {
               _user_id: ap.user_id,
               _title: "Novo cadastro pendente",
-              _message: `A oportunidade "${lead.company_name}" foi marcada como ganha e aguarda cadastro.`,
+              _message: `A oportunidade "${lead.company_name}" foi marcada como ganha e aguarda cadastro. Contrato e cobrança foram gerados automaticamente.`,
               _type: "cadastro_pendente",
             });
           }
@@ -245,7 +296,7 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial")
         setLeads((prev) => prev.filter((l) => l.id !== id));
       }
 
-      toast.success("🎉 Oportunidade ganha! Transferida para cadastro.");
+      toast.success("🎉 Oportunidade ganha! Contrato, cadastro e cobrança gerados automaticamente.");
     }
     return success;
   };

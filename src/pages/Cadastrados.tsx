@@ -17,8 +17,10 @@ import {
   FileSignature, Download, User, UsersRound, Pencil, Save, Loader2,
   DollarSign, TrendingUp, FileText, Activity, ChevronRight,
   CreditCard, AlertTriangle, CheckCircle2, XCircle, BarChart3,
-  Calendar, Mail, Phone, MapPin, Building2, Heart, ArrowLeft
+  Calendar, Mail, Phone, MapPin, Building2, Heart, ArrowLeft,
+  Plus, Rocket, PauseCircle, Trash2
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 // ──────────── Status configs ────────────
 const registrationStatusLabels: Record<string, { label: string; color: string }> = {
@@ -88,6 +90,15 @@ export default function Cadastrados() {
   const [editData, setEditData] = useState<any>({});
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("dados");
+
+  // Upsell
+  const [detailUpsells, setDetailUpsells] = useState<any[]>([]);
+  const [upsellDialogOpen, setUpsellDialogOpen] = useState(false);
+  const [upsellForm, setUpsellForm] = useState({ name: "", description: "", amount: "", type: "mensal", start_date: new Date().toISOString().split("T")[0] });
+  const [upsellSaving, setUpsellSaving] = useState(false);
+
+  // Check if user can manage upsells (Master/CEO/Admin)
+  const canManageUpsell = profile?.is_master || true; // Role check done via RLS
 
   useEffect(() => {
     fetchRegistrations();
@@ -163,8 +174,10 @@ export default function Cadastrados() {
       estado: reg.estado || "",
     });
 
-    // Fetch contracts, transactions, history in parallel
-    const [contractsRes, transactionsRes, historyRes] = await Promise.all([
+    // Fetch contracts, transactions, history, upsells in parallel
+    const contractIds = (await supabase.from("client_contracts").select("id").eq("registration_id", reg.id)).data?.map((c: any) => c.id) || [];
+
+    const [contractsRes, transactionsRes, historyRes, upsellsRes] = await Promise.all([
       supabase
         .from("client_contracts")
         .select("*")
@@ -175,16 +188,22 @@ export default function Cadastrados() {
         .select("*")
         .eq("registration_id", reg.id)
         .order("created_at", { ascending: false }),
-      reg.id ? supabase
+      contractIds.length > 0 ? supabase
         .from("client_contract_history")
         .select("*")
-        .in("contract_id", (await supabase.from("client_contracts").select("id").eq("registration_id", reg.id)).data?.map((c: any) => c.id) || [])
+        .in("contract_id", contractIds)
         .order("created_at", { ascending: false }) : Promise.resolve({ data: [] }),
+      supabase
+        .from("client_upsells" as any)
+        .select("*")
+        .eq("registration_id", reg.id)
+        .order("created_at", { ascending: false }),
     ]);
 
     setDetailContracts(contractsRes.data || []);
     setDetailTransactions(transactionsRes.data || []);
     setDetailHistory(historyRes.data || []);
+    setDetailUpsells((upsellsRes as any).data || []);
   };
 
   const handleSaveEdit = async () => {
@@ -208,7 +227,108 @@ export default function Cadastrados() {
     }
   };
 
-  // ──────── Health for detail view ────────
+  // ──────── Create Upsell ────────
+  const handleCreateUpsell = async () => {
+    if (!selectedReg?.id || !profile?.company_id || !upsellForm.name || !upsellForm.amount) {
+      toast.error("Preencha nome e valor do upsell");
+      return;
+    }
+    setUpsellSaving(true);
+    try {
+      const amount = parseFloat(upsellForm.amount.replace(",", "."));
+      if (isNaN(amount) || amount <= 0) throw new Error("Valor inválido");
+
+      // Create upsell
+      await supabase.from("client_upsells" as any).insert({
+        registration_id: selectedReg.id,
+        servidor_id: profile.company_id,
+        lead_id: selectedReg.lead_id,
+        name: upsellForm.name,
+        description: upsellForm.description,
+        amount,
+        type: upsellForm.type,
+        start_date: upsellForm.start_date,
+        created_by_user_id: profile.user_id,
+        created_by_name: profile.name,
+      });
+
+      // Generate financial transaction for the upsell
+      const dueDate = new Date(upsellForm.start_date || Date.now());
+      if (dueDate < new Date()) dueDate.setMonth(dueDate.getMonth() + 1);
+
+      await supabase.from("financial_transactions").insert({
+        servidor_id: profile.company_id,
+        registration_id: selectedReg.id,
+        lead_id: selectedReg.lead_id,
+        amount,
+        type: "cobranca",
+        description: `Upsell - ${upsellForm.name}`,
+        status: "pendente",
+        due_date: dueDate.toISOString().split("T")[0],
+        created_by_user_id: profile.user_id,
+        created_by_name: profile.name,
+      } as any);
+
+      // Update MRR on registration if recurring
+      if (upsellForm.type === "mensal") {
+        const newTotal = Number(selectedReg.valor_mensal || 0) + amount;
+        await supabase.from("crm_client_registrations").update({ valor_mensal: newTotal } as any).eq("id", selectedReg.id);
+        setSelectedReg((prev: any) => ({ ...prev, valor_mensal: newTotal }));
+        setRegistrations(prev => prev.map(r => r.id === selectedReg.id ? { ...r, valor_mensal: newTotal } : r));
+      }
+
+      toast.success(`Upsell "${upsellForm.name}" criado com sucesso!`);
+      setUpsellDialogOpen(false);
+      setUpsellForm({ name: "", description: "", amount: "", type: "mensal", start_date: new Date().toISOString().split("T")[0] });
+
+      // Refresh detail data
+      await openDetail(selectedReg);
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao criar upsell");
+    } finally {
+      setUpsellSaving(false);
+    }
+  };
+
+  // ──────── Mark transaction as paid ────────
+  const handleMarkAsPaid = async (transactionId: string) => {
+    const { error } = await supabase.from("financial_transactions").update({
+      status: "pago",
+      paid_at: new Date().toISOString(),
+    } as any).eq("id", transactionId);
+    if (error) {
+      toast.error("Erro ao marcar como pago");
+      return;
+    }
+    toast.success("Pagamento registrado!");
+
+    // Update client status to active
+    if (selectedReg?.id) {
+      await supabase.from("crm_client_registrations").update({ client_status: "ativo" } as any).eq("id", selectedReg.id);
+      setSelectedReg((prev: any) => ({ ...prev, client_status: "ativo" }));
+      setRegistrations(prev => prev.map(r => r.id === selectedReg.id ? { ...r, client_status: "ativo" } : r));
+    }
+
+    // Refresh transactions
+    if (selectedReg) await openDetail(selectedReg);
+  };
+
+  // ──────── Cancel upsell ────────
+  const handleCancelUpsell = async (upsellId: string, upsellAmount: number, upsellType: string) => {
+    await supabase.from("client_upsells" as any).update({ status: "cancelado" }).eq("id", upsellId);
+
+    // Reduce MRR if recurring
+    if (upsellType === "mensal" && selectedReg?.id) {
+      const newTotal = Math.max(0, Number(selectedReg.valor_mensal || 0) - upsellAmount);
+      await supabase.from("crm_client_registrations").update({ valor_mensal: newTotal } as any).eq("id", selectedReg.id);
+      setSelectedReg((prev: any) => ({ ...prev, valor_mensal: newTotal }));
+      setRegistrations(prev => prev.map(r => r.id === selectedReg.id ? { ...r, valor_mensal: newTotal } : r));
+    }
+
+    toast.success("Upsell cancelado");
+    if (selectedReg) await openDetail(selectedReg);
+  };
+
   const health = selectedReg ? getClientHealth(selectedReg, detailTransactions, detailContracts) : null;
 
   const healthColors = {
@@ -452,10 +572,11 @@ export default function Cadastrados() {
               {/* Tabs */}
               <div className="px-6 py-4">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="mb-4">
+                  <TabsList className="mb-4 flex-wrap">
                     <TabsTrigger value="dados" className="text-xs gap-1.5"><User className="h-3.5 w-3.5" /> Dados</TabsTrigger>
                     <TabsTrigger value="contratos" className="text-xs gap-1.5"><FileSignature className="h-3.5 w-3.5" /> Contratos</TabsTrigger>
                     <TabsTrigger value="financeiro" className="text-xs gap-1.5"><CreditCard className="h-3.5 w-3.5" /> Financeiro</TabsTrigger>
+                    <TabsTrigger value="upsell" className="text-xs gap-1.5"><Rocket className="h-3.5 w-3.5" /> Upsell</TabsTrigger>
                     <TabsTrigger value="documentos" className="text-xs gap-1.5"><Paperclip className="h-3.5 w-3.5" /> Docs</TabsTrigger>
                     <TabsTrigger value="dependentes" className="text-xs gap-1.5"><UsersRound className="h-3.5 w-3.5" /> Dependentes</TabsTrigger>
                     <TabsTrigger value="historico" className="text-xs gap-1.5"><Activity className="h-3.5 w-3.5" /> Histórico</TabsTrigger>
@@ -590,6 +711,7 @@ export default function Cadastrados() {
                                 <TableHead className="text-xs">Vencimento</TableHead>
                                 <TableHead className="text-xs">Status</TableHead>
                                 <TableHead className="text-xs">Pago em</TableHead>
+                                <TableHead className="text-xs text-center">Ações</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -608,10 +730,105 @@ export default function Cadastrados() {
                                     </Badge>
                                   </TableCell>
                                   <TableCell className="text-xs text-muted-foreground">{t.paid_at ? fmtDate(t.paid_at) : "—"}</TableCell>
+                                  <TableCell className="text-center">
+                                    {t.status !== "pago" && (
+                                      <Button size="sm" variant="outline" className="text-xs gap-1" onClick={() => handleMarkAsPaid(t.id)}>
+                                        <CheckCircle2 className="h-3 w-3" /> Pago
+                                      </Button>
+                                    )}
+                                  </TableCell>
                                 </TableRow>
                               ))}
                             </TableBody>
                           </Table>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </TabsContent>
+
+                  {/* ─── TAB: Upsell ─── */}
+                  <TabsContent value="upsell" className="space-y-3 mt-0">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-semibold text-foreground">Produtos & Upsells</h3>
+                        <p className="text-xs text-muted-foreground">Gerencie serviços adicionais do cliente</p>
+                      </div>
+                      {canManageUpsell && (
+                        <Button size="sm" className="gap-1.5" onClick={() => setUpsellDialogOpen(true)}>
+                          <Plus className="h-4 w-4" /> Novo Upsell
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Plano principal */}
+                    {selectedReg.plano_contratado && (
+                      <Card className="border-primary/20">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 rounded-lg bg-primary/10">
+                                <FileText className="h-4 w-4 text-primary" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-semibold text-foreground">{selectedReg.plano_contratado}</p>
+                                <p className="text-[10px] text-muted-foreground">Plano principal · Recorrente</p>
+                              </div>
+                            </div>
+                            <p className="text-sm font-bold text-foreground">{fmtCur(Number(selectedReg.valor_mensal || 0))}/mês</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Upsells */}
+                    {detailUpsells.length === 0 && !selectedReg.plano_contratado ? (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Rocket className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                        <p className="text-sm">Nenhum produto ou upsell</p>
+                      </div>
+                    ) : (
+                      detailUpsells.map(up => (
+                        <Card key={up.id} className={up.status === "cancelado" ? "opacity-50" : ""}>
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-lg ${up.status === "ativo" ? "bg-emerald-50" : "bg-muted"}`}>
+                                  <Rocket className={`h-4 w-4 ${up.status === "ativo" ? "text-emerald-600" : "text-muted-foreground"}`} />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-semibold text-foreground">{up.name}</p>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className={`text-[10px] ${
+                                      up.status === "ativo" ? "bg-green-50 text-green-700 border-green-200" :
+                                      up.status === "pausado" ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
+                                      "bg-muted text-muted-foreground border-border"
+                                    }`}>{up.status === "ativo" ? "Ativo" : up.status === "pausado" ? "Pausado" : "Cancelado"}</Badge>
+                                    <span className="text-[10px] text-muted-foreground">{up.type === "mensal" ? "Recorrente" : "Único"}</span>
+                                    {up.start_date && <span className="text-[10px] text-muted-foreground">· Início: {fmtDate(up.start_date)}</span>}
+                                  </div>
+                                  {up.description && <p className="text-xs text-muted-foreground mt-1">{up.description}</p>}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-bold text-foreground">{fmtCur(Number(up.amount))}{up.type === "mensal" ? "/mês" : ""}</p>
+                                {up.status === "ativo" && canManageUpsell && (
+                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleCancelUpsell(up.id, Number(up.amount), up.type)}>
+                                    <XCircle className="h-4 w-4 text-muted-foreground" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
+
+                    {/* MRR total */}
+                    {(detailUpsells.filter(u => u.status === "ativo" && u.type === "mensal").length > 0 || selectedReg.plano_contratado) && (
+                      <Card className="bg-muted/30">
+                        <CardContent className="p-4 flex items-center justify-between">
+                          <span className="text-sm font-medium text-muted-foreground">Receita Mensal Total</span>
+                          <span className="text-lg font-bold text-foreground">{fmtCur(Number(selectedReg.valor_mensal || 0))}</span>
                         </CardContent>
                       </Card>
                     )}
@@ -738,6 +955,71 @@ export default function Cadastrados() {
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ────── Upsell Creation Dialog ────── */}
+      <Dialog open={upsellDialogOpen} onOpenChange={setUpsellDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Rocket className="h-5 w-5 text-primary" /> Novo Upsell
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs">Nome do Produto/Serviço *</Label>
+              <Input
+                placeholder="Ex: Assistência Premium"
+                value={upsellForm.name}
+                onChange={e => setUpsellForm(f => ({ ...f, name: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Descrição</Label>
+              <Textarea
+                placeholder="Detalhes do upsell..."
+                value={upsellForm.description}
+                onChange={e => setUpsellForm(f => ({ ...f, description: e.target.value }))}
+                className="h-20"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Valor (R$) *</Label>
+                <Input
+                  placeholder="99,90"
+                  value={upsellForm.amount}
+                  onChange={e => setUpsellForm(f => ({ ...f, amount: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Tipo</Label>
+                <Select value={upsellForm.type} onValueChange={v => setUpsellForm(f => ({ ...f, type: v }))}>
+                  <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mensal">Mensal (Recorrente)</SelectItem>
+                    <SelectItem value="unico">Único</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Data de Início</Label>
+              <Input
+                type="date"
+                value={upsellForm.start_date}
+                onChange={e => setUpsellForm(f => ({ ...f, start_date: e.target.value }))}
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setUpsellDialogOpen(false)}>Cancelar</Button>
+              <Button onClick={handleCreateUpsell} disabled={upsellSaving} className="gap-1.5">
+                {upsellSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                Criar Upsell
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
