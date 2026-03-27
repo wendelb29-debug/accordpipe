@@ -957,6 +957,71 @@ export default function Cadastrados() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* ────── Upsell Creation Dialog ────── */}
+      <Dialog open={upsellDialogOpen} onOpenChange={setUpsellDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Rocket className="h-5 w-5 text-primary" /> Novo Upsell
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs">Nome do Produto/Serviço *</Label>
+              <Input
+                placeholder="Ex: Assistência Premium"
+                value={upsellForm.name}
+                onChange={e => setUpsellForm(f => ({ ...f, name: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Descrição</Label>
+              <Textarea
+                placeholder="Detalhes do upsell..."
+                value={upsellForm.description}
+                onChange={e => setUpsellForm(f => ({ ...f, description: e.target.value }))}
+                className="h-20"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Valor (R$) *</Label>
+                <Input
+                  placeholder="99,90"
+                  value={upsellForm.amount}
+                  onChange={e => setUpsellForm(f => ({ ...f, amount: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Tipo</Label>
+                <Select value={upsellForm.type} onValueChange={v => setUpsellForm(f => ({ ...f, type: v }))}>
+                  <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mensal">Mensal (Recorrente)</SelectItem>
+                    <SelectItem value="unico">Único</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Data de Início</Label>
+              <Input
+                type="date"
+                value={upsellForm.start_date}
+                onChange={e => setUpsellForm(f => ({ ...f, start_date: e.target.value }))}
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setUpsellDialogOpen(false)}>Cancelar</Button>
+              <Button onClick={handleCreateUpsell} disabled={upsellSaving} className="gap-1.5">
+                {upsellSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                Criar Upsell
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
