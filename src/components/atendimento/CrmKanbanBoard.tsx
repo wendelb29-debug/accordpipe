@@ -515,10 +515,6 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEdit(lead); }}>
                               <Edit className="h-3.5 w-3.5 mr-2" /> Editar
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); deleteLead(lead.id); }}>
-                              <Trash2 className="h-3.5 w-3.5 mr-2" /> Excluir
-                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
