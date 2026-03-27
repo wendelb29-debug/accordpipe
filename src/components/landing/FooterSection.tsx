@@ -1,4 +1,4 @@
-import { Phone, Mail, MapPin } from "lucide-react";
+import { Mail, MapPin } from "lucide-react";
 import orbitLogo from "@/assets/orbit-logo.png";
 
 export function FooterSection() {
