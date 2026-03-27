@@ -58,82 +58,39 @@ export default function Auth() {
     }
   };
 
-  const handleCnpjLookup = async () => {
-    const cleaned = cnpjSearch.replace(/\D/g, "");
-    if (cleaned.length < 14) {
-      setError("Digite um CNPJ válido com 14 dígitos.");
+  const handleForgotPassword = async () => {
+    const email = loginForm.getValues("email");
+    if (!email) {
+      setError("Digite seu e-mail no campo acima para redefinir a senha.");
       return;
     }
     setError(null);
-    setCnpjLooking(true);
-    setCnpjNotFound(false);
-    setCnpjAlreadyRegistered(false);
-    setFoundServidor(null);
+    setResetLoading(true);
     try {
-      const { data, error } = await supabase.rpc("check_cnpj_status", { _cnpj: cleaned });
-      if (error) throw error;
-      if (data && data.length > 0) {
-        const result = data[0];
-        if (result.result_status === "ja_cadastrado") {
-          // CNPJ exists as a client company, not a server
-          setCnpjAlreadyRegistered(true);
-        } else if (result.result_status === "servidor" && (result.company_status === "active" || result.company_status === "teste")) {
-          // Valid server found — allow signup
-          setFoundServidor({ id: result.id, nome_fantasia: result.nome_fantasia, razao_social: result.razao_social, status: result.company_status });
-        } else {
-          // Server found but inactive/expired
-          setCnpjNotFound(true);
-        }
-      } else {
-        // CNPJ not in any table
-        setCnpjNotFound(true);
+      // Check if email exists in profiles
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", email)
+        .limit(1);
+
+      if (!profiles || profiles.length === 0) {
+        setError("Nenhuma conta encontrada com este e-mail.");
+        return;
       }
-    } catch {
-      setError("Erro ao buscar empresa.");
-    } finally {
-      setCnpjLooking(false);
-    }
-  };
 
-  // Signup - join existing company
-  const onSignup = async (data: SignupFormData) => {
-    setError(null);
-    setSuccess(null);
-
-    if (!foundServidor) {
-      setError("Busque e selecione a empresa pelo CNPJ antes de solicitar acesso.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const redirectUrl = `${window.location.origin}/`;
-      const { error } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: { name: data.name, cpf: data.cpf.replace(/\D/g, ""), company_id: foundServidor.id },
-        },
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) {
-        if (error.message.includes("User already registered")) {
-          setError("Este e-mail já está cadastrado.");
-        } else {
-          setError("Erro ao criar conta. Tente novamente.");
-        }
+        setError("Erro ao enviar e-mail de redefinição.");
       } else {
-        setSuccess("Solicitação enviada! Verifique seu e-mail para confirmar. Após a confirmação, o administrador do servidor aprovará seu acesso.");
-        signupForm.reset();
-        setFoundServidor(null);
-        setCnpjSearch("");
-        setCnpjAlreadyRegistered(false);
-        setCnpjNotFound(false);
+        setSuccess("E-mail de redefinição enviado! Verifique sua caixa de entrada.");
       }
     } catch {
       setError("Erro inesperado. Tente novamente.");
     } finally {
-      setIsSubmitting(false);
+      setResetLoading(false);
     }
   };
 
