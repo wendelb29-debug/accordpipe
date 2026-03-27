@@ -395,6 +395,9 @@ export default function Cadastrados() {
         ))}
       </div>
 
+      {/* ────── Charts ────── */}
+      <CadastradosCharts registrations={registrations} />
+
       {/* ────── Filters ────── */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px]">
