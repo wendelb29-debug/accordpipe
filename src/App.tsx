@@ -35,6 +35,7 @@ import Cadastrados from "./pages/Cadastrados";
 import Financeiro from "./pages/Financeiro";
 import Clientes from "./pages/Clientes";
 import Descarte from "./pages/Descarte";
+import AssinarPdf from "./pages/AssinarPdf";
 
 const queryClient = new QueryClient();
 
@@ -250,6 +251,7 @@ const App = () => (
               }
             />
             <Route path="/assinar/:token" element={<AssinarContrato />} />
+            <Route path="/assinar-pdf/:token" element={<AssinarPdf />} />
             <Route path="/captura/:servidorId" element={<CapturaLead />} />
             <Route path="/contato" element={<FormularioContato />} />
             <Route path="/form/:formId" element={<FormPublico />} />

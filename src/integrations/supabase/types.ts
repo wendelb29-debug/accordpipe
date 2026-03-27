@@ -1103,6 +1103,159 @@ export type Database = {
           },
         ]
       }
+      pdf_contract_history: {
+        Row: {
+          action: string
+          contract_id: string
+          created_at: string
+          created_by_name: string | null
+          description: string | null
+          id: string
+        }
+        Insert: {
+          action: string
+          contract_id: string
+          created_at?: string
+          created_by_name?: string | null
+          description?: string | null
+          id?: string
+        }
+        Update: {
+          action?: string
+          contract_id?: string
+          created_at?: string
+          created_by_name?: string | null
+          description?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pdf_contract_history_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pdf_contract_signers: {
+        Row: {
+          address: string | null
+          contract_id: string
+          cpf_cnpj: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          sign_order: number
+          signature_address: string | null
+          signature_latitude: number | null
+          signature_longitude: number | null
+          signature_photo_url: string | null
+          signed_at: string | null
+          signer_ip: string | null
+          signing_token: string
+          status: string
+        }
+        Insert: {
+          address?: string | null
+          contract_id: string
+          cpf_cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          sign_order?: number
+          signature_address?: string | null
+          signature_latitude?: number | null
+          signature_longitude?: number | null
+          signature_photo_url?: string | null
+          signed_at?: string | null
+          signer_ip?: string | null
+          signing_token?: string
+          status?: string
+        }
+        Update: {
+          address?: string | null
+          contract_id?: string
+          cpf_cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          sign_order?: number
+          signature_address?: string | null
+          signature_latitude?: number | null
+          signature_longitude?: number | null
+          signature_photo_url?: string | null
+          signed_at?: string | null
+          signer_ip?: string | null
+          signing_token?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pdf_contract_signers_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pdf_contracts: {
+        Row: {
+          created_at: string
+          created_by_name: string | null
+          created_by_user_id: string | null
+          description: string | null
+          id: string
+          name: string
+          pdf_path: string
+          pdf_url: string
+          servidor_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_name?: string | null
+          created_by_user_id?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          pdf_path: string
+          pdf_url: string
+          servidor_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_name?: string | null
+          created_by_user_id?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          pdf_path?: string
+          pdf_url?: string
+          servidor_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pdf_contracts_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

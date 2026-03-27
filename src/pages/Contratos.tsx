@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import {
-  Plus, Search, FileSignature, Eye, Clock, CheckCircle2, XCircle, Loader2, Download, ShieldAlert, User, MapPin, Camera, Filter,
+  Plus, Search, FileSignature, Eye, Clock, CheckCircle2, XCircle, Loader2, Download, ShieldAlert, User, MapPin, Camera, Filter, Upload,
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PdfContractsList } from "@/components/contratos/PdfContractsList";
 import { downloadContractPdf, generateContractPdf } from "@/lib/generateContractPdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -150,12 +152,19 @@ export default function Contratos() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Contratos</h1>
-          <p className="text-muted-foreground">Contratos de adesão dos clientes</p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Contratos</h1>
+        <p className="text-muted-foreground">Gestão de contratos e assinaturas digitais</p>
       </div>
+
+      <Tabs defaultValue="adesao" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="adesao" className="gap-2"><FileSignature className="h-4 w-4" /> Contratos de Adesão</TabsTrigger>
+          <TabsTrigger value="pdf" className="gap-2"><Upload className="h-4 w-4" /> Contratos PDF</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="adesao">
+        <div className="space-y-6">
 
       {/* Stats */}
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
@@ -425,6 +434,13 @@ export default function Contratos() {
           )}
         </DialogContent>
       </Dialog>
+      </div>
+        </TabsContent>
+
+        <TabsContent value="pdf">
+          <PdfContractsList />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
