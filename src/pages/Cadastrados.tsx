@@ -711,6 +711,7 @@ export default function Cadastrados() {
                                 <TableHead className="text-xs">Vencimento</TableHead>
                                 <TableHead className="text-xs">Status</TableHead>
                                 <TableHead className="text-xs">Pago em</TableHead>
+                                <TableHead className="text-xs text-center">Ações</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -729,6 +730,13 @@ export default function Cadastrados() {
                                     </Badge>
                                   </TableCell>
                                   <TableCell className="text-xs text-muted-foreground">{t.paid_at ? fmtDate(t.paid_at) : "—"}</TableCell>
+                                  <TableCell className="text-center">
+                                    {t.status !== "pago" && (
+                                      <Button size="sm" variant="outline" className="text-xs gap-1" onClick={() => handleMarkAsPaid(t.id)}>
+                                        <CheckCircle2 className="h-3 w-3" /> Pago
+                                      </Button>
+                                    )}
+                                  </TableCell>
                                 </TableRow>
                               ))}
                             </TableBody>
