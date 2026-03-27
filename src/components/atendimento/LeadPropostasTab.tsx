@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   ArrowLeft, Building2, User, Mail, PhoneCall, MapPin, Calendar,
   DollarSign, FileSpreadsheet, Plus, Loader2, Send, Download,
@@ -8,7 +8,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useContracts } from "@/hooks/useContracts";
-import { downloadContractPdf } from "@/lib/generateContractPdf";
+import { generateContractPdf, downloadContractPdf } from "@/lib/generateContractPdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,7 +57,25 @@ interface ServidorData {
   cep: string | null;
 }
 
+function ContractPdfViewer({ content, companyName }: { content: string; companyName: string }) {
+  const pdfUrl = useMemo(() => {
+    const blob = generateContractPdf({ content, code: "Contrato", companyName });
+    return URL.createObjectURL(blob);
+  }, [content, companyName]);
+
+  useEffect(() => {
+    return () => URL.revokeObjectURL(pdfUrl);
+  }, [pdfUrl]);
+
+  return (
+    <div className="rounded-lg border border-border overflow-hidden" style={{ height: "500px" }}>
+      <iframe src={pdfUrl} className="w-full h-full" title="Visualização do contrato" />
+    </div>
+  );
+}
+
 export function LeadPropostasTab({ lead, addActivity, signatureMode = false }: { lead: CrmLead; addActivity: (data: any) => Promise<any>; signatureMode?: boolean }) {
+
   const { profile } = useAuth();
   const [proposals, setProposals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -623,9 +641,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
           </Button>
         </div>
 
-        <div className="rounded-lg border border-border bg-muted/20 p-4 max-h-[400px] overflow-y-auto">
-          <pre className="whitespace-pre-wrap text-xs leading-relaxed font-sans text-foreground">{contractPreview}</pre>
-        </div>
+        <ContractPdfViewer content={contractPreview} companyName={lead.company_name} />
 
         <div className="rounded-lg border border-border p-3 space-y-1">
           <p className="text-xs font-semibold text-foreground">Dados do Cliente</p>
