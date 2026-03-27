@@ -363,11 +363,122 @@ export default function Cadastrados() {
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Clientes & Cadastros</h1>
+  // ──────── Full-page detail view ────────
+  if (selectedReg) {
+    return (
+      <div className="space-y-6">
+        {/* Back button + Header */}
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => setSelectedReg(null)} className="gap-1.5 text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" /> Voltar
+          </Button>
+        </div>
+
+        {/* Client header */}
+        <div className="bg-card border rounded-xl px-6 py-5">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-4">
+              <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+                <User className="h-7 w-7 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-foreground">{selectedReg.nome_completo || "Cliente"}</h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-sm text-muted-foreground">{selectedReg.cpf || "CPF não informado"}</span>
+                  <span className="text-sm text-muted-foreground">·</span>
+                  <span className="text-sm text-muted-foreground">{selectedReg.crm_leads?.company_name}</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {health && (
+                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${healthColors[health.level]}`}>
+                  <Heart className="h-4 w-4" />
+                  <span className="text-xs font-bold">{health.score}%</span>
+                  <span className="text-xs">{health.label}</span>
+                </div>
+              )}
+              {(() => {
+                const cs = (selectedReg.client_status || "pendente") as string;
+                const cfg = clientStatusConfig[cs] || clientStatusConfig.pendente;
+                return (
+                  <Badge variant="outline" className={`${cfg.color} text-xs`}>
+                    <cfg.icon className="h-3.5 w-3.5 mr-1" />
+                    {cfg.label}
+                  </Badge>
+                );
+              })()}
+              {editing ? (
+                <Button size="sm" onClick={handleSaveEdit} disabled={saving} className="gap-1.5">
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Salvar
+                </Button>
+              ) : (
+                <Button size="sm" variant="outline" onClick={() => setEditing(true)} className="gap-1.5">
+                  <Pencil className="h-4 w-4" /> Editar
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Quick info strip */}
+          <div className="flex items-center gap-6 mt-4 text-sm text-muted-foreground">
+            {selectedReg.plano_contratado && (
+              <span className="flex items-center gap-1"><FileText className="h-4 w-4" /> {selectedReg.plano_contratado}</span>
+            )}
+            {selectedReg.valor_mensal > 0 && (
+              <span className="flex items-center gap-1 font-semibold text-foreground">
+                <DollarSign className="h-4 w-4" /> {fmtCur(Number(selectedReg.valor_mensal))}/mês
+              </span>
+            )}
+            {selectedReg.data_adesao && (
+              <span className="flex items-center gap-1"><Calendar className="h-4 w-4" /> Desde {fmtDate(selectedReg.data_adesao)}</span>
+            )}
+          </div>
+        </div>
+
+        {/* Tabs content */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-4 flex-wrap">
+            <TabsTrigger value="dados" className="text-xs gap-1.5"><User className="h-3.5 w-3.5" /> Dados</TabsTrigger>
+            <TabsTrigger value="contratos" className="text-xs gap-1.5"><FileSignature className="h-3.5 w-3.5" /> Contratos</TabsTrigger>
+            <TabsTrigger value="financeiro" className="text-xs gap-1.5"><CreditCard className="h-3.5 w-3.5" /> Financeiro</TabsTrigger>
+            <TabsTrigger value="upsell" className="text-xs gap-1.5"><Rocket className="h-3.5 w-3.5" /> Upsell</TabsTrigger>
+            <TabsTrigger value="documentos" className="text-xs gap-1.5"><Paperclip className="h-3.5 w-3.5" /> Docs</TabsTrigger>
+            <TabsTrigger value="dependentes" className="text-xs gap-1.5"><UsersRound className="h-3.5 w-3.5" /> Dependentes</TabsTrigger>
+            <TabsTrigger value="historico" className="text-xs gap-1.5"><Activity className="h-3.5 w-3.5" /> Histórico</TabsTrigger>
+          </TabsList>
+
+          {/* ─── TAB: Dados Gerais ─── */}
+          <TabsContent value="dados" className="space-y-4 mt-0">
+            <Card>
+              <CardContent className="p-5">
+                <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <User className="h-4 w-4 text-primary" /> Dados do Titular
+                </h3>
+                <InfoRow label="Nome completo" value={selectedReg.nome_completo} field="nome_completo" icon={User} />
+                <InfoRow label="CPF" value={selectedReg.cpf} field="cpf" />
+                <InfoRow label="RG" value={selectedReg.rg} field="rg" />
+                <InfoRow label="Nascimento" value={selectedReg.data_nascimento ? fmtDate(selectedReg.data_nascimento) : ""} field="data_nascimento" icon={Calendar} />
+                <InfoRow label="E-mail" value={selectedReg.email} field="email" icon={Mail} />
+                <InfoRow label="Nome do pai" value={selectedReg.nome_pai} field="nome_pai" />
+                <InfoRow label="Nome da mãe" value={selectedReg.nome_mae} field="nome_mae" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-5">
+                <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-primary" /> Endereço
+                </h3>
+                <InfoRow label="CEP" value={selectedReg.cep} field="cep" />
+                <InfoRow label="Endereço" value={selectedReg.endereco} field="endereco" icon={MapPin} />
+                <InfoRow label="Número" value={selectedReg.numero} field="numero" />
+                <InfoRow label="Bairro" value={selectedReg.bairro} field="bairro" />
+                <InfoRow label="Cidade" value={selectedReg.cidade} field="cidade" icon={Building2} />
+                <InfoRow label="Estado" value={selectedReg.estado} field="estado" />
+              </CardContent>
+            </Card>
+          </TabsContent>
         <p className="text-sm text-muted-foreground mt-1">Centro de gestão completa da sua base de clientes</p>
       </div>
 
