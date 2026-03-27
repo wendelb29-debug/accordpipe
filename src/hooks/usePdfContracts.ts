@@ -64,8 +64,8 @@ export function usePdfContracts() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error(error);
-      toast.error("Erro ao carregar contratos PDF");
+      console.error("PDF contracts fetch error:", error.message, error.code, error.details, error.hint);
+      toast.error("Erro ao carregar contratos PDF: " + error.message);
     }
     setContracts((data as PdfContract[]) || []);
     setLoading(false);
