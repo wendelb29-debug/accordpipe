@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Clock, Users, MessageSquare, Phone, RefreshCw, FileSignature, GripVertical,
   MoreVertical, Trash2, Edit, Building2, Mail, PhoneCall, Loader2,
-  Plus, TrendingUp, Sparkles, Link2, Check, Tag, Search, Filter
+  Plus, TrendingUp, Sparkles, Link2, Check, Tag, Search, Filter, CalendarClock, AlertTriangle
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -78,6 +78,8 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const [localSearch, setLocalSearch] = useState(searchTerm);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<{ id: string; name: string; color: string }[]>([]);
+  const [leadsWithActivity, setLeadsWithActivity] = useState<Set<string>>(new Set());
+  const [nextActivities, setNextActivities] = useState<Record<string, string>>({});
 
   // Drag-to-scroll
   const pipelineRef = useRef<HTMLDivElement>(null);
@@ -131,6 +133,38 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
     };
     fetchTags();
   }, [profile?.company_id]);
+
+  // Fetch activity status for all leads (check if they have scheduled activities)
+  useEffect(() => {
+    const fetchActivityStatus = async () => {
+      if (leads.length === 0) return;
+      const leadIds = leads.map((l) => l.id);
+      
+      // Fetch all activities for current leads that are of type "task" or "call" or "meeting" (scheduled activities)
+      const { data } = await supabase
+        .from("crm_lead_activities")
+        .select("lead_id, title, created_at, type, metadata")
+        .in("lead_id", leadIds)
+        .order("created_at", { ascending: false });
+      
+      if (data) {
+        const withActivity = new Set<string>();
+        const nextAct: Record<string, string> = {};
+        
+        for (const activity of data) {
+          // Any activity counts as having a scheduled return
+          if (!withActivity.has(activity.lead_id)) {
+            withActivity.add(activity.lead_id);
+            nextAct[activity.lead_id] = activity.title;
+          }
+        }
+        
+        setLeadsWithActivity(withActivity);
+        setNextActivities(nextAct);
+      }
+    };
+    fetchActivityStatus();
+  }, [leads]);
 
   const toggleTag = (tagName: string) => {
     setSelectedTags((prev) =>
@@ -425,6 +459,8 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                 {stageLeads.map((lead) => {
                   const overdue = isLeadOverdue(lead, stage.id);
                   const days = Math.floor((Date.now() - new Date(lead.stage_entered_at).getTime()) / (1000 * 60 * 60 * 24));
+                  const hasActivity = leadsWithActivity.has(lead.id);
+                  const noActivity = !hasActivity;
 
                   return (
                     <div
@@ -433,15 +469,27 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                       onDragStart={() => setDraggedLead(lead)}
                       onClick={() => openDetail(lead)}
                       className={cn(
-                        "kanban-card rounded-xl border bg-card p-3 cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 group",
+                        "kanban-card rounded-xl border p-3 cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 group",
                         draggedLead?.id === lead.id && "opacity-40 scale-95",
-                        overdue
-                          ? "border-destructive/40 bg-destructive/5 dark:bg-destructive/10"
-                          : "border-border/40 hover:border-border/80"
+                        noActivity
+                          ? "border-yellow-400/60 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-500/40"
+                          : overdue
+                            ? "border-destructive/40 bg-destructive/5 dark:bg-destructive/10"
+                            : "border-border/40 bg-card hover:border-border/80"
                       )}
                     >
+                      {/* No activity alert */}
+                      {noActivity && (
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-yellow-700 dark:text-yellow-400 bg-yellow-200/60 dark:bg-yellow-800/40 rounded-full px-2 py-0.5">
+                            <AlertTriangle className="h-3 w-3" />
+                            Sem atividade
+                          </span>
+                        </div>
+                      )}
+
                       {/* Status badge */}
-                      {overdue && (
+                      {overdue && hasActivity && (
                         <div className="flex items-center gap-1.5 mb-2">
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-destructive bg-destructive/10 rounded-full px-2 py-0.5">
                             <span className="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse" />
@@ -504,6 +552,14 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-green-500/10 text-green-600 dark:text-green-400 rounded-full px-2 py-0.5">
                             ✅ Ganho
                           </span>
+                        </div>
+                      )}
+
+                      {/* Activity indicator */}
+                      {hasActivity && nextActivities[lead.id] && (
+                        <div className="flex items-center gap-1 mt-2 text-[10px] text-muted-foreground/60">
+                          <CalendarClock className="h-3 w-3" />
+                          <span className="truncate">{nextActivities[lead.id]}</span>
                         </div>
                       )}
 
