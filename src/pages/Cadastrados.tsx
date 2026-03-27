@@ -227,7 +227,108 @@ export default function Cadastrados() {
     }
   };
 
-  // ──────── Health for detail view ────────
+  // ──────── Create Upsell ────────
+  const handleCreateUpsell = async () => {
+    if (!selectedReg?.id || !profile?.company_id || !upsellForm.name || !upsellForm.amount) {
+      toast.error("Preencha nome e valor do upsell");
+      return;
+    }
+    setUpsellSaving(true);
+    try {
+      const amount = parseFloat(upsellForm.amount.replace(",", "."));
+      if (isNaN(amount) || amount <= 0) throw new Error("Valor inválido");
+
+      // Create upsell
+      await supabase.from("client_upsells" as any).insert({
+        registration_id: selectedReg.id,
+        servidor_id: profile.company_id,
+        lead_id: selectedReg.lead_id,
+        name: upsellForm.name,
+        description: upsellForm.description,
+        amount,
+        type: upsellForm.type,
+        start_date: upsellForm.start_date,
+        created_by_user_id: profile.user_id,
+        created_by_name: profile.name,
+      });
+
+      // Generate financial transaction for the upsell
+      const dueDate = new Date(upsellForm.start_date || Date.now());
+      if (dueDate < new Date()) dueDate.setMonth(dueDate.getMonth() + 1);
+
+      await supabase.from("financial_transactions").insert({
+        servidor_id: profile.company_id,
+        registration_id: selectedReg.id,
+        lead_id: selectedReg.lead_id,
+        amount,
+        type: "cobranca",
+        description: `Upsell - ${upsellForm.name}`,
+        status: "pendente",
+        due_date: dueDate.toISOString().split("T")[0],
+        created_by_user_id: profile.user_id,
+        created_by_name: profile.name,
+      } as any);
+
+      // Update MRR on registration if recurring
+      if (upsellForm.type === "mensal") {
+        const newTotal = Number(selectedReg.valor_mensal || 0) + amount;
+        await supabase.from("crm_client_registrations").update({ valor_mensal: newTotal } as any).eq("id", selectedReg.id);
+        setSelectedReg((prev: any) => ({ ...prev, valor_mensal: newTotal }));
+        setRegistrations(prev => prev.map(r => r.id === selectedReg.id ? { ...r, valor_mensal: newTotal } : r));
+      }
+
+      toast.success(`Upsell "${upsellForm.name}" criado com sucesso!`);
+      setUpsellDialogOpen(false);
+      setUpsellForm({ name: "", description: "", amount: "", type: "mensal", start_date: new Date().toISOString().split("T")[0] });
+
+      // Refresh detail data
+      await openDetail(selectedReg);
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao criar upsell");
+    } finally {
+      setUpsellSaving(false);
+    }
+  };
+
+  // ──────── Mark transaction as paid ────────
+  const handleMarkAsPaid = async (transactionId: string) => {
+    const { error } = await supabase.from("financial_transactions").update({
+      status: "pago",
+      paid_at: new Date().toISOString(),
+    } as any).eq("id", transactionId);
+    if (error) {
+      toast.error("Erro ao marcar como pago");
+      return;
+    }
+    toast.success("Pagamento registrado!");
+
+    // Update client status to active
+    if (selectedReg?.id) {
+      await supabase.from("crm_client_registrations").update({ client_status: "ativo" } as any).eq("id", selectedReg.id);
+      setSelectedReg((prev: any) => ({ ...prev, client_status: "ativo" }));
+      setRegistrations(prev => prev.map(r => r.id === selectedReg.id ? { ...r, client_status: "ativo" } : r));
+    }
+
+    // Refresh transactions
+    if (selectedReg) await openDetail(selectedReg);
+  };
+
+  // ──────── Cancel upsell ────────
+  const handleCancelUpsell = async (upsellId: string, upsellAmount: number, upsellType: string) => {
+    await supabase.from("client_upsells" as any).update({ status: "cancelado" }).eq("id", upsellId);
+
+    // Reduce MRR if recurring
+    if (upsellType === "mensal" && selectedReg?.id) {
+      const newTotal = Math.max(0, Number(selectedReg.valor_mensal || 0) - upsellAmount);
+      await supabase.from("crm_client_registrations").update({ valor_mensal: newTotal } as any).eq("id", selectedReg.id);
+      setSelectedReg((prev: any) => ({ ...prev, valor_mensal: newTotal }));
+      setRegistrations(prev => prev.map(r => r.id === selectedReg.id ? { ...r, valor_mensal: newTotal } : r));
+    }
+
+    toast.success("Upsell cancelado");
+    if (selectedReg) await openDetail(selectedReg);
+  };
+
   const health = selectedReg ? getClientHealth(selectedReg, detailTransactions, detailContracts) : null;
 
   const healthColors = {
