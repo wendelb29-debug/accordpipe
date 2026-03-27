@@ -35,6 +35,7 @@ import Cadastrados from "./pages/Cadastrados";
 import Financeiro from "./pages/Financeiro";
 import Clientes from "./pages/Clientes";
 import Descarte from "./pages/Descarte";
+import AssinarPdf from "./pages/AssinarPdf";
 
 const queryClient = new QueryClient();
 
