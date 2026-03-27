@@ -386,7 +386,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
             <div
               key={stage.id}
               className={cn(
-                "flex-shrink-0 w-64 bg-muted/30 rounded-xl flex flex-col border border-border/30",
+                "flex-shrink-0 w-56 bg-muted/30 rounded-xl flex flex-col border border-border/30",
                 dragOverStage === stage.id && "ring-2 ring-primary/50 bg-primary/5"
               )}
               onDragOver={(e) => { e.preventDefault(); setDragOverStage(stage.id); }}
