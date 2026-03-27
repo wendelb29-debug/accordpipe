@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Clock, Users, MessageSquare, Phone, RefreshCw, FileSignature, GripVertical,
   MoreVertical, Trash2, Edit, Building2, Mail, PhoneCall, Loader2,
-  Plus, TrendingUp, Sparkles, Link2, Check, Tag, Search, Filter
+  Plus, TrendingUp, Sparkles, Link2, Check, Tag, Search, Filter, CalendarClock, AlertTriangle
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
