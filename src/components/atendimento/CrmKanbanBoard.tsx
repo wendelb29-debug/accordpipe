@@ -584,10 +584,17 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                         )}>
                           {days}d
                         </span>
-                      </div>
+                      {/* Activity indicator */}
+                      {hasActivity && nextActivities[lead.id] && (
+                        <div className="flex items-center gap-1 mt-1.5 text-[10px] text-muted-foreground/60">
+                          <CalendarClock className="h-3 w-3" />
+                          <span className="truncate">{nextActivities[lead.id]}</span>
+                        </div>
+                      )}
                     </div>
-                  );
-                })}
+                    );
+                  })()}
+              
               </div>
             </div>
           );
