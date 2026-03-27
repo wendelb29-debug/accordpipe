@@ -135,14 +135,8 @@ export default function Auth() {
 
           <Card className="border-0 shadow-none lg:border lg:border-border/50 lg:shadow-card rounded-2xl">
             <CardHeader className="space-y-2 pb-6">
-              <CardTitle className="text-2xl font-extrabold tracking-tight">
-                {activeTab === "login" ? "Bem-vindo de volta" : "Crie sua conta"}
-              </CardTitle>
-              <CardDescription className="text-[15px]">
-                {activeTab === "login"
-                  ? "Entre com suas credenciais para acessar a plataforma"
-                  : "Preencha os dados abaixo para começar"}
-              </CardDescription>
+              <CardTitle className="text-2xl font-extrabold tracking-tight">Bem-vindo de volta</CardTitle>
+              <CardDescription className="text-[15px]">Entre com suas credenciais para acessar a plataforma</CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-6">
