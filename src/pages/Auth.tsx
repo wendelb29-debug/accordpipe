@@ -108,7 +108,6 @@ export default function Auth() {
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-primary via-primary to-accent">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(255,255,255,0.08),transparent_60%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.05),transparent_50%)]" />
-        {/* Subtle grid pattern */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px]" />
         
         <div className="relative flex flex-col justify-between p-12 text-primary-foreground">
@@ -153,184 +152,56 @@ export default function Auth() {
                 </Alert>
               )}
 
-              <Tabs value={activeTab} onValueChange={(val) => { setActiveTab(val); setError(null); setSuccess(null); }}>
-                <TabsList className="grid w-full grid-cols-2 rounded-xl h-11">
-                  <TabsTrigger value="login" className="flex items-center gap-2 rounded-lg text-sm">
-                    <User className="h-4 w-4" />
-                    Entrar
-                  </TabsTrigger>
-                  <TabsTrigger value="signup" className="flex items-center gap-2 rounded-lg text-sm">
-                    <UserPlus className="h-4 w-4" />
-                    Criar Conta
-                  </TabsTrigger>
-                </TabsList>
-
-                {/* LOGIN TAB */}
-                <TabsContent value="login" className="space-y-4 mt-6">
-                  <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="login-email">E-mail</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
-                        <Input id="login-email" type="email" placeholder="seu@email.com" className="pl-10 rounded-xl h-11" {...loginForm.register("email")} />
-                      </div>
-                      {loginForm.formState.errors.email && <p className="text-sm text-destructive">{loginForm.formState.errors.email.message}</p>}
+              <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="login-email">E-mail</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
+                    <Input id="login-email" type="email" placeholder="seu@email.com" className="pl-10 rounded-xl h-11" {...loginForm.register("email")} />
+                  </div>
+                  {loginForm.formState.errors.email && <p className="text-sm text-destructive">{loginForm.formState.errors.email.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="login-password">Senha</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
+                    <Input id="login-password" type={showPassword ? "text" : "password"} placeholder="••••••••" className="pl-10 pr-10 rounded-xl h-11" {...loginForm.register("password")} />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {loginForm.formState.errors.password && <p className="text-sm text-destructive">{loginForm.formState.errors.password.message}</p>}
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="remember-me"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked === true)}
+                    />
+                    <label htmlFor="remember-me" className="text-sm text-muted-foreground cursor-pointer flex items-center gap-1.5">
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      Lembrar-me
+                    </label>
+                  </div>
+                  <button
+                    type="button"
+                    className="text-sm text-primary hover:underline disabled:opacity-50"
+                    onClick={handleForgotPassword}
+                    disabled={resetLoading}
+                  >
+                    {resetLoading ? "Enviando..." : "Esqueci minha senha"}
+                  </button>
+                </div>
+                <Button type="submit" className="w-full h-11 rounded-xl text-sm font-semibold" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Entrando...
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="login-password">Senha</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
-                        <Input id="login-password" type={showPassword ? "text" : "password"} placeholder="••••••••" className="pl-10 pr-10 rounded-xl h-11" {...loginForm.register("password")} />
-                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                      {loginForm.formState.errors.password && <p className="text-sm text-destructive">{loginForm.formState.errors.password.message}</p>}
-                    </div>
-                    <Button type="submit" className="w-full h-11 rounded-xl text-sm font-semibold" disabled={isSubmitting}>
-                      {isSubmitting ? (
-                        <div className="flex items-center gap-2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground"></div>
-                          Entrando...
-                        </div>
-                      ) : "Entrar"}
-                    </Button>
-                    <div className="text-center">
-                      <button
-                        type="button"
-                        className="text-sm text-primary hover:underline"
-                        onClick={async () => {
-                          const email = loginForm.getValues("email");
-                          if (!email) { setError("Digite seu e-mail no campo acima para redefinir a senha."); return; }
-                          setError(null);
-                          const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
-                          if (error) { setError("Erro ao enviar e-mail de redefinição."); }
-                          else { setSuccess("E-mail de redefinição enviado! Verifique sua caixa de entrada."); }
-                        }}
-                      >
-                        Esqueci minha senha
-                      </button>
-                    </div>
-                  </form>
-                </TabsContent>
-
-                {/* SIGNUP TAB */}
-                <TabsContent value="signup" className="space-y-4 mt-6">
-                  <div className="space-y-4">
-                      {/* CNPJ Search */}
-                      <div className="space-y-2">
-                        <Label>CNPJ da Empresa</Label>
-                        <div className="flex gap-2">
-                          <div className="relative flex-1">
-                            <Building2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
-                            <Input
-                              type="text"
-                              placeholder="00.000.000/0000-00"
-                              className="pl-10 rounded-xl h-11"
-                              value={cnpjSearch}
-                              onChange={(e) => {
-                                setCnpjSearch(e.target.value);
-                                setCnpjNotFound(false);
-                                setCnpjAlreadyRegistered(false);
-                                setFoundServidor(null);
-                              }}
-                              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCnpjLookup(); } }}
-                            />
-                          </div>
-                          <Button type="button" variant="outline" className="rounded-xl h-11 px-4" onClick={handleCnpjLookup} disabled={cnpjLooking}>
-                            {cnpjLooking ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Search className="h-4 w-4 mr-1" /> Buscar</>}
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* CNPJ already registered as client company */}
-                      {cnpjAlreadyRegistered && (
-                        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 animate-fade-in">
-                          <div className="flex items-start gap-3">
-                            <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-                            <div>
-                              <p className="font-medium text-foreground">Empresa já possui cadastro</p>
-                              <p className="text-sm text-muted-foreground mt-1">Este CNPJ já está registrado como cliente no sistema. Se você perdeu o acesso, entre em contato com o administrador.</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Found company card */}
-                      {foundServidor && (
-                        <div className="rounded-xl border border-accent/30 bg-accent/5 p-4 space-y-3 animate-fade-in">
-                          <div className="flex items-start gap-3">
-                            <div className="rounded-lg bg-accent/10 p-2">
-                              <Building2 className="h-5 w-5 text-accent" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs text-muted-foreground">Empresa encontrada</p>
-                              <p className="font-semibold text-foreground truncate">{foundServidor.nome_fantasia || foundServidor.razao_social}</p>
-                              <p className="text-sm text-muted-foreground truncate">{foundServidor.razao_social}</p>
-                              <p className={`text-xs font-medium mt-1 ${statusLabels[foundServidor.status]?.color || "text-muted-foreground"}`}>
-                                📊 {statusLabels[foundServidor.status]?.label || foundServidor.status}
-                              </p>
-                            </div>
-                            <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-1" />
-                          </div>
-
-                        </div>
-                      )}
-
-                      {/* CNPJ not found / not authorized */}
-                      {cnpjNotFound && (
-                        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 animate-fade-in">
-                          <div className="flex items-start gap-3">
-                            <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-                            <div>
-                              <p className="font-medium text-foreground">CNPJ não autorizado</p>
-                              <p className="text-sm text-muted-foreground mt-1">Nenhum servidor ativo com este CNPJ foi encontrado. Verifique o número e tente novamente.</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* User data form (only show after finding valid servidor) */}
-                      {foundServidor && (
-                        <form onSubmit={signupForm.handleSubmit(onSignup)} className="space-y-4 animate-fade-in">
-                          <div className="space-y-2">
-                            <Label htmlFor="join-name">Nome Completo</Label>
-                            <div className="relative">
-                              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
-                              <Input id="join-name" type="text" placeholder="Seu nome completo" className="pl-10 rounded-xl h-11" {...signupForm.register("name")} />
-                            </div>
-                            {signupForm.formState.errors.name && <p className="text-sm text-destructive">{signupForm.formState.errors.name.message}</p>}
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="join-cpf">CPF</Label>
-                            <div className="relative">
-                              <CreditCard className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
-                              <Input id="join-cpf" type="text" placeholder="000.000.000-00" className="pl-10 rounded-xl h-11" {...signupForm.register("cpf")} />
-                            </div>
-                            {signupForm.formState.errors.cpf && <p className="text-sm text-destructive">{signupForm.formState.errors.cpf.message}</p>}
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="join-email">E-mail</Label>
-                            <div className="relative">
-                              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
-                              <Input id="join-email" type="email" placeholder="seu@email.com" className="pl-10 rounded-xl h-11" {...signupForm.register("email")} />
-                            </div>
-                            {signupForm.formState.errors.email && <p className="text-sm text-destructive">{signupForm.formState.errors.email.message}</p>}
-                          </div>
-                          <PasswordFields form={signupForm} prefix="join" />
-                          <Button type="submit" className="w-full h-11 rounded-xl text-sm font-semibold" disabled={isSubmitting}>
-                            {isSubmitting ? (
-                              <div className="flex items-center gap-2">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                Criando conta...
-                              </div>
-                            ) : "Criar Conta"}
-                          </Button>
-                        </form>
-                      )}
-                    </div>
-                </TabsContent>
-              </Tabs>
+                  ) : "Entrar"}
+                </Button>
+              </form>
             </CardContent>
           </Card>
         </div>
