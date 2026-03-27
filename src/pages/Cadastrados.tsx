@@ -17,8 +17,10 @@ import {
   FileSignature, Download, User, UsersRound, Pencil, Save, Loader2,
   DollarSign, TrendingUp, FileText, Activity, ChevronRight,
   CreditCard, AlertTriangle, CheckCircle2, XCircle, BarChart3,
-  Calendar, Mail, Phone, MapPin, Building2, Heart, ArrowLeft
+  Calendar, Mail, Phone, MapPin, Building2, Heart, ArrowLeft,
+  Plus, Rocket, PauseCircle, Trash2
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 // ──────────── Status configs ────────────
 const registrationStatusLabels: Record<string, { label: string; color: string }> = {
