@@ -572,10 +572,11 @@ export default function Cadastrados() {
               {/* Tabs */}
               <div className="px-6 py-4">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="mb-4">
+                  <TabsList className="mb-4 flex-wrap">
                     <TabsTrigger value="dados" className="text-xs gap-1.5"><User className="h-3.5 w-3.5" /> Dados</TabsTrigger>
                     <TabsTrigger value="contratos" className="text-xs gap-1.5"><FileSignature className="h-3.5 w-3.5" /> Contratos</TabsTrigger>
                     <TabsTrigger value="financeiro" className="text-xs gap-1.5"><CreditCard className="h-3.5 w-3.5" /> Financeiro</TabsTrigger>
+                    <TabsTrigger value="upsell" className="text-xs gap-1.5"><Rocket className="h-3.5 w-3.5" /> Upsell</TabsTrigger>
                     <TabsTrigger value="documentos" className="text-xs gap-1.5"><Paperclip className="h-3.5 w-3.5" /> Docs</TabsTrigger>
                     <TabsTrigger value="dependentes" className="text-xs gap-1.5"><UsersRound className="h-3.5 w-3.5" /> Dependentes</TabsTrigger>
                     <TabsTrigger value="historico" className="text-xs gap-1.5"><Activity className="h-3.5 w-3.5" /> Histórico</TabsTrigger>
