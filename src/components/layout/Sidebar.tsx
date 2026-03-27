@@ -151,7 +151,7 @@ export function Sidebar() {
       <div className={cn("flex h-16 items-center border-b border-sidebar-border/50 shrink-0 select-none", collapsed ? "justify-center px-2" : "justify-between px-5")}>
         {!collapsed && (
           <div className="flex items-center gap-2.5 cursor-default" onClick={(e) => e.preventDefault()}>
-            <img src={orbitLogo} alt="ORBIT HUB" className="h-10 w-auto" />
+            <img src={orbitLogo} alt="ORBIT HUB" className="h-12 w-auto" />
             <span className="text-lg font-black tracking-tight text-sidebar-primary" style={{ letterSpacing: "-0.04em" }}>ORBIT</span>
             <span className="text-lg font-light tracking-tight text-sidebar-foreground/50" style={{ letterSpacing: "-0.04em" }}>HUB</span>
           </div>
