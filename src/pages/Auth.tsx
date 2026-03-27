@@ -25,23 +25,13 @@ export default function Auth() {
   const navigate = useNavigate();
   const { user, loading, signIn } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState("login");
-  
-
-  // Join existing company state
-  const [cnpjSearch, setCnpjSearch] = useState("");
-  const [cnpjLooking, setCnpjLooking] = useState(false);
-  const [foundServidor, setFoundServidor] = useState<{ id: string; nome_fantasia: string | null; razao_social: string; status: string } | null>(null);
-  const [cnpjNotFound, setCnpjNotFound] = useState(false);
-  const [cnpjAlreadyRegistered, setCnpjAlreadyRegistered] = useState(false);
-  
+  const [rememberMe, setRememberMe] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   const loginForm = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) });
-  const signupForm = useForm<SignupFormData>({ resolver: zodResolver(signupSchema) });
 
   useEffect(() => {
     if (!loading && user) navigate("/home");
