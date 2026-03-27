@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import orbitLogo from "@/assets/orbit-logo.png";
 import {
   Home,
   LayoutDashboard,
