@@ -177,7 +177,7 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
                     onDragStart={() => setDraggedLead(lead)}
                     onClick={() => setDetailLead(lead)}
                     className={cn(
-                      "cursor-grab active:cursor-grabbing hover:shadow-md transition-all text-xs",
+                      "kanban-card cursor-grab active:cursor-grabbing hover:shadow-md transition-all text-xs",
                       draggedLead?.id === lead.id && "opacity-50"
                     )}
                   >
