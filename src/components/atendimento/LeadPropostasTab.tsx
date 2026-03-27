@@ -8,7 +8,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useContracts } from "@/hooks/useContracts";
-import { downloadContractPdf } from "@/lib/generateContractPdf";
+import { generateContractPdf, downloadContractPdf } from "@/lib/generateContractPdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
