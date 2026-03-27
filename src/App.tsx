@@ -251,6 +251,7 @@ const App = () => (
               }
             />
             <Route path="/assinar/:token" element={<AssinarContrato />} />
+            <Route path="/assinar-pdf/:token" element={<AssinarPdf />} />
             <Route path="/captura/:servidorId" element={<CapturaLead />} />
             <Route path="/contato" element={<FormularioContato />} />
             <Route path="/form/:formId" element={<FormPublico />} />
