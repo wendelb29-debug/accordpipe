@@ -33,6 +33,37 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [detailLead, setDetailLead] = useState<CrmLead | null>(null);
 
+  const pipelineRef = useRef<HTMLDivElement>(null);
+  const isDraggingScroll = useRef(false);
+  const startX = useRef(0);
+  const scrollLeftStart = useRef(0);
+
+  const handlePipelineMouseDown = useCallback((e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('.kanban-card')) return;
+    const el = pipelineRef.current;
+    if (!el) return;
+    isDraggingScroll.current = true;
+    startX.current = e.pageX - el.offsetLeft;
+    scrollLeftStart.current = el.scrollLeft;
+    el.style.cursor = 'grabbing';
+    el.style.userSelect = 'none';
+  }, []);
+
+  const handlePipelineMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDraggingScroll.current) return;
+    e.preventDefault();
+    const el = pipelineRef.current;
+    if (!el) return;
+    const x = e.pageX - el.offsetLeft;
+    el.scrollLeft = scrollLeftStart.current - (x - startX.current) * 1.3;
+  }, []);
+
+  const handlePipelineMouseUp = useCallback(() => {
+    isDraggingScroll.current = false;
+    const el = pipelineRef.current;
+    if (el) { el.style.cursor = 'grab'; el.style.userSelect = ''; }
+  }, []);
+
   const filteredLeads = leads.filter((l) => {
     if (!searchTerm) return true;
     const s = searchTerm.toLowerCase();
