@@ -91,6 +91,15 @@ export default function Cadastrados() {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("dados");
 
+  // Upsell
+  const [detailUpsells, setDetailUpsells] = useState<any[]>([]);
+  const [upsellDialogOpen, setUpsellDialogOpen] = useState(false);
+  const [upsellForm, setUpsellForm] = useState({ name: "", description: "", amount: "", type: "mensal", start_date: new Date().toISOString().split("T")[0] });
+  const [upsellSaving, setUpsellSaving] = useState(false);
+
+  // Check if user can manage upsells (Master/CEO/Admin)
+  const canManageUpsell = profile?.is_master || true; // Role check done via RLS
+
   useEffect(() => {
     fetchRegistrations();
   }, [profile]);
