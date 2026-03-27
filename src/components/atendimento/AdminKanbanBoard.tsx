@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import {
   Clock, GripVertical, MoreVertical, Trash2, Edit, Building2, Mail, PhoneCall, Loader2,
   Users, ClipboardList, FileCheck, FileWarning, Sparkles
@@ -32,6 +32,37 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
   const [draggedLead, setDraggedLead] = useState<CrmLead | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [detailLead, setDetailLead] = useState<CrmLead | null>(null);
+
+  const pipelineRef = useRef<HTMLDivElement>(null);
+  const isDraggingScroll = useRef(false);
+  const startX = useRef(0);
+  const scrollLeftStart = useRef(0);
+
+  const handlePipelineMouseDown = useCallback((e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('.kanban-card')) return;
+    const el = pipelineRef.current;
+    if (!el) return;
+    isDraggingScroll.current = true;
+    startX.current = e.pageX - el.offsetLeft;
+    scrollLeftStart.current = el.scrollLeft;
+    el.style.cursor = 'grabbing';
+    el.style.userSelect = 'none';
+  }, []);
+
+  const handlePipelineMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDraggingScroll.current) return;
+    e.preventDefault();
+    const el = pipelineRef.current;
+    if (!el) return;
+    const x = e.pageX - el.offsetLeft;
+    el.scrollLeft = scrollLeftStart.current - (x - startX.current) * 1.3;
+  }, []);
+
+  const handlePipelineMouseUp = useCallback(() => {
+    isDraggingScroll.current = false;
+    const el = pipelineRef.current;
+    if (el) { el.style.cursor = 'grab'; el.style.userSelect = ''; }
+  }, []);
 
   const filteredLeads = leads.filter((l) => {
     if (!searchTerm) return true;
@@ -95,7 +126,14 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
       </div>
 
       {/* Kanban Columns */}
-      <div className="flex gap-2 p-3 h-[calc(100%-3.5rem)] overflow-x-auto">
+      <div
+        ref={pipelineRef}
+        className="flex gap-2 p-3 h-[calc(100%-3.5rem)] overflow-x-auto cursor-grab"
+        onMouseDown={handlePipelineMouseDown}
+        onMouseMove={handlePipelineMouseMove}
+        onMouseUp={handlePipelineMouseUp}
+        onMouseLeave={handlePipelineMouseUp}
+      >
         {stageStats.map((stage) => {
           const Icon = stageIcons[stage.id] || Clock;
           const stageLeads = filteredLeads.filter((l) => l.stage === stage.id);
@@ -139,7 +177,7 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
                     onDragStart={() => setDraggedLead(lead)}
                     onClick={() => setDetailLead(lead)}
                     className={cn(
-                      "cursor-grab active:cursor-grabbing hover:shadow-md transition-all text-xs",
+                      "kanban-card cursor-grab active:cursor-grabbing hover:shadow-md transition-all text-xs",
                       draggedLead?.id === lead.id && "opacity-50"
                     )}
                   >
