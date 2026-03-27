@@ -193,6 +193,79 @@ export type Database = {
           },
         ]
       }
+      client_upsells: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by_name: string | null
+          created_by_user_id: string | null
+          description: string | null
+          id: string
+          lead_id: string | null
+          name: string
+          registration_id: string
+          servidor_id: string
+          start_date: string | null
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          created_by_name?: string | null
+          created_by_user_id?: string | null
+          description?: string | null
+          id?: string
+          lead_id?: string | null
+          name: string
+          registration_id: string
+          servidor_id: string
+          start_date?: string | null
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by_name?: string | null
+          created_by_user_id?: string | null
+          description?: string | null
+          id?: string
+          lead_id?: string | null
+          name?: string
+          registration_id?: string
+          servidor_id?: string
+          start_date?: string | null
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_upsells_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_upsells_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "crm_client_registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_upsells_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           bairro: string | null
