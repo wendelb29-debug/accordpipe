@@ -205,7 +205,7 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial")
       } as any);
 
       // Create registration record with lead data
-      const { data: regData } = await supabase.from("crm_client_registrations" as any).insert({
+      const regResult = await supabase.from("crm_client_registrations" as any).insert({
         lead_id: id,
         servidor_id: lead.servidor_id,
         nome_completo: lead.contact_name || lead.company_name || "",
@@ -217,6 +217,7 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial")
         cidade: lead.cidade || null,
         estado: lead.estado || null,
       }).select("id").single();
+      const regId = (regResult.data as any)?.id;
 
       // Auto-create contract linked to registration
       if (regData?.id) {
