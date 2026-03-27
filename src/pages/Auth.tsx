@@ -19,29 +19,7 @@ const loginSchema = z.object({
   password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres" }),
 });
 
-
-const signupSchema = z.object({
-  name: z.string().trim().min(2, { message: "Nome deve ter pelo menos 2 caracteres" }).max(100),
-  cpf: z.string().trim().min(11, { message: "CPF deve ter 11 dígitos" }).max(14, { message: "CPF inválido" }).refine(
-    (v) => v.replace(/\D/g, "").length === 11,
-    { message: "CPF deve ter 11 dígitos" }
-  ),
-  email: z.string().trim().email({ message: "E-mail inválido" }).max(255),
-  password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres" }),
-  confirmPassword: z.string().min(6, { message: "Confirme a senha" }),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "As senhas não coincidem",
-  path: ["confirmPassword"],
-});
-
 type LoginFormData = z.infer<typeof loginSchema>;
-type SignupFormData = z.infer<typeof signupSchema>;
-
-const statusLabels: Record<string, { label: string; color: string }> = {
-  active: { label: "Ativo", color: "text-green-600" },
-  teste: { label: "Em Teste", color: "text-blue-600" },
-  expirado: { label: "Bloqueado", color: "text-destructive" },
-};
 
 export default function Auth() {
   const navigate = useNavigate();
