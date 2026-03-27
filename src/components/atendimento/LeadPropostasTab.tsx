@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   ArrowLeft, Building2, User, Mail, PhoneCall, MapPin, Calendar,
   DollarSign, FileSpreadsheet, Plus, Loader2, Send, Download,
