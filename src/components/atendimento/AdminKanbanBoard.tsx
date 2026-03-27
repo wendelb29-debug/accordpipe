@@ -126,7 +126,14 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
       </div>
 
       {/* Kanban Columns */}
-      <div className="flex gap-2 p-3 h-[calc(100%-3.5rem)] overflow-x-auto">
+      <div
+        ref={pipelineRef}
+        className="flex gap-2 p-3 h-[calc(100%-3.5rem)] overflow-x-auto cursor-grab"
+        onMouseDown={handlePipelineMouseDown}
+        onMouseMove={handlePipelineMouseMove}
+        onMouseUp={handlePipelineMouseUp}
+        onMouseLeave={handlePipelineMouseUp}
+      >
         {stageStats.map((stage) => {
           const Icon = stageIcons[stage.id] || Clock;
           const stageLeads = filteredLeads.filter((l) => l.stage === stage.id);
