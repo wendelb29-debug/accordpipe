@@ -433,7 +433,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                       onDragStart={() => setDraggedLead(lead)}
                       onClick={() => openDetail(lead)}
                       className={cn(
-                        "rounded-xl border bg-card p-3 cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 group",
+                        "kanban-card rounded-xl border bg-card p-3 cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 group",
                         draggedLead?.id === lead.id && "opacity-40 scale-95",
                         overdue
                           ? "border-destructive/40 bg-destructive/5 dark:bg-destructive/10"
