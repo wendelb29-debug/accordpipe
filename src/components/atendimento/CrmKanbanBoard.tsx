@@ -79,6 +79,42 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<{ id: string; name: string; color: string }[]>([]);
 
+  // Drag-to-scroll
+  const pipelineRef = useRef<HTMLDivElement>(null);
+  const isDraggingScroll = useRef(false);
+  const startX = useRef(0);
+  const scrollLeftStart = useRef(0);
+
+  const handlePipelineMouseDown = useCallback((e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('.kanban-card')) return;
+    const el = pipelineRef.current;
+    if (!el) return;
+    isDraggingScroll.current = true;
+    startX.current = e.pageX - el.offsetLeft;
+    scrollLeftStart.current = el.scrollLeft;
+    el.style.cursor = 'grabbing';
+    el.style.userSelect = 'none';
+  }, []);
+
+  const handlePipelineMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDraggingScroll.current) return;
+    e.preventDefault();
+    const el = pipelineRef.current;
+    if (!el) return;
+    const x = e.pageX - el.offsetLeft;
+    const walk = (x - startX.current) * 1.3;
+    el.scrollLeft = scrollLeftStart.current - walk;
+  }, []);
+
+  const handlePipelineMouseUp = useCallback(() => {
+    isDraggingScroll.current = false;
+    const el = pipelineRef.current;
+    if (el) {
+      el.style.cursor = 'grab';
+      el.style.userSelect = '';
+    }
+  }, []);
+
   const isAdminOrMaster = profile?.is_master || false;
 
   // Fetch available tags
