@@ -31,7 +31,7 @@ export function Header() {
   const navigate = useNavigate();
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border/50 bg-background/80 backdrop-blur-xl px-6">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/40 bg-background/90 backdrop-blur-xl px-8">
       {/* Search */}
       <div className="flex items-center gap-4 flex-1">
         <div className="relative w-full max-w-md">

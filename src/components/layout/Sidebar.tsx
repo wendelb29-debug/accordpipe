@@ -102,23 +102,23 @@ export function Sidebar() {
       <Link
         to={item.href}
         className={cn(
-          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-200 group relative",
+          "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200 group relative",
           isActive
-            ? "bg-gradient-to-r from-sidebar-primary/90 to-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/25"
-            : "text-sidebar-foreground/45 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground/90"
+            ? "bg-sidebar-accent text-sidebar-foreground"
+            : "text-sidebar-foreground/40 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground/80"
         )}
       >
         {/* Active indicator bar */}
         {isActive && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full bg-sidebar-primary-foreground/90" />
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 rounded-r-full bg-sidebar-primary" />
         )}
         <div className="relative shrink-0">
           <item.icon className={cn(
-            "h-[18px] w-[18px] transition-colors duration-200",
-            isActive ? "drop-shadow-sm" : "group-hover:text-sidebar-foreground/80"
+            "h-[17px] w-[17px] transition-colors duration-200",
+            isActive ? "text-sidebar-primary" : "group-hover:text-sidebar-foreground/70"
           )} />
           {badge > 0 && collapsed && (
-            <span className="absolute -top-2 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-0.5 animate-pulse">
+            <span className="absolute -top-2 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-0.5">
               {badge}
             </span>
           )}
@@ -127,7 +127,7 @@ export function Sidebar() {
           <span className="truncate flex-1">{item.name}</span>
         )}
         {!collapsed && badge > 0 && (
-          <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-1 animate-pulse">
+          <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive/80 text-[10px] font-bold text-destructive-foreground px-1">
             {badge}
           </span>
         )}
@@ -156,12 +156,12 @@ export function Sidebar() {
       )}
     >
       {/* Logo */}
-      <div className={cn("flex h-16 items-center border-b border-sidebar-border/50 shrink-0 select-none", collapsed ? "justify-center px-2" : "justify-between px-5")}>
+      <div className={cn("flex h-16 items-center border-b border-sidebar-border/30 shrink-0 select-none", collapsed ? "justify-center px-2" : "justify-between px-5")}>
         {!collapsed && (
           <div className="flex items-center gap-2.5 cursor-default" onClick={(e) => e.preventDefault()}>
             <img src={orbitLogo} alt="ORBIT HUB" className="h-14 w-auto" />
-            <span className="text-lg font-black tracking-tight bg-gradient-to-r from-sidebar-primary to-blue-400 bg-clip-text text-transparent" style={{ letterSpacing: "-0.04em" }}>ORBIT</span>
-            <span className="text-base font-light tracking-tight text-sidebar-foreground/30" style={{ letterSpacing: "-0.04em" }}>HUB</span>
+            <span className="text-[15px] font-bold tracking-tight text-sidebar-foreground/90" style={{ letterSpacing: "-0.03em" }}>ORBIT</span>
+            <span className="text-sm font-light tracking-tight text-sidebar-foreground/25" style={{ letterSpacing: "-0.03em" }}>HUB</span>
           </div>
         )}
         {collapsed && (
@@ -205,9 +205,9 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className={cn("flex-1 space-y-0.5 overflow-y-auto py-3", collapsed ? "px-2" : "px-3")}>
+      <nav className={cn("flex-1 space-y-0.5 overflow-y-auto py-4", collapsed ? "px-2" : "px-3")}>
         {!collapsed && (
-          <p className="px-3 pb-3 pt-1 text-[9px] font-bold uppercase tracking-[0.2em] text-sidebar-foreground/15">
+          <p className="px-3 pb-2 pt-1 text-[10px] font-medium uppercase tracking-[0.15em] text-sidebar-foreground/20">
             Menu
           </p>
         )}
