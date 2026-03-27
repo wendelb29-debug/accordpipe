@@ -122,7 +122,83 @@ Deno.serve(async (req) => {
           .eq("id", contractId);
       }
     } else {
-      // Legacy single-signer flow
+      // Check client_contracts table
+      const { data: clientContract } = await supabase
+        .from("client_contracts")
+        .select("id, contract_status, client_name, client_cpf, plan_name, monthly_value, servidor_id")
+        .eq("signing_token", token)
+        .eq("contract_status", "pendente")
+        .maybeSingle();
+
+      if (clientContract) {
+        // Client contract signing flow
+        contractId = clientContract.id;
+
+        const fileName = `client_${contractId}_${Date.now()}.jpg`;
+        const arrayBuffer = await photo.arrayBuffer();
+        const { error: uploadErr } = await supabase.storage
+          .from("signatures")
+          .upload(fileName, arrayBuffer, { contentType: photo.type });
+
+        if (uploadErr) {
+          return new Response(
+            JSON.stringify({ error: "Failed to upload photo" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
+        const signedAt = new Date().toISOString();
+
+        const { error: updateErr } = await supabase
+          .from("client_contracts")
+          .update({
+            contract_status: "assinado",
+            signed_at: signedAt,
+            signature_photo_url: urlData.publicUrl,
+            signature_latitude: latitude,
+            signature_longitude: longitude,
+            signature_address: address,
+            signer_name: signerName || null,
+            signer_document: signerDocument || null,
+          })
+          .eq("id", contractId)
+          .eq("contract_status", "pendente");
+
+        if (updateErr) {
+          return new Response(
+            JSON.stringify({ error: "Failed to update contract" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Record signing in client_contract_history
+        const historyDescription = [
+          `Contrato assinado digitalmente`,
+          `Cliente: ${clientContract.client_name || "—"}`,
+          clientContract.client_cpf ? `CPF: ${clientContract.client_cpf}` : null,
+          clientContract.plan_name ? `Plano: ${clientContract.plan_name}` : null,
+          clientContract.monthly_value ? `Valor: R$ ${Number(clientContract.monthly_value).toFixed(2)}` : null,
+          `Assinante: ${signerName || "—"}`,
+          signerDocument ? `Documento do assinante: ${signerDocument}` : null,
+          `Data da assinatura: ${new Date(signedAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}`,
+          `Localização: ${address || "—"}`,
+        ].filter(Boolean).join("\n");
+
+        await supabase.from("client_contract_history").insert({
+          contract_id: contractId,
+          action: "assinatura",
+          description: historyDescription,
+          created_by_name: signerName || "Agente Externo",
+        });
+
+        return new Response(
+          JSON.stringify({ success: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Legacy single-signer flow (contracts table)
       const { data: contract, error: fetchErr } = await supabase
         .from("contracts")
         .select("id, signature_status")

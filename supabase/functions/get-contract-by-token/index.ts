@@ -56,7 +56,9 @@ Deno.serve(async (req) => {
           signer_document: sigData.signer_document,
         };
       }
-    } else {
+    }
+
+    if (!contractData) {
       // Fallback: legacy single-signer token on contracts table
       const { data, error } = await supabase
         .from("contracts")
@@ -71,6 +73,42 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Check client_contracts table
+    if (!contractData) {
+      const { data: clientContract, error: ccErr } = await supabase
+        .from("client_contracts")
+        .select("id, client_name, client_cpf, plan_name, monthly_value, contract_content, contract_status, signing_token, signed_at, signature_photo_url, signer_name, signer_document, servidor_id")
+        .eq("signing_token", token)
+        .maybeSingle();
+
+      if (!ccErr && clientContract) {
+        // Fetch company info for display
+        const { data: company } = await supabase
+          .from("companies")
+          .select("razao_social, nome_fantasia, cnpj, responsavel, endereco, numero, bairro, cidade, estado, cep")
+          .eq("id", clientContract.servidor_id)
+          .maybeSingle();
+
+        contractData = {
+          id: clientContract.id,
+          code: `CC-${clientContract.id.substring(0, 8).toUpperCase()}`,
+          contract_content: clientContract.contract_content,
+          signature_status: clientContract.contract_status === "pendente" ? "pending" : clientContract.contract_status,
+          signed_at: clientContract.signed_at,
+          signer_role: "cliente",
+          signer_name: clientContract.signer_name,
+          signer_document: clientContract.signer_document,
+          signer_signed_at: clientContract.signed_at,
+          companies: company,
+          is_client_contract: true,
+          client_name: clientContract.client_name,
+          client_cpf: clientContract.client_cpf,
+          plan_name: clientContract.plan_name,
+          monthly_value: clientContract.monthly_value,
+        };
+      }
+    }
+
     if (!contractData) {
       return new Response(
         JSON.stringify({ error: "Contract not found" }),
@@ -78,14 +116,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Also fetch all signatures for this contract
-    const { data: allSigs } = await supabase
-      .from("contract_signatures")
-      .select("signer_role, signer_name, signed_at, signature_photo_url, signature_address")
-      .eq("contract_id", contractData.id)
-      .order("created_at");
+    // Also fetch all signatures for this contract (only for contracts table)
+    if (!contractData.is_client_contract) {
+      const { data: allSigs } = await supabase
+        .from("contract_signatures")
+        .select("signer_role, signer_name, signed_at, signature_photo_url, signature_address")
+        .eq("contract_id", contractData.id)
+        .order("created_at");
 
-    contractData.signatures = allSigs || [];
+      contractData.signatures = allSigs || [];
+    }
 
     return new Response(JSON.stringify(contractData), {
       status: 200,
