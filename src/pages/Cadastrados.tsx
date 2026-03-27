@@ -21,6 +21,7 @@ import {
   Plus, Rocket, PauseCircle, Trash2
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { CadastradosCharts } from "@/components/cadastrados/CadastradosCharts";
 
 // ──────────── Status configs ────────────
 const registrationStatusLabels: Record<string, { label: string; color: string }> = {
@@ -393,6 +394,9 @@ export default function Cadastrados() {
           </Card>
         ))}
       </div>
+
+      {/* ────── Charts ────── */}
+      <CadastradosCharts registrations={registrations} />
 
       {/* ────── Filters ────── */}
       <div className="flex flex-wrap items-center gap-3">
