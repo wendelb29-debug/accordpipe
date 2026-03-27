@@ -888,6 +888,67 @@ export default function Cadastrados() {
           </SelectContent>
         </Select>
       </div>
+
+      {/* ────── Client Table ────── */}
+      <Card>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30">
+                  <TableHead className="text-xs font-semibold">Nome</TableHead>
+                  <TableHead className="text-xs font-semibold">CPF</TableHead>
+                  <TableHead className="text-xs font-semibold">Empresa</TableHead>
+                  <TableHead className="text-xs font-semibold">Plano</TableHead>
+                  <TableHead className="text-xs font-semibold">Valor</TableHead>
+                  <TableHead className="text-xs font-semibold">Status</TableHead>
+                  <TableHead className="text-xs font-semibold">Entrada</TableHead>
+                  <TableHead className="text-xs font-semibold">Deps.</TableHead>
+                  <TableHead className="text-xs font-semibold text-center">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                      <Users className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                      <p className="text-sm">Nenhum cadastro encontrado</p>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filtered.map(r => {
+                    const cs = (r.client_status || "pendente") as string;
+                    const cfg = clientStatusConfig[cs] || clientStatusConfig.pendente;
+                    return (
+                      <TableRow key={r.id} className="cursor-pointer hover:bg-muted/30" onClick={() => openDetail(r)}>
+                        <TableCell className="text-sm font-medium">{r.nome_completo || "—"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{r.cpf || "—"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{r.crm_leads?.company_name || "—"}</TableCell>
+                        <TableCell className="text-xs">{r.plano_contratado || "—"}</TableCell>
+                        <TableCell className="text-xs font-semibold">{r.valor_mensal ? fmtCur(Number(r.valor_mensal)) : "—"}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={`text-[10px] ${cfg.color}`}>
+                            <cfg.icon className="h-3 w-3 mr-1" />
+                            {cfg.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{r.data_adesao ? fmtDate(r.data_adesao) : r.created_at ? fmtDate(r.created_at) : "—"}</TableCell>
+                        <TableCell className="text-xs text-center">{r.crm_client_dependents?.length || 0}</TableCell>
+                        <TableCell className="text-center">
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* ────── Upsell Creation Dialog ────── */}
       <Dialog open={upsellDialogOpen} onOpenChange={setUpsellDialogOpen}>
         <DialogContent className="max-w-md">
