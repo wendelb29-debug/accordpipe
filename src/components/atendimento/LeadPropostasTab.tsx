@@ -57,7 +57,24 @@ interface ServidorData {
   cep: string | null;
 }
 
-export function LeadPropostasTab({ lead, addActivity, signatureMode = false }: { lead: CrmLead; addActivity: (data: any) => Promise<any>; signatureMode?: boolean }) {
+function ContractPdfViewer({ content, companyName }: { content: string; companyName: string }) {
+  const pdfUrl = useMemo(() => {
+    const blob = generateContractPdf({ content, code: "Contrato", companyName });
+    return URL.createObjectURL(blob);
+  }, [content, companyName]);
+
+  useEffect(() => {
+    return () => URL.revokeObjectURL(pdfUrl);
+  }, [pdfUrl]);
+
+  return (
+    <div className="rounded-lg border border-border overflow-hidden" style={{ height: "500px" }}>
+      <iframe src={pdfUrl} className="w-full h-full" title="Visualização do contrato" />
+    </div>
+  );
+}
+
+
   const { profile } = useAuth();
   const [proposals, setProposals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
