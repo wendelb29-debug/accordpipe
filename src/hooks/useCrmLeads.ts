@@ -220,9 +220,9 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial")
       const regId = (regResult.data as any)?.id;
 
       // Auto-create contract linked to registration
-      if (regData?.id) {
-        const { data: contractData } = await supabase.from("client_contracts").insert({
-          registration_id: regData.id,
+      if (regId) {
+        const contractResult = await supabase.from("client_contracts").insert({
+          registration_id: regId,
           servidor_id: lead.servidor_id,
           lead_id: id,
           client_name: lead.contact_name || lead.company_name || "",
@@ -232,6 +232,7 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial")
           created_by_user_id: profile?.user_id || null,
           created_by_name: profile?.name || null,
         } as any).select("id").single();
+        const contractId = (contractResult.data as any)?.id;
 
         // Auto-generate first financial transaction (monthly charge)
         if (lead.value_mrr > 0) {
@@ -241,7 +242,7 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial")
 
           await supabase.from("financial_transactions").insert({
             servidor_id: lead.servidor_id,
-            registration_id: regData.id,
+            registration_id: regId,
             lead_id: id,
             amount: lead.value_mrr,
             type: "cobranca",
@@ -254,9 +255,9 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial")
         }
 
         // Log contract creation in history
-        if (contractData?.id) {
+        if (contractId) {
           await supabase.from("client_contract_history").insert({
-            contract_id: contractData.id,
+            contract_id: contractId,
             action: "Contrato criado automaticamente",
             description: `Contrato gerado automaticamente a partir da venda CRM. Vendedor: ${profile?.name || "Sistema"}. Valor: R$ ${(lead.value_mrr || 0).toFixed(2)}/mês`,
             created_by_name: profile?.name || "Sistema",
