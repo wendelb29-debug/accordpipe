@@ -134,6 +134,38 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
     fetchTags();
   }, [profile?.company_id]);
 
+  // Fetch activity status for all leads (check if they have scheduled activities)
+  useEffect(() => {
+    const fetchActivityStatus = async () => {
+      if (leads.length === 0) return;
+      const leadIds = leads.map((l) => l.id);
+      
+      // Fetch all activities for current leads that are of type "task" or "call" or "meeting" (scheduled activities)
+      const { data } = await supabase
+        .from("crm_lead_activities")
+        .select("lead_id, title, created_at, type, metadata")
+        .in("lead_id", leadIds)
+        .order("created_at", { ascending: false });
+      
+      if (data) {
+        const withActivity = new Set<string>();
+        const nextAct: Record<string, string> = {};
+        
+        for (const activity of data) {
+          // Any activity counts as having a scheduled return
+          if (!withActivity.has(activity.lead_id)) {
+            withActivity.add(activity.lead_id);
+            nextAct[activity.lead_id] = activity.title;
+          }
+        }
+        
+        setLeadsWithActivity(withActivity);
+        setNextActivities(nextAct);
+      }
+    };
+    fetchActivityStatus();
+  }, [leads]);
+
   const toggleTag = (tagName: string) => {
     setSelectedTags((prev) =>
       prev.includes(tagName) ? prev.filter((t) => t !== tagName) : [...prev, tagName]
