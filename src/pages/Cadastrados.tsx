@@ -746,6 +746,94 @@ export default function Cadastrados() {
                     )}
                   </TabsContent>
 
+                  {/* ─── TAB: Upsell ─── */}
+                  <TabsContent value="upsell" className="space-y-3 mt-0">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-semibold text-foreground">Produtos & Upsells</h3>
+                        <p className="text-xs text-muted-foreground">Gerencie serviços adicionais do cliente</p>
+                      </div>
+                      {canManageUpsell && (
+                        <Button size="sm" className="gap-1.5" onClick={() => setUpsellDialogOpen(true)}>
+                          <Plus className="h-4 w-4" /> Novo Upsell
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Plano principal */}
+                    {selectedReg.plano_contratado && (
+                      <Card className="border-primary/20">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 rounded-lg bg-primary/10">
+                                <FileText className="h-4 w-4 text-primary" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-semibold text-foreground">{selectedReg.plano_contratado}</p>
+                                <p className="text-[10px] text-muted-foreground">Plano principal · Recorrente</p>
+                              </div>
+                            </div>
+                            <p className="text-sm font-bold text-foreground">{fmtCur(Number(selectedReg.valor_mensal || 0))}/mês</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Upsells */}
+                    {detailUpsells.length === 0 && !selectedReg.plano_contratado ? (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Rocket className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                        <p className="text-sm">Nenhum produto ou upsell</p>
+                      </div>
+                    ) : (
+                      detailUpsells.map(up => (
+                        <Card key={up.id} className={up.status === "cancelado" ? "opacity-50" : ""}>
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-lg ${up.status === "ativo" ? "bg-emerald-50" : "bg-muted"}`}>
+                                  <Rocket className={`h-4 w-4 ${up.status === "ativo" ? "text-emerald-600" : "text-muted-foreground"}`} />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-semibold text-foreground">{up.name}</p>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className={`text-[10px] ${
+                                      up.status === "ativo" ? "bg-green-50 text-green-700 border-green-200" :
+                                      up.status === "pausado" ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
+                                      "bg-muted text-muted-foreground border-border"
+                                    }`}>{up.status === "ativo" ? "Ativo" : up.status === "pausado" ? "Pausado" : "Cancelado"}</Badge>
+                                    <span className="text-[10px] text-muted-foreground">{up.type === "mensal" ? "Recorrente" : "Único"}</span>
+                                    {up.start_date && <span className="text-[10px] text-muted-foreground">· Início: {fmtDate(up.start_date)}</span>}
+                                  </div>
+                                  {up.description && <p className="text-xs text-muted-foreground mt-1">{up.description}</p>}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-bold text-foreground">{fmtCur(Number(up.amount))}{up.type === "mensal" ? "/mês" : ""}</p>
+                                {up.status === "ativo" && canManageUpsell && (
+                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleCancelUpsell(up.id, Number(up.amount), up.type)}>
+                                    <XCircle className="h-4 w-4 text-muted-foreground" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
+
+                    {/* MRR total */}
+                    {(detailUpsells.filter(u => u.status === "ativo" && u.type === "mensal").length > 0 || selectedReg.plano_contratado) && (
+                      <Card className="bg-muted/30">
+                        <CardContent className="p-4 flex items-center justify-between">
+                          <span className="text-sm font-medium text-muted-foreground">Receita Mensal Total</span>
+                          <span className="text-lg font-bold text-foreground">{fmtCur(Number(selectedReg.valor_mensal || 0))}</span>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </TabsContent>
+
                   {/* ─── TAB: Documentos ─── */}
                   <TabsContent value="documentos" className="space-y-3 mt-0">
                     {selectedReg.comprovante_url ? (
