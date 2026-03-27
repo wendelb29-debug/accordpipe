@@ -9,17 +9,18 @@ export function HeroSection() {
 
   return (
     <section className="relative overflow-hidden">
-      {/* Premium background */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.06),transparent_60%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,hsl(var(--accent)/0.04),transparent_60%)]" />
+      {/* Layered blue background for depth */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[hsl(218,30%,94%)] via-background to-background" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_center,hsl(218,58%,32%,0.08),transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,hsl(215,50%,45%,0.05),transparent_50%)]" />
       
-      {/* Grid pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(hsl(var(--border)/0.3)_1px,transparent_1px),linear-gradient(90deg,hsl(var(--border)/0.3)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_70%)]" />
+      {/* Subtle grid */}
+      <div className="absolute inset-0 bg-[linear-gradient(hsl(218,30%,80%,0.25)_1px,transparent_1px),linear-gradient(90deg,hsl(218,30%,80%,0.25)_1px,transparent_1px)] bg-[size:72px_72px] [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_65%)]" />
 
       <div className="relative mx-auto max-w-7xl px-6 py-24 md:py-32 lg:py-40">
         <div className="mx-auto max-w-4xl text-center">
           {/* Badge */}
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-5 py-2 text-sm font-medium text-primary backdrop-blur-sm">
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/8 px-5 py-2.5 text-sm font-medium text-primary shadow-sm">
             <Sparkles className="h-3.5 w-3.5" />
             Plataforma completa com Inteligência Artificial
             <ArrowRight className="h-3.5 w-3.5" />
@@ -28,7 +29,7 @@ export function HeroSection() {
           {/* Headline */}
           <h1 className="text-4xl font-black tracking-tight text-foreground sm:text-5xl lg:text-[3.5rem] lg:leading-[1.1]">
             Gerencie vendas, contratos e atendimento em um{" "}
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary via-primary-glow to-primary bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, hsl(218,58%,32%), hsl(215,50%,45%), hsl(210,45%,50%))' }}>
               único sistema com IA
             </span>
           </h1>
@@ -42,14 +43,14 @@ export function HeroSection() {
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Button
               size="lg"
-              className="gap-2 px-8 text-base font-semibold bg-green-600 hover:bg-green-700 shadow-lg shadow-green-600/20 h-13 rounded-xl"
+              className="gap-2 px-8 text-base font-semibold gradient-primary text-primary-foreground shadow-lg shadow-primary/25 h-13 rounded-xl hover:shadow-xl hover:shadow-primary/30 transition-shadow"
               onClick={() => setTrialOpen(true)}
             >
               <Rocket className="h-5 w-5" />
               Começar teste grátis
             </Button>
             <a href="mailto:contato@orbithub.com.br?subject=Solicitar demonstração">
-              <Button size="lg" variant="outline" className="gap-2 px-8 text-base font-medium h-13 rounded-xl border-border/80 hover:bg-muted">
+              <Button size="lg" variant="outline" className="gap-2 px-8 text-base font-medium h-13 rounded-xl border-border hover:bg-card hover:shadow-md transition-all">
                 <CalendarDays className="h-5 w-5" />
                 Ver demonstração
               </Button>
@@ -67,16 +68,16 @@ export function HeroSection() {
         {/* Dashboard Mockup */}
         <div className="mt-20 flex justify-center">
           <div className="relative w-full max-w-5xl">
-            <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-primary/15 to-accent/15 blur-3xl opacity-50" />
-            <div className="relative rounded-2xl border border-border/40 shadow-2xl overflow-hidden bg-card">
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-border/40 bg-muted/30">
+            <div className="absolute -inset-6 rounded-3xl bg-gradient-to-br from-primary/12 via-primary-glow/8 to-transparent blur-3xl" />
+            <div className="relative rounded-2xl border border-border/50 shadow-xl overflow-hidden bg-card">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-border/40 bg-muted/40">
                 <div className="flex gap-1.5">
-                  <div className="h-3 w-3 rounded-full bg-destructive/60" />
-                  <div className="h-3 w-3 rounded-full bg-yellow-500/60" />
-                  <div className="h-3 w-3 rounded-full bg-green-500/60" />
+                  <div className="h-3 w-3 rounded-full bg-destructive/50" />
+                  <div className="h-3 w-3 rounded-full bg-yellow-500/50" />
+                  <div className="h-3 w-3 rounded-full bg-green-500/50" />
                 </div>
                 <div className="flex-1 flex justify-center">
-                  <div className="h-5 w-48 rounded-md bg-muted/50" />
+                  <div className="h-5 w-48 rounded-md bg-muted/60" />
                 </div>
               </div>
               <img
