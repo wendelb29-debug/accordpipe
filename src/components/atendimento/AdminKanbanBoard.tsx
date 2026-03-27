@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import {
   Clock, GripVertical, MoreVertical, Trash2, Edit, Building2, Mail, PhoneCall, Loader2,
   Users, ClipboardList, FileCheck, FileWarning, Sparkles
