@@ -460,22 +460,38 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                   const overdue = isLeadOverdue(lead, stage.id);
                   const days = Math.floor((Date.now() - new Date(lead.stage_entered_at).getTime()) / (1000 * 60 * 60 * 24));
 
-                  return (
+                  {(() => {
+                    const hasActivity = leadsWithActivity.has(lead.id);
+                    const noActivity = !hasActivity;
+
+                    return (
                     <div
                       key={lead.id}
                       draggable
                       onDragStart={() => setDraggedLead(lead)}
                       onClick={() => openDetail(lead)}
                       className={cn(
-                        "kanban-card rounded-xl border bg-card p-3 cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 group",
+                        "kanban-card rounded-xl border p-3 cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 group",
                         draggedLead?.id === lead.id && "opacity-40 scale-95",
-                        overdue
-                          ? "border-destructive/40 bg-destructive/5 dark:bg-destructive/10"
-                          : "border-border/40 hover:border-border/80"
+                        noActivity
+                          ? "border-yellow-400/60 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-500/40"
+                          : overdue
+                            ? "border-destructive/40 bg-destructive/5 dark:bg-destructive/10"
+                            : "border-border/40 bg-card hover:border-border/80"
                       )}
                     >
+                      {/* No activity alert */}
+                      {noActivity && (
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-yellow-700 dark:text-yellow-400 bg-yellow-200/60 dark:bg-yellow-800/40 rounded-full px-2 py-0.5">
+                            <AlertTriangle className="h-3 w-3" />
+                            Sem atividade
+                          </span>
+                        </div>
+                      )}
+
                       {/* Status badge */}
-                      {overdue && (
+                      {overdue && hasActivity && (
                         <div className="flex items-center gap-1.5 mb-2">
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-destructive bg-destructive/10 rounded-full px-2 py-0.5">
                             <span className="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse" />
