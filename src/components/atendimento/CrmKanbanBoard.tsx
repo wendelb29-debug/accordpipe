@@ -459,12 +459,10 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                 {stageLeads.map((lead) => {
                   const overdue = isLeadOverdue(lead, stage.id);
                   const days = Math.floor((Date.now() - new Date(lead.stage_entered_at).getTime()) / (1000 * 60 * 60 * 24));
+                  const hasActivity = leadsWithActivity.has(lead.id);
+                  const noActivity = !hasActivity;
 
-                  {(() => {
-                    const hasActivity = leadsWithActivity.has(lead.id);
-                    const noActivity = !hasActivity;
-
-                    return (
+                  return (
                     <div
                       key={lead.id}
                       draggable
@@ -557,6 +555,14 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                         </div>
                       )}
 
+                      {/* Activity indicator */}
+                      {hasActivity && nextActivities[lead.id] && (
+                        <div className="flex items-center gap-1 mt-2 text-[10px] text-muted-foreground/60">
+                          <CalendarClock className="h-3 w-3" />
+                          <span className="truncate">{nextActivities[lead.id]}</span>
+                        </div>
+                      )}
+
                       {/* Footer: Avatar + date + days */}
                       <div className="flex items-center justify-between mt-2 pt-1.5">
                         <div className="flex items-center gap-1.5">
@@ -584,17 +590,10 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                         )}>
                           {days}d
                         </span>
-                      {/* Activity indicator */}
-                      {hasActivity && nextActivities[lead.id] && (
-                        <div className="flex items-center gap-1 mt-1.5 text-[10px] text-muted-foreground/60">
-                          <CalendarClock className="h-3 w-3" />
-                          <span className="truncate">{nextActivities[lead.id]}</span>
-                        </div>
-                      )}
+                      </div>
                     </div>
-                    );
-                  })()}
-              
+                  );
+                })}
               </div>
             </div>
           );
