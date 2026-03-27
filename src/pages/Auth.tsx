@@ -102,33 +102,6 @@ export default function Auth() {
     );
   }
 
-  const PasswordFields = ({ form, prefix }: { form: any; prefix: string }) => (
-    <>
-      <div className="space-y-2">
-        <Label htmlFor={`${prefix}-password`}>Senha</Label>
-        <div className="relative">
-          <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
-          <Input id={`${prefix}-password`} type={showPassword ? "text" : "password"} placeholder="••••••••" className="pl-10 pr-10 rounded-xl h-11" {...form.register("password")} />
-          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
-            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
-        </div>
-        {form.formState.errors.password && <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>}
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor={`${prefix}-confirm-password`}>Confirmar Senha</Label>
-        <div className="relative">
-          <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
-          <Input id={`${prefix}-confirm-password`} type={showConfirmPassword ? "text" : "password"} placeholder="••••••••" className="pl-10 pr-10 rounded-xl h-11" {...form.register("confirmPassword")} />
-          <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
-            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
-        </div>
-        {form.formState.errors.confirmPassword && <p className="text-sm text-destructive">{form.formState.errors.confirmPassword.message}</p>}
-      </div>
-    </>
-  );
-
   return (
     <div className="flex min-h-screen">
       {/* Left - Branding */}
