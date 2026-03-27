@@ -623,9 +623,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
           </Button>
         </div>
 
-        <div className="rounded-lg border border-border bg-muted/20 p-4 max-h-[400px] overflow-y-auto">
-          <pre className="whitespace-pre-wrap text-xs leading-relaxed font-sans text-foreground">{contractPreview}</pre>
-        </div>
+        <ContractPdfViewer content={contractPreview} companyName={lead.company_name} />
 
         <div className="rounded-lg border border-border p-3 space-y-1">
           <p className="text-xs font-semibold text-foreground">Dados do Cliente</p>
