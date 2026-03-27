@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import {
-  Plus, Search, FileSignature, Eye, Clock, CheckCircle2, XCircle, Loader2, Download, ShieldAlert, User, MapPin, Camera, Filter,
+  Plus, Search, FileSignature, Eye, Clock, CheckCircle2, XCircle, Loader2, Download, ShieldAlert, User, MapPin, Camera, Filter, Upload,
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PdfContractsList } from "@/components/contratos/PdfContractsList";
 import { downloadContractPdf, generateContractPdf } from "@/lib/generateContractPdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
