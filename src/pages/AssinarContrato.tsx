@@ -105,6 +105,8 @@ export default function AssinarContrato() {
         setSigned(true);
       } else if (contractData.signature_status === "signed" && !contractData.signer_role) {
         setSigned(true);
+      } else if (data.is_client_contract && contractData.signature_status === "assinado") {
+        setSigned(true);
       }
       
       // Pre-fill signer info
