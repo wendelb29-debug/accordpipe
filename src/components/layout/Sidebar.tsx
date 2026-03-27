@@ -102,23 +102,23 @@ export function Sidebar() {
       <Link
         to={item.href}
         className={cn(
-          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-200 group relative",
+          "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200 group relative",
           isActive
-            ? "bg-gradient-to-r from-sidebar-primary/90 to-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/25"
-            : "text-sidebar-foreground/45 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground/90"
+            ? "bg-sidebar-accent text-sidebar-foreground"
+            : "text-sidebar-foreground/40 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground/80"
         )}
       >
         {/* Active indicator bar */}
         {isActive && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full bg-sidebar-primary-foreground/90" />
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 rounded-r-full bg-sidebar-primary" />
         )}
         <div className="relative shrink-0">
           <item.icon className={cn(
-            "h-[18px] w-[18px] transition-colors duration-200",
-            isActive ? "drop-shadow-sm" : "group-hover:text-sidebar-foreground/80"
+            "h-[17px] w-[17px] transition-colors duration-200",
+            isActive ? "text-sidebar-primary" : "group-hover:text-sidebar-foreground/70"
           )} />
           {badge > 0 && collapsed && (
-            <span className="absolute -top-2 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-0.5 animate-pulse">
+            <span className="absolute -top-2 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-0.5">
               {badge}
             </span>
           )}
@@ -127,7 +127,7 @@ export function Sidebar() {
           <span className="truncate flex-1">{item.name}</span>
         )}
         {!collapsed && badge > 0 && (
-          <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-1 animate-pulse">
+          <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive/80 text-[10px] font-bold text-destructive-foreground px-1">
             {badge}
           </span>
         )}
