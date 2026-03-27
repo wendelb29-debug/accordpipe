@@ -7,7 +7,7 @@ import { Header } from "./Header";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActivityReminders } from "@/hooks/useActivityReminders";
 import { OrbitAIChat } from "@/components/orbit-ai/OrbitAIChat";
-import { ResolverComIA } from "@/components/orbit-ai/ResolverComIA";
+
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -44,7 +44,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         {!hideHeader && <Header />}
         <main className={cn("max-w-[1600px] mx-auto", hideHeader ? "p-0" : "p-6 lg:p-8")}>{children}</main>
       </div>
-      <ResolverComIA />
+      
       <OrbitAIChat />
     </div>
   );
