@@ -434,6 +434,13 @@ export default function Contratos() {
           )}
         </DialogContent>
       </Dialog>
+      </div>
+        </TabsContent>
+
+        <TabsContent value="pdf">
+          <PdfContractsList />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
