@@ -20,8 +20,7 @@ export function HowItWorksSection() {
         </p>
       </div>
       <div className="relative">
-        {/* Connection line */}
-        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-border hidden lg:block" />
+        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-border/60 hidden lg:block" />
         <div className="grid gap-8 lg:gap-0">
           {steps.map((step, i) => (
             <div
@@ -31,18 +30,17 @@ export function HowItWorksSection() {
               }`}
             >
               <div className={`flex-1 ${i % 2 === 1 ? "lg:text-left" : "lg:text-right"}`}>
-                <div className={`rounded-2xl border border-border/50 bg-card p-6 shadow-sm transition-all hover:shadow-md ${i % 2 === 1 ? "" : "lg:ml-auto"} max-w-md`}>
+                <div className={`rounded-2xl border border-border/40 bg-card p-7 shadow-card transition-all premium-hover ${i % 2 === 1 ? "" : "lg:ml-auto"} max-w-md`}>
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                    <span className="text-xs font-bold text-primary bg-primary/8 px-2.5 py-1 rounded-full">
                       ETAPA {step.number}
                     </span>
                   </div>
                   <h3 className="text-lg font-semibold text-foreground">{step.title}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">{step.description}</p>
+                  <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">{step.description}</p>
                 </div>
               </div>
-              {/* Center icon */}
-              <div className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-4 border-background bg-primary text-primary-foreground shadow-lg">
+              <div className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-4 border-background gradient-primary text-primary-foreground shadow-lg shadow-primary/20">
                 <step.icon className="h-6 w-6" />
               </div>
               <div className="flex-1 hidden lg:block" />
