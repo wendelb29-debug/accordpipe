@@ -370,7 +370,14 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
       </div>
 
       {/* Kanban Columns */}
-      <div className="flex gap-3 p-3 h-[calc(100%-44px)] overflow-x-auto">
+      <div
+        ref={pipelineRef}
+        className="flex gap-3 p-3 h-[calc(100%-44px)] overflow-x-auto cursor-grab"
+        onMouseDown={handlePipelineMouseDown}
+        onMouseMove={handlePipelineMouseMove}
+        onMouseUp={handlePipelineMouseUp}
+        onMouseLeave={handlePipelineMouseUp}
+      >
         {stageStats.map((stage) => {
           const Icon = stageIcons[stage.id] || Clock;
           const stageLeads = filteredLeads.filter((l) => l.stage === stage.id);
