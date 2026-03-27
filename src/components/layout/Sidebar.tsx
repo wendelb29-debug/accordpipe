@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import orbitLogo from "@/assets/orbit-logo.png";
 import {
   Home,
   LayoutDashboard,
@@ -149,13 +150,14 @@ export function Sidebar() {
       {/* Logo */}
       <div className={cn("flex h-16 items-center border-b border-sidebar-border/50 shrink-0 select-none", collapsed ? "justify-center px-2" : "justify-between px-5")}>
         {!collapsed && (
-          <div className="flex items-center gap-1.5 cursor-default" onClick={(e) => e.preventDefault()}>
+          <div className="flex items-center gap-2 cursor-default" onClick={(e) => e.preventDefault()}>
+            <img src={orbitLogo} alt="ORBIT HUB" className="h-8 w-auto" />
             <span className="text-lg font-black tracking-tight text-sidebar-primary" style={{ letterSpacing: "-0.04em" }}>ORBIT</span>
             <span className="text-lg font-light tracking-tight text-sidebar-foreground/50" style={{ letterSpacing: "-0.04em" }}>HUB</span>
           </div>
         )}
         {collapsed && (
-          <span className="text-sm font-black text-sidebar-primary cursor-default" onClick={(e) => e.preventDefault()}>O</span>
+          <img src={orbitLogo} alt="O" className="h-7 w-auto cursor-default" onClick={(e) => e.preventDefault()} />
         )}
       </div>
 
