@@ -410,7 +410,7 @@ export default function Contratos() {
                       <div key={h.id} className="flex items-start gap-3 text-sm">
                         <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
                         <div>
-                          <p className="text-foreground font-medium">{h.description || h.action}</p>
+                          <p className="text-foreground font-medium whitespace-pre-line">{h.description || h.action}</p>
                           <p className="text-xs text-muted-foreground">
                             {new Date(h.created_at).toLocaleString("pt-BR")}
                             {h.created_by_name && ` · ${h.created_by_name}`}
