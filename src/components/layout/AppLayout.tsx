@@ -3,11 +3,12 @@ import { Link, useLocation } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sidebar } from "./Sidebar";
+import { MobileSidebar } from "./MobileSidebar";
 import { Header } from "./Header";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActivityReminders } from "@/hooks/useActivityReminders";
 import { OrbitAIChat } from "@/components/orbit-ai/OrbitAIChat";
-
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -19,6 +20,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   useActivityReminders();
   const location = useLocation();
   const hideHeader = location.pathname === "/atendimento";
+  const isMobile = useIsMobile();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
 
@@ -30,8 +32,15 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar />
-      <div className={cn("transition-all duration-300", sidebarCollapsed ? "pl-[68px]" : "pl-60")}>
+      {/* Desktop sidebar */}
+      {!isMobile && <Sidebar />}
+      {/* Mobile sidebar */}
+      {isMobile && <MobileSidebar />}
+
+      <div className={cn(
+        "transition-all duration-300",
+        isMobile ? "pl-0" : (sidebarCollapsed ? "pl-[68px]" : "pl-60")
+      )}>
         {!hasAvatar && profile && (
           <Link
             to="/perfil"
@@ -42,9 +51,14 @@ export function AppLayout({ children }: AppLayoutProps) {
           </Link>
         )}
         {!hideHeader && <Header />}
-        <main className={cn("max-w-[1600px] mx-auto", hideHeader ? "p-0" : "p-6 lg:p-8")}>{children}</main>
+        <main className={cn(
+          "max-w-[1600px] mx-auto",
+          hideHeader ? "p-0" : (isMobile ? "p-3 pt-16" : "p-6 lg:p-8")
+        )}>
+          {children}
+        </main>
       </div>
-      
+
       <OrbitAIChat />
     </div>
   );
