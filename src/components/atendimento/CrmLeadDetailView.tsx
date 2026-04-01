@@ -491,26 +491,9 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               <>
                 <Badge className="bg-green-600 text-white">✓ Ganho</Badge>
                 {(role === "admin" || role === "administrativo" || role === "ceo") && (
-                  <Button size="sm" variant="outline" onClick={async () => {
-                    setSaving(true);
-                    try {
-                      const success = await onUpdate(lead.id, {
-                        lead_status: "open",
-                        stage: "contrato-fechado",
-                        stage_entered_at: new Date().toISOString(),
-                      } as any);
-                      if (success) {
-                        await addActivity({
-                          type: "stage_change",
-                          title: "Devolvido ao operador",
-                          description: `Lead devolvido ao pipeline comercial (etapa Contrato Fechado) pelo setor administrativo.`,
-                        });
-                        toast.success("Lead devolvido ao operador com sucesso!");
-                        onBack();
-                      }
-                    } finally {
-                      setSaving(false);
-                    }
+                  <Button size="sm" variant="outline" onClick={() => {
+                    setReturnNote("");
+                    setShowReturnDialog(true);
                   }} disabled={saving} className="gap-1.5 border-orange-300 text-orange-700 hover:bg-orange-50">
                     <ArrowLeft className="h-3.5 w-3.5" /> Devolver
                   </Button>
