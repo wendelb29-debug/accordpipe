@@ -955,6 +955,13 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         </DialogContent>
       </Dialog>
 
+      <WonConfirmDialog
+        open={showWonConfirm}
+        onClose={() => setShowWonConfirm(false)}
+        onConfirm={executeWon}
+        saving={saving}
+      />
+
       <WonCelebrationDialog
         open={showWonCelebration}
         onClose={() => setShowWonCelebration(false)}
