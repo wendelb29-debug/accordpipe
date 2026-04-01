@@ -140,6 +140,8 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const [reopenUsers, setReopenUsers] = useState<{ user_id: string; name: string }[]>([]);
   const [showWonCelebration, setShowWonCelebration] = useState(false);
   const [showWonConfirm, setShowWonConfirm] = useState(false);
+  const [showReturnDialog, setShowReturnDialog] = useState(false);
+  const [returnNote, setReturnNote] = useState("");
 
   // Note compose state
   const [noteText, setNoteText] = useState("");
@@ -489,26 +491,9 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               <>
                 <Badge className="bg-green-600 text-white">✓ Ganho</Badge>
                 {(role === "admin" || role === "administrativo" || role === "ceo") && (
-                  <Button size="sm" variant="outline" onClick={async () => {
-                    setSaving(true);
-                    try {
-                      const success = await onUpdate(lead.id, {
-                        lead_status: "open",
-                        stage: "contrato-fechado",
-                        stage_entered_at: new Date().toISOString(),
-                      } as any);
-                      if (success) {
-                        await addActivity({
-                          type: "stage_change",
-                          title: "Devolvido ao operador",
-                          description: `Lead devolvido ao pipeline comercial (etapa Contrato Fechado) pelo setor administrativo.`,
-                        });
-                        toast.success("Lead devolvido ao operador com sucesso!");
-                        onBack();
-                      }
-                    } finally {
-                      setSaving(false);
-                    }
+                  <Button size="sm" variant="outline" onClick={() => {
+                    setReturnNote("");
+                    setShowReturnDialog(true);
                   }} disabled={saving} className="gap-1.5 border-orange-300 text-orange-700 hover:bg-orange-50">
                     <ArrowLeft className="h-3.5 w-3.5" /> Devolver
                   </Button>
@@ -967,6 +952,89 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         onClose={() => setShowWonCelebration(false)}
         leadName={lead.contact_name || lead.company_name}
       />
+
+      {/* Return to operator dialog */}
+      <Dialog open={showReturnDialog} onOpenChange={setShowReturnDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl">Devolver ao Operador</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground text-center">
+              O card será devolvido ao operador <strong>{lead.created_by_name || "original"}</strong> na etapa <strong>Contrato Fechado</strong>.
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="return-note" className="text-sm font-medium">Motivo da devolução *</Label>
+              <Textarea
+                id="return-note"
+                placeholder="Descreva o motivo da devolução do card..."
+                value={returnNote}
+                onChange={(e) => setReturnNote(e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setShowReturnDialog(false)} disabled={saving} className="flex-1">
+              Cancelar
+            </Button>
+            <Button
+              disabled={saving || !returnNote.trim()}
+              className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
+              onClick={async () => {
+                if (!returnNote.trim()) {
+                  toast.error("Informe o motivo da devolução");
+                  return;
+                }
+                setSaving(true);
+                try {
+                  // Add "Devolvido" tag
+                  const currentTags = lead.tags || [];
+                  const newTags = currentTags.includes("Devolvido") ? currentTags : [...currentTags, "Devolvido"];
+
+                  const success = await onUpdate(lead.id, {
+                    lead_status: "open",
+                    stage: "contrato-fechado",
+                    stage_entered_at: new Date().toISOString(),
+                    tags: newTags,
+                  } as any);
+                  if (success) {
+                    await addActivity({
+                      type: "stage_change",
+                      title: "Card devolvido ao operador",
+                      description: `Lead devolvido ao pipeline comercial (etapa **Contrato Fechado**) pelo setor administrativo.\n\n**Motivo:** ${returnNote.trim()}\n**Operador original:** ${lead.created_by_name || "Não identificado"}`,
+                    });
+
+                    // Notify the original operator
+                    if (lead.created_by_user_id) {
+                      await supabase.rpc("create_notification", {
+                        _user_id: lead.created_by_user_id,
+                        _title: "Card devolvido",
+                        _message: `O card "${lead.company_name}" foi devolvido para você. Motivo: ${returnNote.trim()}`,
+                        _type: "card_devolvido",
+                        _link: "/atendimento",
+                      });
+                    }
+
+                    toast.success("Card devolvido ao operador com sucesso!");
+                    setShowReturnDialog(false);
+                    onBack();
+                  }
+                } catch (error) {
+                  console.error("Error returning lead:", error);
+                  toast.error("Erro ao devolver card");
+                } finally {
+                  setSaving(false);
+                }
+              }}
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Confirmar Devolução
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

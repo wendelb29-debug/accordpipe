@@ -552,6 +552,14 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                         </div>
                       )}
 
+                      {lead.tags?.includes("Devolvido") && (
+                        <div className="mt-1">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded-full px-2 py-0.5">
+                            🔄 Devolvido
+                          </span>
+                        </div>
+                      )}
+
                       {/* Activity indicator */}
                       {hasActivity && nextActivities[lead.id] && (
                         <div className="flex items-center gap-1 mt-2 text-[10px] text-muted-foreground/60">
