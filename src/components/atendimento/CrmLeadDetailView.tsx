@@ -5,7 +5,7 @@ import {
   MessageSquare, PhoneCall, FileText, Activity, Trash2, Send, Loader2,
   FileSignature, Eye, Download, Copy, Image as ImageIcon,
   FileSpreadsheet, Edit, MoreVertical, ThumbsUp, ThumbsDown,
-  Link2, CopyPlus, ClipboardList
+  Link2, CopyPlus, ClipboardList, UserRoundPen
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadContractPdf } from "@/lib/generateContractPdf";
