@@ -25,12 +25,31 @@ const formatCurrency = (v: number) => v.toLocaleString("pt-BR", { style: "curren
 const formatDate = (d: string) => new Date(d).toLocaleDateString("pt-BR");
 
 export default function Descarte() {
+  const { role, isMaster } = useAuth();
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [reasonFilter, setReasonFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [rescueLead, setRescueLead] = useState<any>(null);
+
+  const canRescue = isMaster || role === "admin" || role === "ceo" || role === "administrativo";
+
+  const fetchLeads = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("crm_leads")
+      .select("*")
+      .eq("lead_status", "lost")
+      .order("updated_at", { ascending: false });
+    if (error) {
+      console.error("Error fetching lost leads:", error);
+      toast.error("Erro ao carregar leads descartados");
+    }
+    setLeads(data || []);
+    setLoading(false);
+  };
 
   useEffect(() => {
     const fetchLost = async () => {
