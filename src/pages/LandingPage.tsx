@@ -20,7 +20,7 @@ export default function LandingPage() {
   const [trialOpen, setTrialOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden safe-area-bottom">
       {/* Navbar */}
       <header className="sticky top-0 z-50 border-b border-border/30 bg-background/95 backdrop-blur-xl" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="mx-auto flex h-12 sm:h-14 md:h-16 max-w-7xl items-center justify-between px-3 sm:px-4 md:px-6">

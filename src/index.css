@@ -262,3 +262,24 @@ button, a, input, select, textarea {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Safe area insets for PWA on iOS/Android */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Prevent body overflow on mobile */
+html, body {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Touch-friendly tap targets */
+@media (max-width: 640px) {
+  button, a, [role="button"] {
+    min-height: 32px;
+  }
+}
