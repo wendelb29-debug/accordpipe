@@ -10,6 +10,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { downloadContractPdf } from "@/lib/generateContractPdf";
 import { LeadAtividadesTab } from "./LeadAtividadesTab";
+import { NoteEditor } from "./NoteEditor";
 import { LeadPropostasTab } from "./LeadPropostasTab";
 import { LeadContratosTab } from "./LeadContratosTab";
 import { LeadSimulacaoTab } from "./LeadSimulacaoTab";
@@ -43,12 +44,24 @@ const formatFullDate = (dateStr: string) => {
 };
 
 // Render **bold** markdown in text
-const renderBoldText = (text: string) => {
-  const parts = text.split(/\*\*(.*?)\*\*/g);
-  return parts.map((part, i) =>
-    i % 2 === 1 ? <strong key={i}>{part}</strong> : part
-  );
+const renderFormattedText = (text: string) => {
+  // Handle **bold** and _italic_
+  const parts = text.split(/(\*\*.*?\*\*|_.*?_)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith("_") && part.endsWith("_") && part.length > 2) {
+      return <em key={i}>{part.slice(1, -1)}</em>;
+    }
+    // Handle bullet points
+    if (part.startsWith("• ")) {
+      return <span key={i}>• {part.slice(2)}</span>;
+    }
+    return part;
+  });
 };
+const renderBoldText = renderFormattedText;
 
 const activityTypeIcons: Record<string, React.ElementType> = {
   note: StickyNote,
@@ -819,11 +832,11 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                   <Label className="text-xs font-semibold flex items-center gap-1.5">
                     <StickyNote className="h-3.5 w-3.5" /> Nova Nota
                   </Label>
-                  <Textarea
-                    className="text-xs min-h-[80px]"
+                  <NoteEditor
                     value={noteText}
-                    onChange={(e) => setNoteText(e.target.value)}
+                    onChange={setNoteText}
                     placeholder="Escreva sua nota aqui..."
+                    leadContext={`Empresa: ${lead.company_name}, Contato: ${lead.contact_name || "N/A"}, Etapa: ${lead.stage}, Valor MRR: ${lead.value_mrr}, Origem: ${lead.source}`}
                   />
                   {noteImagePreview && (
                     <div className="relative inline-block">
