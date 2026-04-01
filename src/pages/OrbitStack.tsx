@@ -1,7 +1,6 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { useWhatsAppInbox, InboxFilter, InboxContact, InboxMessage } from "@/hooks/useWhatsAppInbox";
+import { useWhatsAppInbox } from "@/hooks/useWhatsAppInbox";
 import { toast } from "sonner";
 import { QrCodeModal } from "@/components/orbit-inbox/QrCodeModal";
 import { InboxHeader } from "@/components/orbit-inbox/InboxHeader";
@@ -11,20 +10,9 @@ import { TransferDialog } from "@/components/orbit-inbox/TransferDialog";
 
 export default function OrbitStack() {
   const {
-    contacts,
-    messages,
-    selectedContactId,
-    selectContact,
-    sendMessage,
-    filter,
-    setFilter,
-    loading,
-    isAdminOrCeo,
-    connectionStatus,
-    generateQrCode,
-    assignContact,
-    transferContact,
-    companyId,
+    contacts, messages, selectedContactId, selectContact, sendMessage,
+    filter, setFilter, loading, isAdminOrCeo, connectionStatus,
+    generateQrCode, assignContact, transferContact, companyId,
   } = useWhatsAppInbox();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -50,7 +38,6 @@ export default function OrbitStack() {
         setQrCode(qr);
         toast.success("QR Code gerado! Escaneie com seu WhatsApp.");
       } else {
-        // May have connected during the QR generation
         setQrCode(null);
         setQrModalOpen(false);
         toast.success("WhatsApp já conectado!");
@@ -80,13 +67,13 @@ export default function OrbitStack() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)]">
+    <div className="flex flex-col h-[calc(100vh-3.5rem)] bg-background">
       <InboxHeader
         connectionStatus={connectionStatus}
         onConnectClick={handleConnectClick}
       />
 
-      <div className="flex flex-1 min-h-0 border-b border-border">
+      <div className="flex flex-1 min-h-0">
         <InboxSidebar
           contacts={filteredContacts}
           selectedId={selectedContactId}
