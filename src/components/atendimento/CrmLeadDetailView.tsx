@@ -31,7 +31,7 @@ import { CrmLead, STAGES, ADMIN_STAGES, ALL_STAGES } from "@/hooks/useCrmLeads";
 import { useCrmActivities } from "@/hooks/useCrmActivities";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { WonCelebrationDialog } from "./WonCelebrationDialog";
+import { WonConfirmDialog, WonCelebrationDialog } from "./WonCelebrationDialog";
 
 const formatCurrency = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
