@@ -219,16 +219,16 @@ export default function Atividades() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Listagem de atividades</h1>
-          <p className="text-sm text-muted-foreground">Home / Atividades</p>
+          <h1 className="text-xl md:text-2xl font-bold text-foreground">Listagem de atividades</h1>
+          <p className="text-xs md:text-sm text-muted-foreground">Home / Atividades</p>
         </div>
         <div className="flex items-center gap-2">
           <Select value={dateFilter} onValueChange={setDateFilter}>
-            <SelectTrigger className="w-[140px] h-9 text-sm rounded-lg">
+            <SelectTrigger className="w-[120px] md:w-[140px] h-9 text-sm rounded-lg">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -281,7 +281,97 @@ export default function Atividades() {
             </div>
           ) : (
             <>
-              <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+              {/* Mobile card view */}
+              <div className="md:hidden space-y-3">
+                {paginated.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    Nenhuma atividade encontrada para o período selecionado.
+                  </div>
+                ) : (
+                  paginated.map((activity) => {
+                    const meta = activity.metadata || {};
+                    const actType = meta.activity_type || activity.type;
+                    const TypeIcon = ACTIVITY_TYPE_ICONS[actType] || Briefcase;
+                    const status = meta.status || "planejada";
+                    const scheduledDate = meta.scheduled_at ? new Date(meta.scheduled_at).toLocaleDateString("pt-BR") : (meta.scheduled_date ? new Date(meta.scheduled_date).toLocaleDateString("pt-BR") : null);
+                    const scheduledTime = meta.scheduled_at ? new Date(meta.scheduled_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : (meta.scheduled_time || meta.time || null);
+                    const scheduledAt = meta.scheduled_at ? new Date(meta.scheduled_at) : (meta.scheduled_date ? new Date(meta.scheduled_date) : null);
+                    const isOverdue = scheduledAt && status !== "concluida" && status !== "no_show" && scheduledAt < new Date();
+                    const creatorAvatar = activity.created_by_user_id ? userAvatars[activity.created_by_user_id] : null;
+
+                    return (
+                      <div key={activity.id} className={cn("rounded-xl border border-border bg-card p-4 shadow-sm relative", isOverdue && "border-l-2 border-l-destructive bg-destructive/5")}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className={cn("shrink-0 h-9 w-9 rounded-lg flex items-center justify-center", isOverdue ? "bg-destructive/10" : "bg-muted")}>
+                              <TypeIcon className={cn("h-4 w-4", isOverdue ? "text-destructive" : "text-muted-foreground")} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-foreground truncate">
+                                {ACTIVITY_TYPE_LABELS[actType] || activity.title}
+                              </p>
+                              {activity.description && (
+                                <p className="text-xs text-muted-foreground truncate mt-0.5">{activity.description}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {status !== "concluida" && (
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleMarkDone(activity)} title="Concluir">
+                                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            )}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleMarkDone(activity)}>
+                                  <CheckCircle className="h-3.5 w-3.5 mr-2" /> Concluir
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleMarkNoShow(activity)}>
+                                  <Ban className="h-3.5 w-3.5 mr-2" /> No-show
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <UserCircle className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">{activity.created_by_name || "Sistema"}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <Calendar className="h-3.5 w-3.5 shrink-0" />
+                            <span>{scheduledDate || formatDate(activity.created_at).split("\n")[0]}</span>
+                            {scheduledTime && <span className="text-foreground font-medium">{scheduledTime}</span>}
+                          </div>
+                          {activity.lead_company_name && activity.lead_company_name !== "-" && (
+                            <div className="col-span-2 flex items-center gap-1.5 text-primary text-xs font-medium">
+                              <Briefcase className="h-3.5 w-3.5 shrink-0" />
+                              <span className="truncate">{activity.lead_company_name}</span>
+                              {activity.lead_contact_name && <span className="text-muted-foreground">· {activity.lead_contact_name}</span>}
+                            </div>
+                          )}
+                        </div>
+
+                        {isOverdue && (
+                          <div className="mt-2 flex items-center gap-1 text-destructive text-[11px] font-medium">
+                            <AlertTriangle className="h-3 w-3" />
+                            Atrasada
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Desktop table view */}
+              <div className="hidden md:block rounded-xl border border-border bg-card shadow-sm overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
@@ -314,11 +404,8 @@ export default function Atividades() {
                         const scheduledDate = meta.scheduled_at ? new Date(meta.scheduled_at).toLocaleDateString("pt-BR") : (meta.scheduled_date ? new Date(meta.scheduled_date).toLocaleDateString("pt-BR") : null);
                         const scheduledTime = meta.scheduled_at ? new Date(meta.scheduled_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : (meta.scheduled_time || meta.time || null);
                         const duration = meta.duration || "--";
-
-                        // Determine if overdue
                         const scheduledAt = meta.scheduled_at ? new Date(meta.scheduled_at) : (meta.scheduled_date ? new Date(meta.scheduled_date) : null);
                         const isOverdue = scheduledAt && status !== "concluida" && status !== "no_show" && scheduledAt < new Date();
-
                         const creatorAvatar = activity.created_by_user_id ? userAvatars[activity.created_by_user_id] : null;
 
                         return (
@@ -434,10 +521,10 @@ export default function Atividades() {
               </div>
 
               {/* Pagination */}
-              <div className="flex items-center justify-between pt-2">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2">
                 <div className="flex items-center gap-2">
                   <Select value={String(perPage)} onValueChange={(v) => { setPerPage(Number(v)); setPage(1); }}>
-                    <SelectTrigger className="w-[110px] h-8 text-xs">
+                    <SelectTrigger className="w-[100px] h-8 text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -447,11 +534,11 @@ export default function Atividades() {
                     </SelectContent>
                   </Select>
                   <span className="text-xs text-muted-foreground">
-                    Exibindo {startItem}-{endItem} de {totalItems} resultados.
+                    {startItem}-{endItem} de {totalItems}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button variant="outline" size="sm" className="text-xs h-8" disabled={page === 1} onClick={() => setPage(1)}>
+                  <Button variant="outline" size="sm" className="text-xs h-8 hidden sm:inline-flex" disabled={page === 1} onClick={() => setPage(1)}>
                     Primeira
                   </Button>
                   <Button variant="outline" size="icon" className="h-8 w-8" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
@@ -463,7 +550,7 @@ export default function Atividades() {
                   <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="sm" className="text-xs h-8" disabled={page >= totalPages} onClick={() => setPage(totalPages)}>
+                  <Button variant="outline" size="sm" className="text-xs h-8 hidden sm:inline-flex" disabled={page >= totalPages} onClick={() => setPage(totalPages)}>
                     Última
                   </Button>
                 </div>
