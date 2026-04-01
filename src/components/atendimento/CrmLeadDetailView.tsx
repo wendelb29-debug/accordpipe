@@ -1100,6 +1100,40 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Transfer Ownership Dialog */}
+      <Dialog open={showTransferDialog} onOpenChange={setShowTransferDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl">Transferir Propriedade</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground text-center">
+              Selecione o novo responsável por esta oportunidade.
+            </p>
+            <p className="text-xs text-muted-foreground text-center">
+              Responsável atual: <strong>{lead.created_by_name || "—"}</strong>
+            </p>
+            <Select value={transferUserId} onValueChange={setTransferUserId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um usuário" />
+              </SelectTrigger>
+              <SelectContent>
+                {transferUsers.map(u => (
+                  <SelectItem key={u.user_id} value={u.user_id}>{u.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTransferDialog(false)}>Cancelar</Button>
+            <Button onClick={confirmTransferOwnership} disabled={saving || !transferUserId}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UserRoundPen className="h-4 w-4 mr-2" />}
+              Transferir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
