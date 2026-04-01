@@ -22,36 +22,35 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Navbar */}
-      <header className="sticky top-0 z-50 border-b border-border/30 glass overflow-x-hidden">
-        <div className="mx-auto flex h-14 md:h-16 max-w-7xl items-center justify-between px-4 md:px-6 gap-2 md:gap-4">
-          <div className="flex items-center gap-1.5 md:gap-2 shrink-0 min-w-0">
-            <img src={orbitLogo} alt="ORBIT" className="h-7 md:h-8 w-auto max-h-8 shrink-0" />
-            <span className="text-base md:text-lg font-black tracking-tight text-foreground whitespace-nowrap" style={{ letterSpacing: "-0.04em" }}>ORBIT</span>
-            <span className="hidden sm:inline text-base md:text-lg font-light tracking-tight text-muted-foreground whitespace-nowrap" style={{ letterSpacing: "-0.04em" }}>HUB</span>
-          </div>
-          <nav className="hidden lg:flex items-center gap-6 shrink-0">
-            <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">
-              Funcionalidades
-            </a>
-            <a href="#integracoes" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">
-              Integrações
-            </a>
-            <a href="#faq" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">
-              FAQ
-            </a>
+      <header className="sticky top-0 z-50 border-b border-border/30 bg-background/95 backdrop-blur-xl" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+        <div className="mx-auto flex h-12 sm:h-14 md:h-16 max-w-7xl items-center justify-between px-3 sm:px-4 md:px-6">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-1.5 shrink-0">
+            <img src={orbitLogo} alt="ORBIT" className="h-6 sm:h-7 md:h-8 w-auto shrink-0" />
+            <span className="text-sm sm:text-base md:text-lg font-black tracking-tight text-foreground" style={{ letterSpacing: "-0.04em" }}>ORBIT</span>
+            <span className="hidden xs:inline text-sm sm:text-base md:text-lg font-light tracking-tight text-muted-foreground" style={{ letterSpacing: "-0.04em" }}>HUB</span>
+          </Link>
+
+          {/* Nav - desktop only */}
+          <nav className="hidden lg:flex items-center gap-6">
+            <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Funcionalidades</a>
+            <a href="#integracoes" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Integrações</a>
+            <a href="#faq" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
           </nav>
-          <div className="flex items-center gap-2 md:gap-3 shrink-0">
+
+          {/* Actions */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <Button
               size="sm"
-              className="gap-1.5 gradient-primary text-primary-foreground shadow-md hover:shadow-lg transition-shadow text-xs md:text-sm px-3 md:px-4 h-8 md:h-9 shrink-0 whitespace-nowrap"
+              className="gap-1 gradient-primary text-primary-foreground shadow-md text-[11px] sm:text-xs md:text-sm px-2.5 sm:px-3 md:px-4 h-7 sm:h-8 md:h-9 shrink-0"
               onClick={() => setTrialOpen(true)}
             >
-              <Rocket className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
+              <Rocket className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
               <span className="hidden sm:inline">Teste Gratuito</span>
               <span className="sm:hidden">Testar</span>
             </Button>
-            <Link to="/auth" className="shrink-0">
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-xs md:text-sm px-2 md:px-3 h-8 md:h-9 whitespace-nowrap">Entrar</Button>
+            <Link to="/auth">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-[11px] sm:text-xs md:text-sm px-2 sm:px-3 h-7 sm:h-8 md:h-9">Entrar</Button>
             </Link>
           </div>
         </div>
