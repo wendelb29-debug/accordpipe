@@ -401,7 +401,10 @@ export function LeadAtividadesTab({
               {/* Tipo */}
               <div className="space-y-1">
                 <Label className="text-xs font-semibold text-primary">Tipo</Label>
-                <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+                <Select value={form.type} onValueChange={(v) => {
+                  const label = ACTIVITY_TYPES.find(t => t.value === v)?.label || "";
+                  setForm({ ...form, type: v, title: label });
+                }}>
                   <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
                     {ACTIVITY_TYPES.map((t) => (
