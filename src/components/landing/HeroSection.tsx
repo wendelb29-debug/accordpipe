@@ -17,17 +17,17 @@ export function HeroSection() {
       {/* Subtle grid */}
       <div className="absolute inset-0 bg-[linear-gradient(hsl(218,30%,80%,0.25)_1px,transparent_1px),linear-gradient(90deg,hsl(218,30%,80%,0.25)_1px,transparent_1px)] bg-[size:72px_72px] [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_65%)]" />
 
-      <div className="relative mx-auto max-w-7xl px-6 py-24 md:py-32 lg:py-40">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 py-16 sm:py-24 md:py-32 lg:py-40">
         <div className="mx-auto max-w-4xl text-center">
           {/* Badge */}
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/8 px-5 py-2.5 text-sm font-medium text-primary shadow-sm">
-            <Sparkles className="h-3.5 w-3.5" />
-            Plataforma completa com Inteligência Artificial
-            <ArrowRight className="h-3.5 w-3.5" />
+          <div className="mb-6 sm:mb-8 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/8 px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-primary shadow-sm">
+            <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+            <span>Plataforma completa com Inteligência Artificial</span>
+            <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
           </div>
 
           {/* Headline */}
-          <h1 className="text-4xl font-black tracking-tight text-foreground sm:text-5xl lg:text-[3.5rem] lg:leading-[1.1]">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-black tracking-tight text-foreground leading-[1.15] sm:leading-[1.1]">
             Gerencie vendas, contratos e atendimento em um{" "}
             <span className="bg-gradient-to-r from-primary via-primary-glow to-primary bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, hsl(218,58%,32%), hsl(215,50%,45%), hsl(210,45%,50%))' }}>
               único sistema com IA
@@ -35,33 +35,33 @@ export function HeroSection() {
           </h1>
 
           {/* Subheadline */}
-          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
+          <p className="mx-auto mt-4 sm:mt-6 max-w-2xl text-base sm:text-lg md:text-xl leading-relaxed text-muted-foreground">
             Automatize processos, aumente suas vendas e tenha controle total da sua operação sem complicação.
           </p>
 
           {/* CTAs */}
-          <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+          <div className="mt-8 sm:mt-10 flex flex-col items-center gap-3 sm:gap-4 sm:flex-row sm:justify-center">
             <Button
               size="lg"
-              className="gap-2 px-8 text-base font-semibold gradient-primary text-primary-foreground shadow-lg shadow-primary/25 h-13 rounded-xl hover:shadow-xl hover:shadow-primary/30 transition-shadow"
+              className="gap-2 px-6 sm:px-8 text-sm sm:text-base font-semibold gradient-primary text-primary-foreground shadow-lg shadow-primary/25 h-11 sm:h-13 rounded-xl hover:shadow-xl hover:shadow-primary/30 transition-shadow w-full sm:w-auto"
               onClick={() => setTrialOpen(true)}
             >
-              <Rocket className="h-5 w-5" />
+              <Rocket className="h-4 w-4 sm:h-5 sm:w-5" />
               Começar teste grátis
             </Button>
-            <a href="mailto:contato@orbithub.com.br?subject=Solicitar demonstração">
-              <Button size="lg" variant="outline" className="gap-2 px-8 text-base font-medium h-13 rounded-xl border-border hover:bg-card hover:shadow-md transition-all">
-                <CalendarDays className="h-5 w-5" />
+            <a href="mailto:contato@orbithub.com.br?subject=Solicitar demonstração" className="w-full sm:w-auto">
+              <Button size="lg" variant="outline" className="gap-2 px-6 sm:px-8 text-sm sm:text-base font-medium h-11 sm:h-13 rounded-xl border-border hover:bg-card hover:shadow-md transition-all w-full">
+                <CalendarDays className="h-4 w-4 sm:h-5 sm:w-5" />
                 Ver demonstração
               </Button>
             </a>
           </div>
 
           {/* Trust indicators */}
-          <div className="mt-8 flex items-center justify-center gap-6 text-sm text-muted-foreground">
+          <div className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">✓ Sem cartão de crédito</span>
-            <span className="hidden sm:flex items-center gap-1.5">✓ 7 dias grátis</span>
-            <span className="hidden md:flex items-center gap-1.5">✓ Suporte incluso</span>
+            <span className="flex items-center gap-1.5">✓ 7 dias grátis</span>
+            <span className="hidden sm:flex items-center gap-1.5">✓ Suporte incluso</span>
           </div>
         </div>
 
