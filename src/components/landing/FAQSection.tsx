@@ -9,7 +9,7 @@ const faqs = [
   { question: "Posso testar o sistema antes de contratar?", answer: "Sim! Oferecemos 7 dias de teste gratuito com acesso a todas as funcionalidades. Basta clicar em 'Teste Gratuito' e preencher seus dados." },
   { question: "O sistema é seguro?", answer: "Sim. Utilizamos criptografia de ponta a ponta, autenticação segura, controle de acesso por níveis de permissão e backups automáticos diários." },
   { question: "Como funciona o pagamento automático?", answer: "Integramos com gateway de pagamento para processar pagamentos via PIX, boleto e cartão de crédito. Quando o pagamento é confirmado, o sistema atualiza automaticamente o status financeiro." },
-  { question: "Quais integrações o ORBIT HUB oferece?", answer: "O sistema integra com WhatsApp (Z-API e Evolution API), gateway de pagamento para cobranças, e possui IA integrada para automações inteligentes. Novas integrações são adicionadas constantemente." },
+  { question: "Quais integrações o ORBIT HUB oferece?", answer: "O sistema integra com API WhatsApp, gateway de pagamento para cobranças, e possui IA integrada para automações inteligentes. Novas integrações são adicionadas constantemente." },
 ];
 
 export function FAQSection() {
