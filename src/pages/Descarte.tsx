@@ -6,9 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Search, Trash2, Download, XCircle, Calendar } from "lucide-react";
+import { Loader2, Search, Trash2, Download, XCircle, Calendar, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
+import { RescueLeadDialog } from "@/components/descarte/RescueLeadDialog";
+import { useAuth } from "@/contexts/AuthContext";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const LOST_REASONS_MAP: Record<string, string> = {
   "DADOS INCORRETOS": "Dados Incorretos",
