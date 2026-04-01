@@ -475,10 +475,15 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
       const filtered: { user_id: string; name: string }[] = [];
       for (const u of users) {
         if (u.user_id === lead.created_by_user_id) continue;
-        const { data: roleData } = await supabase
-          .from("user_roles").select("role").eq("user_id", u.user_id).maybeSingle();
-        if (roleData && ["admin", "operador", "comercial", "ceo", "administrativo"].includes(roleData.role)) {
+        if (profile?.is_master) {
+          // Master tem acesso total — pode transferir para qualquer usuário do servidor
           filtered.push(u);
+        } else {
+          const { data: roleData } = await supabase
+            .from("user_roles").select("role").eq("user_id", u.user_id).maybeSingle();
+          if (roleData && ["admin", "operador", "comercial", "ceo", "administrativo"].includes(roleData.role)) {
+            filtered.push(u);
+          }
         }
       }
       setTransferUsers(filtered);
