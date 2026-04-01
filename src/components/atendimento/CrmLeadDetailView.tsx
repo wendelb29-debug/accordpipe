@@ -720,37 +720,39 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         {/* Main Content - Tabs */}
         <div className="flex-1 overflow-hidden flex flex-col">
           <Tabs defaultValue="historico" className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="w-full justify-start rounded-none border-b bg-card px-4 h-10">
-              <TabsTrigger value="historico" className="text-xs gap-1.5">
-                <Calendar className="h-3.5 w-3.5" /> Histórico
-              </TabsTrigger>
-              <TabsTrigger value="notas" className="text-xs gap-1.5">
-                <StickyNote className="h-3.5 w-3.5" /> Notas
-              </TabsTrigger>
-              <TabsTrigger value="atividades" className="text-xs gap-1.5">
-                <Activity className="h-3.5 w-3.5" /> Atividades
-              </TabsTrigger>
-              <TabsTrigger value="ligacoes" className="text-xs gap-1.5">
-                <PhoneCall className="h-3.5 w-3.5" /> Ligações
-              </TabsTrigger>
-              <TabsTrigger value="contratos" className="text-xs gap-1.5">
-                <FileSignature className="h-3.5 w-3.5" /> Contratos
-              </TabsTrigger>
-              <TabsTrigger value="propostas" className="text-xs gap-1.5">
-                <FileSpreadsheet className="h-3.5 w-3.5" /> Propostas
-              </TabsTrigger>
-              <TabsTrigger value="assinatura" className="text-xs gap-1.5">
-                <FileSignature className="h-3.5 w-3.5" /> Assinatura
-              </TabsTrigger>
-              <TabsTrigger value="simulacao" className="text-xs gap-1.5">
-                <Calculator className="h-3.5 w-3.5" /> Simulação
-              </TabsTrigger>
-              {(isAdminPipeline || role === "administrativo" || role === "admin") && (
-                <TabsTrigger value="cadastro" className="text-xs gap-1.5">
-                  <ClipboardList className="h-3.5 w-3.5" /> Cadastro
+            <div className="overflow-x-auto scrollbar-hide border-b bg-card">
+              <TabsList className="w-max sm:w-full justify-start rounded-none bg-card px-3 sm:px-4 h-10">
+                <TabsTrigger value="historico" className="text-[11px] sm:text-xs gap-1">
+                  <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Histórico
                 </TabsTrigger>
-              )}
-            </TabsList>
+                <TabsTrigger value="notas" className="text-[11px] sm:text-xs gap-1">
+                  <StickyNote className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Notas
+                </TabsTrigger>
+                <TabsTrigger value="atividades" className="text-[11px] sm:text-xs gap-1">
+                  <Activity className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Atividades
+                </TabsTrigger>
+                <TabsTrigger value="ligacoes" className="text-[11px] sm:text-xs gap-1">
+                  <PhoneCall className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Ligações
+                </TabsTrigger>
+                <TabsTrigger value="contratos" className="text-[11px] sm:text-xs gap-1">
+                  <FileSignature className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Contratos
+                </TabsTrigger>
+                <TabsTrigger value="propostas" className="text-[11px] sm:text-xs gap-1">
+                  <FileSpreadsheet className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Propostas
+                </TabsTrigger>
+                <TabsTrigger value="assinatura" className="text-[11px] sm:text-xs gap-1">
+                  <FileSignature className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Assinatura
+                </TabsTrigger>
+                <TabsTrigger value="simulacao" className="text-[11px] sm:text-xs gap-1">
+                  <Calculator className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Simulação
+                </TabsTrigger>
+                {(isAdminPipeline || role === "administrativo" || role === "admin") && (
+                  <TabsTrigger value="cadastro" className="text-[11px] sm:text-xs gap-1">
+                    <ClipboardList className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Cadastro
+                  </TabsTrigger>
+                )}
+              </TabsList>
+            </div>
 
             {/* Histórico - all activities */}
             <TabsContent value="historico" className="flex-1 overflow-y-auto p-4 mt-0">
