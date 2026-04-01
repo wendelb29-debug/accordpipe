@@ -820,11 +820,11 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                   <Label className="text-xs font-semibold flex items-center gap-1.5">
                     <StickyNote className="h-3.5 w-3.5" /> Nova Nota
                   </Label>
-                  <Textarea
-                    className="text-xs min-h-[80px]"
+                  <NoteEditor
                     value={noteText}
-                    onChange={(e) => setNoteText(e.target.value)}
+                    onChange={setNoteText}
                     placeholder="Escreva sua nota aqui..."
+                    leadContext={`Empresa: ${lead.company_name}, Contato: ${lead.contact_name || "N/A"}, Etapa: ${lead.stage}, Valor MRR: ${lead.value_mrr}, Origem: ${lead.source}`}
                   />
                   {noteImagePreview && (
                     <div className="relative inline-block">
