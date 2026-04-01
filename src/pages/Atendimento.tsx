@@ -25,7 +25,7 @@ export default function Atendimento() {
   // If user only has access to commercial
   if (canSeeCommercial && !canSeeAdmin) {
     return (
-      <div className="h-[calc(100vh-4rem)] overflow-hidden flex flex-col">
+      <div className="h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
         <CrmKanbanBoard searchTerm={crmSearch} />
       </div>
     );
