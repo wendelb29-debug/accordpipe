@@ -132,8 +132,14 @@ export function NotificationBell() {
               {notifications.map((n) => (
                 <button
                   key={n.id}
-                  onClick={() => { if (!n.is_read) markAsRead(n.id); }}
-                  className={`w-full text-left p-4 hover:bg-muted/50 transition-colors flex gap-3 ${!n.is_read ? "bg-primary/5" : ""}`}
+                  onClick={() => {
+                    if (!n.is_read) markAsRead(n.id);
+                    if (n.link) {
+                      setOpen(false);
+                      navigate(n.link);
+                    }
+                  }}
+                  className={`w-full text-left p-4 hover:bg-muted/50 transition-colors flex gap-3 cursor-pointer ${!n.is_read ? "bg-primary/5" : ""}`}
                 >
                   <div className="mt-0.5 shrink-0">{getIcon(n.type)}</div>
                   <div className="min-w-0 flex-1">
