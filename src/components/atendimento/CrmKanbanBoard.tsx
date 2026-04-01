@@ -30,12 +30,10 @@ import { useAuth } from "@/contexts/AuthContext";
 const stageIcons: Record<string, React.ElementType> = {
   "novos": Sparkles,
   "standby": Clock,
-  
   "primeiro-contato": MessageSquare,
   "call-negocio": Phone,
   "follow-up-1": RefreshCw,
   "follow-up-2": RefreshCw,
-  "informe-cs": TrendingUp,
   "contrato-fechado": FileSignature,
 };
 
@@ -303,7 +301,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
 
 
   return (
-    <>
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Premium Summary Bar */}
       <div className="px-4 py-2 border-b bg-card/90 backdrop-blur-sm flex items-center gap-3 text-xs text-muted-foreground">
         <div className="flex items-center gap-4">
@@ -406,7 +404,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
       {/* Kanban Columns */}
       <div
         ref={pipelineRef}
-        className="flex gap-3 p-3 h-[calc(100%-44px)] overflow-x-auto cursor-grab"
+        className="flex gap-3 p-3 flex-1 min-h-0 overflow-x-auto overflow-y-hidden cursor-grab"
         onMouseDown={handlePipelineMouseDown}
         onMouseMove={handlePipelineMouseMove}
         onMouseUp={handlePipelineMouseUp}
@@ -619,6 +617,6 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
         onOpenChange={setGlobalSearchOpen}
         onSelectLead={(lead) => openDetail(lead)}
       />
-    </>
+    </div>
   );
 }

@@ -50,7 +50,7 @@ export const STAGES = [
   { id: "call-negocio", title: "Call/Negócio", daysLimit: "3d", color: "bg-orange-500" },
   { id: "follow-up-1", title: "Follow-up 1", daysLimit: "15d", color: "bg-purple-500" },
   { id: "follow-up-2", title: "Follow-up 2", daysLimit: "15d", color: "bg-indigo-500" },
-  { id: "informe-cs", title: "Inf. p/ CS", daysLimit: "3d", color: "bg-teal-500" },
+  
   { id: "contrato-fechado", title: "Contrato Fechado", daysLimit: "", color: "bg-green-500" },
 ] as const;
 
