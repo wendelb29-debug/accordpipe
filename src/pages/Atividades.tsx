@@ -521,10 +521,10 @@ export default function Atividades() {
               </div>
 
               {/* Pagination */}
-              <div className="flex items-center justify-between pt-2">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2">
                 <div className="flex items-center gap-2">
                   <Select value={String(perPage)} onValueChange={(v) => { setPerPage(Number(v)); setPage(1); }}>
-                    <SelectTrigger className="w-[110px] h-8 text-xs">
+                    <SelectTrigger className="w-[100px] h-8 text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -534,11 +534,11 @@ export default function Atividades() {
                     </SelectContent>
                   </Select>
                   <span className="text-xs text-muted-foreground">
-                    Exibindo {startItem}-{endItem} de {totalItems} resultados.
+                    {startItem}-{endItem} de {totalItems}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button variant="outline" size="sm" className="text-xs h-8" disabled={page === 1} onClick={() => setPage(1)}>
+                  <Button variant="outline" size="sm" className="text-xs h-8 hidden sm:inline-flex" disabled={page === 1} onClick={() => setPage(1)}>
                     Primeira
                   </Button>
                   <Button variant="outline" size="icon" className="h-8 w-8" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
@@ -550,7 +550,7 @@ export default function Atividades() {
                   <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="sm" className="text-xs h-8" disabled={page >= totalPages} onClick={() => setPage(totalPages)}>
+                  <Button variant="outline" size="sm" className="text-xs h-8 hidden sm:inline-flex" disabled={page >= totalPages} onClick={() => setPage(totalPages)}>
                     Última
                   </Button>
                 </div>
