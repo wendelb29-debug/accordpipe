@@ -7,7 +7,7 @@ const features = [
   { icon: Bot, title: "Orbit AI – Inteligência Artificial", description: "Assistente com IA integrada (ChatGPT) que gera respostas automáticas, analisa dados e oferece insights estratégicos em tempo real.", highlight: true },
   { icon: MessageSquare, title: "CRM Completo com Kanban", description: "Pipeline visual de vendas com quadro Kanban, gestão de leads por etapas, histórico de atividades e controle total do funil comercial." },
   { icon: Phone, title: "WhatsApp Integrado", description: "Atendimento direto pelo WhatsApp com envio e recebimento de mensagens, automações e respostas inteligentes via IA." },
-  { icon: Receipt, title: "Faturamento Automático", description: "Emissão de cobranças via Kiwify com PIX, boleto e cartão. Controle financeiro completo com status de pagamento em tempo real." },
+  { icon: Receipt, title: "Faturamento Automático", description: "Emissão de cobranças via gateway de pagamento com PIX, boleto e cartão. Controle financeiro completo com status de pagamento em tempo real." },
   { icon: FileSignature, title: "Contratos Digitais", description: "Crie, envie e assine contratos digitalmente com captura de foto, geolocalização e histórico completo de assinaturas." },
   { icon: Building2, title: "Gestão de Empresas", description: "Cadastro completo de clientes e servidores com CNPJ, endereço, responsáveis e controle de status ativo/inativo." },
   { icon: Users, title: "Gestão de Usuários e Permissões", description: "Controle de acesso por perfis (Admin, CEO, Operador, Financeiro, Comercial) com permissões granulares por função." },

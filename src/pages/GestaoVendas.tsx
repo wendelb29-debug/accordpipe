@@ -374,7 +374,7 @@ export default function GestaoVendas() {
                       ["transacao_id", "string", "Sim", "ID da transação (único, evita duplicidade)"],
                       ["valor", "number", "Não", "Valor da venda em R$"],
                       ["data_venda", "string", "Não", "Data da venda (ISO 8601)"],
-                      ["gateway", "string", "Não", "Plataforma de pagamento (Eduzz, Kiwify, etc)"],
+                      ["gateway", "string", "Não", "Plataforma de pagamento (Eduzz, Gateway, etc)"],
                     ].map(([campo, tipo, obrig, desc]) => (
                       <TableRow key={campo}>
                         <TableCell className="font-mono text-sm">{campo}</TableCell>

@@ -147,7 +147,7 @@ export default function CompanyDetail() {
       <div>
         <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
           <Receipt className="h-5 w-5 text-primary" />
-          Pagamentos Emitidos (Kiwify)
+          Pagamentos Emitidos
         </h2>
         <div className="rounded-xl border border-border bg-card shadow-card">
           {payments.length === 0 ? (
