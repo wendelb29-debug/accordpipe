@@ -540,77 +540,69 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   return (
     <div className="flex flex-col h-full overflow-hidden bg-background">
       {/* Header with pipeline progress */}
-      <div className="border-b bg-card px-4 py-3">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8">
+      <div className="border-b bg-card px-3 sm:px-4 py-2 sm:py-3">
+        <div className="flex items-center justify-between mb-2 sm:mb-3 gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8 shrink-0">
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div>
-              <h2 className="text-sm font-bold text-foreground">{lead.source} - {lead.contact_name || lead.company_name}</h2>
-              <p className="text-xs text-muted-foreground">
+            <div className="min-w-0">
+              <h2 className="text-sm font-bold text-foreground truncate">{lead.source} - {lead.contact_name || lead.company_name}</h2>
+              <p className="text-xs text-muted-foreground truncate">
                 Etapa atual: <strong>{pipelineStages.find((s) => s.id === lead.stage)?.title || ALL_STAGES.find((s) => s.id === lead.stage)?.title}</strong>
                 {" · "}{getDaysInStage()} dia(s) nesta etapa
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap justify-end">
             {lead.lead_status === "open" && (
               <>
-                <Button size="sm" variant="default" onClick={handleWon} disabled={saving} className="gap-1.5 bg-green-600 hover:bg-green-700 text-white">
-                  <CheckCircle className="h-3.5 w-3.5" /> Ganho
+                <Button size="sm" variant="default" onClick={handleWon} disabled={saving} className="gap-1 sm:gap-1.5 bg-green-600 hover:bg-green-700 text-white h-7 sm:h-8 text-[11px] sm:text-xs px-2 sm:px-3">
+                  <CheckCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Ganho
                 </Button>
-                <Button size="sm" variant="destructive" onClick={handleLost} disabled={saving} className="gap-1.5">
-                  <XCircle className="h-3.5 w-3.5" /> Perdido
+                <Button size="sm" variant="destructive" onClick={handleLost} disabled={saving} className="gap-1 sm:gap-1.5 h-7 sm:h-8 text-[11px] sm:text-xs px-2 sm:px-3">
+                  <XCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Perdido
                 </Button>
               </>
             )}
             {lead.lead_status === "won" && (
               <>
-                <Badge className="bg-green-600 text-white">✓ Ganho</Badge>
+                <Badge className="bg-green-600 text-white text-[10px]">✓ Ganho</Badge>
                 {(role === "admin" || role === "administrativo" || role === "ceo") && (
                   <Button size="sm" variant="outline" onClick={() => {
                     setReturnNote("");
                     setShowReturnDialog(true);
-                  }} disabled={saving} className="gap-1.5 border-orange-300 text-orange-700 hover:bg-orange-50">
-                    <ArrowLeft className="h-3.5 w-3.5" /> Devolver
+                  }} disabled={saving} className="gap-1 border-orange-300 text-orange-700 hover:bg-orange-50 h-7 sm:h-8 text-[11px] sm:text-xs px-2 sm:px-3">
+                    <ArrowLeft className="h-3 w-3" /> Devolver
                   </Button>
                 )}
                 {(role === "admin" || role === "administrativo") && (
-                  <Button size="sm" variant="outline" onClick={() => window.location.href = "/cadastrados"} className="gap-1.5">
-                    <ClipboardList className="h-3.5 w-3.5" /> Enviar para Cadastro
+                  <Button size="sm" variant="outline" onClick={() => window.location.href = "/cadastrados"} className="gap-1 h-7 sm:h-8 text-[11px] sm:text-xs px-2 sm:px-3 hidden sm:flex">
+                    <ClipboardList className="h-3 w-3" /> Cadastro
                   </Button>
                 )}
               </>
             )}
             {lead.lead_status === "lost" && (
-              <div className="flex items-center gap-2">
-                <Badge variant="destructive">✕ Perdido</Badge>
-                {lead.lost_reason && (
-                  <span className="text-[10px] text-muted-foreground max-w-48 truncate" title={lead.lost_reason}>
-                    {lead.lost_reason.split(":")[0]}
-                  </span>
-                )}
-                <span className="text-[10px] text-muted-foreground">
-                  em {formatFullDate(lead.updated_at)}
-                </span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Badge variant="destructive" className="text-[10px]">✕ Perdido</Badge>
                 {(role === "admin" || role === "ceo" || profile?.is_master) && (
-                  <Button size="sm" variant="outline" onClick={handleReopen} disabled={saving} className="gap-1.5 ml-2">
-                    <Activity className="h-3.5 w-3.5" /> Reabrir
+                  <Button size="sm" variant="outline" onClick={handleReopen} disabled={saving} className="gap-1 h-7 sm:h-8 text-[11px] sm:text-xs px-2 sm:px-3">
+                    <Activity className="h-3 w-3" /> Reabrir
                   </Button>
                 )}
               </div>
             )}
             {canTransferOwnership && (
-              <Button size="sm" variant="ghost" onClick={handleTransferOwnership} disabled={saving} title="Transferir propriedade" className="gap-1.5">
-                <UserRoundPen className="h-4 w-4" />
+              <Button size="sm" variant="ghost" onClick={handleTransferOwnership} disabled={saving} title="Transferir propriedade" className="h-7 w-7 sm:h-8 sm:w-8 p-0">
+                <UserRoundPen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Button>
             )}
           </div>
         </div>
 
-        {/* Pipeline Progress Bar */}
-        <div className="flex gap-0.5">
+        {/* Pipeline Progress Bar - scrollable on mobile */}
+        <div className="flex gap-0.5 overflow-x-auto pb-1 -mb-1 scrollbar-hide">
           {pipelineStages.map((stage, i) => {
             const isActive = i === currentStageIndex;
             const isPast = i < currentStageIndex;
@@ -620,7 +612,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                 onClick={() => handleStageChange(stage.id)}
                 disabled={saving}
                 className={cn(
-                  "flex-1 py-1.5 text-[10px] font-medium rounded-sm transition-all text-center truncate px-1",
+                  "flex-shrink-0 min-w-[70px] sm:flex-1 py-1.5 text-[10px] font-medium rounded-sm transition-all text-center truncate px-1.5",
                   isActive && `${stage.color} text-white`,
                   isPast && "bg-primary/20 text-primary",
                   !isActive && !isPast && "bg-muted text-muted-foreground hover:bg-muted/80",
@@ -638,10 +630,10 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         </div>
       </div>
 
-      {/* Content: Sidebar + Main */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar - Details */}
-        <div className="w-72 shrink-0 border-r overflow-y-auto p-4 space-y-4">
+      {/* Content: Stack on mobile, side-by-side on desktop */}
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+        {/* Left Sidebar - Details (full width on mobile, fixed on desktop) */}
+        <div className="w-full md:w-72 shrink-0 border-b md:border-b-0 md:border-r overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 max-h-[40vh] md:max-h-none">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold flex items-center gap-1.5">
               <FileText className="h-4 w-4" /> Detalhes
