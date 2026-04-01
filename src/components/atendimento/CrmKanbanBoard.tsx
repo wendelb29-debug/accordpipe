@@ -30,12 +30,10 @@ import { useAuth } from "@/contexts/AuthContext";
 const stageIcons: Record<string, React.ElementType> = {
   "novos": Sparkles,
   "standby": Clock,
-  
   "primeiro-contato": MessageSquare,
   "call-negocio": Phone,
   "follow-up-1": RefreshCw,
   "follow-up-2": RefreshCw,
-  "informe-cs": TrendingUp,
   "contrato-fechado": FileSignature,
 };
 
