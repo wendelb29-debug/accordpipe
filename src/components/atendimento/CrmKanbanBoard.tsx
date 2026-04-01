@@ -617,6 +617,6 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
         onOpenChange={setGlobalSearchOpen}
         onSelectLead={(lead) => openDetail(lead)}
       />
-    </>
+    </div>
   );
 }
