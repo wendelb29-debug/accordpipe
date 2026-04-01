@@ -51,23 +51,7 @@ export default function Descarte() {
     setLoading(false);
   };
 
-  useEffect(() => {
-    const fetchLost = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("crm_leads")
-        .select("*")
-        .eq("lead_status", "lost")
-        .order("updated_at", { ascending: false });
-      if (error) {
-        console.error("Error fetching lost leads:", error);
-        toast.error("Erro ao carregar leads descartados");
-      }
-      setLeads(data || []);
-      setLoading(false);
-    };
-    fetchLost();
-  }, []);
+  useEffect(() => { fetchLeads(); }, []);
 
   const filtered = useMemo(() => {
     return leads.filter(l => {
