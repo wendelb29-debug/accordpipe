@@ -303,7 +303,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Premium Summary Bar */}
-      <div className="px-4 py-2 border-b bg-card/90 backdrop-blur-sm flex items-center gap-3 text-xs text-muted-foreground">
+      <div className="px-4 py-1.5 border-b bg-card/90 backdrop-blur-sm flex items-center gap-3 text-xs text-muted-foreground shrink-0">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5">
             <span className="font-bold text-foreground text-sm">{filteredLeads.length}</span>
