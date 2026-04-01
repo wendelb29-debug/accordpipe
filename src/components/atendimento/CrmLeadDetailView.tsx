@@ -31,6 +31,7 @@ import { CrmLead, STAGES, ADMIN_STAGES, ALL_STAGES } from "@/hooks/useCrmLeads";
 import { useCrmActivities } from "@/hooks/useCrmActivities";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { WonCelebrationDialog } from "./WonCelebrationDialog";
 
 const formatCurrency = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -137,6 +138,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const [showReopenDialog, setShowReopenDialog] = useState(false);
   const [reopenUserId, setReopenUserId] = useState("");
   const [reopenUsers, setReopenUsers] = useState<{ user_id: string; name: string }[]>([]);
+  const [showWonCelebration, setShowWonCelebration] = useState(false);
 
   // Note compose state
   const [noteText, setNoteText] = useState("");
@@ -285,7 +287,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         }
       }
 
-      toast.success("🎉 Oportunidade ganha! Transferida para cadastro.");
+      setShowWonCelebration(true);
     } catch (error) {
       console.error("Error marking won:", error);
       toast.error("Erro ao marcar como ganho");
@@ -945,6 +947,12 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <WonCelebrationDialog
+        open={showWonCelebration}
+        onClose={() => setShowWonCelebration(false)}
+        leadName={lead.contact_name || lead.company_name}
+      />
     </div>
   );
 }
