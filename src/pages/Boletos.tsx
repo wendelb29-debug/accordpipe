@@ -129,7 +129,7 @@ export default function Boletos() {
           <DialogHeader>
             <DialogTitle>Selecionar tipo de pagamento</DialogTitle>
             <DialogDescription>
-              Escolha o tipo de pagamento para gerar o link da Kiwify
+              Escolha o tipo de pagamento para gerar o link
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 py-4">
