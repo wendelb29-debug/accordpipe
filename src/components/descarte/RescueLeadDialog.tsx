@@ -4,10 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+
+interface UserProfile {
+  user_id: string;
+  name: string;
+  email: string;
+  avatar_url: string | null;
+  status: string;
+}
 
 interface RescueLeadDialogProps {
   open: boolean;
@@ -17,28 +26,33 @@ interface RescueLeadDialogProps {
 }
 
 export function RescueLeadDialog({ open, onOpenChange, lead, onRescued }: RescueLeadDialogProps) {
-  const { activeCompanyId, profile } = useAuth();
-  const [users, setUsers] = useState<any[]>([]);
+  const { isMaster, activeCompanyId, profile } = useAuth();
+  const [users, setUsers] = useState<UserProfile[]>([]);
   const [selectedUserId, setSelectedUserId] = useState("");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
+  // Use lead's servidor_id as the tenant context; master sees all users of that servidor
+  const companyId = lead?.servidor_id || activeCompanyId;
+
   useEffect(() => {
-    if (!open || !activeCompanyId) return;
+    if (!open || !companyId) return;
     const fetchUsers = async () => {
       setLoadingUsers(true);
       const { data } = await supabase
         .from("profiles")
-        .select("user_id, name, email")
-        .eq("company_id", activeCompanyId)
+        .select("user_id, name, email, avatar_url, status")
+        .eq("company_id", companyId)
         .eq("is_active", true)
         .order("name");
       setUsers(data || []);
       setLoadingUsers(false);
     };
     fetchUsers();
-  }, [open, activeCompanyId]);
+  }, [open, companyId]);
+
+  const selectedUser = users.find(u => u.user_id === selectedUserId) || null;
 
   const handleRescue = async () => {
     if (!selectedUserId) {
@@ -52,8 +66,6 @@ export function RescueLeadDialog({ open, onOpenChange, lead, onRescued }: Rescue
 
     setSaving(true);
     try {
-      const selectedUser = users.find(u => u.user_id === selectedUserId);
-
       const { error: updateError } = await supabase
         .from("crm_leads")
         .update({
@@ -68,7 +80,6 @@ export function RescueLeadDialog({ open, onOpenChange, lead, onRescued }: Rescue
 
       if (updateError) throw updateError;
 
-      // Register activity
       await supabase.from("crm_lead_activities").insert({
         lead_id: lead.id,
         servidor_id: lead.servidor_id,
@@ -91,6 +102,9 @@ export function RescueLeadDialog({ open, onOpenChange, lead, onRescued }: Rescue
       setSaving(false);
     }
   };
+
+  const getInitials = (name: string) =>
+    name.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -119,7 +133,7 @@ export function RescueLeadDialog({ open, onOpenChange, lead, onRescued }: Rescue
             ) : (
               <Select value={selectedUserId} onValueChange={setSelectedUserId}>
                 <SelectTrigger className="h-9 text-xs">
-                  <SelectValue placeholder="Selecione um usuário" />
+                  <SelectValue placeholder="Selecione um usuário do servidor" />
                 </SelectTrigger>
                 <SelectContent>
                   {users.map(u => (
@@ -131,6 +145,28 @@ export function RescueLeadDialog({ open, onOpenChange, lead, onRescued }: Rescue
               </Select>
             )}
           </div>
+
+          {/* Selected user info card */}
+          {selectedUser && (
+            <div className="rounded-lg border bg-muted/30 p-3 flex items-center gap-3">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={selectedUser.avatar_url || undefined} />
+                <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                  {getInitials(selectedUser.name)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                  <User className="h-3 w-3 text-muted-foreground" />
+                  {selectedUser.name}
+                </p>
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5 truncate">
+                  <Mail className="h-3 w-3" />
+                  {selectedUser.email}
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label className="text-xs">Motivo do resgate *</Label>
