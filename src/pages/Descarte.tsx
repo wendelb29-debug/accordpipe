@@ -180,11 +180,12 @@ export default function Descarte() {
               <TableHead className="text-xs">Motivo</TableHead>
               <TableHead className="text-xs">Vendedor</TableHead>
               <TableHead className="text-xs">Data Perda</TableHead>
+              {canRescue && <TableHead className="text-xs text-center">Ações</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 && (
-              <TableRow><TableCell colSpan={8} className="text-center text-xs text-muted-foreground py-8">Nenhum lead descartado encontrado</TableCell></TableRow>
+              <TableRow><TableCell colSpan={canRescue ? 9 : 8} className="text-center text-xs text-muted-foreground py-8">Nenhum lead descartado encontrado</TableCell></TableRow>
             )}
             {filtered.map(l => {
               const reason = l.lost_reason?.split(":")[0]?.trim() || "—";
@@ -202,12 +203,35 @@ export default function Descarte() {
                   </TableCell>
                   <TableCell className="text-xs">{l.created_by_name || "—"}</TableCell>
                   <TableCell className="text-xs">{l.updated_at ? formatDate(l.updated_at) : "—"}</TableCell>
+                  {canRescue && (
+                    <TableCell className="text-center">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setRescueLead(l)}>
+                              <RotateCcw className="h-3.5 w-3.5 text-primary" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent><p className="text-xs">Resgatar lead</p></TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
+                  )}
                 </TableRow>
               );
             })}
           </TableBody>
         </Table>
       </div>
+
+      {rescueLead && (
+        <RescueLeadDialog
+          open={!!rescueLead}
+          onOpenChange={(open) => { if (!open) setRescueLead(null); }}
+          lead={rescueLead}
+          onRescued={() => { setRescueLead(null); fetchLeads(); }}
+        />
+      )}
     </div>
   );
 }
