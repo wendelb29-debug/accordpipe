@@ -39,7 +39,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       <div className={cn(
         "transition-all duration-300",
-        isMobile ? "pl-0" : (sidebarCollapsed ? "pl-[68px]" : "pl-60")
+        isMobile ? "pl-0" : (sidebarCollapsed ? "pl-[52px]" : "pl-56")
       )}>
         {!hasAvatar && profile && (
           <Link
