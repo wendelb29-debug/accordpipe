@@ -157,7 +157,7 @@ export default function Auth() {
                   <Label htmlFor="login-email">E-mail</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
-                    <Input id="login-email" type="email" placeholder="seu@email.com" className="pl-10 rounded-xl h-11" {...loginForm.register("email")} />
+                    <Input id="login-email" type="email" placeholder="seu@email.com" className="pl-10 rounded-xl h-11" autoComplete="username" {...loginForm.register("email")} />
                   </div>
                   {loginForm.formState.errors.email && <p className="text-sm text-destructive">{loginForm.formState.errors.email.message}</p>}
                 </div>
