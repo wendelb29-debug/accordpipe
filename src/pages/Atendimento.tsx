@@ -42,7 +42,7 @@ export default function Atendimento() {
 
   // Both pipelines accessible
   return (
-    <div className="h-[calc(100vh-4rem)] overflow-hidden flex flex-col">
+    <div className="h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
       <Tabs defaultValue="comercial" className="flex-1 flex flex-col overflow-hidden">
         <TabsList className="mx-3 mt-1 mb-0 w-fit h-8">
           <TabsTrigger value="comercial" className="gap-1 text-[11px] h-7 px-3">
