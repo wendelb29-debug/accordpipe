@@ -31,7 +31,7 @@ import { CrmLead, STAGES, ADMIN_STAGES, ALL_STAGES } from "@/hooks/useCrmLeads";
 import { useCrmActivities } from "@/hooks/useCrmActivities";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { WonCelebrationDialog } from "./WonCelebrationDialog";
+import { WonConfirmDialog, WonCelebrationDialog } from "./WonCelebrationDialog";
 
 const formatCurrency = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -139,6 +139,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const [reopenUserId, setReopenUserId] = useState("");
   const [reopenUsers, setReopenUsers] = useState<{ user_id: string; name: string }[]>([]);
   const [showWonCelebration, setShowWonCelebration] = useState(false);
+  const [showWonConfirm, setShowWonConfirm] = useState(false);
 
   // Note compose state
   const [noteText, setNoteText] = useState("");
@@ -234,7 +235,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     }
   };
 
-  const handleWon = async () => {
+  const handleWon = () => {
     if (saving) return;
 
     // Validate required fields before allowing "Ganho"
@@ -249,13 +250,19 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
       return;
     }
 
+    setShowWonConfirm(true);
+  };
+
+  const executeWon = async (observation: string) => {
+    if (saving) return;
     setSaving(true);
     try {
-      // Transfer to admin pipeline (cadastro-pendente)
       await onUpdate(lead.id, { lead_status: "won", stage: "cadastro-pendente", stage_entered_at: new Date().toISOString() } as any);
-      await addActivity({ type: "won", title: "Oportunidade ganha! Transferida para Cadastro.", description: "Lead marcado como ganho e transferido para o pipeline Administrativo." });
+      const desc = observation.trim()
+        ? `Lead marcado como ganho e transferido para o pipeline Administrativo.\nObservação: ${observation.trim()}`
+        : "Lead marcado como ganho e transferido para o pipeline Administrativo.";
+      await addActivity({ type: "won", title: "Oportunidade ganha! Transferida para Cadastro.", description: desc });
       
-      // Create registration record
       await supabase.from("crm_client_registrations" as any).insert({
         lead_id: lead.id,
         servidor_id: lead.servidor_id,
@@ -263,7 +270,6 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         email: lead.email || "",
       } as any);
 
-      // Notify administrativo users
       const { data: adminProfiles } = await supabase
         .from("profiles")
         .select("user_id")
@@ -287,6 +293,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         }
       }
 
+      setShowWonConfirm(false);
       setShowWonCelebration(true);
     } catch (error) {
       console.error("Error marking won:", error);
@@ -947,6 +954,13 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <WonConfirmDialog
+        open={showWonConfirm}
+        onClose={() => setShowWonConfirm(false)}
+        onConfirm={executeWon}
+        saving={saving}
+      />
 
       <WonCelebrationDialog
         open={showWonCelebration}
