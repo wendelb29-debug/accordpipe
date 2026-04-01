@@ -462,6 +462,63 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     }
   };
 
+  const canTransferOwnership = role === "admin" || role === "administrativo" || role === "ceo" || profile?.is_master;
+
+  const handleTransferOwnership = async () => {
+    const { data: users } = await supabase
+      .from("profiles")
+      .select("user_id, name")
+      .eq("company_id", lead.servidor_id)
+      .eq("is_active", true)
+      .order("name");
+    if (users) {
+      const filtered: { user_id: string; name: string }[] = [];
+      for (const u of users) {
+        if (u.user_id === lead.created_by_user_id) continue;
+        const { data: roleData } = await supabase
+          .from("user_roles").select("role").eq("user_id", u.user_id).maybeSingle();
+        if (roleData && ["admin", "operador", "comercial", "ceo", "administrativo"].includes(roleData.role)) {
+          filtered.push(u);
+        }
+      }
+      setTransferUsers(filtered);
+    }
+    setTransferUserId("");
+    setShowTransferDialog(true);
+  };
+
+  const confirmTransferOwnership = async () => {
+    if (!transferUserId) { toast.error("Selecione um usuário"); return; }
+    if (saving) return;
+    setSaving(true);
+    const selectedUser = transferUsers.find(u => u.user_id === transferUserId);
+    try {
+      await onUpdate(lead.id, {
+        created_by_user_id: transferUserId,
+        created_by_name: selectedUser?.name || null,
+      } as any);
+      await addActivity({
+        type: "stage_change",
+        title: "Propriedade transferida",
+        description: `Responsável alterado de **${lead.created_by_name || "—"}** para **${selectedUser?.name || "usuário"}** por **${profile?.name || "Admin"}**.`,
+      });
+      // Notify the new owner
+      await supabase.rpc("create_notification", {
+        _user_id: transferUserId,
+        _title: "Card transferido para você",
+        _message: `A oportunidade "${lead.company_name}" foi transferida para você por ${profile?.name || "um administrador"}.`,
+        _type: "transfer",
+      });
+      toast.success("Propriedade transferida com sucesso!");
+      setShowTransferDialog(false);
+    } catch (error) {
+      console.error("Error transferring ownership:", error);
+      toast.error("Erro ao transferir propriedade");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full overflow-hidden bg-background">
       {/* Header with pipeline progress */}
