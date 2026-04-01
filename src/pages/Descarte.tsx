@@ -6,9 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Search, Trash2, Download, XCircle, Calendar } from "lucide-react";
+import { Loader2, Search, Trash2, Download, XCircle, Calendar, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
+import { RescueLeadDialog } from "@/components/descarte/RescueLeadDialog";
+import { useAuth } from "@/contexts/AuthContext";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const LOST_REASONS_MAP: Record<string, string> = {
   "DADOS INCORRETOS": "Dados Incorretos",
@@ -22,30 +25,33 @@ const formatCurrency = (v: number) => v.toLocaleString("pt-BR", { style: "curren
 const formatDate = (d: string) => new Date(d).toLocaleDateString("pt-BR");
 
 export default function Descarte() {
+  const { role, isMaster } = useAuth();
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [reasonFilter, setReasonFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [rescueLead, setRescueLead] = useState<any>(null);
 
-  useEffect(() => {
-    const fetchLost = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("crm_leads")
-        .select("*")
-        .eq("lead_status", "lost")
-        .order("updated_at", { ascending: false });
-      if (error) {
-        console.error("Error fetching lost leads:", error);
-        toast.error("Erro ao carregar leads descartados");
-      }
-      setLeads(data || []);
-      setLoading(false);
-    };
-    fetchLost();
-  }, []);
+  const canRescue = isMaster || role === "admin" || role === "ceo" || role === "administrativo";
+
+  const fetchLeads = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("crm_leads")
+      .select("*")
+      .eq("lead_status", "lost")
+      .order("updated_at", { ascending: false });
+    if (error) {
+      console.error("Error fetching lost leads:", error);
+      toast.error("Erro ao carregar leads descartados");
+    }
+    setLeads(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchLeads(); }, []);
 
   const filtered = useMemo(() => {
     return leads.filter(l => {
@@ -174,11 +180,12 @@ export default function Descarte() {
               <TableHead className="text-xs">Motivo</TableHead>
               <TableHead className="text-xs">Vendedor</TableHead>
               <TableHead className="text-xs">Data Perda</TableHead>
+              {canRescue && <TableHead className="text-xs text-center">Ações</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 && (
-              <TableRow><TableCell colSpan={8} className="text-center text-xs text-muted-foreground py-8">Nenhum lead descartado encontrado</TableCell></TableRow>
+              <TableRow><TableCell colSpan={canRescue ? 9 : 8} className="text-center text-xs text-muted-foreground py-8">Nenhum lead descartado encontrado</TableCell></TableRow>
             )}
             {filtered.map(l => {
               const reason = l.lost_reason?.split(":")[0]?.trim() || "—";
@@ -196,12 +203,35 @@ export default function Descarte() {
                   </TableCell>
                   <TableCell className="text-xs">{l.created_by_name || "—"}</TableCell>
                   <TableCell className="text-xs">{l.updated_at ? formatDate(l.updated_at) : "—"}</TableCell>
+                  {canRescue && (
+                    <TableCell className="text-center">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setRescueLead(l)}>
+                              <RotateCcw className="h-3.5 w-3.5 text-primary" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent><p className="text-xs">Resgatar lead</p></TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
+                  )}
                 </TableRow>
               );
             })}
           </TableBody>
         </Table>
       </div>
+
+      {rescueLead && (
+        <RescueLeadDialog
+          open={!!rescueLead}
+          onOpenChange={(open) => { if (!open) setRescueLead(null); }}
+          lead={rescueLead}
+          onRescued={() => { setRescueLead(null); fetchLeads(); }}
+        />
+      )}
     </div>
   );
 }
