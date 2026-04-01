@@ -189,7 +189,11 @@ export function useWhatsAppInbox() {
       const { data, error } = await supabase.functions.invoke("zapi", {
         body: { action: "status", company_id: companyId },
       });
-      if (error) throw error;
+      // If Z-API is not configured, silently stay disconnected
+      if (error || data?.error) {
+        setConnectionStatus("disconnected");
+        return;
+      }
       const connected = data?.data?.connected;
       setConnectionStatus(connected === true ? "connected" : "disconnected");
     } catch {
