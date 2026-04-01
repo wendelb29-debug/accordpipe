@@ -5,7 +5,7 @@ import {
   MessageSquare, PhoneCall, FileText, Activity, Trash2, Send, Loader2,
   FileSignature, Eye, Download, Copy, Image as ImageIcon,
   FileSpreadsheet, Edit, MoreVertical, ThumbsUp, ThumbsDown,
-  Link2, CopyPlus, ClipboardList
+  Link2, CopyPlus, ClipboardList, UserRoundPen
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadContractPdf } from "@/lib/generateContractPdf";
@@ -142,6 +142,9 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const [showWonConfirm, setShowWonConfirm] = useState(false);
   const [showReturnDialog, setShowReturnDialog] = useState(false);
   const [returnNote, setReturnNote] = useState("");
+  const [showTransferDialog, setShowTransferDialog] = useState(false);
+  const [transferUserId, setTransferUserId] = useState("");
+  const [transferUsers, setTransferUsers] = useState<{ user_id: string; name: string }[]>([]);
 
   // Note compose state
   const [noteText, setNoteText] = useState("");
@@ -459,6 +462,63 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     }
   };
 
+  const canTransferOwnership = role === "admin" || role === "administrativo" || role === "ceo" || profile?.is_master;
+
+  const handleTransferOwnership = async () => {
+    const { data: users } = await supabase
+      .from("profiles")
+      .select("user_id, name")
+      .eq("company_id", lead.servidor_id)
+      .eq("is_active", true)
+      .order("name");
+    if (users) {
+      const filtered: { user_id: string; name: string }[] = [];
+      for (const u of users) {
+        if (u.user_id === lead.created_by_user_id) continue;
+        const { data: roleData } = await supabase
+          .from("user_roles").select("role").eq("user_id", u.user_id).maybeSingle();
+        if (roleData && ["admin", "operador", "comercial", "ceo", "administrativo"].includes(roleData.role)) {
+          filtered.push(u);
+        }
+      }
+      setTransferUsers(filtered);
+    }
+    setTransferUserId("");
+    setShowTransferDialog(true);
+  };
+
+  const confirmTransferOwnership = async () => {
+    if (!transferUserId) { toast.error("Selecione um usuário"); return; }
+    if (saving) return;
+    setSaving(true);
+    const selectedUser = transferUsers.find(u => u.user_id === transferUserId);
+    try {
+      await onUpdate(lead.id, {
+        created_by_user_id: transferUserId,
+        created_by_name: selectedUser?.name || null,
+      } as any);
+      await addActivity({
+        type: "stage_change",
+        title: "Propriedade transferida",
+        description: `Responsável alterado de **${lead.created_by_name || "—"}** para **${selectedUser?.name || "usuário"}** por **${profile?.name || "Admin"}**.`,
+      });
+      // Notify the new owner
+      await supabase.rpc("create_notification", {
+        _user_id: transferUserId,
+        _title: "Card transferido para você",
+        _message: `A oportunidade "${lead.company_name}" foi transferida para você por ${profile?.name || "um administrador"}.`,
+        _type: "transfer",
+      });
+      toast.success("Propriedade transferida com sucesso!");
+      setShowTransferDialog(false);
+    } catch (error) {
+      console.error("Error transferring ownership:", error);
+      toast.error("Erro ao transferir propriedade");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full overflow-hidden bg-background">
       {/* Header with pipeline progress */}
@@ -522,6 +582,11 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                   </Button>
                 )}
               </div>
+            )}
+            {canTransferOwnership && (
+              <Button size="sm" variant="ghost" onClick={handleTransferOwnership} disabled={saving} title="Transferir propriedade" className="gap-1.5">
+                <UserRoundPen className="h-4 w-4" />
+              </Button>
             )}
           </div>
         </div>
@@ -1031,6 +1096,40 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Confirmar Devolução
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Transfer Ownership Dialog */}
+      <Dialog open={showTransferDialog} onOpenChange={setShowTransferDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl">Transferir Propriedade</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground text-center">
+              Selecione o novo responsável por esta oportunidade.
+            </p>
+            <p className="text-xs text-muted-foreground text-center">
+              Responsável atual: <strong>{lead.created_by_name || "—"}</strong>
+            </p>
+            <Select value={transferUserId} onValueChange={setTransferUserId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um usuário" />
+              </SelectTrigger>
+              <SelectContent>
+                {transferUsers.map(u => (
+                  <SelectItem key={u.user_id} value={u.user_id}>{u.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTransferDialog(false)}>Cancelar</Button>
+            <Button onClick={confirmTransferOwnership} disabled={saving || !transferUserId}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UserRoundPen className="h-4 w-4 mr-2" />}
+              Transferir
             </Button>
           </DialogFooter>
         </DialogContent>
