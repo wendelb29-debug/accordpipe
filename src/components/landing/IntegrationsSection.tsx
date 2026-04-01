@@ -1,4 +1,4 @@
-import { MessageSquare, ShoppingBag, CreditCard, Wallet, Calendar, Webhook } from "lucide-react";
+import { MessageSquare, CreditCard, Calendar, Webhook } from "lucide-react";
 
 const integrations = [
   { icon: MessageSquare, name: "WhatsApp API", color: "text-green-500" },
