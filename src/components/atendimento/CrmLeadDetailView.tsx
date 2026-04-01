@@ -583,6 +583,11 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                 )}
               </div>
             )}
+            {canTransferOwnership && (
+              <Button size="sm" variant="ghost" onClick={handleTransferOwnership} disabled={saving} title="Transferir propriedade" className="gap-1.5">
+                <UserRoundPen className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
 
