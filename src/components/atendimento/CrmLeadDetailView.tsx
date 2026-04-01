@@ -138,6 +138,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const [showReopenDialog, setShowReopenDialog] = useState(false);
   const [reopenUserId, setReopenUserId] = useState("");
   const [reopenUsers, setReopenUsers] = useState<{ user_id: string; name: string }[]>([]);
+  const [showWonCelebration, setShowWonCelebration] = useState(false);
 
   // Note compose state
   const [noteText, setNoteText] = useState("");
