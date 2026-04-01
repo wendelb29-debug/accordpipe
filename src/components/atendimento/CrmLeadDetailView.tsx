@@ -44,12 +44,24 @@ const formatFullDate = (dateStr: string) => {
 };
 
 // Render **bold** markdown in text
-const renderBoldText = (text: string) => {
-  const parts = text.split(/\*\*(.*?)\*\*/g);
-  return parts.map((part, i) =>
-    i % 2 === 1 ? <strong key={i}>{part}</strong> : part
-  );
+const renderFormattedText = (text: string) => {
+  // Handle **bold** and _italic_
+  const parts = text.split(/(\*\*.*?\*\*|_.*?_)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith("_") && part.endsWith("_") && part.length > 2) {
+      return <em key={i}>{part.slice(1, -1)}</em>;
+    }
+    // Handle bullet points
+    if (part.startsWith("• ")) {
+      return <span key={i}>• {part.slice(2)}</span>;
+    }
+    return part;
+  });
 };
+const renderBoldText = renderFormattedText;
 
 const activityTypeIcons: Record<string, React.ElementType> = {
   note: StickyNote,
