@@ -219,16 +219,16 @@ export default function Atividades() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Listagem de atividades</h1>
-          <p className="text-sm text-muted-foreground">Home / Atividades</p>
+          <h1 className="text-xl md:text-2xl font-bold text-foreground">Listagem de atividades</h1>
+          <p className="text-xs md:text-sm text-muted-foreground">Home / Atividades</p>
         </div>
         <div className="flex items-center gap-2">
           <Select value={dateFilter} onValueChange={setDateFilter}>
-            <SelectTrigger className="w-[140px] h-9 text-sm rounded-lg">
+            <SelectTrigger className="w-[120px] md:w-[140px] h-9 text-sm rounded-lg">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
