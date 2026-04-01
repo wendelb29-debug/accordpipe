@@ -184,19 +184,23 @@ export function useWhatsAppInbox() {
 
   // Check Z-API connection status
   const checkConnection = useCallback(async () => {
-    if (!companyId) return;
+    if (!companyId) {
+      setConnectionStatus("disconnected");
+      return;
+    }
     try {
       const { data, error } = await supabase.functions.invoke("zapi", {
         body: { action: "status", company_id: companyId },
       });
-      // If Z-API is not configured, silently stay disconnected
-      if (error || data?.error) {
+      // If Z-API is not configured or returns any error, silently stay disconnected
+      if (error || !data || data?.error || data?.success === false) {
         setConnectionStatus("disconnected");
         return;
       }
       const connected = data?.data?.connected;
       setConnectionStatus(connected === true ? "connected" : "disconnected");
-    } catch {
+    } catch (e) {
+      console.log("Z-API check skipped (not configured):", e);
       setConnectionStatus("disconnected");
     }
   }, [companyId]);
