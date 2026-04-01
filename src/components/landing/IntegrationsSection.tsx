@@ -2,9 +2,7 @@ import { MessageSquare, ShoppingBag, CreditCard, Wallet, Calendar, Webhook } fro
 
 const integrations = [
   { icon: MessageSquare, name: "WhatsApp API", color: "text-green-500" },
-  { icon: ShoppingBag, name: "Gateway de Pagamento", color: "text-purple-500" },
-  { icon: CreditCard, name: "Stripe", color: "text-blue-500" },
-  { icon: Wallet, name: "Mercado Pago", color: "text-sky-500" },
+  { icon: CreditCard, name: "Gateway de Pagamento", color: "text-purple-500" },
   { icon: Calendar, name: "Google Agenda", color: "text-red-500" },
   { icon: Webhook, name: "Webhooks / API", color: "text-orange-500" },
 ];
