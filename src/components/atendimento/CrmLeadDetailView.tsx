@@ -947,6 +947,12 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <WonCelebrationDialog
+        open={showWonCelebration}
+        onClose={() => setShowWonCelebration(false)}
+        leadName={lead.contact_name || lead.company_name}
+      />
     </div>
   );
 }
