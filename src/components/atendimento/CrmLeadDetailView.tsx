@@ -287,7 +287,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         }
       }
 
-      toast.success("🎉 Oportunidade ganha! Transferida para cadastro.");
+      setShowWonCelebration(true);
     } catch (error) {
       console.error("Error marking won:", error);
       toast.error("Erro ao marcar como ganho");
