@@ -154,6 +154,10 @@
   .gradient-primary {
     background: var(--gradient-primary);
   }
+
+  .gradient-accord-btn {
+    background: var(--gradient-accord-btn);
+  }
   
   .gradient-success {
     background: var(--gradient-success);
@@ -165,10 +169,6 @@
   
   .gradient-danger {
     background: var(--gradient-danger);
-  }
-
-  .gradient-blue-subtle {
-    background: var(--gradient-blue-subtle);
   }
 
   .shadow-card {
@@ -183,10 +183,14 @@
     box-shadow: var(--shadow-premium);
   }
 
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
   .glass {
-    background: rgba(255, 255, 255, 0.75);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
   }
 
   .animate-fade-in {
@@ -202,12 +206,16 @@
   }
 
   .premium-hover {
-    @apply transition-all duration-300 ease-out;
+    @apply transition-all duration-200 ease-out;
   }
 
   .premium-hover:hover {
-    transform: translateY(-3px);
+    transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
+  }
+
+  .accord-active-glow {
+    box-shadow: 0 0 12px rgba(122, 63, 242, 0.3);
   }
 }
 
