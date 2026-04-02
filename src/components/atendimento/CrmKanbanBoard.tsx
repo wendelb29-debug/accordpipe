@@ -388,14 +388,15 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
       </div>
 
       {/* Kanban Columns */}
-      <div
-        ref={pipelineRef}
-        className="flex gap-3 px-4 pb-1 flex-1 min-h-0 overflow-x-auto overflow-y-hidden cursor-grab [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full"
-        onMouseDown={handlePipelineMouseDown}
-        onMouseMove={handlePipelineMouseMove}
-        onMouseUp={handlePipelineMouseUp}
-        onMouseLeave={handlePipelineMouseUp}
-      >
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+        <div
+          ref={pipelineRef}
+          className="flex flex-1 min-h-0 items-stretch gap-3 px-4 pb-0.5 overflow-x-auto overflow-y-hidden cursor-grab [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20"
+          onMouseDown={handlePipelineMouseDown}
+          onMouseMove={handlePipelineMouseMove}
+          onMouseUp={handlePipelineMouseUp}
+          onMouseLeave={handlePipelineMouseUp}
+        >
         {stageStats.map((stage) => {
           const Icon = stageIcons[stage.id] || Clock;
           const stageLeads = filteredLeads.filter((l) => l.stage === stage.id);
@@ -580,6 +581,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
             </div>
           );
         })}
+        </div>
       </div>
 
       <CrmLeadDialog
