@@ -460,9 +460,12 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                       onDragStart={() => setDraggedLead(lead)}
                       onClick={() => openDetail(lead)}
                       className={cn(
-                        "kanban-card rounded-2xl bg-card border border-border/40 p-3.5 cursor-grab active:cursor-grabbing transition-all duration-200 group shadow-sm",
+                        "kanban-card rounded-2xl border p-3.5 cursor-grab active:cursor-grabbing transition-all duration-200 group shadow-sm",
                         "hover:-translate-y-[3px] hover:shadow-[0_12px_30px_rgba(0,0,0,0.1)]",
-                        draggedLead?.id === lead.id && "opacity-40 scale-95"
+                        draggedLead?.id === lead.id && "opacity-40 scale-95",
+                        noActivity && "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50",
+                        overdue && hasActivity && "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50",
+                        !noActivity && !(overdue && hasActivity) && "bg-card border-border/40"
                       )}
                       style={{ boxShadow: draggedLead?.id === lead.id ? undefined : '0 8px 25px rgba(0,0,0,0.06)' }}
                     >
