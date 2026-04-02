@@ -581,6 +581,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
             </div>
           );
         })}
+        </div>
       </div>
 
       <CrmLeadDialog
