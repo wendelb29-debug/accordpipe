@@ -146,7 +146,7 @@ export default function Home() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-foreground">Início</h1>
-          <p className="text-sm text-muted-foreground mt-1.5">Bem-vindo ao ORBIT HUB</p>
+          <p className="text-sm text-muted-foreground mt-1.5">Bem-vindo ao ACCORD</p>
         </div>
         <div className="flex gap-2">
           {isAdmin && (

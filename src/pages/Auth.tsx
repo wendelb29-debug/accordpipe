@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import orbitLogo from "@/assets/orbit-logo.png";
+import accordLogo from "@/assets/accord-logo.png";
 
 const loginSchema = z.object({
   email: z.string().trim().email({ message: "E-mail inválido" }).max(255),
@@ -124,7 +124,7 @@ export default function Auth() {
         <div className="relative z-10 flex flex-col justify-between p-12 w-full animate-fade-in">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <img src={orbitLogo} alt="ORBIT HUB" className="h-10 w-auto brightness-0 invert opacity-90" />
+            <img src={accordLogo} alt="ACCORD" className="h-10 w-auto brightness-0 invert opacity-90" />
           </div>
 
           {/* Hero copy */}
@@ -157,7 +157,7 @@ export default function Auth() {
 
           {/* Footer */}
           <p className="text-[11px] text-white/20 font-medium tracking-widest uppercase">
-            © 2026 Orbit Hub — Todos os direitos reservados
+            © 2026 ACCORD — Todos os direitos reservados
           </p>
         </div>
       </div>
@@ -167,7 +167,7 @@ export default function Auth() {
         <div className="w-full max-w-[400px] animate-fade-in">
           {/* Mobile logo */}
           <div className="mb-8 lg:hidden text-center">
-            <img src={orbitLogo} alt="ORBIT HUB" className="h-9 w-auto mx-auto mb-3" />
+            <img src={accordLogo} alt="ACCORD" className="h-9 w-auto mx-auto mb-3" />
             <Link to="/" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
               ← Voltar ao site
             </Link>

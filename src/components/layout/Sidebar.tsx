@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import orbitLogo from "@/assets/orbit-logo.png";
+import accordLogo from "@/assets/accord-logo.png";
 import {
   Home,
   LayoutDashboard,
@@ -30,7 +30,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 const navigation = [
   { name: "Início", href: "/home", icon: Home, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
-  { name: "Orbit Sales", href: "/atendimento", icon: MessageSquare, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
+  { name: "Vendas", href: "/atendimento", icon: MessageSquare, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
   { name: "Formulários", href: "/formularios", icon: ClipboardList, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
   { name: "Atividades", href: "/atividades", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
   { name: "Clientes", href: "/clientes", icon: Users, roles: ["admin", "ceo", "administrativo", "financeiro"] },
@@ -160,15 +160,18 @@ export function Sidebar() {
       <div className={cn("flex h-16 items-center border-b border-sidebar-border/30 shrink-0 select-none", collapsed ? "justify-center px-2" : "justify-between px-5")}>
         {!collapsed && (
           <div className="flex items-center gap-2.5 cursor-default" onClick={(e) => e.preventDefault()}>
-            <img src={orbitLogo} alt="ORBIT HUB" className="h-14 w-auto" />
+            <img src={accordLogo} alt="ACCORD" className="h-8 w-auto" />
+            <span className="text-[15px] font-bold tracking-tight text-sidebar-foreground/90">ACCORD</span>
           </div>
         )}
         {collapsed && (
-          <img src={orbitLogo} alt="O" className="h-7 w-auto cursor-default" onClick={(e) => e.preventDefault()} />
+          <div className="flex items-center justify-center cursor-default" onClick={(e) => e.preventDefault()}>
+            <span className="text-sm font-bold text-sidebar-foreground/90">A</span>
+          </div>
         )}
       </div>
 
-      {/* Orbit Stack Button */}
+      {/* ACCORD Stack Button */}
       <div className={cn("shrink-0", collapsed ? "px-2 py-3" : "px-3 py-3")}>
         {collapsed ? (
           <Tooltip delayDuration={0}>
@@ -177,7 +180,7 @@ export function Sidebar() {
                 <Rocket className="h-4 w-4" />
               </Link>
             </TooltipTrigger>
-            <TooltipContent side="right" className="font-medium text-xs">Orbit Stack</TooltipContent>
+            <TooltipContent side="right" className="font-medium text-xs">ACCORD Stack</TooltipContent>
           </Tooltip>
         ) : (
           <Link
@@ -189,7 +192,7 @@ export function Sidebar() {
             style={location.pathname === "/orbit-stack" ? { background: 'linear-gradient(135deg, #7A3FF2, #D94FD5)' } : undefined}
           >
             <Rocket className="h-3.5 w-3.5" />
-            Orbit Stack
+            ACCORD Stack
           </Link>
         )}
       </div>

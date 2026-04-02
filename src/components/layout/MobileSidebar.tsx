@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import orbitLogo from "@/assets/orbit-logo.png";
+import accordLogo from "@/assets/accord-logo.png";
 import {
   Home, LayoutDashboard, Building2, Receipt, FileText, BarChart3,
   FileSignature, Users, LogOut, MessageSquare, CalendarCheck, Rocket,
@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 const navigation = [
   { name: "Início", href: "/home", icon: Home, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
-  { name: "Orbit Sales", href: "/atendimento", icon: MessageSquare, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
+  { name: "Vendas", href: "/atendimento", icon: MessageSquare, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
   { name: "Formulários", href: "/formularios", icon: ClipboardList, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
   { name: "Atividades", href: "/atividades", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
   { name: "Clientes", href: "/clientes", icon: Users, roles: ["admin", "ceo", "administrativo", "financeiro"] },
@@ -59,13 +59,12 @@ export function MobileSidebar() {
         {/* Logo */}
         <div className="flex h-16 items-center justify-between px-5 border-b border-sidebar-border/30">
           <div className="flex items-center gap-2.5">
-            <img src={orbitLogo} alt="ORBIT HUB" className="h-10 w-auto" />
-            <span className="text-[15px] font-bold tracking-tight text-sidebar-foreground/90">ORBIT</span>
-            <span className="text-sm font-light text-sidebar-foreground/25">HUB</span>
+            <img src={accordLogo} alt="ACCORD" className="h-8 w-auto" />
+            <span className="text-[15px] font-bold tracking-tight text-sidebar-foreground/90">ACCORD</span>
           </div>
         </div>
 
-        {/* Orbit Stack */}
+        {/* ACCORD Stack */}
         <div className="px-3 py-3">
           <Link
             to="/orbit-stack"
@@ -77,7 +76,7 @@ export function MobileSidebar() {
             style={location.pathname === "/orbit-stack" ? { background: 'linear-gradient(135deg, #7A3FF2, #D94FD5)' } : undefined}
           >
             <Rocket className="h-3.5 w-3.5" />
-            Orbit Stack
+            ACCORD Stack
           </Link>
         </div>
 
