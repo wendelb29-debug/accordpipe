@@ -134,7 +134,7 @@ export default function Auth() {
               <br />
               operação em
               <br />
-              <span className="bg-gradient-to-r from-[hsl(250,80%,70%)] to-[hsl(280,70%,65%)] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-[#7A3FF2] to-[#D94FD5] bg-clip-text text-transparent">
                 um só lugar.
               </span>
             </h1>
