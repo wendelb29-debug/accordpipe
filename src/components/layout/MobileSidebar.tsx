@@ -72,8 +72,9 @@ export function MobileSidebar() {
             onClick={() => setOpen(false)}
             className={cn(
               "flex items-center gap-2 w-full h-9 rounded-xl border border-sidebar-primary/20 text-sidebar-primary hover:bg-sidebar-primary/10 text-xs font-semibold justify-center transition-all",
-              location.pathname === "/orbit-stack" && "bg-gradient-to-r from-sidebar-primary/90 to-sidebar-primary text-sidebar-primary-foreground border-sidebar-primary shadow-lg shadow-sidebar-primary/25"
+              location.pathname === "/orbit-stack" && "text-sidebar-primary-foreground border-sidebar-primary shadow-[0_0_12px_rgba(122,63,242,0.3)]"
             )}
+            style={location.pathname === "/orbit-stack" ? { background: 'linear-gradient(135deg, #7A3FF2, #D94FD5)' } : undefined}
           >
             <Rocket className="h-3.5 w-3.5" />
             Orbit Stack
@@ -93,11 +94,11 @@ export function MobileSidebar() {
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-200 relative",
                   isActive
-                    ? "bg-sidebar-accent text-sidebar-foreground"
-                    : "text-sidebar-foreground/40 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground/80"
+                    ? "bg-sidebar-primary/15 text-sidebar-foreground"
+                    : "text-sidebar-foreground/45 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground/80"
                 )}
               >
-                {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 rounded-r-full bg-sidebar-primary" />}
+                {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-sidebar-primary shadow-[0_0_8px_rgba(122,63,242,0.5)]" />}
                 <item.icon className={cn("h-[17px] w-[17px]", isActive ? "text-sidebar-primary" : "")} />
                 <span className="truncate">{item.name}</span>
               </Link>

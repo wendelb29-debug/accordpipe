@@ -129,13 +129,13 @@ export default function Auth() {
 
           {/* Hero copy */}
           <div className="max-w-lg">
-            <h1 className="text-5xl xl:text-6xl font-black text-white leading-[1.08] tracking-tight">
-              Gerencie sua
+            <h1 className="text-5xl xl:text-6xl font-black text-primary-foreground leading-[1.08] tracking-tight">
+              Controle total
               <br />
-              operação em
+              da sua operação,
               <br />
               <span className="bg-gradient-to-r from-[#7A3FF2] to-[#D94FD5] bg-clip-text text-transparent">
-                um só lugar.
+                simples e inteligente.
               </span>
             </h1>
             <p className="mt-6 text-[17px] text-white/50 leading-relaxed max-w-md">
