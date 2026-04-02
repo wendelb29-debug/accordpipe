@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import orbitLogo from "@/assets/orbit-logo.png";
+import accordLogo from "@/assets/accord-logo.png";
 import {
   Home, LayoutDashboard, Building2, Receipt, FileText, BarChart3,
   FileSignature, Users, LogOut, MessageSquare, CalendarCheck, Rocket,
