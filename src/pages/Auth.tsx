@@ -108,7 +108,7 @@ export default function Auth() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center" style={{ background: 'linear-gradient(135deg, #0F1C3F 0%, #3B3F9C 35%, #7A3FF2 70%, #D94FD5 100%)' }}>
+      <div className="dark flex min-h-screen items-center justify-center" style={{ background: 'linear-gradient(135deg, #0F1C3F 0%, #3B3F9C 35%, #7A3FF2 70%, #D94FD5 100%)' }}>
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-foreground"></div>
       </div>
     );
@@ -116,7 +116,7 @@ export default function Auth() {
 
   return (
     <div
-      className="relative flex min-h-screen items-center justify-center p-4 sm:p-6 overflow-hidden"
+      className="dark relative flex min-h-screen items-center justify-center p-4 sm:p-6 overflow-hidden"
       style={{ background: 'linear-gradient(135deg, #0F1C3F 0%, #3B3F9C 35%, #7A3FF2 70%, #D94FD5 100%)' }}
     >
       {/* Back button */}
