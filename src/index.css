@@ -10,34 +10,34 @@
 
 @layer base {
   :root {
-    /* ACCORD — Premium SaaS Design System */
-    --background: 220 14% 98%;
-    --foreground: 224 71% 7%;
+    /* ACCORD — Premium Dark SaaS Design System */
+    --background: 228 40% 6%;
+    --foreground: 210 40% 98%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 224 71% 7%;
+    --card: 220 30% 12%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 224 71% 7%;
+    --popover: 220 30% 12%;
+    --popover-foreground: 210 40% 98%;
 
     --primary: 224 76% 53%;
     --primary-foreground: 0 0% 100%;
     --primary-glow: 263 87% 60%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 224 71% 7%;
+    --secondary: 220 25% 14%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 220 13% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 220 25% 14%;
+    --muted-foreground: 218 14% 65%;
 
-    --accent: 220 14% 93%;
-    --accent-foreground: 224 71% 7%;
+    --accent: 220 25% 17%;
+    --accent-foreground: 210 40% 98%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 96%;
+    --border: 220 20% 22%;
+    --input: 220 30% 12%;
     --ring: 224 76% 53%;
 
     --radius: 0.75rem;
@@ -64,49 +64,49 @@
 
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, #0F1C3F 0%, #3B3F9C 35%, #7A3FF2 70%, #D94FD5 100%);
-    --gradient-accord-btn: linear-gradient(135deg, #2563EB, #1D4ED8);
+    --gradient-accord-btn: linear-gradient(135deg, #2563EB, #7A3FF2);
     --gradient-success: linear-gradient(135deg, hsl(152 55% 40%) 0%, hsl(160 50% 46%) 100%);
     --gradient-warning: linear-gradient(135deg, hsl(38 70% 50%) 0%, hsl(43 70% 50%) 100%);
     --gradient-danger: linear-gradient(135deg, hsl(0 65% 52%) 0%, hsl(12 65% 52%) 100%);
 
     /* Premium Shadows */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04);
-    --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.04);
-    --shadow-lg: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 4px 10px -4px rgb(0 0 0 / 0.04);
-    --shadow-xl: 0 20px 40px -12px rgb(0 0 0 / 0.15);
-    --shadow-premium: 0 0 0 1px rgb(0 0 0 / 0.03), 0 2px 4px rgb(0 0 0 / 0.04), 0 8px 20px rgb(0 0 0 / 0.06);
-    --shadow-card: 0 1px 3px rgb(0 0 0 / 0.05), 0 2px 8px rgb(0 0 0 / 0.04);
-    --shadow-glow: 0 0 20px rgba(122, 63, 242, 0.15);
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.15);
+    --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.15);
+    --shadow-lg: 0 10px 25px -5px rgb(0 0 0 / 0.4), 0 4px 10px -4px rgb(0 0 0 / 0.15);
+    --shadow-xl: 0 20px 40px -12px rgb(0 0 0 / 0.5);
+    --shadow-premium: 0 0 0 1px rgb(255 255 255 / 0.05), 0 2px 4px rgb(0 0 0 / 0.2), 0 8px 20px rgb(0 0 0 / 0.3);
+    --shadow-card: 0 8px 25px rgb(0 0 0 / 0.4);
+    --shadow-glow: 0 0 20px rgba(122, 63, 242, 0.25);
   }
 
   .dark {
-    --background: 224 40% 7%;
-    --foreground: 210 40% 96%;
+    --background: 228 40% 6%;
+    --foreground: 210 40% 98%;
 
-    --card: 224 30% 11%;
-    --card-foreground: 210 40% 96%;
+    --card: 220 30% 12%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 224 30% 11%;
-    --popover-foreground: 210 40% 96%;
+    --popover: 220 30% 12%;
+    --popover-foreground: 210 40% 98%;
 
     --primary: 224 76% 53%;
     --primary-foreground: 0 0% 100%;
     --primary-glow: 263 87% 60%;
 
-    --secondary: 224 20% 15%;
-    --secondary-foreground: 210 40% 96%;
+    --secondary: 220 25% 14%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 224 20% 15%;
-    --muted-foreground: 218 14% 52%;
+    --muted: 220 25% 14%;
+    --muted-foreground: 218 14% 65%;
 
-    --accent: 224 20% 18%;
-    --accent-foreground: 210 40% 96%;
+    --accent: 220 25% 17%;
+    --accent-foreground: 210 40% 98%;
 
     --destructive: 0 55% 40%;
-    --destructive-foreground: 210 40% 96%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 224 20% 16%;
-    --input: 224 20% 16%;
+    --border: 220 20% 22%;
+    --input: 220 30% 12%;
     --ring: 224 76% 53%;
 
     --sidebar-background: 224 45% 6%;
@@ -188,7 +188,7 @@
   }
 
   .glass {
-    background: rgba(255, 255, 255, 0.8);
+    background: rgba(15, 23, 42, 0.8);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
   }
