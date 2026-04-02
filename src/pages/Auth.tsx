@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import orbitLogo from "@/assets/orbit-logo.png";
+import accordLogo from "@/assets/accord-logo.png";
 
 const loginSchema = z.object({
   email: z.string().trim().email({ message: "E-mail inválido" }).max(255),
