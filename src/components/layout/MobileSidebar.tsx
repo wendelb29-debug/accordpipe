@@ -72,8 +72,9 @@ export function MobileSidebar() {
             onClick={() => setOpen(false)}
             className={cn(
               "flex items-center gap-2 w-full h-9 rounded-xl border border-sidebar-primary/20 text-sidebar-primary hover:bg-sidebar-primary/10 text-xs font-semibold justify-center transition-all",
-              location.pathname === "/orbit-stack" && "bg-gradient-to-r from-sidebar-primary/90 to-sidebar-primary text-sidebar-primary-foreground border-sidebar-primary shadow-lg shadow-sidebar-primary/25"
+              location.pathname === "/orbit-stack" && "text-sidebar-primary-foreground border-sidebar-primary shadow-[0_0_12px_rgba(122,63,242,0.3)]"
             )}
+            style={location.pathname === "/orbit-stack" ? { background: 'linear-gradient(135deg, #7A3FF2, #D94FD5)' } : undefined}
           >
             <Rocket className="h-3.5 w-3.5" />
             Orbit Stack
