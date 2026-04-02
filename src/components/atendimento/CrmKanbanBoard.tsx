@@ -391,7 +391,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
         <div
           ref={pipelineRef}
-          className="flex flex-1 min-h-0 items-stretch gap-3 px-4 pb-0.5 overflow-x-auto overflow-y-hidden cursor-grab [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20"
+          className="flex flex-1 min-h-0 items-stretch gap-3 px-4 pb-1 overflow-x-auto overflow-y-hidden cursor-grab [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-track]:bg-muted/50 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gradient-to-r [&::-webkit-scrollbar-thumb]:from-[hsl(var(--primary))] [&::-webkit-scrollbar-thumb]:to-[hsl(220,80%,55%)]"
           onMouseDown={handlePipelineMouseDown}
           onMouseMove={handlePipelineMouseMove}
           onMouseUp={handlePipelineMouseUp}
