@@ -192,7 +192,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
       if (!profile.is_master && !hasAdminRole) return;
       const { data } = await supabase
         .from("profiles")
-        .select("user_id, name")
+        .select("user_id, name, avatar_url")
         .eq("company_id", profile.company_id)
         .eq("is_active", true)
         .order("name");
