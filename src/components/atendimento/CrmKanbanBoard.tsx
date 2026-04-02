@@ -174,6 +174,21 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
     fetchActivityStatus();
   }, [leads]);
 
+  // Fetch avatars for all lead creators
+  useEffect(() => {
+    const fetchCreatorAvatars = async () => {
+      if (leads.length === 0 || teamMembers.length > 0) return;
+      const userIds = [...new Set(leads.map(l => l.created_by_user_id).filter(Boolean))] as string[];
+      if (userIds.length === 0) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, name, avatar_url")
+        .in("user_id", userIds);
+      if (data) setTeamMembers(data);
+    };
+    fetchCreatorAvatars();
+  }, [leads, teamMembers.length]);
+
   const toggleTag = (tagName: string) => {
     setSelectedTags((prev) =>
       prev.includes(tagName) ? prev.filter((t) => t !== tagName) : [...prev, tagName]
