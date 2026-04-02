@@ -97,7 +97,7 @@ export function MobileSidebar() {
                     : "text-sidebar-foreground/45 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground/80"
                 )}
               >
-                {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 rounded-r-full bg-sidebar-primary" />}
+                {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-sidebar-primary shadow-[0_0_8px_rgba(122,63,242,0.5)]" />}
                 <item.icon className={cn("h-[17px] w-[17px]", isActive ? "text-sidebar-primary" : "")} />
                 <span className="truncate">{item.name}</span>
               </Link>
