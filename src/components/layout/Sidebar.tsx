@@ -160,11 +160,14 @@ export function Sidebar() {
       <div className={cn("flex h-16 items-center border-b border-sidebar-border/30 shrink-0 select-none", collapsed ? "justify-center px-2" : "justify-between px-5")}>
         {!collapsed && (
           <div className="flex items-center gap-2.5 cursor-default" onClick={(e) => e.preventDefault()}>
-            <img src={orbitLogo} alt="ORBIT HUB" className="h-14 w-auto" />
+            <img src={accordLogo} alt="ACCORD" className="h-8 w-auto" />
+            <span className="text-[15px] font-bold tracking-tight text-sidebar-foreground/90">ACCORD</span>
           </div>
         )}
         {collapsed && (
-          <img src={orbitLogo} alt="O" className="h-7 w-auto cursor-default" onClick={(e) => e.preventDefault()} />
+          <div className="flex items-center justify-center cursor-default" onClick={(e) => e.preventDefault()}>
+            <span className="text-sm font-bold text-sidebar-foreground/90">A</span>
+          </div>
         )}
       </div>
 
