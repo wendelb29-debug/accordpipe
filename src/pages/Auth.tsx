@@ -3,11 +3,10 @@ import { useNavigate, Link } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, Lock, Mail, AlertCircle, ArrowLeft, Loader2, CheckCircle2, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
@@ -67,7 +66,6 @@ export default function Auth() {
     setError(null);
     setResetLoading(true);
     try {
-      // Check if email exists in profiles
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id")
@@ -103,109 +101,208 @@ export default function Auth() {
   }
 
   return (
-    <div className="flex min-h-screen">
-      {/* Left - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-primary via-primary to-accent">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(255,255,255,0.08),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.05),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px]" />
-        
-        <div className="relative flex flex-col justify-between p-12 text-primary-foreground">
-          <Link to="/" className="flex items-center gap-2 text-primary-foreground/60 hover:text-primary-foreground transition-colors w-fit">
-            <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm font-medium">Voltar ao site</span>
-          </Link>
-          <div>
-            <img src={orbitLogo} alt="ORBIT" className="h-14 w-auto mb-10 brightness-0 invert opacity-90" />
-            <h1 className="text-5xl font-black leading-[1.1] tracking-tight">Controle total<br />da sua operação<br />em um só lugar.</h1>
-            <p className="mt-6 text-lg text-primary-foreground/60 max-w-md leading-relaxed">CRM, contratos, WhatsApp e IA integrada para automatizar e escalar sua operação.</p>
+    <div className="flex min-h-screen bg-background">
+      {/* LEFT — Hero branding */}
+      <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden">
+        {/* Gradient base */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(245,60%,12%)] via-[hsl(250,50%,18%)] to-[hsl(260,45%,8%)]" />
+
+        {/* Glow orbs */}
+        <div className="absolute top-[15%] left-[10%] w-[500px] h-[500px] rounded-full bg-[hsl(250,80%,50%)] opacity-[0.12] blur-[120px]" />
+        <div className="absolute bottom-[10%] right-[5%] w-[400px] h-[400px] rounded-full bg-[hsl(280,70%,55%)] opacity-[0.10] blur-[100px]" />
+        <div className="absolute top-[60%] left-[40%] w-[300px] h-[300px] rounded-full bg-[hsl(220,90%,55%)] opacity-[0.08] blur-[80px]" />
+
+        {/* Grid overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
+
+        {/* Floating shapes */}
+        <div className="absolute top-[20%] right-[15%] w-20 h-20 border border-white/[0.06] rounded-2xl rotate-12 animate-[float_6s_ease-in-out_infinite]" />
+        <div className="absolute bottom-[25%] left-[20%] w-14 h-14 border border-white/[0.04] rounded-xl -rotate-6 animate-[float_8s_ease-in-out_infinite_1s]" />
+        <div className="absolute top-[50%] right-[30%] w-10 h-10 bg-white/[0.03] rounded-lg rotate-45 animate-[float_7s_ease-in-out_infinite_2s]" />
+
+        {/* Content */}
+        <div className="relative z-10 flex flex-col justify-between p-12 w-full animate-fade-in">
+          {/* Logo */}
+          <div className="flex items-center gap-3">
+            <img src={orbitLogo} alt="ORBIT HUB" className="h-10 w-auto brightness-0 invert opacity-90" />
           </div>
-          <p className="text-xs text-primary-foreground/30 font-medium tracking-wider">© 2026 ORBIT HUB — TODOS OS DIREITOS RESERVADOS</p>
+
+          {/* Hero copy */}
+          <div className="max-w-lg">
+            <h1 className="text-5xl xl:text-6xl font-black text-white leading-[1.08] tracking-tight">
+              Gerencie sua
+              <br />
+              operação em
+              <br />
+              <span className="bg-gradient-to-r from-[hsl(250,80%,70%)] to-[hsl(280,70%,65%)] bg-clip-text text-transparent">
+                um só lugar.
+              </span>
+            </h1>
+            <p className="mt-6 text-[17px] text-white/50 leading-relaxed max-w-md">
+              CRM, contratos, WhatsApp e IA integrada — tudo que você precisa para automatizar e escalar sua operação comercial.
+            </p>
+
+            {/* Feature pills */}
+            <div className="flex flex-wrap gap-2 mt-8">
+              {["CRM Inteligente", "WhatsApp", "Contratos", "IA Integrada"].map((f) => (
+                <span
+                  key={f}
+                  className="px-3 py-1.5 text-xs font-medium text-white/60 bg-white/[0.06] border border-white/[0.08] rounded-full backdrop-blur-sm"
+                >
+                  {f}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <p className="text-[11px] text-white/20 font-medium tracking-widest uppercase">
+            © 2026 Orbit Hub — Todos os direitos reservados
+          </p>
         </div>
       </div>
 
-      {/* Right - Form */}
-      <div className="flex flex-1 items-center justify-center p-8 bg-background overflow-y-auto">
-        <div className="w-full max-w-[420px]">
-          <div className="mb-10 lg:hidden text-center">
-            <img src={orbitLogo} alt="ORBIT" className="h-10 w-auto mx-auto mb-4" />
-            <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Voltar ao site</Link>
+      {/* RIGHT — Login form */}
+      <div className="flex flex-1 items-center justify-center p-6 sm:p-8 lg:p-12">
+        <div className="w-full max-w-[400px] animate-fade-in">
+          {/* Mobile logo */}
+          <div className="mb-8 lg:hidden text-center">
+            <img src={orbitLogo} alt="ORBIT HUB" className="h-9 w-auto mx-auto mb-3" />
+            <Link to="/" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+              ← Voltar ao site
+            </Link>
           </div>
 
-          <Card className="border-0 shadow-none lg:border lg:border-border/50 lg:shadow-card rounded-2xl">
-            <CardHeader className="space-y-2 pb-6">
-              <CardTitle className="text-2xl font-extrabold tracking-tight">Bem-vindo de volta</CardTitle>
-              <CardDescription className="text-[15px]">Entre com suas credenciais para acessar a plataforma</CardDescription>
-            </CardHeader>
+          {/* Form card */}
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <h2 className="text-[26px] font-extrabold tracking-tight text-foreground">
+                Bem-vindo de volta
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Entre com suas credenciais para acessar a plataforma
+              </p>
+            </div>
 
-            <CardContent className="space-y-6">
-              {error && (
-                <Alert variant="destructive" className="animate-fade-in rounded-xl">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              {success && (
-                <Alert className="animate-fade-in border-accent/50 bg-accent/10 rounded-xl">
-                  <CheckCircle2 className="h-4 w-4 text-accent" />
-                  <AlertDescription className="text-accent">{success}</AlertDescription>
-                </Alert>
-              )}
+            {error && (
+              <Alert variant="destructive" className="animate-fade-in rounded-xl border-destructive/30 bg-destructive/5">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-sm">{error}</AlertDescription>
+              </Alert>
+            )}
+            {success && (
+              <Alert className="animate-fade-in border-accent/30 bg-accent/5 rounded-xl">
+                <CheckCircle2 className="h-4 w-4 text-accent" />
+                <AlertDescription className="text-sm text-accent">{success}</AlertDescription>
+              </Alert>
+            )}
 
-              <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">E-mail</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
-                    <Input id="login-email" type="email" placeholder="seu@email.com" className="pl-10 rounded-xl h-11" autoComplete="username" {...loginForm.register("email")} />
-                  </div>
-                  {loginForm.formState.errors.email && <p className="text-sm text-destructive">{loginForm.formState.errors.email.message}</p>}
+            <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-5">
+              <div className="space-y-1.5">
+                <Label htmlFor="login-email" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  E-mail
+                </Label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
+                  <Input
+                    id="login-email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    className="pl-11 h-12 rounded-xl border-border/60 bg-muted/30 focus:bg-background transition-colors text-sm"
+                    autoComplete="username"
+                    {...loginForm.register("email")}
+                  />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">Senha</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
-                    <Input id="login-password" type={showPassword ? "text" : "password"} placeholder="••••••••" className="pl-10 pr-10 rounded-xl h-11" autoComplete="current-password" {...loginForm.register("password")} />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  {loginForm.formState.errors.password && <p className="text-sm text-destructive">{loginForm.formState.errors.password.message}</p>}
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="remember-me"
-                      checked={rememberMe}
-                      onCheckedChange={(checked) => setRememberMe(checked === true)}
-                    />
-                    <label htmlFor="remember-me" className="text-sm text-muted-foreground cursor-pointer flex items-center gap-1.5">
-                      <ShieldCheck className="h-3.5 w-3.5" />
-                      Lembrar-me
-                    </label>
-                  </div>
+                {loginForm.formState.errors.email && (
+                  <p className="text-xs text-destructive mt-1">{loginForm.formState.errors.email.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="login-password" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Senha
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
+                  <Input
+                    id="login-password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    className="pl-11 pr-11 h-12 rounded-xl border-border/60 bg-muted/30 focus:bg-background transition-colors text-sm"
+                    autoComplete="current-password"
+                    {...loginForm.register("password")}
+                  />
                   <button
                     type="button"
-                    className="text-sm text-primary hover:underline disabled:opacity-50"
-                    onClick={handleForgotPassword}
-                    disabled={resetLoading}
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/40 hover:text-foreground transition-colors"
                   >
-                    {resetLoading ? "Enviando..." : "Esqueci minha senha"}
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                <Button type="submit" className="w-full h-11 rounded-xl text-sm font-semibold" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Entrando...
-                    </div>
-                  ) : "Entrar"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+                {loginForm.formState.errors.password && (
+                  <p className="text-xs text-destructive mt-1">{loginForm.formState.errors.password.message}</p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="remember-me"
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => setRememberMe(checked === true)}
+                    className="rounded"
+                  />
+                  <label htmlFor="remember-me" className="text-xs text-muted-foreground cursor-pointer">
+                    Lembrar-me
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  className="text-xs font-medium text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+                  onClick={handleForgotPassword}
+                  disabled={resetLoading}
+                >
+                  {resetLoading ? "Enviando..." : "Esqueci minha senha"}
+                </button>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full h-12 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Entrando...
+                  </span>
+                ) : (
+                  "Entrar"
+                )}
+              </Button>
+            </form>
+
+            {/* Back to site — desktop */}
+            <div className="hidden lg:block text-center pt-2">
+              <Link
+                to="/"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                ← Voltar ao site
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Float animation keyframe */}
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0) rotate(var(--tw-rotate, 0)); }
+          50% { transform: translateY(-12px) rotate(var(--tw-rotate, 0)); }
+        }
+      `}</style>
     </div>
   );
 }
