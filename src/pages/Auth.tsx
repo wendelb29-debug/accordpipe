@@ -157,7 +157,7 @@ export default function Auth() {
 
           {/* Footer */}
           <p className="text-[11px] text-white/20 font-medium tracking-widest uppercase">
-            © 2026 Orbit Hub — Todos os direitos reservados
+            © 2026 ACCORD — Todos os direitos reservados
           </p>
         </div>
       </div>
