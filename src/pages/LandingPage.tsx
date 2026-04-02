@@ -26,7 +26,7 @@ export default function LandingPage() {
         <div className="mx-auto flex h-12 sm:h-14 md:h-16 max-w-7xl items-center justify-between px-3 sm:px-4 md:px-6">
           {/* Logo */}
           <Link to="/" className="flex items-center shrink-0">
-            <img src={accordLogo} alt="ACCORD" className="h-7 sm:h-8 md:h-10 w-auto shrink-0" />
+            <img src={accordLogo} alt="ACCORD" className="h-14 w-auto shrink-0" />
           </Link>
 
           {/* Nav - desktop only */}
