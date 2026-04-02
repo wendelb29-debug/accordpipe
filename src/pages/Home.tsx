@@ -155,7 +155,7 @@ export default function Home() {
               Gerenciar Recados
             </Button>
           )}
-          <Button className="gap-2" onClick={() => setSupportOpen(true)}>
+          <Button className="gap-2 gradient-primary text-primary-foreground shadow-md" onClick={() => setSupportOpen(true)}>
             <HeadphonesIcon className="h-4 w-4" />
             Suporte
           </Button>
