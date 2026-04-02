@@ -1,6 +1,6 @@
 {
-  "name": "ORBIT HUB",
-  "short_name": "ORBIT",
+  "name": "Accord",
+  "short_name": "Accord",
   "description": "Plataforma completa para gestão de vendas, contratos digitais, CRM, WhatsApp e IA integrada.",
   "start_url": "/",
   "display": "standalone",
