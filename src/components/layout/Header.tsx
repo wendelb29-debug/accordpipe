@@ -33,19 +33,19 @@ export function Header() {
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/50 bg-card/95 backdrop-blur-xl px-6 lg:px-8 shadow-sm">
       {/* Search */}
-      <div className="flex items-center gap-4 flex-1">
-        <div className="relative w-full max-w-md">
+      <div className="flex items-center gap-4 flex-1 min-w-0">
+        <div className="relative w-full max-w-md min-w-0">
           <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
           <Input
             type="search"
             placeholder="Buscar leads, clientes, documentos..."
-            className="pl-10 bg-muted/40 border-border/40 focus-visible:ring-1 focus-visible:ring-primary/50 rounded-xl h-10 text-sm"
+            className="pl-10 bg-muted/40 border-border/40 focus-visible:ring-1 focus-visible:ring-primary/50 rounded-xl h-10 text-sm w-full"
           />
         </div>
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 shrink-0">
         <Button
           variant="ghost"
           size="icon"
