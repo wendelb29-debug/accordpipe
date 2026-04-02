@@ -59,9 +59,8 @@ export function MobileSidebar() {
         {/* Logo */}
         <div className="flex h-16 items-center justify-between px-5 border-b border-sidebar-border/30">
           <div className="flex items-center gap-2.5">
-            <img src={orbitLogo} alt="ORBIT HUB" className="h-10 w-auto" />
-            <span className="text-[15px] font-bold tracking-tight text-sidebar-foreground/90">ORBIT</span>
-            <span className="text-sm font-light text-sidebar-foreground/25">HUB</span>
+            <img src={accordLogo} alt="ACCORD" className="h-8 w-auto" />
+            <span className="text-[15px] font-bold tracking-tight text-sidebar-foreground/90">ACCORD</span>
           </div>
         </div>
 
