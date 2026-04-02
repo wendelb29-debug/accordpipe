@@ -5,7 +5,7 @@ import {
   MoreVertical, Trash2, Edit, Loader2,
   Plus, Sparkles, Link2, Check, Tag, Search, Filter, CalendarClock, AlertTriangle
 } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -89,7 +89,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const [formLinkOpen, setFormLinkOpen] = useState(false);
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string>("all");
-  const [teamMembers, setTeamMembers] = useState<{ user_id: string; name: string }[]>([]);
+  const [teamMembers, setTeamMembers] = useState<{ user_id: string; name: string; avatar_url?: string | null }[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [localSearch, setLocalSearch] = useState(searchTerm);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -174,6 +174,21 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
     fetchActivityStatus();
   }, [leads]);
 
+  // Fetch avatars for all lead creators
+  useEffect(() => {
+    const fetchCreatorAvatars = async () => {
+      if (leads.length === 0 || teamMembers.length > 0) return;
+      const userIds = [...new Set(leads.map(l => l.created_by_user_id).filter(Boolean))] as string[];
+      if (userIds.length === 0) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, name, avatar_url")
+        .in("user_id", userIds);
+      if (data) setTeamMembers(data);
+    };
+    fetchCreatorAvatars();
+  }, [leads, teamMembers.length]);
+
   const toggleTag = (tagName: string) => {
     setSelectedTags((prev) =>
       prev.includes(tagName) ? prev.filter((t) => t !== tagName) : [...prev, tagName]
@@ -192,7 +207,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
       if (!profile.is_master && !hasAdminRole) return;
       const { data } = await supabase
         .from("profiles")
-        .select("user_id, name")
+        .select("user_id, name, avatar_url")
         .eq("company_id", profile.company_id)
         .eq("is_active", true)
         .order("name");
@@ -555,18 +570,22 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                       {/* Footer */}
                       <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border/20">
                         <div className="flex items-center gap-1.5">
-                          {lead.created_by_name && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Avatar className="h-5 w-5">
-                                  <AvatarFallback className="text-[7px] bg-primary/10 text-primary font-bold">
-                                    {lead.created_by_name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
-                                  </AvatarFallback>
-                                </Avatar>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom" className="text-xs">{lead.created_by_name}</TooltipContent>
-                            </Tooltip>
-                          )}
+                          {lead.created_by_name && (() => {
+                            const memberAvatar = teamMembers.find(m => m.user_id === lead.created_by_user_id)?.avatar_url;
+                            return (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Avatar className="h-7 w-7 ring-2 ring-primary/20">
+                                    {memberAvatar && <AvatarImage src={memberAvatar} alt={lead.created_by_name} />}
+                                    <AvatarFallback className="text-[9px] bg-primary/10 text-primary font-bold">
+                                      {lead.created_by_name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" className="text-xs font-medium">{lead.created_by_name}</TooltipContent>
+                              </Tooltip>
+                            );
+                          })()}
                           <span className="text-[10px] text-muted-foreground/50">{new Date(lead.created_at).toLocaleDateString("pt-BR")}</span>
                         </div>
                         <span className={cn(
