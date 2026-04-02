@@ -1,13 +1,12 @@
 import { useState, useRef, useCallback } from "react";
 import {
-  Clock, GripVertical, MoreVertical, Trash2, Edit, Building2, Mail, PhoneCall, Loader2,
+  Clock, MoreVertical, Trash2, Mail, PhoneCall, Loader2,
   Users, ClipboardList, FileCheck, FileWarning, Sparkles
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { CrmLeadDetailView } from "./CrmLeadDetailView";
@@ -18,6 +17,13 @@ const stageIcons: Record<string, React.ElementType> = {
   "dados-em-analise": FileCheck,
   "cadastro-concluido": Sparkles,
   "documentacao-pendente": FileWarning,
+};
+
+const stageColors: Record<string, { bg: string; text: string; icon: string; border: string }> = {
+  "cadastro-pendente": { bg: "bg-amber-50 dark:bg-amber-950/30", text: "text-amber-700 dark:text-amber-400", icon: "bg-amber-500", border: "border-amber-200 dark:border-amber-800" },
+  "dados-em-analise": { bg: "bg-blue-50 dark:bg-blue-950/30", text: "text-blue-700 dark:text-blue-400", icon: "bg-blue-500", border: "border-blue-200 dark:border-blue-800" },
+  "cadastro-concluido": { bg: "bg-green-50 dark:bg-green-950/30", text: "text-green-700 dark:text-green-400", icon: "bg-green-500", border: "border-green-200 dark:border-green-800" },
+  "documentacao-pendente": { bg: "bg-red-50 dark:bg-red-950/30", text: "text-red-700 dark:text-red-400", icon: "bg-red-500", border: "border-red-200 dark:border-red-800" },
 };
 
 const formatCurrency = (v: number) =>
@@ -90,7 +96,7 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -103,32 +109,26 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
         onBack={() => setDetailLead(null)}
         onUpdate={updateLead}
         onMoveStage={moveToStage}
-        onDelete={async (id) => {
-          await deleteLead(id);
-          setDetailLead(null);
-          return true;
-        }}
+        onDelete={async (id) => { await deleteLead(id); setDetailLead(null); return true; }}
         isAdminPipeline
       />
     );
   }
 
   return (
-    <>
+    <div className="flex flex-col h-full bg-muted/30">
       {/* Summary Bar */}
-      <div className="px-4 py-3 border-b bg-card flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
-          <h2 className="text-sm font-semibold text-foreground">
-            <ClipboardList className="h-4 w-4 inline mr-1.5" />
-            Cadastro de Clientes — {filteredLeads.length} registros
-          </h2>
+      <div className="px-4 py-3 flex items-center gap-3">
+        <div className="bg-card rounded-xl border border-border/50 px-4 py-2.5 shadow-sm">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Cadastro de Clientes</p>
+          <p className="text-xl font-bold text-foreground mt-0.5">{filteredLeads.length} <span className="text-sm font-normal text-muted-foreground">registros</span></p>
         </div>
       </div>
 
       {/* Kanban Columns */}
       <div
         ref={pipelineRef}
-        className="flex gap-2 p-3 h-[calc(100%-3.5rem)] overflow-x-auto cursor-grab"
+        className="flex gap-3 px-4 pb-4 flex-1 min-h-0 overflow-x-auto cursor-grab"
         onMouseDown={handlePipelineMouseDown}
         onMouseMove={handlePipelineMouseMove}
         onMouseUp={handlePipelineMouseUp}
@@ -137,105 +137,113 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
         {stageStats.map((stage) => {
           const Icon = stageIcons[stage.id] || Clock;
           const stageLeads = filteredLeads.filter((l) => l.stage === stage.id);
+          const colors = stageColors[stage.id] || stageColors["cadastro-pendente"];
 
           return (
             <div
               key={stage.id}
               className={cn(
-                "flex-shrink-0 w-64 bg-muted/40 rounded-lg flex flex-col",
-                dragOverStage === stage.id && "ring-2 ring-primary"
+                "flex-shrink-0 w-[280px] rounded-2xl flex flex-col border transition-all duration-200",
+                colors.border,
+                colors.bg,
+                dragOverStage === stage.id && "ring-2 ring-primary/60 scale-[1.01]"
               )}
               onDragOver={(e) => { e.preventDefault(); setDragOverStage(stage.id); }}
               onDragLeave={() => setDragOverStage(null)}
               onDrop={(e) => handleDrop(e, stage.id)}
             >
               {/* Column Header */}
-              <div className="p-2.5 border-b bg-background rounded-t-lg">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-1.5">
-                    <div className={cn("p-1 rounded", stage.color)}>
+              <div className="px-3 py-3 rounded-t-2xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={cn("p-1.5 rounded-lg shadow-sm", colors.icon)}>
                       <Icon className="h-3.5 w-3.5 text-white" />
                     </div>
-                    <span className="font-semibold text-xs">{stage.title}</span>
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{stage.count}</Badge>
+                    <span className="font-semibold text-sm text-foreground">{stage.title}</span>
+                    <span className={cn("text-xs font-bold rounded-full px-2.5 py-0.5 bg-card border border-border/50 shadow-sm", colors.text)}>
+                      {stage.count}
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* Cards */}
-              <div className="flex-1 p-1 space-y-1 overflow-y-auto">
+              <div className="flex-1 px-2 pb-2 space-y-2 overflow-y-auto">
                 {stageLeads.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                    <Icon className="h-8 w-8 mb-2 opacity-30" />
-                    <p className="text-xs">Etapa vazia</p>
+                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground/30">
+                    <Icon className="h-10 w-10 mb-3" />
+                    <p className="text-xs font-medium">Etapa vazia</p>
                   </div>
                 )}
                 {stageLeads.map((lead) => (
-                  <Card
+                  <div
                     key={lead.id}
                     draggable
                     onDragStart={() => setDraggedLead(lead)}
                     onClick={() => setDetailLead(lead)}
                     className={cn(
-                      "kanban-card cursor-grab active:cursor-grabbing hover:shadow-md transition-all text-xs",
-                      draggedLead?.id === lead.id && "opacity-50"
+                      "kanban-card rounded-2xl bg-card border border-border/40 p-3.5 cursor-grab active:cursor-grabbing transition-all duration-200 group shadow-sm",
+                      "hover:-translate-y-[3px] hover:shadow-[0_12px_30px_rgba(0,0,0,0.1)]",
+                      draggedLead?.id === lead.id && "opacity-40 scale-95"
                     )}
+                    style={{ boxShadow: draggedLead?.id === lead.id ? undefined : '0 8px 25px rgba(0,0,0,0.06)' }}
                   >
-                    <CardContent className="p-2 space-y-1">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-1.5 min-w-0">
-                          <GripVertical className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
-                          <div className="min-w-0">
-                            <p className="font-semibold text-xs truncate text-foreground">{lead.company_name}</p>
-                            {lead.contact_name && (
-                              <div className="flex items-center gap-1 text-muted-foreground mt-0.5">
-                                <Users className="h-3 w-3 shrink-0" />
-                                <span className="truncate">{lead.contact_name}</span>
-                              </div>
-                            )}
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-xs text-foreground truncate">{lead.company_name}</p>
+                        {lead.contact_name && (
+                          <div className="flex items-center gap-1 text-muted-foreground mt-0.5 text-[11px]">
+                            <Users className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{lead.contact_name}</span>
                           </div>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button variant="ghost" size="icon" className="h-5 w-5">
-                              <MoreVertical className="h-3 w-3" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); deleteLead(lead.id); }}>
-                              <Trash2 className="h-3.5 w-3.5 mr-2" /> Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        )}
                       </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+                            <MoreVertical className="h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="rounded-xl">
+                          <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); deleteLead(lead.id); }}>
+                            <Trash2 className="h-3.5 w-3.5 mr-2" /> Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
 
-                      {lead.email && (
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Mail className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{lead.email}</span>
-                        </div>
-                      )}
-                      {lead.phone && (
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <PhoneCall className="h-3 w-3 shrink-0" />
-                          <span>{lead.phone}</span>
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between text-[10px] text-muted-foreground/70 pt-1 border-t border-border/50">
-                        <span>📅 {new Date(lead.created_at).toLocaleDateString("pt-BR")}</span>
-                        <Badge variant="outline" className="text-[10px] px-1 py-0">
-                          {lead.lead_status === "won" ? "Ganho" : lead.lead_status}
-                        </Badge>
+                    {lead.email && (
+                      <div className="flex items-center gap-1 text-muted-foreground text-[11px] mb-0.5">
+                        <Mail className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{lead.email}</span>
                       </div>
-                    </CardContent>
-                  </Card>
+                    )}
+                    {lead.phone && (
+                      <div className="flex items-center gap-1 text-muted-foreground text-[11px] mb-0.5">
+                        <PhoneCall className="h-3 w-3 shrink-0" />
+                        <span>{lead.phone}</span>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground/60 pt-2 mt-2 border-t border-border/30">
+                      <span>{new Date(lead.created_at).toLocaleDateString("pt-BR")}</span>
+                      <span className={cn(
+                        "font-semibold rounded-full px-2 py-0.5",
+                        lead.lead_status === "won"
+                          ? "bg-green-50 text-green-600 dark:bg-green-950/30 dark:text-green-400"
+                          : "bg-muted text-muted-foreground"
+                      )}>
+                        {lead.lead_status === "won" ? "Ganho" : lead.lead_status}
+                      </span>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
           );
         })}
       </div>
-    </>
+    </div>
   );
 }
