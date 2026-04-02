@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { Search, User, Moon, Sun, Bell } from "lucide-react";
+import { Search, User, Moon, Sun } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
+import { MobileSidebar } from "./MobileSidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,6 +15,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { useTheme } from "next-themes";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const roleLabels: Record<string, string> = {
   admin: "Administrador",
@@ -29,9 +31,12 @@ export function Header() {
   const { profile, role, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/50 bg-card/95 backdrop-blur-xl px-3 sm:px-6 lg:px-8 shadow-sm gap-2">
+      {/* Mobile menu */}
+      {isMobile && <MobileSidebar />}
       {/* Search */}
       <div className="flex items-center flex-1 min-w-0 overflow-hidden">
         <div className="relative w-full min-w-0 max-w-md">
