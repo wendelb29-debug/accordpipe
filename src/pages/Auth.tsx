@@ -135,7 +135,7 @@ export default function Auth() {
               da sua operação,
               <br />
               <span className="bg-gradient-to-r from-[#7A3FF2] to-[#D94FD5] bg-clip-text text-transparent">
-                um só lugar.
+                simples e inteligente.
               </span>
             </h1>
             <p className="mt-6 text-[17px] text-white/50 leading-relaxed max-w-md">
