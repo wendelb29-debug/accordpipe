@@ -124,7 +124,7 @@ export default function Auth() {
         <div className="relative z-10 flex flex-col justify-between p-12 w-full animate-fade-in">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <img src={orbitLogo} alt="ORBIT HUB" className="h-10 w-auto brightness-0 invert opacity-90" />
+            <img src={accordLogo} alt="ACCORD" className="h-10 w-auto brightness-0 invert opacity-90" />
           </div>
 
           {/* Hero copy */}
