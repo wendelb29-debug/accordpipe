@@ -171,7 +171,7 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* Orbit Stack Button */}
+      {/* ACCORD Stack Button */}
       <div className={cn("shrink-0", collapsed ? "px-2 py-3" : "px-3 py-3")}>
         {collapsed ? (
           <Tooltip delayDuration={0}>
@@ -180,7 +180,7 @@ export function Sidebar() {
                 <Rocket className="h-4 w-4" />
               </Link>
             </TooltipTrigger>
-            <TooltipContent side="right" className="font-medium text-xs">Orbit Stack</TooltipContent>
+            <TooltipContent side="right" className="font-medium text-xs">ACCORD Stack</TooltipContent>
           </Tooltip>
         ) : (
           <Link
@@ -192,7 +192,7 @@ export function Sidebar() {
             style={location.pathname === "/orbit-stack" ? { background: 'linear-gradient(135deg, #7A3FF2, #D94FD5)' } : undefined}
           >
             <Rocket className="h-3.5 w-3.5" />
-            Orbit Stack
+            ACCORD Stack
           </Link>
         )}
       </div>

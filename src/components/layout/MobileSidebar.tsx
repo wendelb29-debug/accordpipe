@@ -64,7 +64,7 @@ export function MobileSidebar() {
           </div>
         </div>
 
-        {/* Orbit Stack */}
+        {/* ACCORD Stack */}
         <div className="px-3 py-3">
           <Link
             to="/orbit-stack"
@@ -76,7 +76,7 @@ export function MobileSidebar() {
             style={location.pathname === "/orbit-stack" ? { background: 'linear-gradient(135deg, #7A3FF2, #D94FD5)' } : undefined}
           >
             <Rocket className="h-3.5 w-3.5" />
-            Orbit Stack
+            ACCORD Stack
           </Link>
         </div>
 
