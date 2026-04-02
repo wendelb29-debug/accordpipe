@@ -166,7 +166,7 @@ export function Sidebar() {
         )}
         {collapsed && (
           <div className="flex items-center justify-center cursor-default" onClick={(e) => e.preventDefault()}>
-            <span className="text-sm font-bold text-sidebar-foreground/90">A</span>
+            <img src={accordLogo} alt="ACCORD" className="h-7 w-auto" />
           </div>
         )}
       </div>
