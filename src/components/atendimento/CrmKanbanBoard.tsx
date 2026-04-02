@@ -287,22 +287,22 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   return (
     <div className="flex flex-col h-full overflow-hidden bg-muted/30">
       {/* KPI Cards */}
-      <div className="px-4 py-3 flex items-center gap-3 shrink-0">
-        <div className="flex items-center gap-3 flex-1 flex-wrap">
+      <div className="px-3 py-1.5 flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 flex-1 flex-wrap">
           {/* KPI: Oportunidades */}
-          <div className="bg-card rounded-xl border border-border/50 px-4 py-2.5 shadow-sm min-w-[140px]">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Oportunidades</p>
-            <p className="text-xl font-bold text-foreground mt-0.5">{filteredLeads.length}</p>
+          <div className="bg-card rounded-lg border border-border/50 px-3 py-1.5 shadow-sm min-w-[100px]">
+            <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Oportunidades</p>
+            <p className="text-base font-bold text-foreground">{filteredLeads.length}</p>
           </div>
           {/* KPI: Valor Total */}
-          <div className="bg-card rounded-xl border border-border/50 px-4 py-2.5 shadow-sm min-w-[140px]">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Valor Total (P&S)</p>
-            <p className="text-xl font-bold text-foreground mt-0.5">{formatCurrency(totalPS)}</p>
+          <div className="bg-card rounded-lg border border-border/50 px-3 py-1.5 shadow-sm min-w-[100px]">
+            <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Valor Total (P&S)</p>
+            <p className="text-base font-bold text-foreground">{formatCurrency(totalPS)}</p>
           </div>
           {/* KPI: MRR */}
-          <div className="bg-card rounded-xl border border-border/50 px-4 py-2.5 shadow-sm min-w-[140px]">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">MRR</p>
-            <p className="text-xl font-bold text-primary mt-0.5">{formatCurrency(totalMRR)}</p>
+          <div className="bg-card rounded-lg border border-border/50 px-3 py-1.5 shadow-sm min-w-[100px]">
+            <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">MRR</p>
+            <p className="text-base font-bold text-primary">{formatCurrency(totalMRR)}</p>
           </div>
         </div>
 
