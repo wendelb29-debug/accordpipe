@@ -3,10 +3,11 @@ import { useNavigate, Link } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader2, CheckCircle2, Users, Briefcase } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader2, CheckCircle2, Users, Briefcase, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import accordLogo from "@/assets/accord-logo.png";
@@ -27,8 +28,15 @@ export default function Auth() {
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => localStorage.getItem("accord-remember-me") === "true");
 
-  const loginForm = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) });
+  const loginForm = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: rememberMe ? (localStorage.getItem("accord-saved-email") || "") : "",
+      password: "",
+    },
+  });
 
   useEffect(() => {
     if (!loading && user) navigate("/home");
@@ -38,6 +46,14 @@ export default function Auth() {
     setError(null);
     setIsSubmitting(true);
     try {
+      if (rememberMe) {
+        localStorage.setItem("accord-remember-me", "true");
+        localStorage.setItem("accord-saved-email", data.email);
+      } else {
+        localStorage.removeItem("accord-remember-me");
+        localStorage.removeItem("accord-saved-email");
+      }
+
       const { error } = await signIn(data.email, data.password);
       if (error) {
         if (error.message.includes("Invalid login credentials")) {
@@ -103,6 +119,15 @@ export default function Auth() {
       className="relative flex min-h-screen items-center justify-center p-4 sm:p-6 overflow-hidden"
       style={{ background: 'linear-gradient(135deg, #0F1C3F 0%, #3B3F9C 35%, #7A3FF2 70%, #D94FD5 100%)' }}
     >
+      {/* Back button */}
+      <Link
+        to="/"
+        className="absolute top-5 left-5 z-20 flex items-center gap-1.5 text-sm text-white/60 hover:text-white transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        <span>Voltar</span>
+      </Link>
+
       {/* Decorative elements */}
       <div className="absolute top-[10%] left-[5%] w-32 h-32 rounded-full opacity-20 blur-[60px]" style={{ background: '#7A3FF2' }} />
       <div className="absolute bottom-[10%] right-[10%] w-40 h-40 rounded-full opacity-15 blur-[80px]" style={{ background: '#D94FD5' }} />
@@ -126,16 +151,11 @@ export default function Auth() {
       <div className="relative z-10 w-full max-w-[960px] rounded-3xl overflow-hidden shadow-2xl animate-fade-in flex flex-col lg:flex-row" style={{ boxShadow: '0 25px 60px -12px rgba(0,0,0,0.4)' }}>
         {/* LEFT SIDE — Branding */}
         <div className="hidden lg:flex lg:w-[55%] relative flex-col justify-between p-10 overflow-hidden" style={{ background: 'linear-gradient(160deg, rgba(15,28,63,0.95) 0%, rgba(59,63,156,0.9) 50%, rgba(122,63,242,0.85) 100%)' }}>
-          {/* Inner glow */}
           <div className="absolute top-0 right-0 w-[300px] h-[300px] rounded-full opacity-20 blur-[100px]" style={{ background: '#7A3FF2' }} />
-
-          {/* Logo */}
           <div className="flex items-center gap-2.5 relative z-10">
             <img src={accordLogo} alt="ACCORD" className="h-8 w-auto" />
             <span className="text-lg font-bold tracking-tight text-primary-foreground">ACCORD</span>
           </div>
-
-          {/* Hero text */}
           <div className="relative z-10 space-y-4">
             <h1 className="text-3xl xl:text-4xl font-extrabold text-primary-foreground leading-[1.15] tracking-tight">
               Gerencie sua operação
@@ -146,22 +166,11 @@ export default function Auth() {
               Simplifique sua gestão de leads, vendas e atendimento em uma única plataforma.
             </p>
           </div>
-
-          {/* Dashboard mockup */}
           <div className="relative z-10 mt-4">
             <div className="rounded-xl overflow-hidden shadow-xl border border-white/10">
-              <img
-                src={dashboardMockup}
-                alt="Dashboard"
-                className="w-full h-auto opacity-90"
-                loading="lazy"
-                width={960}
-                height={640}
-              />
+              <img src={dashboardMockup} alt="Dashboard" className="w-full h-auto opacity-90" loading="lazy" width={960} height={640} />
             </div>
           </div>
-
-          {/* Stats bar */}
           <div className="relative z-10 flex items-center gap-6 mt-6">
             <div className="flex items-center gap-2">
               <div className="h-7 w-7 rounded-lg bg-white/10 flex items-center justify-center">
@@ -185,7 +194,6 @@ export default function Auth() {
 
         {/* RIGHT SIDE — Login form */}
         <div className="flex flex-col justify-center bg-card p-8 sm:p-10 lg:p-12 lg:w-[45%]">
-          {/* Mobile logo */}
           <div className="mb-8 lg:hidden text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
               <img src={accordLogo} alt="ACCORD" className="h-7 w-auto" />
@@ -255,7 +263,17 @@ export default function Auth() {
                 )}
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="remember-me"
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => setRememberMe(checked === true)}
+                  />
+                  <label htmlFor="remember-me" className="text-xs text-muted-foreground cursor-pointer select-none">
+                    Lembrar-me
+                  </label>
+                </div>
                 <button
                   type="button"
                   className="text-xs font-medium text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
@@ -283,7 +301,6 @@ export default function Auth() {
               </Button>
             </form>
 
-            {/* Footer */}
             <p className="text-center text-[11px] text-muted-foreground/50 pt-4">
               © 2026 ACCORD — Todos os direitos reservados.
             </p>
