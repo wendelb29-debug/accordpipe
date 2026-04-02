@@ -195,8 +195,9 @@ export function OrbitAIChat() {
         onClick={() => setOpen((v) => !v)}
         className={cn(
           "fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 group",
-          "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground"
+          "text-primary-foreground"
         )}
+        style={{ background: 'linear-gradient(135deg, #3B3F9C, #7A3FF2)' }}
         title="✨ Assistente IA"
       >
         {open ? <X className="h-6 w-6" /> : (
