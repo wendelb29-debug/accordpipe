@@ -31,15 +31,15 @@ export function Header() {
   const navigate = useNavigate();
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/50 bg-card/95 backdrop-blur-xl px-6 lg:px-8 shadow-sm">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/50 bg-card/95 backdrop-blur-xl px-3 sm:px-6 lg:px-8 shadow-sm gap-2">
       {/* Search */}
-      <div className="flex items-center gap-4 flex-1 min-w-0">
-        <div className="relative w-full max-w-md min-w-0">
-          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
+      <div className="flex items-center flex-1 min-w-0 overflow-hidden">
+        <div className="relative w-full min-w-0 max-w-md">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
           <Input
             type="search"
             placeholder="Buscar leads, clientes, documentos..."
-            className="pl-10 bg-muted/40 border-border/40 focus-visible:ring-1 focus-visible:ring-primary/50 rounded-xl h-10 text-sm w-full"
+            className="pl-9 pr-2 bg-muted/40 border-border/40 focus-visible:ring-1 focus-visible:ring-primary/50 rounded-xl h-9 sm:h-10 text-xs sm:text-sm w-full truncate"
           />
         </div>
       </div>
