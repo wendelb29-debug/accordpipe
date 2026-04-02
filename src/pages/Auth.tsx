@@ -269,7 +269,8 @@ export default function Auth() {
 
               <Button
                 type="submit"
-                className="w-full h-12 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
+                className="w-full h-12 rounded-xl text-sm font-semibold text-primary-foreground shadow-lg transition-all"
+                style={{ background: 'linear-gradient(135deg, #2563EB, #1D4ED8)', boxShadow: '0 8px 24px -4px rgba(37, 99, 235, 0.35)' }}
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
