@@ -217,7 +217,7 @@ export function OrbitAIChat() {
               <Sparkles className="h-5 w-5" />
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-sm">✨ Assistente IA</p>
+              <p className="font-semibold text-sm">✨ ACCORD IA</p>
               <p className="text-[11px] opacity-80">Contexto: {pageName}</p>
             </div>
             <button
