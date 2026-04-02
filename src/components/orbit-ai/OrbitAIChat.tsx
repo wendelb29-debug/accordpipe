@@ -212,7 +212,7 @@ export function OrbitAIChat() {
       {open && (
         <div className="fixed bottom-24 right-6 z-50 w-[400px] max-h-[560px] rounded-2xl shadow-2xl border border-border bg-background flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
           {/* Header */}
-          <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
+          <div className="flex items-center gap-3 px-4 py-3 text-primary-foreground" style={{ background: 'linear-gradient(135deg, #3B3F9C, #7A3FF2)' }}>
             <div className="h-9 w-9 rounded-full bg-white/20 flex items-center justify-center">
               <Sparkles className="h-5 w-5" />
             </div>
