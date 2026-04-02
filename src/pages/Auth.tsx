@@ -105,12 +105,12 @@ export default function Auth() {
       {/* LEFT — Hero branding */}
       <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden">
         {/* Gradient base */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(245,60%,12%)] via-[hsl(250,50%,18%)] to-[hsl(260,45%,8%)]" />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #0F1C3F 0%, #3B3F9C 35%, #7A3FF2 70%, #D94FD5 100%)' }} />
 
         {/* Glow orbs */}
-        <div className="absolute top-[15%] left-[10%] w-[500px] h-[500px] rounded-full bg-[hsl(250,80%,50%)] opacity-[0.12] blur-[120px]" />
-        <div className="absolute bottom-[10%] right-[5%] w-[400px] h-[400px] rounded-full bg-[hsl(280,70%,55%)] opacity-[0.10] blur-[100px]" />
-        <div className="absolute top-[60%] left-[40%] w-[300px] h-[300px] rounded-full bg-[hsl(220,90%,55%)] opacity-[0.08] blur-[80px]" />
+        <div className="absolute top-[15%] left-[10%] w-[500px] h-[500px] rounded-full opacity-[0.15] blur-[120px]" style={{ background: '#7A3FF2' }} />
+        <div className="absolute bottom-[10%] right-[5%] w-[400px] h-[400px] rounded-full opacity-[0.12] blur-[100px]" style={{ background: '#D94FD5' }} />
+        <div className="absolute top-[60%] left-[40%] w-[300px] h-[300px] rounded-full opacity-[0.10] blur-[80px]" style={{ background: '#3B3F9C' }} />
 
         {/* Grid overlay */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
@@ -134,7 +134,7 @@ export default function Auth() {
               <br />
               operação em
               <br />
-              <span className="bg-gradient-to-r from-[hsl(250,80%,70%)] to-[hsl(280,70%,65%)] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-[#7A3FF2] to-[#D94FD5] bg-clip-text text-transparent">
                 um só lugar.
               </span>
             </h1>
@@ -269,7 +269,8 @@ export default function Auth() {
 
               <Button
                 type="submit"
-                className="w-full h-12 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
+                className="w-full h-12 rounded-xl text-sm font-semibold text-primary-foreground shadow-lg transition-all"
+                style={{ background: 'linear-gradient(135deg, #2563EB, #1D4ED8)', boxShadow: '0 8px 24px -4px rgba(37, 99, 235, 0.35)' }}
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
