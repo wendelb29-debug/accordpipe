@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import orbitLogo from "@/assets/orbit-logo-new.png";
+import accordLogo from "@/assets/accord-logo.png";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
 import { BenefitsSection } from "@/components/landing/BenefitsSection";
@@ -26,9 +26,8 @@ export default function LandingPage() {
         <div className="mx-auto flex h-12 sm:h-14 md:h-16 max-w-7xl items-center justify-between px-3 sm:px-4 md:px-6">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-1.5 shrink-0">
-            <img src={orbitLogo} alt="ORBIT" className="h-6 sm:h-7 md:h-8 w-auto shrink-0" />
-            <span className="text-sm sm:text-base md:text-lg font-black tracking-tight text-foreground" style={{ letterSpacing: "-0.04em" }}>ORBIT</span>
-            <span className="hidden xs:inline text-sm sm:text-base md:text-lg font-light tracking-tight text-muted-foreground" style={{ letterSpacing: "-0.04em" }}>HUB</span>
+            <img src={accordLogo} alt="ACCORD" className="h-6 sm:h-7 md:h-8 w-auto shrink-0" />
+            <span className="text-sm sm:text-base md:text-lg font-black tracking-tight text-foreground" style={{ letterSpacing: "-0.04em" }}>ACCORD</span>
           </Link>
 
           {/* Nav - desktop only */}
