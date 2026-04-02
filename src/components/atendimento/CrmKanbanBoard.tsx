@@ -287,22 +287,23 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   return (
     <div className="flex flex-col h-full overflow-hidden bg-muted/30">
       {/* KPI Cards */}
-      <div className="px-3 py-1.5 flex items-center gap-2 shrink-0">
-        <div className="flex items-center gap-2 flex-1 flex-wrap">
-          {/* KPI: Oportunidades */}
-          <div className="bg-card rounded-lg border border-border/50 px-3 py-1.5 shadow-sm min-w-[100px]">
-            <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Oportunidades</p>
-            <p className="text-base font-bold text-foreground">{filteredLeads.length}</p>
-          </div>
-          {/* KPI: Valor Total */}
-          <div className="bg-card rounded-lg border border-border/50 px-3 py-1.5 shadow-sm min-w-[100px]">
-            <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Valor Total (P&S)</p>
-            <p className="text-base font-bold text-foreground">{formatCurrency(totalPS)}</p>
-          </div>
-          {/* KPI: MRR */}
-          <div className="bg-card rounded-lg border border-border/50 px-3 py-1.5 shadow-sm min-w-[100px]">
-            <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">MRR</p>
-            <p className="text-base font-bold text-primary">{formatCurrency(totalMRR)}</p>
+      <div className="px-3 py-1 flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 flex-1">
+          <div className="flex items-center gap-3 bg-card rounded-lg border border-border/50 px-3 py-1 shadow-sm">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Oport.</span>
+              <span className="text-sm font-bold text-foreground">{filteredLeads.length}</span>
+            </div>
+            <div className="w-px h-4 bg-border/50" />
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">P&S</span>
+              <span className="text-sm font-bold text-foreground">{formatCurrency(totalPS)}</span>
+            </div>
+            <div className="w-px h-4 bg-border/50" />
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">MRR</span>
+              <span className="text-sm font-bold text-primary">{formatCurrency(totalMRR)}</span>
+            </div>
           </div>
         </div>
 
