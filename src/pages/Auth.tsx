@@ -167,7 +167,7 @@ export default function Auth() {
         <div className="w-full max-w-[400px] animate-fade-in">
           {/* Mobile logo */}
           <div className="mb-8 lg:hidden text-center">
-            <img src={orbitLogo} alt="ORBIT HUB" className="h-9 w-auto mx-auto mb-3" />
+            <img src={accordLogo} alt="ACCORD" className="h-9 w-auto mx-auto mb-3" />
             <Link to="/" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
               ← Voltar ao site
             </Link>
