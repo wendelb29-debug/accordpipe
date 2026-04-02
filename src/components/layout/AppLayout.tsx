@@ -34,8 +34,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     <div className="min-h-screen bg-background">
       {/* Desktop sidebar */}
       {!isMobile && <Sidebar />}
-      {/* Mobile sidebar */}
-      {isMobile && <MobileSidebar />}
+      {/* Mobile sidebar is now inside Header */}
 
       <div className={cn(
         "transition-all duration-300",
@@ -53,7 +52,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         {!hideHeader && <Header />}
         <main className={cn(
           "max-w-[1600px] mx-auto",
-          hideHeader ? "p-0" : (isMobile ? "p-3 pt-16" : "p-6 lg:p-8")
+          hideHeader ? "p-0" : (isMobile ? "p-3" : "p-6 lg:p-8")
         )}>
           {children}
         </main>
