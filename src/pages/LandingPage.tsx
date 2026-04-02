@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import accordLogo from "@/assets/accord-logo.png";
+import accordLogo from "@/assets/accord-logo-full.png";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
 import { BenefitsSection } from "@/components/landing/BenefitsSection";
@@ -25,9 +25,8 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 border-b border-border/30 bg-background/95 backdrop-blur-xl" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="mx-auto flex h-12 sm:h-14 md:h-16 max-w-7xl items-center justify-between px-3 sm:px-4 md:px-6">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-1.5 shrink-0">
-            <img src={accordLogo} alt="ACCORD" className="h-6 sm:h-7 md:h-8 w-auto shrink-0" />
-            <span className="text-sm sm:text-base md:text-lg font-black tracking-tight text-foreground" style={{ letterSpacing: "-0.04em" }}>ACCORD</span>
+          <Link to="/" className="flex items-center shrink-0">
+            <img src={accordLogo} alt="ACCORD" className="h-7 sm:h-8 md:h-10 w-auto shrink-0" />
           </Link>
 
           {/* Nav - desktop only */}
