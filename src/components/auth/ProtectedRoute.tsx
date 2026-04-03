@@ -49,6 +49,11 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     );
   }
 
+  // Check if signature is completed (block access if not)
+  if (profile && !(profile as any).signature_completed && location.pathname !== "/onboarding/assinatura") {
+    return <Navigate to="/onboarding/assinatura" replace />;
+  }
+
   // Check if user has required role
   if (allowedRoles && role && !allowedRoles.includes(role)) {
     return (

@@ -13,6 +13,7 @@ interface Profile {
   is_master: boolean;
   company_id: string | null;
   avatar_url: string | null;
+  signature_completed: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -134,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (profileError) throw profileError;
-      setProfile(profileData as Profile | null);
+      setProfile(profileData as unknown as Profile | null);
 
       const { data: roleData, error: roleError } = await supabase
         .from("user_roles")
