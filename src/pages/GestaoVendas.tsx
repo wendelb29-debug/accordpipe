@@ -44,7 +44,7 @@ export default function GestaoVendas() {
     queryKey: ["vendas-accord"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("vendas_accord")
+        .from("vendas_orbit")
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -105,7 +105,7 @@ export default function GestaoVendas() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `vendas_accord_${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.download = `vendas_orbit_${format(new Date(), "yyyy-MM-dd")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success("CSV exportado!");
