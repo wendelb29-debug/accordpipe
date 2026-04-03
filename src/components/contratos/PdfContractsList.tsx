@@ -178,7 +178,12 @@ export function PdfContractsList() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex justify-end">
+                      <div className="flex justify-end gap-1">
+                        {canManage && contract.status === "pendente" && (
+                          <Button variant="ghost" size="icon" title="Editor de Campos" onClick={() => openBuilder(contract)}>
+                            <PenTool className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button variant="ghost" size="icon" title="Visualizar" onClick={() => openView(contract)}>
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -197,7 +202,14 @@ export function PdfContractsList() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         onSubmit={async (name, desc, file, signers) => {
-          await createContract(name, desc, file, signers);
+          const contractId = await createContract(name, desc, file, signers);
+          if (contractId) {
+            // Auto-open builder after creation
+            const newContract = contracts.find(c => c.id === contractId);
+            if (newContract) {
+              setTimeout(() => openBuilder(newContract), 500);
+            }
+          }
         }}
       />
 
@@ -212,6 +224,20 @@ export function PdfContractsList() {
           setViewContract(null);
         }}
       />
+
+      {builderContract && (
+        <SignatureBuilderDialog
+          open={builderOpen}
+          onOpenChange={setBuilderOpen}
+          contractId={builderContract.id}
+          pdfUrl={builderContract.pdf_url}
+          signers={builderSigners}
+          onComplete={() => {
+            fetchContracts();
+            setBuilderContract(null);
+          }}
+        />
+      )}
     </div>
   );
 }
