@@ -13,7 +13,7 @@ export function HowItWorksSection() {
     <section className="mx-auto max-w-7xl px-6 py-24">
       <div className="mx-auto max-w-2xl text-center mb-16">
         <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          Como o ORBIT funciona
+          Como o ACCORD funciona
         </h2>
         <p className="mt-4 text-lg text-muted-foreground">
           Do primeiro contato ao relatório final, tudo automatizado em 5 etapas.

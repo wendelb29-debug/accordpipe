@@ -61,9 +61,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setActiveCompanyId = (id: string | null) => {
     setActiveCompanyIdState(id);
     if (id) {
-      localStorage.setItem("orbit_active_company", id);
+      localStorage.setItem("accord_active_company", id);
     } else {
-      localStorage.removeItem("orbit_active_company");
+      localStorage.removeItem("accord_active_company");
     }
   };
 
@@ -169,7 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Set active company
-      const savedCompanyId = localStorage.getItem("orbit_active_company");
+      const savedCompanyId = localStorage.getItem("accord_active_company");
       if (isMasterUser || isCeoUser) {
         setActiveCompanyIdState(savedCompanyId || null);
       } else if (profileData?.company_id) {
@@ -198,7 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRole(null);
     setCompanies([]);
     setActiveCompanyIdState(null);
-    localStorage.removeItem("orbit_active_company");
+    localStorage.removeItem("accord_active_company");
   };
 
   const activeCompany = companies.find(c => c.id === activeCompanyId) || null;

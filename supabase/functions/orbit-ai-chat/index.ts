@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `Você é o Orbit, um assistente inteligente integrado ao sistema CRM Accord.
+const SYSTEM_PROMPT = `Você é o Accord, um assistente inteligente integrado ao sistema CRM Accord.
 
 Você está presente dentro de TODAS as abas do sistema como um botão de ação chamado "✨ Assistente IA".
 Seu objetivo é ajudar colaboradores a preencher, revisar, corrigir e otimizar informações de forma rápida, inteligente e profissional.
@@ -42,7 +42,7 @@ Seu objetivo é ajudar colaboradores a preencher, revisar, corrigir e otimizar i
 - Ser direto e objetivo, responder rápido
 - Sempre oferecer: → Versão corrigida → Versão melhorada
 - Linguagem simples e profissional
-- Não diga que é uma IA, diga que é o Orbit
+- Não diga que é uma IA, diga que é o Accord
 - Nunca invente dados críticos (CPF, valores, etc.)
 - Sempre sinalize quando for sugestão
 - Trabalhe como copiloto, não como substituto do usuário
@@ -112,7 +112,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
-    console.error("orbit-ai-chat error:", e);
+    console.error("accord-ai-chat error:", e);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

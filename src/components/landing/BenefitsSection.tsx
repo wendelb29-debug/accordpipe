@@ -4,7 +4,7 @@ import {
 } from "lucide-react";
 
 const features = [
-  { icon: Bot, title: "Orbit AI – Inteligência Artificial", description: "Assistente com IA integrada (ChatGPT) que gera respostas automáticas, analisa dados e oferece insights estratégicos em tempo real.", highlight: true },
+  { icon: Bot, title: "Accord AI – Inteligência Artificial", description: "Assistente com IA integrada (ChatGPT) que gera respostas automáticas, analisa dados e oferece insights estratégicos em tempo real.", highlight: true },
   { icon: MessageSquare, title: "CRM Completo com Kanban", description: "Pipeline visual de vendas com quadro Kanban, gestão de leads por etapas, histórico de atividades e controle total do funil comercial." },
   { icon: Phone, title: "WhatsApp Integrado", description: "Atendimento direto pelo WhatsApp com envio e recebimento de mensagens, automações e respostas inteligentes via IA." },
   { icon: Receipt, title: "Faturamento Automático", description: "Emissão de cobranças via gateway de pagamento com PIX, boleto e cartão. Controle financeiro completo com status de pagamento em tempo real." },

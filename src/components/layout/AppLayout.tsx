@@ -7,7 +7,7 @@ import { MobileSidebar } from "./MobileSidebar";
 import { Header } from "./Header";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActivityReminders } from "@/hooks/useActivityReminders";
-import { OrbitAIChat } from "@/components/orbit-ai/OrbitAIChat";
+import { AccordAIChat } from "@/components/accord-ai/AccordAIChat";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface AppLayoutProps {
@@ -58,7 +58,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </main>
       </div>
 
-      <OrbitAIChat />
+      <AccordAIChat />
     </div>
   );
 }

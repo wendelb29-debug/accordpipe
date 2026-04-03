@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import orbitLogo from "@/assets/orbit-logo.png";
+import accordLogo from "@/assets/accord-logo.png";
 
 export default function CapturaLead() {
   const { servidorId } = useParams<{ servidorId: string }>();
@@ -120,7 +120,7 @@ export default function CapturaLead() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
       <Card className="max-w-lg w-full shadow-lg">
         <CardHeader className="text-center space-y-3">
-          <img src={orbitLogo} alt="Logo" className="h-10 mx-auto" />
+          <img src={accordLogo} alt="Logo" className="h-10 mx-auto" />
           <CardTitle className="text-xl">
             {servidor.nome_fantasia || servidor.razao_social}
           </CardTitle>

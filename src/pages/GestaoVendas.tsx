@@ -19,7 +19,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
-type VendaOrbit = {
+type VendaAccord = {
   id: string;
   mentor_id: string;
   mentor_nome: string;
@@ -41,14 +41,14 @@ export default function GestaoVendas() {
   const [filterDateTo, setFilterDateTo] = useState("");
 
   const { data: vendas = [], isLoading } = useQuery({
-    queryKey: ["vendas-orbit"],
+    queryKey: ["vendas-accord"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("vendas_orbit")
+        .from("vendas_accord")
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data || []) as VendaOrbit[];
+      return (data || []) as VendaAccord[];
     },
   });
 
@@ -105,7 +105,7 @@ export default function GestaoVendas() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `vendas_orbit_${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.download = `vendas_accord_${format(new Date(), "yyyy-MM-dd")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success("CSV exportado!");
@@ -114,7 +114,7 @@ export default function GestaoVendas() {
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
-  const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/orbit-vendas-webhook`;
+  const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/accord-vendas-webhook`;
 
   const payloadExample = `{
   "mentor_id": "glauberson",
@@ -130,7 +130,7 @@ export default function GestaoVendas() {
 
   const curlExample = `curl -X POST "${webhookUrl}" \\
   -H "Content-Type: application/json" \\
-  -H "x-orbit-token: SEU_TOKEN_AQUI" \\
+  -H "x-accord-token: SEU_TOKEN_AQUI" \\
   -d '${payloadExample}'`;
 
   if (isLoading) {
@@ -154,7 +154,7 @@ export default function GestaoVendas() {
             <h1 className="text-2xl font-bold text-foreground">
               {selectedMentor
                 ? `Vendas — ${mentors.find((m) => m.id === selectedMentor)?.nome || ""}`
-                : "Orbit Sales — Gestão de Vendas"}
+                : "Accord Sales — Gestão de Vendas"}
             </h1>
             <p className="text-sm text-muted-foreground">Vendas centralizadas via webhook dos parceiros</p>
           </div>
@@ -334,10 +334,10 @@ export default function GestaoVendas() {
                 <h3 className="font-semibold text-foreground mb-2">Headers de Autenticação</h3>
                 <div className="bg-muted rounded-md p-4 space-y-1">
                   <p className="text-sm font-mono"><span className="text-primary">Content-Type:</span> application/json</p>
-                  <p className="text-sm font-mono"><span className="text-primary">x-orbit-token:</span> SEU_TOKEN_AQUI</p>
+                  <p className="text-sm font-mono"><span className="text-primary">x-accord-token:</span> SEU_TOKEN_AQUI</p>
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Cada site receberá um token exclusivo. Enviar no header <code className="bg-muted px-1 rounded">x-orbit-token</code>.
+                  Cada site receberá um token exclusivo. Enviar no header <code className="bg-muted px-1 rounded">x-accord-token</code>.
                 </p>
               </div>
 

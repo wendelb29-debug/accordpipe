@@ -1,5 +1,5 @@
 import { Mail, MapPin } from "lucide-react";
-import orbitLogo from "@/assets/orbit-logo.png";
+import accordLogo from "@/assets/accord-logo.png";
 
 export function FooterSection() {
   return (
@@ -9,7 +9,7 @@ export function FooterSection() {
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <img src={orbitLogo} alt="ORBIT" className="h-8 w-auto" />
+              <img src={accordLogo} alt="ACCORD" className="h-8 w-auto" />
               <span className="text-lg font-bold text-foreground">ACCORD</span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
@@ -34,8 +34,8 @@ export function FooterSection() {
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-primary" />
-                <a href="mailto:suporte@orbitclass.com.br" className="hover:text-foreground transition-colors">
-                  suporte@orbitclass.com.br
+                <a href="mailto:suporte@accordclass.com.br" className="hover:text-foreground transition-colors">
+                  suporte@accordclass.com.br
                 </a>
               </li>
               <li className="flex items-center gap-2">

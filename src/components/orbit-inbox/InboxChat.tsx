@@ -39,7 +39,7 @@ function MessageStatusIcon({ status }: { status: string }) {
 
 export function InboxChat({ contact, messages, onSendMessage, onTransfer, onAssignToMe, isAdmin, companyId }: InboxChatProps) {
   const [inputValue, setInputValue] = useState("");
-  const [orbitLoading, setOrbitLoading] = useState(false);
+  const [accordLoading, setAccordLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -52,16 +52,16 @@ export function InboxChat({ contact, messages, onSendMessage, onTransfer, onAssi
     setInputValue("");
   };
 
-  const handleOrbitAI = async () => {
+  const handleAccordAI = async () => {
     if (!contact) return;
     const lastInbound = [...messages].reverse().find(m => m.direction === "inbound");
     if (!lastInbound) {
       toast.error("Nenhuma mensagem recebida para responder.");
       return;
     }
-    setOrbitLoading(true);
+    setAccordLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("orbit-ai-chat", {
+      const { data, error } = await supabase.functions.invoke("accord-ai-chat", {
         body: {
           message: `O cliente enviou: "${lastInbound.message}". Gere uma resposta profissional e direta para essa mensagem, como se fosse um atendente.`,
         },
@@ -70,12 +70,12 @@ export function InboxChat({ contact, messages, onSendMessage, onTransfer, onAssi
       const reply = data?.reply || data?.message || "";
       if (reply) {
         setInputValue(reply);
-        toast.success("Resposta do Orbit AI preenchida!");
+        toast.success("Resposta do Accord AI preenchida!");
       }
     } catch {
-      toast.error("Erro ao gerar resposta com Orbit AI");
+      toast.error("Erro ao gerar resposta com Accord AI");
     } finally {
-      setOrbitLoading(false);
+      setAccordLoading(false);
     }
   };
 
@@ -246,13 +246,13 @@ export function InboxChat({ contact, messages, onSendMessage, onTransfer, onAssi
             <Button
               size="icon" variant="ghost"
               className="h-8 w-8 shrink-0 text-emerald-600 hover:bg-emerald-500/10"
-              onClick={handleOrbitAI}
-              disabled={orbitLoading}
+              onClick={handleAccordAI}
+              disabled={accordLoading}
             >
-              {orbitLoading ? <Loader2 className="h-[18px] w-[18px] animate-spin" /> : <Bot className="h-[18px] w-[18px]" />}
+              {accordLoading ? <Loader2 className="h-[18px] w-[18px] animate-spin" /> : <Bot className="h-[18px] w-[18px]" />}
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Responder com Orbit AI</TooltipContent>
+          <TooltipContent>Responder com Accord AI</TooltipContent>
         </Tooltip>
 
         <div className="flex-1 mx-1">

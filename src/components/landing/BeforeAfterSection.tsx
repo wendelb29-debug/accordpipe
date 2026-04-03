@@ -13,7 +13,7 @@ export function BeforeAfterSection() {
       <div className="mx-auto max-w-4xl px-6 py-24">
         <div className="mx-auto max-w-2xl text-center mb-16">
           <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            Antes e depois do ORBIT
+            Antes e depois do ACCORD
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
             Veja como sua operação muda com o ACCORD.
@@ -34,7 +34,7 @@ export function BeforeAfterSection() {
           </div>
           {/* After column */}
           <div className="rounded-2xl border border-green-500/20 bg-green-500/5 p-6">
-            <h3 className="mb-6 text-center text-lg font-bold text-green-600">COM ORBIT</h3>
+            <h3 className="mb-6 text-center text-lg font-bold text-green-600">COM ACCORD</h3>
             <div className="space-y-4">
               {comparisons.map((c) => (
                 <div key={c.after} className="flex items-center gap-3 rounded-xl bg-background/60 p-4">

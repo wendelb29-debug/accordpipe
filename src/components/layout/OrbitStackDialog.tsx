@@ -25,7 +25,7 @@ const steps = [
   },
   {
     icon: MessageSquare,
-    title: "3️⃣ Conectar no Orbit",
+    title: "3️⃣ Conectar no Accord",
     description: "Use os endpoints da Evolution API para integrar:",
     endpoints: ["/message/sendText", "/message/sendImage", "/message/sendAudio"],
     features: ["Enviar mensagem automática", "Disparar WhatsApp", "Responder clientes", "Integrar funil"],
@@ -40,7 +40,7 @@ const stackItems = [
   { label: "PostgreSQL", desc: "Persistência", icon: HardDrive },
 ];
 
-export function OrbitStackDialog({ collapsed }: { collapsed: boolean }) {
+export function AccordStackDialog({ collapsed }: { collapsed: boolean }) {
   const trigger = collapsed ? (
     <Button variant="ghost" size="icon" className="w-full h-9 rounded-xl text-primary">
       <Rocket className="h-4 w-4" />
@@ -48,7 +48,7 @@ export function OrbitStackDialog({ collapsed }: { collapsed: boolean }) {
   ) : (
     <Button variant="outline" size="sm" className="w-full gap-2 rounded-xl border-primary/20 text-primary hover:bg-primary/5 h-9 text-xs font-semibold">
       <Rocket className="h-3.5 w-3.5" />
-      Orbit Stack
+      Accord Stack
     </Button>
   );
 
@@ -59,7 +59,7 @@ export function OrbitStackDialog({ collapsed }: { collapsed: boolean }) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
             <Rocket className="h-5 w-5 text-primary" />
-            Orbit Stack
+            Accord Stack
           </DialogTitle>
         </DialogHeader>
 
@@ -105,9 +105,9 @@ export function OrbitStackDialog({ collapsed }: { collapsed: boolean }) {
               ⚡ Arquitetura Ideal
             </h3>
             <div className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
-              <Badge className="text-xs">Orbit (Lovable Frontend)</Badge>
+              <Badge className="text-xs">Accord (Lovable Frontend)</Badge>
               <span>↓</span>
-              <Badge variant="secondary" className="text-xs">API do Orbit (Edge Functions)</Badge>
+              <Badge variant="secondary" className="text-xs">API do Accord (Edge Functions)</Badge>
               <span>↓</span>
               <Badge variant="outline" className="text-xs">Evolution API</Badge>
               <span>↓</span>
@@ -117,7 +117,7 @@ export function OrbitStackDialog({ collapsed }: { collapsed: boolean }) {
 
           {/* Stack */}
           <div className="rounded-xl border border-border p-4 space-y-3">
-            <h3 className="text-sm font-semibold text-foreground">🔥 Orbit Stack Profissional</h3>
+            <h3 className="text-sm font-semibold text-foreground">🔥 Accord Stack Profissional</h3>
             <div className="grid grid-cols-2 gap-2">
               {stackItems.map((item) => (
                 <div key={item.label} className="flex items-center gap-2 rounded-lg border border-border p-2.5">

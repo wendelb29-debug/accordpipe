@@ -8,7 +8,7 @@ import { useLocation } from "react-router-dom";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/orbit-ai-chat`;
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/accord-ai-chat`;
 
 interface QuickAction {
   label: string;
@@ -84,7 +84,7 @@ function getContextForRoute(pathname: string): { pageName: string; quickActions:
   };
 }
 
-export function OrbitAIChat() {
+export function AccordAIChat() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -179,7 +179,7 @@ export function OrbitAIChat() {
     } catch (e: any) {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: `⚠️ ${e.message || "Erro ao conectar com o Orbit AI"}` },
+        { role: "assistant", content: `⚠️ ${e.message || "Erro ao conectar com o Accord AI"}` },
       ]);
     } finally {
       setIsLoading(false);
@@ -234,7 +234,7 @@ export function OrbitAIChat() {
               <div className="space-y-4">
                 <div className="text-center text-muted-foreground text-sm py-4 space-y-2">
                   <Bot className="h-10 w-10 mx-auto opacity-40" />
-                  <p className="font-medium">Olá! Sou o Orbit AI.</p>
+                  <p className="font-medium">Olá! Sou o Accord AI.</p>
                   <p className="text-xs">Estou aqui para ajudar com <strong>{pageName}</strong>.</p>
                 </div>
                 {/* Quick Actions */}

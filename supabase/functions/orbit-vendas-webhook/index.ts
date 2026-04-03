@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-orbit-token",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-accord-token",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -138,8 +138,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Validate orbit token
-    const token = req.headers.get("x-orbit-token") || req.headers.get("X-Orbit-Token");
+    // Validate accord token
+    const token = req.headers.get("x-accord-token") || req.headers.get("X-Accord-Token");
     const expectedToken = Deno.env.get("VENDAS_WEBHOOK_TOKEN");
 
     if (!expectedToken) {
@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
     }
 
     if (token !== expectedToken) {
-      console.error("Invalid orbit token");
+      console.error("Invalid accord token");
       return new Response(JSON.stringify({ error: "Token inválido" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
     }
 
     const payload = await req.json();
-    console.log("Orbit vendas webhook received:", JSON.stringify(payload));
+    console.log("Accord vendas webhook received:", JSON.stringify(payload));
 
     // Normalize payload from any platform format
     const normalized = normalizePayload(payload);
@@ -186,7 +186,7 @@ Deno.serve(async (req) => {
 
     // Check for duplicate transacao_id
     const { data: existing, error: checkError } = await supabase
-      .from("vendas_orbit")
+      .from("vendas_accord")
       .select("id")
       .eq("transacao_id", normalized.transacao_id)
       .maybeSingle();
@@ -214,7 +214,7 @@ Deno.serve(async (req) => {
     }
 
     // Insert sale
-    const { error: insertError } = await supabase.from("vendas_orbit").insert({
+    const { error: insertError } = await supabase.from("vendas_accord").insert({
       mentor_id: normalized.mentor_id.slice(0, 255),
       mentor_nome: normalized.mentor_nome.slice(0, 255),
       aluno_nome: normalized.aluno_nome.slice(0, 255),

@@ -15,7 +15,7 @@ export function Configuracoes() {
   const { loading, createInstance, connect, connectionState, logout } = useEvolutionApi();
 
   const companyId = activeCompanyId || profile?.company_id;
-  const defaultInstanceName = companyId ? `orbit-${companyId.slice(0, 8)}` : "orbit-default";
+  const defaultInstanceName = companyId ? `accord-${companyId.slice(0, 8)}` : "accord-default";
 
   const [instanceName, setInstanceName] = useState(defaultInstanceName);
   const [status, setStatus] = useState<ConnectionStatus>("disconnected");
@@ -136,7 +136,7 @@ export function Configuracoes() {
             <Input
               value={instanceName}
               onChange={(e) => setInstanceName(e.target.value)}
-              placeholder="Nome da instância (ex: orbit-empresa)"
+              placeholder="Nome da instância (ex: accord-empresa)"
               className="flex-1"
             />
             <Button

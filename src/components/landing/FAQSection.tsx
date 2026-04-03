@@ -4,7 +4,7 @@ import {
 
 const faqs = [
   { question: "O que é o ACCORD?", answer: "É uma plataforma completa de gestão operacional que centraliza CRM, atendimento via WhatsApp, contratos digitais, faturamento, relatórios e inteligência artificial em um único painel moderno e seguro." },
-  { question: "O ACCORD possui Inteligência Artificial?", answer: "Sim! O Orbit AI é um assistente inteligente integrado que utiliza tecnologia de IA (ChatGPT) para gerar respostas automáticas no WhatsApp, analisar dados, fornecer insights estratégicos e auxiliar na tomada de decisões." },
+  { question: "O ACCORD possui Inteligência Artificial?", answer: "Sim! O Accord AI é um assistente inteligente integrado que utiliza tecnologia de IA (ChatGPT) para gerar respostas automáticas no WhatsApp, analisar dados, fornecer insights estratégicos e auxiliar na tomada de decisões." },
   { question: "Preciso pagar para usar?", answer: "O ACCORD possui planos flexíveis. Oferecemos um teste gratuito de 7 dias para que você conheça todas as funcionalidades antes de tomar sua decisão." },
   { question: "Posso testar o sistema antes de contratar?", answer: "Sim! Oferecemos 7 dias de teste gratuito com acesso a todas as funcionalidades. Basta clicar em 'Teste Gratuito' e preencher seus dados." },
   { question: "O sistema é seguro?", answer: "Sim. Utilizamos criptografia de ponta a ponta, autenticação segura, controle de acesso por níveis de permissão e backups automáticos diários." },

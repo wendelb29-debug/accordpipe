@@ -10,13 +10,13 @@ export function DemoVideoSection() {
             Tudo em um único painel
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Assista uma demonstração rápida e veja o ORBIT em ação.
+            Assista uma demonstração rápida e veja o ACCORD em ação.
           </p>
         </div>
         <div className="relative mx-auto aspect-video max-w-4xl rounded-2xl border border-border/50 bg-card shadow-xl overflow-hidden flex items-center justify-center">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5" />
           <div className="relative flex flex-col items-center gap-4">
-            <a href="mailto:contato@orbithub.com.br?subject=Solicitar demonstração">
+            <a href="mailto:contato@accordhub.com.br?subject=Solicitar demonstração">
               <Button
                 size="lg"
                 className="gap-3 rounded-full px-8 text-base shadow-lg shadow-primary/25"

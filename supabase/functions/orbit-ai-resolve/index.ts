@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `Você é o Orbit, um assistente inteligente proativo integrado ao CRM Accord.
+const SYSTEM_PROMPT = `Você é o Accord, um assistente inteligente proativo integrado ao CRM Accord.
 
 Ao receber os dados da página atual, você deve:
 
@@ -43,7 +43,7 @@ REGRAS:
 - Seja direto e objetivo
 - Use bullet points
 - Linguagem profissional em português
-- Se identifique como Orbit
+- Se identifique como Accord
 - Nunca invente dados críticos (CPF, valores, etc.)
 - Adapte a análise ao contexto da página`;
 
@@ -111,7 +111,7 @@ Analise TUDO acima e forneça sua análise completa nos 3 blocos (Corrigido, Oti
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
-    console.error("orbit-ai-resolve error:", e);
+    console.error("accord-ai-resolve error:", e);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
