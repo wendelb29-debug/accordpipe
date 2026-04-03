@@ -154,6 +154,23 @@ export default function AssinaturaOnboarding() {
     }
     setSaving(true);
     try {
+      // Check if signature already exists (prevent duplicates)
+      const { data: existing } = await supabase
+        .from("user_signatures" as any)
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (existing) {
+        // Already signed, just update profile and redirect
+        await supabase
+          .from("profiles")
+          .update({ signature_completed: true } as any)
+          .eq("user_id", user.id);
+        toast.success("Assinatura já registrada!");
+        window.location.href = "/home";
+        return;
+      }
+
       let signatureImageUrl = "";
 
       if (signatureType === "draw" && canvasRef.current) {
