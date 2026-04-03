@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "react-router-dom";
 import { toast } from "sonner";
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/accord-ai-resolve`;
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/orbit-ai-resolve`;
 
 interface ResolveResult {
   corrected: string;
