@@ -325,7 +325,7 @@ export function SignatureBuilderDialog({ open, onOpenChange, contractId, pdfUrl,
                         borderColor: field.signer_color,
                         backgroundColor: `${field.signer_color}20`,
                         color: field.signer_color,
-                        ringColor: field.signer_color,
+                        // ring color set via border
                       }}
                       onClick={(e) => { e.stopPropagation(); setSelectedFieldId(field.id); }}
                     >
