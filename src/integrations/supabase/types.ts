@@ -1103,6 +1103,72 @@ export type Database = {
           },
         ]
       }
+      pdf_contract_fields: {
+        Row: {
+          contract_id: string
+          created_at: string
+          field_type: string
+          height: number
+          id: string
+          label: string | null
+          page: number
+          pos_x: number
+          pos_y: number
+          required: boolean
+          signer_color: string | null
+          signer_id: string | null
+          value: string | null
+          width: number
+        }
+        Insert: {
+          contract_id: string
+          created_at?: string
+          field_type?: string
+          height?: number
+          id?: string
+          label?: string | null
+          page?: number
+          pos_x?: number
+          pos_y?: number
+          required?: boolean
+          signer_color?: string | null
+          signer_id?: string | null
+          value?: string | null
+          width?: number
+        }
+        Update: {
+          contract_id?: string
+          created_at?: string
+          field_type?: string
+          height?: number
+          id?: string
+          label?: string | null
+          page?: number
+          pos_x?: number
+          pos_y?: number
+          required?: boolean
+          signer_color?: string | null
+          signer_id?: string | null
+          value?: string | null
+          width?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pdf_contract_fields_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pdf_contract_fields_signer_id_fkey"
+            columns: ["signer_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_contract_signers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pdf_contract_history: {
         Row: {
           action: string
@@ -1217,6 +1283,7 @@ export type Database = {
           pdf_path: string
           pdf_url: string
           servidor_id: string
+          sign_mode: string
           status: string
           updated_at: string
         }
@@ -1230,6 +1297,7 @@ export type Database = {
           pdf_path: string
           pdf_url: string
           servidor_id: string
+          sign_mode?: string
           status?: string
           updated_at?: string
         }
@@ -1243,6 +1311,7 @@ export type Database = {
           pdf_path?: string
           pdf_url?: string
           servidor_id?: string
+          sign_mode?: string
           status?: string
           updated_at?: string
         }
@@ -1719,6 +1788,10 @@ export type Database = {
         }
         Returns: string
       }
+      get_pdf_contract_servidor: {
+        Args: { _contract_id: string }
+        Returns: string
+      }
       get_user_company_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
@@ -1737,6 +1810,10 @@ export type Database = {
           razao_social: string
           status: string
         }[]
+      }
+      pdf_contract_has_signer_token: {
+        Args: { _contract_id: string }
+        Returns: boolean
       }
     }
     Enums: {

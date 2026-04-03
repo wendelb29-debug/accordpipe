@@ -52,7 +52,7 @@ export function usePdfContracts() {
   const [contracts, setContracts] = useState<PdfContract[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const canManage = isMaster || isCeo;
+  const canManage = isMaster || isCeo || profile?.is_master;
 
   const fetchContracts = async () => {
     if (!profile?.company_id) return;

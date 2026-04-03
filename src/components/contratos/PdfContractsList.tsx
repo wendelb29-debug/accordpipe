@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  Plus, Search, FileSignature, Eye, Clock, CheckCircle2, XCircle, Loader2, Filter,
+  Plus, Search, FileSignature, Eye, Clock, CheckCircle2, XCircle, Loader2, Filter, PenTool,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { usePdfContracts } from "@/hooks/usePdfContracts";
 import { PdfContractCreateDialog } from "./PdfContractCreateDialog";
 import { PdfContractViewDialog } from "./PdfContractViewDialog";
+import { SignatureBuilderDialog } from "./SignatureBuilderDialog";
 import type { PdfContract, PdfContractSigner, PdfContractHistory } from "@/hooks/usePdfContracts";
 
 const statusConfig: Record<string, { label: string; icon: any; className: string; emoji: string }> = {
@@ -20,7 +21,7 @@ const statusConfig: Record<string, { label: string; icon: any; className: string
 };
 
 export function PdfContractsList() {
-  const { contracts, loading, canManage, fetchSigners, fetchHistory, createContract, cancelContract } = usePdfContracts();
+  const { contracts, loading, canManage, fetchContracts, fetchSigners, fetchHistory, createContract, cancelContract } = usePdfContracts();
   const [createOpen, setCreateOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -32,6 +33,11 @@ export function PdfContractsList() {
   const [viewSigners, setViewSigners] = useState<PdfContractSigner[]>([]);
   const [viewHistory, setViewHistory] = useState<PdfContractHistory[]>([]);
 
+  // Builder
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [builderContract, setBuilderContract] = useState<PdfContract | null>(null);
+  const [builderSigners, setBuilderSigners] = useState<PdfContractSigner[]>([]);
+
   const openView = async (contract: PdfContract) => {
     setViewContract(contract);
     const [signers, history] = await Promise.all([
@@ -40,6 +46,13 @@ export function PdfContractsList() {
     ]);
     setViewSigners(signers);
     setViewHistory(history);
+  };
+
+  const openBuilder = async (contract: PdfContract) => {
+    const signers = await fetchSigners(contract.id);
+    setBuilderContract(contract);
+    setBuilderSigners(signers);
+    setBuilderOpen(true);
   };
 
   const filtered = contracts.filter((c) => {
@@ -165,7 +178,12 @@ export function PdfContractsList() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex justify-end">
+                      <div className="flex justify-end gap-1">
+                        {canManage && contract.status === "pendente" && (
+                          <Button variant="ghost" size="icon" title="Editor de Campos" onClick={() => openBuilder(contract)}>
+                            <PenTool className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button variant="ghost" size="icon" title="Visualizar" onClick={() => openView(contract)}>
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -184,7 +202,14 @@ export function PdfContractsList() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         onSubmit={async (name, desc, file, signers) => {
-          await createContract(name, desc, file, signers);
+          const contractId = await createContract(name, desc, file, signers);
+          if (contractId) {
+            // Auto-open builder after creation
+            const newContract = contracts.find(c => c.id === contractId);
+            if (newContract) {
+              setTimeout(() => openBuilder(newContract), 500);
+            }
+          }
         }}
       />
 
@@ -199,6 +224,20 @@ export function PdfContractsList() {
           setViewContract(null);
         }}
       />
+
+      {builderContract && (
+        <SignatureBuilderDialog
+          open={builderOpen}
+          onOpenChange={setBuilderOpen}
+          contractId={builderContract.id}
+          pdfUrl={builderContract.pdf_url}
+          signers={builderSigners}
+          onComplete={() => {
+            fetchContracts();
+            setBuilderContract(null);
+          }}
+        />
+      )}
     </div>
   );
 }
