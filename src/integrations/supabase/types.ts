@@ -932,6 +932,82 @@ export type Database = {
           },
         ]
       }
+      drive_files: {
+        Row: {
+          contract_id: string | null
+          created_at: string
+          created_by_name: string | null
+          created_by_user_id: string | null
+          file_path: string | null
+          file_size: number | null
+          file_type: string | null
+          file_url: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          servidor_id: string
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          contract_id?: string | null
+          created_at?: string
+          created_by_name?: string | null
+          created_by_user_id?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          servidor_id: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          contract_id?: string | null
+          created_at?: string
+          created_by_name?: string | null
+          created_by_user_id?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          servidor_id?: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drive_files_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_files_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "drive_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_files_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_transactions: {
         Row: {
           amount: number
@@ -1788,6 +1864,7 @@ export type Database = {
         }
         Returns: string
       }
+      get_drive_file_servidor: { Args: { _file_id: string }; Returns: string }
       get_pdf_contract_servidor: {
         Args: { _contract_id: string }
         Returns: string
