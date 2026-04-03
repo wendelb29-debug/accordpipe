@@ -297,9 +297,18 @@ export default function AssinarPdf() {
               {!photo ? (
                 <div className="space-y-3">
                   {cameraActive ? (
-                    <div className="space-y-3">
+                    <div className="space-y-3 relative">
                       <video ref={videoRef} autoPlay playsInline className="w-full max-w-sm rounded-lg border mx-auto" />
-                      <Button className="w-full" onClick={capturePhoto}>Capturar Foto</Button>
+                      {countdown !== null && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-6xl font-bold text-white drop-shadow-lg bg-black/40 rounded-full w-20 h-20 flex items-center justify-center">
+                            {countdown}
+                          </span>
+                        </div>
+                      )}
+                      <p className="text-center text-sm text-muted-foreground">
+                        {countdown !== null ? `Capturando em ${countdown}s...` : "Capturando..."}
+                      </p>
                     </div>
                   ) : (
                     <Button variant="outline" className="w-full" onClick={startCamera}>
@@ -315,20 +324,19 @@ export default function AssinarPdf() {
               )}
             </div>
 
-            {/* Location */}
+            {/* Location (auto-captured) */}
             <div className="space-y-3">
               <p className="text-sm font-medium flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-primary" /> Geolocalização
-                {location && <CheckCircle className="h-4 w-4 text-green-500" />}
+                {location && !locationLoading && <CheckCircle className="h-4 w-4 text-green-500" />}
               </p>
-              {!location ? (
-                <Button variant="outline" className="w-full" onClick={captureLocation} disabled={locationLoading}>
-                  {locationLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <MapPin className="h-4 w-4 mr-2" />}
-                  {locationLoading ? "Obtendo localização..." : "Capturar Localização"}
-                </Button>
-              ) : (
+              {locationLoading ? (
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Obtendo localização automaticamente...
+                </p>
+              ) : location ? (
                 <p className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">{location.address}</p>
-              )}
+              ) : null}
             </div>
 
             {/* Sign Button */}
