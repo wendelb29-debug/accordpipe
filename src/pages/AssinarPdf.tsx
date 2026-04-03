@@ -81,8 +81,8 @@ export default function AssinarPdf() {
     load();
   }, [token]);
 
-  // Get geolocation
-  const captureLocation = () => {
+  // Auto-capture geolocation on mount
+  useEffect(() => {
     setLocationLoading(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
@@ -102,22 +102,10 @@ export default function AssinarPdf() {
       },
       { enableHighAccuracy: true }
     );
-  };
+  }, []);
 
-  // Camera
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        setCameraActive(true);
-      }
-    } catch {
-      setError("Não foi possível acessar a câmera.");
-    }
-  };
-
-  const capturePhoto = () => {
+  // Camera with auto-capture after countdown
+  const capturePhoto = useCallback(() => {
     if (!videoRef.current) return;
     const canvas = document.createElement("canvas");
     canvas.width = videoRef.current.videoWidth;
@@ -129,11 +117,43 @@ export default function AssinarPdf() {
         setPhotoPreview(URL.createObjectURL(blob));
       }
     }, "image/jpeg", 0.8);
-    // Stop camera
     const stream = videoRef.current.srcObject as MediaStream;
     stream?.getTracks().forEach(t => t.stop());
     setCameraActive(false);
+    setCountdown(null);
+  }, []);
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setCameraActive(true);
+        // Start 5s countdown
+        let count = 5;
+        setCountdown(count);
+        countdownRef.current = setInterval(() => {
+          count--;
+          if (count <= 0) {
+            clearInterval(countdownRef.current!);
+            setCountdown(null);
+            // Small delay to ensure video frame is ready
+            setTimeout(() => capturePhoto(), 100);
+          } else {
+            setCountdown(count);
+          }
+        }, 1000);
+      }
+    } catch {
+      setError("Não foi possível acessar a câmera.");
+    }
   };
+
+  useEffect(() => {
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, []);
 
   // Sign
   const handleSign = async () => {
