@@ -186,7 +186,7 @@ Deno.serve(async (req) => {
 
     // Check for duplicate transacao_id
     const { data: existing, error: checkError } = await supabase
-      .from("vendas_accord")
+      .from("vendas_orbit")
       .select("id")
       .eq("transacao_id", normalized.transacao_id)
       .maybeSingle();
@@ -214,7 +214,7 @@ Deno.serve(async (req) => {
     }
 
     // Insert sale
-    const { error: insertError } = await supabase.from("vendas_accord").insert({
+    const { error: insertError } = await supabase.from("vendas_orbit").insert({
       mentor_id: normalized.mentor_id.slice(0, 255),
       mentor_nome: normalized.mentor_nome.slice(0, 255),
       aluno_nome: normalized.aluno_nome.slice(0, 255),

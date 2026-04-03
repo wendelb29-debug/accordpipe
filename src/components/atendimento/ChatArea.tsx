@@ -116,7 +116,7 @@ export function ChatArea({ contact, onSendMessage }: ChatAreaProps) {
     }
     setAccordLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("accord-ai-chat", {
+      const { data, error } = await supabase.functions.invoke("orbit-ai-chat", {
         body: {
           message: `O cliente enviou: "${lastInbound.text}". Gere uma resposta profissional e direta para essa mensagem, como se fosse um atendente.`,
         },
