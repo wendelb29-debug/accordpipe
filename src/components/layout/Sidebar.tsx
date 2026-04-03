@@ -45,6 +45,7 @@ const navigation = [
 
 const configNavigation = [
   { name: "Usuários", href: "/configuracoes/usuarios", icon: Users, roles: ["admin", "ceo", "administrativo"] },
+  { name: "Assinaturas", href: "/configuracoes/assinaturas", icon: FileSignature, roles: ["admin", "ceo"] },
 ];
 
 export function Sidebar() {

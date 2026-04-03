@@ -258,6 +258,24 @@ const App = () => (
             <Route path="/contato" element={<FormularioContato />} />
             <Route path="/form/:formId" element={<FormPublico />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route
+              path="/onboarding/assinatura"
+              element={
+                <ProtectedRoute>
+                  <AssinaturaOnboarding />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/configuracoes/assinaturas"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "ceo"]}>
+                  <AppLayout>
+                    <Assinaturas />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
