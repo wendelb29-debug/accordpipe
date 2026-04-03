@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { Camera, MapPin, CheckCircle, Loader2, FileSignature, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,8 @@ export default function AssinarPdf() {
   const [locationLoading, setLocationLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [cameraActive, setCameraActive] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const load = async () => {
