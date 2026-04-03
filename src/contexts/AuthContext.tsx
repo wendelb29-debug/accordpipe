@@ -13,6 +13,7 @@ interface Profile {
   is_master: boolean;
   company_id: string | null;
   avatar_url: string | null;
+  signature_completed: boolean;
   created_at: string;
   updated_at: string;
 }
