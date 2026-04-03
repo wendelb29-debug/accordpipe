@@ -17,7 +17,7 @@ export function TargetAudienceSection() {
           Para quem é o ORBIT?
         </h2>
         <p className="mt-4 text-lg text-muted-foreground">
-          O ORBIT HUB foi desenvolvido para empresas que precisam gerenciar vendas, contratos e pagamentos com eficiência.
+          O ACCORD foi desenvolvido para empresas que precisam gerenciar vendas, contratos e pagamentos com eficiência.
         </p>
       </div>
       <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-6">

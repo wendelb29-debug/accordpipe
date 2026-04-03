@@ -3,13 +3,13 @@ import {
 } from "@/components/ui/accordion";
 
 const faqs = [
-  { question: "O que é o ORBIT HUB?", answer: "É uma plataforma completa de gestão operacional que centraliza CRM, atendimento via WhatsApp, contratos digitais, faturamento, relatórios e inteligência artificial em um único painel moderno e seguro." },
-  { question: "O ORBIT HUB possui Inteligência Artificial?", answer: "Sim! O Orbit AI é um assistente inteligente integrado que utiliza tecnologia de IA (ChatGPT) para gerar respostas automáticas no WhatsApp, analisar dados, fornecer insights estratégicos e auxiliar na tomada de decisões." },
-  { question: "Preciso pagar para usar?", answer: "O ORBIT HUB possui planos flexíveis. Oferecemos um teste gratuito de 7 dias para que você conheça todas as funcionalidades antes de tomar sua decisão." },
+  { question: "O que é o ACCORD?", answer: "É uma plataforma completa de gestão operacional que centraliza CRM, atendimento via WhatsApp, contratos digitais, faturamento, relatórios e inteligência artificial em um único painel moderno e seguro." },
+  { question: "O ACCORD possui Inteligência Artificial?", answer: "Sim! O Orbit AI é um assistente inteligente integrado que utiliza tecnologia de IA (ChatGPT) para gerar respostas automáticas no WhatsApp, analisar dados, fornecer insights estratégicos e auxiliar na tomada de decisões." },
+  { question: "Preciso pagar para usar?", answer: "O ACCORD possui planos flexíveis. Oferecemos um teste gratuito de 7 dias para que você conheça todas as funcionalidades antes de tomar sua decisão." },
   { question: "Posso testar o sistema antes de contratar?", answer: "Sim! Oferecemos 7 dias de teste gratuito com acesso a todas as funcionalidades. Basta clicar em 'Teste Gratuito' e preencher seus dados." },
   { question: "O sistema é seguro?", answer: "Sim. Utilizamos criptografia de ponta a ponta, autenticação segura, controle de acesso por níveis de permissão e backups automáticos diários." },
   { question: "Como funciona o pagamento automático?", answer: "Integramos com gateway de pagamento para processar pagamentos via PIX, boleto e cartão de crédito. Quando o pagamento é confirmado, o sistema atualiza automaticamente o status financeiro." },
-  { question: "Quais integrações o ORBIT HUB oferece?", answer: "O sistema integra com API WhatsApp, gateway de pagamento para cobranças, e possui IA integrada para automações inteligentes. Novas integrações são adicionadas constantemente." },
+  { question: "Quais integrações o ACCORD oferece?", answer: "O sistema integra com API WhatsApp, gateway de pagamento para cobranças, e possui IA integrada para automações inteligentes. Novas integrações são adicionadas constantemente." },
 ];
 
 export function FAQSection() {
@@ -22,7 +22,7 @@ export function FAQSection() {
             Perguntas frequentes
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Tire suas dúvidas sobre o ORBIT HUB.
+            Tire suas dúvidas sobre o ACCORD.
           </p>
         </div>
         <div className="rounded-2xl border border-border/40 bg-card p-6 shadow-card">

@@ -82,7 +82,7 @@ export function HeroSection() {
               </div>
               <img
                 src={dashboardMockup}
-                alt="Painel do ORBIT HUB"
+                alt="Painel do ACCORD"
                 className="w-full"
                 loading="lazy"
               />
