@@ -114,7 +114,7 @@ export default function GestaoVendas() {
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
-  const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/accord-vendas-webhook`;
+  const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/orbit-vendas-webhook`;
 
   const payloadExample = `{
   "mentor_id": "glauberson",
