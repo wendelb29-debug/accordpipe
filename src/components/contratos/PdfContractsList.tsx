@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  Plus, Search, FileSignature, Eye, Clock, CheckCircle2, XCircle, Loader2, Filter,
+  Plus, Search, FileSignature, Eye, Clock, CheckCircle2, XCircle, Loader2, Filter, PenTool,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { usePdfContracts } from "@/hooks/usePdfContracts";
 import { PdfContractCreateDialog } from "./PdfContractCreateDialog";
 import { PdfContractViewDialog } from "./PdfContractViewDialog";
+import { SignatureBuilderDialog } from "./SignatureBuilderDialog";
 import type { PdfContract, PdfContractSigner, PdfContractHistory } from "@/hooks/usePdfContracts";
 
 const statusConfig: Record<string, { label: string; icon: any; className: string; emoji: string }> = {
