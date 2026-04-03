@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `Você é o Orbit, um assistente inteligente integrado ao sistema CRM Orbit Hub.
+const SYSTEM_PROMPT = `Você é o Orbit, um assistente inteligente integrado ao sistema CRM Accord.
 
 Você está presente dentro de TODAS as abas do sistema como um botão de ação chamado "✨ Assistente IA".
 Seu objetivo é ajudar colaboradores a preencher, revisar, corrigir e otimizar informações de forma rápida, inteligente e profissional.

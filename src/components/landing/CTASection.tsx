@@ -18,7 +18,7 @@ export function CTASection() {
             Pronto para transformar sua gestão?
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-primary-foreground/75">
-            Simplifique atendimento, vendas e pagamentos agora mesmo com o ORBIT HUB.
+            Simplifique atendimento, vendas e pagamentos agora mesmo com o ACCORD.
           </p>
           <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Button

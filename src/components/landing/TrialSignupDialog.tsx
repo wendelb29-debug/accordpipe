@@ -92,7 +92,7 @@ export function TrialSignupDialog({ open, onOpenChange }: TrialSignupDialogProps
         onOpenChange(false);
         navigate("/auth");
       } else {
-        toast.success("Bem-vindo ao ORBIT HUB! Seu teste de 7 dias começou.");
+        toast.success("Bem-vindo ao ACCORD! Seu teste de 7 dias começou.");
         onOpenChange(false);
         navigate("/home");
       }
@@ -114,7 +114,7 @@ export function TrialSignupDialog({ open, onOpenChange }: TrialSignupDialogProps
             Teste Gratuito – 7 Dias
           </DialogTitle>
           <DialogDescription>
-            Cadastre sua empresa e comece a usar o ORBIT HUB agora mesmo. Sem cartão de crédito.
+            Cadastre sua empresa e comece a usar o ACCORD agora mesmo. Sem cartão de crédito.
           </DialogDescription>
         </DialogHeader>
 
