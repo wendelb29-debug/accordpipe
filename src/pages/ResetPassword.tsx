@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
-import orbitLogo from "@/assets/orbit-logo.png";
+import accordLogo from "@/assets/accord-logo.png";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -64,7 +64,7 @@ export default function ResetPassword() {
       <div className="flex min-h-screen items-center justify-center bg-background p-6">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <img src={orbitLogo} alt="ORBIT" className="h-10 w-auto mx-auto mb-4" />
+            <img src={accordLogo} alt="ACCORD" className="h-10 w-auto mx-auto mb-4" />
             <CardTitle>Link inválido</CardTitle>
             <CardDescription>
               Este link de redefinição é inválido ou já expirou.
@@ -98,7 +98,7 @@ export default function ResetPassword() {
     <div className="flex min-h-screen items-center justify-center bg-background p-6">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <img src={orbitLogo} alt="ORBIT" className="h-10 w-auto mx-auto mb-4" />
+          <img src={accordLogo} alt="ACCORD" className="h-10 w-auto mx-auto mb-4" />
           <CardTitle>Redefinir senha</CardTitle>
           <CardDescription>Digite sua nova senha abaixo</CardDescription>
         </CardHeader>

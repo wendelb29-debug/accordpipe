@@ -64,7 +64,7 @@ export function ChatArea({ contact, onSendMessage }: ChatAreaProps) {
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<WhatsAppMessage[]>([]);
   const [sendChannel, setSendChannel] = useState<Channel>("whatsapp");
-  const [orbitLoading, setOrbitLoading] = useState(false);
+  const [accordLoading, setAccordLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -107,16 +107,16 @@ export function ChatArea({ contact, onSendMessage }: ChatAreaProps) {
     }, 3000);
   };
 
-  const handleOrbitAI = async () => {
+  const handleAccordAI = async () => {
     if (!contact) return;
     const lastInbound = [...messages].reverse().find((m) => m.direction === "inbound");
     if (!lastInbound) {
       toast.error("Nenhuma mensagem recebida para responder.");
       return;
     }
-    setOrbitLoading(true);
+    setAccordLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("orbit-ai-chat", {
+      const { data, error } = await supabase.functions.invoke("accord-ai-chat", {
         body: {
           message: `O cliente enviou: "${lastInbound.text}". Gere uma resposta profissional e direta para essa mensagem, como se fosse um atendente.`,
         },
@@ -125,12 +125,12 @@ export function ChatArea({ contact, onSendMessage }: ChatAreaProps) {
       const reply = data?.reply || data?.message || "";
       if (reply) {
         setInputValue(reply);
-        toast.success("Resposta do Orbit AI preenchida!");
+        toast.success("Resposta do Accord AI preenchida!");
       }
     } catch (err: any) {
-      toast.error("Erro ao gerar resposta com Orbit AI");
+      toast.error("Erro ao gerar resposta com Accord AI");
     } finally {
-      setOrbitLoading(false);
+      setAccordLoading(false);
     }
   };
 
@@ -146,7 +146,7 @@ export function ChatArea({ contact, onSendMessage }: ChatAreaProps) {
             </div>
           </div>
           <h2 className="text-2xl font-light text-[#41525d] dark:text-[#e9edef]">
-            Orbit Omnichannel
+            Accord Omnichannel
           </h2>
           <p className="text-sm text-[#667781] dark:text-[#8696a0] leading-relaxed">
             Centralize suas conversas de WhatsApp, Messenger, Instagram e Telegram.
@@ -318,24 +318,24 @@ export function ChatArea({ contact, onSendMessage }: ChatAreaProps) {
           <Paperclip className="h-5 w-5" />
         </Button>
 
-        {/* Orbit AI button */}
+        {/* Accord AI button */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               size="icon"
               variant="ghost"
               className="h-9 w-9 shrink-0 text-[#25D366] hover:bg-[#25D366]/10"
-              onClick={handleOrbitAI}
-              disabled={orbitLoading}
+              onClick={handleAccordAI}
+              disabled={accordLoading}
             >
-              {orbitLoading ? (
+              {accordLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <Bot className="h-5 w-5" />
               )}
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="top">Responder com Orbit AI</TooltipContent>
+          <TooltipContent side="top">Responder com Accord AI</TooltipContent>
         </Tooltip>
 
         <div className="flex-1 mx-1">

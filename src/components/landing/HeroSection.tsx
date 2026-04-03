@@ -49,7 +49,7 @@ export function HeroSection() {
               <Rocket className="h-4 w-4 sm:h-5 sm:w-5" />
               Começar teste grátis
             </Button>
-            <a href="mailto:contato@orbithub.com.br?subject=Solicitar demonstração" className="w-full sm:w-auto">
+            <a href="mailto:contato@accordhub.com.br?subject=Solicitar demonstração" className="w-full sm:w-auto">
               <Button size="lg" variant="outline" className="gap-2 px-6 sm:px-8 text-sm sm:text-base font-medium h-11 sm:h-13 rounded-xl border-border hover:bg-card hover:shadow-md transition-all w-full">
                 <CalendarDays className="h-4 w-4 sm:h-5 sm:w-5" />
                 Ver demonstração

@@ -26,7 +26,7 @@ import CapturaLead from "./pages/CapturaLead";
 import FormularioContato from "./pages/FormularioContato";
 import Atividades from "./pages/Atividades";
 import Perfil from "./pages/Perfil";
-import OrbitStack from "./pages/OrbitStack";
+import AccordStack from "./pages/AccordStack";
 import GestaoVendas from "./pages/GestaoVendas";
 import NotFound from "./pages/NotFound";
 import Formularios from "./pages/Formularios";
@@ -181,11 +181,11 @@ const App = () => (
               }
             />
             <Route
-              path="/orbit-stack"
+              path="/accord-stack"
               element={
                 <ProtectedRoute allowedRoles={["admin"]}>
                   <AppLayout>
-                    <OrbitStack />
+                    <AccordStack />
                   </AppLayout>
                 </ProtectedRoute>
               }

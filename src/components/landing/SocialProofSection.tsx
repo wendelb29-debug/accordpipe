@@ -2,7 +2,7 @@ import { Star } from "lucide-react";
 
 const testimonials = [
   {
-    quote: "Aceleramos o atendimento em 3x com o Orbit. A gestão de contratos ficou muito mais ágil.",
+    quote: "Aceleramos o atendimento em 3x com o Accord. A gestão de contratos ficou muito mais ágil.",
     name: "Carlos Mendes",
     role: "Diretor Comercial",
     company: "Grupo Proteger",

@@ -16,7 +16,7 @@ export function IntegrationsSection() {
             Integrações poderosas
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            O ORBIT conecta com as principais ferramentas para automatizar sua operação.
+            O ACCORD conecta com as principais ferramentas para automatizar sua operação.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-6">

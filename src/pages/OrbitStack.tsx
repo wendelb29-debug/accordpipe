@@ -2,13 +2,13 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWhatsAppInbox } from "@/hooks/useWhatsAppInbox";
 import { toast } from "sonner";
-import { QrCodeModal } from "@/components/orbit-inbox/QrCodeModal";
-import { InboxHeader } from "@/components/orbit-inbox/InboxHeader";
-import { InboxSidebar } from "@/components/orbit-inbox/InboxSidebar";
-import { InboxChat } from "@/components/orbit-inbox/InboxChat";
-import { TransferDialog } from "@/components/orbit-inbox/TransferDialog";
+import { QrCodeModal } from "@/components/accord-inbox/QrCodeModal";
+import { InboxHeader } from "@/components/accord-inbox/InboxHeader";
+import { InboxSidebar } from "@/components/accord-inbox/InboxSidebar";
+import { InboxChat } from "@/components/accord-inbox/InboxChat";
+import { TransferDialog } from "@/components/accord-inbox/TransferDialog";
 
-export default function OrbitStack() {
+export default function AccordStack() {
   const {
     contacts, messages, selectedContactId, selectContact, sendMessage,
     filter, setFilter, loading, isAdminOrCeo, connectionStatus,

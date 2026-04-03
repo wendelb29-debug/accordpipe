@@ -29,7 +29,7 @@ export function CTASection() {
               <Rocket className="h-5 w-5" />
               Teste Gratuito – 7 Dias
             </Button>
-            <a href="mailto:contato@orbithub.com.br?subject=Solicitar demonstração">
+            <a href="mailto:contato@accordhub.com.br?subject=Solicitar demonstração">
               <Button
                 size="lg"
                 variant="outline"

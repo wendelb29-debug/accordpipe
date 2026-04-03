@@ -37,7 +37,7 @@ export function ContractPreview({ formData, onGenerateContract }: ContractPrevie
   };
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText("https://orbit.app/assinatura/contrato-001");
+    navigator.clipboard.writeText("https://accord.app/assinatura/contrato-001");
     toast.success("Link copiado para a área de transferência!");
   };
 

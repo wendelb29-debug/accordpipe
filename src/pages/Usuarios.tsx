@@ -368,7 +368,7 @@ export default function Usuarios() {
       await supabase.rpc("create_notification", {
         _user_id: approvingUser.user_id,
         _title: "Conta aprovada!",
-        _message: `Sua conta foi aprovada com o perfil ${roleLabels[approveRole]}. Você já pode acessar o Orbit.`,
+        _message: `Sua conta foi aprovada com o perfil ${roleLabels[approveRole]}. Você já pode acessar o Accord.`,
         _type: "user_approved",
       });
 
