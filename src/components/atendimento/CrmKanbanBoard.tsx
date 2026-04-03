@@ -527,22 +527,11 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                         </DropdownMenu>
                       </div>
 
-                      {/* Contact info */}
-                      <div className="space-y-0.5 mb-2.5 text-[11px] text-muted-foreground">
-                        {lead.email && <p className="truncate">✉ {lead.email}</p>}
-                        {lead.phone && <p>📞 {lead.phone}</p>}
-                      </div>
-
-                      {/* Value - Prominent */}
-                      <div className="flex items-center gap-3 pt-2.5 border-t border-border/30">
-                        <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-muted-foreground">P&S</span>
-                          <span className="text-sm font-bold text-foreground">{formatCurrency(lead.value_ps)}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-muted-foreground">MRR</span>
-                          <span className="text-sm font-bold text-primary">{formatCurrency(lead.value_mrr)}</span>
-                        </div>
+                      {/* Value - Compact */}
+                      <div className="flex items-center gap-2 pt-2 border-t border-border/30 text-[11px]">
+                        <span className="text-muted-foreground">P&S <span className="font-bold text-foreground">{formatCurrency(lead.value_ps)}</span></span>
+                        <span className="text-muted-foreground/30">·</span>
+                        <span className="text-muted-foreground">MRR <span className="font-bold text-primary">{formatCurrency(lead.value_mrr)}</span></span>
                       </div>
 
                       {/* Won / Devolvido badges */}
