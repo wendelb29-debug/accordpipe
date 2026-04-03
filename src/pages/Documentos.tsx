@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import {
-  Upload, Search, FolderPlus, FileText, Folder, File, Image, MoreVertical,
+  Upload, Search, FolderPlus, FileText, Folder, File as FileIcon2, Image, MoreVertical,
   Eye, Trash2, PenTool, Download, ChevronRight, Home, Loader2, Grid, List,
   FileSignature, Edit2, Send, ArrowLeft, X,
 } from "lucide-react";
