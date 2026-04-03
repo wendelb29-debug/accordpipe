@@ -32,7 +32,7 @@ const FileIcon = ({ type, fileType }: { type: string; fileType?: string | null }
   if (type === "folder") return <Folder className="h-10 w-10 text-primary" fill="currentColor" fillOpacity={0.15} />;
   if (fileType?.includes("pdf")) return <FileText className="h-10 w-10 text-destructive" />;
   if (fileType?.includes("image")) return <Image className="h-10 w-10 text-primary" />;
-  return <File className="h-10 w-10 text-muted-foreground" />;
+  return <FileIcon2 className="h-10 w-10 text-muted-foreground" />;
 };
 
 const formatSize = (bytes: number | null) => {
