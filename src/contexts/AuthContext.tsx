@@ -135,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (profileError) throw profileError;
-      setProfile(profileData as Profile | null);
+      setProfile(profileData as unknown as Profile | null);
 
       const { data: roleData, error: roleError } = await supabase
         .from("user_roles")
