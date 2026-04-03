@@ -21,7 +21,7 @@ const statusConfig: Record<string, { label: string; icon: any; className: string
 };
 
 export function PdfContractsList() {
-  const { contracts, loading, canManage, fetchSigners, fetchHistory, createContract, cancelContract } = usePdfContracts();
+  const { contracts, loading, canManage, fetchContracts, fetchSigners, fetchHistory, createContract, cancelContract } = usePdfContracts();
   const [createOpen, setCreateOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
