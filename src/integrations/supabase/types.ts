@@ -1360,7 +1360,7 @@ export type Database = {
         }
         Relationships: []
       }
-      vendas_accord: {
+      vendas_orbit: {
         Row: {
           aluno_email: string
           aluno_nome: string
