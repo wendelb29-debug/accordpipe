@@ -33,6 +33,11 @@ export function PdfContractsList() {
   const [viewSigners, setViewSigners] = useState<PdfContractSigner[]>([]);
   const [viewHistory, setViewHistory] = useState<PdfContractHistory[]>([]);
 
+  // Builder
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [builderContract, setBuilderContract] = useState<PdfContract | null>(null);
+  const [builderSigners, setBuilderSigners] = useState<PdfContractSigner[]>([]);
+
   const openView = async (contract: PdfContract) => {
     setViewContract(contract);
     const [signers, history] = await Promise.all([
@@ -41,6 +46,13 @@ export function PdfContractsList() {
     ]);
     setViewSigners(signers);
     setViewHistory(history);
+  };
+
+  const openBuilder = async (contract: PdfContract) => {
+    const signers = await fetchSigners(contract.id);
+    setBuilderContract(contract);
+    setBuilderSigners(signers);
+    setBuilderOpen(true);
   };
 
   const filtered = contracts.filter((c) => {
