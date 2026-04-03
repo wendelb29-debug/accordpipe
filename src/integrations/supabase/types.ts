@@ -1412,6 +1412,7 @@ export type Database = {
           is_master: boolean
           last_assigned_at: string | null
           name: string
+          signature_completed: boolean
           status: string
           tags: string[] | null
           updated_at: string
@@ -1427,6 +1428,7 @@ export type Database = {
           is_master?: boolean
           last_assigned_at?: string | null
           name: string
+          signature_completed?: boolean
           status?: string
           tags?: string[] | null
           updated_at?: string
@@ -1442,6 +1444,7 @@ export type Database = {
           is_master?: boolean
           last_assigned_at?: string | null
           name?: string
+          signature_completed?: boolean
           status?: string
           tags?: string[] | null
           updated_at?: string
@@ -1501,6 +1504,51 @@ export type Database = {
         Update: {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_signatures: {
+        Row: {
+          birth_date: string | null
+          cargo: string | null
+          cpf: string
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          phone: string | null
+          signature_hash: string | null
+          signature_image_url: string | null
+          signature_type: string
+          user_id: string
+        }
+        Insert: {
+          birth_date?: string | null
+          cargo?: string | null
+          cpf: string
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          phone?: string | null
+          signature_hash?: string | null
+          signature_image_url?: string | null
+          signature_type?: string
+          user_id: string
+        }
+        Update: {
+          birth_date?: string | null
+          cargo?: string | null
+          cpf?: string
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          signature_hash?: string | null
+          signature_image_url?: string | null
+          signature_type?: string
           user_id?: string
         }
         Relationships: []
