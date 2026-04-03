@@ -36,6 +36,8 @@ import Financeiro from "./pages/Financeiro";
 import Clientes from "./pages/Clientes";
 import Descarte from "./pages/Descarte";
 import AssinarPdf from "./pages/AssinarPdf";
+import AssinaturaOnboarding from "./pages/AssinaturaOnboarding";
+import Assinaturas from "./pages/Assinaturas";
 
 const queryClient = new QueryClient();
 
