@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Pen, Type, Upload, ArrowLeft, ArrowRight, Check } from "lucide-react";
+import {
+  Pen, Type, Upload, ArrowLeft, ArrowRight, Check,
+  User, Mail, Phone, Briefcase, Calendar, ShieldCheck, Lock, FileSignature
+} from "lucide-react";
 
 function validateCPF(cpf: string): boolean {
   const cleaned = cpf.replace(/\D/g, "");
@@ -41,6 +43,12 @@ function maskPhone(value: string): string {
   }
   return cleaned.replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d)/, "$1-$2");
 }
+
+const steps = [
+  { label: "Dados", icon: User },
+  { label: "Assinatura", icon: FileSignature },
+  { label: "Confirmação", icon: Check },
+];
 
 export default function AssinaturaOnboarding() {
   const { user, profile } = useAuth();
@@ -138,12 +146,6 @@ export default function AssinaturaOnboarding() {
 
   const canProceedStep1 = form.full_name && form.cpf && validateCPF(form.cpf.replace(/\D/g, "")) && form.email;
 
-  const getSignaturePreview = () => {
-    if (signatureType === "typed") return typedSignature || form.full_name;
-    if (signatureType === "upload") return uploadPreview;
-    return null;
-  };
-
   const handleSubmit = async () => {
     if (!user) return;
     if (!accepted) {
@@ -176,7 +178,6 @@ export default function AssinaturaOnboarding() {
         const { data: urlData } = supabase.storage.from("user-signatures").getPublicUrl(path);
         signatureImageUrl = urlData.publicUrl;
       } else if (signatureType === "typed") {
-        // Generate typed signature as canvas image
         const tempCanvas = document.createElement("canvas");
         tempCanvas.width = 400;
         tempCanvas.height = 100;
@@ -202,7 +203,6 @@ export default function AssinaturaOnboarding() {
         }
       }
 
-      // Save user_signatures
       const { error: sigErr } = await supabase.from("user_signatures" as any).insert({
         user_id: user.id,
         full_name: form.full_name,
@@ -216,7 +216,6 @@ export default function AssinaturaOnboarding() {
       } as any);
       if (sigErr) throw sigErr;
 
-      // Update profile
       const { error: profErr } = await supabase
         .from("profiles")
         .update({ signature_completed: true } as any)
@@ -224,7 +223,6 @@ export default function AssinaturaOnboarding() {
       if (profErr) throw profErr;
 
       toast.success("Assinatura criada com sucesso!");
-      // Force reload to update profile state
       window.location.href = "/home";
     } catch (error: any) {
       console.error(error);
@@ -234,204 +232,345 @@ export default function AssinaturaOnboarding() {
     }
   };
 
-  const progressValue = step === 1 ? 33 : step === 2 ? 66 : 100;
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-2xl shadow-xl">
-        <CardContent className="p-6 md:p-8">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-foreground mb-1">Criação de Assinatura</h1>
-            <p className="text-sm text-muted-foreground">
-              {step === 1 && "Preencha seus dados pessoais"}
-              {step === 2 && "Crie sua assinatura digital"}
-              {step === 3 && "Confirme e finalize"}
-            </p>
-            <Progress value={progressValue} className="mt-4 h-2" />
-            <div className="flex justify-between mt-1 text-xs text-muted-foreground">
-              <span className={step >= 1 ? "text-primary font-medium" : ""}>Dados</span>
-              <span className={step >= 2 ? "text-primary font-medium" : ""}>Assinatura</span>
-              <span className={step >= 3 ? "text-primary font-medium" : ""}>Confirmação</span>
-            </div>
-          </div>
-
-          {/* STEP 1 - Dados */}
-          {step === 1 && (
-            <div className="space-y-4">
-              <div>
-                <Label>Nome completo *</Label>
-                <Input name="full_name" value={form.full_name} onChange={handleChange} placeholder="Nome completo" />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>CPF *</Label>
-                  <Input name="cpf" value={form.cpf} onChange={handleChange} placeholder="000.000.000-00" />
-                  {form.cpf && !validateCPF(form.cpf.replace(/\D/g, "")) && (
-                    <p className="text-xs text-destructive mt-1">CPF inválido</p>
-                  )}
-                </div>
-                <div>
-                  <Label>Data de nascimento</Label>
-                  <Input name="birth_date" type="date" value={form.birth_date} onChange={handleChange} />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Email *</Label>
-                  <Input name="email" type="email" value={form.email} onChange={handleChange} placeholder="email@exemplo.com" />
-                </div>
-                <div>
-                  <Label>Telefone</Label>
-                  <Input name="phone" value={form.phone} onChange={handleChange} placeholder="(00) 00000-0000" />
-                </div>
-              </div>
-              <div>
-                <Label>Cargo (opcional)</Label>
-                <Input name="cargo" value={form.cargo} onChange={handleChange} placeholder="Ex: Gerente comercial" />
-              </div>
-              <Button onClick={() => setStep(2)} disabled={!canProceedStep1} className="w-full">
-                Próximo <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          )}
-
-          {/* STEP 2 - Assinatura */}
-          {step === 2 && (
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <Button
-                  variant={signatureType === "typed" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSignatureType("typed")}
-                >
-                  <Type className="mr-1 h-4 w-4" /> Digitar
-                </Button>
-                <Button
-                  variant={signatureType === "draw" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSignatureType("draw")}
-                >
-                  <Pen className="mr-1 h-4 w-4" /> Desenhar
-                </Button>
-                <Button
-                  variant={signatureType === "upload" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSignatureType("upload")}
-                >
-                  <Upload className="mr-1 h-4 w-4" /> Upload
-                </Button>
-              </div>
-
-              {signatureType === "typed" && (
-                <div className="space-y-3">
-                  <Input
-                    placeholder="Digite seu nome para gerar assinatura"
-                    value={typedSignature}
-                    onChange={(e) => setTypedSignature(e.target.value)}
-                  />
-                  <div className="border rounded-lg p-6 bg-card text-center min-h-[100px] flex items-center justify-center">
-                    <span className="text-3xl italic text-foreground" style={{ fontFamily: "Georgia, serif" }}>
-                      {typedSignature || form.full_name || "Sua assinatura"}
-                    </span>
+    <div className="min-h-[100dvh] flex items-center justify-center bg-slate-50 p-4">
+      <div className="w-full max-w-2xl">
+        {/* Stepper */}
+        <div className="flex items-center justify-center gap-0 mb-8">
+          {steps.map((s, i) => {
+            const stepNum = i + 1;
+            const isActive = step === stepNum;
+            const isDone = step > stepNum;
+            const Icon = s.icon;
+            return (
+              <div key={s.label} className="flex items-center">
+                <div className="flex flex-col items-center gap-1.5">
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
+                      isDone
+                        ? "bg-primary text-primary-foreground"
+                        : isActive
+                        ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {isDone ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
                   </div>
+                  <span
+                    className={`text-xs font-medium transition-colors ${
+                      isActive || isDone ? "text-primary" : "text-muted-foreground"
+                    }`}
+                  >
+                    {s.label}
+                  </span>
                 </div>
-              )}
+                {i < steps.length - 1 && (
+                  <div
+                    className={`w-16 sm:w-24 h-0.5 mx-2 mb-5 transition-colors ${
+                      step > stepNum ? "bg-primary" : "bg-muted"
+                    }`}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
 
-              {signatureType === "draw" && (
-                <div className="space-y-2">
-                  <div className="border rounded-lg overflow-hidden bg-white">
-                    <canvas
-                      ref={canvasRef}
-                      width={500}
-                      height={150}
-                      className="w-full cursor-crosshair"
-                      onMouseDown={startDrawing}
-                      onMouseMove={draw}
-                      onMouseUp={stopDrawing}
-                      onMouseLeave={stopDrawing}
+        <Card className="shadow-sm border border-border/50 rounded-2xl overflow-hidden">
+          <CardContent className="p-6 md:p-10">
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">
+                Criação de Assinatura
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                {step === 1 && "Preencha seus dados pessoais para continuar"}
+                {step === 2 && "Crie sua assinatura digital personalizada"}
+                {step === 3 && "Revise suas informações e finalize"}
+              </p>
+            </div>
+
+            {/* STEP 1 - Dados */}
+            {step === 1 && (
+              <div className="space-y-5">
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground font-medium flex items-center gap-1.5 mb-1.5">
+                    <User className="h-3.5 w-3.5" /> Nome completo *
+                  </Label>
+                  <Input
+                    name="full_name"
+                    value={form.full_name}
+                    onChange={handleChange}
+                    placeholder="Nome completo"
+                    className="h-11"
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground font-medium flex items-center gap-1.5 mb-1.5">
+                      <ShieldCheck className="h-3.5 w-3.5" /> CPF *
+                    </Label>
+                    <Input
+                      name="cpf"
+                      value={form.cpf}
+                      onChange={handleChange}
+                      placeholder="000.000.000-00"
+                      className="h-11"
+                    />
+                    {form.cpf && !validateCPF(form.cpf.replace(/\D/g, "")) && (
+                      <p className="text-xs text-destructive mt-1">CPF inválido</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground font-medium flex items-center gap-1.5 mb-1.5">
+                      <Calendar className="h-3.5 w-3.5" /> Data de nascimento
+                    </Label>
+                    <Input
+                      name="birth_date"
+                      type="date"
+                      value={form.birth_date}
+                      onChange={handleChange}
+                      className="h-11"
                     />
                   </div>
-                  <Button variant="outline" size="sm" onClick={clearCanvas}>
-                    Limpar
-                  </Button>
                 </div>
-              )}
-
-              {signatureType === "upload" && (
-                <div className="space-y-3">
-                  <Input type="file" accept="image/*" onChange={handleUpload} />
-                  {uploadPreview && (
-                    <div className="border rounded-lg p-4 bg-card flex justify-center">
-                      <img src={uploadPreview} alt="Preview" className="max-h-[100px] object-contain" />
-                    </div>
-                  )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground font-medium flex items-center gap-1.5 mb-1.5">
+                      <Mail className="h-3.5 w-3.5" /> Email *
+                    </Label>
+                    <Input
+                      name="email"
+                      type="email"
+                      value={form.email}
+                      onChange={handleChange}
+                      placeholder="email@exemplo.com"
+                      className="h-11"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground font-medium flex items-center gap-1.5 mb-1.5">
+                      <Phone className="h-3.5 w-3.5" /> Telefone
+                    </Label>
+                    <Input
+                      name="phone"
+                      value={form.phone}
+                      onChange={handleChange}
+                      placeholder="(00) 00000-0000"
+                      className="h-11"
+                    />
+                  </div>
                 </div>
-              )}
-
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep(1)}>
-                  <ArrowLeft className="mr-1 h-4 w-4" /> Voltar
-                </Button>
-                <Button onClick={() => setStep(3)} className="flex-1">
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground font-medium flex items-center gap-1.5 mb-1.5">
+                    <Briefcase className="h-3.5 w-3.5" /> Cargo (opcional)
+                  </Label>
+                  <Input
+                    name="cargo"
+                    value={form.cargo}
+                    onChange={handleChange}
+                    placeholder="Ex: Gerente comercial"
+                    className="h-11"
+                  />
+                </div>
+                <Button onClick={() => setStep(2)} disabled={!canProceedStep1} className="w-full h-12 text-base">
                   Próximo <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* STEP 3 - Confirmação */}
-          {step === 3 && (
-            <div className="space-y-4">
-              <div className="border rounded-lg p-4 bg-muted/50 space-y-2 text-sm">
-                <p><strong>Nome:</strong> {form.full_name}</p>
-                <p><strong>CPF:</strong> {form.cpf}</p>
-                {form.birth_date && <p><strong>Nascimento:</strong> {new Date(form.birth_date + "T12:00:00").toLocaleDateString("pt-BR")}</p>}
-                <p><strong>Email:</strong> {form.email}</p>
-                {form.phone && <p><strong>Telefone:</strong> {form.phone}</p>}
-                {form.cargo && <p><strong>Cargo:</strong> {form.cargo}</p>}
-              </div>
+            {/* STEP 2 - Assinatura */}
+            {step === 2 && (
+              <div className="space-y-5">
+                <div className="flex gap-2 p-1 bg-muted rounded-xl">
+                  {([
+                    { key: "typed" as const, icon: Type, label: "Digitar" },
+                    { key: "draw" as const, icon: Pen, label: "Desenhar" },
+                    { key: "upload" as const, icon: Upload, label: "Upload" },
+                  ]).map((opt) => (
+                    <button
+                      key={opt.key}
+                      onClick={() => setSignatureType(opt.key)}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                        signatureType === opt.key
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <opt.icon className="h-4 w-4" />
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
 
-              <div className="border rounded-lg p-4 bg-card flex justify-center min-h-[80px] items-center">
                 {signatureType === "typed" && (
-                  <span className="text-3xl italic" style={{ fontFamily: "Georgia, serif" }}>
-                    {typedSignature || form.full_name}
-                  </span>
+                  <div className="space-y-4">
+                    <Input
+                      placeholder="Digite seu nome para gerar assinatura"
+                      value={typedSignature}
+                      onChange={(e) => setTypedSignature(e.target.value)}
+                      className="h-11"
+                    />
+                    <div className="border-2 border-dashed border-border rounded-xl p-8 bg-slate-50/50 text-center min-h-[120px] flex items-center justify-center">
+                      <span
+                        className="text-3xl md:text-4xl italic text-foreground"
+                        style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
+                      >
+                        {typedSignature || form.full_name || "Sua assinatura"}
+                      </span>
+                    </div>
+                  </div>
                 )}
-                {signatureType === "draw" && canvasRef.current && (
-                  <img src={canvasRef.current.toDataURL()} alt="Assinatura" className="max-h-[80px]" />
-                )}
-                {signatureType === "upload" && uploadPreview && (
-                  <img src={uploadPreview} alt="Assinatura" className="max-h-[80px]" />
-                )}
-              </div>
 
-              <div className="flex items-start gap-2">
-                <Checkbox
-                  id="accept"
-                  checked={accepted}
-                  onCheckedChange={(v) => setAccepted(v === true)}
-                />
-                <label htmlFor="accept" className="text-sm text-muted-foreground leading-tight cursor-pointer">
-                  Declaro que esta assinatura é válida e de minha responsabilidade.
-                </label>
-              </div>
+                {signatureType === "draw" && (
+                  <div className="space-y-3">
+                    <div className="border-2 border-dashed border-border rounded-xl overflow-hidden bg-white">
+                      <canvas
+                        ref={canvasRef}
+                        width={500}
+                        height={150}
+                        className="w-full cursor-crosshair"
+                        onMouseDown={startDrawing}
+                        onMouseMove={draw}
+                        onMouseUp={stopDrawing}
+                        onMouseLeave={stopDrawing}
+                      />
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={clearCanvas} className="text-muted-foreground">
+                      Limpar desenho
+                    </Button>
+                  </div>
+                )}
 
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep(2)}>
-                  <ArrowLeft className="mr-1 h-4 w-4" /> Voltar
-                </Button>
-                <Button onClick={handleSubmit} disabled={!accepted || saving} className="flex-1">
-                  {saving ? "Salvando..." : (
-                    <>
-                      <Check className="mr-1 h-4 w-4" /> Finalizar
-                    </>
+                {signatureType === "upload" && (
+                  <div className="space-y-4">
+                    <div className="border-2 border-dashed border-border rounded-xl p-8 bg-slate-50/50 text-center">
+                      {uploadPreview ? (
+                        <img src={uploadPreview} alt="Preview" className="max-h-[100px] object-contain mx-auto" />
+                      ) : (
+                        <div className="text-muted-foreground">
+                          <Upload className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                          <p className="text-sm">Selecione uma imagem da sua assinatura</p>
+                        </div>
+                      )}
+                    </div>
+                    <Input type="file" accept="image/*" onChange={handleUpload} />
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <Button variant="ghost" onClick={() => setStep(1)} className="text-muted-foreground">
+                    <ArrowLeft className="mr-1.5 h-4 w-4" /> Voltar
+                  </Button>
+                  <Button onClick={() => setStep(3)} className="flex-1 h-12 text-base">
+                    Próximo <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3 - Confirmação */}
+            {step === 3 && (
+              <div className="space-y-6">
+                {/* User data grid */}
+                <div className="rounded-xl border border-border bg-slate-50/50 p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <ShieldCheck className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-sm font-semibold text-foreground">Dados Verificados</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {[
+                      { label: "Nome", value: form.full_name },
+                      { label: "CPF", value: form.cpf },
+                      ...(form.birth_date
+                        ? [{ label: "Nascimento", value: new Date(form.birth_date + "T12:00:00").toLocaleDateString("pt-BR") }]
+                        : []),
+                      { label: "Email", value: form.email },
+                      ...(form.phone ? [{ label: "Telefone", value: form.phone }] : []),
+                      ...(form.cargo ? [{ label: "Cargo", value: form.cargo }] : []),
+                    ].map((item) => (
+                      <div key={item.label}>
+                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium mb-0.5">
+                          {item.label}
+                        </p>
+                        <p className="text-sm font-semibold text-foreground">{item.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Signature preview */}
+                <div className="rounded-xl border-2 border-dashed border-border bg-[#fefefe] p-6 flex flex-col items-center justify-center min-h-[110px] relative">
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium absolute top-3 left-4">
+                    Assinatura Digital
+                  </p>
+                  {signatureType === "typed" && (
+                    <span
+                      className="text-3xl md:text-4xl italic text-foreground"
+                      style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
+                    >
+                      {typedSignature || form.full_name}
+                    </span>
                   )}
-                </Button>
+                  {signatureType === "draw" && canvasRef.current && (
+                    <img src={canvasRef.current.toDataURL()} alt="Assinatura" className="max-h-[80px]" />
+                  )}
+                  {signatureType === "upload" && uploadPreview && (
+                    <img src={uploadPreview} alt="Assinatura" className="max-h-[80px]" />
+                  )}
+                </div>
+
+                {/* Checkbox */}
+                <div className="flex items-start gap-3 p-4 rounded-xl border border-border bg-muted/30">
+                  <Checkbox
+                    id="accept"
+                    checked={accepted}
+                    onCheckedChange={(v) => setAccepted(v === true)}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="accept" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
+                    Declaro que esta assinatura é válida e de minha responsabilidade.
+                  </label>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3">
+                  <Button variant="ghost" onClick={() => setStep(2)} className="text-muted-foreground">
+                    <ArrowLeft className="mr-1.5 h-4 w-4" /> Voltar
+                  </Button>
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={!accepted || saving}
+                    className="flex-1 h-12 text-base gap-2"
+                  >
+                    {saving ? (
+                      "Salvando..."
+                    ) : (
+                      <>
+                        <Lock className="h-4 w-4" />
+                        Finalizar com segurança
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {/* Security badge */}
+                <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground pt-1">
+                  <Lock className="h-3 w-3" />
+                  <span>Protegido com criptografia de ponta a ponta</span>
+                </div>
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Footer security */}
+        <p className="text-center text-xs text-muted-foreground mt-6">
+          Accord · Assinatura Digital Segura
+        </p>
+      </div>
     </div>
   );
 }
