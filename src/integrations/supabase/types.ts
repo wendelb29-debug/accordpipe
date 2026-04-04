@@ -1416,6 +1416,7 @@ export type Database = {
           signature_completed: boolean
           status: string
           tags: string[] | null
+          theme: string
           updated_at: string
           user_id: string
         }
@@ -1433,6 +1434,7 @@ export type Database = {
           signature_completed?: boolean
           status?: string
           tags?: string[] | null
+          theme?: string
           updated_at?: string
           user_id: string
         }
@@ -1450,6 +1452,7 @@ export type Database = {
           signature_completed?: boolean
           status?: string
           tags?: string[] | null
+          theme?: string
           updated_at?: string
           user_id?: string
         }
