@@ -142,11 +142,13 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const { role, profile } = useAuth();
   const { activities, loading: activitiesLoading, addActivity, refetch: refetchActivities } = useCrmActivities(lead.id);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ ...lead });
+  const [form, setForm] = useState<any>({ ...lead });
   const [newActivity, setNewActivity] = useState({ type: "note", title: "", description: "" });
   const [showActivityForm, setShowActivityForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchingCnpj, setSearchingCnpj] = useState(false);
+  const [searchingCep, setSearchingCep] = useState(false);
+  const [companyAddress, setCompanyAddress] = useState<any>({});
   const [showLostDialog, setShowLostDialog] = useState(false);
   const [selectedLostReason, setSelectedLostReason] = useState("");
   const [showReopenDialog, setShowReopenDialog] = useState(false);
