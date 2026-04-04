@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Plus, Trash2, PackagePlus, Loader2 } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Plus, Trash2, PackagePlus, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,13 @@ export interface ProposalLineItem {
   total: number;
 }
 
+export interface Installment {
+  number: number;
+  value: number;
+  dueDate: string;
+  paymentMethod: string;
+}
+
 interface CatalogItem {
   id: string;
   name: string;
@@ -38,6 +45,10 @@ interface Props {
   onFirstPaymentDateChange: (v: string) => void;
   dueDay: string;
   onDueDayChange: (v: string) => void;
+  installments?: Installment[];
+  onInstallmentsChange?: (installments: Installment[]) => void;
+  numberOfInstallments?: number;
+  onNumberOfInstallmentsChange?: (n: number) => void;
 }
 
 const fmtCur = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -50,11 +61,33 @@ function calcItemTotal(item: ProposalLineItem): number {
   return Math.max(0, subtotal - item.discountValue);
 }
 
+const FREQ_MONTHS: Record<string, number> = {
+  mensal: 1,
+  trimestral: 3,
+  semestral: 6,
+  anual: 12,
+};
+
+function getDefaultInstallmentCount(freq: string): number {
+  switch (freq) {
+    case "mensal": return 12;
+    case "trimestral": return 4;
+    case "semestral": return 2;
+    case "anual": return 1;
+    case "unica": return 1;
+    default: return 12;
+  }
+}
+
 export function ProposalItemsManager({
   servidorId, items, onChange, canManageCatalog,
   paymentFrequency, onPaymentFrequencyChange,
   firstPaymentDate, onFirstPaymentDateChange,
   dueDay, onDueDayChange,
+  installments: externalInstallments,
+  onInstallmentsChange,
+  numberOfInstallments: externalNumInstallments,
+  onNumberOfInstallmentsChange,
 }: Props) {
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(true);
@@ -63,6 +96,14 @@ export function ProposalItemsManager({
   const [newItemValue, setNewItemValue] = useState("");
   const [creating, setCreating] = useState(false);
   const [selectedCatalogId, setSelectedCatalogId] = useState("");
+
+  const [internalInstallments, setInternalInstallments] = useState<Installment[]>([]);
+  const [internalNumInstallments, setInternalNumInstallments] = useState(12);
+
+  const installmentsList = externalInstallments ?? internalInstallments;
+  const setInstallmentsList = onInstallmentsChange ?? setInternalInstallments;
+  const numInstallments = externalNumInstallments ?? internalNumInstallments;
+  const setNumInstallments = onNumberOfInstallmentsChange ?? setInternalNumInstallments;
 
   useEffect(() => {
     fetchCatalog();
@@ -103,7 +144,6 @@ export function ProposalItemsManager({
     if (!selectedCatalogId) return;
     const catItem = catalog.find(c => c.id === selectedCatalogId);
     if (!catItem) return;
-
     const newItem: ProposalLineItem = {
       catalogId: catItem.id,
       name: catItem.name,
@@ -132,11 +172,57 @@ export function ProposalItemsManager({
   };
 
   const totalMensal = items.reduce((sum, it) => sum + it.total, 0);
-  const totalContrato = paymentFrequency === "anual" ? totalMensal * 12
-    : paymentFrequency === "unica" ? totalMensal
-    : totalMensal;
 
-  const installments = paymentFrequency === "anual" ? 12 : 1;
+  const totalContrato = useMemo(() => {
+    if (paymentFrequency === "unica") return totalMensal;
+    const months = FREQ_MONTHS[paymentFrequency] || 1;
+    return totalMensal * months * numInstallments;
+  }, [totalMensal, paymentFrequency, numInstallments]);
+
+  const generateInstallments = () => {
+    if (!firstPaymentDate || items.length === 0) return;
+    const months = FREQ_MONTHS[paymentFrequency] || 1;
+    const count = paymentFrequency === "unica" ? 1 : numInstallments;
+    const installmentValue = paymentFrequency === "unica"
+      ? totalMensal
+      : totalMensal * months;
+
+    const newInstallments: Installment[] = [];
+    const baseDate = new Date(firstPaymentDate + "T12:00:00");
+
+    for (let i = 0; i < count; i++) {
+      const date = new Date(baseDate);
+      date.setMonth(date.getMonth() + i * months);
+      if (dueDay) {
+        const day = Math.min(parseInt(dueDay), 28);
+        date.setDate(day);
+      }
+      newInstallments.push({
+        number: i + 1,
+        value: Math.round(installmentValue * 100) / 100,
+        dueDate: date.toISOString().split("T")[0],
+        paymentMethod: "boleto",
+      });
+    }
+    setInstallmentsList(newInstallments);
+  };
+
+  useEffect(() => {
+    if (firstPaymentDate && items.length > 0) {
+      generateInstallments();
+    }
+  }, [paymentFrequency, firstPaymentDate, dueDay, numInstallments, totalMensal]);
+
+  useEffect(() => {
+    setNumInstallments(getDefaultInstallmentCount(paymentFrequency));
+  }, [paymentFrequency]);
+
+  const updateInstallment = (index: number, updates: Partial<Installment>) => {
+    const updated = installmentsList.map((inst, i) =>
+      i === index ? { ...inst, ...updates } : inst
+    );
+    setInstallmentsList(updated);
+  };
 
   return (
     <div className="space-y-4">
@@ -165,8 +251,10 @@ export function ProposalItemsManager({
                 </thead>
                 <tbody>
                   {items.map((item, idx) => {
-                    const itemContractTotal = paymentFrequency === "anual" ? item.total * 12
-                      : item.total;
+                    const months = FREQ_MONTHS[paymentFrequency] || 1;
+                    const itemContractTotal = paymentFrequency === "unica"
+                      ? item.total
+                      : item.total * months * numInstallments;
                     return (
                       <tr key={idx} className="border-b border-border/50">
                         <td className="py-2 px-2 text-muted-foreground">{idx + 1}</td>
@@ -274,16 +362,30 @@ export function ProposalItemsManager({
       {/* Payment frequency section */}
       <Card>
         <CardContent className="p-4 space-y-3">
-          <p className="font-semibold text-sm flex items-center gap-1.5">
-            💳 Forma de pagamento de MRR
-          </p>
-          <div className="grid grid-cols-5 gap-3">
+          <div className="flex items-center justify-between">
+            <p className="font-semibold text-sm flex items-center gap-1.5">
+              💳 Forma de pagamento de MRR
+            </p>
+            {installmentsList.length > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={() => setInstallmentsList([])}
+              >
+                <RotateCcw className="h-3 w-3" /> Limpar
+              </Button>
+            )}
+          </div>
+          <div className="grid grid-cols-6 gap-3">
             <div className="space-y-1">
               <Label className="text-xs">Forma de pagamento</Label>
               <Select value={paymentFrequency} onValueChange={onPaymentFrequencyChange}>
                 <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="mensal">Mensal</SelectItem>
+                  <SelectItem value="trimestral">Trimestral</SelectItem>
+                  <SelectItem value="semestral">Semestral</SelectItem>
                   <SelectItem value="anual">Anual</SelectItem>
                   <SelectItem value="unica">Única</SelectItem>
                 </SelectContent>
@@ -297,6 +399,19 @@ export function ProposalItemsManager({
               <Label className="text-xs">📅 Dia de vencimento</Label>
               <Input className="h-8 text-xs" type="number" min={1} max={31} value={dueDay} onChange={(e) => onDueDayChange(e.target.value)} placeholder="10" />
             </div>
+            {paymentFrequency !== "unica" && (
+              <div className="space-y-1">
+                <Label className="text-xs">Nº de parcelas</Label>
+                <Input
+                  className="h-8 text-xs"
+                  type="number"
+                  min={1}
+                  max={60}
+                  value={numInstallments}
+                  onChange={(e) => setNumInstallments(Math.max(1, parseInt(e.target.value) || 1))}
+                />
+              </div>
+            )}
             <div className="space-y-1">
               <Label className="text-xs">Total mensal (itens)</Label>
               <Input className="h-8 text-xs bg-muted" value={fmtCur(totalMensal)} readOnly />
@@ -307,36 +422,60 @@ export function ProposalItemsManager({
             </div>
           </div>
 
-          {/* Installments preview */}
-          {paymentFrequency && firstPaymentDate && items.length > 0 && (
+          {/* Editable installments table */}
+          {installmentsList.length > 0 && (
             <div className="space-y-2 pt-2">
-              <Label className="text-xs font-medium">Quantidade de Parcelas: {installments}</Label>
-              <div className="overflow-x-auto">
+              <Label className="text-xs font-medium">Quantidade de Parcelas: {installmentsList.length}</Label>
+              <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
                 <table className="w-full text-xs border-collapse">
-                  <thead>
+                  <thead className="sticky top-0 bg-card z-10">
                     <tr className="border-b border-border text-muted-foreground">
-                      <th className="text-left py-1.5 px-2 font-medium">Parcela</th>
+                      <th className="text-left py-1.5 px-2 font-medium w-20">Parcela</th>
                       <th className="text-left py-1.5 px-2 font-medium">Valor da parcela</th>
                       <th className="text-left py-1.5 px-2 font-medium">Data de vencimento</th>
+                      <th className="text-left py-1.5 px-2 font-medium">Meio de pagamento</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {Array.from({ length: installments }, (_, i) => {
-                      const installmentValue = paymentFrequency === "anual" ? totalContrato / 12 : totalContrato;
-                      const baseDate = new Date(firstPaymentDate + "T12:00:00");
-                      const date = new Date(baseDate);
-                      date.setMonth(date.getMonth() + i);
-                      if (dueDay) {
-                        date.setDate(Math.min(parseInt(dueDay), 28));
-                      }
-                      return (
-                        <tr key={i} className="border-b border-border/30">
-                          <td className="py-1.5 px-2">{i + 1}</td>
-                          <td className="py-1.5 px-2">{fmtCur(installmentValue)}</td>
-                          <td className="py-1.5 px-2">{date.toLocaleDateString("pt-BR")}</td>
-                        </tr>
-                      );
-                    })}
+                    {installmentsList.map((inst, i) => (
+                      <tr key={i} className="border-b border-border/30">
+                        <td className="py-1.5 px-2">
+                          <Input className="h-7 w-16 text-xs bg-muted" value={inst.number} readOnly />
+                        </td>
+                        <td className="py-1.5 px-2">
+                          <div className="flex items-center gap-1">
+                            <span className="text-muted-foreground text-xs">R$</span>
+                            <Input
+                              className="h-7 w-28 text-xs"
+                              type="number"
+                              step="0.01"
+                              value={inst.value}
+                              onChange={(e) => updateInstallment(i, { value: parseFloat(e.target.value) || 0 })}
+                            />
+                          </div>
+                        </td>
+                        <td className="py-1.5 px-2">
+                          <Input
+                            className="h-7 text-xs"
+                            type="date"
+                            value={inst.dueDate}
+                            onChange={(e) => updateInstallment(i, { dueDate: e.target.value })}
+                          />
+                        </td>
+                        <td className="py-1.5 px-2">
+                          <Select value={inst.paymentMethod} onValueChange={(v) => updateInstallment(i, { paymentMethod: v })}>
+                            <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="boleto">Boleto</SelectItem>
+                              <SelectItem value="pix">PIX</SelectItem>
+                              <SelectItem value="cartao">Cartão</SelectItem>
+                              <SelectItem value="transferencia">Transferência</SelectItem>
+                              <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>

@@ -110,6 +110,10 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
   // Currency state
   const [currency, setCurrency] = useState("BRL");
 
+  // Installments state
+  const [installments, setInstallments] = useState<import("./ProposalItemsManager").Installment[]>([]);
+  const [numberOfInstallments, setNumberOfInstallments] = useState(12);
+
   // In signature mode, always show the selection panel
   useEffect(() => {
     if (signatureMode) setShowSignatureSelect(true);
@@ -231,6 +235,8 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     setLineItems([]);
     setPaymentFrequency("mensal");
     setCurrency("BRL");
+    setInstallments([]);
+    setNumberOfInstallments(12);
   };
 
   const handleCreate = async () => {
@@ -269,6 +275,8 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
         company_snapshot: companyData,
         servidor_snapshot: servidorData,
         currency,
+        installments,
+        number_of_installments: numberOfInstallments,
         brand_id: selectedBrandId,
         brand_snapshot: brands.find(b => b.id === selectedBrandId) || null,
       };
@@ -1135,6 +1143,10 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
           onFirstPaymentDateChange={(v) => setForm({ ...form, first_payment_date: v })}
           dueDay={form.due_day}
           onDueDayChange={(v) => setForm({ ...form, due_day: v })}
+          installments={installments}
+          onInstallmentsChange={setInstallments}
+          numberOfInstallments={numberOfInstallments}
+          onNumberOfInstallmentsChange={setNumberOfInstallments}
         />
 
         {/* Observações */}
@@ -1336,6 +1348,8 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
                             setLineItems(m.line_items || []);
                             setPaymentFrequency(m.payment_frequency || "mensal");
                             setCurrency(m.currency || "BRL");
+                            if (m.installments) setInstallments(m.installments);
+                            if (m.number_of_installments) setNumberOfInstallments(m.number_of_installments);
                             if (m.brand_id) setSelectedBrandId(m.brand_id);
                             setEditingProposal(p);
                             setShowForm(true);
