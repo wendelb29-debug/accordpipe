@@ -109,15 +109,36 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
     setLoadingSigners(false);
   };
 
-  const handleViewContract = (contract: any) => {
+  const handleViewContract = async (contract: any) => {
     setViewContract(contract);
-    fetchContractSigners(contract.id);
+    await fetchContractSigners(contract.id);
   };
+
+  // After signers load, ensure vendor is present
+  useEffect(() => {
+    if (viewContract && contractSigners.length >= 0 && !loadingSigners) {
+      ensureVendorSigner(viewContract.id, contractSigners);
+    }
+  }, [viewContract?.id, loadingSigners]);
 
   const handleAddSigner = async () => {
     if (!viewContract || !newSignerName.trim()) {
       toast.error("Preencha ao menos o nome do signatário");
       return;
+    }
+    if (newSignerEmail.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(newSignerEmail.trim())) {
+        toast.error("E-mail inválido");
+        return;
+      }
+      const duplicate = contractSigners.find(
+        (s) => s.signer_name?.toLowerCase() === newSignerEmail.trim().toLowerCase()
+      );
+      if (duplicate) {
+        toast.error("Este e-mail já está na lista de envolvidos");
+        return;
+      }
     }
     setAddingNewSigner(true);
     try {
@@ -141,6 +162,24 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
       toast.error("Erro ao adicionar signatário: " + (err.message || ""));
     }
     setAddingNewSigner(false);
+  };
+
+  // Auto-add vendor when viewing contract
+  const ensureVendorSigner = async (contractId: string, signers: ContractSigner[]) => {
+    if (!profile?.name) return;
+    const hasVendor = signers.some((s) => s.signer_role === "vendedor");
+    if (hasVendor) return;
+    try {
+      const token = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+      await supabase.from("contract_signatures").insert({
+        contract_id: contractId,
+        signer_role: "vendedor",
+        signing_token: token,
+        signer_name: profile.name,
+        signer_document: null,
+      } as any);
+      await fetchContractSigners(contractId);
+    } catch { /* silent */ }
   };
 
   const getSigningLink = (token: string | null) => {
@@ -483,8 +522,8 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
                   <User className="h-5 w-5 text-primary" /> Envolvidos
                 </h3>
                 {viewContract?.signature_status === "pending" && (
-                  <Button size="sm" variant="outline" onClick={() => setAddSignerOpen(true)} className="gap-1.5 text-xs">
-                    <UserPlus className="h-3.5 w-3.5" /> Adicionar pessoa
+                  <Button size="sm" onClick={() => setAddSignerOpen(true)} className="gap-1.5 text-xs bg-primary hover:bg-primary/90 text-primary-foreground">
+                    <Plus className="h-3.5 w-3.5" /> Adicionar Signatário
                   </Button>
                 )}
               </div>
@@ -495,49 +534,79 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
                 <p className="text-sm text-muted-foreground text-center py-4">Nenhum signatário encontrado</p>
               ) : (
                 <div className="space-y-3">
-                  {contractSigners.map((signer) => (
-                    <Card key={signer.id} className={cn("p-4 border-l-4", signer.signed_at ? "border-l-green-500 bg-green-50/50 dark:bg-green-950/20" : "border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20")}>
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            {signer.signed_at ? (
-                              <CheckCircle2 className="h-4 w-4 text-green-600" />
-                            ) : (
-                              <Clock className="h-4 w-4 text-amber-600" />
-                            )}
-                            <span className="text-sm font-medium text-foreground">{signer.signer_name || "—"}</span>
+                  {contractSigners.map((signer) => {
+                    const isSigned = !!signer.signed_at;
+                    const isVendor = signer.signer_role === "vendedor";
+                    return (
+                      <Card key={signer.id} className={cn(
+                        "border-l-4 overflow-hidden",
+                        isSigned
+                          ? "border-l-green-500 bg-green-50 dark:bg-green-950/30"
+                          : "border-l-amber-400 bg-card"
+                      )}>
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-1.5">
+                              <div className="flex items-center gap-2">
+                                {isSigned ? (
+                                  <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+                                ) : (
+                                  <Clock className="h-4 w-4 text-amber-500 shrink-0" />
+                                )}
+                                <span className="text-sm font-semibold text-foreground">{signer.signer_name || "—"}</span>
+                                {isVendor && (
+                                  <Badge variant="outline" className="text-[10px] h-5 border-primary/40 text-primary">Vendedor</Badge>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground ml-6">
+                                {roleLabels[signer.signer_role] || signer.signer_role}
+                              </p>
+                              {signer.signer_document && (
+                                <p className="text-xs font-mono text-muted-foreground ml-6">{signer.signer_document}</p>
+                              )}
+                              {isSigned && (
+                                <p className="text-xs text-muted-foreground ml-6">
+                                  Assinado em: {new Date(signer.signed_at!).toLocaleString("pt-BR")}
+                                </p>
+                              )}
+                              {signer.signing_token && !isSigned && (
+                                <button
+                                  onClick={() => handleCopySignerLink(signer.signing_token, signer.signer_name)}
+                                  className="flex items-center gap-1 text-xs text-primary hover:underline ml-6 cursor-pointer"
+                                >
+                                  <Link2 className="h-3 w-3" /> Link para assinatura
+                                </button>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {signer.signing_token && !isSigned && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => handleCopySignerLink(signer.signing_token, signer.signer_name)}
+                                  title="Copiar link"
+                                >
+                                  <Copy className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              {signer.signature_photo_url && (
+                                <img src={signer.signature_photo_url} alt="Foto" className="h-8 w-8 rounded object-cover border" />
+                              )}
+                            </div>
                           </div>
-                          <p className="text-xs text-muted-foreground ml-6">
-                            {roleLabels[signer.signer_role] || signer.signer_role}
-                          </p>
-                          {signer.signer_document && (
-                            <p className="text-xs font-mono text-muted-foreground ml-6">{signer.signer_document}</p>
-                          )}
-                          {signer.signed_at && (
-                            <p className="text-xs text-muted-foreground ml-6">
-                              Assinado em: {new Date(signer.signed_at).toLocaleString("pt-BR")}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {signer.signing_token && !signer.signed_at && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="gap-1.5 text-xs"
-                              onClick={() => handleCopySignerLink(signer.signing_token, signer.signer_name)}
-                            >
-                              <Link2 className="h-3.5 w-3.5" /> Link para assinatura
-                            </Button>
-                          )}
-                          {signer.signature_photo_url && (
-                            <img src={signer.signature_photo_url} alt="Foto" className="h-8 w-8 rounded object-cover border" />
-                          )}
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
+              )}
+
+              {/* Cancel button */}
+              {viewContract?.signature_status === "pending" && (
+                <Button variant="destructive" className="w-full gap-2" size="sm" onClick={() => { /* cancel logic if needed */ }}>
+                  <X className="h-4 w-4" /> Cancelar assinatura do documento
+                </Button>
               )}
             </div>
           </ScrollArea>
