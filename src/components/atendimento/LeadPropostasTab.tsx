@@ -1087,13 +1087,56 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
             Fechar
           </Button>
           <div className="flex-1" />
-          <Button size="sm" variant="outline" onClick={() => {
-            // Generate PDF preview
-            handleCreate().then(() => {
-              const latest = proposals[0];
-              if (latest) generateProposalPdf(latest);
-            });
-          }} className="text-xs gap-1.5">
+          <Button size="sm" variant="outline" onClick={async () => {
+            if (!form.title.trim()) { toast.error("Preencha o título da proposta"); return; }
+            setCreating(true);
+            try {
+              const validUntil = new Date();
+              validUntil.setDate(validUntil.getDate() + form.validity_days);
+              const totalMrr = lineItems.reduce((sum, it) => sum + it.total, 0);
+              const itemsText = lineItems.map(it => {
+                const discountStr = it.discountValue > 0
+                  ? ` (desconto: ${it.discountType === "percent" ? `${it.discountValue}%` : `R$ ${it.discountValue}`})`
+                  : "";
+                return `${it.quantity}x ${it.name} - R$ ${it.unitValue.toFixed(2)}${discountStr} = R$ ${it.total.toFixed(2)}`;
+              }).join("\n");
+
+              const result = await addActivity({
+                type: "proposal",
+                title: `Proposta: ${form.title}`,
+                description: form.description || undefined,
+                servidor_id: lead.servidor_id,
+                metadata: {
+                  sigla: form.sigla, introduction: form.introduction,
+                  items: itemsText || form.items, line_items: lineItems,
+                  value_ps: form.value_ps, value_mrr: totalMrr || form.value_mrr,
+                  validity_days: form.validity_days, valid_until: validUntil.toISOString(),
+                  status: "enviada", total_items: lineItems.length || (form.items ? form.items.split("\n").filter(Boolean).length : 0),
+                  payment_method: form.payment_method, payment_frequency: paymentFrequency,
+                  first_payment_date: form.first_payment_date, due_day: form.due_day,
+                  version: form.version, oc_number: form.oc_number,
+                  company_snapshot: companyData, servidor_snapshot: servidorData,
+                  brand_id: selectedBrandId, brand_snapshot: brands.find(b => b.id === selectedBrandId) || null,
+                },
+              });
+
+              if (result) {
+                toast.success("Proposta salva! Gerando PDF...");
+                await generateProposalPdf(result);
+                resetForm();
+                setShowForm(false);
+                setEditingProposal(null);
+                await fetchProposals();
+              } else {
+                toast.error("Erro ao salvar proposta.");
+              }
+            } catch (err) {
+              console.error("Error saving and generating PDF:", err);
+              toast.error("Erro ao salvar proposta");
+            } finally {
+              setCreating(false);
+            }
+          }} disabled={!form.title.trim() || creating} className="text-xs gap-1.5">
             <Download className="h-3.5 w-3.5" /> Gerar PDF
           </Button>
           <Button
