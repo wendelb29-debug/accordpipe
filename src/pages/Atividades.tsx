@@ -224,7 +224,7 @@ export default function Atividades() {
     }
   };
 
-
+  const dateFilterLabels: Record<string, string> = {
     today: "Hoje",
     week: "Esta semana",
     month: "Este mês",
