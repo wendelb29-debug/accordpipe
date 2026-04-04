@@ -155,11 +155,22 @@ export default function AssinarPdf() {
     };
   }, []);
 
+  // Get IP address
+  const getClientIp = async (): Promise<string> => {
+    try {
+      const res = await fetch("https://api.ipify.org?format=json");
+      const data = await res.json();
+      return data.ip || "0.0.0.0";
+    } catch { return "0.0.0.0"; }
+  };
+
   // Sign
   const handleSign = async () => {
     if (!signer || !photo || !location) return;
     setSigning(true);
     try {
+      const clientIp = await getClientIp();
+
       // Upload photo
       const fileName = `pdf_${signer.id}_${Date.now()}.jpg`;
       const { error: uploadErr } = await supabase.storage
@@ -179,6 +190,7 @@ export default function AssinarPdf() {
           signature_latitude: location.lat,
           signature_longitude: location.lng,
           signature_address: location.address,
+          signer_ip: clientIp,
         } as any)
         .eq("id", signer.id);
       if (updateErr) throw updateErr;
@@ -187,20 +199,38 @@ export default function AssinarPdf() {
       await supabase.from("pdf_contract_history").insert({
         contract_id: signer.contract_id,
         action: "assinado",
-        description: `${signer.name} assinou o contrato em ${new Date().toLocaleString("pt-BR")}. Local: ${location.address}`,
+        description: `${signer.name} assinou o contrato em ${new Date().toLocaleString("pt-BR")}. Local: ${location.address}. IP: ${clientIp}`,
       } as any);
 
-      // Check if all signers signed → update contract status
+      // Check if all signers signed → update contract status + generate hash
       const { data: allSigners } = await supabase
         .from("pdf_contract_signers")
         .select("status")
         .eq("contract_id", signer.contract_id);
 
       if (allSigners && allSigners.every((s: any) => s.status === "assinado")) {
+        // Generate document hash and validation code
+        const now = new Date().toISOString();
+        const hashInput = `${signer.contract_id}|${now}|pdf_contract`;
+        const encoder = new TextEncoder();
+        const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(hashInput));
+        const documentHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+        const validationCode = crypto.randomUUID().replace(/-/g, "").slice(0, 16).toUpperCase();
+
         await supabase
           .from("pdf_contracts")
-          .update({ status: "assinado" } as any)
+          .update({
+            status: "assinado",
+            document_hash: documentHash,
+            validation_code: validationCode,
+          } as any)
           .eq("id", signer.contract_id);
+
+        await supabase.from("pdf_contract_history").insert({
+          contract_id: signer.contract_id,
+          action: "concluido",
+          description: `Todas as assinaturas foram coletadas. Hash: ${documentHash.slice(0, 16)}... Código: ${validationCode}`,
+        } as any);
       }
 
       setSigned(true);
