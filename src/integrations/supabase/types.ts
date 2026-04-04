@@ -1369,6 +1369,7 @@ export type Database = {
           created_by_name: string | null
           created_by_user_id: string | null
           description: string | null
+          document_hash: string | null
           id: string
           name: string
           pdf_path: string
@@ -1377,12 +1378,14 @@ export type Database = {
           sign_mode: string
           status: string
           updated_at: string
+          validation_code: string | null
         }
         Insert: {
           created_at?: string
           created_by_name?: string | null
           created_by_user_id?: string | null
           description?: string | null
+          document_hash?: string | null
           id?: string
           name: string
           pdf_path: string
@@ -1391,12 +1394,14 @@ export type Database = {
           sign_mode?: string
           status?: string
           updated_at?: string
+          validation_code?: string | null
         }
         Update: {
           created_at?: string
           created_by_name?: string | null
           created_by_user_id?: string | null
           description?: string | null
+          document_hash?: string | null
           id?: string
           name?: string
           pdf_path?: string
@@ -1405,6 +1410,7 @@ export type Database = {
           sign_mode?: string
           status?: string
           updated_at?: string
+          validation_code?: string | null
         }
         Relationships: [
           {
