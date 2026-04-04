@@ -245,6 +245,33 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     }
   };
 
+  const handleCepSearch = async () => {
+    const cepClean = (form.comp_cep || "").replace(/\D/g, "");
+    if (cepClean.length !== 8) {
+      toast.error("CEP inválido. Informe 8 dígitos.");
+      return;
+    }
+    setSearchingCep(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cepClean}/json/`);
+      if (!res.ok) throw new Error("CEP não encontrado");
+      const data = await res.json();
+      if (data.erro) throw new Error("CEP não encontrado");
+      setForm(prev => ({
+        ...prev,
+        comp_endereco: data.logradouro || prev.comp_endereco,
+        comp_bairro: data.bairro || prev.comp_bairro,
+        cidade: data.localidade || prev.cidade,
+        estado: data.uf || prev.estado,
+      }));
+      toast.success("Endereço preenchido pelo CEP!");
+    } catch {
+      toast.error("Não foi possível consultar o CEP");
+    } finally {
+      setSearchingCep(false);
+    }
+  };
+
   // Detect changes and log them
   const handleSave = async () => {
     if (saving) return;
@@ -278,6 +305,22 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
       const success = await onUpdate(lead.id, updates);
       if (success) {
+        // Also update company address if company_id exists
+        if (lead.company_id) {
+          await supabase.from("companies").update({
+            endereco: form.comp_endereco || null,
+            numero: form.comp_numero || null,
+            bairro: form.comp_bairro || null,
+            complemento: form.comp_complemento || null,
+            cep: form.comp_cep || null,
+            cidade: form.cidade || null,
+            estado: form.estado || null,
+            email: form.comp_email || null,
+            telefone: form.comp_telefone || null,
+            razao_social: form.comp_razao_social || form.company_name,
+          } as any).eq("id", lead.company_id);
+        }
+
         setEditing(false);
         toast.success("Dados atualizados!");
 
