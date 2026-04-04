@@ -273,6 +273,8 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
         company_snapshot: companyData,
         servidor_snapshot: servidorData,
         currency,
+        installments,
+        number_of_installments: numberOfInstallments,
         brand_id: selectedBrandId,
         brand_snapshot: brands.find(b => b.id === selectedBrandId) || null,
       };
