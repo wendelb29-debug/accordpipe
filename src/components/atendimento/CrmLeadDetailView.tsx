@@ -146,6 +146,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const [newActivity, setNewActivity] = useState({ type: "note", title: "", description: "" });
   const [showActivityForm, setShowActivityForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [searchingCnpj, setSearchingCnpj] = useState(false);
   const [showLostDialog, setShowLostDialog] = useState(false);
   const [selectedLostReason, setSelectedLostReason] = useState("");
   const [showReopenDialog, setShowReopenDialog] = useState(false);
