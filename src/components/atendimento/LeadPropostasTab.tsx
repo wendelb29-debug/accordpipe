@@ -101,6 +101,11 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false }: {
   const [generatedContractLink, setGeneratedContractLink] = useState<string | null>(null);
   const [registrationData, setRegistrationData] = useState<any>(null);
 
+  // Brand state
+  const [brands, setBrands] = useState<ProposalBrand[]>([]);
+  const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
+  const [showBrandManager, setShowBrandManager] = useState(false);
+
   // In signature mode, always show the selection panel
   useEffect(() => {
     if (signatureMode) setShowSignatureSelect(true);
