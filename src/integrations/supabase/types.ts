@@ -1404,6 +1404,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          birth_date: string | null
           company_id: string | null
           created_at: string
           email: string
@@ -1420,6 +1421,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          birth_date?: string | null
           company_id?: string | null
           created_at?: string
           email: string
@@ -1436,6 +1438,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          birth_date?: string | null
           company_id?: string | null
           created_at?: string
           email?: string
@@ -1916,6 +1919,15 @@ export type Database = {
       get_pdf_contract_servidor: {
         Args: { _contract_id: string }
         Returns: string
+      }
+      get_today_birthdays: {
+        Args: { _company_id?: string }
+        Returns: {
+          avatar_url: string
+          birth_date: string
+          name: string
+          user_id: string
+        }[]
       }
       get_user_company_id: { Args: { _user_id: string }; Returns: string }
       has_role: {

@@ -10,16 +10,20 @@ import { ActivityFeed } from "@/components/home/ActivityFeed";
 import { StatsOverview } from "@/components/home/StatsOverview";
 import { SupportDialog } from "@/components/home/SupportDialog";
 import { ManageAnnouncementsDialog } from "@/components/home/ManageAnnouncementsDialog";
+import { BirthdayBanner } from "@/components/home/BirthdayBanner";
+import { BirthdayCard } from "@/components/home/BirthdayCard";
+import { BirthdayCelebration } from "@/components/home/BirthdayCelebration";
 
 interface Announcement {
   id: string; title: string; image_url: string; description: string | null;
 }
 
 export default function Home() {
-  const { isAdmin, isMaster, activeCompanyId } = useAuth();
+  const { isAdmin, isMaster, activeCompanyId, profile } = useAuth();
   const [supportOpen, setSupportOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const fetchAnnouncements = useCallback(async () => {
     let q = supabase.from("announcements").select("id,title,image_url,description")
@@ -33,6 +37,9 @@ export default function Home() {
 
   return (
     <div className="space-y-6 p-1">
+      {/* Birthday celebration modal + confetti */}
+      <BirthdayCelebration />
+
       {/* Top bar */}
       <div className="flex items-center justify-between">
         <div />
@@ -48,11 +55,17 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Birthday banner (missing birth date) */}
+      <BirthdayBanner key={refreshKey} onSaved={() => setRefreshKey((k) => k + 1)} />
+
       {/* Welcome */}
       <WelcomeBanner />
 
       {/* Stats */}
       <StatsOverview />
+
+      {/* Birthday card */}
+      <BirthdayCard />
 
       {/* Quick actions */}
       <QuickActions />
