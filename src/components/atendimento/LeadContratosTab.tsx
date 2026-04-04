@@ -268,9 +268,48 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
     addActivity({ type: "signature_link", title: `Link copiado: ${code}`, description: `Link do contrato ${code} copiado.` });
   };
 
-  const handleDownloadPdf = (contract: any) => {
+  const handleDownloadPdf = async (contract: any) => {
     if (!contract.contract_content) { toast.error("Conteúdo não disponível"); return; }
-    downloadContractPdf({ content: contract.contract_content, code: contract.code, companyName: contract.company?.razao_social || lead.company_name });
+
+    if (contract.signature_status === "signed" && contract.document_hash) {
+      // Fetch signers and generate signed PDF with proof
+      const { data: sigs } = await supabase
+        .from("contract_signatures")
+        .select("*")
+        .eq("contract_id", contract.id)
+        .order("created_at", { ascending: true });
+
+      const signers = (sigs || []).map((s: any) => ({
+        name: s.signer_name || "—",
+        role: s.signer_role || "signatário",
+        email: null,
+        document: s.signer_document,
+        signed_at: s.signed_at,
+        ip: s.signer_ip,
+        signature_hash: s.signer_ip ? undefined : undefined, // hash generated at sign time
+      }));
+
+      const validationUrl = `${window.location.origin}/validar-documento/${contract.validation_code || ""}`;
+
+      downloadSignedContractPdf({
+        content: contract.contract_content,
+        code: contract.code,
+        companyName: contract.company?.razao_social || lead.company_name,
+        documentHash: contract.document_hash || "",
+        validationCode: contract.validation_code || "",
+        signedAt: contract.signed_at || new Date().toISOString(),
+        signers,
+        history: [
+          { timestamp: contract.created_at, user: "Sistema", action: "gerou o documento." },
+          ...(contract.signed_at ? [{ timestamp: contract.signed_at, user: signers[0]?.name || "Signatário", action: "assinou o documento." }] : []),
+        ],
+        validationUrl,
+        companyEmitter: "Save Car Brasil Tecnologia e Serviços Ltda",
+      });
+    } else {
+      downloadContractPdf({ content: contract.contract_content, code: contract.code, companyName: contract.company?.razao_social || lead.company_name });
+    }
+
     addActivity({ type: "pdf_download", title: `PDF ${contract.code} baixado`, description: `Download do PDF do contrato ${contract.code}.` });
   };
 
