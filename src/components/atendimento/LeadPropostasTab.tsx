@@ -239,6 +239,9 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false }: {
           // Snapshot company/servidor data
           company_snapshot: companyData,
           servidor_snapshot: servidorData,
+          // Brand info
+          brand_id: selectedBrandId,
+          brand_snapshot: brands.find(b => b.id === selectedBrandId) || null,
         },
       });
 
