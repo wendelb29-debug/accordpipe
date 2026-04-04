@@ -216,7 +216,15 @@ export default function Atividades() {
       "\n" + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   };
 
-  const dateFilterLabels: Record<string, string> = {
+  const handleLeadClick = (activity: ActivityRow) => {
+    if (isMobile) {
+      setExpandedActivityId(expandedActivityId === activity.id ? null : activity.id);
+    } else {
+      window.open(`/gestao-vendas?lead=${activity.lead_id}`, "_blank");
+    }
+  };
+
+
     today: "Hoje",
     week: "Esta semana",
     month: "Este mês",
