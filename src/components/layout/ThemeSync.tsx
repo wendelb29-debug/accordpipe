@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -6,23 +6,23 @@ import { useAuth } from "@/contexts/AuthContext";
  * Syncs the theme with user profile preference.
  * - Forces "light" when no user is logged in (public pages).
  * - Applies user's saved theme after login.
+ * Uses useLayoutEffect to prevent visible flash.
  */
 export function ThemeSync() {
   const { setTheme } = useTheme();
   const { user, profile, loading } = useAuth();
 
-  useEffect(() => {
+  // Use layout effect for synchronous DOM update before paint
+  useLayoutEffect(() => {
     if (loading) return;
 
     if (!user) {
-      // Public pages: always light
       setTheme("light");
       return;
     }
 
     if (profile) {
-      // Apply user's saved theme
-      const userTheme = (profile as any).theme || "light";
+      const userTheme = profile.theme || "light";
       setTheme(userTheme);
     }
   }, [user, profile, loading, setTheme]);
