@@ -64,6 +64,8 @@ interface UserAvatarMap {
 
 export default function Atividades() {
   const { profile, isMaster, isAdmin, activeCompanyId, user } = useAuth();
+  const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [activities, setActivities] = useState<ActivityRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"list" | "agenda">("list");
@@ -71,6 +73,7 @@ export default function Atividades() {
   const [perPage, setPerPage] = useState(20);
   const [dateFilter, setDateFilter] = useState("today");
   const [userAvatars, setUserAvatars] = useState<UserAvatarMap>({});
+  const [expandedActivityId, setExpandedActivityId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchActivities();
