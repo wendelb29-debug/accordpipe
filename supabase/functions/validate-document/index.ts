@@ -138,6 +138,8 @@ Deno.serve(async (req) => {
 
     const isSigned = contractType === "contract"
       ? contract.signature_status === "signed"
+      : contractType === "pdf_contract"
+      ? contract.status === "assinado"
       : contract.contract_status === "assinado";
 
     return new Response(
