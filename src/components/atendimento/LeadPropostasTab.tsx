@@ -275,6 +275,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false }: {
 
     const srv = meta.servidor_snapshot || servidorData;
     const comp = meta.company_snapshot || companyData;
+    const brandInfo = meta.brand_snapshot || brands.find(b => b.id === meta.brand_id);
     const createdDate = new Date(proposal.created_at).toLocaleDateString("pt-BR");
     const validUntilStr = meta.valid_until ? new Date(meta.valid_until).toLocaleDateString("pt-BR") : "-";
     const sigla = meta.sigla || "SEM-SIGLA";
@@ -284,22 +285,8 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false }: {
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(9);
     pdf.text(`${createdDate} - Validade: ${validUntilStr}`, mL, y);
-    pdf.setFont("helvetica", "normal");
-    pdf.text("Proposta ", pageWidth - mR, y, { align: "right" });
-    // Bold the code
-    const propostaLabel = "Proposta ";
-    const codeText = `${sigla}`;
-    const versionText = ` - v${version}`;
-    const rightText = propostaLabel + codeText + versionText;
-    const rightWidth = pdf.getTextWidth(rightText);
-    const rightX = pageWidth - mR - rightWidth;
-    pdf.text("Proposta ", rightX, y);
-    const afterProposta = rightX + pdf.getTextWidth("Proposta ");
-    pdf.setFont("helvetica", "bold");
-    pdf.text(codeText, afterProposta, y);
-    const afterCode = afterProposta + pdf.getTextWidth(codeText);
-    pdf.setFont("helvetica", "normal");
-    pdf.text(versionText, afterCode, y);
+    const rightText = `Proposta ${sigla} - v${version}`;
+    pdf.text(rightText, pageWidth - mR, y, { align: "right" });
     y += 4;
 
     // Horizontal line
@@ -308,32 +295,49 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false }: {
     pdf.line(mL, y, pageWidth - mR, y);
     y += 6;
 
-    // ===== ROW 2: Servidor info left + Contato right =====
+    // ===== ROW 2: Brand logo (left) + Servidor info (center) + Contato (right) =====
     const srvStartY = y;
 
-    // Servidor section (left ~65% width)
+    // Brand logo (top-left)
+    let logoEndX = mL;
+    if (brandInfo?.logo_url) {
+      try {
+        const logoImg = new Image();
+        logoImg.crossOrigin = "anonymous";
+        await new Promise<void>((resolve, reject) => {
+          logoImg.onload = () => resolve();
+          logoImg.onerror = () => reject();
+          logoImg.src = brandInfo.logo_url;
+        });
+        const logoW = 30;
+        const logoH = 15;
+        pdf.addImage(logoImg, "PNG", mL, y, logoW, logoH);
+        logoEndX = mL + logoW + 4;
+      } catch {
+        // If logo fails, skip
+      }
+    }
+
+    // Servidor section
+    const srvX = logoEndX;
     if (srv) {
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(12);
-      pdf.text(srv.nome_fantasia || srv.razao_social || "", mL, y);
-      y += 6;
-      pdf.setFontSize(10);
-      pdf.text(srv.razao_social || "", mL, y);
-      y += 5;
+      pdf.setFontSize(11);
+      pdf.text(srv.nome_fantasia || srv.razao_social || "", srvX, y + 4);
+      let srvY = y + 9;
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(9);
-      if (srv.cnpj) { pdf.text(`CNPJ: ${srv.cnpj}`, mL, y); y += 4.5; }
-      const srvAddr = [
-        srv.endereco ? `Endereço: ${srv.endereco}` : null,
-        srv.numero,
-      ].filter(Boolean).join(", ");
+      if (srv.razao_social && srv.nome_fantasia) {
+        pdf.text(srv.razao_social, srvX, srvY); srvY += 4.5;
+      }
+      if (srv.cnpj) { pdf.text(`CNPJ: ${srv.cnpj}`, srvX, srvY); srvY += 4.5; }
+      const srvAddr = [srv.endereco, srv.numero].filter(Boolean).join(", ");
       const srvAddr2 = [srv.bairro, srv.cidade && srv.estado ? `${srv.cidade}/${srv.estado}` : null, srv.cep].filter(Boolean).join(" ");
-      if (srvAddr) { pdf.text(srvAddr, mL, y); y += 4.5; }
-      if (srvAddr2) { pdf.text(srvAddr2, mL, y); y += 4.5; }
+      if (srvAddr) { pdf.text(`Endereço: ${srvAddr}`, srvX, srvY); srvY += 4.5; }
+      if (srvAddr2) { pdf.text(srvAddr2, srvX, srvY); srvY += 4.5; }
     }
 
     // Contato section (right column)
-    const contactX = pageWidth - mR - 55;
     let cy = srvStartY;
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(11);
