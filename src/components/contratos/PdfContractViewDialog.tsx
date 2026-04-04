@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   CheckCircle2, Clock, XCircle, Eye, Copy, User, MapPin, Camera, Link2, Send,
+  Shield, Download, Hash, Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { generateSignedContractPdf } from "@/lib/generateSignedContractPdf";
 import type { PdfContract, PdfContractSigner, PdfContractHistory } from "@/hooks/usePdfContracts";
 
 const signerStatusConfig: Record<string, { label: string; className: string; emoji: string }> = {
@@ -17,7 +19,7 @@ const signerStatusConfig: Record<string, { label: string; className: string; emo
 };
 
 interface Props {
-  contract: PdfContract | null;
+  contract: (PdfContract & { document_hash?: string; validation_code?: string }) | null;
   signers: PdfContractSigner[];
   history: PdfContractHistory[];
   onClose: () => void;
@@ -33,6 +35,57 @@ export function PdfContractViewDialog({ contract, signers, history, onClose, can
   const copyLink = (token: string) => {
     navigator.clipboard.writeText(getSigningLink(token));
     toast.success("Link copiado!");
+  };
+
+  const isSigned = contract.status === "assinado";
+
+  const handleDownloadSignedPdf = async () => {
+    if (!contract.document_hash || !contract.validation_code) {
+      toast.error("Documento sem dados de validação");
+      return;
+    }
+    const validationUrl = `${window.location.origin}/validar-documento/${contract.validation_code}`;
+    const signerData = signers.map(s => ({
+      name: s.name,
+      role: "signatário",
+      email: s.email,
+      document: s.cpf_cnpj,
+      signed_at: s.signed_at,
+      ip: s.signer_ip,
+    }));
+    const historyData = history.map(h => ({
+      timestamp: h.created_at,
+      user: h.created_by_name || "Sistema",
+      action: h.description || h.action,
+    }));
+
+    const blob = generateSignedContractPdf({
+      content: `CONTRATO: ${contract.name}\n\n${contract.description || "Contrato PDF com assinatura digital."}`,
+      code: `PDF-${contract.id.slice(0, 8).toUpperCase()}`,
+      companyName: contract.created_by_name || "Empresa",
+      documentHash: contract.document_hash,
+      validationCode: contract.validation_code,
+      signedAt: signers.find(s => s.signed_at)?.signed_at || new Date().toISOString(),
+      signers: signerData,
+      history: historyData,
+      validationUrl,
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${contract.name}_assinado.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("PDF com comprovante de assinatura baixado!");
+  };
+
+  const copyValidationLink = () => {
+    if (!contract.validation_code) return;
+    const link = `${window.location.origin}/validar-documento/${contract.validation_code}`;
+    navigator.clipboard.writeText(link);
+    toast.success("Link de validação copiado!");
   };
 
   return (
@@ -63,6 +116,39 @@ export function PdfContractViewDialog({ contract, signers, history, onClose, can
 
           {contract.description && (
             <p className="text-sm text-muted-foreground">{contract.description}</p>
+          )}
+
+          {/* Legal Validity Block - shown when signed */}
+          {isSigned && contract.document_hash && contract.validation_code && (
+            <Card className="border-primary/30 bg-primary/5">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-primary" />
+                  <span className="font-semibold text-sm text-foreground">Validade Jurídica</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Documento assinado digitalmente com validade jurídica, conforme a Medida Provisória nº 2.200-2/2001.
+                </p>
+                <div className="grid gap-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <Hash className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="font-mono text-muted-foreground break-all">Hash: {contract.document_hash.slice(0, 32)}...</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="font-mono text-muted-foreground">Código: {contract.validation_code}</span>
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={copyValidationLink}>
+                    <Copy className="h-3 w-3" /> Link de Validação
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={handleDownloadSignedPdf}>
+                    <Download className="h-3 w-3" /> Baixar PDF Assinado
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* PDF Viewer */}
@@ -100,11 +186,11 @@ export function PdfContractViewDialog({ contract, signers, history, onClose, can
                           <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={() => copyLink(signer.signing_token)}>
                             <Copy className="h-3 w-3" /> Copiar Link
                           </Button>
-                          {signer.email && (
+                          {signer.phone && (
                             <Button variant="outline" size="sm" className="gap-1 text-xs h-7"
                               onClick={() => {
                                 const link = getSigningLink(signer.signing_token);
-                                window.open(`https://wa.me/?text=${encodeURIComponent(`Olá ${signer.name}, segue o link para assinatura do contrato "${contract.name}": ${link}`)}`, "_blank");
+                                window.open(`https://wa.me/${signer.phone}?text=${encodeURIComponent(`Olá ${signer.name}, segue o link para assinatura do contrato "${contract.name}": ${link}`)}`, "_blank");
                               }}
                             >
                               <Send className="h-3 w-3" /> WhatsApp
@@ -116,6 +202,7 @@ export function PdfContractViewDialog({ contract, signers, history, onClose, can
                       {signer.status === "assinado" && signer.signed_at && (
                         <div className="text-xs text-muted-foreground space-y-1 pt-1 border-t">
                           <p>Assinado em: {new Date(signer.signed_at).toLocaleString("pt-BR")}</p>
+                          {signer.signer_ip && <p>IP: {signer.signer_ip}</p>}
                           {signer.signature_address && (
                             <p className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {signer.signature_address}</p>
                           )}
