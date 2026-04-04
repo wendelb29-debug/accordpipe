@@ -188,6 +188,34 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     return Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
   };
 
+  const handleCnpjSearch = async () => {
+    const cnpjClean = (form.documento || "").replace(/\D/g, "");
+    if (cnpjClean.length !== 14) {
+      toast.error("CNPJ inválido. Informe 14 dígitos.");
+      return;
+    }
+    setSearchingCnpj(true);
+    try {
+      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpjClean}`);
+      if (!res.ok) throw new Error("CNPJ não encontrado");
+      const data = await res.json();
+      setForm(prev => ({
+        ...prev,
+        company_name: data.razao_social || prev.company_name,
+        contact_name: data.qsa?.[0]?.nome_socio || prev.contact_name,
+        email: data.email && data.email !== "" ? data.email : prev.email,
+        phone: data.ddd_telefone_1 || prev.phone,
+        cidade: data.municipio || prev.cidade,
+        estado: data.uf || prev.estado,
+      }));
+      toast.success("Dados do CNPJ preenchidos!");
+    } catch {
+      toast.error("Não foi possível consultar o CNPJ");
+    } finally {
+      setSearchingCnpj(false);
+    }
+  };
+
   // Detect changes and log them
   const handleSave = async () => {
     if (saving) return;
@@ -205,6 +233,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         estado: form.estado,
         forecast_date: form.forecast_date,
         source: form.source,
+        documento: form.documento,
       } as any;
 
       // Detect what changed
