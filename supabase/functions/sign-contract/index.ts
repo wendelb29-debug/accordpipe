@@ -6,6 +6,22 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function generateHash(data: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const dataBuffer = encoder.encode(data);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", dataBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function getClientIp(req: Request): string {
+  return (
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
+    "0.0.0.0"
+  );
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -42,13 +58,16 @@ Deno.serve(async (req) => {
       );
     }
 
+    const clientIp = getClientIp(req);
+    const signedAt = new Date().toISOString();
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
     // Check contract_signatures table first (new multi-signer flow)
-    const { data: sigRecord, error: sigErr } = await supabase
+    const { data: sigRecord } = await supabase
       .from("contract_signatures")
       .select("id, contract_id, signer_role, signed_at")
       .eq("signing_token", token)
@@ -57,7 +76,6 @@ Deno.serve(async (req) => {
     let contractId: string;
 
     if (sigRecord) {
-      // New multi-signer flow
       if (sigRecord.signed_at) {
         return new Response(
           JSON.stringify({ error: "This signature has already been completed" }),
@@ -67,7 +85,6 @@ Deno.serve(async (req) => {
 
       contractId = sigRecord.contract_id;
 
-      // Upload photo
       const fileName = `${contractId}_${sigRecord.signer_role}_${Date.now()}.jpg`;
       const arrayBuffer = await photo.arrayBuffer();
       const { error: uploadErr } = await supabase.storage
@@ -83,17 +100,22 @@ Deno.serve(async (req) => {
 
       const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
 
-      // Update the signature record
+      // Generate signature hash
+      const signatureHash = await generateHash(
+        `${contractId}|${signerName || ""}|${signerDocument || ""}|${signedAt}|${clientIp}`
+      );
+
       const { error: updateErr } = await supabase
         .from("contract_signatures")
         .update({
-          signed_at: new Date().toISOString(),
+          signed_at: signedAt,
           signature_photo_url: urlData.publicUrl,
           signature_latitude: latitude,
           signature_longitude: longitude,
           signature_address: address,
           signer_name: signerName || null,
           signer_document: signerDocument || null,
+          signer_ip: clientIp,
         })
         .eq("id", sigRecord.id);
 
@@ -113,109 +135,47 @@ Deno.serve(async (req) => {
       const allSigned = allSigs && allSigs.every((s: any) => s.signed_at !== null);
 
       if (allSigned) {
+        // Generate document hash for the fully signed contract
+        const { data: contractData } = await supabase
+          .from("contracts")
+          .select("contract_content, code")
+          .eq("id", contractId)
+          .single();
+
+        const documentHash = await generateHash(
+          `${contractId}|${contractData?.contract_content || ""}|${signedAt}`
+        );
+        const validationCode = crypto.randomUUID().replace(/-/g, "").slice(0, 16).toUpperCase();
+
         await supabase
           .from("contracts")
           .update({
             signature_status: "signed",
-            signed_at: new Date().toISOString(),
+            signed_at: signedAt,
+            document_hash: documentHash,
+            validation_code: validationCode,
           })
           .eq("id", contractId);
       }
-    } else {
-      // Check client_contracts table
-      const { data: clientContract } = await supabase
-        .from("client_contracts")
-        .select("id, contract_status, client_name, client_cpf, plan_name, monthly_value, servidor_id")
-        .eq("signing_token", token)
-        .eq("contract_status", "pendente")
-        .maybeSingle();
 
-      if (clientContract) {
-        // Client contract signing flow
-        contractId = clientContract.id;
+      return new Response(
+        JSON.stringify({ success: true, signature_hash: signatureHash }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-        const fileName = `client_${contractId}_${Date.now()}.jpg`;
-        const arrayBuffer = await photo.arrayBuffer();
-        const { error: uploadErr } = await supabase.storage
-          .from("signatures")
-          .upload(fileName, arrayBuffer, { contentType: photo.type });
+    // Check client_contracts table
+    const { data: clientContract } = await supabase
+      .from("client_contracts")
+      .select("id, contract_status, client_name, client_cpf, plan_name, monthly_value, servidor_id")
+      .eq("signing_token", token)
+      .eq("contract_status", "pendente")
+      .maybeSingle();
 
-        if (uploadErr) {
-          return new Response(
-            JSON.stringify({ error: "Failed to upload photo" }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
+    if (clientContract) {
+      contractId = clientContract.id;
 
-        const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
-        const signedAt = new Date().toISOString();
-
-        const { error: updateErr } = await supabase
-          .from("client_contracts")
-          .update({
-            contract_status: "assinado",
-            signed_at: signedAt,
-            signature_photo_url: urlData.publicUrl,
-            signature_latitude: latitude,
-            signature_longitude: longitude,
-            signature_address: address,
-            signer_name: signerName || null,
-            signer_document: signerDocument || null,
-          })
-          .eq("id", contractId)
-          .eq("contract_status", "pendente");
-
-        if (updateErr) {
-          return new Response(
-            JSON.stringify({ error: "Failed to update contract" }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-
-        // Record signing in client_contract_history
-        const historyDescription = [
-          `Contrato assinado digitalmente`,
-          `Cliente: ${clientContract.client_name || "—"}`,
-          clientContract.client_cpf ? `CPF: ${clientContract.client_cpf}` : null,
-          clientContract.plan_name ? `Plano: ${clientContract.plan_name}` : null,
-          clientContract.monthly_value ? `Valor: R$ ${Number(clientContract.monthly_value).toFixed(2)}` : null,
-          `Assinante: ${signerName || "—"}`,
-          signerDocument ? `Documento do assinante: ${signerDocument}` : null,
-          `Data da assinatura: ${new Date(signedAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}`,
-          `Localização: ${address || "—"}`,
-        ].filter(Boolean).join("\n");
-
-        await supabase.from("client_contract_history").insert({
-          contract_id: contractId,
-          action: "assinatura",
-          description: historyDescription,
-          created_by_name: signerName || "Agente Externo",
-        });
-
-        return new Response(
-          JSON.stringify({ success: true }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // Legacy single-signer flow (contracts table)
-      const { data: contract, error: fetchErr } = await supabase
-        .from("contracts")
-        .select("id, signature_status")
-        .eq("signing_token", token)
-        .eq("signature_status", "pending")
-        .maybeSingle();
-
-      if (fetchErr || !contract) {
-        return new Response(
-          JSON.stringify({ error: "Contract not found or already signed" }),
-          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      contractId = contract.id;
-
-      const fileName = `${contract.id}_${Date.now()}.jpg`;
+      const fileName = `client_${contractId}_${Date.now()}.jpg`;
       const arrayBuffer = await photo.arrayBuffer();
       const { error: uploadErr } = await supabase.storage
         .from("signatures")
@@ -230,20 +190,27 @@ Deno.serve(async (req) => {
 
       const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
 
+      const documentHash = await generateHash(
+        `${contractId}|${clientContract.client_name}|${clientContract.client_cpf || ""}|${signedAt}`
+      );
+      const validationCode = crypto.randomUUID().replace(/-/g, "").slice(0, 16).toUpperCase();
+
       const { error: updateErr } = await supabase
-        .from("contracts")
+        .from("client_contracts")
         .update({
-          signature_status: "signed",
-          signed_at: new Date().toISOString(),
+          contract_status: "assinado",
+          signed_at: signedAt,
           signature_photo_url: urlData.publicUrl,
           signature_latitude: latitude,
           signature_longitude: longitude,
           signature_address: address,
           signer_name: signerName || null,
           signer_document: signerDocument || null,
+          document_hash: documentHash,
+          validation_code: validationCode,
         })
-        .eq("signing_token", token)
-        .eq("signature_status", "pending");
+        .eq("id", contractId)
+        .eq("contract_status", "pendente");
 
       if (updateErr) {
         return new Response(
@@ -251,6 +218,94 @@ Deno.serve(async (req) => {
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
+      const historyDescription = [
+        `Contrato assinado digitalmente`,
+        `Cliente: ${clientContract.client_name || "—"}`,
+        clientContract.client_cpf ? `CPF: ${clientContract.client_cpf}` : null,
+        clientContract.plan_name ? `Plano: ${clientContract.plan_name}` : null,
+        clientContract.monthly_value ? `Valor: R$ ${Number(clientContract.monthly_value).toFixed(2)}` : null,
+        `Assinante: ${signerName || "—"}`,
+        signerDocument ? `Documento do assinante: ${signerDocument}` : null,
+        `Data da assinatura: ${new Date(signedAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}`,
+        `IP: ${clientIp}`,
+        `Localização: ${address || "—"}`,
+        `Hash do documento: ${documentHash}`,
+        `Código de validação: ${validationCode}`,
+      ].filter(Boolean).join("\n");
+
+      await supabase.from("client_contract_history").insert({
+        contract_id: contractId,
+        action: "assinatura",
+        description: historyDescription,
+        created_by_name: signerName || "Agente Externo",
+      });
+
+      return new Response(
+        JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Legacy single-signer flow (contracts table)
+    const { data: contract, error: fetchErr } = await supabase
+      .from("contracts")
+      .select("id, signature_status, contract_content")
+      .eq("signing_token", token)
+      .eq("signature_status", "pending")
+      .maybeSingle();
+
+    if (fetchErr || !contract) {
+      return new Response(
+        JSON.stringify({ error: "Contract not found or already signed" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    contractId = contract.id;
+
+    const fileName = `${contract.id}_${Date.now()}.jpg`;
+    const arrayBuffer = await photo.arrayBuffer();
+    const { error: uploadErr } = await supabase.storage
+      .from("signatures")
+      .upload(fileName, arrayBuffer, { contentType: photo.type });
+
+    if (uploadErr) {
+      return new Response(
+        JSON.stringify({ error: "Failed to upload photo" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
+
+    const documentHash = await generateHash(
+      `${contractId}|${contract.contract_content || ""}|${signedAt}`
+    );
+    const validationCode = crypto.randomUUID().replace(/-/g, "").slice(0, 16).toUpperCase();
+
+    const { error: updateErr } = await supabase
+      .from("contracts")
+      .update({
+        signature_status: "signed",
+        signed_at: new Date().toISOString(),
+        signature_photo_url: urlData.publicUrl,
+        signature_latitude: latitude,
+        signature_longitude: longitude,
+        signature_address: address,
+        signer_name: signerName || null,
+        signer_document: signerDocument || null,
+        document_hash: documentHash,
+        validation_code: validationCode,
+      })
+      .eq("signing_token", token)
+      .eq("signature_status", "pending");
+
+    if (updateErr) {
+      return new Response(
+        JSON.stringify({ error: "Failed to update contract" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     return new Response(
