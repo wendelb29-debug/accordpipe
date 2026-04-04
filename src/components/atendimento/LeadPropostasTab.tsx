@@ -118,6 +118,9 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false }: {
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
   const [servidorData, setServidorData] = useState<ServidorData | null>(null);
 
+  const [lineItems, setLineItems] = useState<ProposalLineItem[]>([]);
+  const [paymentFrequency, setPaymentFrequency] = useState("mensal");
+
   const [form, setForm] = useState({
     title: "",
     sigla: "",
