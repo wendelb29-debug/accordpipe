@@ -1334,6 +1334,9 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
                               first_payment_date: m.first_payment_date || "", due_day: m.due_day || "",
                               version: m.version || "1", oc_number: m.oc_number || "",
                             });
+                            setLineItems(m.line_items || []);
+                            setPaymentFrequency(m.payment_frequency || "mensal");
+                            if (m.brand_id) setSelectedBrandId(m.brand_id);
                             setEditingProposal(p);
                             setShowForm(true);
                           }}>
