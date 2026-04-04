@@ -35,7 +35,7 @@ export function Header() {
   const isMobile = useIsMobile();
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/50 bg-card/95 backdrop-blur-xl px-3 sm:px-6 lg:px-8 shadow-sm gap-2">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/50 bg-card/95 backdrop-blur-xl px-3 sm:px-6 lg:px-8 shadow-sm gap-2" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       {/* Mobile menu */}
       {isMobile && <MobileSidebar />}
       {/* Search */}
