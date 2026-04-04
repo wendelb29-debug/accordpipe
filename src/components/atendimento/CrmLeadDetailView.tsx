@@ -786,6 +786,38 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                     <Input className="h-7 text-xs" type="number" value={form.value_mrr} onChange={(e) => setForm({ ...form, value_mrr: Number(e.target.value) })} />
                   </div>
                 </div>
+
+                {/* Address section with CEP lookup */}
+                <div className="pt-1 border-t border-border/50">
+                  <Label className="text-[10px] text-muted-foreground font-semibold">Endereço da Empresa</Label>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">CEP</Label>
+                  <div className="flex gap-1">
+                    <Input className="h-7 text-xs flex-1" placeholder="00000-000" value={form.comp_cep || ""} onChange={(e) => setForm({ ...form, comp_cep: e.target.value })} />
+                    <Button variant="outline" size="icon" className="h-7 w-7 shrink-0" onClick={handleCepSearch} disabled={searchingCep} title="Buscar endereço pelo CEP">
+                      {searchingCep ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3" />}
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">Endereço</Label>
+                  <Input className="h-7 text-xs" value={form.comp_endereco || ""} onChange={(e) => setForm({ ...form, comp_endereco: e.target.value })} />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground">Número</Label>
+                    <Input className="h-7 text-xs" value={form.comp_numero || ""} onChange={(e) => setForm({ ...form, comp_numero: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground">Complemento</Label>
+                    <Input className="h-7 text-xs" value={form.comp_complemento || ""} onChange={(e) => setForm({ ...form, comp_complemento: e.target.value })} />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">Bairro</Label>
+                  <Input className="h-7 text-xs" value={form.comp_bairro || ""} onChange={(e) => setForm({ ...form, comp_bairro: e.target.value })} />
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <Label className="text-[10px] text-muted-foreground">Cidade</Label>
