@@ -454,7 +454,11 @@ export default function Atividades() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-1.5">
+                              <div
+                                className="flex items-center gap-1.5 cursor-pointer hover:underline"
+                                onClick={() => handleLeadClick(activity)}
+                                title="Abrir oportunidade em nova aba"
+                              >
                                 {activity.lead_source && activity.lead_source !== "Manual" && (
                                   <span className="text-amber-500">★</span>
                                 )}
@@ -463,8 +467,14 @@ export default function Atividades() {
                                 </span>
                               </div>
                             </TableCell>
-                            <TableCell className="text-sm text-foreground">
-                              {activity.lead_contact_name || "--"}
+                            <TableCell>
+                              <span
+                                className="text-sm text-primary font-medium cursor-pointer hover:underline"
+                                onClick={() => handleLeadClick(activity)}
+                                title="Abrir oportunidade em nova aba"
+                              >
+                                {activity.lead_contact_name || "--"}
+                              </span>
                             </TableCell>
                             <TableCell className="text-sm text-primary">
                               {activity.lead_company_name}
