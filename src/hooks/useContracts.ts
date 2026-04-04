@@ -262,8 +262,8 @@ ${company.responsavel || "[RESPONSÁVEL]"}`;
       return null;
     }
 
-    // Create 3 signature records (Matriz, Revendedor, Colaborador)
-    const roles = ["matriz", "revendedor", "colaborador"];
+    // Create 3 signature records (Matriz, Revendedor, Colaborador) + Vendedor
+    const roles = ["matriz", "revendedor", "colaborador", "vendedor"];
     const signatureRecords = roles.map((role) => {
       const token = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
       return {
