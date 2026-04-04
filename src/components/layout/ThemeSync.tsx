@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -6,26 +6,34 @@ import { useAuth } from "@/contexts/AuthContext";
  * Syncs the theme with user profile preference.
  * - Forces "light" when no user is logged in (public pages).
  * - Applies user's saved theme after login.
+ * - Adds a transitioning class for smooth CSS transitions.
  */
 export function ThemeSync() {
-  const { setTheme } = useTheme();
+  const { setTheme, theme } = useTheme();
   const { user, profile, loading } = useAuth();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (loading) return;
 
+    let targetTheme: string;
+
     if (!user) {
-      // Public pages: always light
-      setTheme("light");
+      targetTheme = "light";
+    } else if (profile) {
+      targetTheme = profile.theme || "light";
+    } else {
       return;
     }
 
-    if (profile) {
-      // Apply user's saved theme
-      const userTheme = (profile as any).theme || "light";
-      setTheme(userTheme);
+    if (theme !== targetTheme) {
+      document.documentElement.classList.add("transitioning");
+      setTheme(targetTheme);
+      const timer = setTimeout(() => {
+        document.documentElement.classList.remove("transitioning");
+      }, 350);
+      return () => clearTimeout(timer);
     }
-  }, [user, profile, loading, setTheme]);
+  }, [user, profile, loading, setTheme, theme]);
 
   return null;
 }
