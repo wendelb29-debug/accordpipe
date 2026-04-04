@@ -97,7 +97,64 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
 
   const { createContract: createContractFn, signContract: signContractFn } = useContracts();
 
-  const fetchContracts = async () => {
+  const fetchContractSigners = async (contractId: string) => {
+    setLoadingSigners(true);
+    const { data, error } = await supabase
+      .from("contract_signatures")
+      .select("*")
+      .eq("contract_id", contractId)
+      .order("created_at", { ascending: true });
+    if (!error) setContractSigners((data as ContractSigner[]) || []);
+    setLoadingSigners(false);
+  };
+
+  const handleViewContract = (contract: any) => {
+    setViewContract(contract);
+    fetchContractSigners(contract.id);
+  };
+
+  const handleAddSigner = async () => {
+    if (!viewContract || !newSignerName.trim()) {
+      toast.error("Preencha ao menos o nome do signatário");
+      return;
+    }
+    setAddingNewSigner(true);
+    try {
+      const token = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+      const { error } = await supabase.from("contract_signatures").insert({
+        contract_id: viewContract.id,
+        signer_role: newSignerRole,
+        signing_token: token,
+        signer_name: newSignerName.trim(),
+        signer_document: newSignerDocument.trim() || null,
+      } as any);
+      if (error) throw error;
+      toast.success("Signatário adicionado com sucesso!");
+      setNewSignerName("");
+      setNewSignerEmail("");
+      setNewSignerDocument("");
+      setNewSignerRole("signatario");
+      setAddSignerOpen(false);
+      await fetchContractSigners(viewContract.id);
+    } catch (err: any) {
+      toast.error("Erro ao adicionar signatário: " + (err.message || ""));
+    }
+    setAddingNewSigner(false);
+  };
+
+  const getSigningLink = (token: string | null) => {
+    if (!token) return "";
+    return `${window.location.origin}/assinar/${token}`;
+  };
+
+  const handleCopySignerLink = (token: string | null, name: string | null) => {
+    if (!token) return;
+    const link = getSigningLink(token);
+    navigator.clipboard.writeText(link);
+    toast.success(`Link de assinatura copiado para ${name || "signatário"}!`);
+  };
+
+
     if (!lead.company_id) { setLoading(false); return; }
     setLoading(true);
     const { data, error } = await supabase
