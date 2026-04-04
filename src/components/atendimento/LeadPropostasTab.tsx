@@ -4,6 +4,7 @@ import {
   DollarSign, FileSpreadsheet, Plus, Loader2, Send, Download,
   Edit, Trash2, MoreVertical, ThumbsUp, ThumbsDown, XCircle,
   Eye, CopyPlus, Link2, Briefcase, Hash, FileSignature, Copy, MessageSquare,
+  ImageIcon, Settings2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,9 +23,16 @@ import {
 import { cn } from "@/lib/utils";
 import { CrmLead } from "@/hooks/useCrmLeads";
 import { toast } from "sonner";
+import { BrandManagerDialog } from "./BrandManagerDialog";
+
+interface ProposalBrand {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  is_default: boolean;
+}
 
 const fmtCur = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-
 interface CompanyData {
   id: string;
   razao_social: string;
