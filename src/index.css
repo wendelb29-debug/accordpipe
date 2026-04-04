@@ -280,6 +280,16 @@ button, a, input, select, textarea {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* Prevent body overflow on mobile */
+html, body {
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 /* Smooth theme transition */
 html.transitioning,
 html.transitioning *,
