@@ -15,6 +15,8 @@ export interface PdfContract {
   created_by_name: string | null;
   created_at: string;
   updated_at: string;
+  document_hash?: string | null;
+  validation_code?: string | null;
   signers?: PdfContractSigner[];
 }
 
