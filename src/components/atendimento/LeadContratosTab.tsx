@@ -363,7 +363,7 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
                     </td>
                     <td className="p-2.5">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setViewContract(c)} title="Visualizar">
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleViewContract(c)} title="Visualizar">
                           <Eye className="h-3 w-3" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDownloadPdf(c)} title="Baixar PDF">
