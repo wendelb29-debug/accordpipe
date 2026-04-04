@@ -235,6 +235,8 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     setLineItems([]);
     setPaymentFrequency("mensal");
     setCurrency("BRL");
+    setInstallments([]);
+    setNumberOfInstallments(12);
   };
 
   const handleCreate = async () => {
