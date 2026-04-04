@@ -119,6 +119,20 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
       toast.error("Preencha ao menos o nome do signatário");
       return;
     }
+    if (newSignerEmail.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(newSignerEmail.trim())) {
+        toast.error("E-mail inválido");
+        return;
+      }
+      const duplicate = contractSigners.find(
+        (s) => s.signer_name?.toLowerCase() === newSignerEmail.trim().toLowerCase()
+      );
+      if (duplicate) {
+        toast.error("Este e-mail já está na lista de envolvidos");
+        return;
+      }
+    }
     setAddingNewSigner(true);
     try {
       const token = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
@@ -141,6 +155,24 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
       toast.error("Erro ao adicionar signatário: " + (err.message || ""));
     }
     setAddingNewSigner(false);
+  };
+
+  // Auto-add vendor when viewing contract
+  const ensureVendorSigner = async (contractId: string, signers: ContractSigner[]) => {
+    if (!profile?.name) return;
+    const hasVendor = signers.some((s) => s.signer_role === "vendedor");
+    if (hasVendor) return;
+    try {
+      const token = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+      await supabase.from("contract_signatures").insert({
+        contract_id: contractId,
+        signer_role: "vendedor",
+        signing_token: token,
+        signer_name: profile.name,
+        signer_document: null,
+      } as any);
+      await fetchContractSigners(contractId);
+    } catch { /* silent */ }
   };
 
   const getSigningLink = (token: string | null) => {
