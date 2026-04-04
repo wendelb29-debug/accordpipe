@@ -39,6 +39,7 @@ import Descarte from "./pages/Descarte";
 import AssinarPdf from "./pages/AssinarPdf";
 import AssinaturaOnboarding from "./pages/AssinaturaOnboarding";
 import Assinaturas from "./pages/Assinaturas";
+import ValidarDocumento from "./pages/ValidarDocumento";
 
 const queryClient = new QueryClient();
 
@@ -256,6 +257,8 @@ const App = () => (
             />
             <Route path="/assinar/:token" element={<AssinarContrato />} />
             <Route path="/assinar-pdf/:token" element={<AssinarPdf />} />
+            <Route path="/validar-documento/:codigo" element={<ValidarDocumento />} />
+            <Route path="/validar-documento" element={<ValidarDocumento />} />
             <Route path="/captura/:servidorId" element={<CapturaLead />} />
             <Route path="/contato" element={<FormularioContato />} />
             <Route path="/form/:formId" element={<FormPublico />} />

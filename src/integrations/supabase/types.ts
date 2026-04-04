@@ -105,6 +105,7 @@ export type Database = {
           created_at: string
           created_by_name: string | null
           created_by_user_id: string | null
+          document_hash: string | null
           id: string
           lead_id: string | null
           monthly_value: number | null
@@ -120,6 +121,7 @@ export type Database = {
           signer_name: string | null
           signing_token: string | null
           updated_at: string
+          validation_code: string | null
         }
         Insert: {
           client_cpf?: string | null
@@ -129,6 +131,7 @@ export type Database = {
           created_at?: string
           created_by_name?: string | null
           created_by_user_id?: string | null
+          document_hash?: string | null
           id?: string
           lead_id?: string | null
           monthly_value?: number | null
@@ -144,6 +147,7 @@ export type Database = {
           signer_name?: string | null
           signing_token?: string | null
           updated_at?: string
+          validation_code?: string | null
         }
         Update: {
           client_cpf?: string | null
@@ -153,6 +157,7 @@ export type Database = {
           created_at?: string
           created_by_name?: string | null
           created_by_user_id?: string | null
+          document_hash?: string | null
           id?: string
           lead_id?: string | null
           monthly_value?: number | null
@@ -168,6 +173,7 @@ export type Database = {
           signer_name?: string | null
           signing_token?: string | null
           updated_at?: string
+          validation_code?: string | null
         }
         Relationships: [
           {
@@ -375,6 +381,7 @@ export type Database = {
           signature_photo_url: string | null
           signed_at: string | null
           signer_document: string | null
+          signer_ip: string | null
           signer_name: string | null
           signer_role: string
           signing_token: string | null
@@ -389,6 +396,7 @@ export type Database = {
           signature_photo_url?: string | null
           signed_at?: string | null
           signer_document?: string | null
+          signer_ip?: string | null
           signer_name?: string | null
           signer_role?: string
           signing_token?: string | null
@@ -403,6 +411,7 @@ export type Database = {
           signature_photo_url?: string | null
           signed_at?: string | null
           signer_document?: string | null
+          signer_ip?: string | null
           signer_name?: string | null
           signer_role?: string
           signing_token?: string | null
@@ -425,6 +434,7 @@ export type Database = {
           contract_type: string
           created_at: string
           created_by: string | null
+          document_hash: string | null
           foro: string | null
           id: string
           link_expires_at: string | null
@@ -443,6 +453,7 @@ export type Database = {
           signer_name: string | null
           signing_token: string | null
           updated_at: string
+          validation_code: string | null
         }
         Insert: {
           code: string
@@ -451,6 +462,7 @@ export type Database = {
           contract_type?: string
           created_at?: string
           created_by?: string | null
+          document_hash?: string | null
           foro?: string | null
           id?: string
           link_expires_at?: string | null
@@ -469,6 +481,7 @@ export type Database = {
           signer_name?: string | null
           signing_token?: string | null
           updated_at?: string
+          validation_code?: string | null
         }
         Update: {
           code?: string
@@ -477,6 +490,7 @@ export type Database = {
           contract_type?: string
           created_at?: string
           created_by?: string | null
+          document_hash?: string | null
           foro?: string | null
           id?: string
           link_expires_at?: string | null
@@ -495,6 +509,7 @@ export type Database = {
           signer_name?: string | null
           signing_token?: string | null
           updated_at?: string
+          validation_code?: string | null
         }
         Relationships: [
           {
