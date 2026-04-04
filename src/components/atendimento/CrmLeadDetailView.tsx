@@ -680,6 +680,15 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             {editing ? (
               <>
                 <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">CNPJ/CPF</Label>
+                  <div className="flex gap-1">
+                    <Input className="h-7 text-xs flex-1" placeholder="00.000.000/0000-00" value={form.documento || ""} onChange={(e) => setForm({ ...form, documento: e.target.value })} />
+                    <Button variant="outline" size="icon" className="h-7 w-7 shrink-0" onClick={handleCnpjSearch} disabled={searchingCnpj} title="Buscar dados do CNPJ">
+                      {searchingCnpj ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3" />}
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-1">
                   <Label className="text-[10px] text-muted-foreground">Empresa</Label>
                   <Input className="h-7 text-xs" value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} />
                 </div>
