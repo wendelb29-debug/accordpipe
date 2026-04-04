@@ -222,6 +222,15 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false }: {
       const validUntil = new Date();
       validUntil.setDate(validUntil.getDate() + form.validity_days);
 
+      // Build items text from lineItems for backward compatibility
+      const totalMrr = lineItems.reduce((sum, it) => sum + it.total, 0);
+      const itemsText = lineItems.map(it => {
+        const discountStr = it.discountValue > 0
+          ? ` (desconto: ${it.discountType === "percent" ? `${it.discountValue}%` : `R$ ${it.discountValue}`})`
+          : "";
+        return `${it.quantity}x ${it.name} - R$ ${it.unitValue.toFixed(2)}${discountStr} = R$ ${it.total.toFixed(2)}`;
+      }).join("\n");
+
       const result = await addActivity({
         type: "proposal",
         title: `Proposta: ${form.title}`,
@@ -230,22 +239,22 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false }: {
         metadata: {
           sigla: form.sigla,
           introduction: form.introduction,
-          items: form.items,
+          items: itemsText || form.items,
+          line_items: lineItems,
           value_ps: form.value_ps,
-          value_mrr: form.value_mrr,
+          value_mrr: totalMrr || form.value_mrr,
           validity_days: form.validity_days,
           valid_until: validUntil.toISOString(),
           status: "enviada",
-          total_items: form.items ? form.items.split("\n").filter(Boolean).length : 0,
+          total_items: lineItems.length || (form.items ? form.items.split("\n").filter(Boolean).length : 0),
           payment_method: form.payment_method,
+          payment_frequency: paymentFrequency,
           first_payment_date: form.first_payment_date,
           due_day: form.due_day,
           version: form.version,
           oc_number: form.oc_number,
-          // Snapshot company/servidor data
           company_snapshot: companyData,
           servidor_snapshot: servidorData,
-          // Brand info
           brand_id: selectedBrandId,
           brand_snapshot: brands.find(b => b.id === selectedBrandId) || null,
         },
