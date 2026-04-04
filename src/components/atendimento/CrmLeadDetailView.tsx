@@ -944,7 +944,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
             {/* Assinatura - select accepted proposal to send for signature */}
             <TabsContent value="assinatura" className="flex-1 overflow-y-auto p-4 mt-0">
-              <LeadPropostasTab lead={lead} addActivity={addActivity} signatureMode />
+              <LeadPropostasTab lead={lead} addActivity={addActivity} signatureMode onUpdateLead={onUpdate} />
             </TabsContent>
 
             {/* Simulação */}
