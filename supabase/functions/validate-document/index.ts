@@ -111,6 +111,20 @@ Deno.serve(async (req) => {
           ? s.signer_document.replace(/(\d{3})\.\d{3}\.\d{3}(-\d{2})/, "$1.***.***$2")
           : null,
       }));
+    } else if (contractType === "pdf_contract") {
+      const { data: pdfSigs } = await supabase
+        .from("pdf_contract_signers")
+        .select("name, signed_at, cpf_cnpj, signer_ip, status")
+        .eq("contract_id", contract.id)
+        .order("sign_order", { ascending: true });
+      signers = (pdfSigs || []).filter((s: any) => s.status === "assinado").map((s: any) => ({
+        name: s.name || "—",
+        role: "signatário",
+        signed_at: s.signed_at,
+        document_masked: s.cpf_cnpj
+          ? s.cpf_cnpj.replace(/(\d{3})\.\d{3}\.\d{3}(-\d{2})/, "$1.***.***$2")
+          : null,
+      }));
     } else {
       signers = [{
         name: contract.signer_name || contract.client_name || "—",
