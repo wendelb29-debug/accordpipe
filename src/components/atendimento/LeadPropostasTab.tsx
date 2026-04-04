@@ -1059,7 +1059,20 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
         {/* Dados da proposta */}
         <Card><CardContent className="p-4 space-y-3">
           <p className="font-semibold text-sm flex items-center gap-1.5"><Briefcase className="h-4 w-4 text-primary" /> Dados da proposta</p>
-          <div className="grid grid-cols-5 gap-3">
+          <div className="grid grid-cols-6 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Moeda *</Label>
+              <Select value={currency} onValueChange={setCurrency}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="BRL">Real Brasileiro</SelectItem>
+                  <SelectItem value="USD">Dólar Americano</SelectItem>
+                  <SelectItem value="EUR">Euro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-1">
               <Label className="text-xs">Título *</Label>
               <Input className="h-8 text-xs" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Proposta Comercial" />
@@ -1075,7 +1088,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Sigla de controle</Label>
-              <Input className="h-8 text-xs" value={form.sigla} onChange={(e) => setForm({ ...form, sigla: e.target.value })} placeholder="OP-00001" />
+              <Input className="h-8 text-xs bg-muted" value={form.sigla} readOnly />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Nº OC cliente</Label>
