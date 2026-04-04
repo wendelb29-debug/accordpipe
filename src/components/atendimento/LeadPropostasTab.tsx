@@ -33,7 +33,7 @@ interface ProposalBrand {
   is_default: boolean;
 }
 
-const fmtCur = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const fmtCur = (v: number, cur = "BRL") => v.toLocaleString("pt-BR", { style: "currency", currency: cur });
 interface CompanyData {
   id: string;
   razao_social: string;
@@ -106,6 +106,9 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
   const [brands, setBrands] = useState<ProposalBrand[]>([]);
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
   const [showBrandManager, setShowBrandManager] = useState(false);
+
+  // Currency state
+  const [currency, setCurrency] = useState("BRL");
 
   // In signature mode, always show the selection panel
   useEffect(() => {
@@ -206,15 +209,28 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     }
   };
 
-  const resetForm = () => {
+  const generateSigla = async () => {
+    // Count existing proposals for this servidor to generate sequential ID
+    const { count } = await supabase
+      .from("crm_lead_activities")
+      .select("*", { count: "exact", head: true })
+      .eq("servidor_id", lead.servidor_id)
+      .eq("type", "proposal");
+    const nextNum = (count || 0) + 1;
+    return `OP-${String(nextNum).padStart(5, "0")}`;
+  };
+
+  const resetForm = async () => {
+    const sigla = await generateSigla();
     setForm({
-      title: "", sigla: "", introduction: "", description: "", items: "",
+      title: "", sigla, introduction: "", description: "", items: "",
       value_ps: lead.value_ps || 0, value_mrr: lead.value_mrr || 0,
       validity_days: 15, payment_method: "", first_payment_date: "",
       due_day: "", version: "1", oc_number: "",
     });
     setLineItems([]);
     setPaymentFrequency("mensal");
+    setCurrency("BRL");
   };
 
   const handleCreate = async () => {
@@ -252,6 +268,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
         oc_number: form.oc_number,
         company_snapshot: companyData,
         servidor_snapshot: servidorData,
+        currency,
         brand_id: selectedBrandId,
         brand_snapshot: brands.find(b => b.id === selectedBrandId) || null,
       };
@@ -1042,7 +1059,20 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
         {/* Dados da proposta */}
         <Card><CardContent className="p-4 space-y-3">
           <p className="font-semibold text-sm flex items-center gap-1.5"><Briefcase className="h-4 w-4 text-primary" /> Dados da proposta</p>
-          <div className="grid grid-cols-5 gap-3">
+          <div className="grid grid-cols-6 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Moeda *</Label>
+              <Select value={currency} onValueChange={setCurrency}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="BRL">Real Brasileiro</SelectItem>
+                  <SelectItem value="USD">Dólar Americano</SelectItem>
+                  <SelectItem value="EUR">Euro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-1">
               <Label className="text-xs">Título *</Label>
               <Input className="h-8 text-xs" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Proposta Comercial" />
@@ -1058,7 +1088,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Sigla de controle</Label>
-              <Input className="h-8 text-xs" value={form.sigla} onChange={(e) => setForm({ ...form, sigla: e.target.value })} placeholder="OP-00001" />
+              <Input className="h-8 text-xs bg-muted" value={form.sigla} readOnly />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Nº OC cliente</Label>
@@ -1305,6 +1335,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
                             });
                             setLineItems(m.line_items || []);
                             setPaymentFrequency(m.payment_frequency || "mensal");
+                            setCurrency(m.currency || "BRL");
                             if (m.brand_id) setSelectedBrandId(m.brand_id);
                             setEditingProposal(p);
                             setShowForm(true);
