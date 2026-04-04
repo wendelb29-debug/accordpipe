@@ -172,6 +172,28 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   useEffect(() => {
     if (!editing) {
       setForm({ ...lead });
+    } else {
+      // Load company address when editing starts
+      if (lead.company_id) {
+        supabase.from("companies").select("endereco, numero, bairro, complemento, cidade, estado, cep, razao_social, nome_fantasia, email, telefone, cnpj")
+          .eq("id", lead.company_id).maybeSingle().then(({ data }) => {
+            if (data) {
+              setCompanyAddress(data);
+              setForm(prev => ({
+                ...prev,
+                comp_endereco: data.endereco || "",
+                comp_numero: data.numero || "",
+                comp_bairro: data.bairro || "",
+                comp_complemento: data.complemento || "",
+                comp_cep: data.cep || "",
+                comp_razao_social: data.razao_social || "",
+                comp_nome_fantasia: data.nome_fantasia || "",
+                comp_email: data.email || "",
+                comp_telefone: data.telefone || "",
+              }));
+            }
+          });
+      }
     }
   }, [lead, editing]);
 
@@ -209,6 +231,11 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         phone: data.ddd_telefone_1 || prev.phone,
         cidade: data.municipio || prev.cidade,
         estado: data.uf || prev.estado,
+        comp_endereco: data.logradouro || prev.comp_endereco,
+        comp_bairro: data.bairro || prev.comp_bairro,
+        comp_numero: data.numero || prev.comp_numero,
+        comp_cep: data.cep ? data.cep.replace(/\D/g, "") : prev.comp_cep,
+        comp_razao_social: data.razao_social || prev.comp_razao_social,
       }));
       toast.success("Dados do CNPJ preenchidos!");
     } catch {
