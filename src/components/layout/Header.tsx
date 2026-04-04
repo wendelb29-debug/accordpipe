@@ -56,7 +56,13 @@ export function Header() {
           variant="ghost"
           size="icon"
           className="rounded-xl h-9 w-9 text-muted-foreground hover:text-foreground"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          onClick={async () => {
+            const newTheme = theme === "dark" ? "light" : "dark";
+            setTheme(newTheme);
+            if (profile) {
+              await supabase.from("profiles").update({ theme: newTheme } as any).eq("id", profile.id);
+            }
+          }}
         >
           {theme === "dark" ? <Sun className="h-[17px] w-[17px]" /> : <Moon className="h-[17px] w-[17px]" />}
         </Button>
