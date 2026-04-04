@@ -6,6 +6,7 @@ import {
   Eye, CopyPlus, Link2, Briefcase, Hash, FileSignature, Copy, MessageSquare,
   ImageIcon, Settings2,
 } from "lucide-react";
+import { ProposalItemsManager, ProposalLineItem } from "./ProposalItemsManager";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useContracts } from "@/hooks/useContracts";
