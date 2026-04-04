@@ -43,7 +43,7 @@ import Assinaturas from "./pages/Assinaturas";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} forcedTheme={undefined}>
+  <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} storageKey="theme" forcedTheme={undefined}>
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
