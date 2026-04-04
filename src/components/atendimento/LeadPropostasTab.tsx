@@ -199,15 +199,6 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false }: {
       setSelectedBrandId(defaultBrand.id);
     }
   };
-    const { data, error } = await supabase
-      .from("crm_lead_activities")
-      .select("*")
-      .eq("lead_id", lead.id)
-      .eq("type", "proposal")
-      .order("created_at", { ascending: false });
-    if (!error) setProposals(data || []);
-    setLoading(false);
-  };
 
   const resetForm = () => {
     setForm({
