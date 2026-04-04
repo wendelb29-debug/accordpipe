@@ -3,7 +3,7 @@ import {
   ArrowLeft, Building2, User, Mail, Phone as PhoneIcon, MapPin, Calendar, Calculator,
   DollarSign, Clock, Tag, StickyNote, CheckCircle, XCircle, Plus,
   MessageSquare, PhoneCall, FileText, Activity, Trash2, Send, Loader2,
-  FileSignature, Eye, Download, Copy, Image as ImageIcon,
+  FileSignature, Eye, Download, Copy, Image as ImageIcon, Search,
   FileSpreadsheet, Edit, MoreVertical, ThumbsUp, ThumbsDown,
   Link2, CopyPlus, ClipboardList, UserRoundPen
 } from "lucide-react";
@@ -146,6 +146,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const [newActivity, setNewActivity] = useState({ type: "note", title: "", description: "" });
   const [showActivityForm, setShowActivityForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [searchingCnpj, setSearchingCnpj] = useState(false);
   const [showLostDialog, setShowLostDialog] = useState(false);
   const [selectedLostReason, setSelectedLostReason] = useState("");
   const [showReopenDialog, setShowReopenDialog] = useState(false);
@@ -187,6 +188,34 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     return Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
   };
 
+  const handleCnpjSearch = async () => {
+    const cnpjClean = (form.documento || "").replace(/\D/g, "");
+    if (cnpjClean.length !== 14) {
+      toast.error("CNPJ inválido. Informe 14 dígitos.");
+      return;
+    }
+    setSearchingCnpj(true);
+    try {
+      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpjClean}`);
+      if (!res.ok) throw new Error("CNPJ não encontrado");
+      const data = await res.json();
+      setForm(prev => ({
+        ...prev,
+        company_name: data.razao_social || prev.company_name,
+        contact_name: data.qsa?.[0]?.nome_socio || prev.contact_name,
+        email: data.email && data.email !== "" ? data.email : prev.email,
+        phone: data.ddd_telefone_1 || prev.phone,
+        cidade: data.municipio || prev.cidade,
+        estado: data.uf || prev.estado,
+      }));
+      toast.success("Dados do CNPJ preenchidos!");
+    } catch {
+      toast.error("Não foi possível consultar o CNPJ");
+    } finally {
+      setSearchingCnpj(false);
+    }
+  };
+
   // Detect changes and log them
   const handleSave = async () => {
     if (saving) return;
@@ -204,6 +233,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         estado: form.estado,
         forecast_date: form.forecast_date,
         source: form.source,
+        documento: form.documento,
       } as any;
 
       // Detect what changed
@@ -650,6 +680,15 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             {editing ? (
               <>
                 <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">CNPJ/CPF</Label>
+                  <div className="flex gap-1">
+                    <Input className="h-7 text-xs flex-1" placeholder="00.000.000/0000-00" value={form.documento || ""} onChange={(e) => setForm({ ...form, documento: e.target.value })} />
+                    <Button variant="outline" size="icon" className="h-7 w-7 shrink-0" onClick={handleCnpjSearch} disabled={searchingCnpj} title="Buscar dados do CNPJ">
+                      {searchingCnpj ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3" />}
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-1">
                   <Label className="text-[10px] text-muted-foreground">Empresa</Label>
                   <Input className="h-7 text-xs" value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} />
                 </div>
@@ -700,6 +739,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               </>
             ) : (
               <>
+                <DetailField icon={FileText} label="CNPJ/CPF" value={lead.documento || "Não informado"} />
                 <DetailField icon={Building2} label="Empresa" value={lead.company_name} />
                 <DetailField icon={User} label="Contato" value={lead.contact_name || "Não informado"} />
                 <DetailField icon={Mail} label="Email" value={lead.email || "Não informado"} />
