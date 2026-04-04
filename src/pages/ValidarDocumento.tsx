@@ -39,12 +39,6 @@ export default function ValidarDocumento() {
     setData(null);
 
     try {
-      const { data: result, error } = await supabase.functions.invoke("validate-document", {
-        body: null,
-        method: "GET",
-      });
-
-      // Use fetch directly since we need query params
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const url = `https://${projectId}.supabase.co/functions/v1/validate-document?code=${encodeURIComponent(code)}`;
       const res = await fetch(url);
