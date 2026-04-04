@@ -16,6 +16,8 @@ interface Profile {
   signature_completed: boolean;
   created_at: string;
   updated_at: string;
+  birth_date: string | null;
+  theme: string;
 }
 
 interface CompanyOption {
