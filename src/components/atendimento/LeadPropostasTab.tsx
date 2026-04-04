@@ -1139,6 +1139,10 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
           onFirstPaymentDateChange={(v) => setForm({ ...form, first_payment_date: v })}
           dueDay={form.due_day}
           onDueDayChange={(v) => setForm({ ...form, due_day: v })}
+          installments={installments}
+          onInstallmentsChange={setInstallments}
+          numberOfInstallments={numberOfInstallments}
+          onNumberOfInstallmentsChange={setNumberOfInstallments}
         />
 
         {/* Observações */}
