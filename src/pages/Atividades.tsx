@@ -363,13 +363,30 @@ export default function Atividades() {
                             {scheduledTime && <span className="text-foreground font-medium">{scheduledTime}</span>}
                           </div>
                           {activity.lead_company_name && activity.lead_company_name !== "-" && (
-                            <div className="col-span-2 flex items-center gap-1.5 text-primary text-xs font-medium">
+                            <div
+                              className="col-span-2 flex items-center gap-1.5 text-primary text-xs font-medium cursor-pointer hover:underline"
+                              onClick={() => handleLeadClick(activity)}
+                            >
                               <Briefcase className="h-3.5 w-3.5 shrink-0" />
                               <span className="truncate">{activity.lead_company_name}</span>
                               {activity.lead_contact_name && <span className="text-muted-foreground">· {activity.lead_contact_name}</span>}
                             </div>
                           )}
                         </div>
+
+                        {/* Expanded activity details on mobile */}
+                        {expandedActivityId === activity.id && (
+                          <div className="mt-3 p-3 rounded-lg bg-muted/50 border border-border text-xs space-y-2">
+                            <p className="font-semibold text-foreground">{activity.title}</p>
+                            {activity.description && <p className="text-muted-foreground">{activity.description}</p>}
+                            <div className="grid grid-cols-2 gap-1 text-muted-foreground">
+                              <span>Empresa: {activity.lead_company_name}</span>
+                              <span>Pessoa: {activity.lead_contact_name || "--"}</span>
+                              <span>Responsável: {activity.created_by_name || "Sistema"}</span>
+                              <span>Origem: {activity.lead_source || "Manual"}</span>
+                            </div>
+                          </div>
+                        )}
 
                         {isOverdue && (
                           <div className="mt-2 flex items-center gap-1 text-destructive text-[11px] font-medium">
