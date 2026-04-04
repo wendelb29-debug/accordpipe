@@ -231,41 +231,71 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
         return `${it.quantity}x ${it.name} - R$ ${it.unitValue.toFixed(2)}${discountStr} = R$ ${it.total.toFixed(2)}`;
       }).join("\n");
 
-      const result = await addActivity({
-        type: "proposal",
-        title: `Proposta: ${form.title}`,
-        description: form.description || undefined,
-        servidor_id: lead.servidor_id,
-        metadata: {
-          sigla: form.sigla,
-          introduction: form.introduction,
-          items: itemsText || form.items,
-          line_items: lineItems,
-          value_ps: form.value_ps,
-          value_mrr: totalMrr || form.value_mrr,
-          validity_days: form.validity_days,
-          valid_until: validUntil.toISOString(),
-          status: "enviada",
-          total_items: lineItems.length || (form.items ? form.items.split("\n").filter(Boolean).length : 0),
-          payment_method: form.payment_method,
-          payment_frequency: paymentFrequency,
-          first_payment_date: form.first_payment_date,
-          due_day: form.due_day,
-          version: form.version,
-          oc_number: form.oc_number,
-          company_snapshot: companyData,
-          servidor_snapshot: servidorData,
-          brand_id: selectedBrandId,
-          brand_snapshot: brands.find(b => b.id === selectedBrandId) || null,
-        },
-      });
+      const metadata = {
+        sigla: form.sigla,
+        introduction: form.introduction,
+        items: itemsText || form.items,
+        line_items: lineItems,
+        value_ps: form.value_ps,
+        value_mrr: totalMrr || form.value_mrr,
+        validity_days: form.validity_days,
+        valid_until: validUntil.toISOString(),
+        status: editingProposal ? ((editingProposal.metadata as any)?.status || "enviada") : "enviada",
+        total_items: lineItems.length || (form.items ? form.items.split("\n").filter(Boolean).length : 0),
+        payment_method: form.payment_method,
+        payment_frequency: paymentFrequency,
+        first_payment_date: form.first_payment_date,
+        due_day: form.due_day,
+        version: form.version,
+        oc_number: form.oc_number,
+        company_snapshot: companyData,
+        servidor_snapshot: servidorData,
+        brand_id: selectedBrandId,
+        brand_snapshot: brands.find(b => b.id === selectedBrandId) || null,
+      };
 
-      if (!result) {
-        toast.error("Erro ao salvar proposta. Verifique suas permissões.");
-        return;
+      let result: any = null;
+
+      if (editingProposal) {
+        // Update existing proposal
+        const { error } = await supabase
+          .from("crm_lead_activities")
+          .update({
+            title: `Proposta: ${form.title}`,
+            description: form.description || null,
+            metadata: metadata as any,
+          } as any)
+          .eq("id", editingProposal.id);
+
+        if (error) {
+          toast.error("Erro ao atualizar proposta: " + error.message);
+          return;
+        }
+        result = { ...editingProposal, title: `Proposta: ${form.title}`, description: form.description, metadata };
+        toast.success("Proposta atualizada!");
+      } else {
+        // Create new proposal
+        result = await addActivity({
+          type: "proposal",
+          title: `Proposta: ${form.title}`,
+          description: form.description || undefined,
+          servidor_id: lead.servidor_id,
+          metadata,
+        });
+
+        if (!result) {
+          toast.error("Erro ao salvar proposta. Verifique suas permissões.");
+          return;
+        }
+        toast.success("Proposta criada e registrada no histórico!");
       }
 
-      toast.success("Proposta criada e registrada no histórico!");
+      // Auto-update lead MRR with proposal total
+      const finalMrr = totalMrr || form.value_mrr;
+      if (onUpdateLead && finalMrr > 0) {
+        await onUpdateLead(lead.id, { value_mrr: finalMrr });
+      }
+
       resetForm();
       setShowForm(false);
       setEditingProposal(null);
