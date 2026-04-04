@@ -197,10 +197,12 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
       .order("name");
     const brandList = (data as ProposalBrand[]) || [];
     setBrands(brandList);
-    // Auto-select default brand
+    // Always pre-select the default brand
     const defaultBrand = brandList.find(b => b.is_default);
-    if (defaultBrand && !selectedBrandId) {
+    if (defaultBrand) {
       setSelectedBrandId(defaultBrand.id);
+    } else if (brandList.length > 0 && !selectedBrandId) {
+      setSelectedBrandId(brandList[0].id);
     }
   };
 
