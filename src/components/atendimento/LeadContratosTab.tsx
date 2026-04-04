@@ -109,10 +109,17 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
     setLoadingSigners(false);
   };
 
-  const handleViewContract = (contract: any) => {
+  const handleViewContract = async (contract: any) => {
     setViewContract(contract);
-    fetchContractSigners(contract.id);
+    await fetchContractSigners(contract.id);
   };
+
+  // After signers load, ensure vendor is present
+  useEffect(() => {
+    if (viewContract && contractSigners.length >= 0 && !loadingSigners) {
+      ensureVendorSigner(viewContract.id, contractSigners);
+    }
+  }, [viewContract?.id, loadingSigners]);
 
   const handleAddSigner = async () => {
     if (!viewContract || !newSignerName.trim()) {
