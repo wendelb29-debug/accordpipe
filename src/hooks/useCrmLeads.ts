@@ -12,6 +12,7 @@ export interface CrmLead {
   contact_name: string | null;
   email: string | null;
   phone: string | null;
+  documento: string | null;
   value_ps: number;
   value_mrr: number;
   stage: string;
