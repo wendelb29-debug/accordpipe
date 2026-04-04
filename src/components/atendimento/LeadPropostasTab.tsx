@@ -1061,46 +1061,19 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
           <Textarea className="text-xs min-h-[120px]" value={form.introduction} onChange={(e) => setForm({ ...form, introduction: e.target.value })} placeholder="Texto de introdução da proposta..." />
         </CardContent></Card>
 
-        {/* Itens */}
-        <Card><CardContent className="p-4 space-y-2">
-          <p className="font-semibold text-sm flex items-center gap-1.5"><Plus className="h-4 w-4 text-primary" /> Adicionar itens</p>
-          <Textarea className="text-xs min-h-[80px]" value={form.items} onChange={(e) => setForm({ ...form, items: e.target.value })} placeholder={"Servidor dedicado 16GB\nSuporte 24/7\nBackup diário\n(um item por linha)"} />
-        </CardContent></Card>
-
-        {/* Forma de pagamento MRR */}
-        <Card><CardContent className="p-4 space-y-3">
-          <p className="font-semibold text-sm flex items-center gap-1.5"><DollarSign className="h-4 w-4 text-primary" /> Forma de pagamento de MRR</p>
-          <div className="grid grid-cols-5 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">Forma de pagamento</Label>
-              <Select value={form.payment_method} onValueChange={(v) => setForm({ ...form, payment_method: v })}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="boleto">Boleto</SelectItem>
-                  <SelectItem value="pix">PIX</SelectItem>
-                  <SelectItem value="cartao">Cartão</SelectItem>
-                  <SelectItem value="transferencia">Transferência</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs flex items-center gap-1"><Calendar className="h-3 w-3" /> Data 1ª parcela</Label>
-              <Input className="h-8 text-xs" type="date" value={form.first_payment_date} onChange={(e) => setForm({ ...form, first_payment_date: e.target.value })} />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs flex items-center gap-1"><Calendar className="h-3 w-3" /> Dia de vencimento</Label>
-              <Input className="h-8 text-xs" type="number" value={form.due_day} onChange={(e) => setForm({ ...form, due_day: e.target.value })} placeholder="10" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Valor P&S (R$)</Label>
-              <Input className="h-8 text-xs" type="number" value={form.value_ps} onChange={(e) => setForm({ ...form, value_ps: Number(e.target.value) })} />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Valor MRR (R$)</Label>
-              <Input className="h-8 text-xs" type="number" value={form.value_mrr} onChange={(e) => setForm({ ...form, value_mrr: Number(e.target.value) })} />
-            </div>
-          </div>
-        </CardContent></Card>
+        {/* Itens + Pagamento */}
+        <ProposalItemsManager
+          servidorId={lead.servidor_id}
+          items={lineItems}
+          onChange={setLineItems}
+          canManageCatalog={!!(profile?.is_master || (profile as any)?.is_admin)}
+          paymentFrequency={paymentFrequency}
+          onPaymentFrequencyChange={setPaymentFrequency}
+          firstPaymentDate={form.first_payment_date}
+          onFirstPaymentDateChange={(v) => setForm({ ...form, first_payment_date: v })}
+          dueDay={form.due_day}
+          onDueDayChange={(v) => setForm({ ...form, due_day: v })}
+        />
 
         {/* Observações */}
         <Card><CardContent className="p-4 space-y-2">
