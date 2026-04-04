@@ -110,6 +110,10 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
   // Currency state
   const [currency, setCurrency] = useState("BRL");
 
+  // Installments state
+  const [installments, setInstallments] = useState<import("./ProposalItemsManager").Installment[]>([]);
+  const [numberOfInstallments, setNumberOfInstallments] = useState(12);
+
   // In signature mode, always show the selection panel
   useEffect(() => {
     if (signatureMode) setShowSignatureSelect(true);
