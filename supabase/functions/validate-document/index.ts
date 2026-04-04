@@ -69,6 +69,25 @@ Deno.serve(async (req) => {
       if (cc2) { contract = cc2; contractType = "client_contract"; }
     }
 
+    // Search pdf_contracts if not found
+    if (!contract && code) {
+      const { data: pc1 } = await supabase
+        .from("pdf_contracts")
+        .select("id, status, created_at, document_hash, validation_code, name")
+        .eq("validation_code", code)
+        .maybeSingle();
+      if (pc1) { contract = pc1; contractType = "pdf_contract"; }
+    }
+
+    if (!contract && hash) {
+      const { data: pc2 } = await supabase
+        .from("pdf_contracts")
+        .select("id, status, created_at, document_hash, validation_code, name")
+        .eq("document_hash", hash)
+        .maybeSingle();
+      if (pc2) { contract = pc2; contractType = "pdf_contract"; }
+    }
+
     if (!contract) {
       return new Response(
         JSON.stringify({ valid: false, error: "Documento não encontrado" }),
