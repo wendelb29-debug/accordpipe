@@ -1510,6 +1510,44 @@ export type Database = {
           },
         ]
       }
+      proposal_catalog_items: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          servidor_id: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          servidor_id: string
+          updated_at?: string
+          value?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          servidor_id?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_catalog_items_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_requests: {
         Row: {
           created_at: string
