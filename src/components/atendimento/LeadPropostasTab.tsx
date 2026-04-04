@@ -183,6 +183,32 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false }: {
     setLoading(false);
   };
 
+  const fetchBrands = async () => {
+    if (!lead.servidor_id) return;
+    const { data } = await supabase
+      .from("proposal_brands")
+      .select("id, name, logo_url, is_default")
+      .eq("servidor_id", lead.servidor_id)
+      .order("is_default", { ascending: false })
+      .order("name");
+    const brandList = (data as ProposalBrand[]) || [];
+    setBrands(brandList);
+    // Auto-select default brand
+    const defaultBrand = brandList.find(b => b.is_default);
+    if (defaultBrand && !selectedBrandId) {
+      setSelectedBrandId(defaultBrand.id);
+    }
+  };
+    const { data, error } = await supabase
+      .from("crm_lead_activities")
+      .select("*")
+      .eq("lead_id", lead.id)
+      .eq("type", "proposal")
+      .order("created_at", { ascending: false });
+    if (!error) setProposals(data || []);
+    setLoading(false);
+  };
+
   const resetForm = () => {
     setForm({
       title: "", sigla: "", introduction: "", description: "", items: "",
