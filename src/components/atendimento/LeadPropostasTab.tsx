@@ -107,6 +107,9 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
   const [showBrandManager, setShowBrandManager] = useState(false);
 
+  // Currency state
+  const [currency, setCurrency] = useState("BRL");
+
   // In signature mode, always show the selection panel
   useEffect(() => {
     if (signatureMode) setShowSignatureSelect(true);
