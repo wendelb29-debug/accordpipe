@@ -155,7 +155,7 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
     toast.success(`Link de assinatura copiado para ${name || "signatário"}!`);
   };
 
-
+  const fetchContracts = async () => {
     if (!lead.company_id) { setLoading(false); return; }
     setLoading(true);
     const { data, error } = await supabase

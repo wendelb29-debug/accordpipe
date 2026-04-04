@@ -69,6 +69,25 @@ Deno.serve(async (req) => {
       if (cc2) { contract = cc2; contractType = "client_contract"; }
     }
 
+    // Search pdf_contracts if not found
+    if (!contract && code) {
+      const { data: pc1 } = await supabase
+        .from("pdf_contracts")
+        .select("id, status, created_at, document_hash, validation_code, name")
+        .eq("validation_code", code)
+        .maybeSingle();
+      if (pc1) { contract = pc1; contractType = "pdf_contract"; }
+    }
+
+    if (!contract && hash) {
+      const { data: pc2 } = await supabase
+        .from("pdf_contracts")
+        .select("id, status, created_at, document_hash, validation_code, name")
+        .eq("document_hash", hash)
+        .maybeSingle();
+      if (pc2) { contract = pc2; contractType = "pdf_contract"; }
+    }
+
     if (!contract) {
       return new Response(
         JSON.stringify({ valid: false, error: "Documento não encontrado" }),
@@ -92,6 +111,20 @@ Deno.serve(async (req) => {
           ? s.signer_document.replace(/(\d{3})\.\d{3}\.\d{3}(-\d{2})/, "$1.***.***$2")
           : null,
       }));
+    } else if (contractType === "pdf_contract") {
+      const { data: pdfSigs } = await supabase
+        .from("pdf_contract_signers")
+        .select("name, signed_at, cpf_cnpj, signer_ip, status")
+        .eq("contract_id", contract.id)
+        .order("sign_order", { ascending: true });
+      signers = (pdfSigs || []).filter((s: any) => s.status === "assinado").map((s: any) => ({
+        name: s.name || "—",
+        role: "signatário",
+        signed_at: s.signed_at,
+        document_masked: s.cpf_cnpj
+          ? s.cpf_cnpj.replace(/(\d{3})\.\d{3}\.\d{3}(-\d{2})/, "$1.***.***$2")
+          : null,
+      }));
     } else {
       signers = [{
         name: contract.signer_name || contract.client_name || "—",
@@ -105,6 +138,8 @@ Deno.serve(async (req) => {
 
     const isSigned = contractType === "contract"
       ? contract.signature_status === "signed"
+      : contractType === "pdf_contract"
+      ? contract.status === "assinado"
       : contract.contract_status === "assinado";
 
     return new Response(
