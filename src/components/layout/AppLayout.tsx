@@ -31,7 +31,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background safe-area-top">
       {/* Desktop sidebar */}
       {!isMobile && <Sidebar />}
       {/* Mobile sidebar is now inside Header */}
