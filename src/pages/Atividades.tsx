@@ -4,7 +4,9 @@ import {
   Ban, MoreVertical, Calendar, ListOrdered, Filter, Settings,
   UserCircle, Plus, Loader2, ChevronLeft, ChevronRight, AlertTriangle,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -62,6 +64,8 @@ interface UserAvatarMap {
 
 export default function Atividades() {
   const { profile, isMaster, isAdmin, activeCompanyId, user } = useAuth();
+  const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [activities, setActivities] = useState<ActivityRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"list" | "agenda">("list");
@@ -69,6 +73,7 @@ export default function Atividades() {
   const [perPage, setPerPage] = useState(20);
   const [dateFilter, setDateFilter] = useState("today");
   const [userAvatars, setUserAvatars] = useState<UserAvatarMap>({});
+  const [expandedActivityId, setExpandedActivityId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchActivities();
@@ -211,6 +216,14 @@ export default function Atividades() {
       "\n" + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   };
 
+  const handleLeadClick = (activity: ActivityRow) => {
+    if (isMobile) {
+      setExpandedActivityId(expandedActivityId === activity.id ? null : activity.id);
+    } else {
+      window.open(`/gestao-vendas?lead=${activity.lead_id}`, "_blank");
+    }
+  };
+
   const dateFilterLabels: Record<string, string> = {
     today: "Hoje",
     week: "Esta semana",
@@ -350,13 +363,30 @@ export default function Atividades() {
                             {scheduledTime && <span className="text-foreground font-medium">{scheduledTime}</span>}
                           </div>
                           {activity.lead_company_name && activity.lead_company_name !== "-" && (
-                            <div className="col-span-2 flex items-center gap-1.5 text-primary text-xs font-medium">
+                            <div
+                              className="col-span-2 flex items-center gap-1.5 text-primary text-xs font-medium cursor-pointer hover:underline"
+                              onClick={() => handleLeadClick(activity)}
+                            >
                               <Briefcase className="h-3.5 w-3.5 shrink-0" />
                               <span className="truncate">{activity.lead_company_name}</span>
                               {activity.lead_contact_name && <span className="text-muted-foreground">· {activity.lead_contact_name}</span>}
                             </div>
                           )}
                         </div>
+
+                        {/* Expanded activity details on mobile */}
+                        {expandedActivityId === activity.id && (
+                          <div className="mt-3 p-3 rounded-lg bg-muted/50 border border-border text-xs space-y-2">
+                            <p className="font-semibold text-foreground">{activity.title}</p>
+                            {activity.description && <p className="text-muted-foreground">{activity.description}</p>}
+                            <div className="grid grid-cols-2 gap-1 text-muted-foreground">
+                              <span>Empresa: {activity.lead_company_name}</span>
+                              <span>Pessoa: {activity.lead_contact_name || "--"}</span>
+                              <span>Responsável: {activity.created_by_name || "Sistema"}</span>
+                              <span>Origem: {activity.lead_source || "Manual"}</span>
+                            </div>
+                          </div>
+                        )}
 
                         {isOverdue && (
                           <div className="mt-2 flex items-center gap-1 text-destructive text-[11px] font-medium">
@@ -441,7 +471,11 @@ export default function Atividades() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-1.5">
+                              <div
+                                className="flex items-center gap-1.5 cursor-pointer hover:underline"
+                                onClick={() => handleLeadClick(activity)}
+                                title="Abrir oportunidade em nova aba"
+                              >
                                 {activity.lead_source && activity.lead_source !== "Manual" && (
                                   <span className="text-amber-500">★</span>
                                 )}
@@ -450,8 +484,14 @@ export default function Atividades() {
                                 </span>
                               </div>
                             </TableCell>
-                            <TableCell className="text-sm text-foreground">
-                              {activity.lead_contact_name || "--"}
+                            <TableCell>
+                              <span
+                                className="text-sm text-primary font-medium cursor-pointer hover:underline"
+                                onClick={() => handleLeadClick(activity)}
+                                title="Abrir oportunidade em nova aba"
+                              >
+                                {activity.lead_contact_name || "--"}
+                              </span>
                             </TableCell>
                             <TableCell className="text-sm text-primary">
                               {activity.lead_company_name}
