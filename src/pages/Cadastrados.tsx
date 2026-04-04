@@ -211,18 +211,34 @@ export default function Cadastrados() {
     if (!selectedReg?.id) return;
     setSaving(true);
     try {
+      // Only send valid columns to avoid errors
+      const validFields = [
+        "nome_completo", "cpf", "rg", "data_nascimento", "email",
+        "nome_pai", "nome_mae", "cep", "endereco", "numero",
+        "bairro", "cidade", "estado",
+      ];
+      const cleanData: Record<string, any> = {};
+      for (const key of validFields) {
+        if (key in editData) {
+          cleanData[key] = editData[key] || null;
+        }
+      }
       const { error } = await supabase
         .from("crm_client_registrations")
-        .update(editData as any)
+        .update(cleanData as any)
         .eq("id", selectedReg.id);
-      if (error) throw error;
-      const updated = { ...selectedReg, ...editData };
+      if (error) {
+        console.error("Save error:", error);
+        throw error;
+      }
+      const updated = { ...selectedReg, ...cleanData };
       setSelectedReg(updated);
-      setRegistrations(prev => prev.map(r => r.id === selectedReg.id ? { ...r, ...editData } : r));
+      setRegistrations(prev => prev.map(r => r.id === selectedReg.id ? { ...r, ...cleanData } : r));
       setEditing(false);
       toast.success("Cadastro atualizado com sucesso!");
-    } catch {
-      toast.error("Erro ao salvar alterações");
+    } catch (err: any) {
+      console.error("Save error details:", err);
+      toast.error(err?.message || "Erro ao salvar alterações");
     } finally {
       setSaving(false);
     }
