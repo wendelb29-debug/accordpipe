@@ -33,7 +33,7 @@ interface ProposalBrand {
   is_default: boolean;
 }
 
-const fmtCur = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const fmtCur = (v: number, cur = "BRL") => v.toLocaleString("pt-BR", { style: "currency", currency: cur });
 interface CompanyData {
   id: string;
   razao_social: string;
