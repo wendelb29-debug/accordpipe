@@ -211,6 +211,8 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false }: {
       validity_days: 15, payment_method: "", first_payment_date: "",
       due_day: "", version: "1", oc_number: "",
     });
+    setLineItems([]);
+    setPaymentFrequency("mensal");
   };
 
   const handleCreate = async () => {
