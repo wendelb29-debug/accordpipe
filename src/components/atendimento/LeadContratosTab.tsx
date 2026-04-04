@@ -608,11 +608,6 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
                   <X className="h-4 w-4" /> Cancelar assinatura do documento
                 </Button>
               )}
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
             </div>
           </ScrollArea>
         </DialogContent>
