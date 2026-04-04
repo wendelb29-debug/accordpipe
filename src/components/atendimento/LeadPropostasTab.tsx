@@ -1322,6 +1322,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
                             });
                             setLineItems(m.line_items || []);
                             setPaymentFrequency(m.payment_frequency || "mensal");
+                            setCurrency(m.currency || "BRL");
                             if (m.brand_id) setSelectedBrandId(m.brand_id);
                             setEditingProposal(p);
                             setShowForm(true);
