@@ -137,6 +137,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false }: {
     fetchProposals();
     fetchCompanyAndServidor();
     fetchRegistrationData();
+    fetchBrands();
   }, [lead.id]);
 
   const fetchRegistrationData = async () => {
