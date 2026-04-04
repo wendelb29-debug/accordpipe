@@ -209,15 +209,28 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     }
   };
 
-  const resetForm = () => {
+  const generateSigla = async () => {
+    // Count existing proposals for this servidor to generate sequential ID
+    const { count } = await supabase
+      .from("crm_lead_activities")
+      .select("*", { count: "exact", head: true })
+      .eq("servidor_id", lead.servidor_id)
+      .eq("type", "proposal");
+    const nextNum = (count || 0) + 1;
+    return `OP-${String(nextNum).padStart(5, "0")}`;
+  };
+
+  const resetForm = async () => {
+    const sigla = await generateSigla();
     setForm({
-      title: "", sigla: "", introduction: "", description: "", items: "",
+      title: "", sigla, introduction: "", description: "", items: "",
       value_ps: lead.value_ps || 0, value_mrr: lead.value_mrr || 0,
       validity_days: 15, payment_method: "", first_payment_date: "",
       due_day: "", version: "1", oc_number: "",
     });
     setLineItems([]);
     setPaymentFrequency("mensal");
+    setCurrency("BRL");
   };
 
   const handleCreate = async () => {
