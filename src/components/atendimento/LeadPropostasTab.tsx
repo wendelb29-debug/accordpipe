@@ -1346,6 +1346,8 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
                             setLineItems(m.line_items || []);
                             setPaymentFrequency(m.payment_frequency || "mensal");
                             setCurrency(m.currency || "BRL");
+                            if (m.installments) setInstallments(m.installments);
+                            if (m.number_of_installments) setNumberOfInstallments(m.number_of_installments);
                             if (m.brand_id) setSelectedBrandId(m.brand_id);
                             setEditingProposal(p);
                             setShowForm(true);
