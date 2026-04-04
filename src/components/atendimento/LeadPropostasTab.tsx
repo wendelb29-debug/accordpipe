@@ -901,6 +901,48 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
           <h3 className="text-lg font-semibold">{editingProposal ? "Editar Proposta" : "Criar Proposta"}</h3>
         </div>
 
+        {/* Brand selector */}
+        <Card><CardContent className="p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="font-semibold text-sm flex items-center gap-1.5">
+              <ImageIcon className="h-4 w-4 text-primary" /> Alterar a Marca
+            </p>
+            {(profile?.is_master || (profile as any)?.is_admin) && (
+              <Button size="sm" variant="outline" className="text-xs gap-1.5 h-7" onClick={() => setShowBrandManager(true)}>
+                <Settings2 className="h-3.5 w-3.5" /> Gerenciar Marcas
+              </Button>
+            )}
+          </div>
+          <Select value={selectedBrandId || ""} onValueChange={(v) => setSelectedBrandId(v || null)}>
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue placeholder="Selecione uma marca (opcional)" />
+            </SelectTrigger>
+            <SelectContent>
+              {brands.map(b => (
+                <SelectItem key={b.id} value={b.id}>
+                  <span className="flex items-center gap-2">
+                    {b.logo_url && <img src={b.logo_url} alt="" className="h-4 w-4 object-contain" />}
+                    {b.name} {b.is_default && "(Padrão)"}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedBrandId && brands.find(b => b.id === selectedBrandId)?.logo_url && (
+            <div className="flex items-center gap-3 p-2 rounded-md bg-muted/50">
+              <img src={brands.find(b => b.id === selectedBrandId)!.logo_url!} alt="Logo" className="h-10 object-contain" />
+              <span className="text-xs text-muted-foreground">Logo será exibido no canto superior esquerdo da proposta</span>
+            </div>
+          )}
+        </CardContent></Card>
+
+        <BrandManagerDialog
+          open={showBrandManager}
+          onOpenChange={setShowBrandManager}
+          servidorId={lead.servidor_id}
+          onBrandsChange={fetchBrands}
+        />
+
         {/* Servidor + Contact + Version */}
         <div className="grid grid-cols-3 gap-3">
           <Card><CardContent className="p-4 text-xs space-y-1.5">
