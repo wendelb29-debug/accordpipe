@@ -142,11 +142,13 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const { role, profile } = useAuth();
   const { activities, loading: activitiesLoading, addActivity, refetch: refetchActivities } = useCrmActivities(lead.id);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ ...lead });
+  const [form, setForm] = useState<any>({ ...lead });
   const [newActivity, setNewActivity] = useState({ type: "note", title: "", description: "" });
   const [showActivityForm, setShowActivityForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchingCnpj, setSearchingCnpj] = useState(false);
+  const [searchingCep, setSearchingCep] = useState(false);
+  const [companyAddress, setCompanyAddress] = useState<any>({});
   const [showLostDialog, setShowLostDialog] = useState(false);
   const [selectedLostReason, setSelectedLostReason] = useState("");
   const [showReopenDialog, setShowReopenDialog] = useState(false);
@@ -170,6 +172,28 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   useEffect(() => {
     if (!editing) {
       setForm({ ...lead });
+    } else {
+      // Load company address when editing starts
+      if (lead.company_id) {
+        supabase.from("companies").select("endereco, numero, bairro, complemento, cidade, estado, cep, razao_social, nome_fantasia, email, telefone, cnpj")
+          .eq("id", lead.company_id).maybeSingle().then(({ data }) => {
+            if (data) {
+              setCompanyAddress(data);
+              setForm(prev => ({
+                ...prev,
+                comp_endereco: data.endereco || "",
+                comp_numero: data.numero || "",
+                comp_bairro: data.bairro || "",
+                comp_complemento: data.complemento || "",
+                comp_cep: data.cep || "",
+                comp_razao_social: data.razao_social || "",
+                comp_nome_fantasia: data.nome_fantasia || "",
+                comp_email: data.email || "",
+                comp_telefone: data.telefone || "",
+              }));
+            }
+          });
+      }
     }
   }, [lead, editing]);
 
@@ -207,12 +231,44 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         phone: data.ddd_telefone_1 || prev.phone,
         cidade: data.municipio || prev.cidade,
         estado: data.uf || prev.estado,
+        comp_endereco: data.logradouro || prev.comp_endereco,
+        comp_bairro: data.bairro || prev.comp_bairro,
+        comp_numero: data.numero || prev.comp_numero,
+        comp_cep: data.cep ? data.cep.replace(/\D/g, "") : prev.comp_cep,
+        comp_razao_social: data.razao_social || prev.comp_razao_social,
       }));
       toast.success("Dados do CNPJ preenchidos!");
     } catch {
       toast.error("Não foi possível consultar o CNPJ");
     } finally {
       setSearchingCnpj(false);
+    }
+  };
+
+  const handleCepSearch = async () => {
+    const cepClean = (form.comp_cep || "").replace(/\D/g, "");
+    if (cepClean.length !== 8) {
+      toast.error("CEP inválido. Informe 8 dígitos.");
+      return;
+    }
+    setSearchingCep(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cepClean}/json/`);
+      if (!res.ok) throw new Error("CEP não encontrado");
+      const data = await res.json();
+      if (data.erro) throw new Error("CEP não encontrado");
+      setForm(prev => ({
+        ...prev,
+        comp_endereco: data.logradouro || prev.comp_endereco,
+        comp_bairro: data.bairro || prev.comp_bairro,
+        cidade: data.localidade || prev.cidade,
+        estado: data.uf || prev.estado,
+      }));
+      toast.success("Endereço preenchido pelo CEP!");
+    } catch {
+      toast.error("Não foi possível consultar o CEP");
+    } finally {
+      setSearchingCep(false);
     }
   };
 
@@ -249,6 +305,22 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
       const success = await onUpdate(lead.id, updates);
       if (success) {
+        // Also update company address if company_id exists
+        if (lead.company_id) {
+          await supabase.from("companies").update({
+            endereco: form.comp_endereco || null,
+            numero: form.comp_numero || null,
+            bairro: form.comp_bairro || null,
+            complemento: form.comp_complemento || null,
+            cep: form.comp_cep || null,
+            cidade: form.cidade || null,
+            estado: form.estado || null,
+            email: form.comp_email || null,
+            telefone: form.comp_telefone || null,
+            razao_social: form.comp_razao_social || form.company_name,
+          } as any).eq("id", lead.company_id);
+        }
+
         setEditing(false);
         toast.success("Dados atualizados!");
 
@@ -713,6 +785,38 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                     <Label className="text-[10px] text-muted-foreground">Valor MRR</Label>
                     <Input className="h-7 text-xs" type="number" value={form.value_mrr} onChange={(e) => setForm({ ...form, value_mrr: Number(e.target.value) })} />
                   </div>
+                </div>
+
+                {/* Address section with CEP lookup */}
+                <div className="pt-1 border-t border-border/50">
+                  <Label className="text-[10px] text-muted-foreground font-semibold">Endereço da Empresa</Label>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">CEP</Label>
+                  <div className="flex gap-1">
+                    <Input className="h-7 text-xs flex-1" placeholder="00000-000" value={form.comp_cep || ""} onChange={(e) => setForm({ ...form, comp_cep: e.target.value })} />
+                    <Button variant="outline" size="icon" className="h-7 w-7 shrink-0" onClick={handleCepSearch} disabled={searchingCep} title="Buscar endereço pelo CEP">
+                      {searchingCep ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3" />}
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">Endereço</Label>
+                  <Input className="h-7 text-xs" value={form.comp_endereco || ""} onChange={(e) => setForm({ ...form, comp_endereco: e.target.value })} />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground">Número</Label>
+                    <Input className="h-7 text-xs" value={form.comp_numero || ""} onChange={(e) => setForm({ ...form, comp_numero: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground">Complemento</Label>
+                    <Input className="h-7 text-xs" value={form.comp_complemento || ""} onChange={(e) => setForm({ ...form, comp_complemento: e.target.value })} />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">Bairro</Label>
+                  <Input className="h-7 text-xs" value={form.comp_bairro || ""} onChange={(e) => setForm({ ...form, comp_bairro: e.target.value })} />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
