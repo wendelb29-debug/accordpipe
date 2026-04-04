@@ -739,6 +739,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               </>
             ) : (
               <>
+                <DetailField icon={FileText} label="CNPJ/CPF" value={lead.documento || "Não informado"} />
                 <DetailField icon={Building2} label="Empresa" value={lead.company_name} />
                 <DetailField icon={User} label="Contato" value={lead.contact_name || "Não informado"} />
                 <DetailField icon={Mail} label="Email" value={lead.email || "Não informado"} />
