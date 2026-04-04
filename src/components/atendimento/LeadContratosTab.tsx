@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   FileSignature, Plus, Eye, Download, Copy, Camera, MapPin, User, X,
-  Clock, CheckCircle2, AlertCircle, Loader2, Search,
+  Clock, CheckCircle2, AlertCircle, Loader2, Search, UserPlus, Link2, Mail,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadContractPdf } from "@/lib/generateContractPdf";
 import { useContracts } from "@/hooks/useContracts";
 import { useCompanies } from "@/hooks/useCompanies";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -30,12 +31,36 @@ const statusConfig: Record<string, { label: string; icon: any; className: string
   expired: { label: "Expirado", icon: AlertCircle, className: "bg-red-100 text-red-700 border-red-300" },
 };
 
+const roleLabels: Record<string, string> = {
+  matriz: "Matriz",
+  revendedor: "Revendedor",
+  colaborador: "Colaborador",
+  vendedor: "Vendedor",
+  testemunha: "Testemunha",
+  signatario: "Signatário",
+};
+
+interface ContractSigner {
+  id: string;
+  contract_id: string;
+  signer_role: string;
+  signing_token: string | null;
+  signed_at: string | null;
+  signer_name: string | null;
+  signer_document: string | null;
+  signature_photo_url: string | null;
+  signature_address: string | null;
+  signature_latitude: number | null;
+  signature_longitude: number | null;
+}
+
 interface LeadContratosTabProps {
   lead: CrmLead;
   addActivity: (data: any) => Promise<any>;
 }
 
 export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
+  const { profile } = useAuth();
   const [contracts, setContracts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -49,6 +74,16 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
 
   // View contract dialog
   const [viewContract, setViewContract] = useState<any | null>(null);
+  const [contractSigners, setContractSigners] = useState<ContractSigner[]>([]);
+  const [loadingSigners, setLoadingSigners] = useState(false);
+
+  // Add signer dialog
+  const [addSignerOpen, setAddSignerOpen] = useState(false);
+  const [newSignerName, setNewSignerName] = useState("");
+  const [newSignerEmail, setNewSignerEmail] = useState("");
+  const [newSignerDocument, setNewSignerDocument] = useState("");
+  const [newSignerRole, setNewSignerRole] = useState("signatario");
+  const [addingNewSigner, setAddingNewSigner] = useState(false);
 
   // Sign contract dialog
   const [signContract, setSignContract] = useState<any | null>(null);
@@ -62,7 +97,64 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
 
   const { createContract: createContractFn, signContract: signContractFn } = useContracts();
 
-  const fetchContracts = async () => {
+  const fetchContractSigners = async (contractId: string) => {
+    setLoadingSigners(true);
+    const { data, error } = await supabase
+      .from("contract_signatures")
+      .select("*")
+      .eq("contract_id", contractId)
+      .order("created_at", { ascending: true });
+    if (!error) setContractSigners((data as ContractSigner[]) || []);
+    setLoadingSigners(false);
+  };
+
+  const handleViewContract = (contract: any) => {
+    setViewContract(contract);
+    fetchContractSigners(contract.id);
+  };
+
+  const handleAddSigner = async () => {
+    if (!viewContract || !newSignerName.trim()) {
+      toast.error("Preencha ao menos o nome do signatário");
+      return;
+    }
+    setAddingNewSigner(true);
+    try {
+      const token = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+      const { error } = await supabase.from("contract_signatures").insert({
+        contract_id: viewContract.id,
+        signer_role: newSignerRole,
+        signing_token: token,
+        signer_name: newSignerName.trim(),
+        signer_document: newSignerDocument.trim() || null,
+      } as any);
+      if (error) throw error;
+      toast.success("Signatário adicionado com sucesso!");
+      setNewSignerName("");
+      setNewSignerEmail("");
+      setNewSignerDocument("");
+      setNewSignerRole("signatario");
+      setAddSignerOpen(false);
+      await fetchContractSigners(viewContract.id);
+    } catch (err: any) {
+      toast.error("Erro ao adicionar signatário: " + (err.message || ""));
+    }
+    setAddingNewSigner(false);
+  };
+
+  const getSigningLink = (token: string | null) => {
+    if (!token) return "";
+    return `${window.location.origin}/assinar/${token}`;
+  };
+
+  const handleCopySignerLink = (token: string | null, name: string | null) => {
+    if (!token) return;
+    const link = getSigningLink(token);
+    navigator.clipboard.writeText(link);
+    toast.success(`Link de assinatura copiado para ${name || "signatário"}!`);
+  };
+
+
     if (!lead.company_id) { setLoading(false); return; }
     setLoading(true);
     const { data, error } = await supabase
@@ -271,7 +363,7 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
                     </td>
                     <td className="p-2.5">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setViewContract(c)} title="Visualizar">
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleViewContract(c)} title="Visualizar">
                           <Eye className="h-3 w-3" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDownloadPdf(c)} title="Baixar PDF">
@@ -335,45 +427,123 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
       </Dialog>
 
       {/* View Contract Dialog */}
-      <Dialog open={!!viewContract} onOpenChange={(open) => !open && setViewContract(null)}>
+      <Dialog open={!!viewContract} onOpenChange={(open) => { if (!open) { setViewContract(null); setContractSigners([]); } }}>
         <DialogContent className="max-w-3xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Contrato {viewContract?.code}</DialogTitle>
           </DialogHeader>
           <ScrollArea className="max-h-[70vh]">
             <pre className="whitespace-pre-wrap text-sm leading-relaxed font-sans p-4">{viewContract?.contract_content || "Conteúdo não disponível"}</pre>
-            {viewContract?.signature_status === "signed" && (
-              <>
-                <Separator className="my-4" />
-                <div className="p-4 space-y-4">
-                  <h3 className="font-semibold text-foreground flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-primary" /> Dados da Assinatura
-                  </h3>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <Card className="p-4 space-y-2">
-                      <div className="flex items-center gap-2 text-sm font-medium"><User className="h-4 w-4 text-primary" /> Signatário</div>
-                      <p className="text-sm text-muted-foreground">{viewContract.signer_name || viewContract.company?.responsavel || "-"}</p>
-                      <p className="text-sm font-mono text-muted-foreground">{viewContract.signer_document || viewContract.company?.cnpj || "-"}</p>
-                      {viewContract.signed_at && <p className="text-xs text-muted-foreground">Assinado em: {new Date(viewContract.signed_at).toLocaleString("pt-BR")}</p>}
+
+            {/* Signers / Envolvidos Section */}
+            <Separator className="my-4" />
+            <div className="p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <User className="h-5 w-5 text-primary" /> Envolvidos
+                </h3>
+                {viewContract?.signature_status === "pending" && (
+                  <Button size="sm" variant="outline" onClick={() => setAddSignerOpen(true)} className="gap-1.5 text-xs">
+                    <UserPlus className="h-3.5 w-3.5" /> Adicionar pessoa
+                  </Button>
+                )}
+              </div>
+
+              {loadingSigners ? (
+                <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+              ) : contractSigners.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">Nenhum signatário encontrado</p>
+              ) : (
+                <div className="space-y-3">
+                  {contractSigners.map((signer) => (
+                    <Card key={signer.id} className={cn("p-4 border-l-4", signer.signed_at ? "border-l-green-500 bg-green-50/50 dark:bg-green-950/20" : "border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20")}>
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            {signer.signed_at ? (
+                              <CheckCircle2 className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <Clock className="h-4 w-4 text-amber-600" />
+                            )}
+                            <span className="text-sm font-medium text-foreground">{signer.signer_name || "—"}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground ml-6">
+                            {roleLabels[signer.signer_role] || signer.signer_role}
+                          </p>
+                          {signer.signer_document && (
+                            <p className="text-xs font-mono text-muted-foreground ml-6">{signer.signer_document}</p>
+                          )}
+                          {signer.signed_at && (
+                            <p className="text-xs text-muted-foreground ml-6">
+                              Assinado em: {new Date(signer.signed_at).toLocaleString("pt-BR")}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {signer.signing_token && !signer.signed_at && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="gap-1.5 text-xs"
+                              onClick={() => handleCopySignerLink(signer.signing_token, signer.signer_name)}
+                            >
+                              <Link2 className="h-3.5 w-3.5" /> Link para assinatura
+                            </Button>
+                          )}
+                          {signer.signature_photo_url && (
+                            <img src={signer.signature_photo_url} alt="Foto" className="h-8 w-8 rounded object-cover border" />
+                          )}
+                        </div>
+                      </div>
                     </Card>
-                    <Card className="p-4 space-y-2">
-                      <div className="flex items-center gap-2 text-sm font-medium"><MapPin className="h-4 w-4 text-primary" /> Localização</div>
-                      <p className="text-sm text-muted-foreground">{viewContract.signature_address || "-"}</p>
-                      {viewContract.signature_latitude && viewContract.signature_longitude && (
-                        <p className="text-xs font-mono text-muted-foreground">({viewContract.signature_latitude.toFixed(6)}, {viewContract.signature_longitude.toFixed(6)})</p>
-                      )}
-                    </Card>
-                  </div>
-                  {viewContract.signature_photo_url && (
-                    <Card className="p-4 space-y-2">
-                      <div className="flex items-center gap-2 text-sm font-medium"><Camera className="h-4 w-4 text-primary" /> Foto</div>
-                      <img src={viewContract.signature_photo_url} alt="Foto de assinatura" className="max-w-xs rounded-lg border" />
-                    </Card>
-                  )}
+                  ))}
                 </div>
-              </>
-            )}
+              )}
+            </div>
           </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Signer Dialog */}
+      <Dialog open={addSignerOpen} onOpenChange={setAddSignerOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Adicionar Signatário</DialogTitle>
+            <DialogDescription>Preencha os dados da pessoa que irá assinar o contrato</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label className="text-xs">Nome completo *</Label>
+              <Input placeholder="Nome do signatário" value={newSignerName} onChange={(e) => setNewSignerName(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label className="text-xs">E-mail</Label>
+              <Input type="email" placeholder="email@exemplo.com" value={newSignerEmail} onChange={(e) => setNewSignerEmail(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label className="text-xs">CPF/CNPJ</Label>
+              <Input placeholder="000.000.000-00" value={newSignerDocument} onChange={(e) => setNewSignerDocument(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label className="text-xs">Papel</Label>
+              <Select value={newSignerRole} onValueChange={setNewSignerRole}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="signatario">Signatário</SelectItem>
+                  <SelectItem value="testemunha">Testemunha</SelectItem>
+                  <SelectItem value="vendedor">Vendedor</SelectItem>
+                  <SelectItem value="colaborador">Colaborador</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddSignerOpen(false)}>Cancelar</Button>
+            <Button onClick={handleAddSigner} disabled={addingNewSigner || !newSignerName.trim()} className="gap-2">
+              {addingNewSigner ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+              Adicionar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
