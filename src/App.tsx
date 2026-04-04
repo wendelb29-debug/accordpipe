@@ -39,6 +39,7 @@ import Descarte from "./pages/Descarte";
 import AssinarPdf from "./pages/AssinarPdf";
 import AssinaturaOnboarding from "./pages/AssinaturaOnboarding";
 import Assinaturas from "./pages/Assinaturas";
+import ValidarDocumento from "./pages/ValidarDocumento";
 
 const queryClient = new QueryClient();
 
