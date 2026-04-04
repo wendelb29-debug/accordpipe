@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   FileSignature, Plus, Eye, Download, Copy, Camera, MapPin, User, X,
-  Clock, CheckCircle2, AlertCircle, Loader2, Search,
+  Clock, CheckCircle2, AlertCircle, Loader2, Search, UserPlus, Link2, Mail,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadContractPdf } from "@/lib/generateContractPdf";
 import { useContracts } from "@/hooks/useContracts";
 import { useCompanies } from "@/hooks/useCompanies";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -30,12 +31,36 @@ const statusConfig: Record<string, { label: string; icon: any; className: string
   expired: { label: "Expirado", icon: AlertCircle, className: "bg-red-100 text-red-700 border-red-300" },
 };
 
+const roleLabels: Record<string, string> = {
+  matriz: "Matriz",
+  revendedor: "Revendedor",
+  colaborador: "Colaborador",
+  vendedor: "Vendedor",
+  testemunha: "Testemunha",
+  signatario: "Signatário",
+};
+
+interface ContractSigner {
+  id: string;
+  contract_id: string;
+  signer_role: string;
+  signing_token: string | null;
+  signed_at: string | null;
+  signer_name: string | null;
+  signer_document: string | null;
+  signature_photo_url: string | null;
+  signature_address: string | null;
+  signature_latitude: number | null;
+  signature_longitude: number | null;
+}
+
 interface LeadContratosTabProps {
   lead: CrmLead;
   addActivity: (data: any) => Promise<any>;
 }
 
 export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
+  const { profile } = useAuth();
   const [contracts, setContracts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -49,6 +74,16 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
 
   // View contract dialog
   const [viewContract, setViewContract] = useState<any | null>(null);
+  const [contractSigners, setContractSigners] = useState<ContractSigner[]>([]);
+  const [loadingSigners, setLoadingSigners] = useState(false);
+
+  // Add signer dialog
+  const [addSignerOpen, setAddSignerOpen] = useState(false);
+  const [newSignerName, setNewSignerName] = useState("");
+  const [newSignerEmail, setNewSignerEmail] = useState("");
+  const [newSignerDocument, setNewSignerDocument] = useState("");
+  const [newSignerRole, setNewSignerRole] = useState("signatario");
+  const [addingNewSigner, setAddingNewSigner] = useState(false);
 
   // Sign contract dialog
   const [signContract, setSignContract] = useState<any | null>(null);
