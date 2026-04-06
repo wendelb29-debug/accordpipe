@@ -404,7 +404,7 @@ export default function Atividades() {
               <div className="hidden md:block rounded-xl border border-border bg-card shadow-sm overflow-hidden">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-muted/50">
+                    <TableRow className="bg-muted/50 [&>th]:h-9 [&>th]:py-2 [&>th]:px-3">
                       <TableHead className="w-10"><Checkbox /></TableHead>
                       <TableHead className="font-semibold text-xs uppercase tracking-wider">Título</TableHead>
                       <TableHead className="font-semibold text-xs uppercase tracking-wider">Descrição</TableHead>
@@ -414,14 +414,13 @@ export default function Atividades() {
                       <TableHead className="font-semibold text-xs uppercase tracking-wider">Empresa</TableHead>
                       <TableHead className="font-semibold text-xs uppercase tracking-wider">Início</TableHead>
                       <TableHead className="font-semibold text-xs uppercase tracking-wider">Duração</TableHead>
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider">Conclusão</TableHead>
                       <TableHead className="font-semibold text-xs uppercase tracking-wider text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginated.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={11} className="text-center py-12 text-muted-foreground">
+                        <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
                           Nenhuma atividade encontrada para o período selecionado.
                         </TableCell>
                       </TableRow>
@@ -439,7 +438,7 @@ export default function Atividades() {
                         const creatorAvatar = activity.created_by_user_id ? userAvatars[activity.created_by_user_id] : null;
 
                         return (
-                          <TableRow key={activity.id} className={cn("group hover:bg-muted/30 relative", isOverdue && "bg-destructive/5")}>
+                          <TableRow key={activity.id} className={cn("group hover:bg-muted/30 relative [&>td]:py-2 [&>td]:px-3", isOverdue && "bg-destructive/5")}>
                             {isOverdue && (
                               <td className="absolute left-0 top-0 bottom-0 w-1 bg-destructive rounded-l" />
                             )}
@@ -505,11 +504,6 @@ export default function Atividades() {
                             </TableCell>
                             <TableCell className="text-sm text-foreground">
                               {duration}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {status === "concluida"
-                                ? new Date(activity.created_at).toLocaleDateString("pt-BR")
-                                : "--"}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center justify-end gap-1">
