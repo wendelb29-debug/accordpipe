@@ -568,6 +568,12 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                           <span className="truncate">{nextActivities[lead.id]}</span>
                         </div>
                       )}
+                      {noActivity && lastCompletedActivities[lead.id] && (
+                        <div className="flex items-center gap-1 mt-2 text-[10px] text-muted-foreground">
+                          <CheckCircle className="h-3 w-3 text-emerald-500" />
+                          <span className="truncate">Atividade concluída: {lastCompletedActivities[lead.id]}</span>
+                        </div>
+                      )}
 
                       {/* Footer */}
                       <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border/20">
