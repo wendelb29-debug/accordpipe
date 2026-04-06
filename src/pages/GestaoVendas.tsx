@@ -13,8 +13,9 @@ import {
 } from "@/components/ui/tabs";
 import {
   DollarSign, Users, ShoppingCart, Download, Copy, ArrowLeft,
-  TrendingUp, Calendar, FileText, Code, Send,
+  TrendingUp, Calendar, FileText, Code, Send, Webhook,
 } from "lucide-react";
+import { WebhookConfig } from "@/components/atendimento/tabs/WebhookConfig";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -167,6 +168,7 @@ export default function GestaoVendas() {
       <Tabs defaultValue="vendas">
         <TabsList>
           <TabsTrigger value="vendas" className="gap-2"><ShoppingCart className="h-4 w-4" /> Vendas</TabsTrigger>
+          <TabsTrigger value="webhooks" className="gap-2"><Webhook className="h-4 w-4" /> Webhooks</TabsTrigger>
           <TabsTrigger value="docs" className="gap-2"><FileText className="h-4 w-4" /> Documentação</TabsTrigger>
         </TabsList>
 
@@ -420,6 +422,14 @@ export default function GestaoVendas() {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="webhooks" className="mt-4">
+          <Card>
+            <CardContent className="p-6">
+              <WebhookConfig />
             </CardContent>
           </Card>
         </TabsContent>
