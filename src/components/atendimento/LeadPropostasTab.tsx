@@ -67,6 +67,7 @@ interface ServidorData {
   cidade: string | null;
   estado: string | null;
   cep: string | null;
+  complemento: string | null;
   brand_logo_url?: string | null;
   brand_primary_color?: string | null;
   brand_secondary_color?: string | null;
