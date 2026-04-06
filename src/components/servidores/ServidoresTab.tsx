@@ -452,9 +452,9 @@ export default function ServidoresTab() {
                   onChange={(e) => setFormData({ ...formData, cnpj: formatCnpj(e.target.value) })}
                   placeholder="00.000.000/0000-00"
                   className="flex-1"
-                  disabled={!!editingCompany}
+                  disabled={!!editingCompany && !isMaster}
                 />
-                {!editingCompany && (
+                {(!editingCompany || isMaster) && (
                   <Button
                     variant="secondary"
                     size="icon"
