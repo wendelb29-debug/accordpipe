@@ -1056,34 +1056,36 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
   }
 
   // Helper: resolve template field values from servidor + lead + proposal
-  const resolveFieldValue = (fieldType: string) => {
+  const resolveFieldValue = (fieldType: string, proposalOverride?: any) => {
     const srv = servidorData;
-    const meta = contractPreviewProposal ? ((contractPreviewProposal.metadata as any) || {}) : {};
+    const proposal = proposalOverride || contractPreviewProposal;
+    const meta = proposal ? ((proposal.metadata as any) || {}) : {};
     const srvAddr = srv ? [srv.endereco, srv.numero && `nº ${srv.numero}`, srv.bairro, srv.cidade && srv.estado && `${srv.cidade}/${srv.estado}`, srv.cep && `CEP: ${srv.cep}`].filter(Boolean).join(", ") : "";
     const clientName = registrationData?.nome_completo || lead.contact_name || lead.company_name;
 
     switch (fieldType) {
-      // Legacy servidor fields (backward compat)
+      // DADOS DO SERVIDOR (CONTRATADA)
       case "servidor_logo": return srv?.brand_logo_url || "";
       case "servidor_empresa": return srv?.razao_social || srv?.nome_fantasia || "";
       case "servidor_cnpj": return srv?.cnpj || "";
       case "servidor_endereco": return srvAddr;
-      case "campo_proposta": return buildProposalClause(contractPreviewProposal || {});
+      case "servidor_email": return srv?.email || "";
 
-      // CONTRATO fields
-      case "clausula": return buildProposalClause(contractPreviewProposal || {});
+      // DETALHES DA PROPOSTA
+      case "campo_proposta": return buildProposalClause(proposal || {});
+      case "clausula": return buildProposalClause(proposal || {});
+      case "valor_mrr": return meta.value_mrr ? fmtCur(meta.value_mrr) : fmtCur(lead.value_mrr || 0);
+      case "valor_ps": return meta.value_ps ? fmtCur(meta.value_ps) : fmtCur(lead.value_ps || 0);
       case "assinatura": return "______________________________";
+
+      // Legacy/compat fields
       case "data": return new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
       case "plano": return registrationData?.plano_contratado || meta.sigla || "—";
-
-      // DADOS DO CLIENTE fields
       case "cnpj_cpf": return registrationData?.cpf || lead.documento || "—";
       case "empresa": return lead.company_name || "—";
       case "nome_cliente": return clientName;
       case "cliente_email": return lead.email || "—";
       case "cliente_telefone": return lead.phone || "—";
-      case "valor_ps": return meta.value_ps ? fmtCur(meta.value_ps) : fmtCur(lead.value_ps || 0);
-      case "valor_mrr": return meta.value_mrr ? fmtCur(meta.value_mrr) : fmtCur(lead.value_mrr || 0);
       case "cliente_cep": return lead.cep || "—";
       case "cliente_endereco": return lead.endereco || "—";
       case "cliente_numero": return lead.numero || "—";
