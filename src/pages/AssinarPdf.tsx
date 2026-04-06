@@ -1,19 +1,31 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { Camera, MapPin, CheckCircle, Loader2, FileSignature, AlertCircle } from "lucide-react";
+import { Camera, MapPin, CheckCircle, Loader2, FileSignature, AlertCircle, Clock, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
+
+interface SignerInfo {
+  id: string;
+  name: string;
+  sign_order: number;
+  status: string;
+  signed_at: string | null;
+}
 
 export default function AssinarPdf() {
   const { token } = useParams<{ token: string }>();
   const [signer, setSigner] = useState<any>(null);
   const [contract, setContract] = useState<any>(null);
+  const [allSigners, setAllSigners] = useState<SignerInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [signing, setSigning] = useState(false);
   const [signed, setSigned] = useState(false);
+  const [blocked, setBlocked] = useState(false);
   const [photo, setPhoto] = useState<Blob | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [location, setLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
@@ -27,7 +39,6 @@ export default function AssinarPdf() {
     const load = async () => {
       if (!token) { setError("Token inválido"); setLoading(false); return; }
       
-      // Find signer by token
       const { data: signerData, error: signerErr } = await supabase
         .from("pdf_contract_signers")
         .select("*")
@@ -43,20 +54,25 @@ export default function AssinarPdf() {
       if (signerData.status === "assinado") {
         setSigner(signerData);
         setSigned(true);
-        // Load contract for download
         const { data: contractData } = await supabase
           .from("pdf_contracts")
           .select("*")
           .eq("id", signerData.contract_id)
           .single();
         if (contractData) setContract(contractData);
+        // Load all signers for progress
+        const { data: signersList } = await supabase
+          .from("pdf_contract_signers")
+          .select("id, name, sign_order, status, signed_at")
+          .eq("contract_id", signerData.contract_id)
+          .order("sign_order", { ascending: true });
+        setAllSigners((signersList as SignerInfo[]) || []);
         setLoading(false);
         return;
       }
 
       setSigner(signerData);
 
-      // Load contract
       const { data: contractData, error: contractErr } = await supabase
         .from("pdf_contracts")
         .select("*")
@@ -76,12 +92,32 @@ export default function AssinarPdf() {
       }
 
       setContract(contractData);
+
+      // Load all signers to check order
+      const { data: signersList } = await supabase
+        .from("pdf_contract_signers")
+        .select("id, name, sign_order, status, signed_at")
+        .eq("contract_id", signerData.contract_id)
+        .order("sign_order", { ascending: true });
+      
+      const sigList = (signersList as SignerInfo[]) || [];
+      setAllSigners(sigList);
+
+      // Check if this signer's turn - all previous signers must have signed
+      const myOrder = signerData.sign_order || 1;
+      const previousSigners = sigList.filter(s => s.sign_order < myOrder);
+      const allPreviousSigned = previousSigners.every(s => s.status === "assinado");
+      
+      if (!allPreviousSigned && previousSigners.length > 0) {
+        setBlocked(true);
+      }
+
       setLoading(false);
     };
     load();
   }, [token]);
 
-  // Auto-capture geolocation on mount
+  // Auto-capture geolocation
   useEffect(() => {
     setLocationLoading(true);
     navigator.geolocation.getCurrentPosition(
@@ -104,7 +140,6 @@ export default function AssinarPdf() {
     );
   }, []);
 
-  // Camera with auto-capture after countdown
   const capturePhoto = useCallback(() => {
     if (!videoRef.current) return;
     const canvas = document.createElement("canvas");
@@ -129,7 +164,6 @@ export default function AssinarPdf() {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setCameraActive(true);
-        // Start 5s countdown
         let count = 5;
         setCountdown(count);
         countdownRef.current = setInterval(() => {
@@ -137,7 +171,6 @@ export default function AssinarPdf() {
           if (count <= 0) {
             clearInterval(countdownRef.current!);
             setCountdown(null);
-            // Small delay to ensure video frame is ready
             setTimeout(() => capturePhoto(), 100);
           } else {
             setCountdown(count);
@@ -155,7 +188,6 @@ export default function AssinarPdf() {
     };
   }, []);
 
-  // Get IP address
   const getClientIp = async (): Promise<string> => {
     try {
       const res = await fetch("https://api.ipify.org?format=json");
@@ -164,14 +196,12 @@ export default function AssinarPdf() {
     } catch { return "0.0.0.0"; }
   };
 
-  // Sign
   const handleSign = async () => {
     if (!signer || !photo || !location) return;
     setSigning(true);
     try {
       const clientIp = await getClientIp();
 
-      // Upload photo
       const fileName = `pdf_${signer.id}_${Date.now()}.jpg`;
       const { error: uploadErr } = await supabase.storage
         .from("signatures")
@@ -180,7 +210,6 @@ export default function AssinarPdf() {
 
       const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
 
-      // Update signer
       const { error: updateErr } = await supabase
         .from("pdf_contract_signers")
         .update({
@@ -195,21 +224,19 @@ export default function AssinarPdf() {
         .eq("id", signer.id);
       if (updateErr) throw updateErr;
 
-      // Add history
       await supabase.from("pdf_contract_history").insert({
         contract_id: signer.contract_id,
         action: "assinado",
         description: `${signer.name} assinou o contrato em ${new Date().toLocaleString("pt-BR")}. Local: ${location.address}. IP: ${clientIp}`,
       } as any);
 
-      // Check if all signers signed → update contract status + generate hash
-      const { data: allSigners } = await supabase
+      // Check if all signers signed
+      const { data: updatedSigners } = await supabase
         .from("pdf_contract_signers")
         .select("status")
         .eq("contract_id", signer.contract_id);
 
-      if (allSigners && allSigners.every((s: any) => s.status === "assinado")) {
-        // Generate document hash and validation code
+      if (updatedSigners && updatedSigners.every((s: any) => s.status === "assinado")) {
         const now = new Date().toISOString();
         const hashInput = `${signer.contract_id}|${now}|pdf_contract`;
         const encoder = new TextEncoder();
@@ -241,6 +268,56 @@ export default function AssinarPdf() {
     }
   };
 
+  const signedCount = allSigners.filter(s => s.status === "assinado").length;
+  const progressPercent = allSigners.length > 0 ? (signedCount / allSigners.length) * 100 : 0;
+
+  // Progress tracker component
+  const SigningProgress = () => (
+    <Card className="border-border">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Users className="h-4 w-4 text-primary" /> Progresso das Assinaturas
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="space-y-1.5">
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>{signedCount} de {allSigners.length} assinatura(s)</span>
+            <span>{Math.round(progressPercent)}%</span>
+          </div>
+          <Progress value={progressPercent} className="h-2" />
+        </div>
+        <div className="space-y-2">
+          {allSigners.map((s, idx) => (
+            <div key={s.id} className="flex items-center gap-2.5 text-sm">
+              <div className="flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground">
+                {idx + 1}
+              </div>
+              {s.status === "assinado" ? (
+                <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+              ) : s.id === signer?.id ? (
+                <div className="h-4 w-4 rounded-full border-2 border-primary animate-pulse shrink-0" />
+              ) : (
+                <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+              )}
+              <span className={s.status === "assinado" ? "text-muted-foreground line-through" : s.id === signer?.id ? "font-semibold text-foreground" : "text-muted-foreground"}>
+                {s.name}
+              </span>
+              {s.id === signer?.id && s.status !== "assinado" && (
+                <Badge variant="outline" className="text-[10px] ml-auto">Sua vez</Badge>
+              )}
+              {s.status === "assinado" && s.signed_at && (
+                <span className="text-[10px] text-muted-foreground ml-auto">
+                  {new Date(s.signed_at).toLocaleDateString("pt-BR")}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -266,20 +343,52 @@ export default function AssinarPdf() {
   if (signed) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
-            <CardTitle>Contrato Assinado!</CardTitle>
-            <CardDescription>Sua assinatura foi registrada com sucesso.</CardDescription>
-          </CardHeader>
-          {contract?.pdf_url && (
+        <div className="w-full max-w-md space-y-4">
+          <Card>
+            <CardHeader className="text-center">
+              <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
+              <CardTitle>Contrato Assinado!</CardTitle>
+              <CardDescription>Sua assinatura foi registrada com sucesso.</CardDescription>
+            </CardHeader>
+            {contract?.pdf_url && (
+              <CardContent>
+                <Button className="w-full" onClick={() => window.open(contract.pdf_url, "_blank")}>
+                  Baixar Documento PDF
+                </Button>
+              </CardContent>
+            )}
+          </Card>
+          {allSigners.length > 1 && <SigningProgress />}
+        </div>
+      </div>
+    );
+  }
+
+  // Blocked - not this signer's turn
+  if (blocked) {
+    const myOrder = signer?.sign_order || 1;
+    const pendingBefore = allSigners.filter(s => s.sign_order < myOrder && s.status !== "assinado");
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <div className="w-full max-w-md space-y-4">
+          <Card>
+            <CardHeader className="text-center">
+              <Clock className="h-12 w-12 text-amber-500 mx-auto mb-2" />
+              <CardTitle>Aguardando sua vez</CardTitle>
+              <CardDescription>
+                Este contrato possui ordem de assinatura obrigatória. Aguarde {pendingBefore.length === 1 ? "o signatário anterior" : `os ${pendingBefore.length} signatários anteriores`} assinar(em) primeiro.
+              </CardDescription>
+            </CardHeader>
             <CardContent>
-              <Button className="w-full" onClick={() => window.open(contract.pdf_url, "_blank")}>
-                Baixar Documento PDF
-              </Button>
+              <Alert>
+                <AlertDescription className="text-sm">
+                  Você receberá uma notificação quando for sua vez de assinar.
+                </AlertDescription>
+              </Alert>
             </CardContent>
-          )}
-        </Card>
+          </Card>
+          <SigningProgress />
+        </div>
       </div>
     );
   }
@@ -301,6 +410,9 @@ export default function AssinarPdf() {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
+
+        {/* Progress */}
+        {allSigners.length > 1 && <SigningProgress />}
 
         {/* PDF */}
         {contract?.pdf_url && (
@@ -354,7 +466,7 @@ export default function AssinarPdf() {
               )}
             </div>
 
-            {/* Location (auto-captured) */}
+            {/* Location */}
             <div className="space-y-3">
               <p className="text-sm font-medium flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-primary" /> Geolocalização
