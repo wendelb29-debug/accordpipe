@@ -4,7 +4,7 @@ import {
   DollarSign, Clock, Tag, StickyNote, CheckCircle, XCircle, Plus,
   MessageSquare, PhoneCall, FileText, Activity, Trash2, Send, Loader2,
   FileSignature, Eye, Download, Copy, Image as ImageIcon, Search,
-  FileSpreadsheet, Edit, MoreVertical, ThumbsUp, ThumbsDown,
+  FileSpreadsheet, Edit, MoreVertical, ThumbsUp, ThumbsDown, Paperclip,
   Link2, CopyPlus, ClipboardList, UserRoundPen
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
