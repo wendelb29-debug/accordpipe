@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Smartphone, QrCode, Wifi, WifiOff, RefreshCw, Settings, Loader2, Plus, Unplug } from "lucide-react";
+import { Smartphone, QrCode, Wifi, WifiOff, RefreshCw, Settings, Loader2, Plus, Unplug, Webhook } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
