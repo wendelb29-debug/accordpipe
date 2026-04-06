@@ -1052,6 +1052,83 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
     await handlePreviewContract(proposal);
   };
 
+  const downloadContractWithOverlay = async () => {
+    if (!templatePdfUrl) { toast.error("Nenhum template disponível"); return; }
+    try {
+      toast.loading("Gerando PDF...", { id: "contract-pdf" });
+      const pdfjsLib = await import("pdfjs-dist");
+      const { default: jsPDF } = await import("jspdf");
+      const pdfDoc = await pdfjsLib.getDocument(templatePdfUrl).promise;
+      const totalPg = pdfDoc.numPages;
+      const scale = 2;
+      let pdf: any = null;
+
+      for (let pg = 1; pg <= totalPg; pg++) {
+        const page = await pdfDoc.getPage(pg);
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement("canvas");
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext("2d")!;
+        await page.render({ canvasContext: ctx, viewport }).promise;
+
+        // Draw overlay fields on this page
+        const pageFields = templateFields.filter((f: any) => f.page === pg);
+        for (const f of pageFields) {
+          const value = resolveFieldValue(f.field_type);
+          if (!value) continue;
+          const isLogo = f.field_type === "servidor_logo";
+          if (isLogo) {
+            try {
+              const img = new Image();
+              img.crossOrigin = "anonymous";
+              await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = () => rej(); img.src = value; });
+              ctx.drawImage(img, f.pos_x * scale, f.pos_y * scale, f.width * scale, f.height * scale);
+            } catch { /* skip */ }
+          } else {
+            ctx.fillStyle = "#000";
+            const fontSize = (f.field_type === "campo_proposta" || f.field_type === "clausula") ? 8 * scale : 11 * scale;
+            ctx.font = `${fontSize}px Arial, sans-serif`;
+            const maxW = f.width * scale;
+            const words = value.split(" ");
+            let line = "";
+            let ly = f.pos_y * scale + fontSize;
+            const lineH = fontSize * 1.3;
+            for (const word of words) {
+              const test = line ? line + " " + word : word;
+              if (ctx.measureText(test).width > maxW && line) {
+                ctx.fillText(line, f.pos_x * scale, ly);
+                line = word;
+                ly += lineH;
+              } else {
+                line = test;
+              }
+            }
+            if (line) ctx.fillText(line, f.pos_x * scale, ly);
+          }
+        }
+
+        const imgData = canvas.toDataURL("image/jpeg", 0.92);
+        const pxToMm = (px: number) => px * 25.4 / 96 / (scale / 1);
+        const wMm = pxToMm(viewport.width);
+        const hMm = pxToMm(viewport.height);
+
+        if (pg === 1) {
+          pdf = new jsPDF({ orientation: wMm > hMm ? "landscape" : "portrait", unit: "mm", format: [wMm, hMm] });
+        } else {
+          pdf.addPage([wMm, hMm], wMm > hMm ? "landscape" : "portrait");
+        }
+        pdf.addImage(imgData, "JPEG", 0, 0, wMm, hMm);
+      }
+
+      pdf.save(`Contrato_${lead.company_name.replace(/\s+/g, "_")}.pdf`);
+      toast.success("PDF baixado!", { id: "contract-pdf" });
+    } catch (err) {
+      console.error("Error generating contract PDF:", err);
+      toast.error("Erro ao gerar PDF", { id: "contract-pdf" });
+    }
+  };
+
   if (loading) {
     return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
