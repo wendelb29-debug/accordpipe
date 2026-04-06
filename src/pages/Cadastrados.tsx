@@ -847,14 +847,7 @@ export default function Cadastrados() {
     );
   }
 
-  // ──────── Manual Registration ────────
-  const [manualRegOpen, setManualRegOpen] = useState(false);
-  const [manualForm, setManualForm] = useState({
-    nome_completo: "", cpf: "", email: "", telefone: "",
-    empresa: "", plano: "", valor: "", client_status: "pendente",
-    data_adesao: new Date().toISOString().split("T")[0], observacoes: "", origem: "manual",
-  });
-  const [manualSaving, setManualSaving] = useState(false);
+  // ──────── Manual Registration Logic ────────
 
   const applyMask = (value: string, type: "cpf" | "phone") => {
     const digits = value.replace(/\D/g, "");
@@ -932,7 +925,7 @@ export default function Cadastrados() {
   };
 
   // ──────── Delete registration ────────
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  // ──────── Delete registration ────────
   const handleDeleteRegistration = async (regId: string) => {
     const { error } = await supabase.from("crm_client_registrations").delete().eq("id", regId);
     if (error) { toast.error("Erro ao excluir"); return; }
