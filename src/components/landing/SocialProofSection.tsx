@@ -32,15 +32,6 @@ export function SocialProofSection() {
   return (
     <section className="relative py-20 sm:py-28" style={{ background: '#0B0F19' }}>
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-4 mb-20">
-          {stats.map((stat) => (
-            <div key={stat.label} className="text-center">
-              <p className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-[#2563EB] to-[#A855F7] bg-clip-text text-transparent">{stat.value}</p>
-              <p className="mt-1 text-sm text-[#6B7280]">{stat.label}</p>
-            </div>
-          ))}
-        </div>
 
         {/* Testimonials */}
         <div className="mx-auto max-w-2xl text-center mb-12">
