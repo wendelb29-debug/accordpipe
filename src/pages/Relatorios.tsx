@@ -164,9 +164,40 @@ export default function Relatorios() {
     return (data || []) as CrmRow[];
   };
 
+  const generateAiAnalysis = async (
+    curKpis: Record<string, number>,
+    prevKpis: Record<string, number>,
+    type: string,
+    from: string,
+    to: string
+  ) => {
+    setAiLoading(true);
+    setAiAnalysis("");
+    try {
+      const [pf, pt] = getPreviousPeriod(from, to);
+      const { data, error } = await supabase.functions.invoke("report-ai-analysis", {
+        body: {
+          currentKpis: curKpis,
+          previousKpis: prevKpis,
+          reportType: type,
+          periodLabel: `${new Date(from).toLocaleDateString("pt-BR")} a ${new Date(to).toLocaleDateString("pt-BR")}`,
+          previousPeriodLabel: `${new Date(pf).toLocaleDateString("pt-BR")} a ${new Date(pt).toLocaleDateString("pt-BR")}`,
+        },
+      });
+      if (error) throw error;
+      setAiAnalysis(data.analysis || "Erro ao gerar análise.");
+    } catch (e: any) {
+      console.error("AI analysis error:", e);
+      setAiAnalysis("Não foi possível gerar a análise comparativa. Tente novamente.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const handleGenerate = async () => {
     setLoading(true);
     setPage(0);
+    setAiAnalysis("");
     try {
       if (activeTab === "clientes" && canViewClients) {
         const data = await fetchClientData(dateFrom || undefined, dateTo || undefined);
