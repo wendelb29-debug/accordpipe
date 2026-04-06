@@ -421,7 +421,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
           logoImg.onerror = () => reject();
           logoImg.src = brandInfo.logo_url;
         });
-        pdf.addImage(logoImg, "PNG", mL, y, 28, 14);
+        pdf.addImage(logoImg, "PNG", mL, y, 44, 22);
         logoLoaded = true;
       } catch { /* skip */ }
     }
@@ -437,7 +437,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     pdf.text(`Nº ${sigla}  |  Versão ${version}`, pageWidth - mR, y + 10, { align: "right" });
     pdf.text(`Emissão: ${createdDate}  |  Validade: ${validUntilStr}`, pageWidth - mR, y + 14, { align: "right" });
 
-    y += (logoLoaded ? 18 : 18);
+    y += (logoLoaded ? 26 : 18);
 
     // Accent line
     pdf.setDrawColor(accent.r, accent.g, accent.b);
