@@ -1246,6 +1246,10 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
     const approvedProposals = proposals.filter(p => (p.metadata as any)?.status === "aceita");
     const hasTemplate = !!templatePdfUrl;
 
+    // Get the selected proposal for live preview
+    const selectedProposal = selectedSignProposal ? proposals.find(p => p.id === selectedSignProposal) : null;
+    const selectedIsApproved = selectedProposal ? (selectedProposal.metadata as any)?.status === "aceita" : false;
+
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-2">
@@ -1261,60 +1265,11 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
           </div>
         )}
 
-        {/* Template preview (read-only) */}
-        {hasTemplate && (
-          <div className="space-y-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Pré-visualização do Contrato</p>
-            <div className="relative rounded-lg border border-border overflow-hidden bg-muted/30" style={{ maxHeight: 350, overflow: "auto" }}>
-              <div className="relative inline-block">
-                <PdfRenderer
-                  pdfUrl={templatePdfUrl!}
-                  currentPage={templateCurrentPage}
-                  onTotalPages={setTemplateTotalPages}
-                  scale={0.8}
-                />
-                {templateFields
-                  .filter((f: any) => f.page === templateCurrentPage)
-                  .map((f: any) => {
-                    const value = resolveFieldValue(f.field_type);
-                    const isLogo = f.field_type === "servidor_logo";
-                    const s = 0.8;
-                    return (
-                      <div
-                        key={f.id}
-                        className="absolute bg-background/80 rounded px-0.5 overflow-hidden"
-                        style={{
-                          left: f.pos_x * s,
-                          top: f.pos_y * s,
-                          width: f.width * s,
-                          height: f.height * s,
-                          fontSize: Math.min(f.height * 0.5, 11),
-                          lineHeight: `${f.height * s}px`,
-                        }}
-                      >
-                        {isLogo && value ? (
-                          <img src={value} alt="Logo" className="h-full w-auto object-contain" />
-                        ) : (
-                          <span className="text-foreground whitespace-pre-wrap leading-tight" style={{ fontSize: 9, lineHeight: "1.2" }}>
-                            {value}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-              </div>
-            </div>
-            {templateTotalPages > 1 && (
-              <div className="flex items-center justify-center gap-2">
-                <Button variant="outline" size="icon" className="h-6 w-6" disabled={templateCurrentPage <= 1} onClick={() => setTemplateCurrentPage(p => p - 1)}>
-                  <ChevronLeft className="h-3 w-3" />
-                </Button>
-                <span className="text-[10px] text-muted-foreground">{templateCurrentPage} / {templateTotalPages}</span>
-                <Button variant="outline" size="icon" className="h-6 w-6" disabled={templateCurrentPage >= templateTotalPages} onClick={() => setTemplateCurrentPage(p => p + 1)}>
-                  <ChevronRight className="h-3 w-3" />
-                </Button>
-              </div>
-            )}
+        {/* No approved proposals message */}
+        {approvedProposals.length === 0 && availableProposals.length > 0 && (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-600 flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            Aguardando aprovação da proposta. Aprove uma proposta na aba Propostas para gerar o contrato.
           </div>
         )}
 
@@ -1355,11 +1310,88 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
             );
           })}
         </div>
+
+        {/* Live contract preview when a proposal is selected */}
+        {hasTemplate && selectedProposal && (
+          <div className="space-y-2">
+            <Separator />
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Pré-visualização do Contrato</p>
+            <div className="relative rounded-lg border border-border overflow-auto bg-muted/20" style={{ maxHeight: 450 }}>
+              <div className="relative inline-block">
+                <PdfRenderer
+                  pdfUrl={templatePdfUrl!}
+                  currentPage={templateCurrentPage}
+                  onTotalPages={setTemplateTotalPages}
+                  scale={0.9}
+                />
+                {templateFields
+                  .filter((f: any) => f.page === templateCurrentPage)
+                  .map((f: any) => {
+                    const value = resolveFieldValue(f.field_type, selectedProposal);
+                    const isLogo = f.field_type === "servidor_logo";
+                    const s = 0.9;
+                    if (!value) return null;
+                    return (
+                      <div
+                        key={f.id}
+                        className="absolute bg-background/90 rounded px-0.5 overflow-hidden flex items-center"
+                        style={{
+                          left: f.pos_x * s,
+                          top: f.pos_y * s,
+                          width: f.width * s,
+                          height: f.height * s,
+                          fontSize: Math.min(f.height * 0.5, 12),
+                        }}
+                      >
+                        {isLogo && value ? (
+                          <img src={value} alt="Logo" className="h-full w-auto object-contain" />
+                        ) : (
+                          <span className="text-foreground whitespace-pre-wrap leading-tight" style={{ fontSize: f.field_type === "campo_proposta" || f.field_type === "clausula" ? 8 : 10, lineHeight: "1.2" }}>
+                            {value}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+            {templateTotalPages > 1 && (
+              <div className="flex items-center justify-center gap-2">
+                <Button variant="outline" size="icon" className="h-6 w-6" disabled={templateCurrentPage <= 1} onClick={() => setTemplateCurrentPage(p => p - 1)}>
+                  <ChevronLeft className="h-3 w-3" />
+                </Button>
+                <span className="text-[10px] text-muted-foreground">{templateCurrentPage} / {templateTotalPages}</span>
+                <Button variant="outline" size="icon" className="h-6 w-6" disabled={templateCurrentPage >= templateTotalPages} onClick={() => setTemplateCurrentPage(p => p + 1)}>
+                  <ChevronRight className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+
+            {/* Data summary */}
+            <div className="rounded-lg border border-border p-2.5 space-y-1">
+              <p className="text-[10px] font-semibold text-foreground">Dados mapeados</p>
+              <div className="grid grid-cols-2 gap-1 text-[10px] text-muted-foreground">
+                <span>Servidor: {servidorData?.razao_social || "—"}</span>
+                <span>CNPJ: {servidorData?.cnpj || "—"}</span>
+                <span>Cliente: {lead.contact_name || lead.company_name}</span>
+                <span>MRR: {fmtCur((selectedProposal.metadata as any)?.value_mrr || lead.value_mrr || 0)}</span>
+              </div>
+            </div>
+
+            {/* Print button */}
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => window.open(templatePdfUrl!, '_blank')}>
+                <Download className="h-3.5 w-3.5" /> Imprimir / Baixar PDF
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="flex justify-end">
           <Button
             size="sm"
             className="text-xs gap-1.5"
-            disabled={!selectedSignProposal || sendingToSign || !hasTemplate}
+            disabled={!selectedSignProposal || sendingToSign || !hasTemplate || !selectedIsApproved}
             onClick={async () => {
               const proposal = proposals.find(p => p.id === selectedSignProposal);
               if (proposal) {
@@ -1367,9 +1399,12 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
               }
             }}
           >
-            {sendingToSign ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
-            Visualizar contrato
+            {sendingToSign ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileSignature className="h-3.5 w-3.5" />}
+            Gerar contrato e enviar
           </Button>
+          {selectedSignProposal && !selectedIsApproved && (
+            <p className="text-[10px] text-amber-500 ml-2 self-center">Aprove a proposta primeiro</p>
+          )}
         </div>
       </div>
     );
