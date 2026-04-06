@@ -88,13 +88,23 @@ export function Sidebar() {
     return () => clearInterval(interval);
   }, [fetchOverdueActivities]);
 
-  const filteredNavigation = navigation.filter(
-    (item) => !role || item.roles.includes(role)
-  );
+  const { hasPermission } = usePermissions();
 
-  const filteredConfigNavigation = configNavigation.filter(
-    (item) => !role || item.roles.includes(role)
-  );
+  const filteredNavigation = navigation.filter((item) => {
+    // Role-based filter (legacy)
+    if (role && !item.roles.includes(role)) return false;
+    // Permission-based filter
+    const perm = ROUTE_PERMISSIONS[item.href];
+    if (perm && !hasPermission(perm)) return false;
+    return true;
+  });
+
+  const filteredConfigNavigation = configNavigation.filter((item) => {
+    if (role && !item.roles.includes(role)) return false;
+    const perm = ROUTE_PERMISSIONS[item.href];
+    if (perm && !hasPermission(perm)) return false;
+    return true;
+  });
 
   const userInitials = profile?.name
     ? profile.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()
