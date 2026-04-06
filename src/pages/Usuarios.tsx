@@ -535,6 +535,20 @@ export default function Usuarios() {
                         )}
                       </TableCell>
                       <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Permissões"
+                            onClick={() => {
+                              setPermUserId(user.user_id);
+                              setPermUserName(user.name);
+                              setPermUserIsCeo(user.role === "ceo" || user.is_master);
+                              setPermDialogOpen(true);
+                            }}
+                          >
+                            <Shield className="h-4 w-4 text-primary" />
+                          </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
@@ -579,6 +593,7 @@ export default function Usuarios() {
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
