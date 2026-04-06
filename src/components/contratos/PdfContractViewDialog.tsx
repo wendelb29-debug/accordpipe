@@ -39,7 +39,7 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
 
   // Realtime subscription for signer status changes
   useEffect(() => {
-    if (!contract) return;
+    if (!contract?.id) return;
     const channel = supabase
       .channel(`pdf-signers-${contract.id}`)
       .on(
