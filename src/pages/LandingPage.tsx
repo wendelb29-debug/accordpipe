@@ -10,7 +10,7 @@ import { FlowSection } from "@/components/landing/FlowSection";
 import { DifferentialSection } from "@/components/landing/DifferentialSection";
 import { DashboardVisualSection } from "@/components/landing/DashboardVisualSection";
 import { SocialProofSection } from "@/components/landing/SocialProofSection";
-import { PricingSection } from "@/components/landing/PricingSection";
+
 import { SecuritySection } from "@/components/landing/SecuritySection";
 import { FAQSection } from "@/components/landing/FAQSection";
 import { CTASection } from "@/components/landing/CTASection";
@@ -60,7 +60,7 @@ export default function LandingPage() {
       <DifferentialSection />
       <DashboardVisualSection />
       <SocialProofSection />
-      <PricingSection />
+      
       <SecuritySection />
       <FAQSection />
       <CTASection />
