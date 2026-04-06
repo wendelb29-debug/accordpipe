@@ -101,6 +101,16 @@ export default function Cadastrados() {
   const [upsellForm, setUpsellForm] = useState({ name: "", description: "", amount: "", type: "mensal", start_date: new Date().toISOString().split("T")[0] });
   const [upsellSaving, setUpsellSaving] = useState(false);
 
+  // Manual Registration state (must be before any early return)
+  const [manualRegOpen, setManualRegOpen] = useState(false);
+  const [manualForm, setManualForm] = useState({
+    nome_completo: "", cpf: "", email: "", telefone: "",
+    empresa: "", plano: "", valor: "", client_status: "pendente",
+    data_adesao: new Date().toISOString().split("T")[0], observacoes: "", origem: "manual",
+  });
+  const [manualSaving, setManualSaving] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
   // Check if user can manage upsells (Master/CEO/Admin)
   const canManageUpsell = profile?.is_master || true; // Role check done via RLS
 
