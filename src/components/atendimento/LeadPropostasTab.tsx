@@ -1019,6 +1019,18 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
             }}>
               <Download className="h-3.5 w-3.5" /> Baixar contrato em PDF
             </Button>
+
+            {/* Signers Manager */}
+            {generatedContractId && (
+              <div className="border-t border-border pt-4">
+                <ContractSignersManager
+                  contractId={generatedContractId}
+                  contractStatus="pendente"
+                  clientName={registrationData?.nome_completo || lead.contact_name || lead.company_name}
+                  clientCpf={registrationData?.cpf}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
