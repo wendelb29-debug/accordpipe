@@ -91,17 +91,21 @@ export function ContractTemplateTab({ companyId }: Props) {
           .eq("template_id", t.id);
 
         if (fieldData) {
-          setFields(fieldData.map((f: any) => ({
-            id: f.id,
-            field_type: f.field_type,
-            label: f.label || f.field_type,
-            pos_x: Number(f.pos_x),
-            pos_y: Number(f.pos_y),
-            width: Number(f.width),
-            height: Number(f.height),
-            page: f.page,
-            required: f.required,
-          })));
+          setFields(fieldData.map((f: any) => {
+            const normalizedType = f.field_type === "servidor_empresa" ? "empresa" : f.field_type;
+            const typeDef = TEMPLATE_FIELD_TYPES.find(t => t.type === normalizedType);
+            return {
+              id: f.id,
+              field_type: normalizedType,
+              label: f.label || typeDef?.label || normalizedType,
+              pos_x: Number(f.pos_x),
+              pos_y: Number(f.pos_y),
+              width: Number(f.width),
+              height: Number(f.height),
+              page: f.page,
+              required: f.required,
+            };
+          }));
         }
       }
       setLoading(false);

@@ -189,7 +189,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
           .select("*")
           .eq("template_id", template.id);
         setTemplatePdfUrl(template.pdf_url);
-        setTemplateFields(fields || []);
+        setTemplateFields((fields || []).map((f: any) => ({ ...f, field_type: f.field_type === "servidor_empresa" ? "empresa" : f.field_type })));
       }
     };
     loadTemplate();
@@ -932,7 +932,7 @@ ${meta.items ? `\nItens contratados:\n${meta.items.split("\n").filter(Boolean).m
           .eq("template_id", template.id);
 
         setTemplatePdfUrl(template.pdf_url);
-        setTemplateFields(fields || []);
+        setTemplateFields((fields || []).map((f: any) => ({ ...f, field_type: f.field_type === "servidor_empresa" ? "empresa" : f.field_type })));
         setTemplateCurrentPage(1);
         setContractPreviewProposal(proposal);
         setContractPreview("__template__"); // marker to use template mode
