@@ -1192,6 +1192,13 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               <LeadDocsTab lead={lead} />
             </TabsContent>
 
+            {/* Pós-Venda */}
+            {(isAdminPipeline || role === "administrativo" || role === "admin" || role === "ceo" || profile?.is_master) && (
+              <TabsContent value="pos-venda" className="flex-1 overflow-y-auto p-4 mt-0">
+                <LeadPosVendaTab lead={lead} />
+              </TabsContent>
+            )}
+
             {/* Cadastro do Cliente */}
             {(isAdminPipeline || role === "administrativo" || role === "admin") && (
               <TabsContent value="cadastro" className="flex-1 overflow-y-auto p-4 mt-0">
