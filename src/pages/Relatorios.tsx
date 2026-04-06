@@ -1,9 +1,10 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   FileSpreadsheet, Download, Filter, Loader2, Search, ShieldAlert,
   Users, TrendingUp, DollarSign, BarChart3, CalendarDays, ArrowUpRight,
-  ArrowDownRight, FileText, RefreshCw,
+  ArrowDownRight, FileText, Sparkles, Bot,
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -131,6 +132,10 @@ export default function Relatorios() {
   const [prevClientData, setPrevClientData] = useState<ClientRow[]>([]);
   const [prevCrmData, setPrevCrmData] = useState<CrmRow[]>([]);
 
+  // AI analysis
+  const [aiAnalysis, setAiAnalysis] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+
   const servidorId = isMaster ? profile?.company_id : profile?.company_id;
 
   const applyQuick = (key: string) => {
@@ -159,9 +164,40 @@ export default function Relatorios() {
     return (data || []) as CrmRow[];
   };
 
+  const generateAiAnalysis = async (
+    curKpis: Record<string, number>,
+    prevKpis: Record<string, number>,
+    type: string,
+    from: string,
+    to: string
+  ) => {
+    setAiLoading(true);
+    setAiAnalysis("");
+    try {
+      const [pf, pt] = getPreviousPeriod(from, to);
+      const { data, error } = await supabase.functions.invoke("report-ai-analysis", {
+        body: {
+          currentKpis: curKpis,
+          previousKpis: prevKpis,
+          reportType: type,
+          periodLabel: `${new Date(from).toLocaleDateString("pt-BR")} a ${new Date(to).toLocaleDateString("pt-BR")}`,
+          previousPeriodLabel: `${new Date(pf).toLocaleDateString("pt-BR")} a ${new Date(pt).toLocaleDateString("pt-BR")}`,
+        },
+      });
+      if (error) throw error;
+      setAiAnalysis(data.analysis || "Erro ao gerar análise.");
+    } catch (e: any) {
+      console.error("AI analysis error:", e);
+      setAiAnalysis("Não foi possível gerar a análise comparativa. Tente novamente.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const handleGenerate = async () => {
     setLoading(true);
     setPage(0);
+    setAiAnalysis("");
     try {
       if (activeTab === "clientes" && canViewClients) {
         const data = await fetchClientData(dateFrom || undefined, dateTo || undefined);
@@ -512,6 +548,58 @@ export default function Relatorios() {
                   </>
                 )}
               </div>
+            )}
+
+            {/* AI Comparison Panel */}
+            {generated && showCompare && dateFrom && dateTo && (
+              <Card className="border-primary/30 bg-primary/5">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      Análise Comparativa com IA
+                    </CardTitle>
+                    <Button
+                      size="sm"
+                      variant={aiAnalysis ? "outline" : "default"}
+                      className="text-xs gap-1.5"
+                      disabled={aiLoading}
+                      onClick={() => {
+                        const curKpis = activeTab === "clientes"
+                          ? { total_clientes: clientKpis.total, ativos: clientKpis.ativos, receita_mrr: clientKpis.receita, ticket_medio: clientKpis.ticket }
+                          : { total_leads: crmKpis.total, vendas_ganhas: crmKpis.ganhos, receita: crmKpis.receita, ticket_medio: crmKpis.ticket };
+                        const prevKpis = activeTab === "clientes"
+                          ? { total_clientes: prevClientKpis.total, receita_mrr: prevClientKpis.receita }
+                          : { total_leads: prevCrmKpis.total, vendas_ganhas: prevCrmKpis.ganhos, receita: prevCrmKpis.receita };
+                        generateAiAnalysis(curKpis, prevKpis, activeTab, dateFrom, dateTo);
+                      }}
+                    >
+                      {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Bot className="h-3.5 w-3.5" />}
+                      {aiAnalysis ? "Regenerar" : "Gerar Análise"}
+                    </Button>
+                  </div>
+                  <CardDescription className="text-xs">
+                    Comparando com o período anterior equivalente
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {aiLoading ? (
+                    <div className="flex flex-col items-center justify-center py-8 gap-3">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      <p className="text-xs text-muted-foreground">Gerando análise comparativa...</p>
+                    </div>
+                  ) : aiAnalysis ? (
+                    <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-4 [&_h2]:mb-2 [&_ul]:my-1 [&_li]:my-0.5 [&_p]:my-1.5">
+                      <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <Bot className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                      <p className="text-xs">Clique em "Gerar Análise" para obter insights comparativos com IA</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             )}
 
             {/* Table */}
