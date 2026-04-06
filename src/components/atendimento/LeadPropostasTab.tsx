@@ -375,14 +375,18 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
       return p;
     };
 
-    // Colors
-    const primary = { r: 30, g: 41, b: 82 };
-    const accent = { r: 79, g: 70, b: 229 };
-    const lightBg = { r: 243, g: 244, b: 246 };
+    // Colors - use brand colors from servidor if available
+    const hexToRgb = (hex: string) => {
+      const h = hex.replace("#", "");
+      return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16) };
+    };
+    const primary = hexToRgb(srv?.brand_primary_color || "#1E2952");
+    const accent = hexToRgb(srv?.brand_secondary_color || "#4F46E5");
+    const lightBg = hexToRgb(srv?.brand_bg_color || "#F3F4F6");
     const borderColor = { r: 209, g: 213, b: 219 };
-    const textDark = { r: 31, g: 41, b: 55 };
+    const textDark = hexToRgb(srv?.brand_text_color || "#1F2937");
     const textMuted = { r: 107, g: 114, b: 128 };
-    const greenAccent = { r: 16, g: 185, b: 129 };
+    const greenAccent = hexToRgb(srv?.brand_accent_color || "#10B981");
 
     const checkPageBreak = (needed: number) => {
       if (y + needed > pageHeight - 20) {
