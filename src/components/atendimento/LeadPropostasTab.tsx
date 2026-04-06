@@ -4,9 +4,10 @@ import {
   DollarSign, FileSpreadsheet, Plus, Loader2, Send, Download,
   Edit, Trash2, MoreVertical, ThumbsUp, ThumbsDown, XCircle,
   Eye, CopyPlus, Link2, Briefcase, Hash, FileSignature, Copy, MessageSquare,
-  ImageIcon, Settings2,
+  ImageIcon, Settings2, Users,
 } from "lucide-react";
 import { ProposalItemsManager, ProposalLineItem } from "./ProposalItemsManager";
+import { ContractSignersManager } from "./ContractSignersManager";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useContracts } from "@/hooks/useContracts";
@@ -106,6 +107,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
   const [contractPreview, setContractPreview] = useState<string | null>(null);
   const [contractPreviewProposal, setContractPreviewProposal] = useState<any | null>(null);
   const [generatedContractLink, setGeneratedContractLink] = useState<string | null>(null);
+  const [generatedContractId, setGeneratedContractId] = useState<string | null>(null);
   const [registrationData, setRegistrationData] = useState<any>(null);
 
   // Brand state
@@ -894,10 +896,10 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
       );
 
       if (result) {
-        // Get the generated contract to retrieve the link
+        // Get the generated contract to retrieve the link and ID
         const { data: latestContract } = await supabase
           .from("contracts")
-          .select("signature_link")
+          .select("id, signature_link")
           .eq("company_id", companyId)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -905,6 +907,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
 
         const link = latestContract?.signature_link || "";
         setGeneratedContractLink(link);
+        setGeneratedContractId(latestContract?.id || null);
 
         await addActivity({
           type: "signature",
@@ -965,7 +968,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
             <FileSignature className="h-4 w-4 text-primary" />
             {generatedContractLink ? "Contrato Gerado" : "Visualizar Contrato"}
           </h3>
-          <Button variant="ghost" size="sm" className="text-xs" onClick={() => { setContractPreview(null); setContractPreviewProposal(null); setGeneratedContractLink(null); }}>
+          <Button variant="ghost" size="sm" className="text-xs" onClick={() => { setContractPreview(null); setContractPreviewProposal(null); setGeneratedContractLink(null); setGeneratedContractId(null); }}>
             Voltar
           </Button>
         </div>
@@ -1016,6 +1019,18 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
             }}>
               <Download className="h-3.5 w-3.5" /> Baixar contrato em PDF
             </Button>
+
+            {/* Signers Manager */}
+            {generatedContractId && (
+              <div className="border-t border-border pt-4">
+                <ContractSignersManager
+                  contractId={generatedContractId}
+                  contractStatus="pendente"
+                  clientName={registrationData?.nome_completo || lead.contact_name || lead.company_name}
+                  clientCpf={registrationData?.cpf}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
