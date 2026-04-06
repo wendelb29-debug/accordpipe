@@ -209,19 +209,20 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
             return (
               <div
                 key={`tmpl-${field.id}`}
-                className="absolute bg-background/90 rounded px-1 overflow-hidden flex items-center pointer-events-none"
+                className="absolute overflow-hidden flex items-center pointer-events-none"
                 style={{
                   left: field.pos_x * scale,
                   top: field.pos_y * scale,
                   width: field.width * scale,
                   height: field.height * scale,
                   fontSize: Math.min(field.height * 0.55, 13),
+                  background: "transparent",
                 }}
               >
                 {isLogo && value ? (
                   <img src={value} alt="Logo" className="h-full w-auto object-contain" />
                 ) : (
-                  <span className="text-foreground whitespace-pre-wrap leading-tight" style={{ fontSize: field.field_type === "campo_proposta" || field.field_type === "clausula" ? 8 : 11, lineHeight: "1.3" }}>
+                  <span className="whitespace-pre-wrap leading-tight" style={{ color: "#000", fontSize: field.field_type === "campo_proposta" || field.field_type === "clausula" ? 8 : 11, lineHeight: "1.3" }}>
                     {value}
                   </span>
                 )}
