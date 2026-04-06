@@ -1181,9 +1181,9 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               <LeadPropostasTab lead={lead} addActivity={addActivity} signatureMode onUpdateLead={onUpdate} />
             </TabsContent>
 
-            {/* Simulação */}
-            <TabsContent value="simulacao" className="flex-1 overflow-y-auto p-4 mt-0">
-              <LeadSimulacaoTab lead={lead} addActivity={addActivity} />
+            {/* Docs */}
+            <TabsContent value="docs" className="flex-1 overflow-y-auto p-4 mt-0">
+              <LeadDocsTab lead={lead} />
             </TabsContent>
 
             {/* Cadastro do Cliente */}
