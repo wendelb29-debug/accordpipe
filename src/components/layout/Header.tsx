@@ -37,10 +37,14 @@ export function Header() {
 
   const handleThemeToggle = async () => {
     const newTheme = currentTheme === "dark" ? "light" : "dark";
+    // Enable smooth transition
+    document.documentElement.classList.add("theme-transition");
     document.documentElement.classList.remove("light", "dark");
     document.documentElement.classList.add(newTheme);
     localStorage.setItem("theme", newTheme);
     setCurrentTheme(newTheme);
+    // Remove transition class after animation completes
+    setTimeout(() => document.documentElement.classList.remove("theme-transition"), 200);
     // Persist to DB (non-blocking)
     if (profile) {
       supabase.from("profiles").update({ theme: newTheme } as any).eq("id", profile.id).then(() => {});
