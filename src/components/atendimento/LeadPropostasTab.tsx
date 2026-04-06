@@ -1482,7 +1482,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
 
             {/* Print button */}
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => window.open(templatePdfUrl!, '_blank')}>
+              <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={downloadContractWithOverlay}>
                 <Download className="h-3.5 w-3.5" /> Imprimir / Baixar PDF
               </Button>
             </div>
