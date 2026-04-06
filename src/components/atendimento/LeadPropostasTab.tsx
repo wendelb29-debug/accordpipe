@@ -854,6 +854,33 @@ ${meta.items ? `\nItens contratados:\n${meta.items.split("\n").filter(Boolean).m
       company = data;
     }
 
+    // Try to load PDF template from server settings
+    if (lead.servidor_id) {
+      const { data: templates } = await supabase
+        .from("company_contract_templates")
+        .select("*")
+        .eq("company_id", lead.servidor_id)
+        .limit(1);
+
+      if (templates && templates.length > 0) {
+        const template = templates[0];
+        // Load template fields
+        const { data: fields } = await supabase
+          .from("company_contract_template_fields")
+          .select("*")
+          .eq("template_id", template.id);
+
+        setTemplatePdfUrl(template.pdf_url);
+        setTemplateFields(fields || []);
+        setTemplateCurrentPage(1);
+        setContractPreviewProposal(proposal);
+        setContractPreview("__template__"); // marker to use template mode
+        setGeneratedContractLink(null);
+        return;
+      }
+    }
+
+    // Fallback: generate text-based contract
     const clause = buildProposalClause(proposal);
     const matrizNome = "Save Car Brasil Tecnologia e Serviços Ltda";
     const currentDate = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
@@ -879,6 +906,8 @@ ${clause}
 ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
     }
 
+    setTemplatePdfUrl(null);
+    setTemplateFields([]);
     setContractPreview(content);
     setContractPreviewProposal(proposal);
     setGeneratedContractLink(null);
