@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   CheckCircle2, Clock, XCircle, Eye, Copy, User, MapPin, Camera, Link2, Send,
-  Shield, Download, Hash, Globe,
+  Shield, Download, Hash, Globe, MessageSquare, RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { generateSignedContractPdf } from "@/lib/generateSignedContractPdf";
 import type { PdfContract, PdfContractSigner, PdfContractHistory } from "@/hooks/usePdfContracts";
 
@@ -27,7 +29,34 @@ interface Props {
   onCancel: (id: string) => void;
 }
 
-export function PdfContractViewDialog({ contract, signers, history, onClose, canManage, onCancel }: Props) {
+export function PdfContractViewDialog({ contract, signers: initialSigners, history, onClose, canManage, onCancel }: Props) {
+  const [signers, setSigners] = useState(initialSigners);
+
+  // Sync when props change
+  useEffect(() => {
+    setSigners(initialSigners);
+  }, [initialSigners]);
+
+  // Realtime subscription for signer status changes
+  useEffect(() => {
+    if (!contract?.id) return;
+    const channel = supabase
+      .channel(`pdf-signers-${contract.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "pdf_contract_signers", filter: `contract_id=eq.${contract.id}` },
+        (payload) => {
+          const updated = payload.new as any;
+          setSigners(prev => prev.map(s => s.id === updated.id ? { ...s, ...updated } : s));
+          if (updated.status === "assinado") {
+            toast.success(`${updated.name} assinou o contrato!`);
+          }
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [contract?.id]);
+
   if (!contract) return null;
 
   const getSigningLink = (token: string) => `${window.location.origin}/assinar-pdf/${token}`;
@@ -38,6 +67,26 @@ export function PdfContractViewDialog({ contract, signers, history, onClose, can
   };
 
   const isSigned = contract.status === "assinado";
+  const signedCount = signers.filter(s => s.status === "assinado").length;
+  const progressPercent = signers.length > 0 ? (signedCount / signers.length) * 100 : 0;
+
+  const sendWhatsApp = (signer: PdfContractSigner) => {
+    const link = getSigningLink(signer.signing_token);
+    const message = `Olá, ${signer.name}! 👋\n\nSeu contrato "${contract.name}" está pronto para assinatura.\n\n👉 Assine aqui:\n${link}\n\nÉ rápido e pode ser feito pelo celular.\n\nSe tiver dúvidas, estou à disposição!`;
+    window.open(`https://wa.me/${signer.phone?.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`, "_blank");
+  };
+
+  const sendAllWhatsApp = () => {
+    const pendingSigners = signers.filter(s => s.status === "pendente" && s.phone);
+    if (pendingSigners.length === 0) {
+      toast.error("Nenhum contratante pendente com telefone cadastrado.");
+      return;
+    }
+    pendingSigners.forEach((s, i) => {
+      setTimeout(() => sendWhatsApp(s), i * 1000);
+    });
+    toast.success(`Enviando para ${pendingSigners.length} contratante(s)...`);
+  };
 
   const handleDownloadSignedPdf = async () => {
     if (!contract.document_hash || !contract.validation_code) {
@@ -118,7 +167,26 @@ export function PdfContractViewDialog({ contract, signers, history, onClose, can
             <p className="text-sm text-muted-foreground">{contract.description}</p>
           )}
 
-          {/* Legal Validity Block - shown when signed */}
+          {/* Progress bar */}
+          {signers.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{signedCount} de {signers.length} assinatura(s)</span>
+                <span>{Math.round(progressPercent)}%</span>
+              </div>
+              <Progress value={progressPercent} className="h-2" />
+            </div>
+          )}
+
+          {/* Send All WhatsApp Button */}
+          {canManage && contract.status === "pendente" && signers.some(s => s.status === "pendente" && s.phone) && (
+            <Button onClick={sendAllWhatsApp} variant="outline" className="w-full gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Enviar para todos via WhatsApp ({signers.filter(s => s.status === "pendente" && s.phone).length})
+            </Button>
+          )}
+
+          {/* Legal Validity Block */}
           {isSigned && contract.document_hash && contract.validation_code && (
             <Card className="border-primary/30 bg-primary/5">
               <CardContent className="p-4 space-y-3">
@@ -182,17 +250,12 @@ export function PdfContractViewDialog({ contract, signers, history, onClose, can
                       {signer.email && <p className="text-xs text-muted-foreground">{signer.email}</p>}
 
                       {signer.status === "pendente" && contract.status === "pendente" && (
-                        <div className="flex items-center gap-2 pt-1">
+                        <div className="flex items-center gap-2 pt-1 flex-wrap">
                           <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={() => copyLink(signer.signing_token)}>
-                            <Copy className="h-3 w-3" /> Copiar Link
+                            <Copy className="h-3 w-3" /> Link
                           </Button>
                           {signer.phone && (
-                            <Button variant="outline" size="sm" className="gap-1 text-xs h-7"
-                              onClick={() => {
-                                const link = getSigningLink(signer.signing_token);
-                                window.open(`https://wa.me/${signer.phone}?text=${encodeURIComponent(`Olá ${signer.name}, segue o link para assinatura do contrato "${contract.name}": ${link}`)}`, "_blank");
-                              }}
-                            >
+                            <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={() => sendWhatsApp(signer)}>
                               <Send className="h-3 w-3" /> WhatsApp
                             </Button>
                           )}

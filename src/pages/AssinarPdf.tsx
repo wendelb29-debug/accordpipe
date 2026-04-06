@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
+import { PdfSigningOverlay } from "@/components/contratos/PdfSigningOverlay";
 
 interface SignerInfo {
   id: string;
@@ -34,6 +35,8 @@ export default function AssinarPdf() {
   const [cameraActive, setCameraActive] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
+  const [signedFieldIds, setSignedFieldIds] = useState<string[]>([]);
+  const [selectedField, setSelectedField] = useState<any>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -60,7 +63,6 @@ export default function AssinarPdf() {
           .eq("id", signerData.contract_id)
           .single();
         if (contractData) setContract(contractData);
-        // Load all signers for progress
         const { data: signersList } = await supabase
           .from("pdf_contract_signers")
           .select("id, name, sign_order, status, signed_at")
@@ -93,7 +95,6 @@ export default function AssinarPdf() {
 
       setContract(contractData);
 
-      // Load all signers to check order
       const { data: signersList } = await supabase
         .from("pdf_contract_signers")
         .select("id, name, sign_order, status, signed_at")
@@ -103,13 +104,14 @@ export default function AssinarPdf() {
       const sigList = (signersList as SignerInfo[]) || [];
       setAllSigners(sigList);
 
-      // Check if this signer's turn - all previous signers must have signed
-      const myOrder = signerData.sign_order || 1;
-      const previousSigners = sigList.filter(s => s.sign_order < myOrder);
-      const allPreviousSigned = previousSigners.every(s => s.status === "assinado");
-      
-      if (!allPreviousSigned && previousSigners.length > 0) {
-        setBlocked(true);
+      // Check signing order (only for sequential mode)
+      if (contractData.sign_mode === "sequential") {
+        const myOrder = signerData.sign_order || 0;
+        const previousSigners = sigList.filter(s => s.sign_order < myOrder);
+        const allPreviousSigned = previousSigners.every(s => s.status === "assinado");
+        if (!allPreviousSigned && previousSigners.length > 0) {
+          setBlocked(true);
+        }
       }
 
       setLoading(false);
@@ -196,6 +198,12 @@ export default function AssinarPdf() {
     } catch { return "0.0.0.0"; }
   };
 
+  const handleFieldClick = (field: any) => {
+    setSelectedField(field);
+    // Scroll to signing section
+    document.getElementById("signing-section")?.scrollIntoView({ behavior: "smooth" });
+  };
+
   const handleSign = async () => {
     if (!signer || !photo || !location) return;
     setSigning(true);
@@ -223,6 +231,14 @@ export default function AssinarPdf() {
         } as any)
         .eq("id", signer.id);
       if (updateErr) throw updateErr;
+
+      // Mark field as signed if selected
+      if (selectedField) {
+        setSignedFieldIds(prev => [...prev, selectedField.id]);
+        await supabase.from("pdf_contract_fields")
+          .update({ value: "signed" } as any)
+          .eq("id", selectedField.id);
+      }
 
       await supabase.from("pdf_contract_history").insert({
         contract_id: signer.contract_id,
@@ -271,7 +287,6 @@ export default function AssinarPdf() {
   const signedCount = allSigners.filter(s => s.status === "assinado").length;
   const progressPercent = allSigners.length > 0 ? (signedCount / allSigners.length) * 100 : 0;
 
-  // Progress tracker component
   const SigningProgress = () => (
     <Card className="border-border">
       <CardHeader className="pb-3">
@@ -364,9 +379,8 @@ export default function AssinarPdf() {
     );
   }
 
-  // Blocked - not this signer's turn
   if (blocked) {
-    const myOrder = signer?.sign_order || 1;
+    const myOrder = signer?.sign_order || 0;
     const pendingBefore = allSigners.filter(s => s.sign_order < myOrder && s.status !== "assinado");
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -414,20 +428,33 @@ export default function AssinarPdf() {
         {/* Progress */}
         {allSigners.length > 1 && <SigningProgress />}
 
-        {/* PDF */}
-        {contract?.pdf_url && (
+        {/* PDF with Signature Overlay */}
+        {contract && signer && (
           <Card>
-            <CardContent className="p-0">
-              <iframe src={contract.pdf_url} className="w-full h-[60vh] rounded-lg" title="Contrato" />
+            <CardContent className="p-2 sm:p-4">
+              <PdfSigningOverlay
+                contractId={contract.id}
+                pdfUrl={contract.pdf_url}
+                currentSignerId={signer.id}
+                onFieldClick={handleFieldClick}
+                signedFieldIds={signedFieldIds}
+              />
             </CardContent>
           </Card>
         )}
 
         {/* Signing Actions */}
-        <Card>
+        <Card id="signing-section">
           <CardHeader>
-            <CardTitle className="text-lg">Assinar Documento</CardTitle>
-            <CardDescription>Capture sua foto e permita o acesso à localização para validar a assinatura.</CardDescription>
+            <CardTitle className="text-lg">
+              {selectedField ? "✍️ Assinar Campo Selecionado" : "Assinar Documento"}
+            </CardTitle>
+            <CardDescription>
+              {selectedField
+                ? `Você está assinando o campo "${selectedField.label || "Assinatura"}". Capture sua foto e permita a localização.`
+                : "Capture sua foto e permita o acesso à localização para validar a assinatura."
+              }
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Photo */}
