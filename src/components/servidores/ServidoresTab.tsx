@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import {
-  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe,
+  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast as sonnerToast } from "sonner";
 
 interface Company {
   id: string;
@@ -30,9 +31,39 @@ interface Company {
   status: string;
   cidade: string | null;
   estado: string | null;
+  endereco: string | null;
+  bairro: string | null;
+  cep: string | null;
+  numero: string | null;
+  complemento: string | null;
   created_at: string;
   user_count?: number;
 }
+
+const cleanDigits = (v: string) => v.replace(/\D/g, "");
+
+const formatCnpj = (v: string) => {
+  const d = cleanDigits(v).slice(0, 14);
+  if (d.length <= 2) return d;
+  if (d.length <= 5) return `${d.slice(0, 2)}.${d.slice(2)}`;
+  if (d.length <= 8) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5)}`;
+  if (d.length <= 12) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8)}`;
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
+};
+
+const formatCep = (v: string) => {
+  const d = cleanDigits(v).slice(0, 8);
+  if (d.length <= 5) return d;
+  return `${d.slice(0, 5)}-${d.slice(5)}`;
+};
+
+const formatPhone = (v: string) => {
+  const d = cleanDigits(v).slice(0, 11);
+  if (d.length <= 2) return d;
+  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+};
 
 export default function ServidoresTab() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,6 +72,8 @@ export default function ServidoresTab() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cnpjLoading, setCnpjLoading] = useState(false);
+  const [cepLoading, setCepLoading] = useState(false);
   const { toast } = useToast();
   const { isMaster } = useAuth();
 
@@ -53,6 +86,11 @@ export default function ServidoresTab() {
     responsavel: "",
     cidade: "",
     estado: "",
+    endereco: "",
+    bairro: "",
+    cep: "",
+    numero: "",
+    complemento: "",
   });
 
   useEffect(() => {
@@ -64,12 +102,11 @@ export default function ServidoresTab() {
       const { data: companiesData, error } = await supabase
         .from("companies")
         .select("*")
-        .is("servidor_id", null) // Only top-level servidores
+        .is("servidor_id", null)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      // Fetch user counts per company
       const { data: profiles } = await supabase
         .from("profiles")
         .select("company_id");
@@ -107,12 +144,75 @@ export default function ServidoresTab() {
         responsavel: company.responsavel || "",
         cidade: company.cidade || "",
         estado: company.estado || "",
+        endereco: company.endereco || "",
+        bairro: company.bairro || "",
+        cep: company.cep || "",
+        numero: company.numero || "",
+        complemento: company.complemento || "",
       });
     } else {
       setEditingCompany(null);
-      setFormData({ razao_social: "", nome_fantasia: "", cnpj: "", email: "", telefone: "", responsavel: "", cidade: "", estado: "" });
+      setFormData({ razao_social: "", nome_fantasia: "", cnpj: "", email: "", telefone: "", responsavel: "", cidade: "", estado: "", endereco: "", bairro: "", cep: "", numero: "", complemento: "" });
     }
     setDialogOpen(true);
+  };
+
+  const handleCnpjSearch = async () => {
+    const digits = cleanDigits(formData.cnpj);
+    if (digits.length !== 14) {
+      sonnerToast.error("Digite um CNPJ válido com 14 dígitos");
+      return;
+    }
+    setCnpjLoading(true);
+    try {
+      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${digits}`);
+      if (!res.ok) throw new Error("CNPJ não encontrado");
+      const data = await res.json();
+      setFormData((prev) => ({
+        ...prev,
+        razao_social: data.razao_social || prev.razao_social,
+        nome_fantasia: data.nome_fantasia || data.razao_social || prev.nome_fantasia,
+        email: data.email || prev.email,
+        telefone: data.ddd_telefone_1 ? formatPhone(data.ddd_telefone_1) : prev.telefone,
+        cep: data.cep ? formatCep(data.cep) : prev.cep,
+        endereco: data.logradouro || prev.endereco,
+        numero: data.numero || prev.numero,
+        complemento: data.complemento || prev.complemento,
+        bairro: data.bairro || prev.bairro,
+        cidade: data.municipio || prev.cidade,
+        estado: data.uf || prev.estado,
+      }));
+      sonnerToast.success("Dados do CNPJ carregados com sucesso!");
+    } catch {
+      sonnerToast.error("Não foi possível buscar o CNPJ. Verifique e tente novamente.");
+    } finally {
+      setCnpjLoading(false);
+    }
+  };
+
+  const handleCepSearch = async (cep: string) => {
+    const digits = cleanDigits(cep);
+    if (digits.length !== 8) return;
+    setCepLoading(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
+      const data = await res.json();
+      if (data.erro) throw new Error();
+      setFormData((prev) => ({
+        ...prev,
+        cep: formatCep(digits),
+        endereco: data.logradouro || prev.endereco,
+        bairro: data.bairro || prev.bairro,
+        cidade: data.localidade || prev.cidade,
+        estado: data.uf || prev.estado,
+        complemento: data.complemento || prev.complemento,
+      }));
+      sonnerToast.success("Endereço carregado pelo CEP!");
+    } catch {
+      sonnerToast.error("CEP não encontrado.");
+    } finally {
+      setCepLoading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -123,35 +223,28 @@ export default function ServidoresTab() {
 
     setIsSubmitting(true);
     try {
+      const payload = {
+        razao_social: formData.razao_social,
+        nome_fantasia: formData.nome_fantasia || null,
+        cnpj: formData.cnpj,
+        email: formData.email || null,
+        telefone: formData.telefone || null,
+        responsavel: formData.responsavel || null,
+        cidade: formData.cidade || null,
+        estado: formData.estado || null,
+        endereco: formData.endereco || null,
+        bairro: formData.bairro || null,
+        cep: formData.cep || null,
+        numero: formData.numero || null,
+        complemento: formData.complemento || null,
+      };
+
       if (editingCompany) {
-        const { error } = await supabase
-          .from("companies")
-          .update({
-            razao_social: formData.razao_social,
-            nome_fantasia: formData.nome_fantasia || null,
-            cnpj: formData.cnpj,
-            email: formData.email || null,
-            telefone: formData.telefone || null,
-            responsavel: formData.responsavel || null,
-            cidade: formData.cidade || null,
-            estado: formData.estado || null,
-          })
-          .eq("id", editingCompany.id);
+        const { error } = await supabase.from("companies").update(payload).eq("id", editingCompany.id);
         if (error) throw error;
         toast({ title: "Servidor atualizado", description: "Os dados do servidor foram atualizados." });
       } else {
-        const { error } = await supabase
-          .from("companies")
-          .insert({
-            razao_social: formData.razao_social,
-            nome_fantasia: formData.nome_fantasia || null,
-            cnpj: formData.cnpj,
-            email: formData.email || null,
-            telefone: formData.telefone || null,
-            responsavel: formData.responsavel || null,
-            cidade: formData.cidade || null,
-            estado: formData.estado || null,
-          });
+        const { error } = await supabase.from("companies").insert(payload);
         if (error) throw error;
         toast({ title: "Servidor criado", description: "O novo servidor foi criado com sucesso." });
       }
@@ -167,10 +260,7 @@ export default function ServidoresTab() {
   const handleToggleStatus = async (company: Company) => {
     const newStatus = company.status === "active" ? "inactive" : "active";
     try {
-      const { error } = await supabase
-        .from("companies")
-        .update({ status: newStatus })
-        .eq("id", company.id);
+      const { error } = await supabase.from("companies").update({ status: newStatus }).eq("id", company.id);
       if (error) throw error;
       toast({
         title: newStatus === "active" ? "Servidor ativado" : "Servidor bloqueado",
@@ -342,7 +432,7 @@ export default function ServidoresTab() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingCompany ? "Editar Servidor" : "Novo Servidor"}</DialogTitle>
             <DialogDescription>
@@ -353,6 +443,32 @@ export default function ServidoresTab() {
           </DialogHeader>
 
           <div className="grid gap-4">
+            {/* CNPJ with search */}
+            <div className="space-y-2">
+              <Label>CNPJ *</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={formData.cnpj}
+                  onChange={(e) => setFormData({ ...formData, cnpj: formatCnpj(e.target.value) })}
+                  placeholder="00.000.000/0000-00"
+                  className="flex-1"
+                  disabled={!!editingCompany}
+                />
+                {!editingCompany && (
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    onClick={handleCnpjSearch}
+                    disabled={cnpjLoading}
+                    className="shrink-0"
+                    title="Buscar dados pelo CNPJ"
+                  >
+                    {cnpjLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  </Button>
+                )}
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Razão Social *</Label>
@@ -363,34 +479,70 @@ export default function ServidoresTab() {
                 <Input value={formData.nome_fantasia} onChange={(e) => setFormData({ ...formData, nome_fantasia: e.target.value })} placeholder="Nome Fantasia" />
               </div>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>CNPJ *</Label>
-                <Input value={formData.cnpj} onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })} placeholder="00.000.000/0000-00" disabled={!!editingCompany} />
-              </div>
               <div className="space-y-2">
                 <Label>Responsável</Label>
                 <Input value={formData.responsavel} onChange={(e) => setFormData({ ...formData, responsavel: e.target.value })} placeholder="Nome do responsável" />
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>E-mail</Label>
                 <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="email@empresa.com" />
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Telefone</Label>
-                <Input value={formData.telefone} onChange={(e) => setFormData({ ...formData, telefone: e.target.value })} placeholder="(00) 00000-0000" />
+                <Input value={formData.telefone} onChange={(e) => setFormData({ ...formData, telefone: formatPhone(e.target.value) })} placeholder="(00) 00000-0000" />
+              </div>
+              <div className="space-y-2">
+                <Label>CEP</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={formData.cep}
+                    onChange={(e) => {
+                      const formatted = formatCep(e.target.value);
+                      setFormData({ ...formData, cep: formatted });
+                      if (cleanDigits(formatted).length === 8) {
+                        handleCepSearch(formatted);
+                      }
+                    }}
+                    placeholder="00000-000"
+                    className="flex-1"
+                  />
+                  {cepLoading && <Loader2 className="h-4 w-4 animate-spin self-center text-muted-foreground" />}
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+
+            <div className="grid grid-cols-4 gap-4">
+              <div className="space-y-2 col-span-2">
+                <Label>Endereço</Label>
+                <Input value={formData.endereco} onChange={(e) => setFormData({ ...formData, endereco: e.target.value })} placeholder="Rua, Avenida..." />
+              </div>
+              <div className="space-y-2">
+                <Label>Número</Label>
+                <Input value={formData.numero} onChange={(e) => setFormData({ ...formData, numero: e.target.value })} placeholder="Nº" />
+              </div>
+              <div className="space-y-2">
+                <Label>Complemento</Label>
+                <Input value={formData.complemento} onChange={(e) => setFormData({ ...formData, complemento: e.target.value })} placeholder="Sala, Andar..." />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Bairro</Label>
+                <Input value={formData.bairro} onChange={(e) => setFormData({ ...formData, bairro: e.target.value })} placeholder="Bairro" />
+              </div>
               <div className="space-y-2">
                 <Label>Cidade</Label>
                 <Input value={formData.cidade} onChange={(e) => setFormData({ ...formData, cidade: e.target.value })} placeholder="Cidade" />
               </div>
               <div className="space-y-2">
                 <Label>Estado</Label>
-                <Input value={formData.estado} onChange={(e) => setFormData({ ...formData, estado: e.target.value })} placeholder="UF" maxLength={2} />
+                <Input value={formData.estado} onChange={(e) => setFormData({ ...formData, estado: e.target.value.toUpperCase() })} placeholder="UF" maxLength={2} />
               </div>
             </div>
           </div>
