@@ -1,5 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import accordLogo from "@/assets/accord-logo.png";
+import { usePermissions } from "@/hooks/usePermissions";
+import { ROUTE_PERMISSIONS } from "@/lib/permissions";
 import {
   Home,
   LayoutDashboard,
