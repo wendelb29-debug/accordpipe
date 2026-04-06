@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import {
-  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette,
+  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ContractTemplateTab } from "./ContractTemplateTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -471,7 +472,7 @@ export default function ServidoresTab() {
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="cadastro" className="gap-2">
                 <Building2 className="h-4 w-4" />
                 Dados Cadastrais
@@ -479,6 +480,10 @@ export default function ServidoresTab() {
               <TabsTrigger value="identidade" className="gap-2">
                 <Palette className="h-4 w-4" />
                 Identidade Visual
+              </TabsTrigger>
+              <TabsTrigger value="contrato" className="gap-2">
+                <FileSignature className="h-4 w-4" />
+                Contrato
               </TabsTrigger>
             </TabsList>
 
@@ -625,6 +630,10 @@ export default function ServidoresTab() {
                     brandTextColor: d.brandTextColor,
                   })}
                 />
+              </TabsContent>
+
+              <TabsContent value="contrato" className="mt-0">
+                <ContractTemplateTab companyId={editingCompany?.id || null} />
               </TabsContent>
             </div>
           </Tabs>
