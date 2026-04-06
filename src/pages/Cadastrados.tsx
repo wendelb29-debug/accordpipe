@@ -90,6 +90,7 @@ export default function Cadastrados() {
   const [detailContracts, setDetailContracts] = useState<any[]>([]);
   const [detailTransactions, setDetailTransactions] = useState<any[]>([]);
   const [detailHistory, setDetailHistory] = useState<any[]>([]);
+  const [detailDocuments, setDetailDocuments] = useState<any[]>([]);
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState<any>({});
   const [saving, setSaving] = useState(false);
