@@ -4,7 +4,7 @@ import {
   DollarSign, FileSpreadsheet, Plus, Loader2, Send, Download,
   Edit, Trash2, MoreVertical, ThumbsUp, ThumbsDown, XCircle,
   Eye, CopyPlus, Link2, Briefcase, Hash, FileSignature, Copy, MessageSquare,
-  ImageIcon, Settings2, Users, ChevronLeft, ChevronRight,
+  ImageIcon, Settings2, Users, ChevronLeft, ChevronRight, AlertCircle,
 } from "lucide-react";
 import { PdfRenderer } from "@/components/contratos/PdfRenderer";
 import { ProposalItemsManager, ProposalLineItem } from "./ProposalItemsManager";
