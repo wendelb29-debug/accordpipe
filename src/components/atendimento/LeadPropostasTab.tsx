@@ -340,6 +340,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     const { default: jsPDF } = await import("jspdf");
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
     const mL = 15;
     const mR = 15;
     const usable = pageWidth - mL - mR;
@@ -352,26 +353,65 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     const validUntilStr = meta.valid_until ? new Date(meta.valid_until).toLocaleDateString("pt-BR") : "-";
     const sigla = meta.sigla || "SEM-SIGLA";
     const version = meta.version || "1";
+    const curCode = meta.currency || "BRL";
 
-    // ===== ROW 1: Date/Validity left, Proposta code right =====
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(9);
-    pdf.text(`${createdDate} - Validade: ${validUntilStr}`, mL, y);
-    const rightText = `Proposta ${sigla} - v${version}`;
-    pdf.text(rightText, pageWidth - mR, y, { align: "right" });
-    y += 4;
+    const fmtVal = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: curCode });
+    const fmtCpfCnpj = (doc: string) => {
+      const d = doc.replace(/\D/g, "");
+      if (d.length === 11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+      if (d.length === 14) return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
+      return doc;
+    };
+    const fmtPhone = (p: string) => {
+      const d = p.replace(/\D/g, "");
+      if (d.length === 11) return d.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+      if (d.length === 10) return d.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
+      return p;
+    };
 
-    // Horizontal line
-    pdf.setDrawColor(200);
-    pdf.setLineWidth(0.5);
-    pdf.line(mL, y, pageWidth - mR, y);
-    y += 6;
+    // Colors
+    const primary = { r: 30, g: 41, b: 82 };
+    const accent = { r: 79, g: 70, b: 229 };
+    const lightBg = { r: 243, g: 244, b: 246 };
+    const borderColor = { r: 209, g: 213, b: 219 };
+    const textDark = { r: 31, g: 41, b: 55 };
+    const textMuted = { r: 107, g: 114, b: 128 };
+    const greenAccent = { r: 16, g: 185, b: 129 };
 
-    // ===== ROW 2: Brand logo (left) + Servidor info (center) + Contato (right) =====
-    const srvStartY = y;
+    const checkPageBreak = (needed: number) => {
+      if (y + needed > pageHeight - 20) {
+        pdf.addPage();
+        y = 15;
+      }
+    };
 
-    // Brand logo (top-left)
-    let logoEndX = mL;
+    const drawSectionTitle = (title: string) => {
+      checkPageBreak(12);
+      pdf.setFillColor(primary.r, primary.g, primary.b);
+      pdf.rect(mL, y, usable, 7, "F");
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(9);
+      pdf.text(title.toUpperCase(), mL + 4, y + 5);
+      y += 10;
+      pdf.setTextColor(textDark.r, textDark.g, textDark.b);
+    };
+
+    const drawInfoRow = (label: string, value: string, indent = 0) => {
+      if (!value || value.trim() === "") return;
+      checkPageBreak(5);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(8);
+      pdf.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+      pdf.text(label + ":", mL + 4 + indent, y);
+      pdf.setFont("helvetica", "normal");
+      pdf.setTextColor(textDark.r, textDark.g, textDark.b);
+      pdf.text(value, mL + 4 + indent + pdf.getTextWidth(label + ": "), y);
+      y += 4.5;
+    };
+
+    // ===== HEADER WITH LOGO =====
+    let logoLoaded = false;
     if (brandInfo?.logo_url) {
       try {
         const logoImg = new Image();
@@ -381,225 +421,340 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
           logoImg.onerror = () => reject();
           logoImg.src = brandInfo.logo_url;
         });
-        const logoW = 30;
-        const logoH = 15;
-        pdf.addImage(logoImg, "PNG", mL, y, logoW, logoH);
-        logoEndX = mL + logoW + 4;
-      } catch {
-        // If logo fails, skip
-      }
+        pdf.addImage(logoImg, "PNG", mL, y, 28, 14);
+        logoLoaded = true;
+      } catch { /* skip */ }
     }
 
-    // Servidor section
-    const srvX = logoEndX;
-    if (srv) {
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(11);
-      pdf.text(srv.nome_fantasia || srv.razao_social || "", srvX, y + 4);
-      let srvY = y + 9;
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(9);
-      if (srv.razao_social && srv.nome_fantasia) {
-        pdf.text(srv.razao_social, srvX, srvY); srvY += 4.5;
-      }
-      if (srv.cnpj) { pdf.text(`CNPJ: ${srv.cnpj}`, srvX, srvY); srvY += 4.5; }
-      const srvAddr = [srv.endereco, srv.numero].filter(Boolean).join(", ");
-      const srvAddr2 = [srv.bairro, srv.cidade && srv.estado ? `${srv.cidade}/${srv.estado}` : null, srv.cep].filter(Boolean).join(" ");
-      if (srvAddr) { pdf.text(`Endereço: ${srvAddr}`, srvX, srvY); srvY += 4.5; }
-      if (srvAddr2) { pdf.text(srvAddr2, srvX, srvY); srvY += 4.5; }
-    }
-
-    // Contato section (right column)
-    let cy = srvStartY;
+    // Header right: proposal info
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(11);
-    pdf.text("Contato", pageWidth - mR, cy, { align: "right" });
-    cy += 5;
+    pdf.setFontSize(16);
+    pdf.setTextColor(primary.r, primary.g, primary.b);
+    pdf.text("PROPOSTA COMERCIAL", pageWidth - mR, y + 5, { align: "right" });
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(9);
-    const contactName = srv?.responsavel || profile?.name || "-";
-    pdf.text(contactName, pageWidth - mR, cy, { align: "right" });
-    cy += 4;
-    if (srv?.email) { pdf.text(srv.email, pageWidth - mR, cy, { align: "right" }); cy += 4; }
-    if (srv?.telefone) { pdf.text(srv.telefone, pageWidth - mR, cy, { align: "right" }); cy += 4; }
+    pdf.setFontSize(8);
+    pdf.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+    pdf.text(`Nº ${sigla}  |  Versão ${version}`, pageWidth - mR, y + 10, { align: "right" });
+    pdf.text(`Emissão: ${createdDate}  |  Validade: ${validUntilStr}`, pageWidth - mR, y + 14, { align: "right" });
 
-    y = Math.max(y, cy) + 5;
+    y += (logoLoaded ? 18 : 18);
 
-    // ===== ROW 3: Bordered box with Dados da pessoa + Dados da empresa (PF/PJ) =====
-    const boxY = y;
-    const colPadding = 3;
+    // Accent line
+    pdf.setDrawColor(accent.r, accent.g, accent.b);
+    pdf.setLineWidth(0.8);
+    pdf.line(mL, y, pageWidth - mR, y);
+    y += 6;
 
-    // Determine if PJ: has company data with CNPJ
-    const isPJ = !!(comp?.cnpj);
-    const halfWidth = isPJ ? usable / 2 : usable;
-    const maxTextWidth = isPJ ? (halfWidth - colPadding * 2) : (usable - colPadding * 2);
-
-    // Collect left column lines (Dados da pessoa)
-    const leftLines: { text: string; bold?: boolean; header?: boolean }[] = [];
-    leftLines.push({ text: "Dados da pessoa", header: true });
-    if (lead.contact_name) leftLines.push({ text: lead.contact_name, bold: true });
-    if (lead.documento) leftLines.push({ text: `CPF/CNPJ: ${lead.documento}` });
-    if (lead.email) leftLines.push({ text: `E-mail: ${lead.email}` });
-    if (lead.phone) leftLines.push({ text: `Telefone: ${lead.phone}` });
-
-    // Collect right column lines (Dados da empresa) — only if PJ
-    const rightLines: { text: string; bold?: boolean; header?: boolean }[] = [];
-    if (isPJ) {
-      rightLines.push({ text: "Dados da empresa", header: true });
-      if (comp?.razao_social) rightLines.push({ text: comp.razao_social, bold: true });
-      if (comp?.nome_fantasia) rightLines.push({ text: `Nome fantasia: ${comp.nome_fantasia}` });
-      if (comp?.cnpj) rightLines.push({ text: `CNPJ: ${comp.cnpj}` });
-      if (comp?.email) rightLines.push({ text: `E-mail: ${comp.email}` });
-      if (comp?.telefone) rightLines.push({ text: `Telefone: ${comp.telefone}` });
-      const compAddr = [comp?.endereco, comp?.numero].filter(Boolean).join(", ");
-      const compAddr2 = [comp?.bairro, comp?.cidade && comp?.estado ? `${comp.cidade}/${comp.estado}` : null].filter(Boolean).join(" ");
-      const compCep = comp?.cep ? `CEP ${comp.cep}` : "";
-      const fullAddr = [compAddr, compAddr2, compCep].filter(Boolean).join(" - ");
-      if (fullAddr) rightLines.push({ text: `Endereço: ${fullAddr}` });
+    // ===== EMPRESA EMISSORA =====
+    if (srv) {
+      drawSectionTitle("Empresa Emissora");
+      drawInfoRow("Empresa", srv.nome_fantasia || srv.razao_social || "");
+      if (srv.razao_social && srv.nome_fantasia) drawInfoRow("Razão Social", srv.razao_social);
+      if (srv.cnpj) drawInfoRow("CNPJ", fmtCpfCnpj(srv.cnpj));
+      const srvAddr = [srv.endereco, srv.numero].filter(Boolean).join(", ");
+      const srvAddr2 = [srv.bairro, srv.cidade && srv.estado ? `${srv.cidade}/${srv.estado}` : null, srv.cep].filter(Boolean).join(" - ");
+      const fullSrvAddr = [srvAddr, srvAddr2].filter(Boolean).join(" - ");
+      if (fullSrvAddr) drawInfoRow("Endereço", fullSrvAddr);
+      if (srv.email) drawInfoRow("E-mail", srv.email);
+      if (srv.telefone) drawInfoRow("Telefone", fmtPhone(srv.telefone));
+      y += 2;
     }
 
-    // Calculate dynamic box height
-    const lineH = 4;
-    const headerH = 5;
-    const boxPaddingTop = 5;
-    const boxPaddingBottom = 4;
+    // ===== CONTATO =====
+    drawSectionTitle("Contato");
+    const contactName = srv?.responsavel || profile?.name || "-";
+    drawInfoRow("Nome", contactName);
+    if (srv?.email) drawInfoRow("E-mail", srv.email);
+    if (srv?.telefone) drawInfoRow("Telefone", fmtPhone(srv.telefone));
+    y += 2;
 
-    const calcColHeight = (lines: typeof leftLines, tw: number) => {
-      let h = boxPaddingTop;
-      for (const line of lines) {
-        if (line.header) { h += headerH; }
-        else {
-          pdf.setFontSize(line.bold ? 9 : 8);
-          const wrapped = pdf.splitTextToSize(line.text, tw);
-          h += wrapped.length * lineH;
-        }
+    // ===== DADOS DA PESSOA =====
+    const isPJ = !!(comp?.cnpj);
+
+    if (isPJ) {
+      // Two-column layout
+      checkPageBreak(40);
+      const halfW = (usable - 4) / 2;
+
+      // Left: Dados da pessoa
+      const leftX = mL;
+      pdf.setFillColor(primary.r, primary.g, primary.b);
+      pdf.rect(leftX, y, halfW, 7, "F");
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(9);
+      pdf.text("DADOS DA PESSOA", leftX + 4, y + 5);
+
+      // Right: Dados da empresa
+      const rightX = mL + halfW + 4;
+      pdf.rect(rightX, y, halfW, 7, "F");
+      pdf.text("DADOS DA EMPRESA", rightX + 4, y + 5);
+      y += 10;
+
+      pdf.setTextColor(textDark.r, textDark.g, textDark.b);
+
+      // Build person data
+      const personLines: { label: string; value: string }[] = [];
+      if (lead.contact_name) personLines.push({ label: "Nome", value: lead.contact_name });
+      if (lead.documento) personLines.push({ label: "CPF", value: fmtCpfCnpj(lead.documento) });
+      if (lead.email) personLines.push({ label: "E-mail", value: lead.email });
+      if (lead.phone) personLines.push({ label: "Telefone", value: fmtPhone(lead.phone) });
+
+      // Build company data
+      const compLines: { label: string; value: string }[] = [];
+      if (comp?.razao_social) compLines.push({ label: "Razão Social", value: comp.razao_social });
+      if (comp?.nome_fantasia) compLines.push({ label: "Nome Fantasia", value: comp.nome_fantasia });
+      if (comp?.cnpj) compLines.push({ label: "CNPJ", value: fmtCpfCnpj(comp.cnpj) });
+      if (comp?.email) compLines.push({ label: "E-mail", value: comp.email });
+      if (comp?.telefone) compLines.push({ label: "Telefone", value: fmtPhone(comp.telefone) });
+      const compAddr = [comp?.endereco, comp?.numero].filter(Boolean).join(", ");
+      const compAddr2 = [comp?.bairro, comp?.cidade && comp?.estado ? `${comp.cidade}/${comp.estado}` : null, comp?.cep].filter(Boolean).join(" - ");
+      const fullCompAddr = [compAddr, compAddr2].filter(Boolean).join(" - ");
+      if (fullCompAddr) compLines.push({ label: "Endereço", value: fullCompAddr });
+
+      const maxRows = Math.max(personLines.length, compLines.length);
+      const savedY = y;
+
+      // Render left column
+      let ly = savedY;
+      for (const line of personLines) {
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(7.5);
+        pdf.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+        pdf.text(line.label + ":", leftX + 4, ly);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(textDark.r, textDark.g, textDark.b);
+        const labelW = pdf.getTextWidth(line.label + ": ");
+        const valLines = pdf.splitTextToSize(line.value, halfW - 8 - labelW);
+        pdf.text(valLines, leftX + 4 + labelW, ly);
+        ly += valLines.length * 4;
       }
-      return h + boxPaddingBottom;
+
+      // Render right column
+      let ry = savedY;
+      for (const line of compLines) {
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(7.5);
+        pdf.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+        pdf.text(line.label + ":", rightX + 4, ry);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(textDark.r, textDark.g, textDark.b);
+        const labelW = pdf.getTextWidth(line.label + ": ");
+        const valLines = pdf.splitTextToSize(line.value, halfW - 8 - labelW);
+        pdf.text(valLines, rightX + 4 + labelW, ry);
+        ry += valLines.length * 4;
+      }
+
+      // Draw borders
+      const boxH = Math.max(ly, ry) - savedY + 3;
+      pdf.setDrawColor(borderColor.r, borderColor.g, borderColor.b);
+      pdf.setLineWidth(0.3);
+      pdf.rect(leftX, savedY - 3, halfW, boxH + 3);
+      pdf.rect(rightX, savedY - 3, halfW, boxH + 3);
+
+      y = Math.max(ly, ry) + 5;
+    } else {
+      // PF: full width
+      drawSectionTitle("Dados da Pessoa");
+      if (lead.contact_name) drawInfoRow("Nome", lead.contact_name);
+      if (lead.documento) drawInfoRow("CPF", fmtCpfCnpj(lead.documento));
+      if (lead.email) drawInfoRow("E-mail", lead.email);
+      if (lead.phone) drawInfoRow("Telefone", fmtPhone(lead.phone));
+      y += 2;
+    }
+
+    // ===== PRODUTOS E SERVIÇOS (TABELA) =====
+    const items: ProposalLineItem[] = meta.line_items || [];
+    if (items.length > 0) {
+      drawSectionTitle("Produtos e Serviços");
+
+      const colWidths = [12, 15, usable - 12 - 15 - 30 - 30 - 30, 30, 30, 30]; // Order, Qty, Name, Unit, Discount, Total
+      const headers = ["#", "Qtd", "Descrição", "Valor Unit.", "Desconto", "Subtotal"];
+
+      // Table header
+      pdf.setFillColor(lightBg.r, lightBg.g, lightBg.b);
+      pdf.rect(mL, y - 1, usable, 7, "F");
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+      let cx = mL + 2;
+      headers.forEach((h, i) => {
+        const align = i >= 3 ? "right" : "left";
+        if (align === "right") {
+          pdf.text(h, cx + colWidths[i] - 2, y + 3, { align: "right" });
+        } else {
+          pdf.text(h, cx, y + 3);
+        }
+        cx += colWidths[i];
+      });
+      y += 8;
+
+      // Table rows
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(8);
+      pdf.setTextColor(textDark.r, textDark.g, textDark.b);
+
+      items.forEach((item, idx) => {
+        checkPageBreak(7);
+        if (idx % 2 === 0) {
+          pdf.setFillColor(250, 250, 252);
+          pdf.rect(mL, y - 3, usable, 6, "F");
+        }
+        cx = mL + 2;
+        // Order
+        pdf.text(`${idx + 1}`, cx, y);
+        cx += colWidths[0];
+        // Qty
+        pdf.text(`${item.quantity}`, cx, y);
+        cx += colWidths[1];
+        // Name
+        const nameLines = pdf.splitTextToSize(item.name, colWidths[2] - 4);
+        pdf.text(nameLines[0], cx, y);
+        cx += colWidths[2];
+        // Unit value
+        pdf.text(fmtVal(item.unitValue), cx + colWidths[3] - 2, y, { align: "right" });
+        cx += colWidths[3];
+        // Discount
+        const discStr = item.discountValue > 0
+          ? (item.discountType === "percent" ? `${item.discountValue}%` : fmtVal(item.discountValue))
+          : "-";
+        pdf.text(discStr, cx + colWidths[4] - 2, y, { align: "right" });
+        cx += colWidths[4];
+        // Subtotal
+        pdf.setFont("helvetica", "bold");
+        pdf.text(fmtVal(item.total), cx + colWidths[5] - 2, y, { align: "right" });
+        pdf.setFont("helvetica", "normal");
+
+        y += 6;
+      });
+
+      // Table footer line
+      pdf.setDrawColor(borderColor.r, borderColor.g, borderColor.b);
+      pdf.setLineWidth(0.3);
+      pdf.line(mL, y - 2, pageWidth - mR, y - 2);
+      y += 2;
+    }
+
+    // ===== RESUMO FINANCEIRO =====
+    checkPageBreak(30);
+    drawSectionTitle("Resumo Financeiro");
+
+    const totalProducts = items.reduce((s, it) => s + it.total, 0);
+    const totalPS = meta.value_ps || 0;
+    const totalMRR = meta.value_mrr || totalProducts;
+    const grandTotal = totalPS + totalMRR;
+
+    const drawSummaryRow = (label: string, value: string, bold = false, highlight = false) => {
+      checkPageBreak(7);
+      if (highlight) {
+        pdf.setFillColor(greenAccent.r, greenAccent.g, greenAccent.b);
+        pdf.rect(mL, y - 3.5, usable, 8, "F");
+        pdf.setTextColor(255, 255, 255);
+      }
+      pdf.setFont("helvetica", bold ? "bold" : "normal");
+      pdf.setFontSize(bold ? 10 : 9);
+      pdf.text(label, mL + 4, y);
+      pdf.text(value, pageWidth - mR - 4, y, { align: "right" });
+      if (highlight) pdf.setTextColor(textDark.r, textDark.g, textDark.b);
+      y += bold ? 7 : 5.5;
     };
 
-    const leftH = calcColHeight(leftLines, maxTextWidth);
-    const rightH = isPJ ? calcColHeight(rightLines, halfWidth - colPadding * 2) : 0;
-    const boxHeight = Math.max(leftH, rightH);
+    if (totalPS > 0) drawSummaryRow("Subtotal Produtos/Serviços (P&S)", fmtVal(totalPS));
+    if (totalMRR > 0) drawSummaryRow("Subtotal Recorrente (MRR)", fmtVal(totalMRR));
+    drawSummaryRow("TOTAL GERAL", fmtVal(grandTotal), true, true);
+    y += 3;
 
-    // Draw box
-    pdf.setDrawColor(180);
-    pdf.setLineWidth(0.3);
-    pdf.rect(mL, boxY, usable, boxHeight);
-    if (isPJ) {
-      pdf.line(mL + halfWidth, boxY, mL + halfWidth, boxY + boxHeight);
-    }
+    // ===== MENSALIDADE (MRR) - INSTALLMENTS =====
+    const installmentData: import("./ProposalItemsManager").Installment[] = meta.installments || [];
+    if (installmentData.length > 0) {
+      checkPageBreak(20);
+      drawSectionTitle("Mensalidade (MRR) - Parcelamento");
 
-    // Render left column
-    let ly = boxY + boxPaddingTop;
-    for (const line of leftLines) {
-      if (line.header) {
-        pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setTextColor(120);
-        pdf.text(line.text, mL + colPadding, ly);
-        pdf.setTextColor(0);
-        ly += headerH;
-      } else {
-        pdf.setFont("helvetica", line.bold ? "bold" : "normal");
-        pdf.setFontSize(line.bold ? 9 : 8);
-        const wrapped = pdf.splitTextToSize(line.text, maxTextWidth);
-        for (const w of wrapped) { pdf.text(w, mL + colPadding, ly); ly += lineH; }
+      const freqLabels: Record<string, string> = { mensal: "Mensal", trimestral: "Trimestral", semestral: "Semestral", anual: "Anual", unica: "Única" };
+      const payFreq = meta.payment_frequency || "mensal";
+      drawInfoRow("Periodicidade", freqLabels[payFreq] || payFreq);
+      drawInfoRow("Parcelas", `${installmentData.length}x`);
+      y += 2;
+
+      // Installment table
+      const instColWidths = [20, usable - 20 - 45 - 40, 45, 40];
+      const instHeaders = ["Parcela", "Vencimento", "Valor", "Método"];
+
+      pdf.setFillColor(lightBg.r, lightBg.g, lightBg.b);
+      pdf.rect(mL, y - 1, usable, 6, "F");
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+      cx = mL + 2;
+      instHeaders.forEach((h, i) => {
+        pdf.text(h, cx, y + 3);
+        cx += instColWidths[i];
+      });
+      y += 7;
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(8);
+      pdf.setTextColor(textDark.r, textDark.g, textDark.b);
+
+      for (const inst of installmentData) {
+        checkPageBreak(6);
+        cx = mL + 2;
+        pdf.text(`${inst.number}ª`, cx, y);
+        cx += instColWidths[0];
+        pdf.text(inst.dueDate ? new Date(inst.dueDate + "T12:00:00").toLocaleDateString("pt-BR") : "-", cx, y);
+        cx += instColWidths[1];
+        pdf.setFont("helvetica", "bold");
+        pdf.text(fmtVal(inst.value), cx, y);
+        pdf.setFont("helvetica", "normal");
+        cx += instColWidths[2];
+        const payMethods: Record<string, string> = { boleto: "Boleto", pix: "PIX", cartao: "Cartão", transferencia: "Transf." };
+        pdf.text(payMethods[inst.paymentMethod] || inst.paymentMethod || "Boleto", cx, y);
+        y += 5;
       }
+
+      // Total do contrato
+      y += 2;
+      const totalContrato = installmentData.reduce((s, i) => s + i.value, 0);
+      pdf.setDrawColor(borderColor.r, borderColor.g, borderColor.b);
+      pdf.line(mL, y - 1, pageWidth - mR, y - 1);
+      y += 3;
+      drawSummaryRow("TOTAL DO CONTRATO", fmtVal(totalContrato), true, true);
+      y += 3;
     }
 
-    // Render right column (only if PJ)
-    if (isPJ && rightLines.length > 0) {
-      const rColX = mL + halfWidth + colPadding;
-      const rMaxW = halfWidth - colPadding * 2;
-      let ry = boxY + boxPaddingTop;
-      for (const line of rightLines) {
-        if (line.header) {
-          pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setTextColor(120);
-          pdf.text(line.text, rColX, ry);
-          pdf.setTextColor(0);
-          ry += headerH;
-        } else {
-          pdf.setFont("helvetica", line.bold ? "bold" : "normal");
-          pdf.setFontSize(line.bold ? 9 : 8);
-          const wrapped = pdf.splitTextToSize(line.text, rMaxW);
-          for (const w of wrapped) { pdf.text(w, rColX, ry); ry += lineH; }
-        }
-      }
-    }
+    // ===== OBSERVAÇÕES =====
+    if (proposal.description || meta.introduction) {
+      checkPageBreak(15);
+      drawSectionTitle("Observações");
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(8);
+      pdf.setTextColor(textDark.r, textDark.g, textDark.b);
 
-    y = boxY + boxHeight + 8;
-
-    // ===== PROPOSAL CONTENT =====
-    // Title
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(12);
-    pdf.text(proposal.title.replace("Proposta: ", ""), mL, y);
-    y += 8;
-
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(9);
-
-    // Values
-    pdf.setFont("helvetica", "bold");
-    pdf.text(`Valor de P&S: ${fmtCur(meta.value_ps || 0)}`, mL, y); y += 5;
-    pdf.text(`Valor de MRR: ${fmtCur(meta.value_mrr || 0)}`, mL, y); y += 7;
-    pdf.setFont("helvetica", "normal");
-
-    // Introduction
-    if (meta.introduction) {
-      pdf.setFont("helvetica", "bold"); pdf.setFontSize(10);
-      pdf.text("Introdução:", mL, y); y += 5;
-      pdf.setFont("helvetica", "normal"); pdf.setFontSize(9);
-      for (const line of pdf.splitTextToSize(meta.introduction, usable)) {
-        if (y > 272) { pdf.addPage(); y = 20; }
-        pdf.text(line, mL, y); y += 4.5;
+      const obsText = [meta.introduction, proposal.description].filter(Boolean).join("\n\n");
+      const obsLines = pdf.splitTextToSize(obsText, usable - 8);
+      for (const line of obsLines) {
+        checkPageBreak(5);
+        pdf.text(line, mL + 4, y);
+        y += 4;
       }
       y += 3;
     }
 
-    // Items
-    if (meta.items) {
-      pdf.setFont("helvetica", "bold"); pdf.setFontSize(10);
-      pdf.text("Itens:", mL, y); y += 5;
-      pdf.setFont("helvetica", "normal"); pdf.setFontSize(9);
-      for (const item of meta.items.split("\n").filter(Boolean)) {
-        const wrapped = pdf.splitTextToSize(`• ${item}`, usable - 5);
-        for (const line of wrapped) {
-          if (y > 272) { pdf.addPage(); y = 20; }
-          pdf.text(line, mL + 3, y); y += 4.5;
-        }
-      }
-      y += 3;
-    }
-
-    // Observations
-    if (proposal.description) {
-      pdf.setFont("helvetica", "bold"); pdf.setFontSize(10);
-      pdf.text("Observações:", mL, y); y += 5;
-      pdf.setFont("helvetica", "normal"); pdf.setFontSize(9);
-      for (const line of pdf.splitTextToSize(proposal.description, usable)) {
-        if (y > 272) { pdf.addPage(); y = 20; }
-        pdf.text(line, mL, y); y += 4.5;
-      }
-    }
-
-    // Payment info
-    if (meta.payment_method) {
-      y += 5;
-      pdf.setFont("helvetica", "bold"); pdf.setFontSize(10);
-      pdf.text("Pagamento:", mL, y); y += 5;
-      pdf.setFont("helvetica", "normal"); pdf.setFontSize(9);
-      const payLabels: Record<string, string> = { boleto: "Boleto", pix: "PIX", cartao: "Cartão", transferencia: "Transferência" };
-      pdf.text(`Forma: ${payLabels[meta.payment_method] || meta.payment_method}`, mL, y); y += 4.5;
-      if (meta.first_payment_date) { pdf.text(`1ª Parcela: ${meta.first_payment_date}`, mL, y); y += 4.5; }
-      if (meta.due_day) { pdf.text(`Dia de vencimento: ${meta.due_day}`, mL, y); y += 4.5; }
-    }
-
-    // Footer with page numbers
+    // ===== FOOTER =====
     const totalPages = pdf.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       pdf.setPage(i);
-      pdf.setFont("helvetica", "italic"); pdf.setFontSize(7); pdf.setTextColor(150);
-      pdf.text(`Proposta ${sigla} - v${version} - Página ${i} de ${totalPages}`, pageWidth / 2, 287, { align: "center" });
-      pdf.setTextColor(0);
+      // Bottom accent line
+      pdf.setDrawColor(accent.r, accent.g, accent.b);
+      pdf.setLineWidth(0.5);
+      pdf.line(mL, pageHeight - 12, pageWidth - mR, pageHeight - 12);
+      // Footer text
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(7);
+      pdf.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+      pdf.text(`Proposta ${sigla} - v${version}`, mL, pageHeight - 8);
+      pdf.text(`Página ${i} de ${totalPages}`, pageWidth - mR, pageHeight - 8, { align: "right" });
+      if (srv?.nome_fantasia || srv?.razao_social) {
+        pdf.text(srv.nome_fantasia || srv.razao_social, pageWidth / 2, pageHeight - 8, { align: "center" });
+      }
     }
 
     pdf.save(`${lead.company_name.replace(/\s+/g, "_")}_${sigla}.pdf`);
