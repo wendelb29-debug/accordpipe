@@ -80,42 +80,48 @@
   }
 
   .dark {
-    --background: 228 40% 6%;
-    --foreground: 210 40% 98%;
+    /* Deep tech dark — #0B0F19 */
+    --background: 224 45% 7%;
+    --foreground: 220 20% 91%;
 
-    --card: 220 30% 12%;
-    --card-foreground: 210 40% 98%;
+    /* Cards — #111827 */
+    --card: 222 47% 11%;
+    --card-foreground: 220 20% 91%;
 
-    --popover: 220 30% 12%;
-    --popover-foreground: 210 40% 98%;
+    /* Popovers */
+    --popover: 222 47% 11%;
+    --popover-foreground: 220 20% 91%;
 
     --primary: 224 76% 53%;
     --primary-foreground: 0 0% 100%;
     --primary-glow: 263 87% 60%;
 
-    --secondary: 220 25% 14%;
-    --secondary-foreground: 210 40% 98%;
+    /* Secondary — #1E293B */
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 220 20% 91%;
 
-    --muted: 220 25% 14%;
-    --muted-foreground: 218 14% 65%;
+    --muted: 217 33% 14%;
+    --muted-foreground: 218 11% 65%;
 
-    --accent: 220 25% 17%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 217 33% 17%;
+    --accent-foreground: 220 20% 91%;
 
-    --destructive: 0 55% 40%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 220 20% 22%;
-    --input: 220 30% 12%;
+    /* Borders — subtle white */
+    --border: 220 20% 14%;
+    --input: 222 47% 13%;
     --ring: 224 76% 53%;
 
-    --sidebar-background: 224 45% 6%;
-    --sidebar-foreground: 210 40% 96%;
+    /* Sidebar — deepest dark */
+    --sidebar-background: 228 50% 5%;
+    --sidebar-foreground: 220 20% 88%;
     --sidebar-primary: 263 87% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 224 30% 13%;
-    --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border: 224 25% 11%;
+    --sidebar-accent: 224 40% 12%;
+    --sidebar-accent-foreground: 220 20% 88%;
+    --sidebar-border: 224 30% 10%;
     --sidebar-ring: 263 87% 60%;
   }
 }
@@ -199,6 +205,11 @@
     background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+  }
+
+  .dark .glass {
+    background: rgba(17, 24, 39, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.05);
   }
 
   .animate-fade-in {
