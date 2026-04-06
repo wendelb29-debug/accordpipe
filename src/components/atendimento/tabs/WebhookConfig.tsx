@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Send, LogOut, MessageSquare, Radio, Activity, Wifi, Loader2, Save } from "lucide-react";
+import { Send, LogOut, MessageSquare, Radio, Activity, Wifi, Loader2, Save, Copy, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -34,6 +34,21 @@ function isValidUrl(url: string): boolean {
   }
 }
 
+function CopyButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(value);
+    setCopied(true);
+    toast.success("URL copiada!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={handleCopy}>
+      {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
+    </Button>
+  );
+}
+
 export function WebhookConfig() {
   const { profile } = useAuth();
   const companyId = profile?.company_id;
@@ -43,6 +58,9 @@ export function WebhookConfig() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
+
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const webhookBaseUrl = supabaseUrl ? `${supabaseUrl}/functions/v1/zapi-webhook` : "";
 
   useEffect(() => {
     if (!companyId) return;
@@ -91,7 +109,6 @@ export function WebhookConfig() {
 
       if (error) throw error;
 
-      // Also update via Z-API edge function
       try {
         await supabase.functions.invoke("zapi", {
           body: {
@@ -129,11 +146,42 @@ export function WebhookConfig() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Integration URLs section */}
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-xs font-semibold uppercase tracking-widest text-primary mb-1">URLs de Integração Z-API</h3>
+          <p className="text-sm text-muted-foreground">
+            Use estas URLs no painel da Z-API para receber os eventos da sua instância no Accord Stack.
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
+          {[
+            { label: "Webhook URL (principal)", url: webhookBaseUrl },
+            { label: "Ao receber mensagem", url: webhookBaseUrl },
+            { label: "Ao enviar mensagem", url: webhookBaseUrl },
+            { label: "Status da mensagem", url: webhookBaseUrl },
+            { label: "Ao conectar", url: webhookBaseUrl },
+            { label: "Ao desconectar", url: webhookBaseUrl },
+            { label: "Presença do chat", url: webhookBaseUrl },
+          ].map((item, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <Label className="text-xs text-muted-foreground w-44 shrink-0">{item.label}</Label>
+              <div className="flex-1 flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2">
+                <code className="text-xs text-foreground truncate flex-1">{item.url}</code>
+                <CopyButton value={item.url} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Custom webhook overrides */}
       <div>
         <h3 className="text-xs font-semibold uppercase tracking-widest text-primary mb-1">Configure Webhooks</h3>
         <p className="text-sm text-muted-foreground">
-          Configurar webhooks para sua instância permite receber os eventos dela.
+          Opcionalmente, defina URLs personalizadas para encaminhar eventos para outros sistemas.
         </p>
       </div>
 
