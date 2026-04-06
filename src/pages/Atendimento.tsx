@@ -49,7 +49,7 @@ export default function Atendimento() {
             <MessageSquare className="h-3 w-3" /> Pipeline Comercial
           </TabsTrigger>
           <TabsTrigger value="cadastro" className="gap-1 text-[11px] h-7 px-3">
-            <ClipboardList className="h-3 w-3" /> Cadastro de Clientes
+            <ClipboardList className="h-3 w-3" /> Validação de Clientes
           </TabsTrigger>
           <TabsTrigger value="importar" className="gap-1 text-[11px] h-7 px-3">
             <FileSpreadsheet className="h-3 w-3" /> Importar Planilha

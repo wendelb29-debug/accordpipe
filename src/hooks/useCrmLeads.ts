@@ -186,6 +186,9 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial")
     const lead = leads.find((l) => l.id === id);
     if (!lead) return false;
 
+    // Save previous stage for potential return
+    const previousStage = lead.stage;
+
     // Update lead: status won, move to admin pipeline stage
     const success = await updateLead(id, {
       lead_status: "won",
@@ -194,15 +197,16 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial")
     } as any);
 
     if (success) {
-      // Log activity
+      // Log activity with previous stage stored in metadata
       await supabase.from("crm_lead_activities").insert({
         lead_id: id,
         servidor_id: lead.servidor_id,
         type: "won",
-        title: "Oportunidade ganha! Transferida para Cadastro.",
-        description: "Lead marcado como ganho e transferido para o pipeline Administrativo (Cadastro Pendente).",
+        title: "Oportunidade ganha! Transferida para Validação.",
+        description: `Lead marcado como ganho e transferido para **Validação de Clientes** (Cadastro Pendente). Etapa anterior: **${previousStage}**.`,
         created_by_user_id: profile?.user_id || null,
         created_by_name: profile?.name || null,
+        metadata: { previous_stage: previousStage },
       } as any);
 
       // Create registration record with lead data

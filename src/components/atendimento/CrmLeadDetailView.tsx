@@ -713,17 +713,41 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               <>
                 <Badge className="bg-green-600 text-white text-[10px]">✓ Ganho</Badge>
                 {(role === "admin" || role === "administrativo" || role === "ceo") && (
-                  <Button size="sm" variant="outline" onClick={() => {
-                    setReturnNote("");
-                    setShowReturnDialog(true);
-                  }} disabled={saving} className="gap-1 border-orange-300 text-orange-700 hover:bg-orange-50 h-7 sm:h-8 text-[11px] sm:text-xs px-2 sm:px-3">
-                    <ArrowLeft className="h-3 w-3" /> Devolver
-                  </Button>
-                )}
-                {(role === "admin" || role === "administrativo") && (
-                  <Button size="sm" variant="outline" onClick={() => window.location.href = "/cadastrados"} className="gap-1 h-7 sm:h-8 text-[11px] sm:text-xs px-2 sm:px-3 hidden sm:flex">
-                    <ClipboardList className="h-3 w-3" /> Cadastro
-                  </Button>
+                  <>
+                    <Button size="sm" onClick={async () => {
+                      setSaving(true);
+                      try {
+                        // Find registration for this lead and set client_status to ativo
+                        const { data: reg } = await supabase
+                          .from("crm_client_registrations")
+                          .select("id")
+                          .eq("lead_id", lead.id)
+                          .maybeSingle();
+                        if (reg) {
+                          await supabase.from("crm_client_registrations")
+                            .update({ client_status: "ativo", status: "concluido" } as any)
+                            .eq("id", reg.id);
+                        }
+                        // Remove "Pendente de Correção" tag if present
+                        const currentTags = lead.tags || [];
+                        const cleanTags = currentTags.filter(t => t !== "Pendente de Correção");
+                        await onUpdate(lead.id, { stage: "cadastro-concluido", tags: cleanTags } as any);
+                        await addActivity({ type: "won", title: "Cadastro aprovado pelo administrativo", description: `Cliente aprovado e ativado na **Base de Clientes** por ${profile?.name || "Admin"}.` });
+                        toast.success("✅ Cliente aprovado e ativado na Base de Clientes!");
+                        onBack();
+                      } catch (err) {
+                        toast.error("Erro ao aprovar cadastro");
+                      } finally { setSaving(false); }
+                    }} disabled={saving} className="gap-1 bg-emerald-600 hover:bg-emerald-700 text-white h-7 sm:h-8 text-[11px] sm:text-xs px-2 sm:px-3 border-0">
+                      <CheckCircle className="h-3 w-3" /> Aprovar
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => {
+                      setReturnNote("");
+                      setShowReturnDialog(true);
+                    }} disabled={saving} className="gap-1 border-orange-300 text-orange-700 hover:bg-orange-50 h-7 sm:h-8 text-[11px] sm:text-xs px-2 sm:px-3">
+                      <ArrowLeft className="h-3 w-3" /> Devolver
+                    </Button>
+                  </>
                 )}
               </>
             )}
@@ -1275,13 +1299,25 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                 }
                 setSaving(true);
                 try {
-                  // Add "Devolvido" tag
+                  // Find previous stage from won activity metadata
+                  const { data: wonActivities } = await supabase
+                    .from("crm_lead_activities")
+                    .select("metadata")
+                    .eq("lead_id", lead.id)
+                    .eq("type", "won")
+                    .order("created_at", { ascending: false })
+                    .limit(1);
+                  const previousStage = (wonActivities?.[0]?.metadata as any)?.previous_stage || "contrato-fechado";
+
+                  // Add "Pendente de Correção" and "Devolvido" tags
                   const currentTags = lead.tags || [];
-                  const newTags = currentTags.includes("Devolvido") ? currentTags : [...currentTags, "Devolvido"];
+                  let newTags = [...currentTags];
+                  if (!newTags.includes("Devolvido")) newTags.push("Devolvido");
+                  if (!newTags.includes("Pendente de Correção")) newTags.push("Pendente de Correção");
 
                   const success = await onUpdate(lead.id, {
                     lead_status: "open",
-                    stage: "contrato-fechado",
+                    stage: previousStage,
                     stage_entered_at: new Date().toISOString(),
                     tags: newTags,
                   } as any);
@@ -1289,7 +1325,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                     await addActivity({
                       type: "stage_change",
                       title: "Card devolvido ao operador",
-                      description: `Lead devolvido ao pipeline comercial (etapa **Contrato Fechado**) pelo setor administrativo.\n\n**Motivo:** ${returnNote.trim()}\n**Operador original:** ${lead.created_by_name || "Não identificado"}`,
+                      description: `Lead devolvido ao pipeline comercial (etapa **${previousStage}**) pelo setor administrativo.\n\n**Motivo:** ${returnNote.trim()}\n**Operador original:** ${lead.created_by_name || "Não identificado"}`,
                     });
 
                     // Notify the original operator
