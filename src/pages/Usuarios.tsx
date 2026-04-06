@@ -562,6 +562,15 @@ export default function Usuarios() {
                               <Pencil className="h-4 w-4" />
                               Editar
                             </DropdownMenuItem>
+                            <DropdownMenuItem className="gap-2" onClick={() => {
+                              setPermUserId(user.user_id);
+                              setPermUserName(user.name);
+                              setPermUserIsCeo(user.role === "ceo" || user.is_master);
+                              setPermDialogOpen(true);
+                            }}>
+                              <Shield className="h-4 w-4" />
+                              Permissões
+                            </DropdownMenuItem>
                             {!user.is_master && user.status !== "pendente" && (
                               <DropdownMenuItem className="gap-2" onClick={() => handleToggleActive(user)}>
                                 <Power className="h-4 w-4" />
