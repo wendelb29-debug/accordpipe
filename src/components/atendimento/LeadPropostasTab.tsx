@@ -106,6 +106,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
   const [contractPreview, setContractPreview] = useState<string | null>(null);
   const [contractPreviewProposal, setContractPreviewProposal] = useState<any | null>(null);
   const [generatedContractLink, setGeneratedContractLink] = useState<string | null>(null);
+  const [generatedContractId, setGeneratedContractId] = useState<string | null>(null);
   const [registrationData, setRegistrationData] = useState<any>(null);
 
   // Brand state
