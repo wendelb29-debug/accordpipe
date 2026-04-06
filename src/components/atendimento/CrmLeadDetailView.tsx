@@ -5,7 +5,7 @@ import {
   MessageSquare, PhoneCall, FileText, Activity, Trash2, Send, Loader2,
   FileSignature, Eye, Download, Copy, Image as ImageIcon, Search,
   FileSpreadsheet, Edit, MoreVertical, ThumbsUp, ThumbsDown, Paperclip,
-  Link2, CopyPlus, ClipboardList, UserRoundPen
+  Link2, CopyPlus, ClipboardList, UserRoundPen, Headphones
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadContractPdf } from "@/lib/generateContractPdf";
@@ -14,6 +14,7 @@ import { NoteEditor } from "./NoteEditor";
 import { LeadPropostasTab } from "./LeadPropostasTab";
 import { LeadContratosTab } from "./LeadContratosTab";
 import { LeadDocsTab } from "./LeadDocsTab";
+import { LeadPosVendaTab } from "./LeadPosVendaTab";
 
 import { LeadCadastroTab } from "./LeadCadastroTab";
 import { Button } from "@/components/ui/button";
