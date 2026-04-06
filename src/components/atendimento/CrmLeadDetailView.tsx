@@ -611,7 +611,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
       toast.success("Nota atualizada!");
       setEditingNoteId(null);
       setEditingNoteText("");
-      refreshActivities?.();
+      refetchActivities?.();
     } catch {
       toast.error("Erro ao atualizar nota");
     } finally {
