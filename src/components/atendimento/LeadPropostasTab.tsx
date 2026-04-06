@@ -251,7 +251,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     if (lead.servidor_id) {
       const { data } = await supabase
         .from("companies")
-        .select("id, razao_social, nome_fantasia, cnpj, responsavel, email, telefone, endereco, numero, bairro, cidade, estado, cep, brand_logo_url, brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color")
+        .select("id, razao_social, nome_fantasia, cnpj, responsavel, email, telefone, endereco, numero, complemento, bairro, cidade, estado, cep, brand_logo_url, brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color")
         .eq("id", lead.servidor_id)
         .maybeSingle();
       if (data) setServidorData(data as ServidorData);
@@ -1553,27 +1553,35 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
               </Button>
             )}
           </div>
-          <Select value={selectedBrandId || ""} onValueChange={(v) => setSelectedBrandId(v || null)}>
-            <SelectTrigger className="h-9 text-xs">
-              <SelectValue placeholder="Selecione uma marca (opcional)" />
-            </SelectTrigger>
-            <SelectContent>
-              {brands.map(b => (
-                <SelectItem key={b.id} value={b.id}>
-                  <span className="flex items-center gap-2">
-                    {b.logo_url && <img src={b.logo_url} alt="" className="h-4 w-4 object-contain" />}
-                    {b.name} {b.is_default && "(Padrão)"}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {selectedBrandId && brands.find(b => b.id === selectedBrandId)?.logo_url && (
-            <div className="flex items-center gap-3 p-2 rounded-md bg-muted/50">
-              <img src={brands.find(b => b.id === selectedBrandId)!.logo_url!} alt="Logo" className="h-10 object-contain" />
-              <span className="text-xs text-muted-foreground">Logo será exibido no canto superior esquerdo da proposta</span>
-            </div>
-          )}
+          {brands.length > 1 ? (
+            <Select value={selectedBrandId || ""} onValueChange={(v) => setSelectedBrandId(v || null)}>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue placeholder="Selecione uma marca (opcional)" />
+              </SelectTrigger>
+              <SelectContent>
+                {brands.map(b => (
+                  <SelectItem key={b.id} value={b.id}>
+                    <span className="flex items-center gap-2">
+                      {b.logo_url && <img src={b.logo_url} alt="" className="h-4 w-4 object-contain" />}
+                      {b.name} {b.is_default && "(Padrão)"}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : null}
+          {/* Show active logo: server logo as global default, brand logo as override */}
+          {(() => {
+            const activeLogo = (selectedBrandId && brands.find(b => b.id === selectedBrandId)?.logo_url) || servidorData?.brand_logo_url;
+            return activeLogo ? (
+              <div className="flex items-center gap-3 p-2 rounded-md bg-muted/50">
+                <img src={activeLogo} alt="Logo" className="h-10 object-contain" />
+                <span className="text-xs text-muted-foreground">Logo será exibido no canto superior esquerdo da proposta</span>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">Nenhuma logo configurada. Configure em Editar Servidor → Identidade Visual.</p>
+            );
+          })()}
         </CardContent></Card>
 
         <BrandManagerDialog
