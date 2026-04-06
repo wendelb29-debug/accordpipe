@@ -422,7 +422,7 @@ export function ContractTemplateTab({ companyId }: Props) {
                     }}
                   >
                     {(() => {
-                      const Icon = TEMPLATE_FIELD_TYPES.find(f => f.type === field.field_type)?.icon || Type;
+                      const Icon = TEMPLATE_FIELD_TYPES.find(f => f.type === field.field_type)?.icon || FileText;
                       return <Icon className="h-3.5 w-3.5 shrink-0" />;
                     })()}
                     <span className="truncate">{field.label}</span>
