@@ -30,21 +30,21 @@ const stats = [
 
 export function SocialProofSection() {
   return (
-    <section className="relative py-20 sm:py-28 bg-[hsl(228,40%,6%)]">
+    <section className="relative py-20 sm:py-28" style={{ background: '#0B0F19' }}>
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
         {/* Stats */}
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4 mb-20">
           {stats.map((stat) => (
             <div key={stat.label} className="text-center">
-              <p className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-[hsl(224,76%,60%)] to-[hsl(263,87%,65%)] bg-clip-text text-transparent">{stat.value}</p>
-              <p className="mt-1 text-sm text-[hsl(218,14%,50%)]">{stat.label}</p>
+              <p className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-[#2563EB] to-[#A855F7] bg-clip-text text-transparent">{stat.value}</p>
+              <p className="mt-1 text-sm text-[#6B7280]">{stat.label}</p>
             </div>
           ))}
         </div>
 
         {/* Testimonials */}
         <div className="mx-auto max-w-2xl text-center mb-12">
-          <h2 className="text-3xl font-bold tracking-tight text-[hsl(210,40%,98%)] sm:text-4xl">
+          <h2 className="text-3xl font-bold tracking-tight text-[#E5E7EB] sm:text-4xl">
             Quem usa, recomenda
           </h2>
         </div>
@@ -52,17 +52,17 @@ export function SocialProofSection() {
           {testimonials.map((t) => (
             <div
               key={t.name}
-              className="rounded-2xl border border-[hsl(220,20%,16%)] bg-[hsl(220,30%,10%)] p-6"
+              className="rounded-2xl border border-[rgba(255,255,255,0.05)] bg-[#111827] p-6 transition-all duration-200 hover:border-[rgba(255,255,255,0.1)]"
             >
               <div className="flex gap-1 mb-4">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-[hsl(45,93%,47%)] text-[hsl(45,93%,47%)]" />
+                  <Star key={i} className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]" />
                 ))}
               </div>
-              <p className="text-sm leading-relaxed text-[hsl(210,20%,80%)] italic">"{t.quote}"</p>
-              <div className="mt-4 border-t border-[hsl(220,20%,16%)] pt-4">
-                <p className="text-sm font-semibold text-[hsl(210,40%,98%)]">{t.name}</p>
-                <p className="text-xs text-[hsl(218,14%,50%)]">{t.role} — {t.company}</p>
+              <p className="text-sm leading-relaxed text-[#D1D5DB] italic">"{t.quote}"</p>
+              <div className="mt-4 border-t border-[rgba(255,255,255,0.05)] pt-4">
+                <p className="text-sm font-semibold text-[#E5E7EB]">{t.name}</p>
+                <p className="text-xs text-[#6B7280]">{t.role} — {t.company}</p>
               </div>
             </div>
           ))}

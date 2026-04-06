@@ -8,35 +8,34 @@ export function HeroSection() {
   const [trialOpen, setTrialOpen] = useState(false);
 
   return (
-    <section className="relative overflow-hidden bg-[hsl(228,40%,6%)] min-h-[90vh] flex items-center">
-      {/* Ambient glow effects */}
-      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[radial-gradient(circle,hsl(224,76%,53%,0.15),transparent_60%)] blur-3xl" />
-      <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[radial-gradient(circle,hsl(263,87%,60%,0.1),transparent_60%)] blur-3xl" />
+    <section className="relative overflow-hidden min-h-[90vh] flex items-center" style={{ background: '#0B0F19' }}>
+      {/* Ambient glow */}
+      <div className="absolute top-[-10%] left-[20%] w-[700px] h-[700px] rounded-full bg-[radial-gradient(circle,rgba(37,99,235,0.12),transparent_60%)] blur-3xl pointer-events-none" />
+      <div className="absolute bottom-[-5%] right-[15%] w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(124,58,237,0.08),transparent_60%)] blur-3xl pointer-events-none" />
       {/* Grid overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(hsl(224,50%,20%,0.15)_1px,transparent_1px),linear-gradient(90deg,hsl(224,50%,20%,0.15)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_70%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:72px_72px] [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_70%)]" />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 py-20 sm:py-28 md:py-36 w-full">
         <div className="mx-auto max-w-4xl text-center">
           {/* Badge */}
-          <div className="mb-6 sm:mb-8 inline-flex items-center gap-2 rounded-full border border-[hsl(263,87%,60%,0.3)] bg-[hsl(263,87%,60%,0.08)] px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-[hsl(263,87%,70%)]">
+          <div className="mb-6 sm:mb-8 inline-flex items-center gap-2 rounded-full border border-[rgba(124,58,237,0.25)] bg-[rgba(124,58,237,0.06)] px-5 py-2.5 text-xs sm:text-sm font-medium text-[#A78BFA]">
             <Zap className="h-3.5 w-3.5 shrink-0" />
-            <span>Plataforma completa com IA integrada</span>
+            <span>CRM + Contratos + IA em uma só plataforma</span>
             <ArrowRight className="h-3.5 w-3.5 shrink-0" />
           </div>
 
           {/* Headline */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-[hsl(210,40%,98%)] leading-[1.1]">
-            Automatize seu comercial,{" "}
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-[#E5E7EB] leading-[1.1]">
+            Controle seu comercial{" "}
             <br className="hidden sm:block" />
-            contratos e clientes em{" "}
-            <span className="bg-gradient-to-r from-[hsl(224,76%,53%)] via-[hsl(263,87%,60%)] to-[hsl(280,70%,60%)] bg-clip-text text-transparent">
+            do lead ao contrato em{" "}
+            <span className="bg-gradient-to-r from-[#2563EB] via-[#7C3AED] to-[#A855F7] bg-clip-text text-transparent">
               um só lugar
             </span>
           </h1>
 
-          {/* Sub */}
-          <p className="mx-auto mt-5 sm:mt-6 max-w-2xl text-base sm:text-lg md:text-xl leading-relaxed text-[hsl(218,14%,65%)]">
-            Do lead ao contrato assinado, tudo integrado, automatizado e escalável. 
+          <p className="mx-auto mt-5 sm:mt-6 max-w-2xl text-base sm:text-lg md:text-xl leading-relaxed text-[#9CA3AF]">
+            CRM, contratos, clientes e automações integrados em uma única plataforma.
             Simplifique sua operação e venda mais.
           </p>
 
@@ -44,14 +43,14 @@ export function HeroSection() {
           <div className="mt-8 sm:mt-10 flex flex-col items-center gap-3 sm:gap-4 sm:flex-row sm:justify-center">
             <Button
               size="lg"
-              className="gap-2 px-8 text-sm sm:text-base font-semibold bg-gradient-to-r from-[hsl(224,76%,53%)] to-[hsl(263,87%,60%)] text-[hsl(0,0%,100%)] shadow-lg shadow-[hsl(263,87%,60%,0.25)] h-12 sm:h-14 rounded-xl hover:shadow-xl hover:shadow-[hsl(263,87%,60%,0.35)] transition-all w-full sm:w-auto border-0"
+              className="gap-2 px-8 text-sm sm:text-base font-semibold bg-gradient-to-r from-[#2563EB] to-[#7C3AED] text-white shadow-lg shadow-[rgba(124,58,237,0.3)] h-12 sm:h-14 rounded-xl hover:shadow-xl hover:shadow-[rgba(124,58,237,0.4)] hover:scale-[1.02] transition-all duration-150 w-full sm:w-auto border-0"
               onClick={() => setTrialOpen(true)}
             >
               <Rocket className="h-5 w-5" />
-              Testar grátis por 7 dias
+              Começar agora
             </Button>
             <a href="mailto:contato@accordhub.com.br?subject=Solicitar demonstração" className="w-full sm:w-auto">
-              <Button size="lg" variant="outline" className="gap-2 px-8 text-sm sm:text-base font-medium h-12 sm:h-14 rounded-xl border-[hsl(220,20%,22%)] text-[hsl(210,40%,96%)] hover:bg-[hsl(220,25%,14%)] hover:border-[hsl(220,20%,30%)] transition-all w-full bg-transparent">
+              <Button size="lg" variant="outline" className="gap-2 px-8 text-sm sm:text-base font-medium h-12 sm:h-14 rounded-xl border-[rgba(255,255,255,0.08)] text-[#E5E7EB] hover:bg-[rgba(255,255,255,0.04)] hover:border-[rgba(255,255,255,0.12)] transition-all duration-150 w-full bg-transparent">
                 <Play className="h-4 w-4" />
                 Ver demonstração
               </Button>
@@ -59,7 +58,7 @@ export function HeroSection() {
           </div>
 
           {/* Trust */}
-          <div className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-[hsl(218,14%,50%)]">
+          <div className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-[#6B7280]">
             <span className="flex items-center gap-1.5">✓ Sem cartão de crédito</span>
             <span className="flex items-center gap-1.5">✓ 7 dias grátis</span>
             <span className="hidden sm:flex items-center gap-1.5">✓ Suporte incluso</span>
@@ -69,16 +68,16 @@ export function HeroSection() {
         {/* Dashboard Mockup */}
         <div className="mt-16 sm:mt-20 flex justify-center">
           <div className="relative w-full max-w-5xl">
-            <div className="absolute -inset-6 rounded-3xl bg-gradient-to-br from-[hsl(224,76%,53%,0.15)] via-[hsl(263,87%,60%,0.1)] to-transparent blur-3xl" />
-            <div className="relative rounded-2xl border border-[hsl(220,20%,18%)] shadow-2xl shadow-[hsl(0,0%,0%,0.4)] overflow-hidden bg-[hsl(220,30%,10%)]">
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-[hsl(220,20%,16%)] bg-[hsl(220,30%,8%)]">
+            <div className="absolute -inset-8 rounded-3xl bg-gradient-to-br from-[rgba(37,99,235,0.12)] via-[rgba(124,58,237,0.08)] to-transparent blur-3xl" />
+            <div className="relative rounded-2xl border border-[rgba(255,255,255,0.06)] shadow-2xl shadow-[rgba(0,0,0,0.5)] overflow-hidden bg-[#111827]">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-[rgba(255,255,255,0.05)] bg-[#0D1321]">
                 <div className="flex gap-1.5">
-                  <div className="h-3 w-3 rounded-full bg-[hsl(0,72%,51%,0.6)]" />
-                  <div className="h-3 w-3 rounded-full bg-[hsl(45,93%,47%,0.6)]" />
-                  <div className="h-3 w-3 rounded-full bg-[hsl(142,71%,45%,0.6)]" />
+                  <div className="h-3 w-3 rounded-full bg-[#EF4444]/60" />
+                  <div className="h-3 w-3 rounded-full bg-[#F59E0B]/60" />
+                  <div className="h-3 w-3 rounded-full bg-[#22C55E]/60" />
                 </div>
                 <div className="flex-1 flex justify-center">
-                  <div className="h-5 w-48 rounded-md bg-[hsl(220,25%,14%)]" />
+                  <div className="h-5 w-48 rounded-md bg-[rgba(255,255,255,0.04)]" />
                 </div>
               </div>
               <img
