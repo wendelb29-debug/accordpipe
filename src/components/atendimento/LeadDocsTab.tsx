@@ -40,7 +40,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
 
   const fetchDocs = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("lead_documents")
       .select("*")
       .eq("lead_id", lead.id)
@@ -70,7 +70,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
 
       const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(filePath);
 
-      const { error: insertErr } = await supabase.from("lead_documents").insert({
+      const { error: insertErr } = await (supabase as any).from("lead_documents").insert({
         lead_id: lead.id,
         servidor_id: lead.servidor_id,
         doc_type: docType,
@@ -93,7 +93,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
 
   const handleDelete = async (doc: LeadDoc) => {
     await supabase.storage.from("contract-pdfs").remove([doc.file_path]);
-    await supabase.from("lead_documents").delete().eq("id", doc.id);
+    await (supabase as any).from("lead_documents").delete().eq("id", doc.id);
     toast.success("Documento removido!");
     await fetchDocs();
   };
