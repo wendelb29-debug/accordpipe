@@ -18,7 +18,7 @@ const TEMPLATE_FIELD_TYPES = [
   // DADOS DO SERVIDOR (CONTRATADA)
   { type: "servidor_logo", label: "Logo Servidor", icon: ImageIcon, defaultW: 120, defaultH: 60, group: "servidor" },
   { type: "servidor_empresa", label: "Empresa (Contratada)", icon: Building2, defaultW: 280, defaultH: 36, group: "servidor" },
-  { type: "servidor_cnpj", label: "CNPJ Servidor", icon: Hash, defaultW: 200, defaultH: 36, group: "servidor" },
+  { type: "servidor_cnpj", label: "Bloco Dados Servidor", icon: Hash, defaultW: 480, defaultH: 60, group: "servidor" },
   { type: "servidor_endereco", label: "Endereço Servidor", icon: MapPin, defaultW: 300, defaultH: 36, group: "servidor" },
   { type: "servidor_email", label: "E-mail Servidor", icon: Mail, defaultW: 240, defaultH: 36, group: "servidor" },
   // DETALHES DA PROPOSTA

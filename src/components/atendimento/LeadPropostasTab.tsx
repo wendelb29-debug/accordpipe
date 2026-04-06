@@ -67,6 +67,7 @@ interface ServidorData {
   cidade: string | null;
   estado: string | null;
   cep: string | null;
+  complemento: string | null;
   brand_logo_url?: string | null;
   brand_primary_color?: string | null;
   brand_secondary_color?: string | null;
@@ -1067,7 +1068,17 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
       // DADOS DO SERVIDOR (CONTRATADA)
       case "servidor_logo": return srv?.brand_logo_url || "";
       case "servidor_empresa": return srv?.razao_social || srv?.nome_fantasia || "";
-      case "servidor_cnpj": return srv?.cnpj || "";
+      case "servidor_cnpj": {
+        if (!srv) return "";
+        const parts = [
+          srv.razao_social || srv.nome_fantasia || "",
+          srv.cnpj ? `inscrita no CNPJ/MF sob o nº ${srv.cnpj}` : "",
+          [srv.endereco, srv.numero && `nº ${srv.numero}`, srv.complemento, srv.bairro, srv.cep && `CEP: ${srv.cep}`, srv.cidade && srv.estado && `${srv.cidade}-${srv.estado}`].filter(Boolean).join(", "),
+          srv.email ? `e-mail ${srv.email}` : "",
+          srv.telefone ? `telefone ${srv.telefone}` : "",
+        ].filter(Boolean);
+        return parts.length > 0 ? `${parts[0]}, ${parts.slice(1).join(", ")}.` : "";
+      }
       case "servidor_endereco": return srvAddr;
       case "servidor_email": return srv?.email || "";
 
