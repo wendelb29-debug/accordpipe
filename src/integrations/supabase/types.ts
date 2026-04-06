@@ -1286,6 +1286,69 @@ export type Database = {
           },
         ]
       }
+      lead_post_sale: {
+        Row: {
+          comprovante_path: string | null
+          comprovante_url: string | null
+          created_at: string
+          email_financeiro: string | null
+          id: string
+          lead_id: string
+          link_proposta_assinada: string | null
+          observacoes_venda: string | null
+          pessoa_financeira: string | null
+          servidor_id: string
+          telefone_financeiro: string | null
+          updated_at: string
+          updated_by_name: string | null
+        }
+        Insert: {
+          comprovante_path?: string | null
+          comprovante_url?: string | null
+          created_at?: string
+          email_financeiro?: string | null
+          id?: string
+          lead_id: string
+          link_proposta_assinada?: string | null
+          observacoes_venda?: string | null
+          pessoa_financeira?: string | null
+          servidor_id: string
+          telefone_financeiro?: string | null
+          updated_at?: string
+          updated_by_name?: string | null
+        }
+        Update: {
+          comprovante_path?: string | null
+          comprovante_url?: string | null
+          created_at?: string
+          email_financeiro?: string | null
+          id?: string
+          lead_id?: string
+          link_proposta_assinada?: string | null
+          observacoes_venda?: string | null
+          pessoa_financeira?: string | null
+          servidor_id?: string
+          telefone_financeiro?: string | null
+          updated_at?: string
+          updated_by_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_post_sale_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_post_sale_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
