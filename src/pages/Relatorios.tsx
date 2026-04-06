@@ -132,6 +132,10 @@ export default function Relatorios() {
   const [prevClientData, setPrevClientData] = useState<ClientRow[]>([]);
   const [prevCrmData, setPrevCrmData] = useState<CrmRow[]>([]);
 
+  // AI analysis
+  const [aiAnalysis, setAiAnalysis] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+
   const servidorId = isMaster ? profile?.company_id : profile?.company_id;
 
   const applyQuick = (key: string) => {
