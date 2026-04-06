@@ -167,6 +167,9 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const [noteImage, setNoteImage] = useState<File | null>(null);
   const [noteImagePreview, setNoteImagePreview] = useState<string | null>(null);
   const [savingNote, setSavingNote] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteText, setEditingNoteText] = useState("");
+  const [savingEditNote, setSavingEditNote] = useState(false);
   const noteFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
