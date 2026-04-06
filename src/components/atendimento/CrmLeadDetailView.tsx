@@ -167,6 +167,9 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const [noteImage, setNoteImage] = useState<File | null>(null);
   const [noteImagePreview, setNoteImagePreview] = useState<string | null>(null);
   const [savingNote, setSavingNote] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteText, setEditingNoteText] = useState("");
+  const [savingEditNote, setSavingEditNote] = useState(false);
   const noteFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -592,7 +595,31 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     }
   };
 
+  const handleEditNote = (activity: any) => {
+    setEditingNoteId(activity.id);
+    setEditingNoteText(activity.description || activity.title || "");
+  };
+
+  const handleSaveEditNote = async () => {
+    if (!editingNoteId || !editingNoteText.trim()) return;
+    setSavingEditNote(true);
+    try {
+      await supabase.from("crm_lead_activities").update({
+        description: editingNoteText.trim(),
+        title: editingNoteText.trim().slice(0, 100),
+      } as any).eq("id", editingNoteId);
+      toast.success("Nota atualizada!");
+      setEditingNoteId(null);
+      setEditingNoteText("");
+      refetchActivities?.();
+    } catch {
+      toast.error("Erro ao atualizar nota");
+    } finally {
+      setSavingEditNote(false);
+    }
+  };
   const canTransferOwnership = role === "admin" || role === "administrativo" || role === "ceo" || profile?.is_master;
+
 
   const handleTransferOwnership = async () => {
     const { data: users } = await supabase
@@ -1054,25 +1081,48 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                     {notes.map((activity) => (
                       <Card key={activity.id}>
                         <CardContent className="p-3">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs text-foreground whitespace-pre-wrap">{renderBoldText(activity.description || activity.title)}</p>
-                              {(activity.metadata as any)?.image_url && (
-                                <img
-                                  src={(activity.metadata as any).image_url}
-                                  alt="Nota"
-                                  className="mt-2 max-h-40 rounded-md border cursor-pointer"
-                                  onClick={() => window.open((activity.metadata as any).image_url, "_blank")}
-                                />
-                              )}
+                          {editingNoteId === activity.id ? (
+                            <div className="space-y-2">
+                              <textarea
+                                className="w-full text-xs border border-border rounded-md p-2 bg-background text-foreground resize-none min-h-[60px]"
+                                value={editingNoteText}
+                                onChange={(e) => setEditingNoteText(e.target.value)}
+                              />
+                              <div className="flex gap-2 justify-end">
+                                <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setEditingNoteId(null)}>Cancelar</Button>
+                                <Button size="sm" className="h-6 text-[10px]" onClick={handleSaveEditNote} disabled={savingEditNote}>
+                                  {savingEditNote ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar"}
+                                </Button>
+                              </div>
                             </div>
-                            <span className="text-[10px] text-muted-foreground shrink-0 ml-3 text-right">
-                              {activity.created_by_name || "Sistema"}
-                            </span>
-                          </div>
-                          <p className="text-[10px] text-primary mt-2">
-                            {formatFullDate(activity.created_at)}
-                          </p>
+                          ) : (
+                            <>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs text-foreground whitespace-pre-wrap">{renderBoldText(activity.description || activity.title)}</p>
+                                  {(activity.metadata as any)?.image_url && (
+                                    <img
+                                      src={(activity.metadata as any).image_url}
+                                      alt="Nota"
+                                      className="mt-2 max-h-40 rounded-md border cursor-pointer"
+                                      onClick={() => window.open((activity.metadata as any).image_url, "_blank")}
+                                    />
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0 ml-3">
+                                  <span className="text-[10px] text-muted-foreground text-right">
+                                    {activity.created_by_name || "Sistema"}
+                                  </span>
+                                  <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => handleEditNote(activity)} title="Editar nota">
+                                    <Edit className="h-3 w-3 text-muted-foreground" />
+                                  </Button>
+                                </div>
+                              </div>
+                              <p className="text-[10px] text-primary mt-2">
+                                {formatFullDate(activity.created_at)}
+                              </p>
+                            </>
+                          )}
                         </CardContent>
                       </Card>
                     ))}
