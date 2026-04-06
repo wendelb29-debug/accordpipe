@@ -290,6 +290,11 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         forecast_date: form.forecast_date,
         source: form.source,
         documento: form.documento,
+        cep: form.comp_cep || null,
+        endereco: form.comp_endereco || null,
+        bairro: form.comp_bairro || null,
+        numero: form.comp_numero || null,
+        complemento: form.comp_complemento || null,
       } as any;
 
       // Detect what changed
