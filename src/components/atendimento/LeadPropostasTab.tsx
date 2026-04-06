@@ -64,6 +64,12 @@ interface ServidorData {
   cidade: string | null;
   estado: string | null;
   cep: string | null;
+  brand_logo_url?: string | null;
+  brand_primary_color?: string | null;
+  brand_secondary_color?: string | null;
+  brand_accent_color?: string | null;
+  brand_bg_color?: string | null;
+  brand_text_color?: string | null;
 }
 
 function ContractPdfViewer({ content, companyName }: { content: string; companyName: string }) {
@@ -175,7 +181,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     if (lead.servidor_id) {
       const { data } = await supabase
         .from("companies")
-        .select("id, razao_social, nome_fantasia, cnpj, responsavel, email, telefone, endereco, numero, bairro, cidade, estado, cep")
+        .select("id, razao_social, nome_fantasia, cnpj, responsavel, email, telefone, endereco, numero, bairro, cidade, estado, cep, brand_logo_url, brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color")
         .eq("id", lead.servidor_id)
         .maybeSingle();
       if (data) setServidorData(data as ServidorData);
