@@ -422,7 +422,8 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
 
     // ===== HEADER WITH LOGO =====
     let logoLoaded = false;
-    if (brandInfo?.logo_url) {
+    const logoUrl = srv?.brand_logo_url || brandInfo?.logo_url;
+    if (logoUrl) {
       try {
         const logoImg = new Image();
         logoImg.crossOrigin = "anonymous";
