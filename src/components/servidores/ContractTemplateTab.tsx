@@ -17,20 +17,22 @@ import { PdfRenderer } from "@/components/contratos/PdfRenderer";
 
 const TEMPLATE_FIELD_TYPES = [
   // Campos do Contrato
-  { type: "valor", label: "Valor", icon: DollarSign, defaultW: 180, defaultH: 36, group: "contrato" },
   { type: "clausula", label: "Cláusula", icon: FileText, defaultW: 400, defaultH: 80, group: "contrato" },
   { type: "assinatura", label: "Assinatura", icon: FileSignature, defaultW: 200, defaultH: 60, group: "contrato" },
   { type: "data", label: "Data", icon: Calendar, defaultW: 140, defaultH: 36, group: "contrato" },
   { type: "plano", label: "Plano", icon: PenTool, defaultW: 200, defaultH: 36, group: "contrato" },
-  // Campos do Cliente (Lead)
-  { type: "nome_cliente", label: "Nome Cliente", icon: Type, defaultW: 200, defaultH: 36, group: "cliente" },
-  { type: "cpf_cnpj", label: "CPF/CNPJ Cliente", icon: Hash, defaultW: 180, defaultH: 36, group: "cliente" },
-  { type: "cliente_email", label: "E-mail Cliente", icon: Mail, defaultW: 220, defaultH: 36, group: "cliente" },
-  { type: "cliente_telefone", label: "Telefone Cliente", icon: Phone, defaultW: 180, defaultH: 36, group: "cliente" },
-  { type: "cliente_endereco", label: "Endereço Cliente", icon: MapPin, defaultW: 320, defaultH: 36, group: "cliente" },
-  { type: "cliente_cidade_uf", label: "Cidade/UF Cliente", icon: Home, defaultW: 200, defaultH: 36, group: "cliente" },
-  { type: "cliente_cep", label: "CEP Cliente", icon: MapPin, defaultW: 140, defaultH: 36, group: "cliente" },
-  { type: "cliente_contato", label: "Contato Cliente", icon: User, defaultW: 200, defaultH: 36, group: "cliente" },
+  // Dados do Cliente (sincronizado com o card de oportunidade)
+  { type: "cpf_cnpj", label: "CNPJ/CPF", icon: Hash, defaultW: 200, defaultH: 36, group: "cliente" },
+  { type: "empresa", label: "Empresa", icon: Type, defaultW: 280, defaultH: 36, group: "cliente" },
+  { type: "nome_cliente", label: "Nome do Cliente", icon: User, defaultW: 220, defaultH: 36, group: "cliente" },
+  { type: "cliente_email", label: "Email", icon: Mail, defaultW: 240, defaultH: 36, group: "cliente" },
+  { type: "cliente_telefone", label: "Telefone", icon: Phone, defaultW: 180, defaultH: 36, group: "cliente" },
+  { type: "valor_ps", label: "Valor P&S", icon: DollarSign, defaultW: 140, defaultH: 36, group: "cliente" },
+  { type: "valor_mrr", label: "Valor MRR", icon: DollarSign, defaultW: 140, defaultH: 36, group: "cliente" },
+  { type: "cliente_cep", label: "CEP", icon: MapPin, defaultW: 140, defaultH: 36, group: "cliente" },
+  { type: "cliente_endereco", label: "Endereço", icon: MapPin, defaultW: 300, defaultH: 36, group: "cliente" },
+  { type: "cliente_numero", label: "Número", icon: Hash, defaultW: 120, defaultH: 36, group: "cliente" },
+  { type: "cliente_complemento", label: "Complemento", icon: Home, defaultW: 160, defaultH: 36, group: "cliente" },
 ];
 
 const SNAP_SIZE = 10;
@@ -252,18 +254,21 @@ export function ContractTemplateTab({ companyId }: Props) {
 
   const FIELD_COLORS: Record<string, string> = {
     valor: "#f59e0b",
+    valor_ps: "#f59e0b",
+    valor_mrr: "#f59e0b",
     clausula: "#8b5cf6",
     assinatura: "#3b82f6",
     nome_cliente: "#22c55e",
     cpf_cnpj: "#ec4899",
+    empresa: "#22c55e",
     data: "#06b6d4",
     plano: "#f97316",
     cliente_email: "#22c55e",
     cliente_telefone: "#22c55e",
     cliente_endereco: "#22c55e",
-    cliente_cidade_uf: "#22c55e",
     cliente_cep: "#22c55e",
-    cliente_contato: "#22c55e",
+    cliente_numero: "#22c55e",
+    cliente_complemento: "#22c55e",
   };
 
   if (loading) {
@@ -344,7 +349,7 @@ export function ContractTemplateTab({ companyId }: Props) {
           </div>
         </div>
         <div>
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Cliente</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Dados do Cliente</span>
           <div className="flex flex-wrap gap-1.5">
             {TEMPLATE_FIELD_TYPES.filter(ft => ft.group === "cliente").map(ft => (
               <Button key={ft.type} variant="outline" size="sm" onClick={() => addField(ft.type)} className="gap-1.5 text-xs h-8" style={{ borderColor: FIELD_COLORS[ft.type] + "80" }}>
