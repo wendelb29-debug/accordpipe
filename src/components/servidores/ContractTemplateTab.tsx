@@ -268,6 +268,21 @@ export function ContractTemplateTab({ companyId }: Props) {
     cpf_cnpj: "#ec4899",
     data: "#06b6d4",
     plano: "#f97316",
+    servidor_razao: "#14b8a6",
+    servidor_fantasia: "#14b8a6",
+    servidor_cnpj: "#14b8a6",
+    servidor_endereco: "#14b8a6",
+    servidor_cidade_uf: "#14b8a6",
+    servidor_cep: "#14b8a6",
+    servidor_telefone: "#14b8a6",
+    servidor_email: "#14b8a6",
+    servidor_responsavel: "#14b8a6",
+    cliente_email: "#22c55e",
+    cliente_telefone: "#22c55e",
+    cliente_endereco: "#22c55e",
+    cliente_cidade_uf: "#22c55e",
+    cliente_cep: "#22c55e",
+    cliente_contato: "#22c55e",
   };
 
   if (loading) {
