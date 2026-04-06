@@ -391,6 +391,94 @@ export type Database = {
           },
         ]
       }
+      company_contract_template_fields: {
+        Row: {
+          created_at: string
+          field_type: string
+          height: number
+          id: string
+          label: string | null
+          page: number
+          pos_x: number
+          pos_y: number
+          required: boolean
+          template_id: string
+          width: number
+        }
+        Insert: {
+          created_at?: string
+          field_type?: string
+          height?: number
+          id?: string
+          label?: string | null
+          page?: number
+          pos_x?: number
+          pos_y?: number
+          required?: boolean
+          template_id: string
+          width?: number
+        }
+        Update: {
+          created_at?: string
+          field_type?: string
+          height?: number
+          id?: string
+          label?: string | null
+          page?: number
+          pos_x?: number
+          pos_y?: number
+          required?: boolean
+          template_id?: string
+          width?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_contract_template_fields_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "company_contract_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_contract_templates: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          name: string
+          pdf_path: string
+          pdf_url: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          name?: string
+          pdf_path: string
+          pdf_url: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          pdf_path?: string
+          pdf_url?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_contract_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contract_signatures: {
         Row: {
           contract_id: string
