@@ -82,6 +82,10 @@ export default function Usuarios() {
   const [editingUser, setEditingUser] = useState<UserWithRole | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [permDialogOpen, setPermDialogOpen] = useState(false);
+  const [permUserId, setPermUserId] = useState<string | null>(null);
+  const [permUserName, setPermUserName] = useState("");
+  const [permUserIsCeo, setPermUserIsCeo] = useState(false);
   const { toast } = useToast();
   const { isMaster, isCeo, activeCompanyId, profile } = useAuth();
   const [allCompanies, setAllCompanies] = useState<{id: string; nome_fantasia: string | null; razao_social: string; cnpj: string}[]>([]);
