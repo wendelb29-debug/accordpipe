@@ -14,7 +14,7 @@ import { NoteEditor } from "./NoteEditor";
 import { LeadPropostasTab } from "./LeadPropostasTab";
 import { LeadContratosTab } from "./LeadContratosTab";
 import { LeadDocsTab } from "./LeadDocsTab";
-import { LeadSimulacaoTab } from "./LeadSimulacaoTab";
+
 import { LeadCadastroTab } from "./LeadCadastroTab";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
