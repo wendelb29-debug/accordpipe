@@ -958,6 +958,11 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                 <TabsTrigger value="docs" className="text-[11px] sm:text-xs gap-1">
                   <Paperclip className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Docs
                 </TabsTrigger>
+                {(isAdminPipeline || role === "administrativo" || role === "admin" || role === "ceo" || profile?.is_master) && (
+                  <TabsTrigger value="pos-venda" className="text-[11px] sm:text-xs gap-1">
+                    <Headphones className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Pós-Venda
+                  </TabsTrigger>
+                )}
                 {(isAdminPipeline || role === "administrativo" || role === "admin") && (
                   <TabsTrigger value="cadastro" className="text-[11px] sm:text-xs gap-1">
                     <ClipboardList className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Cadastro
