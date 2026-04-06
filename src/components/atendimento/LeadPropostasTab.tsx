@@ -895,10 +895,10 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
       );
 
       if (result) {
-        // Get the generated contract to retrieve the link
+        // Get the generated contract to retrieve the link and ID
         const { data: latestContract } = await supabase
           .from("contracts")
-          .select("signature_link")
+          .select("id, signature_link")
           .eq("company_id", companyId)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -906,6 +906,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
 
         const link = latestContract?.signature_link || "";
         setGeneratedContractLink(link);
+        setGeneratedContractId(latestContract?.id || null);
 
         await addActivity({
           type: "signature",
