@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import {
-  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2,
+  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -19,6 +20,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast as sonnerToast } from "sonner";
+import { BrandIdentityFields } from "@/components/empresas/BrandIdentityFields";
+import { CompanyFormData } from "@/components/empresas/types";
 
 interface Company {
   id: string;
@@ -91,7 +94,15 @@ export default function ServidoresTab() {
     cep: "",
     numero: "",
     complemento: "",
+    brandLogoUrl: "",
+    brandLogoPath: "",
+    brandPrimaryColor: "#1E2952",
+    brandSecondaryColor: "#4F46E5",
+    brandAccentColor: "#10B981",
+    brandBgColor: "#F3F4F6",
+    brandTextColor: "#1F2937",
   });
+  const [activeTab, setActiveTab] = useState("cadastro");
 
   useEffect(() => {
     fetchCompanies();
@@ -132,6 +143,8 @@ export default function ServidoresTab() {
     }
   };
 
+  const defaultBrand = { brandLogoUrl: "", brandLogoPath: "", brandPrimaryColor: "#1E2952", brandSecondaryColor: "#4F46E5", brandAccentColor: "#10B981", brandBgColor: "#F3F4F6", brandTextColor: "#1F2937" };
+
   const handleOpenDialog = (company?: Company) => {
     if (company) {
       setEditingCompany(company);
@@ -149,11 +162,19 @@ export default function ServidoresTab() {
         cep: company.cep || "",
         numero: company.numero || "",
         complemento: company.complemento || "",
+        brandLogoUrl: (company as any).brand_logo_url || "",
+        brandLogoPath: (company as any).brand_logo_path || "",
+        brandPrimaryColor: (company as any).brand_primary_color || "#1E2952",
+        brandSecondaryColor: (company as any).brand_secondary_color || "#4F46E5",
+        brandAccentColor: (company as any).brand_accent_color || "#10B981",
+        brandBgColor: (company as any).brand_bg_color || "#F3F4F6",
+        brandTextColor: (company as any).brand_text_color || "#1F2937",
       });
     } else {
       setEditingCompany(null);
-      setFormData({ razao_social: "", nome_fantasia: "", cnpj: "", email: "", telefone: "", responsavel: "", cidade: "", estado: "", endereco: "", bairro: "", cep: "", numero: "", complemento: "" });
+      setFormData({ razao_social: "", nome_fantasia: "", cnpj: "", email: "", telefone: "", responsavel: "", cidade: "", estado: "", endereco: "", bairro: "", cep: "", numero: "", complemento: "", ...defaultBrand });
     }
+    setActiveTab("cadastro");
     setDialogOpen(true);
   };
 
@@ -237,6 +258,13 @@ export default function ServidoresTab() {
         cep: formData.cep || null,
         numero: formData.numero || null,
         complemento: formData.complemento || null,
+        brand_logo_url: formData.brandLogoUrl || null,
+        brand_logo_path: formData.brandLogoPath || null,
+        brand_primary_color: formData.brandPrimaryColor,
+        brand_secondary_color: formData.brandSecondaryColor,
+        brand_accent_color: formData.brandAccentColor,
+        brand_bg_color: formData.brandBgColor,
+        brand_text_color: formData.brandTextColor,
       };
 
       if (editingCompany) {
@@ -432,7 +460,7 @@ export default function ServidoresTab() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>{editingCompany ? "Editar Servidor" : "Novo Servidor"}</DialogTitle>
             <DialogDescription>
@@ -442,112 +470,166 @@ export default function ServidoresTab() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4">
-            {/* CNPJ with search */}
-            <div className="space-y-2">
-              <Label>CNPJ *</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={formData.cnpj}
-                  onChange={(e) => setFormData({ ...formData, cnpj: formatCnpj(e.target.value) })}
-                  placeholder="00.000.000/0000-00"
-                  className="flex-1"
-                  disabled={!!editingCompany && !isMaster}
-                />
-                {(!editingCompany || isMaster) && (
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    onClick={handleCnpjSearch}
-                    disabled={cnpjLoading}
-                    className="shrink-0"
-                    title="Buscar dados pelo CNPJ"
-                  >
-                    {cnpjLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                  </Button>
-                )}
-              </div>
-            </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="cadastro" className="gap-2">
+                <Building2 className="h-4 w-4" />
+                Dados Cadastrais
+              </TabsTrigger>
+              <TabsTrigger value="identidade" className="gap-2">
+                <Palette className="h-4 w-4" />
+                Identidade Visual
+              </TabsTrigger>
+            </TabsList>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Razão Social *</Label>
-                <Input value={formData.razao_social} onChange={(e) => setFormData({ ...formData, razao_social: e.target.value })} placeholder="Razão Social" />
-              </div>
-              <div className="space-y-2">
-                <Label>Nome Fantasia</Label>
-                <Input value={formData.nome_fantasia} onChange={(e) => setFormData({ ...formData, nome_fantasia: e.target.value })} placeholder="Nome Fantasia" />
-              </div>
-            </div>
+            <div className="flex-1 overflow-y-auto py-4">
+              <TabsContent value="cadastro" className="mt-0">
+                <div className="grid gap-4">
+                  {/* CNPJ with search */}
+                  <div className="space-y-2">
+                    <Label>CNPJ *</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={formData.cnpj}
+                        onChange={(e) => setFormData({ ...formData, cnpj: formatCnpj(e.target.value) })}
+                        placeholder="00.000.000/0000-00"
+                        className="flex-1"
+                        disabled={!!editingCompany && !isMaster}
+                      />
+                      {(!editingCompany || isMaster) && (
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          onClick={handleCnpjSearch}
+                          disabled={cnpjLoading}
+                          className="shrink-0"
+                          title="Buscar dados pelo CNPJ"
+                        >
+                          {cnpjLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Responsável</Label>
-                <Input value={formData.responsavel} onChange={(e) => setFormData({ ...formData, responsavel: e.target.value })} placeholder="Nome do responsável" />
-              </div>
-              <div className="space-y-2">
-                <Label>E-mail</Label>
-                <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="email@empresa.com" />
-              </div>
-            </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Razão Social *</Label>
+                      <Input value={formData.razao_social} onChange={(e) => setFormData({ ...formData, razao_social: e.target.value })} placeholder="Razão Social" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Nome Fantasia</Label>
+                      <Input value={formData.nome_fantasia} onChange={(e) => setFormData({ ...formData, nome_fantasia: e.target.value })} placeholder="Nome Fantasia" />
+                    </div>
+                  </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Telefone</Label>
-                <Input value={formData.telefone} onChange={(e) => setFormData({ ...formData, telefone: formatPhone(e.target.value) })} placeholder="(00) 00000-0000" />
-              </div>
-              <div className="space-y-2">
-                <Label>CEP</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={formData.cep}
-                    onChange={(e) => {
-                      const formatted = formatCep(e.target.value);
-                      setFormData({ ...formData, cep: formatted });
-                      if (cleanDigits(formatted).length === 8) {
-                        handleCepSearch(formatted);
-                      }
-                    }}
-                    placeholder="00000-000"
-                    className="flex-1"
-                  />
-                  {cepLoading && <Loader2 className="h-4 w-4 animate-spin self-center text-muted-foreground" />}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Responsável</Label>
+                      <Input value={formData.responsavel} onChange={(e) => setFormData({ ...formData, responsavel: e.target.value })} placeholder="Nome do responsável" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>E-mail</Label>
+                      <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="email@empresa.com" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Telefone</Label>
+                      <Input value={formData.telefone} onChange={(e) => setFormData({ ...formData, telefone: formatPhone(e.target.value) })} placeholder="(00) 00000-0000" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>CEP</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          value={formData.cep}
+                          onChange={(e) => {
+                            const formatted = formatCep(e.target.value);
+                            setFormData({ ...formData, cep: formatted });
+                            if (cleanDigits(formatted).length === 8) {
+                              handleCepSearch(formatted);
+                            }
+                          }}
+                          placeholder="00000-000"
+                          className="flex-1"
+                        />
+                        {cepLoading && <Loader2 className="h-4 w-4 animate-spin self-center text-muted-foreground" />}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-4">
+                    <div className="space-y-2 col-span-2">
+                      <Label>Endereço</Label>
+                      <Input value={formData.endereco} onChange={(e) => setFormData({ ...formData, endereco: e.target.value })} placeholder="Rua, Avenida..." />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Número</Label>
+                      <Input value={formData.numero} onChange={(e) => setFormData({ ...formData, numero: e.target.value })} placeholder="Nº" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Complemento</Label>
+                      <Input value={formData.complemento} onChange={(e) => setFormData({ ...formData, complemento: e.target.value })} placeholder="Sala, Andar..." />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Bairro</Label>
+                      <Input value={formData.bairro} onChange={(e) => setFormData({ ...formData, bairro: e.target.value })} placeholder="Bairro" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Cidade</Label>
+                      <Input value={formData.cidade} onChange={(e) => setFormData({ ...formData, cidade: e.target.value })} placeholder="Cidade" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Estado</Label>
+                      <Input value={formData.estado} onChange={(e) => setFormData({ ...formData, estado: e.target.value.toUpperCase() })} placeholder="UF" maxLength={2} />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </TabsContent>
 
-            <div className="grid grid-cols-4 gap-4">
-              <div className="space-y-2 col-span-2">
-                <Label>Endereço</Label>
-                <Input value={formData.endereco} onChange={(e) => setFormData({ ...formData, endereco: e.target.value })} placeholder="Rua, Avenida..." />
-              </div>
-              <div className="space-y-2">
-                <Label>Número</Label>
-                <Input value={formData.numero} onChange={(e) => setFormData({ ...formData, numero: e.target.value })} placeholder="Nº" />
-              </div>
-              <div className="space-y-2">
-                <Label>Complemento</Label>
-                <Input value={formData.complemento} onChange={(e) => setFormData({ ...formData, complemento: e.target.value })} placeholder="Sala, Andar..." />
-              </div>
+              <TabsContent value="identidade" className="mt-0">
+                <BrandIdentityFields
+                  formData={{
+                    cnpj: formData.cnpj,
+                    razaoSocial: formData.razao_social,
+                    nomeFantasia: formData.nome_fantasia,
+                    responsavel: formData.responsavel,
+                    email: formData.email,
+                    telefone: formData.telefone,
+                    cep: formData.cep,
+                    endereco: formData.endereco,
+                    numero: formData.numero,
+                    complemento: formData.complemento,
+                    bairro: formData.bairro,
+                    cidade: formData.cidade,
+                    estado: formData.estado,
+                    brandLogoUrl: formData.brandLogoUrl,
+                    brandLogoPath: formData.brandLogoPath,
+                    brandPrimaryColor: formData.brandPrimaryColor,
+                    brandSecondaryColor: formData.brandSecondaryColor,
+                    brandAccentColor: formData.brandAccentColor,
+                    brandBgColor: formData.brandBgColor,
+                    brandTextColor: formData.brandTextColor,
+                  }}
+                  onChange={(d) => setFormData({
+                    ...formData,
+                    brandLogoUrl: d.brandLogoUrl,
+                    brandLogoPath: d.brandLogoPath,
+                    brandPrimaryColor: d.brandPrimaryColor,
+                    brandSecondaryColor: d.brandSecondaryColor,
+                    brandAccentColor: d.brandAccentColor,
+                    brandBgColor: d.brandBgColor,
+                    brandTextColor: d.brandTextColor,
+                  })}
+                />
+              </TabsContent>
             </div>
+          </Tabs>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Bairro</Label>
-                <Input value={formData.bairro} onChange={(e) => setFormData({ ...formData, bairro: e.target.value })} placeholder="Bairro" />
-              </div>
-              <div className="space-y-2">
-                <Label>Cidade</Label>
-                <Input value={formData.cidade} onChange={(e) => setFormData({ ...formData, cidade: e.target.value })} placeholder="Cidade" />
-              </div>
-              <div className="space-y-2">
-                <Label>Estado</Label>
-                <Input value={formData.estado} onChange={(e) => setFormData({ ...formData, estado: e.target.value.toUpperCase() })} placeholder="UF" maxLength={2} />
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
+          <DialogFooter className="border-t border-border pt-4">
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>Cancelar</Button>
             <Button onClick={handleSave} disabled={isSubmitting}>
               {isSubmitting ? "Salvando..." : editingCompany ? "Salvar" : "Criar Servidor"}
