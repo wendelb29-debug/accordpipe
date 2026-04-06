@@ -3,13 +3,11 @@ import { useTheme } from "next-themes";
 import { useAuth } from "@/contexts/AuthContext";
 
 /**
- * Syncs the theme with user profile preference.
- * - Forces "light" when no user is logged in (public pages).
- * - Applies user's saved theme after login.
- * - Adds a transitioning class for smooth CSS transitions.
+ * Syncs the next-themes state with the theme already applied by AuthContext.
+ * This is lightweight — AuthContext handles the actual DOM class changes.
  */
 export function ThemeSync() {
-  const { setTheme, theme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
   const { user, profile, loading } = useAuth();
 
   useLayoutEffect(() => {
@@ -19,21 +17,17 @@ export function ThemeSync() {
 
     if (!user) {
       targetTheme = "light";
-    } else if (profile) {
-      targetTheme = profile.theme || "light";
+    } else if (profile?.theme) {
+      targetTheme = profile.theme;
     } else {
-      return;
+      targetTheme = "light";
     }
 
-    if (theme !== targetTheme) {
-      document.documentElement.classList.add("transitioning");
+    // Only update next-themes if it differs (avoids re-renders)
+    if (resolvedTheme !== targetTheme) {
       setTheme(targetTheme);
-      const timer = setTimeout(() => {
-        document.documentElement.classList.remove("transitioning");
-      }, 350);
-      return () => clearTimeout(timer);
     }
-  }, [user, profile, loading, setTheme, theme]);
+  }, [user, profile, loading, setTheme, resolvedTheme]);
 
   return null;
 }
