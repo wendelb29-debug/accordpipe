@@ -376,6 +376,13 @@ export type Database = {
           zapi_instance_id: string | null
           zapi_phone: string | null
           zapi_token: string | null
+          zapi_webhook_chat_presence: string | null
+          zapi_webhook_message_status: string | null
+          zapi_webhook_notify_me: boolean | null
+          zapi_webhook_on_connect: string | null
+          zapi_webhook_on_disconnect: string | null
+          zapi_webhook_on_receive: string | null
+          zapi_webhook_on_send: string | null
         }
         Insert: {
           bairro?: string | null
@@ -412,6 +419,13 @@ export type Database = {
           zapi_instance_id?: string | null
           zapi_phone?: string | null
           zapi_token?: string | null
+          zapi_webhook_chat_presence?: string | null
+          zapi_webhook_message_status?: string | null
+          zapi_webhook_notify_me?: boolean | null
+          zapi_webhook_on_connect?: string | null
+          zapi_webhook_on_disconnect?: string | null
+          zapi_webhook_on_receive?: string | null
+          zapi_webhook_on_send?: string | null
         }
         Update: {
           bairro?: string | null
@@ -448,6 +462,13 @@ export type Database = {
           zapi_instance_id?: string | null
           zapi_phone?: string | null
           zapi_token?: string | null
+          zapi_webhook_chat_presence?: string | null
+          zapi_webhook_message_status?: string | null
+          zapi_webhook_notify_me?: boolean | null
+          zapi_webhook_on_connect?: string | null
+          zapi_webhook_on_disconnect?: string | null
+          zapi_webhook_on_receive?: string | null
+          zapi_webhook_on_send?: string | null
         }
         Relationships: [
           {
