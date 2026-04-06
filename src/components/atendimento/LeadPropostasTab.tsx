@@ -1110,29 +1110,66 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
         </div>
 
         {isTemplateMode ? (
-          <div className="rounded-lg border border-border overflow-hidden bg-muted/20" style={{ height: "650px" }}>
-            <iframe
-              src={`${templatePdfUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`}
-              className="w-full h-full"
-              title="Visualização do contrato PDF"
-              style={{ border: "none" }}
-            />
+          <div className="space-y-3">
+            <div className="relative rounded-lg border border-border overflow-auto bg-muted/20" style={{ maxHeight: 650 }}>
+              <div className="relative inline-block">
+                <PdfRenderer
+                  pdfUrl={templatePdfUrl}
+                  currentPage={templateCurrentPage}
+                  onTotalPages={setTemplateTotalPages}
+                  scale={1.2}
+                />
+                {templateFields
+                  .filter((f: any) => f.page === templateCurrentPage)
+                  .map((f: any) => {
+                    const value = resolveFieldValue(f.field_type);
+                    const isLogo = f.field_type === "servidor_logo";
+                    return (
+                      <div
+                        key={f.id}
+                        className="absolute border border-primary/30 bg-background/90 rounded px-1 overflow-hidden flex items-center"
+                        style={{
+                          left: f.pos_x * 1.2,
+                          top: f.pos_y * 1.2,
+                          width: f.width * 1.2,
+                          height: f.height * 1.2,
+                          fontSize: Math.min(f.height * 0.55, 13),
+                        }}
+                      >
+                        {isLogo && value ? (
+                          <img src={value} alt="Logo" className="h-full w-auto object-contain" />
+                        ) : (
+                          <span className="text-foreground whitespace-pre-wrap leading-tight" style={{ fontSize: f.field_type === "campo_proposta" || f.field_type === "clausula" ? 8 : 11, lineHeight: "1.3" }}>
+                            {value}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+            {templateTotalPages > 1 && (
+              <div className="flex items-center justify-center gap-2">
+                <Button variant="outline" size="icon" className="h-7 w-7" disabled={templateCurrentPage <= 1} onClick={() => setTemplateCurrentPage(p => p - 1)}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-xs text-muted-foreground">{templateCurrentPage} / {templateTotalPages}</span>
+                <Button variant="outline" size="icon" className="h-7 w-7" disabled={templateCurrentPage >= templateTotalPages} onClick={() => setTemplateCurrentPage(p => p + 1)}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => {
+                window.open(templatePdfUrl, '_blank');
+              }}>
+                <Download className="h-3.5 w-3.5" /> Imprimir / Baixar PDF
+              </Button>
+            </div>
           </div>
         ) : (
           <ContractPdfViewer content={contractPreview} companyName={lead.company_name} />
         )}
-
-        <div className="flex gap-2 justify-end">
-          <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => {
-            const url = isTemplateMode ? templatePdfUrl : undefined;
-            if (url) {
-              const w = window.open(url, '_blank');
-              if (w) setTimeout(() => w.print(), 800);
-            }
-          }}>
-            <Download className="h-3.5 w-3.5" /> Imprimir
-          </Button>
-        </div>
 
         <div className="rounded-lg border border-border p-3 space-y-1">
           <p className="text-xs font-semibold text-foreground">Dados do Cliente</p>
