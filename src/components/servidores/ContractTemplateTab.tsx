@@ -253,13 +253,21 @@ export function ContractTemplateTab({ companyId }: Props) {
   const selectedField = fields.find(f => f.id === selectedFieldId);
 
   const FIELD_COLORS: Record<string, string> = {
-    servidor_logo: "#a855f7",
-    servidor_cnpj: "#ec4899",
-    servidor_empresa: "#8b5cf6",
-    servidor_endereco: "#06b6d4",
-    campo_proposta: "#f97316",
-    valor_mrr: "#f59e0b",
+    clausula: "#a855f7",
     assinatura: "#3b82f6",
+    data: "#06b6d4",
+    plano: "#8b5cf6",
+    cnpj_cpf: "#ec4899",
+    empresa: "#8b5cf6",
+    nome_cliente: "#10b981",
+    cliente_email: "#06b6d4",
+    cliente_telefone: "#f97316",
+    valor_ps: "#f59e0b",
+    valor_mrr: "#f59e0b",
+    cliente_cep: "#14b8a6",
+    cliente_endereco: "#14b8a6",
+    cliente_numero: "#14b8a6",
+    cliente_complemento: "#14b8a6",
   };
 
   if (loading) {
