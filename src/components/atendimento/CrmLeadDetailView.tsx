@@ -618,7 +618,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
       setSavingEditNote(false);
     }
   };
-
+  const canTransferOwnership = role === "admin" || role === "administrativo" || role === "ceo" || profile?.is_master;
 
 
   const handleTransferOwnership = async () => {
