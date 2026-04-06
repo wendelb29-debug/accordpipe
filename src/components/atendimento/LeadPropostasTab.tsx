@@ -425,33 +425,38 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
 
     y = Math.max(y, cy) + 5;
 
-    // ===== ROW 3: Bordered box with Dados da pessoa + Dados da empresa =====
+    // ===== ROW 3: Bordered box with Dados da pessoa + Dados da empresa (PF/PJ) =====
     const boxY = y;
-    const halfWidth = usable / 2;
     const colPadding = 3;
-    const maxTextWidth = halfWidth - colPadding * 2;
+
+    // Determine if PJ: has company data with CNPJ
+    const isPJ = !!(comp?.cnpj);
+    const halfWidth = isPJ ? usable / 2 : usable;
+    const maxTextWidth = isPJ ? (halfWidth - colPadding * 2) : (usable - colPadding * 2);
 
     // Collect left column lines (Dados da pessoa)
     const leftLines: { text: string; bold?: boolean; header?: boolean }[] = [];
     leftLines.push({ text: "Dados da pessoa", header: true });
-    leftLines.push({ text: lead.contact_name || "Não informado", bold: true });
+    if (lead.contact_name) leftLines.push({ text: lead.contact_name, bold: true });
     if (lead.documento) leftLines.push({ text: `CPF/CNPJ: ${lead.documento}` });
-    if (lead.email) leftLines.push({ text: `E-mails: ${lead.email}` });
-    if (lead.phone) leftLines.push({ text: `Telefones: ${lead.phone}` });
+    if (lead.email) leftLines.push({ text: `E-mail: ${lead.email}` });
+    if (lead.phone) leftLines.push({ text: `Telefone: ${lead.phone}` });
 
-    // Collect right column lines (Dados da empresa)
+    // Collect right column lines (Dados da empresa) — only if PJ
     const rightLines: { text: string; bold?: boolean; header?: boolean }[] = [];
-    rightLines.push({ text: "Dados da empresa", header: true });
-    if (comp?.razao_social) rightLines.push({ text: `Razão social: ${comp.razao_social}`, bold: true });
-    if (comp?.nome_fantasia) rightLines.push({ text: `Nome empresa: ${comp.nome_fantasia}` });
-    if (comp?.cnpj) rightLines.push({ text: `CNPJ: ${comp.cnpj}` });
-    if (comp?.email) rightLines.push({ text: `E-mails: ${comp.email}` });
-    if (comp?.telefone) rightLines.push({ text: `Telefones: ${comp.telefone}` });
-    const compAddr = [comp?.endereco, comp?.numero].filter(Boolean).join(", ");
-    const compAddr2 = [comp?.bairro, comp?.cidade && comp?.estado ? `${comp.cidade}/${comp.estado}` : null].filter(Boolean).join(" ");
-    const compCep = comp?.cep ? `CEP ${comp.cep}` : "";
-    const fullAddr = [compAddr, compAddr2, compCep].filter(Boolean).join("\n");
-    if (fullAddr) rightLines.push({ text: `Endereço: ${fullAddr.replace(/\n/g, " ")}` });
+    if (isPJ) {
+      rightLines.push({ text: "Dados da empresa", header: true });
+      if (comp?.razao_social) rightLines.push({ text: comp.razao_social, bold: true });
+      if (comp?.nome_fantasia) rightLines.push({ text: `Nome fantasia: ${comp.nome_fantasia}` });
+      if (comp?.cnpj) rightLines.push({ text: `CNPJ: ${comp.cnpj}` });
+      if (comp?.email) rightLines.push({ text: `E-mail: ${comp.email}` });
+      if (comp?.telefone) rightLines.push({ text: `Telefone: ${comp.telefone}` });
+      const compAddr = [comp?.endereco, comp?.numero].filter(Boolean).join(", ");
+      const compAddr2 = [comp?.bairro, comp?.cidade && comp?.estado ? `${comp.cidade}/${comp.estado}` : null].filter(Boolean).join(" ");
+      const compCep = comp?.cep ? `CEP ${comp.cep}` : "";
+      const fullAddr = [compAddr, compAddr2, compCep].filter(Boolean).join(" - ");
+      if (fullAddr) rightLines.push({ text: `Endereço: ${fullAddr}` });
+    }
 
     // Calculate dynamic box height
     const lineH = 4;
@@ -459,29 +464,30 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     const boxPaddingTop = 5;
     const boxPaddingBottom = 4;
 
-    const calcColHeight = (lines: typeof leftLines) => {
+    const calcColHeight = (lines: typeof leftLines, tw: number) => {
       let h = boxPaddingTop;
       for (const line of lines) {
         if (line.header) { h += headerH; }
         else {
-          // Wrap long text
           pdf.setFontSize(line.bold ? 9 : 8);
-          const wrapped = pdf.splitTextToSize(line.text, maxTextWidth);
+          const wrapped = pdf.splitTextToSize(line.text, tw);
           h += wrapped.length * lineH;
         }
       }
       return h + boxPaddingBottom;
     };
 
-    const leftH = calcColHeight(leftLines);
-    const rightH = calcColHeight(rightLines);
+    const leftH = calcColHeight(leftLines, maxTextWidth);
+    const rightH = isPJ ? calcColHeight(rightLines, halfWidth - colPadding * 2) : 0;
     const boxHeight = Math.max(leftH, rightH);
 
     // Draw box
     pdf.setDrawColor(180);
     pdf.setLineWidth(0.3);
     pdf.rect(mL, boxY, usable, boxHeight);
-    pdf.line(mL + halfWidth, boxY, mL + halfWidth, boxY + boxHeight);
+    if (isPJ) {
+      pdf.line(mL + halfWidth, boxY, mL + halfWidth, boxY + boxHeight);
+    }
 
     // Render left column
     let ly = boxY + boxPaddingTop;
@@ -499,20 +505,23 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
       }
     }
 
-    // Render right column
-    const rColX = mL + halfWidth + colPadding;
-    let ry = boxY + boxPaddingTop;
-    for (const line of rightLines) {
-      if (line.header) {
-        pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setTextColor(120);
-        pdf.text(line.text, rColX, ry);
-        pdf.setTextColor(0);
-        ry += headerH;
-      } else {
-        pdf.setFont("helvetica", line.bold ? "bold" : "normal");
-        pdf.setFontSize(line.bold ? 9 : 8);
-        const wrapped = pdf.splitTextToSize(line.text, maxTextWidth);
-        for (const w of wrapped) { pdf.text(w, rColX, ry); ry += lineH; }
+    // Render right column (only if PJ)
+    if (isPJ && rightLines.length > 0) {
+      const rColX = mL + halfWidth + colPadding;
+      const rMaxW = halfWidth - colPadding * 2;
+      let ry = boxY + boxPaddingTop;
+      for (const line of rightLines) {
+        if (line.header) {
+          pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setTextColor(120);
+          pdf.text(line.text, rColX, ry);
+          pdf.setTextColor(0);
+          ry += headerH;
+        } else {
+          pdf.setFont("helvetica", line.bold ? "bold" : "normal");
+          pdf.setFontSize(line.bold ? 9 : 8);
+          const wrapped = pdf.splitTextToSize(line.text, rMaxW);
+          for (const w of wrapped) { pdf.text(w, rColX, ry); ry += lineH; }
+        }
       }
     }
 
