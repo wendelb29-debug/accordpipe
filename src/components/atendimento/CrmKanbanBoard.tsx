@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Clock, Users, MessageSquare, Phone, RefreshCw, FileSignature,
   MoreVertical, Trash2, Edit, Loader2,
-  Plus, Sparkles, Link2, Check, Tag, Search, Filter, CalendarClock, AlertTriangle
+  Plus, Sparkles, Link2, Check, Tag, Search, Filter, CalendarClock, AlertTriangle, CheckCircle
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -96,6 +96,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const [availableTags, setAvailableTags] = useState<{ id: string; name: string; color: string }[]>([]);
   const [leadsWithActivity, setLeadsWithActivity] = useState<Set<string>>(new Set());
   const [nextActivities, setNextActivities] = useState<Record<string, string>>({});
+  const [lastCompletedActivities, setLastCompletedActivities] = useState<Record<string, string>>({});
 
   // Drag-to-scroll
   const pipelineRef = useRef<HTMLDivElement>(null);
@@ -161,14 +162,26 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
       if (data) {
         const withActivity = new Set<string>();
         const nextAct: Record<string, string> = {};
+        const lastCompleted: Record<string, string> = {};
+        const scheduledTypes = ["internal", "email", "call", "meeting", "whatsapp"];
         for (const activity of data) {
-          if (!withActivity.has(activity.lead_id)) {
+          const meta = activity.metadata as any;
+          const status = meta?.activity_status || "planejada";
+          const isScheduled = scheduledTypes.includes(activity.type);
+          if (isScheduled && status === "planejada") {
+            if (!withActivity.has(activity.lead_id)) {
+              nextAct[activity.lead_id] = activity.title;
+            }
             withActivity.add(activity.lead_id);
-            nextAct[activity.lead_id] = activity.title;
+          }
+          // Track last completed activity per lead
+          if (isScheduled && status === "concluida" && !lastCompleted[activity.lead_id]) {
+            lastCompleted[activity.lead_id] = activity.title;
           }
         }
         setLeadsWithActivity(withActivity);
         setNextActivities(nextAct);
+        setLastCompletedActivities(lastCompleted);
       }
     };
     fetchActivityStatus();
@@ -553,6 +566,12 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                         <div className="flex items-center gap-1 mt-2 text-[10px] text-muted-foreground">
                           <CalendarClock className="h-3 w-3" />
                           <span className="truncate">{nextActivities[lead.id]}</span>
+                        </div>
+                      )}
+                      {noActivity && lastCompletedActivities[lead.id] && (
+                        <div className="flex items-center gap-1 mt-2 text-[10px] text-muted-foreground">
+                          <CheckCircle className="h-3 w-3 text-emerald-500" />
+                          <span className="truncate">Atividade concluída: {lastCompletedActivities[lead.id]}</span>
                         </div>
                       )}
 
