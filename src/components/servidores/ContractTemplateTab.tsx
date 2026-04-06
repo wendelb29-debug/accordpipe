@@ -350,20 +350,40 @@ export function ContractTemplateTab({ companyId }: Props) {
       </div>
 
       {/* Field palette */}
-      <div className="flex flex-wrap gap-1.5">
-        {TEMPLATE_FIELD_TYPES.map(ft => (
-          <Button
-            key={ft.type}
-            variant="outline"
-            size="sm"
-            onClick={() => addField(ft.type)}
-            className="gap-1.5 text-xs h-8"
-            style={{ borderColor: FIELD_COLORS[ft.type] + "80" }}
-          >
-            <ft.icon className="h-3.5 w-3.5" style={{ color: FIELD_COLORS[ft.type] }} />
-            {ft.label}
-          </Button>
-        ))}
+      <div className="space-y-2">
+        <div>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Contrato</span>
+          <div className="flex flex-wrap gap-1.5">
+            {TEMPLATE_FIELD_TYPES.filter(ft => ft.group === "contrato").map(ft => (
+              <Button key={ft.type} variant="outline" size="sm" onClick={() => addField(ft.type)} className="gap-1.5 text-xs h-8" style={{ borderColor: FIELD_COLORS[ft.type] + "80" }}>
+                <ft.icon className="h-3.5 w-3.5" style={{ color: FIELD_COLORS[ft.type] }} />
+                {ft.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Servidor</span>
+          <div className="flex flex-wrap gap-1.5">
+            {TEMPLATE_FIELD_TYPES.filter(ft => ft.group === "servidor").map(ft => (
+              <Button key={ft.type} variant="outline" size="sm" onClick={() => addField(ft.type)} className="gap-1.5 text-xs h-8" style={{ borderColor: FIELD_COLORS[ft.type] + "80" }}>
+                <ft.icon className="h-3.5 w-3.5" style={{ color: FIELD_COLORS[ft.type] }} />
+                {ft.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Cliente</span>
+          <div className="flex flex-wrap gap-1.5">
+            {TEMPLATE_FIELD_TYPES.filter(ft => ft.group === "cliente").map(ft => (
+              <Button key={ft.type} variant="outline" size="sm" onClick={() => addField(ft.type)} className="gap-1.5 text-xs h-8" style={{ borderColor: FIELD_COLORS[ft.type] + "80" }}>
+                <ft.icon className="h-3.5 w-3.5" style={{ color: FIELD_COLORS[ft.type] }} />
+                {ft.label}
+              </Button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Toolbar */}
