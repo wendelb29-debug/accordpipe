@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
-import { useTheme } from "next-themes";
+import { useState, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,17 +31,20 @@ const roleLabels: Record<string, string> = {
 
 export function Header() {
   const { profile, role, signOut, loading } = useAuth();
-  const { resolvedTheme, setTheme } = useTheme();
+  const [currentTheme, setCurrentTheme] = useState(() => document.documentElement.classList.contains("dark") ? "dark" : "light");
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
   const handleThemeToggle = async () => {
-    const newTheme = resolvedTheme === "dark" ? "light" : "dark";
-    // Instant DOM update
+    const newTheme = currentTheme === "dark" ? "light" : "dark";
+    // Enable smooth transition
+    document.documentElement.classList.add("theme-transition");
     document.documentElement.classList.remove("light", "dark");
     document.documentElement.classList.add(newTheme);
     localStorage.setItem("theme", newTheme);
-    setTheme(newTheme);
+    setCurrentTheme(newTheme);
+    // Remove transition class after animation completes
+    setTimeout(() => document.documentElement.classList.remove("theme-transition"), 200);
     // Persist to DB (non-blocking)
     if (profile) {
       supabase.from("profiles").update({ theme: newTheme } as any).eq("id", profile.id).then(() => {});
@@ -69,7 +72,7 @@ export function Header() {
           className="rounded-xl h-9 w-9 text-muted-foreground hover:text-foreground"
           onClick={handleThemeToggle}
         >
-          {resolvedTheme === "dark" ? <Sun className="h-[17px] w-[17px]" /> : <Moon className="h-[17px] w-[17px]" />}
+          {currentTheme === "dark" ? <Sun className="h-[17px] w-[17px]" /> : <Moon className="h-[17px] w-[17px]" />}
         </Button>
 
         <NotificationBell />

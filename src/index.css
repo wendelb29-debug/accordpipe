@@ -125,6 +125,14 @@
     @apply border-border;
   }
 
+  /* Smooth theme transitions (excludes initial load) */
+  html.theme-transition,
+  html.theme-transition *,
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease !important;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;

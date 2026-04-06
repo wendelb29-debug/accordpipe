@@ -1,16 +1,14 @@
-import { useLayoutEffect } from "react";
-import { useTheme } from "next-themes";
+import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 /**
- * Syncs the next-themes state with the theme already applied by AuthContext.
- * This is lightweight — AuthContext handles the actual DOM class changes.
+ * Syncs the user's theme preference from their profile to the DOM.
+ * Manipulates DOM directly to avoid re-renders. No next-themes dependency.
  */
 export function ThemeSync() {
-  const { setTheme, resolvedTheme } = useTheme();
   const { user, profile, loading } = useAuth();
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (loading) return;
 
     let targetTheme: string;
@@ -23,11 +21,15 @@ export function ThemeSync() {
       targetTheme = "light";
     }
 
-    // Only update next-themes if it differs (avoids re-renders)
-    if (resolvedTheme !== targetTheme) {
-      setTheme(targetTheme);
+    const html = document.documentElement;
+    const current = html.classList.contains("dark") ? "dark" : "light";
+
+    if (current !== targetTheme) {
+      html.classList.remove("light", "dark");
+      html.classList.add(targetTheme);
+      localStorage.setItem("theme", targetTheme);
     }
-  }, [user, profile, loading, setTheme, resolvedTheme]);
+  }, [user, profile, loading]);
 
   return null;
 }
