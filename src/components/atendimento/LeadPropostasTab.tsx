@@ -86,8 +86,45 @@ function ContractPdfViewer({ content, companyName }: { content: string; companyN
   }, [pdfUrl]);
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden" style={{ height: "500px" }}>
-      <iframe src={pdfUrl} className="w-full h-full" title="Visualização do contrato" />
+    <div className="rounded-lg border border-border overflow-hidden bg-muted/20" style={{ height: "600px" }}>
+      <iframe
+        src={`${pdfUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`}
+        className="w-full h-full"
+        title="Visualização do contrato"
+        style={{ border: "none" }}
+      />
+    </div>
+  );
+}
+
+function TemplatePdfFullViewer({ pdfUrl, onClose }: { pdfUrl: string; onClose: () => void }) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <Eye className="h-4 w-4 text-primary" />
+          Pré-visualização do Contrato
+        </h3>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => {
+            const w = window.open(pdfUrl, '_blank');
+            if (w) setTimeout(() => w.print(), 800);
+          }}>
+            <Download className="h-3.5 w-3.5" /> Imprimir
+          </Button>
+          <Button variant="ghost" size="sm" className="text-xs" onClick={onClose}>
+            Voltar
+          </Button>
+        </div>
+      </div>
+      <div className="rounded-lg border border-border overflow-hidden bg-muted/20" style={{ height: "650px" }}>
+        <iframe
+          src={`${pdfUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`}
+          className="w-full h-full"
+          title="Visualização do contrato PDF"
+          style={{ border: "none" }}
+        />
+      </div>
     </div>
   );
 }
@@ -1073,63 +1110,29 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
         </div>
 
         {isTemplateMode ? (
-          <div className="space-y-3">
-            {/* PDF Template Viewer with overlaid fields */}
-            <div className="relative rounded-lg border border-border overflow-hidden bg-muted/30" style={{ minHeight: 500 }}>
-              <div className="relative inline-block">
-                <PdfRenderer
-                  pdfUrl={templatePdfUrl}
-                  currentPage={templateCurrentPage}
-                  onTotalPages={setTemplateTotalPages}
-                  scale={1.0}
-                />
-                {/* Overlay resolved field values */}
-                {templateFields
-                  .filter((f: any) => f.page === templateCurrentPage)
-                  .map((f: any) => {
-                    const value = resolveFieldValue(f.field_type);
-                    const isLogo = f.field_type === "servidor_logo";
-                    return (
-                      <div
-                        key={f.id}
-                        className="absolute border border-primary/20 bg-background/80 rounded px-1 overflow-hidden"
-                        style={{
-                          left: f.pos_x,
-                          top: f.pos_y,
-                          width: f.width,
-                          height: f.height,
-                          fontSize: Math.min(f.height * 0.6, 14),
-                          lineHeight: `${f.height}px`,
-                        }}
-                      >
-                        {isLogo && value ? (
-                          <img src={value} alt="Logo" className="h-full w-auto object-contain" />
-                        ) : (
-                          <span className="text-foreground whitespace-pre-wrap leading-tight" style={{ fontSize: f.field_type === "campo_proposta" ? 9 : 11, lineHeight: "1.3" }}>
-                            {value}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-              </div>
-            </div>
-            {/* Page navigation */}
-            {templateTotalPages > 1 && (
-              <div className="flex items-center justify-center gap-2">
-                <Button variant="outline" size="icon" className="h-7 w-7" disabled={templateCurrentPage <= 1} onClick={() => setTemplateCurrentPage(p => p - 1)}>
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-xs text-muted-foreground">{templateCurrentPage} / {templateTotalPages}</span>
-                <Button variant="outline" size="icon" className="h-7 w-7" disabled={templateCurrentPage >= templateTotalPages} onClick={() => setTemplateCurrentPage(p => p + 1)}>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
+          <div className="rounded-lg border border-border overflow-hidden bg-muted/20" style={{ height: "650px" }}>
+            <iframe
+              src={`${templatePdfUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`}
+              className="w-full h-full"
+              title="Visualização do contrato PDF"
+              style={{ border: "none" }}
+            />
           </div>
         ) : (
           <ContractPdfViewer content={contractPreview} companyName={lead.company_name} />
         )}
+
+        <div className="flex gap-2 justify-end">
+          <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => {
+            const url = isTemplateMode ? templatePdfUrl : undefined;
+            if (url) {
+              const w = window.open(url, '_blank');
+              if (w) setTimeout(() => w.print(), 800);
+            }
+          }}>
+            <Download className="h-3.5 w-3.5" /> Imprimir
+          </Button>
+        </div>
 
         <div className="rounded-lg border border-border p-3 space-y-1">
           <p className="text-xs font-semibold text-foreground">Dados do Cliente</p>
