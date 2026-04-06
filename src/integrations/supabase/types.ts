@@ -764,15 +764,19 @@ export type Database = {
       }
       crm_leads: {
         Row: {
+          bairro: string | null
+          cep: string | null
           cidade: string | null
           company_id: string | null
           company_name: string
+          complemento: string | null
           contact_name: string | null
           created_at: string
           created_by_name: string | null
           created_by_user_id: string | null
           documento: string | null
           email: string | null
+          endereco: string | null
           estado: string | null
           forecast_date: string | null
           form_id: string | null
@@ -780,6 +784,7 @@ export type Database = {
           lead_status: string
           lost_reason: string | null
           notes: string | null
+          numero: string | null
           phone: string | null
           servidor_id: string
           source: string
@@ -791,15 +796,19 @@ export type Database = {
           value_ps: number
         }
         Insert: {
+          bairro?: string | null
+          cep?: string | null
           cidade?: string | null
           company_id?: string | null
           company_name: string
+          complemento?: string | null
           contact_name?: string | null
           created_at?: string
           created_by_name?: string | null
           created_by_user_id?: string | null
           documento?: string | null
           email?: string | null
+          endereco?: string | null
           estado?: string | null
           forecast_date?: string | null
           form_id?: string | null
@@ -807,6 +816,7 @@ export type Database = {
           lead_status?: string
           lost_reason?: string | null
           notes?: string | null
+          numero?: string | null
           phone?: string | null
           servidor_id: string
           source?: string
@@ -818,15 +828,19 @@ export type Database = {
           value_ps?: number
         }
         Update: {
+          bairro?: string | null
+          cep?: string | null
           cidade?: string | null
           company_id?: string | null
           company_name?: string
+          complemento?: string | null
           contact_name?: string | null
           created_at?: string
           created_by_name?: string | null
           created_by_user_id?: string | null
           documento?: string | null
           email?: string | null
+          endereco?: string | null
           estado?: string | null
           forecast_date?: string | null
           form_id?: string | null
@@ -834,6 +848,7 @@ export type Database = {
           lead_status?: string
           lost_reason?: string | null
           notes?: string | null
+          numero?: string | null
           phone?: string | null
           servidor_id?: string
           source?: string
