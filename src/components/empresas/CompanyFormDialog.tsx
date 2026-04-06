@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Building2, FileSignature } from "lucide-react";
+import { Building2, FileSignature, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CompanyFormFields } from "./CompanyFormFields";
+import { BrandIdentityFields } from "./BrandIdentityFields";
 import { ContractPreview } from "./ContractPreview";
 import { CompanyFormData, initialFormData } from "./types";
 import { toast } from "sonner";
@@ -40,7 +41,6 @@ export function CompanyFormDialog({ open, onOpenChange, onSave, editData, isEdit
       toast.error("Digite um CNPJ para buscar");
       return;
     }
-    // Simulating CNPJ lookup - would integrate with Receita Federal API
     toast.info("Buscando dados do CNPJ...");
     setTimeout(() => {
       setFormData({
@@ -94,10 +94,14 @@ export function CompanyFormDialog({ open, onOpenChange, onSave, editData, isEdit
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="cadastro" className="gap-2">
               <Building2 className="h-4 w-4" />
               Dados Cadastrais
+            </TabsTrigger>
+            <TabsTrigger value="identidade" className="gap-2">
+              <Palette className="h-4 w-4" />
+              Identidade Visual
             </TabsTrigger>
             <TabsTrigger value="contrato" className="gap-2">
               <FileSignature className="h-4 w-4" />
@@ -111,6 +115,13 @@ export function CompanyFormDialog({ open, onOpenChange, onSave, editData, isEdit
                 formData={formData}
                 onChange={setFormData}
                 onCnpjSearch={handleCnpjSearch}
+              />
+            </TabsContent>
+
+            <TabsContent value="identidade" className="mt-0">
+              <BrandIdentityFields
+                formData={formData}
+                onChange={setFormData}
               />
             </TabsContent>
 
