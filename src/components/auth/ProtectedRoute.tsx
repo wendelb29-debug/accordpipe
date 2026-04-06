@@ -15,7 +15,10 @@ export function ProtectedRoute({ children, allowedRoles, requiredPermission }: P
   const { hasPermission, loading: permLoading } = usePermissions();
   const location = useLocation();
 
-  if (loading || permLoading) {
+  // Wait until auth AND permissions are fully resolved before any access check
+  const isFullyLoaded = !loading && !permLoading && (user ? !!profile && role !== undefined : true);
+
+  if (!isFullyLoaded) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-5">

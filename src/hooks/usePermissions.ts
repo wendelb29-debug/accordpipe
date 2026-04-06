@@ -13,7 +13,10 @@ export function usePermissions() {
 
   useEffect(() => {
     // Wait for auth to finish loading before deciding
-    if (authLoading) return;
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
 
     if (!user || !role) {
       setLoading(false);
