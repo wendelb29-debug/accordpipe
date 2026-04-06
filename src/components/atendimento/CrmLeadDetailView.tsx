@@ -765,7 +765,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                   <Input className="h-7 text-xs" value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[10px] text-muted-foreground">Contato</Label>
+                  <Label className="text-[10px] text-muted-foreground">Nome do Cliente</Label>
                   <Input className="h-7 text-xs" value={form.contact_name || ""} onChange={(e) => setForm({ ...form, contact_name: e.target.value })} />
                 </div>
                 <div className="space-y-1">
@@ -845,7 +845,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               <>
                 <DetailField icon={FileText} label="CNPJ/CPF" value={lead.documento || "Não informado"} />
                 <DetailField icon={Building2} label="Empresa" value={lead.company_name} />
-                <DetailField icon={User} label="Contato" value={lead.contact_name || "Não informado"} />
+                <DetailField icon={User} label="Nome do Cliente" value={lead.contact_name || "Não informado"} />
                 <DetailField icon={Mail} label="Email" value={lead.email || "Não informado"} />
                 <DetailField icon={PhoneIcon} label="Telefone" value={lead.phone || "Não informado"} />
                 <DetailField icon={DollarSign} label="Valor de P&S" value={formatCurrency(lead.value_ps)} />
