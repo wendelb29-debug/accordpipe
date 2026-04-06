@@ -18,6 +18,17 @@ interface SignField {
   value: string | null;
 }
 
+interface TemplateField {
+  id: string;
+  field_type: string;
+  label: string | null;
+  pos_x: number;
+  pos_y: number;
+  width: number;
+  height: number;
+  page: number;
+}
+
 interface Props {
   contractId: string;
   pdfUrl: string;
@@ -26,8 +37,13 @@ interface Props {
   signedFieldIds: string[];
 }
 
+const fmtCur = (v: number, cur = "BRL") => v.toLocaleString("pt-BR", { style: "currency", currency: cur });
+
 export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onFieldClick, signedFieldIds }: Props) {
   const [fields, setFields] = useState<SignField[]>([]);
+  const [templateFields, setTemplateFields] = useState<TemplateField[]>([]);
+  const [serverData, setServerData] = useState<any>(null);
+  const [contractMeta, setContractMeta] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
@@ -35,14 +51,98 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase
+      // Load signing fields
+      const { data: signFields } = await supabase
         .from("pdf_contract_fields")
         .select("*")
         .eq("contract_id", contractId);
-      if (data) setFields(data as SignField[]);
+      if (signFields) setFields(signFields as SignField[]);
+
+      // Load contract to get servidor_id and signer info
+      const { data: contract } = await supabase
+        .from("pdf_contracts")
+        .select("*")
+        .eq("id", contractId)
+        .single();
+
+      if (!contract) return;
+      setContractMeta(contract);
+
+      // Load server/company data
+      if (contract.servidor_id) {
+        const { data: company } = await supabase
+          .from("companies")
+          .select("*")
+          .eq("id", contract.servidor_id)
+          .single();
+        if (company) setServerData(company);
+
+        // Load template fields from company_contract_template_fields
+        const { data: templates } = await supabase
+          .from("company_contract_templates")
+          .select("id")
+          .eq("company_id", contract.servidor_id)
+          .limit(1);
+
+        if (templates && templates.length > 0) {
+          const { data: tFields } = await supabase
+            .from("company_contract_template_fields")
+            .select("*")
+            .eq("template_id", templates[0].id);
+          if (tFields) setTemplateFields(tFields as TemplateField[]);
+        }
+      }
+
+      // Load signer details for client data resolution
+      const { data: signers } = await supabase
+        .from("pdf_contract_signers")
+        .select("*")
+        .eq("contract_id", contractId)
+        .order("sign_order", { ascending: true });
+
+      if (signers && signers.length > 0) {
+        // Store first signer as the primary client for field resolution
+        setContractMeta((prev: any) => ({ ...prev, primarySigner: signers[0], allSigners: signers }));
+      }
     };
     load();
   }, [contractId]);
+
+  const resolveTemplateFieldValue = useCallback((fieldType: string): string => {
+    const srv = serverData;
+    const signer = contractMeta?.primarySigner;
+    const srvAddr = srv ? [srv.endereco, srv.numero && `nº ${srv.numero}`, srv.bairro, srv.cidade && srv.estado && `${srv.cidade}/${srv.estado}`, srv.cep && `CEP: ${srv.cep}`].filter(Boolean).join(", ") : "";
+
+    switch (fieldType) {
+      // Servidor fields
+      case "servidor_logo": return srv?.brand_logo_url || "";
+      case "servidor_empresa": return srv?.razao_social || srv?.nome_fantasia || "";
+      case "servidor_cnpj": return srv?.cnpj || "";
+      case "servidor_endereco": return srvAddr;
+
+      // Client fields
+      case "cnpj_cpf": return signer?.cpf_cnpj || "";
+      case "empresa": return signer?.name || "";
+      case "nome_cliente": return signer?.name || "";
+      case "cliente_email": return signer?.email || "";
+      case "cliente_telefone": return signer?.phone || "";
+      case "cliente_cep": return signer?.address || "";
+      case "cliente_endereco": return signer?.address || "";
+      case "cliente_numero": return "";
+      case "cliente_complemento": return "";
+
+      // Contract fields
+      case "data": return new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+      case "assinatura": return "______________________________";
+      case "plano": return "";
+      case "clausula": return "";
+      case "campo_proposta": return "";
+      case "valor_ps": return "";
+      case "valor_mrr": return "";
+
+      default: return "";
+    }
+  }, [serverData, contractMeta]);
 
   const handleCanvasReady = useCallback((canvas: HTMLCanvasElement) => {
     setCanvasSize({ width: canvas.width, height: canvas.height });
@@ -51,11 +151,15 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
   const pageFields = fields.filter(f => f.page === currentPage);
   const myFields = pageFields.filter(f => f.signer_id === currentSignerId);
   const otherFields = pageFields.filter(f => f.signer_id !== currentSignerId);
+  const pageTemplateFields = templateFields.filter(f => f.page === currentPage);
 
-  if (fields.length === 0) {
+  // Filter out template fields that are signature-type (handled by signing fields)
+  const dataTemplateFields = pageTemplateFields.filter(f => f.field_type !== "assinatura");
+
+  if (fields.length === 0 && templateFields.length === 0) {
     return (
       <div className="rounded-lg border overflow-hidden">
-        <iframe src={pdfUrl} className="w-full h-[60vh] rounded-lg" title="Contrato" />
+        <iframe src={`${pdfUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`} className="w-full h-[60vh] rounded-lg" title="Contrato" style={{ border: "none" }} />
       </div>
     );
   }
@@ -72,6 +176,35 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
             onCanvasReady={handleCanvasReady}
           />
 
+          {/* Template data fields (read-only, filled with resolved values) */}
+          {dataTemplateFields.map(field => {
+            const value = resolveTemplateFieldValue(field.field_type);
+            const isLogo = field.field_type === "servidor_logo";
+            if (!value) return null;
+            return (
+              <div
+                key={`tmpl-${field.id}`}
+                className="absolute bg-background/90 rounded px-1 overflow-hidden flex items-center pointer-events-none"
+                style={{
+                  left: field.pos_x * scale,
+                  top: field.pos_y * scale,
+                  width: field.width * scale,
+                  height: field.height * scale,
+                  fontSize: Math.min(field.height * 0.55, 13),
+                }}
+              >
+                {isLogo && value ? (
+                  <img src={value} alt="Logo" className="h-full w-auto object-contain" />
+                ) : (
+                  <span className="text-foreground whitespace-pre-wrap leading-tight" style={{ fontSize: field.field_type === "campo_proposta" || field.field_type === "clausula" ? 8 : 11, lineHeight: "1.3" }}>
+                    {value}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Other signers' fields */}
           {otherFields.map(field => {
             const isSigned = signedFieldIds.includes(field.id);
             return (
@@ -98,6 +231,7 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
             );
           })}
 
+          {/* Current signer's fields */}
           {myFields.map(field => {
             const isSigned = signedFieldIds.includes(field.id);
             return (
