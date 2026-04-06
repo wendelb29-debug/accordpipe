@@ -7,10 +7,14 @@ export function usePermissions() {
   const [roleDefaults, setRoleDefaults] = useState<string[]>([]);
   const [customPerms, setCustomPerms] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
+  const { loading: authLoading } = useAuth();
 
   const isCeoOrMaster = role === "ceo" || profile?.is_master === true;
 
   useEffect(() => {
+    // Wait for auth to finish loading before deciding
+    if (authLoading) return;
+
     if (!user || !role) {
       setLoading(false);
       return;
