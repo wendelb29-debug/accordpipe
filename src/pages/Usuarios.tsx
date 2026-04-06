@@ -39,7 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AppRole, useAuth } from "@/contexts/AuthContext";
-
+import { PermissionsEditor } from "@/components/usuarios/PermissionsEditor";
 
 interface UserWithRole {
   id: string;
@@ -82,6 +82,10 @@ export default function Usuarios() {
   const [editingUser, setEditingUser] = useState<UserWithRole | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [permDialogOpen, setPermDialogOpen] = useState(false);
+  const [permUserId, setPermUserId] = useState<string | null>(null);
+  const [permUserName, setPermUserName] = useState("");
+  const [permUserIsCeo, setPermUserIsCeo] = useState(false);
   const { toast } = useToast();
   const { isMaster, isCeo, activeCompanyId, profile } = useAuth();
   const [allCompanies, setAllCompanies] = useState<{id: string; nome_fantasia: string | null; razao_social: string; cnpj: string}[]>([]);
@@ -558,6 +562,15 @@ export default function Usuarios() {
                               <Pencil className="h-4 w-4" />
                               Editar
                             </DropdownMenuItem>
+                            <DropdownMenuItem className="gap-2" onClick={() => {
+                              setPermUserId(user.user_id);
+                              setPermUserName(user.name);
+                              setPermUserIsCeo(user.role === "ceo" || user.is_master);
+                              setPermDialogOpen(true);
+                            }}>
+                              <Shield className="h-4 w-4" />
+                              Permissões
+                            </DropdownMenuItem>
                             {!user.is_master && user.status !== "pendente" && (
                               <DropdownMenuItem className="gap-2" onClick={() => handleToggleActive(user)}>
                                 <Power className="h-4 w-4" />
@@ -743,6 +756,27 @@ export default function Usuarios() {
                   Aprovar
                 </Button>
               </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          {/* Permissions Dialog */}
+          <Dialog open={permDialogOpen} onOpenChange={setPermDialogOpen}>
+            <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-primary" />
+                  Permissões — {permUserName}
+                </DialogTitle>
+                <DialogDescription>
+                  Gerencie as permissões de acesso deste usuário por módulo.
+                </DialogDescription>
+              </DialogHeader>
+              {permUserId && (
+                <PermissionsEditor
+                  userId={permUserId}
+                  isCeoOrMaster={permUserIsCeo}
+                  onClose={() => setPermDialogOpen(false)}
+                />
+              )}
             </DialogContent>
           </Dialog>
         </TabsContent>
