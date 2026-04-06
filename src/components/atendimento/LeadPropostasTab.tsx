@@ -1000,15 +1000,35 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
     const srv = servidorData;
     const meta = contractPreviewProposal ? ((contractPreviewProposal.metadata as any) || {}) : {};
     const srvAddr = srv ? [srv.endereco, srv.numero && `nº ${srv.numero}`, srv.bairro, srv.cidade && srv.estado && `${srv.cidade}/${srv.estado}`, srv.cep && `CEP: ${srv.cep}`].filter(Boolean).join(", ") : "";
+    const clientName = registrationData?.nome_completo || lead.contact_name || lead.company_name;
 
     switch (fieldType) {
+      // Legacy servidor fields (backward compat)
       case "servidor_logo": return srv?.brand_logo_url || "";
       case "servidor_empresa": return srv?.razao_social || srv?.nome_fantasia || "";
       case "servidor_cnpj": return srv?.cnpj || "";
       case "servidor_endereco": return srvAddr;
       case "campo_proposta": return buildProposalClause(contractPreviewProposal || {});
-      case "valor_mrr": return meta.value_mrr ? fmtCur(meta.value_mrr) : (lead.value_mrr ? fmtCur(lead.value_mrr) : "R$ 0,00");
+
+      // CONTRATO fields
+      case "clausula": return buildProposalClause(contractPreviewProposal || {});
       case "assinatura": return "______________________________";
+      case "data": return new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+      case "plano": return registrationData?.plano_contratado || meta.sigla || "—";
+
+      // DADOS DO CLIENTE fields
+      case "cnpj_cpf": return registrationData?.cpf || lead.documento || "—";
+      case "empresa": return lead.company_name || "—";
+      case "nome_cliente": return clientName;
+      case "cliente_email": return lead.email || "—";
+      case "cliente_telefone": return lead.phone || "—";
+      case "valor_ps": return meta.value_ps ? fmtCur(meta.value_ps) : fmtCur(lead.value_ps || 0);
+      case "valor_mrr": return meta.value_mrr ? fmtCur(meta.value_mrr) : fmtCur(lead.value_mrr || 0);
+      case "cliente_cep": return lead.cep || "—";
+      case "cliente_endereco": return lead.endereco || "—";
+      case "cliente_numero": return lead.numero || "—";
+      case "cliente_complemento": return lead.complemento || "—";
+
       default: return "";
     }
   };
