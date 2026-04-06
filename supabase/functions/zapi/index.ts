@@ -58,6 +58,35 @@ Deno.serve(async (req) => {
       "Client-Token": CLIENT_TOKEN,
     };
 
+    // ── UPDATE WEBHOOKS ──
+    if (action === "update-webhooks") {
+      const { webhooks } = body;
+      if (!webhooks) {
+        return new Response(JSON.stringify({ error: "webhooks payload required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const webhookPayload: Record<string, any> = {};
+      if (webhooks.onReceive) webhookPayload.receivedByWebhook = webhooks.onReceive;
+      if (webhooks.onSend) webhookPayload.sendByWebhook = webhooks.onSend;
+      if (webhooks.onConnect) webhookPayload.connectedWebhook = webhooks.onConnect;
+      if (webhooks.onDisconnect) webhookPayload.disconnectedWebhook = webhooks.onDisconnect;
+      if (webhooks.chatPresence) webhookPayload.presenceChatWebhook = webhooks.chatPresence;
+      if (webhooks.messageStatus) webhookPayload.messageStatusWebhook = webhooks.messageStatus;
+      if (typeof webhooks.notifyMe === "boolean") webhookPayload.notifyMe = webhooks.notifyMe;
+
+      const res = await fetch(`${baseUrl}/update-webhook`, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify(webhookPayload),
+      });
+      const data = await res.json().catch(() => null);
+      return new Response(JSON.stringify({ success: res.ok, data }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // ── GET QR CODE ──
     if (action === "get-qrcode") {
       const res = await fetch(`${baseUrl}/qr-code/image`, { method: "GET", headers });
@@ -149,7 +178,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ error: "Invalid action. Use: get-qrcode, status, send-text, send-image, disconnect" }),
+      JSON.stringify({ error: "Invalid action. Use: get-qrcode, status, send-text, send-image, disconnect, update-webhooks" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {

@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { Smartphone, QrCode, Wifi, WifiOff, RefreshCw, Settings, Loader2, Plus, Unplug } from "lucide-react";
+import { Smartphone, QrCode, Wifi, WifiOff, RefreshCw, Settings, Loader2, Plus, Unplug, Webhook } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useEvolutionApi } from "@/hooks/useEvolutionApi";
+import { WebhookConfig } from "./WebhookConfig";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -261,6 +262,18 @@ export function Configuracoes() {
               <Settings className="h-3 w-3 mr-1" /> Editar
             </Button>
           </div>
+        </CardContent>
+      </Card>
+      {/* Webhooks Z-API */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Webhook className="h-4 w-4 text-primary" /> Webhooks Z-API
+          </CardTitle>
+          <CardDescription>Configure os endpoints para receber eventos da sua instância</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <WebhookConfig />
         </CardContent>
       </Card>
     </div>
