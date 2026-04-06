@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Rnd } from "react-rnd";
 import {
   Upload, FileText, Trash2, Save, Loader2, ChevronLeft, ChevronRight,
-  ZoomIn, ZoomOut, Grid3X3, Undo2, DollarSign, FileSignature, Type,
-  Calendar, PenTool, Hash, AlertCircle, MapPin, Mail, Building2,
+  ZoomIn, ZoomOut, Grid3X3, Undo2, DollarSign, FileSignature,
+  Hash, AlertCircle, MapPin, Building2, ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,10 +16,10 @@ import { PdfRenderer } from "@/components/contratos/PdfRenderer";
 
 const TEMPLATE_FIELD_TYPES = [
   // Dados do Servidor (Contratada)
+  { type: "servidor_logo", label: "Logo Servidor", icon: ImageIcon, defaultW: 160, defaultH: 60, group: "servidor" },
+  { type: "servidor_empresa", label: "Empresa (Contratada)", icon: Building2, defaultW: 280, defaultH: 36, group: "servidor" },
   { type: "servidor_cnpj", label: "CNPJ Servidor", icon: Hash, defaultW: 200, defaultH: 36, group: "servidor" },
-  { type: "servidor_empresa", label: "Empresa", icon: Building2, defaultW: 280, defaultH: 36, group: "servidor" },
   { type: "servidor_endereco", label: "Endereço Servidor", icon: MapPin, defaultW: 300, defaultH: 36, group: "servidor" },
-  { type: "servidor_email", label: "E-mail Servidor", icon: Mail, defaultW: 240, defaultH: 36, group: "servidor" },
   // Detalhes da Proposta
   { type: "campo_proposta", label: "Campo Proposta", icon: FileText, defaultW: 400, defaultH: 80, group: "proposta" },
   { type: "valor_mrr", label: "Valor MRR", icon: DollarSign, defaultW: 140, defaultH: 36, group: "proposta" },
