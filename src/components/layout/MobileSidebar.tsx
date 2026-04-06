@@ -24,7 +24,7 @@ const navigation = [
   { name: "Relatórios", href: "/relatorios", icon: BarChart3, roles: ["admin", "leitura", "ceo", "administrativo", "financeiro"] },
   { name: "Contratos", href: "/contratos", icon: FileSignature, roles: ["admin", "ceo", "financeiro"] },
   { name: "Gestão de Vendas", href: "/gestao-vendas", icon: Webhook, roles: ["admin", "ceo"] },
-  { name: "Cadastrados", href: "/cadastrados", icon: ClipboardList, roles: ["admin", "ceo", "administrativo"] },
+  { name: "Base de Clientes", href: "/cadastrados", icon: Users, roles: ["admin", "ceo", "administrativo"] },
   { name: "Descarte", href: "/descarte", icon: Trash2, roles: ["admin", "ceo"] },
 ];
 
