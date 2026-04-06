@@ -1,17 +1,21 @@
 import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth, AppRole } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { ROUTE_PERMISSIONS } from "@/lib/permissions";
 
 interface ProtectedRouteProps {
   children: ReactNode;
   allowedRoles?: AppRole[];
+  requiredPermission?: string;
 }
 
-export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, allowedRoles, requiredPermission }: ProtectedRouteProps) {
   const { user, role, loading, profile } = useAuth();
+  const { hasPermission, loading: permLoading } = usePermissions();
   const location = useLocation();
 
-  if (loading) {
+  if (loading || permLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -49,23 +53,45 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     );
   }
 
-  // Check if signature is completed (block access if not)
+  // Check if signature is completed
   if (profile && !(profile as any).signature_completed && location.pathname !== "/onboarding/assinatura") {
     return <Navigate to="/onboarding/assinatura" replace />;
   }
 
-  // Check if user has required role
-  if (allowedRoles && role && !allowedRoles.includes(role)) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-destructive mb-2">Acesso Negado</h1>
-          <p className="text-muted-foreground">
-            Você não tem permissão para acessar esta página.
-          </p>
+  // Permission-based access check (takes priority if specified)
+  const permToCheck = requiredPermission || ROUTE_PERMISSIONS[location.pathname];
+  if (permToCheck && !hasPermission(permToCheck)) {
+    // Still allow legacy role check as fallback for CEO/admin/master
+    const isCeoOrMaster = role === "ceo" || profile?.is_master === true;
+    if (!isCeoOrMaster) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-background">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-destructive mb-2">Acesso Negado</h1>
+            <p className="text-muted-foreground">
+              Você não tem permissão para acessar esta área.
+            </p>
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
+  }
+
+  // Legacy role check (backward compat)
+  if (allowedRoles && role && !allowedRoles.includes(role)) {
+    const isCeoOrMaster = role === "ceo" || profile?.is_master === true;
+    if (!isCeoOrMaster) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-background">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-destructive mb-2">Acesso Negado</h1>
+            <p className="text-muted-foreground">
+              Você não tem permissão para acessar esta página.
+            </p>
+          </div>
+        </div>
+      );
+    }
   }
 
   return <>{children}</>;
