@@ -96,6 +96,74 @@ export type Database = {
           },
         ]
       }
+      client_contract_signers: {
+        Row: {
+          contract_id: string
+          created_at: string
+          email: string | null
+          id: string
+          is_required: boolean
+          name: string
+          sign_order: number
+          signature_address: string | null
+          signature_latitude: number | null
+          signature_longitude: number | null
+          signature_photo_url: string | null
+          signed_at: string | null
+          signer_document: string | null
+          signer_ip: string | null
+          signer_type: string
+          signing_token: string
+          status: string
+        }
+        Insert: {
+          contract_id: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_required?: boolean
+          name: string
+          sign_order?: number
+          signature_address?: string | null
+          signature_latitude?: number | null
+          signature_longitude?: number | null
+          signature_photo_url?: string | null
+          signed_at?: string | null
+          signer_document?: string | null
+          signer_ip?: string | null
+          signer_type?: string
+          signing_token?: string
+          status?: string
+        }
+        Update: {
+          contract_id?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_required?: boolean
+          name?: string
+          sign_order?: number
+          signature_address?: string | null
+          signature_latitude?: number | null
+          signature_longitude?: number | null
+          signature_photo_url?: string | null
+          signed_at?: string | null
+          signer_document?: string | null
+          signer_ip?: string | null
+          signer_type?: string
+          signing_token?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_contract_signers_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "client_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_contracts: {
         Row: {
           client_cpf: string | null
