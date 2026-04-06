@@ -18,8 +18,11 @@ import {
   DollarSign, TrendingUp, FileText, Activity, ChevronRight,
   CreditCard, AlertTriangle, CheckCircle2, XCircle, BarChart3,
   Calendar, Mail, Phone, MapPin, Building2, Heart, ArrowLeft,
-  Plus, Rocket, PauseCircle, Trash2
+  Plus, Rocket, PauseCircle, Trash2, MoreVertical
 } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { CadastradosCharts } from "@/components/cadastrados/CadastradosCharts";
 
