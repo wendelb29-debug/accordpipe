@@ -213,6 +213,21 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
                       </DropdownMenu>
                     </div>
 
+                    {/* Vendedor responsável */}
+                    {lead.created_by_name && (
+                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground mb-1">
+                        <ClipboardList className="h-3 w-3 shrink-0" />
+                        <span className="truncate">Vendedor: <span className="font-medium text-foreground">{lead.created_by_name}</span></span>
+                      </div>
+                    )}
+
+                    {/* Valor */}
+                    {lead.value_mrr > 0 && (
+                      <div className="text-[11px] text-muted-foreground mb-1">
+                        MRR: <span className="font-bold text-primary">{formatCurrency(lead.value_mrr)}</span>
+                      </div>
+                    )}
+
                     {lead.email && (
                       <div className="flex items-center gap-1 text-muted-foreground text-[11px] mb-0.5">
                         <Mail className="h-3 w-3 shrink-0" />
@@ -223,6 +238,22 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
                       <div className="flex items-center gap-1 text-muted-foreground text-[11px] mb-0.5">
                         <PhoneCall className="h-3 w-3 shrink-0" />
                         <span>{lead.phone}</span>
+                      </div>
+                    )}
+
+                    {/* Tags - show Pendente de Correção / Devolvido */}
+                    {lead.tags && lead.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {lead.tags.includes("Pendente de Correção") && (
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-orange-300 text-orange-700 bg-orange-50">
+                            🔄 Pendente de Correção
+                          </Badge>
+                        )}
+                        {lead.tags.includes("Devolvido") && !lead.tags.includes("Pendente de Correção") && (
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-amber-300 text-amber-700 bg-amber-50">
+                            🔄 Devolvido
+                          </Badge>
+                        )}
                       </div>
                     )}
 
