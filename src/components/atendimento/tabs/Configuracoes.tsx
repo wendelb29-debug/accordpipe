@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useEvolutionApi } from "@/hooks/useEvolutionApi";
+import { WebhookConfig } from "./WebhookConfig";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
