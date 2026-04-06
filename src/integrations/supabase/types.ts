@@ -1813,6 +1813,27 @@ export type Database = {
           },
         ]
       }
+      role_default_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          permission_key: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          permission_key: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          permission_key?: string
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: []
+      }
       support_requests: {
         Row: {
           created_at: string
@@ -1839,6 +1860,30 @@ export type Database = {
           status?: string
           subject?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_custom_permissions: {
+        Row: {
+          created_at: string
+          granted: boolean
+          id: string
+          permission_key: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted?: boolean
+          id?: string
+          permission_key: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted?: boolean
+          id?: string
+          permission_key?: string
           user_id?: string
         }
         Relationships: []
@@ -2280,6 +2325,10 @@ export type Database = {
         }[]
       }
       get_user_company_id: { Args: { _user_id: string }; Returns: string }
+      has_permission: {
+        Args: { _permission: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
