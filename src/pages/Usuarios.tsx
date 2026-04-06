@@ -39,7 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AppRole, useAuth } from "@/contexts/AuthContext";
-
+import { PermissionsEditor } from "@/components/usuarios/PermissionsEditor";
 
 interface UserWithRole {
   id: string;
