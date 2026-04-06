@@ -554,7 +554,13 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                           ✅ Ganho
                         </span>
                       )}
-                      {lead.tags?.includes("Devolvido") && (
+                      {lead.tags?.includes("Pendente de Correção") && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full px-2 py-0.5 mt-1"
+                          style={{ backgroundColor: '#FED7AA', color: '#C2410C' }}>
+                          ⚠️ Pendente de Correção
+                        </span>
+                      )}
+                      {lead.tags?.includes("Devolvido") && !lead.tags?.includes("Pendente de Correção") && (
                         <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full px-2 py-0.5 mt-1"
                           style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>
                           🔄 Devolvido
