@@ -24,6 +24,11 @@ export interface CrmLead {
   created_by_name: string | null;
   cidade: string | null;
   estado: string | null;
+  cep: string | null;
+  endereco: string | null;
+  numero: string | null;
+  bairro: string | null;
+  complemento: string | null;
   forecast_date: string | null;
   lead_status: string;
   lost_reason: string | null;

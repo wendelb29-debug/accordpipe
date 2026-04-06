@@ -3,7 +3,8 @@ import { Rnd } from "react-rnd";
 import {
   Upload, FileText, Trash2, Save, Loader2, ChevronLeft, ChevronRight,
   ZoomIn, ZoomOut, Grid3X3, Undo2, DollarSign, FileSignature,
-  Hash, AlertCircle, MapPin, Building2, ImageIcon,
+  Hash, AlertCircle, MapPin, Building2, ImageIcon, User, Mail, Phone,
+  Calendar, ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,15 +16,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { PdfRenderer } from "@/components/contratos/PdfRenderer";
 
 const TEMPLATE_FIELD_TYPES = [
-  // Dados do Servidor (Contratada)
-  { type: "servidor_logo", label: "Logo Servidor", icon: ImageIcon, defaultW: 160, defaultH: 60, group: "servidor" },
-  { type: "servidor_empresa", label: "Empresa (Contratada)", icon: Building2, defaultW: 280, defaultH: 36, group: "servidor" },
-  { type: "servidor_cnpj", label: "CNPJ Servidor", icon: Hash, defaultW: 200, defaultH: 36, group: "servidor" },
-  { type: "servidor_endereco", label: "Endereço Servidor", icon: MapPin, defaultW: 300, defaultH: 36, group: "servidor" },
-  // Detalhes da Proposta
-  { type: "campo_proposta", label: "Campo Proposta", icon: FileText, defaultW: 400, defaultH: 80, group: "proposta" },
-  { type: "valor_mrr", label: "Valor MRR", icon: DollarSign, defaultW: 140, defaultH: 36, group: "proposta" },
-  { type: "assinatura", label: "Assinatura", icon: FileSignature, defaultW: 200, defaultH: 60, group: "proposta" },
+  // CONTRATO
+  { type: "clausula", label: "Cláusula", icon: FileText, defaultW: 400, defaultH: 80, group: "contrato" },
+  { type: "assinatura", label: "Assinatura", icon: FileSignature, defaultW: 200, defaultH: 60, group: "contrato" },
+  { type: "data", label: "Data", icon: Calendar, defaultW: 160, defaultH: 36, group: "contrato" },
+  { type: "plano", label: "Plano", icon: ClipboardList, defaultW: 200, defaultH: 36, group: "contrato" },
+  // DADOS DO CLIENTE
+  { type: "cnpj_cpf", label: "CNPJ/CPF", icon: Hash, defaultW: 200, defaultH: 36, group: "cliente" },
+  { type: "empresa", label: "Empresa", icon: Building2, defaultW: 280, defaultH: 36, group: "cliente" },
+  { type: "nome_cliente", label: "Nome do Cliente", icon: User, defaultW: 240, defaultH: 36, group: "cliente" },
+  { type: "cliente_email", label: "Email", icon: Mail, defaultW: 240, defaultH: 36, group: "cliente" },
+  { type: "cliente_telefone", label: "Telefone", icon: Phone, defaultW: 180, defaultH: 36, group: "cliente" },
+  { type: "valor_ps", label: "Valor P&S", icon: DollarSign, defaultW: 140, defaultH: 36, group: "cliente" },
+  { type: "valor_mrr", label: "Valor MRR", icon: DollarSign, defaultW: 140, defaultH: 36, group: "cliente" },
+  { type: "cliente_cep", label: "CEP", icon: MapPin, defaultW: 120, defaultH: 36, group: "cliente" },
+  { type: "cliente_endereco", label: "Endereço", icon: MapPin, defaultW: 300, defaultH: 36, group: "cliente" },
+  { type: "cliente_numero", label: "Número", icon: Hash, defaultW: 100, defaultH: 36, group: "cliente" },
+  { type: "cliente_complemento", label: "Complemento", icon: MapPin, defaultW: 200, defaultH: 36, group: "cliente" },
 ];
 
 const SNAP_SIZE = 10;
@@ -244,13 +253,21 @@ export function ContractTemplateTab({ companyId }: Props) {
   const selectedField = fields.find(f => f.id === selectedFieldId);
 
   const FIELD_COLORS: Record<string, string> = {
-    servidor_logo: "#a855f7",
-    servidor_cnpj: "#ec4899",
-    servidor_empresa: "#8b5cf6",
-    servidor_endereco: "#06b6d4",
-    campo_proposta: "#f97316",
-    valor_mrr: "#f59e0b",
+    clausula: "#a855f7",
     assinatura: "#3b82f6",
+    data: "#06b6d4",
+    plano: "#8b5cf6",
+    cnpj_cpf: "#ec4899",
+    empresa: "#8b5cf6",
+    nome_cliente: "#10b981",
+    cliente_email: "#06b6d4",
+    cliente_telefone: "#f97316",
+    valor_ps: "#f59e0b",
+    valor_mrr: "#f59e0b",
+    cliente_cep: "#14b8a6",
+    cliente_endereco: "#14b8a6",
+    cliente_numero: "#14b8a6",
+    cliente_complemento: "#14b8a6",
   };
 
   if (loading) {
@@ -320,9 +337,9 @@ export function ContractTemplateTab({ companyId }: Props) {
       {/* Field palette */}
       <div className="space-y-2">
         <div>
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Dados do Servidor (Contratada)</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Contrato</span>
           <div className="flex flex-wrap gap-1.5">
-            {TEMPLATE_FIELD_TYPES.filter(ft => ft.group === "servidor").map(ft => (
+            {TEMPLATE_FIELD_TYPES.filter(ft => ft.group === "contrato").map(ft => (
               <Button key={ft.type} variant="outline" size="sm" onClick={() => addField(ft.type)} className="gap-1.5 text-xs h-8" style={{ borderColor: FIELD_COLORS[ft.type] + "80" }}>
                 <ft.icon className="h-3.5 w-3.5" style={{ color: FIELD_COLORS[ft.type] }} />
                 {ft.label}
@@ -331,9 +348,9 @@ export function ContractTemplateTab({ companyId }: Props) {
           </div>
         </div>
         <div>
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Detalhes da Proposta</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Dados do Cliente</span>
           <div className="flex flex-wrap gap-1.5">
-            {TEMPLATE_FIELD_TYPES.filter(ft => ft.group === "proposta").map(ft => (
+            {TEMPLATE_FIELD_TYPES.filter(ft => ft.group === "cliente").map(ft => (
               <Button key={ft.type} variant="outline" size="sm" onClick={() => addField(ft.type)} className="gap-1.5 text-xs h-8" style={{ borderColor: FIELD_COLORS[ft.type] + "80" }}>
                 <ft.icon className="h-3.5 w-3.5" style={{ color: FIELD_COLORS[ft.type] }} />
                 {ft.label}
