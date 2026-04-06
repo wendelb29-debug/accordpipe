@@ -233,7 +233,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
       .select("*")
       .eq("lead_id", lead.id)
       .maybeSingle();
-    if (data) setRegistrationData(data);
+    setRegistrationData(data || null);
   };
 
   const fetchCompanyAndServidor = async () => {
@@ -1140,6 +1140,18 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
     const meta = proposal ? ((proposal.metadata as any) || {}) : {};
     const srvAddr = srv ? [srv.endereco, srv.numero && `nº ${srv.numero}`, srv.bairro, srv.cidade && srv.estado && `${srv.cidade}/${srv.estado}`, srv.cep && `CEP: ${srv.cep}`].filter(Boolean).join(", ") : "";
     const clientName = registrationData?.nome_completo || lead.contact_name || lead.company_name;
+    const clientDoc = registrationData?.cpf || lead.documento || "";
+    const clientEmail = registrationData?.email || lead.email || "";
+    const clientPhone = registrationData?.telefone || lead.phone || "";
+    const clientAddr = [
+      registrationData?.endereco || lead.endereco,
+      (registrationData?.numero || lead.numero) && `nº ${registrationData?.numero || lead.numero}`,
+      registrationData?.bairro || lead.bairro,
+      (registrationData?.cep || lead.cep) && `CEP: ${registrationData?.cep || lead.cep}`,
+      (registrationData?.cidade || lead.cidade) && (registrationData?.estado || lead.estado)
+        ? `${registrationData?.cidade || lead.cidade}-${registrationData?.estado || lead.estado}`
+        : (registrationData?.cidade || lead.cidade || ""),
+    ].filter(Boolean).join(", ");
 
     switch (fieldType) {
       // DADOS DO SERVIDOR (CONTRATADA)
@@ -1169,29 +1181,24 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
       // Legacy/compat fields
       case "data": return new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
       case "plano": return registrationData?.plano_contratado || meta.sigla || "—";
-      case "cnpj_cpf": return registrationData?.cpf || lead.documento || "—";
+      case "cnpj_cpf": return clientDoc || "—";
       case "empresa": {
-        const nome = clientName || lead.company_name || "";
-        const doc = registrationData?.cpf || lead.documento || "";
-        const addr = [lead.endereco, lead.numero && `nº ${lead.numero}`, lead.complemento, lead.bairro, lead.cep && `CEP: ${lead.cep}`, lead.cidade && lead.estado && `${lead.cidade}-${lead.estado}`].filter(Boolean).join(", ");
-        const email = lead.email || "";
-        const tel = lead.phone || "";
         const parts = [
-          nome,
-          doc ? `inscrito(a) no CPF/CNPJ sob o nº ${doc}` : "",
-          addr ? `com endereço em ${addr}` : "",
-          email ? `e-mail ${email}` : "",
-          tel ? `telefone ${tel}` : "",
+          clientName,
+          clientDoc ? `inscrito(a) no CPF/CNPJ sob o nº ${clientDoc}` : "",
+          clientAddr ? `com endereço em ${clientAddr}` : "",
+          clientEmail ? `contato via e-mail ${clientEmail}` : "",
+          clientPhone ? `telefone ${clientPhone}` : "",
         ].filter(Boolean);
         return parts.length > 0 ? `${parts[0]}, ${parts.slice(1).join(", ")}.` : "—";
       }
       case "nome_cliente": return clientName;
-      case "cliente_email": return lead.email || "—";
-      case "cliente_telefone": return lead.phone || "—";
-      case "cliente_cep": return lead.cep || "—";
-      case "cliente_endereco": return lead.endereco || "—";
-      case "cliente_numero": return lead.numero || "—";
-      case "cliente_complemento": return lead.complemento || "—";
+      case "cliente_email": return clientEmail || "—";
+      case "cliente_telefone": return clientPhone || "—";
+      case "cliente_cep": return registrationData?.cep || lead.cep || "—";
+      case "cliente_endereco": return registrationData?.endereco || lead.endereco || "—";
+      case "cliente_numero": return registrationData?.numero || lead.numero || "—";
+      case "cliente_complemento": return registrationData?.complemento || lead.complemento || "—";
 
       default: return "";
     }
@@ -1231,12 +1238,12 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
                     return (
                       <div
                         key={f.id}
-                        className="absolute overflow-hidden flex items-center"
+                        className="absolute flex items-start"
                         style={{
                           left: f.pos_x * 1.2,
                           top: f.pos_y * 1.2,
                           width: f.width * 1.2,
-                          height: f.height * 1.2,
+                          minHeight: f.height * 1.2,
                           fontSize: Math.min(f.height * 0.55, 13),
                           background: "transparent",
                         }}
@@ -1244,7 +1251,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
                         {isLogo && value ? (
                           <img src={value} alt="Logo" className="h-full w-auto object-contain" />
                         ) : (
-                          <span className="whitespace-pre-wrap leading-tight" style={{ color: "#000", fontSize: f.field_type === "campo_proposta" || f.field_type === "clausula" ? 8 : 11, lineHeight: "1.3" }}>
+                          <span className="whitespace-pre-wrap break-words leading-tight" style={{ color: "#000", fontSize: f.field_type === "campo_proposta" || f.field_type === "clausula" || f.field_type === "empresa" || f.field_type === "servidor_cnpj" ? 8 : 11, lineHeight: "1.3" }}>
                             {value}
                           </span>
                         )}
@@ -1435,12 +1442,12 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
                     return (
                       <div
                         key={f.id}
-                        className="absolute overflow-hidden flex items-center"
+                        className="absolute flex items-start"
                         style={{
                           left: f.pos_x * s,
                           top: f.pos_y * s,
                           width: f.width * s,
-                          height: f.height * s,
+                          minHeight: f.height * s,
                           fontSize: Math.min(f.height * 0.5, 12),
                           background: "transparent",
                         }}
@@ -1448,7 +1455,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
                         {isLogo && value ? (
                           <img src={value} alt="Logo" className="h-full w-auto object-contain" />
                         ) : (
-                          <span className="whitespace-pre-wrap leading-tight" style={{ color: "#000", fontSize: f.field_type === "campo_proposta" || f.field_type === "clausula" ? 8 : 10, lineHeight: "1.2" }}>
+                          <span className="whitespace-pre-wrap break-words leading-tight" style={{ color: "#000", fontSize: f.field_type === "campo_proposta" || f.field_type === "clausula" || f.field_type === "empresa" || f.field_type === "servidor_cnpj" ? 8 : 10, lineHeight: "1.2" }}>
                             {value}
                           </span>
                         )}
