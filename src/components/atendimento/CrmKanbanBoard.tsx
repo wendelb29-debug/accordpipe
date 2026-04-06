@@ -161,10 +161,17 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
       if (data) {
         const withActivity = new Set<string>();
         const nextAct: Record<string, string> = {};
+        const scheduledTypes = ["internal", "email", "call", "meeting", "whatsapp"];
         for (const activity of data) {
-          if (!withActivity.has(activity.lead_id)) {
+          const meta = activity.metadata as any;
+          const status = meta?.activity_status || "planejada";
+          const isScheduled = scheduledTypes.includes(activity.type);
+          // Only count planned (non-completed) scheduled activities
+          if (isScheduled && status === "planejada") {
+            if (!withActivity.has(activity.lead_id)) {
+              nextAct[activity.lead_id] = activity.title;
+            }
             withActivity.add(activity.lead_id);
-            nextAct[activity.lead_id] = activity.title;
           }
         }
         setLeadsWithActivity(withActivity);
