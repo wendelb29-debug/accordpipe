@@ -18,8 +18,11 @@ import {
   DollarSign, TrendingUp, FileText, Activity, ChevronRight,
   CreditCard, AlertTriangle, CheckCircle2, XCircle, BarChart3,
   Calendar, Mail, Phone, MapPin, Building2, Heart, ArrowLeft,
-  Plus, Rocket, PauseCircle, Trash2
+  Plus, Rocket, PauseCircle, Trash2, MoreVertical
 } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { CadastradosCharts } from "@/components/cadastrados/CadastradosCharts";
 
@@ -97,6 +100,16 @@ export default function Cadastrados() {
   const [upsellDialogOpen, setUpsellDialogOpen] = useState(false);
   const [upsellForm, setUpsellForm] = useState({ name: "", description: "", amount: "", type: "mensal", start_date: new Date().toISOString().split("T")[0] });
   const [upsellSaving, setUpsellSaving] = useState(false);
+
+  // Manual Registration state (must be before any early return)
+  const [manualRegOpen, setManualRegOpen] = useState(false);
+  const [manualForm, setManualForm] = useState({
+    nome_completo: "", cpf: "", email: "", telefone: "",
+    empresa: "", plano: "", valor: "", client_status: "pendente",
+    data_adesao: new Date().toISOString().split("T")[0], observacoes: "", origem: "manual",
+  });
+  const [manualSaving, setManualSaving] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Check if user can manage upsells (Master/CEO/Admin)
   const canManageUpsell = profile?.is_master || true; // Role check done via RLS
@@ -834,24 +847,121 @@ export default function Cadastrados() {
     );
   }
 
+  // ──────── Manual Registration Logic ────────
+
+  const applyMask = (value: string, type: "cpf" | "phone") => {
+    const digits = value.replace(/\D/g, "");
+    if (type === "cpf") {
+      if (digits.length <= 11) return digits.replace(/(\d{3})(\d{3})?(\d{3})?(\d{2})?/, (_, a, b, c, d) => [a, b, c].filter(Boolean).join(".") + (d ? `-${d}` : ""));
+      return digits.slice(0, 14).replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})?/, "$1.$2.$3/$4" + (digits.length > 12 ? "-" : "")).replace(/\/$/, "");
+    }
+    if (type === "phone") {
+      if (digits.length <= 10) return digits.replace(/(\d{2})(\d{4})(\d{0,4})/, "($1) $2-$3").trim();
+      return digits.replace(/(\d{2})(\d{5})(\d{0,4})/, "($1) $2-$3").trim();
+    }
+    return value;
+  };
+
+  const handleManualRegister = async () => {
+    if (!manualForm.nome_completo || !profile?.company_id) {
+      toast.error("Nome completo é obrigatório");
+      return;
+    }
+    setManualSaving(true);
+    try {
+      // Create a lead first
+      const { data: leadData, error: leadErr } = await supabase.from("crm_leads").insert({
+        servidor_id: profile.company_id,
+        company_name: manualForm.empresa || manualForm.nome_completo,
+        contact_name: manualForm.nome_completo,
+        email: manualForm.email || null,
+        phone: manualForm.telefone || null,
+        documento: manualForm.cpf || null,
+        source: manualForm.origem || "manual",
+        stage: "cadastro-pendente",
+        lead_status: "won",
+        value_mrr: parseFloat(manualForm.valor.replace(",", ".")) || 0,
+        created_by_user_id: profile.user_id,
+        created_by_name: profile.name,
+      }).select("id").single();
+
+      if (leadErr || !leadData) throw leadErr || new Error("Erro ao criar lead");
+
+      // Create registration
+      const { error: regErr } = await supabase.from("crm_client_registrations").insert({
+        lead_id: leadData.id,
+        servidor_id: profile.company_id,
+        nome_completo: manualForm.nome_completo,
+        cpf: manualForm.cpf || null,
+        email: manualForm.email || null,
+        plano_contratado: manualForm.plano || null,
+        valor_mensal: parseFloat(manualForm.valor.replace(",", ".")) || 0,
+        client_status: manualForm.client_status,
+        data_adesao: manualForm.data_adesao || null,
+        created_by_user_id: profile.user_id,
+        created_by_name: profile.name,
+      });
+
+      if (regErr) throw regErr;
+
+      toast.success("Cliente cadastrado com sucesso!");
+      setManualRegOpen(false);
+      setManualForm({ nome_completo: "", cpf: "", email: "", telefone: "", empresa: "", plano: "", valor: "", client_status: "pendente", data_adesao: new Date().toISOString().split("T")[0], observacoes: "", origem: "manual" });
+      fetchRegistrations();
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao cadastrar cliente");
+    } finally {
+      setManualSaving(false);
+    }
+  };
+
+  // ──────── Change client status ────────
+  const handleChangeStatus = async (regId: string, newStatus: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const { error } = await supabase.from("crm_client_registrations").update({ client_status: newStatus } as any).eq("id", regId);
+    if (error) { toast.error("Erro ao alterar status"); return; }
+    setRegistrations(prev => prev.map(r => r.id === regId ? { ...r, client_status: newStatus } : r));
+    toast.success(`Status alterado para ${clientStatusConfig[newStatus]?.label || newStatus}`);
+  };
+
+  // ──────── Delete registration ────────
+  // ──────── Delete registration ────────
+  const handleDeleteRegistration = async (regId: string) => {
+    const { error } = await supabase.from("crm_client_registrations").delete().eq("id", regId);
+    if (error) { toast.error("Erro ao excluir"); return; }
+    setRegistrations(prev => prev.filter(r => r.id !== regId));
+    setDeleteConfirmId(null);
+    toast.success("Cadastro excluído");
+  };
+
   // ──────── List view ────────
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Clientes & Cadastros</h1>
-        <p className="text-sm text-muted-foreground mt-1">Centro de gestão completa da sua base de clientes</p>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Base de Clientes</h1>
+          <p className="text-sm text-muted-foreground mt-1">Centro de gestão completa da sua base de clientes</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+            <Download className="h-4 w-4" /> Importar Lista
+          </Button>
+          <Button size="sm" className="gap-1.5 text-xs" onClick={() => setManualRegOpen(true)}>
+            <Plus className="h-4 w-4" /> Novo Cadastro
+          </Button>
+        </div>
       </div>
 
       {/* ────── KPI Cards ────── */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
           { label: "Total Clientes", value: stats.total, icon: Users, color: "text-primary bg-primary/10" },
-          { label: "Ativos", value: stats.ativos, icon: UserCheck, color: "text-green-600 bg-green-50" },
-          { label: "Receita Mensal", value: fmtCur(stats.mrr), icon: DollarSign, color: "text-emerald-600 bg-emerald-50" },
-          { label: "Inadimplentes", value: stats.inadimplentes, icon: AlertTriangle, color: "text-red-600 bg-red-50" },
-          { label: "Cadastros OK", value: stats.contratos, icon: FileText, color: "text-blue-600 bg-blue-50" },
-          { label: "Ticket Médio", value: fmtCur(stats.ticketMedio), icon: TrendingUp, color: "text-violet-600 bg-violet-50" },
+          { label: "Ativos", value: stats.ativos, icon: UserCheck, color: "text-emerald-600 bg-emerald-500/10" },
+          { label: "Receita Mensal", value: fmtCur(stats.mrr), icon: DollarSign, color: "text-emerald-600 bg-emerald-500/10" },
+          { label: "Inadimplentes", value: stats.inadimplentes, icon: AlertTriangle, color: "text-red-600 bg-red-500/10" },
+          { label: "Cadastros OK", value: stats.contratos, icon: FileText, color: "text-blue-600 bg-blue-500/10" },
+          { label: "Ticket Médio", value: fmtCur(stats.ticketMedio), icon: TrendingUp, color: "text-violet-600 bg-violet-500/10" },
         ].map((kpi, i) => (
           <Card key={i} className="hover:shadow-md transition-shadow">
             <CardContent className="p-4 flex items-center gap-3">
@@ -913,7 +1023,7 @@ export default function Cadastrados() {
               <TableHeader>
                 <TableRow className="bg-muted/30">
                   <TableHead className="text-xs font-semibold">Nome</TableHead>
-                  <TableHead className="text-xs font-semibold">CPF</TableHead>
+                  <TableHead className="text-xs font-semibold">CPF/CNPJ</TableHead>
                   <TableHead className="text-xs font-semibold">Empresa</TableHead>
                   <TableHead className="text-xs font-semibold">Plano</TableHead>
                   <TableHead className="text-xs font-semibold">Valor</TableHead>
@@ -950,10 +1060,42 @@ export default function Cadastrados() {
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">{r.data_adesao ? fmtDate(r.data_adesao) : r.created_at ? fmtDate(r.created_at) : "—"}</TableCell>
                         <TableCell className="text-xs text-center">{r.crm_client_dependents?.length || 0}</TableCell>
-                        <TableCell className="text-center">
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
+                        <TableCell className="text-center" onClick={e => e.stopPropagation()}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem onClick={() => openDetail(r)}>
+                                <Eye className="h-3.5 w-3.5 mr-2" /> Visualizar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => { openDetail(r); setTimeout(() => setEditing(true), 100); }}>
+                                <Pencil className="h-3.5 w-3.5 mr-2" /> Editar
+                              </DropdownMenuItem>
+                              <Separator className="my-1" />
+                              {cs !== "ativo" && (
+                                <DropdownMenuItem onClick={(e) => handleChangeStatus(r.id, "ativo", e)}>
+                                  <CheckCircle2 className="h-3.5 w-3.5 mr-2 text-green-600" /> Marcar como Ativo
+                                </DropdownMenuItem>
+                              )}
+                              {cs !== "inadimplente" && (
+                                <DropdownMenuItem onClick={(e) => handleChangeStatus(r.id, "inadimplente", e)}>
+                                  <AlertTriangle className="h-3.5 w-3.5 mr-2 text-red-600" /> Marcar Inadimplente
+                                </DropdownMenuItem>
+                              )}
+                              {cs !== "cancelado" && (
+                                <DropdownMenuItem onClick={(e) => handleChangeStatus(r.id, "cancelado", e)}>
+                                  <XCircle className="h-3.5 w-3.5 mr-2" /> Cancelar
+                                </DropdownMenuItem>
+                              )}
+                              <Separator className="my-1" />
+                              <DropdownMenuItem className="text-red-600" onClick={() => setDeleteConfirmId(r.id)}>
+                                <Trash2 className="h-3.5 w-3.5 mr-2" /> Excluir
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     );
@@ -964,6 +1106,131 @@ export default function Cadastrados() {
           </div>
         </CardContent>
       </Card>
+
+      {/* ────── Delete Confirmation Dialog ────── */}
+      <Dialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base">Confirmar exclusão</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">Tem certeza que deseja excluir este cadastro? Esta ação não pode ser desfeita.</p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" size="sm" onClick={() => setDeleteConfirmId(null)}>Cancelar</Button>
+            <Button variant="destructive" size="sm" onClick={() => deleteConfirmId && handleDeleteRegistration(deleteConfirmId)}>
+              <Trash2 className="h-4 w-4 mr-1" /> Excluir
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ────── Manual Registration Dialog ────── */}
+      <Dialog open={manualRegOpen} onOpenChange={setManualRegOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5 text-primary" /> Cadastrar Cliente Manualmente
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-5 pt-2">
+            {/* Dados Pessoais */}
+            <div>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Dados Pessoais</h4>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs">Nome completo *</Label>
+                  <Input value={manualForm.nome_completo} onChange={e => setManualForm(f => ({ ...f, nome_completo: e.target.value }))} placeholder="Nome completo do cliente" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">CPF/CNPJ</Label>
+                    <Input value={manualForm.cpf} onChange={e => setManualForm(f => ({ ...f, cpf: applyMask(e.target.value, "cpf") }))} placeholder="000.000.000-00" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Telefone</Label>
+                    <Input value={manualForm.telefone} onChange={e => setManualForm(f => ({ ...f, telefone: applyMask(e.target.value, "phone") }))} placeholder="(00) 00000-0000" />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">E-mail</Label>
+                  <Input type="email" value={manualForm.email} onChange={e => setManualForm(f => ({ ...f, email: e.target.value }))} placeholder="email@exemplo.com" />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Dados Comerciais */}
+            <div>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Dados Comerciais</h4>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs">Empresa vinculada</Label>
+                  <Input value={manualForm.empresa} onChange={e => setManualForm(f => ({ ...f, empresa: e.target.value }))} placeholder="Nome da empresa" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Plano</Label>
+                    <Input value={manualForm.plano} onChange={e => setManualForm(f => ({ ...f, plano: e.target.value }))} placeholder="Ex: Plano Premium" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Valor mensal (R$)</Label>
+                    <Input value={manualForm.valor} onChange={e => setManualForm(f => ({ ...f, valor: e.target.value }))} placeholder="99,90" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Status</Label>
+                    <Select value={manualForm.client_status} onValueChange={v => setManualForm(f => ({ ...f, client_status: v }))}>
+                      <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(clientStatusConfig).map(([k, v]) => (
+                          <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Data de entrada</Label>
+                    <Input type="date" value={manualForm.data_adesao} onChange={e => setManualForm(f => ({ ...f, data_adesao: e.target.value }))} />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">Origem</Label>
+                  <Select value={manualForm.origem} onValueChange={v => setManualForm(f => ({ ...f, origem: v }))}>
+                    <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="manual">Manual</SelectItem>
+                      <SelectItem value="indicacao">Indicação</SelectItem>
+                      <SelectItem value="accord">Accord Sales</SelectItem>
+                      <SelectItem value="formulario">Formulário</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div>
+              <Label className="text-xs">Observações</Label>
+              <Textarea
+                value={manualForm.observacoes}
+                onChange={e => setManualForm(f => ({ ...f, observacoes: e.target.value }))}
+                placeholder="Observações sobre o cliente..."
+                className="h-20"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setManualRegOpen(false)}>Cancelar</Button>
+              <Button onClick={handleManualRegister} disabled={manualSaving} className="gap-1.5">
+                {manualSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                Cadastrar Cliente
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ────── Upsell Creation Dialog ────── */}
       <Dialog open={upsellDialogOpen} onOpenChange={setUpsellDialogOpen}>
