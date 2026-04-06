@@ -3,7 +3,8 @@ import { Rnd } from "react-rnd";
 import {
   Upload, FileText, Trash2, Save, Loader2, ChevronLeft, ChevronRight,
   ZoomIn, ZoomOut, Grid3X3, Undo2, DollarSign, FileSignature,
-  Hash, AlertCircle, MapPin, Building2, ImageIcon,
+  Hash, AlertCircle, MapPin, Building2, ImageIcon, User, Mail, Phone,
+  Calendar, ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,15 +16,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { PdfRenderer } from "@/components/contratos/PdfRenderer";
 
 const TEMPLATE_FIELD_TYPES = [
-  // Dados do Servidor (Contratada)
-  { type: "servidor_logo", label: "Logo Servidor", icon: ImageIcon, defaultW: 160, defaultH: 60, group: "servidor" },
-  { type: "servidor_empresa", label: "Empresa (Contratada)", icon: Building2, defaultW: 280, defaultH: 36, group: "servidor" },
-  { type: "servidor_cnpj", label: "CNPJ Servidor", icon: Hash, defaultW: 200, defaultH: 36, group: "servidor" },
-  { type: "servidor_endereco", label: "Endereço Servidor", icon: MapPin, defaultW: 300, defaultH: 36, group: "servidor" },
-  // Detalhes da Proposta
-  { type: "campo_proposta", label: "Campo Proposta", icon: FileText, defaultW: 400, defaultH: 80, group: "proposta" },
-  { type: "valor_mrr", label: "Valor MRR", icon: DollarSign, defaultW: 140, defaultH: 36, group: "proposta" },
-  { type: "assinatura", label: "Assinatura", icon: FileSignature, defaultW: 200, defaultH: 60, group: "proposta" },
+  // CONTRATO
+  { type: "clausula", label: "Cláusula", icon: FileText, defaultW: 400, defaultH: 80, group: "contrato" },
+  { type: "assinatura", label: "Assinatura", icon: FileSignature, defaultW: 200, defaultH: 60, group: "contrato" },
+  { type: "data", label: "Data", icon: Calendar, defaultW: 160, defaultH: 36, group: "contrato" },
+  { type: "plano", label: "Plano", icon: ClipboardList, defaultW: 200, defaultH: 36, group: "contrato" },
+  // DADOS DO CLIENTE
+  { type: "cnpj_cpf", label: "CNPJ/CPF", icon: Hash, defaultW: 200, defaultH: 36, group: "cliente" },
+  { type: "empresa", label: "Empresa", icon: Building2, defaultW: 280, defaultH: 36, group: "cliente" },
+  { type: "nome_cliente", label: "Nome do Cliente", icon: User, defaultW: 240, defaultH: 36, group: "cliente" },
+  { type: "cliente_email", label: "Email", icon: Mail, defaultW: 240, defaultH: 36, group: "cliente" },
+  { type: "cliente_telefone", label: "Telefone", icon: Phone, defaultW: 180, defaultH: 36, group: "cliente" },
+  { type: "valor_ps", label: "Valor P&S", icon: DollarSign, defaultW: 140, defaultH: 36, group: "cliente" },
+  { type: "valor_mrr", label: "Valor MRR", icon: DollarSign, defaultW: 140, defaultH: 36, group: "cliente" },
+  { type: "cliente_cep", label: "CEP", icon: MapPin, defaultW: 120, defaultH: 36, group: "cliente" },
+  { type: "cliente_endereco", label: "Endereço", icon: MapPin, defaultW: 300, defaultH: 36, group: "cliente" },
+  { type: "cliente_numero", label: "Número", icon: Hash, defaultW: 100, defaultH: 36, group: "cliente" },
+  { type: "cliente_complemento", label: "Complemento", icon: MapPin, defaultW: 200, defaultH: 36, group: "cliente" },
 ];
 
 const SNAP_SIZE = 10;
