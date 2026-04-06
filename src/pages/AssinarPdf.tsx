@@ -1,11 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { Camera, MapPin, CheckCircle, Loader2, FileSignature, AlertCircle, Clock, Users } from "lucide-react";
+import {
+  Camera, MapPin, CheckCircle, Loader2, FileSignature, AlertCircle, Clock,
+  Users, Shield, Download, Eye, ZoomIn, ZoomOut, ChevronDown, X
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { PdfSigningOverlay } from "@/components/contratos/PdfSigningOverlay";
 
@@ -37,11 +41,14 @@ export default function AssinarPdf() {
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const [signedFieldIds, setSignedFieldIds] = useState<string[]>([]);
   const [selectedField, setSelectedField] = useState<any>(null);
+  const [pdfZoom, setPdfZoom] = useState(100);
+  const [showMobileSigning, setShowMobileSigning] = useState(false);
+  const [companyBrand, setCompanyBrand] = useState<any>(null);
 
   useEffect(() => {
     const load = async () => {
       if (!token) { setError("Token inválido"); setLoading(false); return; }
-      
+
       const { data: signerData, error: signerErr } = await supabase
         .from("pdf_contract_signers")
         .select("*")
@@ -54,34 +61,13 @@ export default function AssinarPdf() {
         return;
       }
 
-      if (signerData.status === "assinado") {
-        setSigner(signerData);
-        setSigned(true);
-        const { data: contractData } = await supabase
-          .from("pdf_contracts")
-          .select("*")
-          .eq("id", signerData.contract_id)
-          .single();
-        if (contractData) setContract(contractData);
-        const { data: signersList } = await supabase
-          .from("pdf_contract_signers")
-          .select("id, name, sign_order, status, signed_at")
-          .eq("contract_id", signerData.contract_id)
-          .order("sign_order", { ascending: true });
-        setAllSigners((signersList as SignerInfo[]) || []);
-        setLoading(false);
-        return;
-      }
-
-      setSigner(signerData);
-
-      const { data: contractData, error: contractErr } = await supabase
+      const { data: contractData } = await supabase
         .from("pdf_contracts")
         .select("*")
         .eq("id", signerData.contract_id)
         .single();
 
-      if (contractErr || !contractData) {
+      if (!contractData) {
         setError("Contrato não encontrado.");
         setLoading(false);
         return;
@@ -93,23 +79,36 @@ export default function AssinarPdf() {
         return;
       }
 
+      // Load company branding
+      if (contractData.servidor_id) {
+        const { data: company } = await supabase
+          .from("companies")
+          .select("nome_fantasia, razao_social, brand_logo_url, brand_primary_color")
+          .eq("id", contractData.servidor_id)
+          .single();
+        if (company) setCompanyBrand(company);
+      }
+
       setContract(contractData);
+      setSigner(signerData);
+
+      if (signerData.status === "assinado") {
+        setSigned(true);
+      }
 
       const { data: signersList } = await supabase
         .from("pdf_contract_signers")
         .select("id, name, sign_order, status, signed_at")
         .eq("contract_id", signerData.contract_id)
         .order("sign_order", { ascending: true });
-      
+
       const sigList = (signersList as SignerInfo[]) || [];
       setAllSigners(sigList);
 
-      // Check signing order (only for sequential mode)
-      if (contractData.sign_mode === "sequential") {
+      if (contractData.sign_mode === "sequential" && signerData.status !== "assinado") {
         const myOrder = signerData.sign_order || 0;
         const previousSigners = sigList.filter(s => s.sign_order < myOrder);
-        const allPreviousSigned = previousSigners.every(s => s.status === "assinado");
-        if (!allPreviousSigned && previousSigners.length > 0) {
+        if (previousSigners.length > 0 && !previousSigners.every(s => s.status === "assinado")) {
           setBlocked(true);
         }
       }
@@ -119,7 +118,6 @@ export default function AssinarPdf() {
     load();
   }, [token]);
 
-  // Auto-capture geolocation
   useEffect(() => {
     setLocationLoading(true);
     navigator.geolocation.getCurrentPosition(
@@ -185,9 +183,7 @@ export default function AssinarPdf() {
   };
 
   useEffect(() => {
-    return () => {
-      if (countdownRef.current) clearInterval(countdownRef.current);
-    };
+    return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
   }, []);
 
   const getClientIp = async (): Promise<string> => {
@@ -200,8 +196,11 @@ export default function AssinarPdf() {
 
   const handleFieldClick = (field: any) => {
     setSelectedField(field);
-    // Scroll to signing section
-    document.getElementById("signing-section")?.scrollIntoView({ behavior: "smooth" });
+    if (window.innerWidth < 1024) {
+      setShowMobileSigning(true);
+    } else {
+      document.getElementById("signing-sidebar")?.scrollIntoView({ behavior: "smooth" });
+    }
   };
 
   const handleSign = async () => {
@@ -209,7 +208,6 @@ export default function AssinarPdf() {
     setSigning(true);
     try {
       const clientIp = await getClientIp();
-
       const fileName = `pdf_${signer.id}_${Date.now()}.jpg`;
       const { error: uploadErr } = await supabase.storage
         .from("signatures")
@@ -232,7 +230,6 @@ export default function AssinarPdf() {
         .eq("id", signer.id);
       if (updateErr) throw updateErr;
 
-      // Mark field as signed if selected
       if (selectedField) {
         setSignedFieldIds(prev => [...prev, selectedField.id]);
         await supabase.from("pdf_contract_fields")
@@ -246,7 +243,6 @@ export default function AssinarPdf() {
         description: `${signer.name} assinou o contrato em ${new Date().toLocaleString("pt-BR")}. Local: ${location.address}. IP: ${clientIp}`,
       } as any);
 
-      // Check if all signers signed
       const { data: updatedSigners } = await supabase
         .from("pdf_contract_signers")
         .select("status")
@@ -262,11 +258,7 @@ export default function AssinarPdf() {
 
         await supabase
           .from("pdf_contracts")
-          .update({
-            status: "assinado",
-            document_hash: documentHash,
-            validation_code: validationCode,
-          } as any)
+          .update({ status: "assinado", document_hash: documentHash, validation_code: validationCode } as any)
           .eq("id", signer.contract_id);
 
         await supabase.from("pdf_contract_history").insert({
@@ -286,239 +278,497 @@ export default function AssinarPdf() {
 
   const signedCount = allSigners.filter(s => s.status === "assinado").length;
   const progressPercent = allSigners.length > 0 ? (signedCount / allSigners.length) * 100 : 0;
+  const companyName = companyBrand?.nome_fantasia || companyBrand?.razao_social || "Accord";
+  const currentDate = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
 
-  const SigningProgress = () => (
-    <Card className="border-border">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Users className="h-4 w-4 text-primary" /> Progresso das Assinaturas
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="space-y-1.5">
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{signedCount} de {allSigners.length} assinatura(s)</span>
-            <span>{Math.round(progressPercent)}%</span>
-          </div>
-          <Progress value={progressPercent} className="h-2" />
-        </div>
-        <div className="space-y-2">
-          {allSigners.map((s, idx) => (
-            <div key={s.id} className="flex items-center gap-2.5 text-sm">
-              <div className="flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground">
-                {idx + 1}
-              </div>
-              {s.status === "assinado" ? (
-                <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
-              ) : s.id === signer?.id ? (
-                <div className="h-4 w-4 rounded-full border-2 border-primary animate-pulse shrink-0" />
-              ) : (
-                <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-              )}
-              <span className={s.status === "assinado" ? "text-muted-foreground line-through" : s.id === signer?.id ? "font-semibold text-foreground" : "text-muted-foreground"}>
-                {s.name}
-              </span>
-              {s.id === signer?.id && s.status !== "assinado" && (
-                <Badge variant="outline" className="text-[10px] ml-auto">Sua vez</Badge>
-              )}
-              {s.status === "assinado" && s.signed_at && (
-                <span className="text-[10px] text-muted-foreground ml-auto">
-                  {new Date(s.signed_at).toLocaleDateString("pt-BR")}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-
+  // ─── LOADING ───
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background p-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex min-h-screen items-center justify-center bg-[hsl(224,62%,8%)]">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center mx-auto">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+          <p className="text-[hsl(220,20%,70%)] text-sm">Carregando contrato...</p>
+        </div>
       </div>
     );
   }
 
+  // ─── ERROR (no signer) ───
   if (error && !signer) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
+      <div className="flex min-h-screen items-center justify-center bg-[hsl(224,62%,8%)] p-4">
+        <Card className="w-full max-w-md bg-[hsl(224,50%,12%)] border-[hsl(224,40%,20%)]">
           <CardHeader className="text-center">
-            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-2" />
-            <CardTitle>Link Inválido</CardTitle>
-            <CardDescription>{error}</CardDescription>
+            <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-3">
+              <AlertCircle className="h-8 w-8 text-destructive" />
+            </div>
+            <CardTitle className="text-[hsl(0,0%,95%)]">Link Inválido</CardTitle>
+            <CardDescription className="text-[hsl(220,20%,60%)]">{error}</CardDescription>
           </CardHeader>
         </Card>
       </div>
     );
   }
 
+  // ─── SIGNED SUCCESS ───
   if (signed) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background p-4">
-        <div className="w-full max-w-md space-y-4">
-          <Card>
-            <CardHeader className="text-center">
-              <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
-              <CardTitle>Contrato Assinado!</CardTitle>
-              <CardDescription>Sua assinatura foi registrada com sucesso.</CardDescription>
+      <div className="min-h-screen bg-[hsl(224,62%,8%)] flex items-center justify-center p-4">
+        <div className="w-full max-w-lg space-y-6">
+          <Card className="bg-[hsl(224,50%,12%)] border-[hsl(224,40%,20%)] overflow-hidden">
+            <div className="h-1.5 bg-gradient-to-r from-[hsl(152,55%,40%)] to-[hsl(152,55%,55%)]" />
+            <CardHeader className="text-center pt-10 pb-4">
+              <div className="w-20 h-20 rounded-full bg-[hsl(152,55%,40%)]/10 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="h-10 w-10 text-[hsl(152,55%,40%)]" />
+              </div>
+              <CardTitle className="text-2xl text-[hsl(0,0%,95%)]">Contrato Assinado!</CardTitle>
+              <CardDescription className="text-[hsl(220,20%,60%)] text-base">
+                Sua assinatura foi registrada com sucesso e possui validade jurídica.
+              </CardDescription>
             </CardHeader>
-            {contract?.pdf_url && (
-              <CardContent>
-                <Button className="w-full" onClick={() => window.open(contract.pdf_url, "_blank")}>
-                  Baixar Documento PDF
+            <CardContent className="space-y-6 pb-8">
+              {/* Signing details */}
+              <div className="bg-[hsl(224,50%,15%)] rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2 text-sm text-[hsl(220,20%,60%)]">
+                  <Shield className="h-4 w-4 text-[hsl(152,55%,40%)]" />
+                  <span>Detalhes da assinatura</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-[hsl(220,20%,50%)] text-xs">Assinante</p>
+                    <p className="text-[hsl(0,0%,90%)] font-medium">{signer?.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-[hsl(220,20%,50%)] text-xs">Data</p>
+                    <p className="text-[hsl(0,0%,90%)] font-medium">{currentDate}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Progress */}
+              {allSigners.length > 1 && (
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[hsl(220,20%,60%)]">{signedCount} de {allSigners.length} assinaturas</span>
+                    <span className="text-[hsl(0,0%,90%)] font-medium">{Math.round(progressPercent)}%</span>
+                  </div>
+                  <Progress value={progressPercent} className="h-2 bg-[hsl(224,50%,18%)]" />
+                  <div className="space-y-2">
+                    {allSigners.map((s) => (
+                      <div key={s.id} className="flex items-center gap-3 text-sm">
+                        {s.status === "assinado" ? (
+                          <CheckCircle className="h-4 w-4 text-[hsl(152,55%,40%)] shrink-0" />
+                        ) : (
+                          <Clock className="h-4 w-4 text-[hsl(45,93%,47%)] shrink-0" />
+                        )}
+                        <span className="text-[hsl(220,20%,70%)]">{s.name}</span>
+                        {s.status === "assinado" && s.signed_at && (
+                          <span className="text-[hsl(220,20%,45%)] text-xs ml-auto">
+                            {new Date(s.signed_at).toLocaleDateString("pt-BR")}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {contract?.pdf_url && (
+                <Button
+                  className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+                  onClick={() => window.open(contract.pdf_url, "_blank")}
+                >
+                  <Download className="h-5 w-5 mr-2" /> Baixar Documento PDF
                 </Button>
-              </CardContent>
-            )}
+              )}
+            </CardContent>
           </Card>
-          {allSigners.length > 1 && <SigningProgress />}
+
+          <p className="text-center text-xs text-[hsl(220,20%,40%)]">
+            <Shield className="h-3 w-3 inline mr-1" />
+            Documento protegido com criptografia SHA-256 · Accord
+          </p>
         </div>
       </div>
     );
   }
 
+  // ─── BLOCKED (sequential) ───
   if (blocked) {
     const myOrder = signer?.sign_order || 0;
     const pendingBefore = allSigners.filter(s => s.sign_order < myOrder && s.status !== "assinado");
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background p-4">
-        <div className="w-full max-w-md space-y-4">
-          <Card>
-            <CardHeader className="text-center">
-              <Clock className="h-12 w-12 text-amber-500 mx-auto mb-2" />
-              <CardTitle>Aguardando sua vez</CardTitle>
-              <CardDescription>
-                Este contrato possui ordem de assinatura obrigatória. Aguarde {pendingBefore.length === 1 ? "o signatário anterior" : `os ${pendingBefore.length} signatários anteriores`} assinar(em) primeiro.
+      <div className="min-h-screen bg-[hsl(224,62%,8%)] flex items-center justify-center p-4">
+        <div className="w-full max-w-lg space-y-6">
+          <Card className="bg-[hsl(224,50%,12%)] border-[hsl(224,40%,20%)] overflow-hidden">
+            <div className="h-1.5 bg-gradient-to-r from-[hsl(45,93%,47%)] to-[hsl(35,93%,55%)]" />
+            <CardHeader className="text-center pt-10">
+              <div className="w-20 h-20 rounded-full bg-[hsl(45,93%,47%)]/10 flex items-center justify-center mx-auto mb-4">
+                <Clock className="h-10 w-10 text-[hsl(45,93%,47%)]" />
+              </div>
+              <CardTitle className="text-2xl text-[hsl(0,0%,95%)]">Aguardando sua vez</CardTitle>
+              <CardDescription className="text-[hsl(220,20%,60%)] text-base">
+                Aguarde {pendingBefore.length === 1 ? "o signatário anterior" : `os ${pendingBefore.length} signatários anteriores`} assinar primeiro.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Alert>
-                <AlertDescription className="text-sm">
-                  Você receberá uma notificação quando for sua vez de assinar.
-                </AlertDescription>
-              </Alert>
+            <CardContent className="pb-8">
+              <div className="space-y-3 mt-2">
+                {allSigners.map((s) => (
+                  <div key={s.id} className="flex items-center gap-3 text-sm p-3 rounded-lg bg-[hsl(224,50%,15%)]">
+                    {s.status === "assinado" ? (
+                      <CheckCircle className="h-4 w-4 text-[hsl(152,55%,40%)] shrink-0" />
+                    ) : s.id === signer?.id ? (
+                      <div className="h-4 w-4 rounded-full border-2 border-primary animate-pulse shrink-0" />
+                    ) : (
+                      <Clock className="h-4 w-4 text-[hsl(45,93%,47%)] shrink-0" />
+                    )}
+                    <span className={s.id === signer?.id ? "text-[hsl(0,0%,95%)] font-semibold" : "text-[hsl(220,20%,65%)]"}>
+                      {s.name}
+                    </span>
+                    {s.id === signer?.id && <Badge className="ml-auto text-xs bg-primary/20 text-primary border-0">Você</Badge>}
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
-          <SigningProgress />
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-3xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <FileSignature className="h-10 w-10 text-primary mx-auto" />
-          <h1 className="text-2xl font-bold text-foreground">{contract?.name || "Contrato"}</h1>
-          <p className="text-muted-foreground">
-            Olá <strong>{signer?.name}</strong>, revise o documento e assine digitalmente.
-          </p>
+  // ─── SIGNING ACTION PANEL (shared between sidebar and mobile) ───
+  const SigningPanel = ({ mobile = false }: { mobile?: boolean }) => (
+    <div className="space-y-5">
+      {/* Signer Info */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-[hsl(0,0%,90%)] uppercase tracking-wider">Dados do Assinante</h3>
+        <div className="bg-[hsl(224,50%,15%)] rounded-xl p-4 space-y-2.5">
+          <div>
+            <p className="text-[hsl(220,20%,50%)] text-xs">Nome</p>
+            <p className="text-[hsl(0,0%,90%)] font-medium text-sm">{signer?.name}</p>
+          </div>
+          {signer?.email && (
+            <div>
+              <p className="text-[hsl(220,20%,50%)] text-xs">E-mail</p>
+              <p className="text-[hsl(0,0%,90%)] text-sm">{signer.email}</p>
+            </div>
+          )}
+          {signer?.cpf_cnpj && (
+            <div>
+              <p className="text-[hsl(220,20%,50%)] text-xs">CPF/CNPJ</p>
+              <p className="text-[hsl(0,0%,90%)] text-sm">{signer.cpf_cnpj}</p>
+            </div>
+          )}
         </div>
-
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Progress */}
-        {allSigners.length > 1 && <SigningProgress />}
-
-        {/* PDF with Signature Overlay */}
-        {contract && signer && (
-          <Card>
-            <CardContent className="p-2 sm:p-4">
-              <PdfSigningOverlay
-                contractId={contract.id}
-                pdfUrl={contract.pdf_url}
-                currentSignerId={signer.id}
-                onFieldClick={handleFieldClick}
-                signedFieldIds={signedFieldIds}
-              />
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Signing Actions */}
-        <Card id="signing-section">
-          <CardHeader>
-            <CardTitle className="text-lg">
-              {selectedField ? "✍️ Assinar Campo Selecionado" : "Assinar Documento"}
-            </CardTitle>
-            <CardDescription>
-              {selectedField
-                ? `Você está assinando o campo "${selectedField.label || "Assinatura"}". Capture sua foto e permita a localização.`
-                : "Capture sua foto e permita o acesso à localização para validar a assinatura."
-              }
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Photo */}
-            <div className="space-y-3">
-              <p className="text-sm font-medium flex items-center gap-2">
-                <Camera className="h-4 w-4 text-primary" /> Foto do Assinante
-                {photo && <CheckCircle className="h-4 w-4 text-green-500" />}
-              </p>
-              {!photo ? (
-                <div className="space-y-3">
-                  {cameraActive ? (
-                    <div className="space-y-3 relative">
-                      <video ref={videoRef} autoPlay playsInline className="w-full max-w-sm rounded-lg border mx-auto" />
-                      {countdown !== null && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-6xl font-bold text-white drop-shadow-lg bg-black/40 rounded-full w-20 h-20 flex items-center justify-center">
-                            {countdown}
-                          </span>
-                        </div>
-                      )}
-                      <p className="text-center text-sm text-muted-foreground">
-                        {countdown !== null ? `Capturando em ${countdown}s...` : "Capturando..."}
-                      </p>
-                    </div>
-                  ) : (
-                    <Button variant="outline" className="w-full" onClick={startCamera}>
-                      <Camera className="h-4 w-4 mr-2" /> Abrir Câmera
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <img src={photoPreview!} alt="Foto" className="w-20 h-20 rounded-lg border object-cover" />
-                  <Button variant="outline" size="sm" onClick={() => { setPhoto(null); setPhotoPreview(null); }}>Tirar outra</Button>
-                </div>
-              )}
-            </div>
-
-            {/* Location */}
-            <div className="space-y-3">
-              <p className="text-sm font-medium flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-primary" /> Geolocalização
-                {location && !locationLoading && <CheckCircle className="h-4 w-4 text-green-500" />}
-              </p>
-              {locationLoading ? (
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Obtendo localização automaticamente...
-                </p>
-              ) : location ? (
-                <p className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">{location.address}</p>
-              ) : null}
-            </div>
-
-            {/* Sign Button */}
-            <Button className="w-full h-12 text-base font-semibold" onClick={handleSign} disabled={!photo || !location || signing}>
-              {signing ? (
-                <><Loader2 className="h-5 w-5 animate-spin mr-2" /> Assinando...</>
-              ) : (
-                <><FileSignature className="h-5 w-5 mr-2" /> Assinar Contrato</>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
       </div>
+
+      <Separator className="bg-[hsl(224,40%,20%)]" />
+
+      {/* Photo Capture */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-[hsl(0,0%,90%)] uppercase tracking-wider flex items-center gap-2">
+          <Camera className="h-4 w-4 text-primary" /> Selfie de Validação
+          {photo && <CheckCircle className="h-4 w-4 text-[hsl(152,55%,40%)]" />}
+        </h3>
+        {!photo ? (
+          cameraActive ? (
+            <div className="relative rounded-xl overflow-hidden border border-[hsl(224,40%,20%)]">
+              <video ref={videoRef} autoPlay playsInline className="w-full rounded-xl" />
+              {countdown !== null && (
+                <div className="absolute inset-0 flex items-center justify-center bg-[hsl(224,62%,8%)]/40">
+                  <span className="text-5xl font-bold text-[hsl(0,0%,100%)] bg-[hsl(224,62%,8%)]/60 rounded-full w-20 h-20 flex items-center justify-center">
+                    {countdown}
+                  </span>
+                </div>
+              )}
+              <p className="text-center text-xs text-[hsl(220,20%,50%)] py-2">
+                {countdown !== null ? `Capturando em ${countdown}s...` : "Preparando..."}
+              </p>
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              className="w-full h-12 border-dashed border-[hsl(224,40%,25%)] bg-[hsl(224,50%,15%)] text-[hsl(220,20%,70%)] hover:bg-[hsl(224,50%,18%)] hover:text-[hsl(0,0%,90%)]"
+              onClick={startCamera}
+            >
+              <Camera className="h-5 w-5 mr-2" /> Abrir Câmera
+            </Button>
+          )
+        ) : (
+          <div className="flex items-center gap-3">
+            <img src={photoPreview!} alt="Foto" className="w-16 h-16 rounded-xl border border-[hsl(224,40%,20%)] object-cover" />
+            <div>
+              <p className="text-sm text-[hsl(152,55%,40%)] font-medium">Foto capturada</p>
+              <button
+                className="text-xs text-primary hover:underline"
+                onClick={() => { setPhoto(null); setPhotoPreview(null); }}
+              >
+                Tirar outra
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Location */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-[hsl(0,0%,90%)] uppercase tracking-wider flex items-center gap-2">
+          <MapPin className="h-4 w-4 text-primary" /> Geolocalização
+          {location && !locationLoading && <CheckCircle className="h-4 w-4 text-[hsl(152,55%,40%)]" />}
+        </h3>
+        {locationLoading ? (
+          <div className="flex items-center gap-2 text-sm text-[hsl(220,20%,50%)] p-3 bg-[hsl(224,50%,15%)] rounded-xl">
+            <Loader2 className="h-4 w-4 animate-spin" /> Obtendo localização...
+          </div>
+        ) : location ? (
+          <p className="text-xs text-[hsl(220,20%,60%)] bg-[hsl(224,50%,15%)] rounded-xl p-3 leading-relaxed">
+            {location.address}
+          </p>
+        ) : null}
+      </div>
+
+      <Separator className="bg-[hsl(224,40%,20%)]" />
+
+      {/* Security info */}
+      <div className="bg-[hsl(224,50%,15%)] border border-[hsl(224,40%,20%)] rounded-xl p-4 space-y-2">
+        <div className="flex items-center gap-2 text-sm text-[hsl(0,0%,90%)] font-medium">
+          <Shield className="h-4 w-4 text-[hsl(152,55%,40%)]" /> Segurança da Assinatura
+        </div>
+        <ul className="text-xs text-[hsl(220,20%,55%)] space-y-1.5">
+          <li className="flex items-start gap-2">
+            <CheckCircle className="h-3 w-3 mt-0.5 text-[hsl(152,55%,40%)] shrink-0" />
+            IP e geolocalização registrados
+          </li>
+          <li className="flex items-start gap-2">
+            <CheckCircle className="h-3 w-3 mt-0.5 text-[hsl(152,55%,40%)] shrink-0" />
+            Data e hora da assinatura
+          </li>
+          <li className="flex items-start gap-2">
+            <CheckCircle className="h-3 w-3 mt-0.5 text-[hsl(152,55%,40%)] shrink-0" />
+            Validade jurídica (MP 2.200-2/2001)
+          </li>
+        </ul>
+      </div>
+
+      {/* Sign CTA */}
+      <Button
+        className="w-full h-14 text-base font-bold bg-[hsl(152,55%,40%)] hover:bg-[hsl(152,55%,35%)] text-[hsl(0,0%,100%)] rounded-xl shadow-lg shadow-[hsl(152,55%,40%)]/20"
+        onClick={handleSign}
+        disabled={!photo || !location || signing}
+      >
+        {signing ? (
+          <><Loader2 className="h-5 w-5 animate-spin mr-2" /> Processando...</>
+        ) : (
+          <><FileSignature className="h-5 w-5 mr-2" /> Assinar Contrato</>
+        )}
+      </Button>
+
+      {!photo && (
+        <p className="text-xs text-center text-[hsl(220,20%,45%)]">
+          Capture sua selfie para habilitar a assinatura
+        </p>
+      )}
+    </div>
+  );
+
+  // ─── MAIN SIGNING VIEW ───
+  return (
+    <div className="min-h-screen bg-[hsl(224,62%,8%)]">
+      {/* ── HEADER ── */}
+      <header className="sticky top-0 z-50 bg-[hsl(224,50%,12%)]/95 backdrop-blur-md border-b border-[hsl(224,40%,18%)]">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          {/* Left: Brand */}
+          <div className="flex items-center gap-3">
+            {companyBrand?.brand_logo_url ? (
+              <img src={companyBrand.brand_logo_url} alt="" className="h-8 w-auto object-contain" />
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                <FileSignature className="h-4 w-4 text-primary" />
+              </div>
+            )}
+            <div className="hidden sm:block">
+              <p className="text-sm font-semibold text-[hsl(0,0%,92%)] leading-tight">{companyName}</p>
+              <p className="text-xs text-[hsl(220,20%,50%)]">Assinatura Digital</p>
+            </div>
+          </div>
+
+          {/* Center: Document name */}
+          <div className="text-center hidden md:block">
+            <p className="text-sm font-medium text-[hsl(0,0%,90%)] truncate max-w-[300px]">{contract?.name || "Contrato"}</p>
+          </div>
+
+          {/* Right: Status + Progress */}
+          <div className="flex items-center gap-3">
+            <Badge className="bg-[hsl(45,93%,47%)]/10 text-[hsl(45,93%,47%)] border-[hsl(45,93%,47%)]/20 text-xs">
+              <Clock className="h-3 w-3 mr-1" /> Pendente
+            </Badge>
+            {allSigners.length > 1 && (
+              <div className="hidden sm:flex items-center gap-2">
+                <span className="text-xs text-[hsl(220,20%,55%)]">{signedCount}/{allSigners.length}</span>
+                <div className="w-20">
+                  <Progress value={progressPercent} className="h-1.5 bg-[hsl(224,50%,18%)]" />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* ── ALERT BAR ── */}
+      <div className="bg-[hsl(45,93%,47%)]/5 border-b border-[hsl(45,93%,47%)]/10">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-center gap-2 text-sm">
+          <Eye className="h-4 w-4 text-[hsl(45,93%,47%)]" />
+          <span className="text-[hsl(45,93%,47%)]">Leia atentamente o contrato antes de assinar</span>
+        </div>
+      </div>
+
+      {error && (
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-4">
+          <Alert variant="destructive" className="bg-destructive/10 border-destructive/20">
+            <AlertDescription className="text-destructive">{error}</AlertDescription>
+          </Alert>
+        </div>
+      )}
+
+      {/* ── CONTENT ── */}
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-6">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* ── LEFT: Document Area ── */}
+          <div className="flex-1 min-w-0 space-y-4">
+            {/* Document name + zoom (mobile) */}
+            <div className="flex items-center justify-between lg:hidden">
+              <h1 className="text-lg font-bold text-[hsl(0,0%,92%)] truncate">{contract?.name || "Contrato"}</h1>
+            </div>
+
+            {/* Zoom Controls */}
+            <div className="flex items-center gap-2 justify-end">
+              <Button
+                variant="ghost" size="icon"
+                className="h-8 w-8 text-[hsl(220,20%,60%)] hover:text-[hsl(0,0%,90%)] hover:bg-[hsl(224,50%,15%)]"
+                onClick={() => setPdfZoom(z => Math.max(50, z - 25))}
+              >
+                <ZoomOut className="h-4 w-4" />
+              </Button>
+              <span className="text-xs text-[hsl(220,20%,55%)] min-w-[40px] text-center">{pdfZoom}%</span>
+              <Button
+                variant="ghost" size="icon"
+                className="h-8 w-8 text-[hsl(220,20%,60%)] hover:text-[hsl(0,0%,90%)] hover:bg-[hsl(224,50%,15%)]"
+                onClick={() => setPdfZoom(z => Math.min(200, z + 25))}
+              >
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* PDF Viewer */}
+            <div className="bg-[hsl(224,50%,15%)] rounded-2xl border border-[hsl(224,40%,20%)] overflow-hidden shadow-2xl shadow-[hsl(224,62%,4%)]/50">
+              <div
+                className="overflow-auto max-h-[calc(100vh-260px)] p-4"
+                style={{ transform: `scale(${pdfZoom / 100})`, transformOrigin: "top center" }}
+              >
+                {contract && signer && (
+                  <PdfSigningOverlay
+                    contractId={contract.id}
+                    pdfUrl={contract.pdf_url}
+                    currentSignerId={signer.id}
+                    onFieldClick={handleFieldClick}
+                    signedFieldIds={signedFieldIds}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Signers List */}
+            {allSigners.length > 1 && (
+              <div className="bg-[hsl(224,50%,12%)] rounded-2xl border border-[hsl(224,40%,20%)] p-5">
+                <h3 className="text-sm font-semibold text-[hsl(0,0%,90%)] mb-4 flex items-center gap-2">
+                  <Users className="h-4 w-4 text-primary" /> Assinaturas do Contrato
+                </h3>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {allSigners.map((s) => (
+                    <div
+                      key={s.id}
+                      className={`rounded-xl p-4 border ${
+                        s.status === "assinado"
+                          ? "bg-[hsl(152,55%,40%)]/5 border-[hsl(152,55%,40%)]/20"
+                          : s.id === signer?.id
+                          ? "bg-primary/5 border-primary/20"
+                          : "bg-[hsl(224,50%,15%)] border-[hsl(224,40%,22%)]"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <p className="text-sm font-medium text-[hsl(0,0%,90%)]">{s.name}</p>
+                        {s.status === "assinado" ? (
+                          <Badge className="bg-[hsl(152,55%,40%)]/10 text-[hsl(152,55%,40%)] border-0 text-[10px]">Assinado</Badge>
+                        ) : (
+                          <Badge className="bg-[hsl(45,93%,47%)]/10 text-[hsl(45,93%,47%)] border-0 text-[10px]">Pendente</Badge>
+                        )}
+                      </div>
+                      {s.status === "assinado" && s.signed_at ? (
+                        <p className="text-xs text-[hsl(220,20%,50%)]">
+                          Assinado em {new Date(s.signed_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}
+                        </p>
+                      ) : s.id === signer?.id ? (
+                        <p className="text-xs text-primary">Sua vez de assinar</p>
+                      ) : (
+                        <div className="mt-2 border-b border-dashed border-[hsl(224,40%,25%)] w-3/4" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── RIGHT SIDEBAR (desktop) ── */}
+          <aside id="signing-sidebar" className="hidden lg:block w-[380px] shrink-0">
+            <div className="sticky top-24 space-y-6">
+              <div className="bg-[hsl(224,50%,12%)] rounded-2xl border border-[hsl(224,40%,20%)] p-6">
+                <h2 className="text-lg font-bold text-[hsl(0,0%,92%)] mb-5 flex items-center gap-2">
+                  <FileSignature className="h-5 w-5 text-primary" /> Assinar Documento
+                </h2>
+                <SigningPanel />
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      {/* ── MOBILE FIXED BOTTOM BAR ── */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[hsl(224,50%,12%)]/95 backdrop-blur-md border-t border-[hsl(224,40%,18%)] p-4 safe-area-pb">
+        <Button
+          className="w-full h-14 text-base font-bold bg-[hsl(152,55%,40%)] hover:bg-[hsl(152,55%,35%)] text-[hsl(0,0%,100%)] rounded-xl"
+          onClick={() => setShowMobileSigning(true)}
+        >
+          <FileSignature className="h-5 w-5 mr-2" /> Assinar Contrato
+        </Button>
+      </div>
+
+      {/* ── MOBILE SIGNING SHEET ── */}
+      {showMobileSigning && (
+        <div className="lg:hidden fixed inset-0 z-[60] bg-[hsl(224,62%,8%)]/80 backdrop-blur-sm" onClick={() => setShowMobileSigning(false)}>
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-[hsl(224,50%,12%)] rounded-t-3xl border-t border-[hsl(224,40%,20%)] max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-[hsl(224,50%,12%)] p-4 flex items-center justify-between border-b border-[hsl(224,40%,18%)] rounded-t-3xl">
+              <h2 className="text-lg font-bold text-[hsl(0,0%,92%)] flex items-center gap-2">
+                <FileSignature className="h-5 w-5 text-primary" /> Assinar
+              </h2>
+              <button onClick={() => setShowMobileSigning(false)} className="text-[hsl(220,20%,50%)] hover:text-[hsl(0,0%,90%)]">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-5 pb-10">
+              <SigningPanel mobile />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom spacing for mobile CTA */}
+      <div className="lg:hidden h-24" />
     </div>
   );
 }
