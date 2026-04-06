@@ -1,9 +1,10 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   FileSpreadsheet, Download, Filter, Loader2, Search, ShieldAlert,
   Users, TrendingUp, DollarSign, BarChart3, CalendarDays, ArrowUpRight,
-  ArrowDownRight, FileText, RefreshCw,
+  ArrowDownRight, FileText, Sparkles, Bot,
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
