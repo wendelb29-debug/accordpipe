@@ -143,6 +143,8 @@ export default function ServidoresTab() {
     }
   };
 
+  const defaultBrand = { brandLogoUrl: "", brandLogoPath: "", brandPrimaryColor: "#1E2952", brandSecondaryColor: "#4F46E5", brandAccentColor: "#10B981", brandBgColor: "#F3F4F6", brandTextColor: "#1F2937" };
+
   const handleOpenDialog = (company?: Company) => {
     if (company) {
       setEditingCompany(company);
@@ -160,11 +162,19 @@ export default function ServidoresTab() {
         cep: company.cep || "",
         numero: company.numero || "",
         complemento: company.complemento || "",
+        brandLogoUrl: (company as any).brand_logo_url || "",
+        brandLogoPath: (company as any).brand_logo_path || "",
+        brandPrimaryColor: (company as any).brand_primary_color || "#1E2952",
+        brandSecondaryColor: (company as any).brand_secondary_color || "#4F46E5",
+        brandAccentColor: (company as any).brand_accent_color || "#10B981",
+        brandBgColor: (company as any).brand_bg_color || "#F3F4F6",
+        brandTextColor: (company as any).brand_text_color || "#1F2937",
       });
     } else {
       setEditingCompany(null);
-      setFormData({ razao_social: "", nome_fantasia: "", cnpj: "", email: "", telefone: "", responsavel: "", cidade: "", estado: "", endereco: "", bairro: "", cep: "", numero: "", complemento: "" });
+      setFormData({ razao_social: "", nome_fantasia: "", cnpj: "", email: "", telefone: "", responsavel: "", cidade: "", estado: "", endereco: "", bairro: "", cep: "", numero: "", complemento: "", ...defaultBrand });
     }
+    setActiveTab("cadastro");
     setDialogOpen(true);
   };
 
@@ -248,6 +258,13 @@ export default function ServidoresTab() {
         cep: formData.cep || null,
         numero: formData.numero || null,
         complemento: formData.complemento || null,
+        brand_logo_url: formData.brandLogoUrl || null,
+        brand_logo_path: formData.brandLogoPath || null,
+        brand_primary_color: formData.brandPrimaryColor,
+        brand_secondary_color: formData.brandSecondaryColor,
+        brand_accent_color: formData.brandAccentColor,
+        brand_bg_color: formData.brandBgColor,
+        brand_text_color: formData.brandTextColor,
       };
 
       if (editingCompany) {
