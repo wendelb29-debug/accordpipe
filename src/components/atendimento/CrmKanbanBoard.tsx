@@ -96,6 +96,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const [availableTags, setAvailableTags] = useState<{ id: string; name: string; color: string }[]>([]);
   const [leadsWithActivity, setLeadsWithActivity] = useState<Set<string>>(new Set());
   const [nextActivities, setNextActivities] = useState<Record<string, string>>({});
+  const [lastCompletedActivities, setLastCompletedActivities] = useState<Record<string, string>>({});
 
   // Drag-to-scroll
   const pipelineRef = useRef<HTMLDivElement>(null);
