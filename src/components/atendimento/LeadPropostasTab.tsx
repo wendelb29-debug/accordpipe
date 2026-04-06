@@ -1154,19 +1154,20 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
                     return (
                       <div
                         key={f.id}
-                        className="absolute border border-primary/30 bg-background/90 rounded px-1 overflow-hidden flex items-center"
+                        className="absolute overflow-hidden flex items-center"
                         style={{
                           left: f.pos_x * 1.2,
                           top: f.pos_y * 1.2,
                           width: f.width * 1.2,
                           height: f.height * 1.2,
                           fontSize: Math.min(f.height * 0.55, 13),
+                          background: "transparent",
                         }}
                       >
                         {isLogo && value ? (
                           <img src={value} alt="Logo" className="h-full w-auto object-contain" />
                         ) : (
-                          <span className="text-foreground whitespace-pre-wrap leading-tight" style={{ fontSize: f.field_type === "campo_proposta" || f.field_type === "clausula" ? 8 : 11, lineHeight: "1.3" }}>
+                          <span className="whitespace-pre-wrap leading-tight" style={{ color: "#000", fontSize: f.field_type === "campo_proposta" || f.field_type === "clausula" ? 8 : 11, lineHeight: "1.3" }}>
                             {value}
                           </span>
                         )}
@@ -1359,19 +1360,20 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
                     return (
                       <div
                         key={f.id}
-                        className="absolute bg-background/90 rounded px-0.5 overflow-hidden flex items-center"
+                        className="absolute overflow-hidden flex items-center"
                         style={{
                           left: f.pos_x * s,
                           top: f.pos_y * s,
                           width: f.width * s,
                           height: f.height * s,
                           fontSize: Math.min(f.height * 0.5, 12),
+                          background: "transparent",
                         }}
                       >
                         {isLogo && value ? (
                           <img src={value} alt="Logo" className="h-full w-auto object-contain" />
                         ) : (
-                          <span className="text-foreground whitespace-pre-wrap leading-tight" style={{ fontSize: f.field_type === "campo_proposta" || f.field_type === "clausula" ? 8 : 10, lineHeight: "1.2" }}>
+                          <span className="whitespace-pre-wrap leading-tight" style={{ color: "#000", fontSize: f.field_type === "campo_proposta" || f.field_type === "clausula" ? 8 : 10, lineHeight: "1.2" }}>
                             {value}
                           </span>
                         )}
