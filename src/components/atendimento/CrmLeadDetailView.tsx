@@ -595,7 +595,31 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     }
   };
 
-  const canTransferOwnership = role === "admin" || role === "administrativo" || role === "ceo" || profile?.is_master;
+  const handleEditNote = (activity: any) => {
+    setEditingNoteId(activity.id);
+    setEditingNoteText(activity.description || activity.title || "");
+  };
+
+  const handleSaveEditNote = async () => {
+    if (!editingNoteId || !editingNoteText.trim()) return;
+    setSavingEditNote(true);
+    try {
+      await supabase.from("crm_lead_activities").update({
+        description: editingNoteText.trim(),
+        title: editingNoteText.trim().slice(0, 100),
+      } as any).eq("id", editingNoteId);
+      toast.success("Nota atualizada!");
+      setEditingNoteId(null);
+      setEditingNoteText("");
+      refreshActivities?.();
+    } catch {
+      toast.error("Erro ao atualizar nota");
+    } finally {
+      setSavingEditNote(false);
+    }
+  };
+
+
 
   const handleTransferOwnership = async () => {
     const { data: users } = await supabase
