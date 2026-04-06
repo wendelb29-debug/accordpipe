@@ -13,6 +13,7 @@ import { LeadAtividadesTab } from "./LeadAtividadesTab";
 import { NoteEditor } from "./NoteEditor";
 import { LeadPropostasTab } from "./LeadPropostasTab";
 import { LeadContratosTab } from "./LeadContratosTab";
+import { LeadDocsTab } from "./LeadDocsTab";
 import { LeadSimulacaoTab } from "./LeadSimulacaoTab";
 import { LeadCadastroTab } from "./LeadCadastroTab";
 import { Button } from "@/components/ui/button";
@@ -945,7 +946,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                   <PhoneCall className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Ligações
                 </TabsTrigger>
                 <TabsTrigger value="contratos" className="text-[11px] sm:text-xs gap-1">
-                  <FileSignature className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Contratos
+                  <FileSignature className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Upsell
                 </TabsTrigger>
                 <TabsTrigger value="propostas" className="text-[11px] sm:text-xs gap-1">
                   <FileSpreadsheet className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Propostas
@@ -953,8 +954,8 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                 <TabsTrigger value="assinatura" className="text-[11px] sm:text-xs gap-1">
                   <FileSignature className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Assinatura
                 </TabsTrigger>
-                <TabsTrigger value="simulacao" className="text-[11px] sm:text-xs gap-1">
-                  <Calculator className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Simulação
+                <TabsTrigger value="docs" className="text-[11px] sm:text-xs gap-1">
+                  <Paperclip className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Docs
                 </TabsTrigger>
                 {(isAdminPipeline || role === "administrativo" || role === "admin") && (
                   <TabsTrigger value="cadastro" className="text-[11px] sm:text-xs gap-1">
