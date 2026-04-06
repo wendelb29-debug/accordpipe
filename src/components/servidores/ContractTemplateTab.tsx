@@ -3,7 +3,8 @@ import { Rnd } from "react-rnd";
 import {
   Upload, FileText, Trash2, Save, Loader2, ChevronLeft, ChevronRight,
   ZoomIn, ZoomOut, Grid3X3, Undo2, DollarSign, FileSignature, Type,
-  Calendar, PenTool, Hash, AlertCircle,
+  Calendar, PenTool, Hash, AlertCircle, Building2, MapPin, Phone, Mail,
+  User, CreditCard, Home,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,13 +16,31 @@ import { supabase } from "@/integrations/supabase/client";
 import { PdfRenderer } from "@/components/contratos/PdfRenderer";
 
 const TEMPLATE_FIELD_TYPES = [
-  { type: "valor", label: "Valor", icon: DollarSign, defaultW: 180, defaultH: 36 },
-  { type: "clausula", label: "Cláusula", icon: FileText, defaultW: 400, defaultH: 80 },
-  { type: "assinatura", label: "Assinatura", icon: FileSignature, defaultW: 200, defaultH: 60 },
-  { type: "nome_cliente", label: "Nome Cliente", icon: Type, defaultW: 200, defaultH: 36 },
-  { type: "cpf_cnpj", label: "CPF/CNPJ", icon: Hash, defaultW: 180, defaultH: 36 },
-  { type: "data", label: "Data", icon: Calendar, defaultW: 140, defaultH: 36 },
-  { type: "plano", label: "Plano", icon: PenTool, defaultW: 200, defaultH: 36 },
+  // Campos do Contrato
+  { type: "valor", label: "Valor", icon: DollarSign, defaultW: 180, defaultH: 36, group: "contrato" },
+  { type: "clausula", label: "Cláusula", icon: FileText, defaultW: 400, defaultH: 80, group: "contrato" },
+  { type: "assinatura", label: "Assinatura", icon: FileSignature, defaultW: 200, defaultH: 60, group: "contrato" },
+  { type: "data", label: "Data", icon: Calendar, defaultW: 140, defaultH: 36, group: "contrato" },
+  { type: "plano", label: "Plano", icon: PenTool, defaultW: 200, defaultH: 36, group: "contrato" },
+  // Campos do Servidor (Empresa)
+  { type: "servidor_razao", label: "Razão Social Servidor", icon: Building2, defaultW: 260, defaultH: 36, group: "servidor" },
+  { type: "servidor_fantasia", label: "Nome Fantasia Servidor", icon: Building2, defaultW: 240, defaultH: 36, group: "servidor" },
+  { type: "servidor_cnpj", label: "CNPJ Servidor", icon: CreditCard, defaultW: 200, defaultH: 36, group: "servidor" },
+  { type: "servidor_endereco", label: "Endereço Servidor", icon: MapPin, defaultW: 320, defaultH: 36, group: "servidor" },
+  { type: "servidor_cidade_uf", label: "Cidade/UF Servidor", icon: Home, defaultW: 200, defaultH: 36, group: "servidor" },
+  { type: "servidor_cep", label: "CEP Servidor", icon: MapPin, defaultW: 140, defaultH: 36, group: "servidor" },
+  { type: "servidor_telefone", label: "Telefone Servidor", icon: Phone, defaultW: 180, defaultH: 36, group: "servidor" },
+  { type: "servidor_email", label: "E-mail Servidor", icon: Mail, defaultW: 220, defaultH: 36, group: "servidor" },
+  { type: "servidor_responsavel", label: "Responsável Servidor", icon: User, defaultW: 200, defaultH: 36, group: "servidor" },
+  // Campos do Cliente (Lead)
+  { type: "nome_cliente", label: "Nome Cliente", icon: Type, defaultW: 200, defaultH: 36, group: "cliente" },
+  { type: "cpf_cnpj", label: "CPF/CNPJ Cliente", icon: Hash, defaultW: 180, defaultH: 36, group: "cliente" },
+  { type: "cliente_email", label: "E-mail Cliente", icon: Mail, defaultW: 220, defaultH: 36, group: "cliente" },
+  { type: "cliente_telefone", label: "Telefone Cliente", icon: Phone, defaultW: 180, defaultH: 36, group: "cliente" },
+  { type: "cliente_endereco", label: "Endereço Cliente", icon: MapPin, defaultW: 320, defaultH: 36, group: "cliente" },
+  { type: "cliente_cidade_uf", label: "Cidade/UF Cliente", icon: Home, defaultW: 200, defaultH: 36, group: "cliente" },
+  { type: "cliente_cep", label: "CEP Cliente", icon: MapPin, defaultW: 140, defaultH: 36, group: "cliente" },
+  { type: "cliente_contato", label: "Contato Cliente", icon: User, defaultW: 200, defaultH: 36, group: "cliente" },
 ];
 
 const SNAP_SIZE = 10;
@@ -249,6 +268,21 @@ export function ContractTemplateTab({ companyId }: Props) {
     cpf_cnpj: "#ec4899",
     data: "#06b6d4",
     plano: "#f97316",
+    servidor_razao: "#14b8a6",
+    servidor_fantasia: "#14b8a6",
+    servidor_cnpj: "#14b8a6",
+    servidor_endereco: "#14b8a6",
+    servidor_cidade_uf: "#14b8a6",
+    servidor_cep: "#14b8a6",
+    servidor_telefone: "#14b8a6",
+    servidor_email: "#14b8a6",
+    servidor_responsavel: "#14b8a6",
+    cliente_email: "#22c55e",
+    cliente_telefone: "#22c55e",
+    cliente_endereco: "#22c55e",
+    cliente_cidade_uf: "#22c55e",
+    cliente_cep: "#22c55e",
+    cliente_contato: "#22c55e",
   };
 
   if (loading) {
@@ -316,20 +350,40 @@ export function ContractTemplateTab({ companyId }: Props) {
       </div>
 
       {/* Field palette */}
-      <div className="flex flex-wrap gap-1.5">
-        {TEMPLATE_FIELD_TYPES.map(ft => (
-          <Button
-            key={ft.type}
-            variant="outline"
-            size="sm"
-            onClick={() => addField(ft.type)}
-            className="gap-1.5 text-xs h-8"
-            style={{ borderColor: FIELD_COLORS[ft.type] + "80" }}
-          >
-            <ft.icon className="h-3.5 w-3.5" style={{ color: FIELD_COLORS[ft.type] }} />
-            {ft.label}
-          </Button>
-        ))}
+      <div className="space-y-2">
+        <div>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Contrato</span>
+          <div className="flex flex-wrap gap-1.5">
+            {TEMPLATE_FIELD_TYPES.filter(ft => ft.group === "contrato").map(ft => (
+              <Button key={ft.type} variant="outline" size="sm" onClick={() => addField(ft.type)} className="gap-1.5 text-xs h-8" style={{ borderColor: FIELD_COLORS[ft.type] + "80" }}>
+                <ft.icon className="h-3.5 w-3.5" style={{ color: FIELD_COLORS[ft.type] }} />
+                {ft.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Servidor</span>
+          <div className="flex flex-wrap gap-1.5">
+            {TEMPLATE_FIELD_TYPES.filter(ft => ft.group === "servidor").map(ft => (
+              <Button key={ft.type} variant="outline" size="sm" onClick={() => addField(ft.type)} className="gap-1.5 text-xs h-8" style={{ borderColor: FIELD_COLORS[ft.type] + "80" }}>
+                <ft.icon className="h-3.5 w-3.5" style={{ color: FIELD_COLORS[ft.type] }} />
+                {ft.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Cliente</span>
+          <div className="flex flex-wrap gap-1.5">
+            {TEMPLATE_FIELD_TYPES.filter(ft => ft.group === "cliente").map(ft => (
+              <Button key={ft.type} variant="outline" size="sm" onClick={() => addField(ft.type)} className="gap-1.5 text-xs h-8" style={{ borderColor: FIELD_COLORS[ft.type] + "80" }}>
+                <ft.icon className="h-3.5 w-3.5" style={{ color: FIELD_COLORS[ft.type] }} />
+                {ft.label}
+              </Button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Toolbar */}
