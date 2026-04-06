@@ -18,7 +18,7 @@ const navigation = [
   { name: "Vendas", href: "/atendimento", icon: MessageSquare, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
   { name: "Formulários", href: "/formularios", icon: ClipboardList, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
   { name: "Atividades", href: "/atividades", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
-  { name: "Clientes", href: "/clientes", icon: Users, roles: ["admin", "ceo", "administrativo", "financeiro"] },
+  
   { name: "Financeiro", href: "/financeiro", icon: Receipt, roles: ["admin", "ceo", "financeiro"] },
   { name: "Documentos", href: "/documentos", icon: FileText, roles: ["admin", "ceo", "administrativo", "financeiro"] },
   { name: "Relatórios", href: "/relatorios", icon: BarChart3, roles: ["admin", "leitura", "ceo", "administrativo", "financeiro"] },
