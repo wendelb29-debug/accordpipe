@@ -111,6 +111,12 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
   const [generatedContractId, setGeneratedContractId] = useState<string | null>(null);
   const [registrationData, setRegistrationData] = useState<any>(null);
 
+  // Template PDF state
+  const [templatePdfUrl, setTemplatePdfUrl] = useState<string | null>(null);
+  const [templateFields, setTemplateFields] = useState<any[]>([]);
+  const [templateCurrentPage, setTemplateCurrentPage] = useState(1);
+  const [templateTotalPages, setTemplateTotalPages] = useState(1);
+
   // Brand state
   const [brands, setBrands] = useState<ProposalBrand[]>([]);
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
