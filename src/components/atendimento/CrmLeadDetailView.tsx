@@ -181,11 +181,11 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               setCompanyAddress(data);
               setForm(prev => ({
                 ...prev,
-                comp_endereco: data.endereco || "",
-                comp_numero: data.numero || "",
-                comp_bairro: data.bairro || "",
-                comp_complemento: data.complemento || "",
-                comp_cep: data.cep || "",
+                comp_endereco: data.endereco || prev.comp_endereco || "",
+                comp_numero: data.numero || prev.comp_numero || "",
+                comp_bairro: data.bairro || prev.comp_bairro || "",
+                comp_complemento: data.complemento || prev.comp_complemento || "",
+                comp_cep: data.cep || prev.comp_cep || "",
                 comp_razao_social: data.razao_social || "",
                 comp_nome_fantasia: data.nome_fantasia || "",
                 comp_email: data.email || "",
@@ -193,6 +193,16 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               }));
             }
           });
+      } else {
+        // Load address from lead itself
+        setForm(prev => ({
+          ...prev,
+          comp_cep: (lead as any).cep || prev.comp_cep || "",
+          comp_endereco: (lead as any).endereco || prev.comp_endereco || "",
+          comp_bairro: (lead as any).bairro || prev.comp_bairro || "",
+          comp_numero: (lead as any).numero || prev.comp_numero || "",
+          comp_complemento: (lead as any).complemento || prev.comp_complemento || "",
+        }));
       }
     }
   }, [lead, editing]);
@@ -290,6 +300,11 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         forecast_date: form.forecast_date,
         source: form.source,
         documento: form.documento,
+        cep: form.comp_cep || null,
+        endereco: form.comp_endereco || null,
+        bairro: form.comp_bairro || null,
+        numero: form.comp_numero || null,
+        complemento: form.comp_complemento || null,
       } as any;
 
       // Detect what changed
