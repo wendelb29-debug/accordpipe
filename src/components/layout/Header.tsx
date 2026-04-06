@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { useTheme } from "next-themes";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const roleLabels: Record<string, string> = {
   admin: "Administrador",
@@ -29,16 +30,27 @@ const roleLabels: Record<string, string> = {
 };
 
 export function Header() {
-  const { profile, role, signOut } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { profile, role, signOut, loading } = useAuth();
+  const { resolvedTheme, setTheme } = useTheme();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
+  const handleThemeToggle = async () => {
+    const newTheme = resolvedTheme === "dark" ? "light" : "dark";
+    // Instant DOM update
+    document.documentElement.classList.remove("light", "dark");
+    document.documentElement.classList.add(newTheme);
+    localStorage.setItem("theme", newTheme);
+    setTheme(newTheme);
+    // Persist to DB (non-blocking)
+    if (profile) {
+      supabase.from("profiles").update({ theme: newTheme } as any).eq("id", profile.id).then(() => {});
+    }
+  };
+
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/50 bg-card/95 backdrop-blur-xl px-3 sm:px-6 lg:px-8 shadow-sm gap-2" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-      {/* Mobile menu */}
       {isMobile && <MobileSidebar />}
-      {/* Search */}
       <div className="flex items-center flex-1 min-w-0 overflow-hidden">
         <div className="relative w-full min-w-0 max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
@@ -50,21 +62,14 @@ export function Header() {
         </div>
       </div>
 
-      {/* Actions */}
       <div className="flex items-center gap-1 shrink-0">
         <Button
           variant="ghost"
           size="icon"
           className="rounded-xl h-9 w-9 text-muted-foreground hover:text-foreground"
-          onClick={async () => {
-            const newTheme = theme === "dark" ? "light" : "dark";
-            setTheme(newTheme);
-            if (profile) {
-              await supabase.from("profiles").update({ theme: newTheme } as any).eq("id", profile.id);
-            }
-          }}
+          onClick={handleThemeToggle}
         >
-          {theme === "dark" ? <Sun className="h-[17px] w-[17px]" /> : <Moon className="h-[17px] w-[17px]" />}
+          {resolvedTheme === "dark" ? <Sun className="h-[17px] w-[17px]" /> : <Moon className="h-[17px] w-[17px]" />}
         </Button>
 
         <NotificationBell />
@@ -79,11 +84,13 @@ export function Header() {
                   <User className="h-4 w-4 text-primary-foreground" />
                 )}
               </div>
-              {profile && (
+              {loading ? (
+                <Skeleton className="hidden md:block h-4 w-20 rounded" />
+              ) : profile ? (
                 <span className="hidden text-sm font-medium text-foreground md:block max-w-[120px] truncate">
                   {profile.name}
                 </span>
-              )}
+              ) : null}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-lg">

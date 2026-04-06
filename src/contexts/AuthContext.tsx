@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -38,7 +38,6 @@ interface AuthContextType {
   isLeitura: boolean;
   isCeo: boolean;
   isMaster: boolean;
-  // Multi-tenant
   activeCompanyId: string | null;
   setActiveCompanyId: (id: string | null) => void;
   companies: CompanyOption[];
@@ -58,6 +57,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [activeCompanyId, setActiveCompanyIdState] = useState<string | null>(null);
 
+  // Prevent duplicate fetches
+  const fetchingRef = useRef<string | null>(null);
+  const initializedRef = useRef(false);
+
   const isCeo = role === "ceo";
   const isMaster = profile?.is_master === true || isCeo;
 
@@ -71,102 +74,95 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // 1. Restore session first (synchronous-ish)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+
+      if (session?.user) {
+        fetchUserData(session.user.id);
+      } else {
+        setLoading(false);
+      }
+      initializedRef.current = true;
+    });
+
+    // 2. Listen for subsequent auth changes only
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        // Skip if this is the initial session restore (already handled above)
+        if (!initializedRef.current) return;
+
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
-          setTimeout(() => {
-            fetchUserData(session.user.id);
-          }, 0);
+          fetchUserData(session.user.id);
         } else {
           setProfile(null);
           setRole(null);
           setCompanies([]);
           setActiveCompanyIdState(null);
           setLoading(false);
+          // Reset theme to light on logout
+          localStorage.setItem("theme", "light");
+          document.documentElement.classList.remove("dark");
+          document.documentElement.classList.add("light");
         }
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchUserData(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    // Auto sign-out when closing the browser tab for security
-    const handleBeforeUnload = () => {
-      // Use sendBeacon to ensure the sign-out request is sent even when the tab is closing
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      const accessToken = session?.access_token;
-      if (accessToken && supabaseUrl) {
-        navigator.sendBeacon(
-          `${supabaseUrl}/auth/v1/logout`,
-          new Blob(
-            [JSON.stringify({})],
-            { type: "application/json" }
-          )
-        );
-      }
-      // Clear local storage session data
-      localStorage.removeItem("sb-nglwgzknqgihlbkdnflu-auth-token");
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-
     return () => {
       subscription.unsubscribe();
-      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [session?.access_token]);
+  }, []);
 
   const fetchUserData = async (userId: string) => {
+    // Deduplicate concurrent calls for the same user
+    if (fetchingRef.current === userId) return;
+    fetchingRef.current = userId;
+
     try {
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", userId)
-        .maybeSingle();
+      // Fetch profile and role in parallel
+      const [{ data: profileData, error: profileError }, { data: roleData, error: roleError }] = await Promise.all([
+        supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
+      ]);
 
       if (profileError) throw profileError;
-      setProfile(profileData as unknown as Profile | null);
-
-      const { data: roleData, error: roleError } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .maybeSingle();
-
       if (roleError) throw roleError;
-      setRole(roleData?.role as AppRole || null);
 
-      // Fetch companies for master/admin (for switcher)
-      const isMasterUser = profileData?.is_master === true;
-      const isAdminUser = roleData?.role === "admin";
+      const typedProfile = profileData as unknown as Profile | null;
+      const typedRole = roleData?.role as AppRole || null;
 
-      const isCeoUser = roleData?.role === "ceo";
+      setProfile(typedProfile);
+      setRole(typedRole);
+
+      // Apply theme immediately from profile
+      if (typedProfile?.theme) {
+        const savedTheme = typedProfile.theme;
+        localStorage.setItem("theme", savedTheme);
+        document.documentElement.classList.remove("light", "dark");
+        document.documentElement.classList.add(savedTheme);
+      }
+
+      // Fetch companies
+      const isMasterUser = typedProfile?.is_master === true;
+      const isCeoUser = typedRole === "ceo";
 
       if (isMasterUser || isCeoUser) {
         const { data: companiesData } = await supabase
           .from("companies")
           .select("id, nome_fantasia, razao_social, cnpj")
-          .is("servidor_id", null) // Only servidores for switcher
+          .is("servidor_id", null)
           .in("status", ["active", "teste"])
           .order("razao_social");
         setCompanies((companiesData as CompanyOption[]) || []);
-      } else if (profileData?.company_id) {
+      } else if (typedProfile?.company_id) {
         const { data: companyData } = await supabase
           .from("companies")
           .select("id, nome_fantasia, razao_social, cnpj")
-          .eq("id", profileData.company_id)
+          .eq("id", typedProfile.company_id)
           .maybeSingle();
         if (companyData) setCompanies([companyData as CompanyOption]);
       }
@@ -175,25 +171,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const savedCompanyId = localStorage.getItem("accord_active_company");
       if (isMasterUser || isCeoUser) {
         setActiveCompanyIdState(savedCompanyId || null);
-      } else if (profileData?.company_id) {
-        setActiveCompanyIdState(profileData.company_id);
+      } else if (typedProfile?.company_id) {
+        setActiveCompanyIdState(typedProfile.company_id);
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
     } finally {
+      fetchingRef.current = null;
       setLoading(false);
     }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
   };
 
   const signOut = async () => {
+    // Reset theme before signing out
+    localStorage.setItem("theme", "light");
+    document.documentElement.classList.remove("dark");
+    document.documentElement.classList.add("light");
+
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
@@ -215,7 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAdmin: role === "admin" || role === "ceo" || role === "administrativo",
     isOperador: role === "operador",
     isLeitura: role === "leitura",
-    isCeo: isCeo,
+    isCeo,
     isMaster,
     activeCompanyId,
     setActiveCompanyId,
