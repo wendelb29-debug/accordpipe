@@ -758,6 +758,27 @@ export default function Usuarios() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          {/* Permissions Dialog */}
+          <Dialog open={permDialogOpen} onOpenChange={setPermDialogOpen}>
+            <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-primary" />
+                  Permissões — {permUserName}
+                </DialogTitle>
+                <DialogDescription>
+                  Gerencie as permissões de acesso deste usuário por módulo.
+                </DialogDescription>
+              </DialogHeader>
+              {permUserId && (
+                <PermissionsEditor
+                  userId={permUserId}
+                  isCeoOrMaster={permUserIsCeo}
+                  onClose={() => setPermDialogOpen(false)}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         {(isMaster || isCeo) && (
