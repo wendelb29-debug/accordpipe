@@ -460,7 +460,7 @@ export default function ServidoresTab() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>{editingCompany ? "Editar Servidor" : "Novo Servidor"}</DialogTitle>
             <DialogDescription>
@@ -470,112 +470,166 @@ export default function ServidoresTab() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4">
-            {/* CNPJ with search */}
-            <div className="space-y-2">
-              <Label>CNPJ *</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={formData.cnpj}
-                  onChange={(e) => setFormData({ ...formData, cnpj: formatCnpj(e.target.value) })}
-                  placeholder="00.000.000/0000-00"
-                  className="flex-1"
-                  disabled={!!editingCompany && !isMaster}
-                />
-                {(!editingCompany || isMaster) && (
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    onClick={handleCnpjSearch}
-                    disabled={cnpjLoading}
-                    className="shrink-0"
-                    title="Buscar dados pelo CNPJ"
-                  >
-                    {cnpjLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                  </Button>
-                )}
-              </div>
-            </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="cadastro" className="gap-2">
+                <Building2 className="h-4 w-4" />
+                Dados Cadastrais
+              </TabsTrigger>
+              <TabsTrigger value="identidade" className="gap-2">
+                <Palette className="h-4 w-4" />
+                Identidade Visual
+              </TabsTrigger>
+            </TabsList>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Razão Social *</Label>
-                <Input value={formData.razao_social} onChange={(e) => setFormData({ ...formData, razao_social: e.target.value })} placeholder="Razão Social" />
-              </div>
-              <div className="space-y-2">
-                <Label>Nome Fantasia</Label>
-                <Input value={formData.nome_fantasia} onChange={(e) => setFormData({ ...formData, nome_fantasia: e.target.value })} placeholder="Nome Fantasia" />
-              </div>
-            </div>
+            <div className="flex-1 overflow-y-auto py-4">
+              <TabsContent value="cadastro" className="mt-0">
+                <div className="grid gap-4">
+                  {/* CNPJ with search */}
+                  <div className="space-y-2">
+                    <Label>CNPJ *</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={formData.cnpj}
+                        onChange={(e) => setFormData({ ...formData, cnpj: formatCnpj(e.target.value) })}
+                        placeholder="00.000.000/0000-00"
+                        className="flex-1"
+                        disabled={!!editingCompany && !isMaster}
+                      />
+                      {(!editingCompany || isMaster) && (
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          onClick={handleCnpjSearch}
+                          disabled={cnpjLoading}
+                          className="shrink-0"
+                          title="Buscar dados pelo CNPJ"
+                        >
+                          {cnpjLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Responsável</Label>
-                <Input value={formData.responsavel} onChange={(e) => setFormData({ ...formData, responsavel: e.target.value })} placeholder="Nome do responsável" />
-              </div>
-              <div className="space-y-2">
-                <Label>E-mail</Label>
-                <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="email@empresa.com" />
-              </div>
-            </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Razão Social *</Label>
+                      <Input value={formData.razao_social} onChange={(e) => setFormData({ ...formData, razao_social: e.target.value })} placeholder="Razão Social" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Nome Fantasia</Label>
+                      <Input value={formData.nome_fantasia} onChange={(e) => setFormData({ ...formData, nome_fantasia: e.target.value })} placeholder="Nome Fantasia" />
+                    </div>
+                  </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Telefone</Label>
-                <Input value={formData.telefone} onChange={(e) => setFormData({ ...formData, telefone: formatPhone(e.target.value) })} placeholder="(00) 00000-0000" />
-              </div>
-              <div className="space-y-2">
-                <Label>CEP</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={formData.cep}
-                    onChange={(e) => {
-                      const formatted = formatCep(e.target.value);
-                      setFormData({ ...formData, cep: formatted });
-                      if (cleanDigits(formatted).length === 8) {
-                        handleCepSearch(formatted);
-                      }
-                    }}
-                    placeholder="00000-000"
-                    className="flex-1"
-                  />
-                  {cepLoading && <Loader2 className="h-4 w-4 animate-spin self-center text-muted-foreground" />}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Responsável</Label>
+                      <Input value={formData.responsavel} onChange={(e) => setFormData({ ...formData, responsavel: e.target.value })} placeholder="Nome do responsável" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>E-mail</Label>
+                      <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="email@empresa.com" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Telefone</Label>
+                      <Input value={formData.telefone} onChange={(e) => setFormData({ ...formData, telefone: formatPhone(e.target.value) })} placeholder="(00) 00000-0000" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>CEP</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          value={formData.cep}
+                          onChange={(e) => {
+                            const formatted = formatCep(e.target.value);
+                            setFormData({ ...formData, cep: formatted });
+                            if (cleanDigits(formatted).length === 8) {
+                              handleCepSearch(formatted);
+                            }
+                          }}
+                          placeholder="00000-000"
+                          className="flex-1"
+                        />
+                        {cepLoading && <Loader2 className="h-4 w-4 animate-spin self-center text-muted-foreground" />}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-4">
+                    <div className="space-y-2 col-span-2">
+                      <Label>Endereço</Label>
+                      <Input value={formData.endereco} onChange={(e) => setFormData({ ...formData, endereco: e.target.value })} placeholder="Rua, Avenida..." />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Número</Label>
+                      <Input value={formData.numero} onChange={(e) => setFormData({ ...formData, numero: e.target.value })} placeholder="Nº" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Complemento</Label>
+                      <Input value={formData.complemento} onChange={(e) => setFormData({ ...formData, complemento: e.target.value })} placeholder="Sala, Andar..." />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Bairro</Label>
+                      <Input value={formData.bairro} onChange={(e) => setFormData({ ...formData, bairro: e.target.value })} placeholder="Bairro" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Cidade</Label>
+                      <Input value={formData.cidade} onChange={(e) => setFormData({ ...formData, cidade: e.target.value })} placeholder="Cidade" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Estado</Label>
+                      <Input value={formData.estado} onChange={(e) => setFormData({ ...formData, estado: e.target.value.toUpperCase() })} placeholder="UF" maxLength={2} />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </TabsContent>
 
-            <div className="grid grid-cols-4 gap-4">
-              <div className="space-y-2 col-span-2">
-                <Label>Endereço</Label>
-                <Input value={formData.endereco} onChange={(e) => setFormData({ ...formData, endereco: e.target.value })} placeholder="Rua, Avenida..." />
-              </div>
-              <div className="space-y-2">
-                <Label>Número</Label>
-                <Input value={formData.numero} onChange={(e) => setFormData({ ...formData, numero: e.target.value })} placeholder="Nº" />
-              </div>
-              <div className="space-y-2">
-                <Label>Complemento</Label>
-                <Input value={formData.complemento} onChange={(e) => setFormData({ ...formData, complemento: e.target.value })} placeholder="Sala, Andar..." />
-              </div>
+              <TabsContent value="identidade" className="mt-0">
+                <BrandIdentityFields
+                  formData={{
+                    cnpj: formData.cnpj,
+                    razaoSocial: formData.razao_social,
+                    nomeFantasia: formData.nome_fantasia,
+                    responsavel: formData.responsavel,
+                    email: formData.email,
+                    telefone: formData.telefone,
+                    cep: formData.cep,
+                    endereco: formData.endereco,
+                    numero: formData.numero,
+                    complemento: formData.complemento,
+                    bairro: formData.bairro,
+                    cidade: formData.cidade,
+                    estado: formData.estado,
+                    brandLogoUrl: formData.brandLogoUrl,
+                    brandLogoPath: formData.brandLogoPath,
+                    brandPrimaryColor: formData.brandPrimaryColor,
+                    brandSecondaryColor: formData.brandSecondaryColor,
+                    brandAccentColor: formData.brandAccentColor,
+                    brandBgColor: formData.brandBgColor,
+                    brandTextColor: formData.brandTextColor,
+                  }}
+                  onChange={(d) => setFormData({
+                    ...formData,
+                    brandLogoUrl: d.brandLogoUrl,
+                    brandLogoPath: d.brandLogoPath,
+                    brandPrimaryColor: d.brandPrimaryColor,
+                    brandSecondaryColor: d.brandSecondaryColor,
+                    brandAccentColor: d.brandAccentColor,
+                    brandBgColor: d.brandBgColor,
+                    brandTextColor: d.brandTextColor,
+                  })}
+                />
+              </TabsContent>
             </div>
+          </Tabs>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Bairro</Label>
-                <Input value={formData.bairro} onChange={(e) => setFormData({ ...formData, bairro: e.target.value })} placeholder="Bairro" />
-              </div>
-              <div className="space-y-2">
-                <Label>Cidade</Label>
-                <Input value={formData.cidade} onChange={(e) => setFormData({ ...formData, cidade: e.target.value })} placeholder="Cidade" />
-              </div>
-              <div className="space-y-2">
-                <Label>Estado</Label>
-                <Input value={formData.estado} onChange={(e) => setFormData({ ...formData, estado: e.target.value.toUpperCase() })} placeholder="UF" maxLength={2} />
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
+          <DialogFooter className="border-t border-border pt-4">
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>Cancelar</Button>
             <Button onClick={handleSave} disabled={isSubmitting}>
               {isSubmitting ? "Salvando..." : editingCompany ? "Salvar" : "Criar Servidor"}
