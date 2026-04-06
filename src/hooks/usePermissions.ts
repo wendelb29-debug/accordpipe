@@ -20,7 +20,7 @@ export function usePermissions() {
       return;
     }
     fetchPermissions();
-  }, [user, role]);
+  }, [user, role, authLoading]);
 
   const fetchPermissions = async () => {
     try {
