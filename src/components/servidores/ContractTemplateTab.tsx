@@ -244,10 +244,10 @@ export function ContractTemplateTab({ companyId }: Props) {
   const selectedField = fields.find(f => f.id === selectedFieldId);
 
   const FIELD_COLORS: Record<string, string> = {
+    servidor_logo: "#a855f7",
     servidor_cnpj: "#ec4899",
     servidor_empresa: "#8b5cf6",
     servidor_endereco: "#06b6d4",
-    servidor_email: "#22c55e",
     campo_proposta: "#f97316",
     valor_mrr: "#f59e0b",
     assinatura: "#3b82f6",
