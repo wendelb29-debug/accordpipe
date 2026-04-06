@@ -1275,13 +1275,25 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                 }
                 setSaving(true);
                 try {
-                  // Add "Devolvido" tag
+                  // Find previous stage from won activity metadata
+                  const { data: wonActivities } = await supabase
+                    .from("crm_lead_activities")
+                    .select("metadata")
+                    .eq("lead_id", lead.id)
+                    .eq("type", "won")
+                    .order("created_at", { ascending: false })
+                    .limit(1);
+                  const previousStage = (wonActivities?.[0]?.metadata as any)?.previous_stage || "contrato-fechado";
+
+                  // Add "Pendente de Correção" and "Devolvido" tags
                   const currentTags = lead.tags || [];
-                  const newTags = currentTags.includes("Devolvido") ? currentTags : [...currentTags, "Devolvido"];
+                  let newTags = [...currentTags];
+                  if (!newTags.includes("Devolvido")) newTags.push("Devolvido");
+                  if (!newTags.includes("Pendente de Correção")) newTags.push("Pendente de Correção");
 
                   const success = await onUpdate(lead.id, {
                     lead_status: "open",
-                    stage: "contrato-fechado",
+                    stage: previousStage,
                     stage_entered_at: new Date().toISOString(),
                     tags: newTags,
                   } as any);
@@ -1289,7 +1301,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                     await addActivity({
                       type: "stage_change",
                       title: "Card devolvido ao operador",
-                      description: `Lead devolvido ao pipeline comercial (etapa **Contrato Fechado**) pelo setor administrativo.\n\n**Motivo:** ${returnNote.trim()}\n**Operador original:** ${lead.created_by_name || "Não identificado"}`,
+                      description: `Lead devolvido ao pipeline comercial (etapa **${previousStage}**) pelo setor administrativo.\n\n**Motivo:** ${returnNote.trim()}\n**Operador original:** ${lead.created_by_name || "Não identificado"}`,
                     });
 
                     // Notify the original operator
