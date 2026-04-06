@@ -472,7 +472,7 @@ export default function ServidoresTab() {
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="cadastro" className="gap-2">
                 <Building2 className="h-4 w-4" />
                 Dados Cadastrais
@@ -480,6 +480,10 @@ export default function ServidoresTab() {
               <TabsTrigger value="identidade" className="gap-2">
                 <Palette className="h-4 w-4" />
                 Identidade Visual
+              </TabsTrigger>
+              <TabsTrigger value="contrato" className="gap-2">
+                <FileSignature className="h-4 w-4" />
+                Contrato
               </TabsTrigger>
             </TabsList>
 
