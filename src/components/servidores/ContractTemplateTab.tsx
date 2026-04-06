@@ -3,8 +3,7 @@ import { Rnd } from "react-rnd";
 import {
   Upload, FileText, Trash2, Save, Loader2, ChevronLeft, ChevronRight,
   ZoomIn, ZoomOut, Grid3X3, Undo2, DollarSign, FileSignature,
-  Hash, AlertCircle, MapPin, Building2, ImageIcon, Mail,
-  DollarSign, FileSignature, ClipboardList,
+  Hash, AlertCircle, MapPin, Building2, ImageIcon, Mail, ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
