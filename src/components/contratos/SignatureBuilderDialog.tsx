@@ -3,7 +3,7 @@ import { Rnd } from "react-rnd";
 import {
   X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Save, Send,
   FileSignature, Type, Calendar, Mail, CheckSquare, PenTool, Trash2, Loader2,
-  Grid3X3, Undo2, Menu,
+  Grid3X3, Undo2, Menu, X as XIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -242,17 +242,34 @@ export function SignatureBuilderDialog({ open, onOpenChange, contractId, pdfUrl,
 
   const selectedField = fields.find(f => f.id === selectedFieldId);
 
+  const signedSignersCount = signers.filter(s => s.status === "assinado").length;
+  const totalSigners = signers.length;
+
   const SidebarContent = () => (
     <div className="flex flex-col h-full overflow-y-auto">
+      {/* Progress */}
+      {totalSigners > 0 && (
+        <div className="p-3 space-y-2 border-b">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Progresso</p>
+          <div className="w-full bg-muted rounded-full h-2">
+            <div
+              className="bg-primary h-2 rounded-full transition-all"
+              style={{ width: `${totalSigners > 0 ? (signedSignersCount / totalSigners) * 100 : 0}%` }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">{signedSignersCount} de {totalSigners} assinatura(s)</p>
+        </div>
+      )}
+
       <div className="p-3 space-y-1">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Campos</p>
         {FIELD_TYPES.map(ft => (
           <button
             key={ft.type}
             onClick={() => addField(ft.type)}
-            className="flex items-center gap-2 w-full px-3 py-2.5 text-sm rounded-md hover:bg-accent transition-colors text-foreground"
+            className="flex items-center gap-2 w-full px-3 py-2.5 text-sm rounded-md hover:bg-accent transition-colors text-foreground group"
           >
-            <ft.icon className="h-4 w-4 text-primary" />
+            <ft.icon className="h-4 w-4 text-primary group-hover:scale-110 transition-transform" />
             {ft.label}
           </button>
         ))}
@@ -262,10 +279,13 @@ export function SignatureBuilderDialog({ open, onOpenChange, contractId, pdfUrl,
 
       <div className="p-3 space-y-2">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contratantes</p>
-        {signers.map((s) => (
-          <div key={s.id} className="flex items-center gap-2 text-xs">
-            <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: signerColorMap[s.id] }} />
-            <span className="truncate text-foreground">{s.name}</span>
+        {signers.map((s, idx) => (
+          <div key={s.id} className="flex items-center gap-2 text-xs p-1.5 rounded-md hover:bg-accent/50 transition-colors">
+            <div className="w-3 h-3 rounded-full shrink-0 ring-2 ring-background shadow-sm" style={{ backgroundColor: signerColorMap[s.id] }} />
+            <div className="min-w-0 flex-1">
+              <span className="truncate text-foreground block text-xs font-medium">{s.name}</span>
+              <span className="text-[10px] text-muted-foreground">Ordem: {idx + 1} • {s.status === "assinado" ? "✅ Assinado" : "⏳ Pendente"}</span>
+            </div>
           </div>
         ))}
       </div>
@@ -427,17 +447,40 @@ export function SignatureBuilderDialog({ open, onOpenChange, contractId, pdfUrl,
                   >
                     <div
                       className={cn(
-                        "w-full h-full rounded border-2 border-dashed flex items-center justify-center text-xs font-medium cursor-move transition-all select-none",
-                        selectedFieldId === field.id ? "ring-2 ring-offset-1 shadow-lg" : "hover:ring-1 hover:shadow-md"
+                        "w-full h-full rounded-md border-2 flex items-center justify-center text-xs font-semibold cursor-move transition-all select-none relative group",
+                        selectedFieldId === field.id
+                          ? "ring-2 ring-offset-2 shadow-xl border-solid scale-[1.02]"
+                          : "border-dashed hover:ring-1 hover:shadow-lg hover:scale-[1.01]"
                       )}
                       style={{
                         borderColor: field.signer_color,
-                        backgroundColor: `${field.signer_color}20`,
+                        backgroundColor: `${field.signer_color}15`,
                         color: field.signer_color,
-                      }}
+                        // @ts-ignore - ring color via CSS var
+                        '--tw-ring-color': field.signer_color,
+                      } as React.CSSProperties}
                       onClick={(e) => { e.stopPropagation(); setSelectedFieldId(field.id); }}
                     >
-                      {field.label}
+                      {field.field_type === "signature" ? (
+                        <div className="flex flex-col items-center gap-0.5">
+                          <FileSignature className="h-4 w-4" />
+                          <span className="text-[10px] font-bold uppercase tracking-wider">Assine Aqui</span>
+                        </div>
+                      ) : (
+                        <span>{field.label}</span>
+                      )}
+                      {/* Signer indicator dot */}
+                      <div
+                        className="absolute -top-1.5 -right-1.5 w-3 h-3 rounded-full border-2 border-white shadow-sm"
+                        style={{ backgroundColor: field.signer_color }}
+                      />
+                      {/* Delete on hover */}
+                      <button
+                        className="absolute -top-2 -left-2 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                        onClick={(e) => { e.stopPropagation(); deleteField(field.id); }}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
                     </div>
                   </Rnd>
                 ))}
