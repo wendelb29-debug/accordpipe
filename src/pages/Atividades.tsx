@@ -505,11 +505,6 @@ export default function Atividades() {
                             <TableCell className="text-sm text-foreground">
                               {duration}
                             </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {status === "concluida"
-                                ? new Date(activity.created_at).toLocaleDateString("pt-BR")
-                                : "--"}
-                            </TableCell>
                             <TableCell>
                               <div className="flex items-center justify-end gap-1">
                                 {status !== "concluida" && (
