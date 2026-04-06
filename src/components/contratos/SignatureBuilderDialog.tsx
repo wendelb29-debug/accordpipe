@@ -456,8 +456,9 @@ export function SignatureBuilderDialog({ open, onOpenChange, contractId, pdfUrl,
                         borderColor: field.signer_color,
                         backgroundColor: `${field.signer_color}15`,
                         color: field.signer_color,
-                        ringColor: field.signer_color,
-                      }}
+                        // @ts-ignore - ring color via CSS var
+                        '--tw-ring-color': field.signer_color,
+                      } as React.CSSProperties}
                       onClick={(e) => { e.stopPropagation(); setSelectedFieldId(field.id); }}
                     >
                       {field.field_type === "signature" ? (
