@@ -4,7 +4,7 @@ import {
   DollarSign, Clock, Tag, StickyNote, CheckCircle, XCircle, Plus,
   MessageSquare, PhoneCall, FileText, Activity, Trash2, Send, Loader2,
   FileSignature, Eye, Download, Copy, Image as ImageIcon, Search,
-  FileSpreadsheet, Edit, MoreVertical, ThumbsUp, ThumbsDown,
+  FileSpreadsheet, Edit, MoreVertical, ThumbsUp, ThumbsDown, Paperclip,
   Link2, CopyPlus, ClipboardList, UserRoundPen
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +13,8 @@ import { LeadAtividadesTab } from "./LeadAtividadesTab";
 import { NoteEditor } from "./NoteEditor";
 import { LeadPropostasTab } from "./LeadPropostasTab";
 import { LeadContratosTab } from "./LeadContratosTab";
-import { LeadSimulacaoTab } from "./LeadSimulacaoTab";
+import { LeadDocsTab } from "./LeadDocsTab";
+
 import { LeadCadastroTab } from "./LeadCadastroTab";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -945,7 +946,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                   <PhoneCall className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Ligações
                 </TabsTrigger>
                 <TabsTrigger value="contratos" className="text-[11px] sm:text-xs gap-1">
-                  <FileSignature className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Contratos
+                  <FileSignature className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Upsell
                 </TabsTrigger>
                 <TabsTrigger value="propostas" className="text-[11px] sm:text-xs gap-1">
                   <FileSpreadsheet className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Propostas
@@ -953,8 +954,8 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                 <TabsTrigger value="assinatura" className="text-[11px] sm:text-xs gap-1">
                   <FileSignature className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Assinatura
                 </TabsTrigger>
-                <TabsTrigger value="simulacao" className="text-[11px] sm:text-xs gap-1">
-                  <Calculator className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Simulação
+                <TabsTrigger value="docs" className="text-[11px] sm:text-xs gap-1">
+                  <Paperclip className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Docs
                 </TabsTrigger>
                 {(isAdminPipeline || role === "administrativo" || role === "admin") && (
                   <TabsTrigger value="cadastro" className="text-[11px] sm:text-xs gap-1">
@@ -1180,9 +1181,9 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               <LeadPropostasTab lead={lead} addActivity={addActivity} signatureMode onUpdateLead={onUpdate} />
             </TabsContent>
 
-            {/* Simulação */}
-            <TabsContent value="simulacao" className="flex-1 overflow-y-auto p-4 mt-0">
-              <LeadSimulacaoTab lead={lead} addActivity={addActivity} />
+            {/* Docs */}
+            <TabsContent value="docs" className="flex-1 overflow-y-auto p-4 mt-0">
+              <LeadDocsTab lead={lead} />
             </TabsContent>
 
             {/* Cadastro do Cliente */}
