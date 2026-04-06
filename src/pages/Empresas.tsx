@@ -45,6 +45,13 @@ export default function Empresas() {
         bairro: company.bairro || "",
         cidade: company.cidade || "",
         estado: company.estado || "",
+        brandLogoUrl: (company as any).brand_logo_url || "",
+        brandLogoPath: (company as any).brand_logo_path || "",
+        brandPrimaryColor: (company as any).brand_primary_color || "#1E2952",
+        brandSecondaryColor: (company as any).brand_secondary_color || "#4F46E5",
+        brandAccentColor: (company as any).brand_accent_color || "#10B981",
+        brandBgColor: (company as any).brand_bg_color || "#F3F4F6",
+        brandTextColor: (company as any).brand_text_color || "#1F2937",
       },
     });
     setDialogOpen(true);
@@ -72,6 +79,13 @@ export default function Empresas() {
       bairro: data.bairro || undefined,
       cidade: data.cidade || undefined,
       estado: data.estado || undefined,
+      brand_logo_url: data.brandLogoUrl || undefined,
+      brand_logo_path: data.brandLogoPath || undefined,
+      brand_primary_color: data.brandPrimaryColor || undefined,
+      brand_secondary_color: data.brandSecondaryColor || undefined,
+      brand_accent_color: data.brandAccentColor || undefined,
+      brand_bg_color: data.brandBgColor || undefined,
+      brand_text_color: data.brandTextColor || undefined,
     };
 
     let success: boolean;
