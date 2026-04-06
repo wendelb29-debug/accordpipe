@@ -1093,7 +1093,21 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
       case "data": return new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
       case "plano": return registrationData?.plano_contratado || meta.sigla || "—";
       case "cnpj_cpf": return registrationData?.cpf || lead.documento || "—";
-      case "empresa": return lead.company_name || "—";
+      case "empresa": {
+        const nome = clientName || lead.company_name || "";
+        const doc = registrationData?.cpf || lead.documento || "";
+        const addr = [lead.endereco, lead.numero && `nº ${lead.numero}`, lead.complemento, lead.bairro, lead.cep && `CEP: ${lead.cep}`, lead.cidade && lead.estado && `${lead.cidade}-${lead.estado}`].filter(Boolean).join(", ");
+        const email = lead.email || "";
+        const tel = lead.phone || "";
+        const parts = [
+          nome,
+          doc ? `inscrito(a) no CPF/CNPJ sob o nº ${doc}` : "",
+          addr ? `com endereço em ${addr}` : "",
+          email ? `e-mail ${email}` : "",
+          tel ? `telefone ${tel}` : "",
+        ].filter(Boolean);
+        return parts.length > 0 ? `${parts[0]}, ${parts.slice(1).join(", ")}.` : "—";
+      }
       case "nome_cliente": return clientName;
       case "cliente_email": return lead.email || "—";
       case "cliente_telefone": return lead.phone || "—";

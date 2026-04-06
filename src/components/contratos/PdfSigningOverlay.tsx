@@ -133,7 +133,21 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
 
       // Client fields
       case "cnpj_cpf": return signer?.cpf_cnpj || "";
-      case "empresa": return signer?.name || "";
+      case "empresa": {
+        const nome = signer?.name || "";
+        const doc = signer?.cpf_cnpj || "";
+        const addr = signer?.address || "";
+        const email = signer?.email || "";
+        const tel = signer?.phone || "";
+        const parts = [
+          nome,
+          doc ? `inscrito(a) no CPF/CNPJ sob o nº ${doc}` : "",
+          addr ? `com endereço em ${addr}` : "",
+          email ? `e-mail ${email}` : "",
+          tel ? `telefone ${tel}` : "",
+        ].filter(Boolean);
+        return parts.length > 0 ? `${parts[0]}, ${parts.slice(1).join(", ")}.` : "";
+      }
       case "nome_cliente": return signer?.name || "";
       case "cliente_email": return signer?.email || "";
       case "cliente_telefone": return signer?.phone || "";
