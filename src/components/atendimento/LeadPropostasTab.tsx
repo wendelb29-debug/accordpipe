@@ -1200,14 +1200,86 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
       const st = (p.metadata as any)?.status;
       return st !== "cancelada" && st !== "declinada";
     });
+    const approvedProposals = proposals.filter(p => (p.metadata as any)?.status === "aceita");
+    const hasTemplate = !!templatePdfUrl;
+
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-2">
           <FileSignature className="h-5 w-5 text-primary" />
           <h3 className="text-sm font-semibold text-foreground">Enviar para Assinatura</h3>
         </div>
+
+        {/* Template status */}
+        {!hasTemplate && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            Nenhum template de contrato configurado para este servidor. Configure em Gestão de Acesso &gt; Editar Servidor &gt; Contrato.
+          </div>
+        )}
+
+        {/* Template preview (read-only) */}
+        {hasTemplate && (
+          <div className="space-y-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Pré-visualização do Contrato</p>
+            <div className="relative rounded-lg border border-border overflow-hidden bg-muted/30" style={{ maxHeight: 350, overflow: "auto" }}>
+              <div className="relative inline-block">
+                <PdfRenderer
+                  pdfUrl={templatePdfUrl!}
+                  currentPage={templateCurrentPage}
+                  onTotalPages={setTemplateTotalPages}
+                  scale={0.8}
+                />
+                {templateFields
+                  .filter((f: any) => f.page === templateCurrentPage)
+                  .map((f: any) => {
+                    const value = resolveFieldValue(f.field_type);
+                    const isLogo = f.field_type === "servidor_logo";
+                    const s = 0.8;
+                    return (
+                      <div
+                        key={f.id}
+                        className="absolute bg-background/80 rounded px-0.5 overflow-hidden"
+                        style={{
+                          left: f.pos_x * s,
+                          top: f.pos_y * s,
+                          width: f.width * s,
+                          height: f.height * s,
+                          fontSize: Math.min(f.height * 0.5, 11),
+                          lineHeight: `${f.height * s}px`,
+                        }}
+                      >
+                        {isLogo && value ? (
+                          <img src={value} alt="Logo" className="h-full w-auto object-contain" />
+                        ) : (
+                          <span className="text-foreground whitespace-pre-wrap leading-tight" style={{ fontSize: 9, lineHeight: "1.2" }}>
+                            {value}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+            {templateTotalPages > 1 && (
+              <div className="flex items-center justify-center gap-2">
+                <Button variant="outline" size="icon" className="h-6 w-6" disabled={templateCurrentPage <= 1} onClick={() => setTemplateCurrentPage(p => p - 1)}>
+                  <ChevronLeft className="h-3 w-3" />
+                </Button>
+                <span className="text-[10px] text-muted-foreground">{templateCurrentPage} / {templateTotalPages}</span>
+                <Button variant="outline" size="icon" className="h-6 w-6" disabled={templateCurrentPage >= templateTotalPages} onClick={() => setTemplateCurrentPage(p => p + 1)}>
+                  <ChevronRight className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        <Separator />
+
         <p className="text-xs text-muted-foreground">
           Selecione a proposta que deseja converter em contrato para assinatura.
+          {approvedProposals.length > 0 && <span className="text-primary font-medium ml-1">({approvedProposals.length} aprovada(s))</span>}
         </p>
         <div className="space-y-2">
           {availableProposals.length === 0 ? (
@@ -1215,6 +1287,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
           ) : availableProposals.map(p => {
             const meta = (p.metadata as any) || {};
             const isSelected = selectedSignProposal === p.id;
+            const isApproved = meta.status === "aceita";
             return (
               <div
                 key={p.id}
@@ -1231,6 +1304,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
                 </div>
                 <div className="flex-1 text-xs">
                   <span className="font-medium text-foreground">{meta.sigla || p.title}</span>
+                  {isApproved && <Badge variant="outline" className="ml-2 text-[9px] border-green-500 text-green-600">Aprovada</Badge>}
                   <span className="text-muted-foreground ml-2">P&S: {fmtCur(meta.value_ps || 0)} · MRR: {fmtCur(meta.value_mrr || 0)}</span>
                 </div>
                 <span className="text-[10px] text-muted-foreground">{new Date(p.created_at).toLocaleDateString("pt-BR")}</span>
@@ -1242,7 +1316,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
           <Button
             size="sm"
             className="text-xs gap-1.5"
-            disabled={!selectedSignProposal || sendingToSign}
+            disabled={!selectedSignProposal || sendingToSign || !hasTemplate}
             onClick={async () => {
               const proposal = proposals.find(p => p.id === selectedSignProposal);
               if (proposal) {
