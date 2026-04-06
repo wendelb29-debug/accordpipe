@@ -835,58 +835,7 @@ export default function Cadastrados() {
             )}
           </TabsContent>
 
-          {/* ─── TAB: Documentos ─── */}
-          <TabsContent value="documentos" className="space-y-3 mt-0">
-            {selectedReg.comprovante_url ? (
-              <Card>
-                <CardContent className="p-5 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-lg bg-primary/10">
-                      <Paperclip className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Comprovante de endereço</p>
-                      <p className="text-xs text-muted-foreground">Documento disponível para download</p>
-                    </div>
-                  </div>
-                  <Button size="sm" variant="outline" asChild className="gap-1.5">
-                    <a href={selectedReg.comprovante_url} target="_blank" rel="noreferrer">
-                      <Download className="h-4 w-4" /> Baixar
-                    </a>
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                <Paperclip className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">Nenhum documento anexado</p>
-              </div>
-            )}
-            {detailContracts.filter(c => c.contract_status === "assinado").map(c => (
-              <Card key={c.id}>
-                <CardContent className="p-5 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-lg bg-green-50">
-                      <FileSignature className="h-5 w-5 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Contrato Assinado</p>
-                      <p className="text-xs text-muted-foreground">
-                        {c.plan_name} · Assinado em {c.signed_at ? fmtDate(c.signed_at) : "—"}
-                      </p>
-                    </div>
-                  </div>
-                  {c.signature_photo_url && (
-                    <Button size="sm" variant="outline" asChild className="gap-1.5">
-                      <a href={c.signature_photo_url} target="_blank" rel="noreferrer">
-                        <Eye className="h-4 w-4" /> Ver
-                      </a>
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </TabsContent>
+
 
           {/* ─── TAB: Dependentes ─── */}
           <TabsContent value="dependentes" className="space-y-3 mt-0">
