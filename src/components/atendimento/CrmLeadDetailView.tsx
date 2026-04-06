@@ -713,17 +713,41 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               <>
                 <Badge className="bg-green-600 text-white text-[10px]">✓ Ganho</Badge>
                 {(role === "admin" || role === "administrativo" || role === "ceo") && (
-                  <Button size="sm" variant="outline" onClick={() => {
-                    setReturnNote("");
-                    setShowReturnDialog(true);
-                  }} disabled={saving} className="gap-1 border-orange-300 text-orange-700 hover:bg-orange-50 h-7 sm:h-8 text-[11px] sm:text-xs px-2 sm:px-3">
-                    <ArrowLeft className="h-3 w-3" /> Devolver
-                  </Button>
-                )}
-                {(role === "admin" || role === "administrativo") && (
-                  <Button size="sm" variant="outline" onClick={() => window.location.href = "/cadastrados"} className="gap-1 h-7 sm:h-8 text-[11px] sm:text-xs px-2 sm:px-3 hidden sm:flex">
-                    <ClipboardList className="h-3 w-3" /> Cadastro
-                  </Button>
+                  <>
+                    <Button size="sm" onClick={async () => {
+                      setSaving(true);
+                      try {
+                        // Find registration for this lead and set client_status to ativo
+                        const { data: reg } = await supabase
+                          .from("crm_client_registrations")
+                          .select("id")
+                          .eq("lead_id", lead.id)
+                          .maybeSingle();
+                        if (reg) {
+                          await supabase.from("crm_client_registrations")
+                            .update({ client_status: "ativo", status: "concluido" } as any)
+                            .eq("id", reg.id);
+                        }
+                        // Remove "Pendente de Correção" tag if present
+                        const currentTags = lead.tags || [];
+                        const cleanTags = currentTags.filter(t => t !== "Pendente de Correção");
+                        await onUpdate(lead.id, { stage: "cadastro-concluido", tags: cleanTags } as any);
+                        await addActivity({ type: "won", title: "Cadastro aprovado pelo administrativo", description: `Cliente aprovado e ativado na **Base de Clientes** por ${profile?.name || "Admin"}.` });
+                        toast.success("✅ Cliente aprovado e ativado na Base de Clientes!");
+                        onBack();
+                      } catch (err) {
+                        toast.error("Erro ao aprovar cadastro");
+                      } finally { setSaving(false); }
+                    }} disabled={saving} className="gap-1 bg-emerald-600 hover:bg-emerald-700 text-white h-7 sm:h-8 text-[11px] sm:text-xs px-2 sm:px-3 border-0">
+                      <CheckCircle className="h-3 w-3" /> Aprovar
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => {
+                      setReturnNote("");
+                      setShowReturnDialog(true);
+                    }} disabled={saving} className="gap-1 border-orange-300 text-orange-700 hover:bg-orange-50 h-7 sm:h-8 text-[11px] sm:text-xs px-2 sm:px-3">
+                      <ArrowLeft className="h-3 w-3" /> Devolver
+                    </Button>
+                  </>
                 )}
               </>
             )}
