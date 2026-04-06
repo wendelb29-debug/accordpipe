@@ -134,6 +134,28 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     if (signatureMode) setShowSignatureSelect(true);
   }, [signatureMode]);
 
+  // Auto-load template in signature mode
+  useEffect(() => {
+    if (!signatureMode || !lead.servidor_id) return;
+    const loadTemplate = async () => {
+      const { data: templates } = await supabase
+        .from("company_contract_templates")
+        .select("*")
+        .eq("company_id", lead.servidor_id)
+        .limit(1);
+      if (templates && templates.length > 0) {
+        const template = templates[0];
+        const { data: fields } = await supabase
+          .from("company_contract_template_fields")
+          .select("*")
+          .eq("template_id", template.id);
+        setTemplatePdfUrl(template.pdf_url);
+        setTemplateFields(fields || []);
+      }
+    };
+    loadTemplate();
+  }, [signatureMode, lead.servidor_id]);
+
   const { createContract } = useContracts();
 
   // Company & servidor data
