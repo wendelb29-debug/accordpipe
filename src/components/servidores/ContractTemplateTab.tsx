@@ -17,7 +17,7 @@ import { PdfRenderer } from "@/components/contratos/PdfRenderer";
 const TEMPLATE_FIELD_TYPES = [
   // DADOS DO SERVIDOR (CONTRATADA)
   { type: "servidor_logo", label: "Logo Servidor", icon: ImageIcon, defaultW: 120, defaultH: 60, group: "servidor" },
-  { type: "servidor_empresa", label: "Empresa (Contratada)", icon: Building2, defaultW: 280, defaultH: 36, group: "servidor" },
+  { type: "empresa", label: "Empresa (Contratante)", icon: Building2, defaultW: 480, defaultH: 60, group: "servidor" },
   { type: "servidor_cnpj", label: "Bloco Dados Servidor", icon: Hash, defaultW: 480, defaultH: 60, group: "servidor" },
   { type: "servidor_endereco", label: "Endereço Servidor", icon: MapPin, defaultW: 300, defaultH: 36, group: "servidor" },
   { type: "servidor_email", label: "E-mail Servidor", icon: Mail, defaultW: 240, defaultH: 36, group: "servidor" },
@@ -246,7 +246,7 @@ export function ContractTemplateTab({ companyId }: Props) {
 
   const FIELD_COLORS: Record<string, string> = {
     servidor_logo: "#a855f7",
-    servidor_empresa: "#8b5cf6",
+    empresa: "#8b5cf6",
     servidor_cnpj: "#ec4899",
     servidor_endereco: "#14b8a6",
     servidor_email: "#06b6d4",
