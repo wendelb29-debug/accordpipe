@@ -7,6 +7,7 @@ import {
   ImageIcon, Settings2, Users,
 } from "lucide-react";
 import { ProposalItemsManager, ProposalLineItem } from "./ProposalItemsManager";
+import { ContractSignersManager } from "./ContractSignersManager";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useContracts } from "@/hooks/useContracts";
