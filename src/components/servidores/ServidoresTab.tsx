@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import {
-  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette,
+  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ContractTemplateTab } from "./ContractTemplateTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
