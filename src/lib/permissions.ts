@@ -83,6 +83,10 @@ export const PERMISSION_MODULES: PermissionModule[] = [
     permissions: [
       { key: "visualizar_relatorios", label: "Visualizar Relatórios", description: "Ver relatórios" },
       { key: "exportar_relatorios", label: "Exportar Relatórios", description: "Exportar dados em relatórios" },
+      { key: "visualizar_relatorio_clientes", label: "Relatório de Clientes", description: "Ver relatório da base de clientes" },
+      { key: "exportar_relatorio_clientes", label: "Exportar Relatório de Clientes", description: "Exportar relatório da base de clientes" },
+      { key: "visualizar_relatorio_crm", label: "Relatório CRM", description: "Ver relatório de vendas/CRM" },
+      { key: "exportar_relatorio_crm", label: "Exportar Relatório CRM", description: "Exportar relatório de vendas/CRM" },
     ],
   },
   {
