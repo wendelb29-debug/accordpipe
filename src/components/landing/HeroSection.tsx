@@ -65,31 +65,6 @@ export function HeroSection() {
           </div>
         </div>
 
-        {/* Dashboard Mockup */}
-        <div className="mt-16 sm:mt-20 flex justify-center">
-          <div className="relative w-full max-w-5xl">
-            <div className="absolute -inset-8 rounded-3xl bg-gradient-to-br from-[rgba(37,99,235,0.12)] via-[rgba(124,58,237,0.08)] to-transparent blur-3xl" />
-            <div className="relative rounded-2xl border border-[rgba(255,255,255,0.06)] shadow-2xl shadow-[rgba(0,0,0,0.5)] overflow-hidden bg-[#111827]">
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-[rgba(255,255,255,0.05)] bg-[#0D1321]">
-                <div className="flex gap-1.5">
-                  <div className="h-3 w-3 rounded-full bg-[#EF4444]/60" />
-                  <div className="h-3 w-3 rounded-full bg-[#F59E0B]/60" />
-                  <div className="h-3 w-3 rounded-full bg-[#22C55E]/60" />
-                </div>
-                <div className="flex-1 flex justify-center">
-                  <div className="h-5 w-48 rounded-md bg-[rgba(255,255,255,0.04)]" />
-                </div>
-              </div>
-              <img
-                src={dashboardMockup}
-                alt="Painel do ACCORD"
-                className="w-full"
-                loading="lazy"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
       <TrialSignupDialog open={trialOpen} onOpenChange={setTrialOpen} />
     </section>
   );
