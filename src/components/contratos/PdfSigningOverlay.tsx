@@ -89,7 +89,7 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
             .from("company_contract_template_fields")
             .select("*")
             .eq("template_id", templates[0].id);
-          if (tFields) setTemplateFields(tFields as TemplateField[]);
+          if (tFields) setTemplateFields(tFields.map((f: any) => ({ ...f, field_type: f.field_type === "servidor_empresa" ? "empresa" : f.field_type })) as TemplateField[]);
         }
       }
 
