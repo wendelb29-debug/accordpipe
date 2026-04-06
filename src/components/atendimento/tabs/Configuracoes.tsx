@@ -264,6 +264,18 @@ export function Configuracoes() {
           </div>
         </CardContent>
       </Card>
+      {/* Webhooks Z-API */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Webhook className="h-4 w-4 text-primary" /> Webhooks Z-API
+          </CardTitle>
+          <CardDescription>Configure os endpoints para receber eventos da sua instância</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <WebhookConfig />
+        </CardContent>
+      </Card>
     </div>
   );
 }
