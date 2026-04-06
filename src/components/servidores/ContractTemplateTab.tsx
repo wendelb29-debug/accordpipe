@@ -116,7 +116,11 @@ export function ContractTemplateTab({ companyId }: Props) {
 
     setUploading(true);
     try {
-      const filePath = `templates/${companyId}/${Date.now()}_${file.name}`;
+      const sanitizedName = file.name
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9._-]/g, "_")
+        .replace(/_+/g, "_");
+      const filePath = `templates/${companyId}/${Date.now()}_${sanitizedName}`;
       const { error: uploadErr } = await supabase.storage
         .from("contract-pdfs")
         .upload(filePath, file, { contentType: "application/pdf" });
