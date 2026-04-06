@@ -683,7 +683,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(7.5);
       pdf.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-      cx = mL + 2;
+      let cx = mL + 2;
       instHeaders.forEach((h, i) => {
         pdf.text(h, cx, y + 3);
         cx += instColWidths[i];
