@@ -631,6 +631,10 @@ export default function ServidoresTab() {
                   })}
                 />
               </TabsContent>
+
+              <TabsContent value="contrato" className="mt-0">
+                <ContractTemplateTab companyId={editingCompany?.id || null} />
+              </TabsContent>
             </div>
           </Tabs>
 
