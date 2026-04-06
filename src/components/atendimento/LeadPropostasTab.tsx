@@ -4,7 +4,7 @@ import {
   DollarSign, FileSpreadsheet, Plus, Loader2, Send, Download,
   Edit, Trash2, MoreVertical, ThumbsUp, ThumbsDown, XCircle,
   Eye, CopyPlus, Link2, Briefcase, Hash, FileSignature, Copy, MessageSquare,
-  ImageIcon, Settings2,
+  ImageIcon, Settings2, Users,
 } from "lucide-react";
 import { ProposalItemsManager, ProposalLineItem } from "./ProposalItemsManager";
 import { supabase } from "@/integrations/supabase/client";
@@ -967,7 +967,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
             <FileSignature className="h-4 w-4 text-primary" />
             {generatedContractLink ? "Contrato Gerado" : "Visualizar Contrato"}
           </h3>
-          <Button variant="ghost" size="sm" className="text-xs" onClick={() => { setContractPreview(null); setContractPreviewProposal(null); setGeneratedContractLink(null); }}>
+          <Button variant="ghost" size="sm" className="text-xs" onClick={() => { setContractPreview(null); setContractPreviewProposal(null); setGeneratedContractLink(null); setGeneratedContractId(null); }}>
             Voltar
           </Button>
         </div>
