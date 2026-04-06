@@ -696,7 +696,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
 
       for (const inst of installmentData) {
         checkPageBreak(6);
-        cx = mL + 2;
+        let cx = mL + 2;
         pdf.text(`${inst.number}ª`, cx, y);
         cx += instColWidths[0];
         pdf.text(inst.dueDate ? new Date(inst.dueDate + "T12:00:00").toLocaleDateString("pt-BR") : "-", cx, y);
