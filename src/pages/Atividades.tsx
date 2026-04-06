@@ -420,7 +420,7 @@ export default function Atividades() {
                   <TableBody>
                     {paginated.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={11} className="text-center py-12 text-muted-foreground">
+                        <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
                           Nenhuma atividade encontrada para o período selecionado.
                         </TableCell>
                       </TableRow>
