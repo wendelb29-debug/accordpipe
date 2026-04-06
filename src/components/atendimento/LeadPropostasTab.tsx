@@ -86,8 +86,45 @@ function ContractPdfViewer({ content, companyName }: { content: string; companyN
   }, [pdfUrl]);
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden" style={{ height: "500px" }}>
-      <iframe src={pdfUrl} className="w-full h-full" title="Visualização do contrato" />
+    <div className="rounded-lg border border-border overflow-hidden bg-muted/20" style={{ height: "600px" }}>
+      <iframe
+        src={`${pdfUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`}
+        className="w-full h-full"
+        title="Visualização do contrato"
+        style={{ border: "none" }}
+      />
+    </div>
+  );
+}
+
+function TemplatePdfFullViewer({ pdfUrl, onClose }: { pdfUrl: string; onClose: () => void }) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <Eye className="h-4 w-4 text-primary" />
+          Pré-visualização do Contrato
+        </h3>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => {
+            const w = window.open(pdfUrl, '_blank');
+            if (w) setTimeout(() => w.print(), 800);
+          }}>
+            <Download className="h-3.5 w-3.5" /> Imprimir
+          </Button>
+          <Button variant="ghost" size="sm" className="text-xs" onClick={onClose}>
+            Voltar
+          </Button>
+        </div>
+      </div>
+      <div className="rounded-lg border border-border overflow-hidden bg-muted/20" style={{ height: "650px" }}>
+        <iframe
+          src={`${pdfUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`}
+          className="w-full h-full"
+          title="Visualização do contrato PDF"
+          style={{ border: "none" }}
+        />
+      </div>
     </div>
   );
 }
