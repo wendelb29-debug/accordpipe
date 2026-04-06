@@ -94,7 +94,15 @@ export default function ServidoresTab() {
     cep: "",
     numero: "",
     complemento: "",
+    brandLogoUrl: "",
+    brandLogoPath: "",
+    brandPrimaryColor: "#1E2952",
+    brandSecondaryColor: "#4F46E5",
+    brandAccentColor: "#10B981",
+    brandBgColor: "#F3F4F6",
+    brandTextColor: "#1F2937",
   });
+  const [activeTab, setActiveTab] = useState("cadastro");
 
   useEffect(() => {
     fetchCompanies();
