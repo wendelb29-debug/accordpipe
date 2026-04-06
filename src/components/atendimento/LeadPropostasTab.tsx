@@ -995,8 +995,28 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
     return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
 
+  // Helper: resolve template field values from servidor + lead + proposal
+  const resolveFieldValue = (fieldType: string) => {
+    const srv = servidorData;
+    const meta = contractPreviewProposal ? ((contractPreviewProposal.metadata as any) || {}) : {};
+    const srvAddr = srv ? [srv.endereco, srv.numero && `nº ${srv.numero}`, srv.bairro, srv.cidade && srv.estado && `${srv.cidade}/${srv.estado}`, srv.cep && `CEP: ${srv.cep}`].filter(Boolean).join(", ") : "";
+
+    switch (fieldType) {
+      case "servidor_logo": return srv?.brand_logo_url || "";
+      case "servidor_empresa": return srv?.razao_social || srv?.nome_fantasia || "";
+      case "servidor_cnpj": return srv?.cnpj || "";
+      case "servidor_endereco": return srvAddr;
+      case "campo_proposta": return buildProposalClause(contractPreviewProposal || {});
+      case "valor_mrr": return meta.value_mrr ? fmtCur(meta.value_mrr) : (lead.value_mrr ? fmtCur(lead.value_mrr) : "R$ 0,00");
+      case "assinatura": return "______________________________";
+      default: return "";
+    }
+  };
+
   // ---- CONTRACT PREVIEW MODE ----
   if (contractPreview) {
+    const isTemplateMode = contractPreview === "__template__" && templatePdfUrl;
+
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -1004,26 +1024,85 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
             <FileSignature className="h-4 w-4 text-primary" />
             {generatedContractLink ? "Contrato Gerado" : "Visualizar Contrato"}
           </h3>
-          <Button variant="ghost" size="sm" className="text-xs" onClick={() => { setContractPreview(null); setContractPreviewProposal(null); setGeneratedContractLink(null); setGeneratedContractId(null); }}>
+          <Button variant="ghost" size="sm" className="text-xs" onClick={() => { setContractPreview(null); setContractPreviewProposal(null); setGeneratedContractLink(null); setGeneratedContractId(null); setTemplatePdfUrl(null); setTemplateFields([]); }}>
             Voltar
           </Button>
         </div>
 
-        <ContractPdfViewer content={contractPreview} companyName={lead.company_name} />
+        {isTemplateMode ? (
+          <div className="space-y-3">
+            {/* PDF Template Viewer with overlaid fields */}
+            <div className="relative rounded-lg border border-border overflow-hidden bg-muted/30" style={{ minHeight: 500 }}>
+              <div className="relative inline-block">
+                <PdfRenderer
+                  pdfUrl={templatePdfUrl}
+                  currentPage={templateCurrentPage}
+                  onTotalPages={setTemplateTotalPages}
+                  scale={1.0}
+                />
+                {/* Overlay resolved field values */}
+                {templateFields
+                  .filter((f: any) => f.page === templateCurrentPage)
+                  .map((f: any) => {
+                    const value = resolveFieldValue(f.field_type);
+                    const isLogo = f.field_type === "servidor_logo";
+                    return (
+                      <div
+                        key={f.id}
+                        className="absolute border border-primary/20 bg-background/80 rounded px-1 overflow-hidden"
+                        style={{
+                          left: f.pos_x,
+                          top: f.pos_y,
+                          width: f.width,
+                          height: f.height,
+                          fontSize: Math.min(f.height * 0.6, 14),
+                          lineHeight: `${f.height}px`,
+                        }}
+                      >
+                        {isLogo && value ? (
+                          <img src={value} alt="Logo" className="h-full w-auto object-contain" />
+                        ) : (
+                          <span className="text-foreground whitespace-pre-wrap leading-tight" style={{ fontSize: f.field_type === "campo_proposta" ? 9 : 11, lineHeight: "1.3" }}>
+                            {value}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+            {/* Page navigation */}
+            {templateTotalPages > 1 && (
+              <div className="flex items-center justify-center gap-2">
+                <Button variant="outline" size="icon" className="h-7 w-7" disabled={templateCurrentPage <= 1} onClick={() => setTemplateCurrentPage(p => p - 1)}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-xs text-muted-foreground">{templateCurrentPage} / {templateTotalPages}</span>
+                <Button variant="outline" size="icon" className="h-7 w-7" disabled={templateCurrentPage >= templateTotalPages} onClick={() => setTemplateCurrentPage(p => p + 1)}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <ContractPdfViewer content={contractPreview} companyName={lead.company_name} />
+        )}
 
         <div className="rounded-lg border border-border p-3 space-y-1">
           <p className="text-xs font-semibold text-foreground">Dados do Cliente</p>
           <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground">
             <span>Nome: {registrationData?.nome_completo || lead.contact_name || "—"}</span>
-            <span>CPF: {registrationData?.cpf || "—"}</span>
+            <span>CPF/CNPJ: {registrationData?.cpf || lead.documento || "—"}</span>
             <span>Empresa: {lead.company_name}</span>
             <span>Telefone: {lead.phone || "—"}</span>
+            <span>E-mail: {lead.email || "—"}</span>
+            <span>MRR: {fmtCur(lead.value_mrr || 0)}</span>
           </div>
         </div>
 
         {!generatedContractLink ? (
           <div className="flex justify-end gap-2">
-            <Button size="sm" variant="outline" className="text-xs gap-1.5" onClick={() => { setContractPreview(null); setContractPreviewProposal(null); }}>
+            <Button size="sm" variant="outline" className="text-xs gap-1.5" onClick={() => { setContractPreview(null); setContractPreviewProposal(null); setTemplatePdfUrl(null); setTemplateFields([]); }}>
               <Edit className="h-3.5 w-3.5" /> Editar dados
             </Button>
             <Button size="sm" className="text-xs gap-1.5" onClick={handleConfirmAndGenerate} disabled={sendingToSign}>
@@ -1049,7 +1128,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
               </Button>
             </div>
             <Button size="sm" variant="outline" className="text-xs gap-1.5 w-full" onClick={() => {
-              if (contractPreview) {
+              if (contractPreview && contractPreview !== "__template__") {
                 downloadContractPdf({ content: contractPreview, code: "Contrato", companyName: lead.company_name });
               }
             }}>
