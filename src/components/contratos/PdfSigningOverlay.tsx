@@ -119,6 +119,7 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
       case "servidor_empresa": return srv?.razao_social || srv?.nome_fantasia || "";
       case "servidor_cnpj": return srv?.cnpj || "";
       case "servidor_endereco": return srvAddr;
+      case "servidor_email": return srv?.email || "";
 
       // Client fields
       case "cnpj_cpf": return signer?.cpf_cnpj || "";
