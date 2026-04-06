@@ -7,7 +7,7 @@ import { HeroSection } from "@/components/landing/HeroSection";
 import { ProblemSolutionSection } from "@/components/landing/ProblemSolutionSection";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { FlowSection } from "@/components/landing/FlowSection";
-
+import { DifferentialSection } from "@/components/landing/DifferentialSection";
 import { DashboardVisualSection } from "@/components/landing/DashboardVisualSection";
 import { SocialProofSection } from "@/components/landing/SocialProofSection";
 
