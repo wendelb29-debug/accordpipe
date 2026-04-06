@@ -430,7 +430,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
         await new Promise<void>((resolve, reject) => {
           logoImg.onload = () => resolve();
           logoImg.onerror = () => reject();
-          logoImg.src = brandInfo.logo_url;
+          logoImg.src = logoUrl;
         });
         pdf.addImage(logoImg, "PNG", mL, y, 44, 22);
         logoLoaded = true;
