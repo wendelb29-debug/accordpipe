@@ -62,9 +62,9 @@ export function HeroSection() {
             <span className="flex items-center gap-1.5">✓ Sem cartão de crédito</span>
             <span className="flex items-center gap-1.5">✓ 7 dias grátis</span>
             <span className="hidden sm:flex items-center gap-1.5">✓ Suporte incluso</span>
+          </div>
         </div>
       </div>
-
       <TrialSignupDialog open={trialOpen} onOpenChange={setTrialOpen} />
     </section>
   );
