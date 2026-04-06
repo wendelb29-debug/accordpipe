@@ -18,9 +18,17 @@ export function ProtectedRoute({ children, allowedRoles, requiredPermission }: P
   if (loading || permLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          <p className="text-muted-foreground">Carregando...</p>
+        <div className="flex flex-col items-center gap-5">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-14 w-14 border-[3px] border-muted border-t-primary"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="h-6 w-6 rounded-full bg-primary/10"></div>
+            </div>
+          </div>
+          <div className="text-center space-y-1">
+            <p className="text-sm font-medium text-foreground">Carregando seu ambiente...</p>
+            <p className="text-xs text-muted-foreground">Verificando permissões</p>
+          </div>
         </div>
       </div>
     );
