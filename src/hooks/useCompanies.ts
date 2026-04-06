@@ -36,6 +36,13 @@ export interface CompanyInsert {
   bairro?: string;
   cidade?: string;
   estado?: string;
+  brand_logo_url?: string;
+  brand_logo_path?: string;
+  brand_primary_color?: string;
+  brand_secondary_color?: string;
+  brand_accent_color?: string;
+  brand_bg_color?: string;
+  brand_text_color?: string;
 }
 
 export function useCompanies() {
@@ -99,7 +106,14 @@ export function useCompanies() {
         bairro: company.bairro,
         cidade: company.cidade,
         estado: company.estado,
-      })
+        brand_logo_url: company.brand_logo_url,
+        brand_logo_path: company.brand_logo_path,
+        brand_primary_color: company.brand_primary_color,
+        brand_secondary_color: company.brand_secondary_color,
+        brand_accent_color: company.brand_accent_color,
+        brand_bg_color: company.brand_bg_color,
+        brand_text_color: company.brand_text_color,
+      } as any)
       .eq("id", id);
     if (error) {
       toast.error("Erro ao atualizar empresa");

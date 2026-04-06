@@ -275,6 +275,13 @@ export type Database = {
       companies: {
         Row: {
           bairro: string | null
+          brand_accent_color: string | null
+          brand_bg_color: string | null
+          brand_logo_path: string | null
+          brand_logo_url: string | null
+          brand_primary_color: string | null
+          brand_secondary_color: string | null
+          brand_text_color: string | null
           cep: string | null
           cidade: string | null
           cnpj: string
@@ -304,6 +311,13 @@ export type Database = {
         }
         Insert: {
           bairro?: string | null
+          brand_accent_color?: string | null
+          brand_bg_color?: string | null
+          brand_logo_path?: string | null
+          brand_logo_url?: string | null
+          brand_primary_color?: string | null
+          brand_secondary_color?: string | null
+          brand_text_color?: string | null
           cep?: string | null
           cidade?: string | null
           cnpj: string
@@ -333,6 +347,13 @@ export type Database = {
         }
         Update: {
           bairro?: string | null
+          brand_accent_color?: string | null
+          brand_bg_color?: string | null
+          brand_logo_path?: string | null
+          brand_logo_url?: string | null
+          brand_primary_color?: string | null
+          brand_secondary_color?: string | null
+          brand_text_color?: string | null
           cep?: string | null
           cidade?: string | null
           cnpj?: string

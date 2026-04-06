@@ -32,6 +32,13 @@ export interface CompanyFormData {
   bairro: string;
   cidade: string;
   estado: string;
+  brandLogoUrl: string;
+  brandLogoPath: string;
+  brandPrimaryColor: string;
+  brandSecondaryColor: string;
+  brandAccentColor: string;
+  brandBgColor: string;
+  brandTextColor: string;
 }
 
 export const initialFormData: CompanyFormData = {
@@ -48,4 +55,11 @@ export const initialFormData: CompanyFormData = {
   bairro: "",
   cidade: "",
   estado: "",
+  brandLogoUrl: "",
+  brandLogoPath: "",
+  brandPrimaryColor: "#1E2952",
+  brandSecondaryColor: "#4F46E5",
+  brandAccentColor: "#10B981",
+  brandBgColor: "#F3F4F6",
+  brandTextColor: "#1F2937",
 };
