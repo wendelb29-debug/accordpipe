@@ -66,14 +66,12 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Check contract_signatures table first (new multi-signer flow)
+    // 1. Check contract_signatures table (multi-signer for contracts)
     const { data: sigRecord } = await supabase
       .from("contract_signatures")
       .select("id, contract_id, signer_role, signed_at")
       .eq("signing_token", token)
       .maybeSingle();
-
-    let contractId: string;
 
     if (sigRecord) {
       if (sigRecord.signed_at) {
@@ -83,8 +81,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      contractId = sigRecord.contract_id;
-
+      const contractId = sigRecord.contract_id;
       const fileName = `${contractId}_${sigRecord.signer_role}_${Date.now()}.jpg`;
       const arrayBuffer = await photo.arrayBuffer();
       const { error: uploadErr } = await supabase.storage
@@ -99,8 +96,6 @@ Deno.serve(async (req) => {
       }
 
       const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
-
-      // Generate signature hash
       const signatureHash = await generateHash(
         `${contractId}|${signerName || ""}|${signerDocument || ""}|${signedAt}|${clientIp}`
       );
@@ -126,7 +121,6 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Check if all signatures are now complete
       const { data: allSigs } = await supabase
         .from("contract_signatures")
         .select("signed_at")
@@ -135,7 +129,6 @@ Deno.serve(async (req) => {
       const allSigned = allSigs && allSigs.every((s: any) => s.signed_at !== null);
 
       if (allSigned) {
-        // Generate document hash for the fully signed contract
         const { data: contractData } = await supabase
           .from("contracts")
           .select("contract_content, code")
@@ -164,7 +157,116 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check client_contracts table
+    // 2. Check client_contract_signers table (multi-signer for client_contracts)
+    const { data: ccSigner } = await supabase
+      .from("client_contract_signers")
+      .select("id, contract_id, signer_type, status, signed_at")
+      .eq("signing_token", token)
+      .maybeSingle();
+
+    if (ccSigner) {
+      if (ccSigner.signed_at || ccSigner.status === "assinado") {
+        return new Response(
+          JSON.stringify({ error: "This signature has already been completed" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const contractId = ccSigner.contract_id;
+      const fileName = `client_signer_${ccSigner.id}_${Date.now()}.jpg`;
+      const arrayBuffer = await photo.arrayBuffer();
+      const { error: uploadErr } = await supabase.storage
+        .from("signatures")
+        .upload(fileName, arrayBuffer, { contentType: photo.type });
+
+      if (uploadErr) {
+        return new Response(
+          JSON.stringify({ error: "Failed to upload photo" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
+      const signatureHash = await generateHash(
+        `${contractId}|${signerName || ""}|${signerDocument || ""}|${signedAt}|${clientIp}`
+      );
+
+      // Update the signer record
+      const { error: updateErr } = await supabase
+        .from("client_contract_signers")
+        .update({
+          status: "assinado",
+          signed_at: signedAt,
+          signature_photo_url: urlData.publicUrl,
+          signature_latitude: latitude,
+          signature_longitude: longitude,
+          signature_address: address,
+          signer_ip: clientIp,
+          signer_document: signerDocument || null,
+        })
+        .eq("id", ccSigner.id);
+
+      if (updateErr) {
+        return new Response(
+          JSON.stringify({ error: "Failed to update signer" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check if all required signers have signed
+      const { data: allSigners } = await supabase
+        .from("client_contract_signers")
+        .select("is_required, status")
+        .eq("contract_id", contractId);
+
+      const allRequiredSigned = allSigners &&
+        allSigners.filter((s: any) => s.is_required).every((s: any) => s.status === "assinado");
+
+      if (allRequiredSigned) {
+        const documentHash = await generateHash(`${contractId}|${signedAt}`);
+        const validationCode = crypto.randomUUID().replace(/-/g, "").slice(0, 16).toUpperCase();
+
+        // Update client_contracts
+        await supabase
+          .from("client_contracts")
+          .update({
+            contract_status: "assinado",
+            signed_at: signedAt,
+            document_hash: documentHash,
+            validation_code: validationCode,
+          })
+          .eq("id", contractId);
+
+        // Log history
+        await supabase.from("client_contract_history").insert({
+          contract_id: contractId,
+          action: "assinatura_completa",
+          description: `Todas as assinaturas obrigatórias foram concluídas.\nHash: ${documentHash}\nCódigo: ${validationCode}`,
+          created_by_name: "Sistema",
+        });
+      }
+
+      // Log individual signature
+      await supabase.from("client_contract_history").insert({
+        contract_id: contractId,
+        action: "assinatura",
+        description: [
+          `Assinatura realizada por: ${signerName || "—"} (${ccSigner.signer_type})`,
+          signerDocument ? `Documento: ${signerDocument}` : null,
+          `Data: ${new Date(signedAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}`,
+          `IP: ${clientIp}`,
+          `Local: ${address || "—"}`,
+        ].filter(Boolean).join("\n"),
+        created_by_name: signerName || "Agente Externo",
+      });
+
+      return new Response(
+        JSON.stringify({ success: true, signature_hash: signatureHash }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 3. Check client_contracts table (legacy single-signer)
     const { data: clientContract } = await supabase
       .from("client_contracts")
       .select("id, contract_status, client_name, client_cpf, plan_name, monthly_value, servidor_id")
@@ -173,8 +275,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (clientContract) {
-      contractId = clientContract.id;
-
+      const contractId = clientContract.id;
       const fileName = `client_${contractId}_${Date.now()}.jpg`;
       const arrayBuffer = await photo.arrayBuffer();
       const { error: uploadErr } = await supabase.storage
@@ -189,7 +290,6 @@ Deno.serve(async (req) => {
       }
 
       const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
-
       const documentHash = await generateHash(
         `${contractId}|${clientContract.client_name}|${clientContract.client_cpf || ""}|${signedAt}`
       );
@@ -247,7 +347,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Legacy single-signer flow (contracts table)
+    // 4. Legacy single-signer flow (contracts table)
     const { data: contract, error: fetchErr } = await supabase
       .from("contracts")
       .select("id, signature_status, contract_content")
@@ -262,8 +362,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    contractId = contract.id;
-
+    const contractId2 = contract.id;
     const fileName = `${contract.id}_${Date.now()}.jpg`;
     const arrayBuffer = await photo.arrayBuffer();
     const { error: uploadErr } = await supabase.storage
@@ -278,9 +377,8 @@ Deno.serve(async (req) => {
     }
 
     const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
-
     const documentHash = await generateHash(
-      `${contractId}|${contract.contract_content || ""}|${signedAt}`
+      `${contractId2}|${contract.contract_content || ""}|${signedAt}`
     );
     const validationCode = crypto.randomUUID().replace(/-/g, "").slice(0, 16).toUpperCase();
 
