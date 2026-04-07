@@ -6,8 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
-import { generateContractPdf } from "@/lib/generateContractPdf";
 import type { CrmLead } from "@/hooks/useCrmLeads";
 
 interface LeadDocsTabProps {
