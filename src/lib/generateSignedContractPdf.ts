@@ -7,6 +7,7 @@ interface SignerData {
   email?: string | null;
   document?: string | null;
   birth_date?: string | null;
+  company_name?: string | null;
   signed_at?: string | null;
   ip?: string | null;
   signature_photo_url?: string | null;
@@ -281,6 +282,11 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
     // Name + role (bold)
     proofPage.drawText(`${signer.name} (${signer.role})`, { x: 30, y, size: 10, font: fontBold, color: rgb(0, 0, 0) });
     y -= 12;
+
+    if (signer.company_name) {
+      proofPage.drawText(`Empresa: ${signer.company_name}`, { x: 30, y, size: 8, font, color: rgb(0.1, 0.1, 0.1) });
+      y -= 10;
+    }
 
     // CPF + Nascimento on same line
     const cpfText = signer.document ? `CPF: ${formatCpf(signer.document)}` : "";
