@@ -501,7 +501,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
         <div
           ref={pipelineRef}
-          className="flex flex-1 min-h-0 items-stretch gap-3 px-4 pb-0 overflow-x-auto overflow-y-hidden cursor-grab [&::-webkit-scrollbar]:h-[4px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gradient-to-r [&::-webkit-scrollbar-thumb]:from-[hsl(var(--primary))] [&::-webkit-scrollbar-thumb]:to-[hsl(263,87%,60%)]"
+          className="flex flex-1 min-h-0 items-stretch gap-2 px-2 pb-0 overflow-x-auto overflow-y-hidden cursor-grab [&::-webkit-scrollbar]:h-[4px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gradient-to-r [&::-webkit-scrollbar-thumb]:from-[hsl(var(--primary))] [&::-webkit-scrollbar-thumb]:to-[hsl(263,87%,60%)]"
           onMouseDown={handlePipelineMouseDown}
           onMouseMove={handlePipelineMouseMove}
           onMouseUp={handlePipelineMouseUp}
@@ -516,7 +516,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
             <div
               key={stage.id}
               className={cn(
-                "flex-shrink-0 w-[260px] rounded-2xl flex flex-col border transition-all duration-200",
+                "flex-shrink-0 w-[220px] rounded-xl flex flex-col border transition-all duration-200",
                 colors.border,
                 colors.bg,
                 dragOverStage === stage.id && "ring-2 ring-primary/60 scale-[1.01]"
@@ -526,22 +526,22 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
               onDrop={(e) => handleDrop(e, stage.id)}
             >
               {/* Column Header */}
-              <div className="px-3 py-3 rounded-t-2xl">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2">
-                    <div className={cn("p-1.5 rounded-lg shadow-sm", colors.icon)}>
-                      <Icon className="h-3.5 w-3.5 text-white" />
+              <div className="px-2.5 py-2 rounded-t-xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <div className={cn("p-1 rounded-md", colors.icon)}>
+                      <Icon className="h-3 w-3 text-white" />
                     </div>
-                    <span className="font-semibold text-sm text-foreground">{stage.title}</span>
-                    <span className={cn("text-xs font-bold rounded-full px-2.5 py-0.5 bg-card border border-border/50 shadow-sm", colors.text)}>
+                    <span className="font-semibold text-[11px] text-foreground">{stage.title}</span>
+                    <span className={cn("text-[10px] font-bold rounded-full px-2 py-0.5 bg-card border border-border/50", colors.text)}>
                       {stage.count}
                     </span>
                   </div>
                   {stage.daysLimit && (
-                    <span className="text-[10px] text-muted-foreground/60 font-medium">{stage.daysLimit}</span>
+                    <span className="text-[9px] text-muted-foreground/60 font-medium">{stage.daysLimit}</span>
                   )}
                 </div>
-                <div className="flex items-center gap-2 text-[10px] mt-1.5">
+                <div className="flex items-center gap-1.5 text-[9px] mt-1">
                   <span className="text-muted-foreground">P&S <span className="font-semibold text-foreground">{formatCurrency(stage.totalPS)}</span></span>
                   <span className="text-muted-foreground/30">·</span>
                   <span className="text-muted-foreground">MRR <span className="font-semibold text-primary">{formatCurrency(stage.totalMRR)}</span></span>
@@ -549,11 +549,11 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
               </div>
 
               {/* Cards */}
-              <div className="flex-1 px-2 pb-2 space-y-2 overflow-y-auto">
+              <div className="flex-1 px-1.5 pb-1.5 space-y-1.5 overflow-y-auto">
                 {stageLeads.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground/30">
-                    <Icon className="h-10 w-10 mb-3" />
-                    <p className="text-xs font-medium">Etapa vazia</p>
+                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground/30">
+                    <Icon className="h-8 w-8 mb-2" />
+                    <p className="text-[10px] font-medium">Etapa vazia</p>
                   </div>
                 )}
                 {stageLeads.map((lead) => {
@@ -571,47 +571,49 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                       onDragStart={() => setDraggedLead(lead)}
                       onClick={() => openDetail(lead)}
                       className={cn(
-                        "kanban-card rounded-2xl border p-3.5 cursor-grab active:cursor-grabbing transition-all duration-200 group shadow-sm",
-                        "hover:-translate-y-[3px] hover:shadow-[0_12px_30px_rgba(0,0,0,0.1)]",
+                        "kanban-card rounded-xl border p-2.5 cursor-grab active:cursor-grabbing transition-all duration-200 group",
+                        "hover:-translate-y-[2px] hover:shadow-md",
                         draggedLead?.id === lead.id && "opacity-40 scale-95",
-                        noActivity && "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50",
-                        overdue && hasActivity && "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50",
-                        !noActivity && !(overdue && hasActivity) && "bg-card border-border/40"
+                        noActivity && "bg-amber-50/60 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/40",
+                        overdue && hasActivity && "bg-red-50/60 dark:bg-red-950/20 border-red-200/60 dark:border-red-800/40",
+                        !noActivity && !(overdue && hasActivity) && "bg-card border-border/30"
                       )}
-                      style={{ boxShadow: draggedLead?.id === lead.id ? undefined : '0 8px 25px rgba(0,0,0,0.06)' }}
+                      style={{ boxShadow: draggedLead?.id === lead.id ? undefined : '0 2px 8px rgba(0,0,0,0.04)' }}
                     >
                       {/* Progress bar */}
-                      <div className="w-full h-1 rounded-full bg-muted mb-3 overflow-hidden">
+                      <div className="w-full h-0.5 rounded-full bg-muted mb-2 overflow-hidden">
                         <div className={cn("h-full rounded-full transition-all duration-500", progressColor)}
                           style={{ width: noActivity ? '30%' : overdue ? '100%' : `${Math.min(100, Math.max(20, 100 - days * 10))}%` }}
                         />
                       </div>
 
-                      {/* Status badges */}
-                      {noActivity && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full px-2 py-0.5 mb-2"
-                          style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>
-                          <AlertTriangle className="h-3 w-3" />
-                          Sem atividade
-                        </span>
-                      )}
-                      {overdue && hasActivity && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full px-2 py-0.5 mb-2"
-                          style={{ backgroundColor: '#FEE2E2', color: '#DC2626' }}>
-                          <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
-                          Atrasado
-                        </span>
-                      )}
-
-                      {/* Source + Company */}
-                      <div className="flex items-start justify-between mb-2">
+                      {/* Source + Company + Status icons */}
+                      <div className="flex items-start justify-between mb-1.5">
                         <div className="min-w-0 flex-1">
-                          <p className="font-semibold text-xs text-foreground truncate">{lead.contact_name || lead.source}</p>
-                          <p className="text-[11px] text-muted-foreground truncate mt-0.5">{lead.company_name}</p>
+                          <div className="flex items-center gap-1">
+                            <p className="font-semibold text-[11px] text-foreground truncate">{lead.contact_name || lead.source}</p>
+                            {noActivity && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <AlertTriangle className="h-3 w-3 shrink-0 text-amber-500" />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-[10px]">Sem atividade</TooltipContent>
+                              </Tooltip>
+                            )}
+                            {overdue && hasActivity && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-[10px]">Atrasado</TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-muted-foreground truncate">{lead.company_name}</p>
                         </div>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+                            <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
                               <MoreVertical className="h-3 w-3" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -623,89 +625,91 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                         </DropdownMenu>
                       </div>
 
-                      {/* Value - Compact */}
-                      <div className="flex items-center gap-2 pt-2 border-t border-border/30 text-[11px]">
+                      {/* Value - Single line */}
+                      <div className="flex items-center gap-1.5 text-[10px]">
                         <span className="text-muted-foreground">P&S <span className="font-bold text-foreground">{formatCurrency(lead.value_ps)}</span></span>
                         <span className="text-muted-foreground/30">·</span>
                         <span className="text-muted-foreground">MRR <span className="font-bold text-primary">{formatCurrency(lead.value_mrr)}</span></span>
                       </div>
 
                       {signatureStats && (
-                        <div className="mt-2 flex flex-wrap gap-1.5">
+                        <div className="mt-1.5 flex flex-wrap gap-1">
                           <Badge
                             variant="secondary"
                             className={cn(
-                              "text-[10px] gap-1 px-2 py-0.5",
+                              "text-[9px] gap-0.5 px-1.5 py-0",
                               signatureStats.approved
                                 ? "bg-status-paid text-status-paid-foreground"
                                 : "bg-status-open text-status-open-foreground"
                             )}
                           >
-                            {signatureStats.approved ? <CheckCircle className="h-3 w-3" /> : <FileSignature className="h-3 w-3" />}
+                            {signatureStats.approved ? <CheckCircle className="h-2.5 w-2.5" /> : <FileSignature className="h-2.5 w-2.5" />}
                             {signatureStats.approved
                               ? "Aprovado"
-                              : `${signatureStats.signed}/${signatureStats.total} assinaturas`}
+                              : `${signatureStats.signed}/${signatureStats.total}`}
                           </Badge>
                         </div>
                       )}
 
                       {/* Won / Devolvido badges */}
-                      {lead.lead_status === "won" && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full px-2 py-0.5 mt-2"
-                          style={{ backgroundColor: '#D1FAE5', color: '#059669' }}>
-                          ✅ Ganho
-                        </span>
-                      )}
-                      {lead.tags?.includes("Pendente de Correção") && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full px-2 py-0.5 mt-1"
-                          style={{ backgroundColor: '#FED7AA', color: '#C2410C' }}>
-                          ⚠️ Pendente de Correção
-                        </span>
-                      )}
-                      {lead.tags?.includes("Devolvido") && !lead.tags?.includes("Pendente de Correção") && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full px-2 py-0.5 mt-1"
-                          style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>
-                          🔄 Devolvido
-                        </span>
-                      )}
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {lead.lead_status === "won" && (
+                          <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold rounded-full px-1.5 py-0"
+                            style={{ backgroundColor: '#D1FAE5', color: '#059669' }}>
+                            ✅ Ganho
+                          </span>
+                        )}
+                        {lead.tags?.includes("Pendente de Correção") && (
+                          <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold rounded-full px-1.5 py-0"
+                            style={{ backgroundColor: '#FED7AA', color: '#C2410C' }}>
+                            ⚠️ Correção
+                          </span>
+                        )}
+                        {lead.tags?.includes("Devolvido") && !lead.tags?.includes("Pendente de Correção") && (
+                          <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold rounded-full px-1.5 py-0"
+                            style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>
+                            🔄 Devolvido
+                          </span>
+                        )}
+                      </div>
 
                       {/* Activity indicator */}
                       {hasActivity && nextActivities[lead.id] && (
-                        <div className="flex items-center gap-1 mt-2 text-[10px] text-muted-foreground">
-                          <CalendarClock className="h-3 w-3" />
+                        <div className="flex items-center gap-1 mt-1 text-[9px] text-muted-foreground">
+                          <CalendarClock className="h-2.5 w-2.5" />
                           <span className="truncate">{nextActivities[lead.id]}</span>
                         </div>
                       )}
                       {noActivity && lastCompletedActivities[lead.id] && (
-                        <div className="flex items-center gap-1 mt-2 text-[10px] text-muted-foreground">
-                          <CheckCircle className="h-3 w-3 text-emerald-500" />
-                          <span className="truncate">Atividade concluída: {lastCompletedActivities[lead.id]}</span>
+                        <div className="flex items-center gap-1 mt-1 text-[9px] text-muted-foreground">
+                          <CheckCircle className="h-2.5 w-2.5 text-emerald-500" />
+                          <span className="truncate">{lastCompletedActivities[lead.id]}</span>
                         </div>
                       )}
 
                       {/* Footer */}
-                      <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border/20">
-                        <div className="flex items-center gap-1.5">
+                      <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-border/15">
+                        <div className="flex items-center gap-1">
                           {lead.created_by_name && (() => {
                             const memberAvatar = teamMembers.find(m => m.user_id === lead.created_by_user_id)?.avatar_url;
                             return (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Avatar className="h-7 w-7 ring-2 ring-primary/20">
+                                  <Avatar className="h-5 w-5 ring-1 ring-primary/15">
                                     {memberAvatar && <AvatarImage src={memberAvatar} alt={lead.created_by_name} />}
-                                    <AvatarFallback className="text-[9px] bg-primary/10 text-primary font-bold">
+                                    <AvatarFallback className="text-[7px] bg-primary/10 text-primary font-bold">
                                       {lead.created_by_name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
                                     </AvatarFallback>
                                   </Avatar>
                                 </TooltipTrigger>
-                                <TooltipContent side="bottom" className="text-xs font-medium">{lead.created_by_name}</TooltipContent>
+                                <TooltipContent side="bottom" className="text-[10px] font-medium">{lead.created_by_name}</TooltipContent>
                               </Tooltip>
                             );
                           })()}
-                          <span className="text-[10px] text-muted-foreground/50">{new Date(lead.created_at).toLocaleDateString("pt-BR")}</span>
+                          <span className="text-[9px] text-muted-foreground/50">{new Date(lead.created_at).toLocaleDateString("pt-BR")}</span>
                         </div>
                         <span className={cn(
-                          "text-[10px] font-bold rounded-full px-2 py-0.5",
+                          "text-[9px] font-bold rounded-full px-1.5 py-0",
                           overdue ? "text-red-600" : days > 3 ? "text-amber-600" : "text-muted-foreground/50",
                           overdue ? "bg-red-50 dark:bg-red-950/30" : days > 3 ? "bg-amber-50 dark:bg-amber-950/30" : ""
                         )}>
