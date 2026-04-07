@@ -736,6 +736,13 @@ Deno.serve(async (req) => {
             validation_code: validationCode,
           })
           .eq("id", contractId);
+
+        // Generate and persist the final signed PDF
+        try {
+          await persistSignedPdfForContract(supabase, contractId, origin);
+        } catch (pdfErr) {
+          console.error("Failed to persist signed PDF for contract:", pdfErr);
+        }
       }
 
       return new Response(
