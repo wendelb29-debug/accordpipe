@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
+import { generateContractPdf } from "@/lib/generateContractPdf";
 import type { CrmLead } from "@/hooks/useCrmLeads";
 
 interface LeadDocsTabProps {
@@ -33,6 +35,12 @@ interface SignedContract {
   document_hash: string | null;
   plan_name: string | null;
   created_at: string;
+  contract_content: string | null;
+  
+  servidor_id: string;
+  signer_name: string | null;
+  signer_document: string | null;
+  signature_photo_url: string | null;
 }
 
 interface SignedPdfContract {
@@ -78,16 +86,13 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
   };
 
   const fetchSignedContracts = async () => {
-    // Fetch signed client_contracts for this lead
     const { data: clientContracts } = await supabase
       .from("client_contracts")
-      .select("id, client_name, contract_status, signed_at, validation_code, document_hash, plan_name, created_at")
+      .select("id, client_name, contract_status, signed_at, validation_code, document_hash, plan_name, created_at, contract_content, servidor_id, signer_name, signer_document, signature_photo_url")
       .eq("lead_id", lead.id)
       .eq("contract_status", "assinado");
     setSignedContracts((clientContracts as SignedContract[]) || []);
 
-    // Fetch signed pdf_contracts linked via drive_files or direct
-    // Check pdf_contracts that have status 'concluido' and are linked to this lead's servidor
     const { data: pdfContracts } = await supabase
       .from("pdf_contracts")
       .select("id, name, status, pdf_assinado_url, pdf_url, validation_code, document_hash, created_at")
@@ -162,6 +167,79 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
     }
   };
 
+  const handleDownloadClientContract = async (contract: SignedContract) => {
+    try {
+      // Fetch signers from client_contract_signers
+      const { data: signers } = await supabase
+        .from("client_contract_signers")
+        .select("*")
+        .eq("contract_id", contract.id)
+        .order("sign_order", { ascending: true });
+
+      const signerList = (signers && signers.length > 0)
+        ? signers.map((s: any) => ({
+            id: s.id,
+            name: s.name || s.signer_name || "—",
+            role: s.signer_type || "signatário",
+            email: s.email,
+            document: s.signer_document,
+            signed_at: s.signed_at,
+            ip: s.signer_ip,
+            signature_photo_url: s.signature_photo_url,
+          }))
+        : [{
+            name: contract.signer_name || contract.client_name,
+            role: "signatário",
+            document: contract.signer_document,
+            signed_at: contract.signed_at,
+            ip: null,
+            signature_photo_url: contract.signature_photo_url,
+          }];
+
+      // Get company name
+      const { data: company } = await supabase
+        .from("companies")
+        .select("razao_social")
+        .eq("id", contract.servidor_id)
+        .single();
+
+      const companyName = company?.razao_social || lead.company_name;
+
+      // Generate base PDF from contract_content if no pdf_url
+      let pdfUrl = "";
+      let tempUrl: string | null = null;
+
+      if (contract.contract_content) {
+        const basePdfBlob = generateContractPdf({
+          content: contract.contract_content,
+          code: `CTR-${contract.id.slice(0, 8).toUpperCase()}`,
+          companyName,
+        });
+        tempUrl = URL.createObjectURL(basePdfBlob);
+        pdfUrl = tempUrl;
+      } else {
+        toast.error("Conteúdo do contrato não disponível");
+        return;
+      }
+
+      await downloadSignedContractPdf({
+        pdfUrl,
+        code: `CTR-${contract.id.slice(0, 8).toUpperCase()}`,
+        companyName,
+        documentHash: contract.document_hash || "",
+        validationCode: contract.validation_code || "",
+        signedAt: contract.signed_at || new Date().toISOString(),
+        signers: signerList,
+        validationUrl: `${window.location.origin}/validar-documento/${contract.validation_code || ""}`,
+      });
+
+      if (tempUrl) URL.revokeObjectURL(tempUrl);
+      toast.success("Contrato assinado baixado com sucesso!");
+    } catch (err: any) {
+      toast.error("Erro ao baixar contrato: " + (err?.message || ""));
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -212,17 +290,24 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
                     <Badge variant="secondary" className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border-0">
                       Assinado
                     </Badge>
-                    {contract.validation_code && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7"
-                        onClick={() => window.open(`/validar-documento/${contract.validation_code}`, "_blank")}
-                        title="Validar documento"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={() => handleDownloadClientContract(contract)}
+                      title="Visualizar contrato assinado"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={() => handleDownloadClientContract(contract)}
+                      title="Baixar contrato assinado"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 </div>
               </CardContent>
