@@ -47,6 +47,7 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+  const [signerDetails, setSignerDetails] = useState<Record<string, any>>({});
   const scale = 1.2;
 
   useEffect(() => {
@@ -93,17 +94,22 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
         }
       }
 
-      // Load signer details for client data resolution
+      // Load signer details for signature stamp rendering
       const { data: signers } = await supabase
         .from("pdf_contract_signers")
         .select("*")
         .eq("contract_id", contractId)
         .order("sign_order", { ascending: true });
 
-      if (signers && signers.length > 0) {
+      const signerMap: Record<string, any> = {};
+      if (signers) {
+        for (const s of signers) {
+          signerMap[s.id] = s;
+        }
         // Store first signer as the primary client for field resolution
         setContractMeta((prev: any) => ({ ...prev, primarySigner: signers[0], allSigners: signers }));
       }
+      setSignerDetails(signerMap);
     };
     load();
   }, [contractId]);
@@ -233,21 +239,30 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
           {/* Other signers' fields */}
           {otherFields.map(field => {
             const isSigned = signedFieldIds.includes(field.id);
+            const signer = field.signer_id ? signerDetails[field.signer_id] : null;
             return (
               <div
                 key={field.id}
-                className="absolute rounded-md border-2 border-dashed flex items-center justify-center pointer-events-none opacity-50"
+                className={cn("absolute rounded-md border-2 flex pointer-events-none", isSigned ? "border-solid items-start p-1" : "border-dashed items-center justify-center opacity-50")}
                 style={{
                   left: field.pos_x,
                   top: field.pos_y,
                   width: field.width,
                   height: field.height,
                   borderColor: field.signer_color || "#9ca3af",
-                  backgroundColor: isSigned ? `${field.signer_color || "#9ca3af"}20` : `${field.signer_color || "#9ca3af"}10`,
+                  backgroundColor: isSigned ? `${field.signer_color || "#9ca3af"}15` : `${field.signer_color || "#9ca3af"}10`,
                 }}
               >
-                {isSigned ? (
-                  <CheckCircle className="h-4 w-4" style={{ color: field.signer_color || "#9ca3af" }} />
+                {isSigned && signer?.status === "assinado" ? (
+                  <div className="flex flex-col gap-0.5 overflow-hidden w-full">
+                    <div className="flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3 shrink-0" style={{ color: field.signer_color || "#16a34a" }} />
+                      <span className="text-[8px] font-bold truncate" style={{ color: "#1e40af" }}>Assinado Digitalmente</span>
+                    </div>
+                    <span className="text-[7px] font-semibold truncate" style={{ color: "#111" }}>{signer.name}</span>
+                    {signer.cpf_cnpj && <span className="text-[6px] truncate" style={{ color: "#555" }}>CPF/CNPJ: {signer.cpf_cnpj}</span>}
+                    {signer.signed_at && <span className="text-[6px] truncate" style={{ color: "#555" }}>{new Date(signer.signed_at).toLocaleString("pt-BR")}</span>}
+                  </div>
                 ) : (
                   <span className="text-[9px] font-medium" style={{ color: field.signer_color || "#9ca3af" }}>
                     {field.label || "Assinatura"}
@@ -260,16 +275,17 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
           {/* Current signer's fields */}
           {myFields.map(field => {
             const isSigned = signedFieldIds.includes(field.id);
+            const signer = field.signer_id ? signerDetails[field.signer_id] : null;
             return (
               <button
                 key={field.id}
                 disabled={isSigned}
                 onClick={() => !isSigned && onFieldClick(field)}
                 className={cn(
-                  "absolute rounded-md border-2 flex items-center justify-center transition-all",
+                  "absolute rounded-md border-2 flex transition-all",
                   isSigned
-                    ? "border-solid cursor-default"
-                    : "border-dashed cursor-pointer hover:shadow-lg hover:scale-[1.02] animate-pulse"
+                    ? "border-solid cursor-default items-start p-1"
+                    : "border-dashed cursor-pointer hover:shadow-lg hover:scale-[1.02] animate-pulse items-center justify-center"
                 )}
                 style={{
                   left: field.pos_x,
@@ -277,13 +293,18 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
                   width: field.width,
                   height: field.height,
                   borderColor: field.signer_color || "#3b82f6",
-                  backgroundColor: isSigned ? `${field.signer_color || "#3b82f6"}20` : `${field.signer_color || "#3b82f6"}15`,
+                  backgroundColor: isSigned ? `${field.signer_color || "#3b82f6"}15` : `${field.signer_color || "#3b82f6"}15`,
                 }}
               >
-                {isSigned ? (
-                  <div className="flex flex-col items-center gap-0.5">
-                    <CheckCircle className="h-4 w-4" style={{ color: field.signer_color || "#3b82f6" }} />
-                    <span className="text-[9px] font-bold" style={{ color: field.signer_color || "#3b82f6" }}>Assinado</span>
+                {isSigned && signer?.status === "assinado" ? (
+                  <div className="flex flex-col gap-0.5 overflow-hidden w-full">
+                    <div className="flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3 shrink-0" style={{ color: "#16a34a" }} />
+                      <span className="text-[8px] font-bold truncate" style={{ color: "#1e40af" }}>Assinado Digitalmente</span>
+                    </div>
+                    <span className="text-[7px] font-semibold truncate" style={{ color: "#111" }}>{signer.name}</span>
+                    {signer.cpf_cnpj && <span className="text-[6px] truncate" style={{ color: "#555" }}>CPF/CNPJ: {signer.cpf_cnpj}</span>}
+                    {signer.signed_at && <span className="text-[6px] truncate" style={{ color: "#555" }}>{new Date(signer.signed_at).toLocaleString("pt-BR")}</span>}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-0.5">

@@ -226,6 +226,26 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
               className="w-full h-[50vh]"
               title="Visualização do contrato PDF"
             />
+            {/* Signature stamps overlay below PDF */}
+            {signers.some(s => s.status === "assinado") && (
+              <div className="border-t bg-muted/30 p-4 space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Assinaturas Registradas no Documento</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {signers.filter(s => s.status === "assinado").map(signer => (
+                    <div key={signer.id} className="rounded-md border border-primary/20 bg-primary/5 p-3 space-y-1">
+                      <div className="flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                        <span className="text-xs font-bold text-foreground">Assinado Digitalmente</span>
+                      </div>
+                      <p className="text-xs font-semibold">{signer.name}</p>
+                      {signer.cpf_cnpj && <p className="text-[10px] text-muted-foreground">CPF/CNPJ: {signer.cpf_cnpj}</p>}
+                      {signer.signed_at && <p className="text-[10px] text-muted-foreground">Data: {new Date(signer.signed_at).toLocaleString("pt-BR")}</p>}
+                      {signer.signer_ip && <p className="text-[10px] text-muted-foreground">IP: {signer.signer_ip}</p>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Signers */}
