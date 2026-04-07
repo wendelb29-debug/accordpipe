@@ -245,7 +245,7 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
   }
 
   const modifiedBytes = await pdfDoc.save();
-  return new Blob([modifiedBytes.buffer], { type: "application/pdf" });
+  return new Blob([new Uint8Array(modifiedBytes).buffer as ArrayBuffer], { type: "application/pdf" });
 }
 
 function splitText(text: string, maxChars: number): string[] {
