@@ -168,26 +168,25 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
 
   const handleDownloadClientContract = async (contract: SignedContract) => {
     try {
-      // Fetch signers from client_contract_signers
+      // Fetch signers from contract_signatures
       const { data: signers } = await supabase
-        .from("client_contract_signers")
+        .from("contract_signatures")
         .select("*")
-        .eq("contract_id", contract.id)
-        .order("sign_order", { ascending: true });
+        .eq("contract_id", contract.id);
 
       const signerList = (signers && signers.length > 0)
-        ? signers.map((s: any) => ({
+        ? signers.filter((s: any) => s.signed_at).map((s: any) => ({
             id: s.id,
-            name: s.name || s.signer_name || "—",
-            role: s.signer_type || "signatário",
-            email: s.email,
+            name: s.signer_name || "—",
+            role: s.signer_role || "signatário",
+            email: null,
             document: s.signer_document,
             signed_at: s.signed_at,
             ip: s.signer_ip,
             signature_photo_url: s.signature_photo_url,
           }))
         : [{
-            name: contract.signer_name || contract.client_name,
+            name: contract.signer_name || lead.company_name,
             role: "signatário",
             document: contract.signer_document,
             signed_at: contract.signed_at,
@@ -199,19 +198,21 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
       const { data: company } = await supabase
         .from("companies")
         .select("razao_social")
-        .eq("id", contract.servidor_id)
+        .eq("id", contract.company_id)
         .single();
 
       const companyName = company?.razao_social || lead.company_name;
 
-      // Generate base PDF from contract_content if no pdf_url
+      // Use existing pdf_url or generate from content
       let pdfUrl = "";
       let tempUrl: string | null = null;
 
-      if (contract.contract_content) {
+      if (contract.pdf_url) {
+        pdfUrl = contract.pdf_url;
+      } else if (contract.contract_content) {
         const basePdfBlob = generateContractPdf({
           content: contract.contract_content,
-          code: `CTR-${contract.id.slice(0, 8).toUpperCase()}`,
+          code: contract.code,
           companyName,
         });
         tempUrl = URL.createObjectURL(basePdfBlob);
@@ -223,7 +224,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
 
       await downloadSignedContractPdf({
         pdfUrl,
-        code: `CTR-${contract.id.slice(0, 8).toUpperCase()}`,
+        code: contract.code,
         companyName,
         documentHash: contract.document_hash || "",
         validationCode: contract.validation_code || "",
