@@ -40,10 +40,13 @@ interface ContractData {
     responsavel: string | null;
     endereco: string | null;
     numero: string | null;
+    complemento: string | null;
     bairro: string | null;
     cidade: string | null;
     estado: string | null;
     cep: string | null;
+    email: string | null;
+    telefone: string | null;
   } | null;
 }
 
@@ -327,6 +330,24 @@ export default function AssinarContrato() {
             <div className="flex justify-between"><span className="text-muted-foreground">Razão Social:</span><span className="font-medium text-foreground">{company?.razao_social || "-"}</span></div>
             {company?.nome_fantasia && <div className="flex justify-between"><span className="text-muted-foreground">Nome Fantasia:</span><span className="font-medium text-foreground">{company.nome_fantasia}</span></div>}
             <div className="flex justify-between"><span className="text-muted-foreground">CNPJ:</span><span className="font-mono font-medium text-foreground">{company?.cnpj || "-"}</span></div>
+            {company?.responsavel && <div className="flex justify-between"><span className="text-muted-foreground">Responsável:</span><span className="font-medium text-foreground">{company.responsavel}</span></div>}
+            {company?.email && <div className="flex justify-between"><span className="text-muted-foreground">E-mail:</span><span className="font-medium text-foreground">{company.email}</span></div>}
+            {company?.telefone && <div className="flex justify-between"><span className="text-muted-foreground">Telefone:</span><span className="font-medium text-foreground">{company.telefone}</span></div>}
+            {(company?.endereco || company?.cidade) && (
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground shrink-0">Endereço:</span>
+                <span className="font-medium text-foreground text-right">
+                  {[
+                    company?.endereco,
+                    company?.numero ? `nº ${company.numero}` : null,
+                    company?.complemento,
+                    company?.bairro,
+                    company?.cep ? `CEP: ${company.cep}` : null,
+                    company?.cidade && company?.estado ? `${company.cidade}/${company.estado}` : company?.cidade || company?.estado,
+                  ].filter(Boolean).join(", ")}
+                </span>
+              </div>
+            )}
           </div>
         </Card>
 
