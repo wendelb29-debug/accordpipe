@@ -103,7 +103,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
       .eq("lead_id", lead.id)
       .eq("signature_status", "signed");
 
-    // Fetch signers for each signed contract
+    // Fetch signers for each signed contract (deduplicated by role)
     const contractsWithSigners: SignedContract[] = [];
     for (const contract of (signedContractsData || [])) {
       const { data: sigs } = await supabase
@@ -112,16 +112,26 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
         .eq("contract_id", contract.id)
         .order("created_at", { ascending: true });
 
+      // Deduplicate by signer_role - keep the signed one or latest
+      const roleMap = new Map<string, ContractSigner>();
+      for (const s of (sigs || []) as any[]) {
+        const role = s.signer_role || "signatário";
+        const existing = roleMap.get(role);
+        if (!existing || (s.signed_at && !existing.signed_at)) {
+          roleMap.set(role, {
+            signer_name: s.signer_name,
+            signer_role: role,
+            signer_document: s.signer_document,
+            signed_at: s.signed_at,
+            signer_ip: s.signer_ip,
+            signature_photo_url: s.signature_photo_url,
+          });
+        }
+      }
+
       contractsWithSigners.push({
         ...(contract as unknown as SignedContract),
-        signers: (sigs || []).map((s: any) => ({
-          signer_name: s.signer_name,
-          signer_role: s.signer_role,
-          signer_document: s.signer_document,
-          signed_at: s.signed_at,
-          signer_ip: s.signer_ip,
-          signature_photo_url: s.signature_photo_url,
-        })),
+        signers: Array.from(roleMap.values()),
       });
     }
     setSignedContracts(contractsWithSigners);
