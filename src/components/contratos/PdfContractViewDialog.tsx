@@ -178,6 +178,7 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
           y: f.pos_y,
           width: f.width,
           height: f.height,
+          signerId: null,
         }));
       }
     }

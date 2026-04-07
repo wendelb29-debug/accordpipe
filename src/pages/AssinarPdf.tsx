@@ -438,6 +438,7 @@ export default function AssinarPdf() {
               y: f.pos_y,
               width: f.width,
               height: f.height,
+              signerId: null,
             }));
           }
         }
