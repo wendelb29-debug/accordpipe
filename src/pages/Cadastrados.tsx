@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { CadastradosCharts } from "@/components/cadastrados/CadastradosCharts";
+import { generateSignedContractPdf } from "@/lib/generateSignedContractPdf";
+import { generateContractPdf } from "@/lib/generateContractPdf";
 
 // ──────────── Status configs ────────────
 const registrationStatusLabels: Record<string, { label: string; color: string }> = {
@@ -103,7 +105,7 @@ export default function Cadastrados() {
   const [upsellDialogOpen, setUpsellDialogOpen] = useState(false);
   const [upsellForm, setUpsellForm] = useState({ name: "", description: "", amount: "", type: "mensal", start_date: new Date().toISOString().split("T")[0] });
   const [upsellSaving, setUpsellSaving] = useState(false);
-
+  const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
   // Manual Registration state (must be before any early return)
   const [manualRegOpen, setManualRegOpen] = useState(false);
   const [manualForm, setManualForm] = useState({
