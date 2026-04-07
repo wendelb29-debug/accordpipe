@@ -234,6 +234,85 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     setLoadingSavedContract(false);
   };
 
+  const fetchContractSigners = useCallback(async (contractId: string) => {
+    setLoadingSigners(true);
+    const { data } = await supabase
+      .from("contract_signatures")
+      .select("*")
+      .eq("contract_id", contractId)
+      .order("created_at", { ascending: true });
+    setContractSigners(data || []);
+    setLoadingSigners(false);
+  }, []);
+
+  // Auto-add vendor signer if missing
+  const ensureVendorSigner = useCallback(async (contractId: string, signers: any[]) => {
+    if (!profile?.name) return;
+    if (signers.some((s: any) => s.signer_role === "vendedor")) return;
+    try {
+      const token = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+      await supabase.from("contract_signatures").insert({
+        contract_id: contractId,
+        signer_role: "vendedor",
+        signing_token: token,
+        signer_name: profile.name,
+      } as any);
+      await fetchContractSigners(contractId);
+    } catch { /* silent */ }
+  }, [profile, fetchContractSigners]);
+
+  // Fetch signers when saved contract loads
+  useEffect(() => {
+    if (savedContract?.id) {
+      fetchContractSigners(savedContract.id);
+    }
+  }, [savedContract?.id, fetchContractSigners]);
+
+  // Ensure vendor after signers load
+  useEffect(() => {
+    if (savedContract?.id && !loadingSigners && contractSigners.length >= 0) {
+      ensureVendorSigner(savedContract.id, contractSigners);
+    }
+  }, [savedContract?.id, loadingSigners]);
+
+  const handleAddContractSigner = async () => {
+    if (!savedContract?.id || !newSignerName.trim()) {
+      toast.error("Preencha o nome do signatário");
+      return;
+    }
+    setAddingSigner(true);
+    try {
+      const token = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+      const { error } = await supabase.from("contract_signatures").insert({
+        contract_id: savedContract.id,
+        signer_role: newSignerRole,
+        signing_token: token,
+        signer_name: newSignerName.trim(),
+        signer_document: newSignerDoc.trim() || null,
+      } as any);
+      if (error) throw error;
+      toast.success("Signatário adicionado!");
+      setNewSignerName(""); setNewSignerEmail(""); setNewSignerDoc(""); setNewSignerRole("testemunha");
+      setAddSignerOpen(false);
+      await fetchContractSigners(savedContract.id);
+    } catch (err: any) {
+      toast.error("Erro: " + (err.message || ""));
+    }
+    setAddingSigner(false);
+  };
+
+  const handleCopySignerLink = (token: string, name: string) => {
+    navigator.clipboard.writeText(`${window.location.origin}/assinar/${token}`);
+    toast.success(`Link copiado para ${name}!`);
+  };
+
+  const handleSendSignerWhatsApp = (token: string, name: string) => {
+    const link = `${window.location.origin}/assinar/${token}`;
+    const message = `Olá ${name},\nsegue o link para assinatura do contrato:\n\n${link}`;
+    const phone = (lead.phone || "").replace(/\D/g, "");
+    window.open(`https://wa.me/${phone.startsWith("55") ? phone : "55" + phone}?text=${encodeURIComponent(message)}`, "_blank");
+  };
+
   const { createContract } = useContracts();
 
   // Company & servidor data
