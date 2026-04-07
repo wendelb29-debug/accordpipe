@@ -229,7 +229,7 @@ ${company.responsavel || "[RESPONSÁVEL]"}`;
 
     if (companyError || !company) {
       toast.error("Empresa não encontrada");
-      return false;
+      return null;
     }
 
     let content = generateContractContent(company as CompanyRow, foro, matrizNome);
