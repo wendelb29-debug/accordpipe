@@ -27,6 +27,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { getLeadContractSignatureStats, normalizeLeadContractSigners } from "@/lib/contractSigners";
 import { CrmLead } from "@/hooks/useCrmLeads";
 import { toast } from "sonner";
 import { BrandManagerDialog } from "./BrandManagerDialog";
@@ -192,7 +193,14 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
 
   // Auto-load template and check for existing contract in signature mode
   useEffect(() => {
-    if (!signatureMode || !lead.servidor_id) return;
+    if (!signatureMode || !lead.servidor_id) {
+      setSavedContract(null);
+      setGeneratedContractLink(null);
+      setGeneratedContractId(null);
+      setContractSigners([]);
+      return;
+    }
+
     const loadTemplate = async () => {
       const { data: templates } = await supabase
         .from("company_contract_templates")
@@ -211,36 +219,29 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     };
     loadTemplate();
     fetchSavedContract();
-  }, [signatureMode, lead.servidor_id]);
+  }, [signatureMode, lead.servidor_id, lead.id]);
 
   const fetchSavedContract = async () => {
-    if (!lead.id) return;
+    if (!lead.id) {
+      setSavedContract(null);
+      setGeneratedContractLink(null);
+      setGeneratedContractId(null);
+      return;
+    }
+
     setLoadingSavedContract(true);
+    setSavedContract(null);
+    setGeneratedContractLink(null);
+    setGeneratedContractId(null);
+
     try {
-      // First try to find by lead_id (new way)
-      let { data } = await supabase
+      const { data } = await supabase
         .from("contracts")
         .select("id, code, signature_link, signature_status, pdf_url, contract_content, signing_token, created_at, lead_id, companies(razao_social)")
         .eq("lead_id", lead.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-
-      // Fallback: find by company_id (legacy contracts)
-      if (!data) {
-        const companyId = lead.company_id || lead.servidor_id;
-        if (companyId) {
-          const res = await supabase
-            .from("contracts")
-            .select("id, code, signature_link, signature_status, pdf_url, contract_content, signing_token, created_at, lead_id, companies(razao_social)")
-            .eq("company_id", companyId)
-            .is("lead_id", null)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          data = res.data;
-        }
-      }
 
       if (data) {
         setSavedContract({ ...data, company: data.companies });
@@ -256,25 +257,55 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
   const fetchContractSigners = useCallback(async (contractId: string) => {
     setLoadingSigners(true);
     setContractSigners([]);
-    const { data } = await supabase
+
+    const { data, error } = await supabase
       .from("contract_signatures")
       .select("*")
       .eq("contract_id", contractId)
       .order("created_at", { ascending: true });
 
-    const uniqueSigners = Array.from(
-      new Map((data || []).map((signer: any) => [signer.signer_role || signer.id, signer])).values()
-    );
+    if (error) {
+      setLoadingSigners(false);
+      return;
+    }
+
+    const { uniqueSigners, duplicateIds } = normalizeLeadContractSigners((data as any[]) || []);
+    const { allSigned } = getLeadContractSignatureStats(uniqueSigners);
 
     setContractSigners(uniqueSigners);
+
+    if (duplicateIds.length > 0) {
+      const { error: cleanupError } = await supabase
+        .from("contract_signatures")
+        .delete()
+        .in("id", duplicateIds);
+
+      if (cleanupError) {
+        console.error("Erro ao limpar assinantes duplicados:", cleanupError);
+      }
+    }
+
+    if (allSigned) {
+      setSavedContract((current) => current?.id === contractId
+        ? { ...current, signature_status: "signed" }
+        : current);
+
+      await supabase
+        .from("contracts")
+        .update({ signature_status: "signed" } as any)
+        .eq("id", contractId)
+        .neq("signature_status", "signed");
+    }
+
     setLoadingSigners(false);
   }, []);
 
   const ensureDefaultSigners = useCallback(async (contractId: string, signers: any[]) => {
     if (!profile?.name || signerInitRef.current === contractId) return;
 
-    const hasVendedor = signers.some((s: any) => s.signer_role === "vendedor");
-    const hasCliente = signers.some((s: any) => s.signer_role === "cliente");
+    const { uniqueSigners } = normalizeLeadContractSigners(signers);
+    const hasVendedor = uniqueSigners.some((s: any) => s.signer_role === "vendedor");
+    const hasCliente = uniqueSigners.some((s: any) => s.signer_role === "cliente");
     const inserts: any[] = [];
 
     if (!hasVendedor) {
@@ -1259,34 +1290,27 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
         "manual",
         7,
         clause,
-        lead.id
+        lead.id,
+        { autoCreateSigners: false }
       );
 
-      if (result) {
-        const { data: latestContract } = await supabase
-          .from("contracts")
-          .select("id, signature_link")
-          .eq("company_id", companyId)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        const link = latestContract?.signature_link || "";
+      if (result?.id) {
+        const link = result.signatureLink || "";
         setGeneratedContractLink(link);
-        setGeneratedContractId(latestContract?.id || null);
+        setGeneratedContractId(result.id);
 
         // If using template PDF, generate the final rendered PDF and upload
-        if (templatePdfUrl && latestContract?.id) {
+        if (templatePdfUrl) {
           try {
             const pdfBlob = await generateTemplatePdfBlob();
             if (pdfBlob) {
-              const pdfFileName = `contracts/${latestContract.id}_${Date.now()}.pdf`;
+              const pdfFileName = `contracts/${result.id}_${Date.now()}.pdf`;
               const { error: uploadErr } = await supabase.storage
                 .from("contract-pdfs")
                 .upload(pdfFileName, pdfBlob, { contentType: "application/pdf" });
               if (!uploadErr) {
                 const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(pdfFileName);
-                await supabase.from("contracts").update({ pdf_url: urlData.publicUrl } as any).eq("id", latestContract.id);
+                await supabase.from("contracts").update({ pdf_url: urlData.publicUrl } as any).eq("id", result.id);
               }
             }
           } catch (e) {
@@ -1309,7 +1333,8 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
         });
 
         toast.success("Contrato gerado com sucesso!");
-        // Refresh saved contract so signature mode shows it
+        setContractPreview(null);
+        setContractPreviewProposal(null);
         await fetchSavedContract();
       }
     } catch (err) {
@@ -1729,15 +1754,14 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
 
               {/* Progress */}
               {contractSigners.length > 0 && (() => {
-                const signedCount = contractSigners.filter((s: any) => !!s.signed_at).length;
-                const total = contractSigners.length;
+                const { signed: signedCount, total, allSigned } = getLeadContractSignatureStats(contractSigners);
                 const progress = (signedCount / total) * 100;
                 return (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted-foreground">{signedCount} de {total} assinaturas concluídas</span>
-                      <span className={cn("font-semibold", signedCount === total ? "text-green-600" : "text-amber-600")}>
-                        {signedCount === total ? "✅ Todos assinaram" : `⏳ ${total - signedCount} pendente(s)`}
+                      <span className={cn("font-semibold", allSigned ? "text-status-paid" : "text-status-open")}>
+                        {allSigned ? "✅ Aprovado" : `⏳ ${total - signedCount} pendente(s)`}
                       </span>
                     </div>
                     <Progress value={progress} className="h-2" />

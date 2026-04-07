@@ -30,6 +30,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { getLeadContractSignatureStats } from "@/lib/contractSigners";
 import { CrmLead, STAGES, ADMIN_STAGES, ALL_STAGES } from "@/hooks/useCrmLeads";
 import { useCrmActivities } from "@/hooks/useCrmActivities";
 import { useAuth } from "@/contexts/AuthContext";
@@ -220,47 +221,29 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     const fetchSignatureStats = async () => {
       const { data: contract } = await supabase
         .from("contracts")
-        .select("id")
+        .select("id, signature_status")
         .eq("lead_id", lead.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (!contract) {
-        // Fallback: check by company_id
-        const companyId = lead.company_id || lead.servidor_id;
-        if (companyId) {
-          const { data: legacyContract } = await supabase
-            .from("contracts")
-            .select("id")
-            .eq("company_id", companyId)
-            .is("lead_id", null)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          if (legacyContract) {
-            await loadSignerStats(legacyContract.id);
-            return;
-          }
-        }
         setSignatureStats(null);
         return;
       }
-      await loadSignerStats(contract.id);
+      await loadSignerStats(contract.id, contract.signature_status);
     };
 
-    const loadSignerStats = async (contractId: string) => {
+    const loadSignerStats = async (contractId: string, signatureStatus?: string | null) => {
       const { data: signers } = await supabase
         .from("contract_signatures")
-        .select("signed_at, signer_role")
+        .select("id, signed_at, signer_role, signer_name, signer_document")
         .eq("contract_id", contractId);
+
       if (signers) {
-        const uniqueSigners = Array.from(
-          new Map(signers.map((signer) => [signer.signer_role || crypto.randomUUID(), signer])).values()
-        );
-        const signed = uniqueSigners.filter(s => !!s.signed_at).length;
-        setSignatureStats({ signed, total: uniqueSigners.length });
-        if (signed > 0 && signed === uniqueSigners.length) {
+        const { signed, total, allSigned } = getLeadContractSignatureStats(signers as any[]);
+        setSignatureStats({ signed, total });
+        if (allSigned && signatureStatus !== "signed") {
           await supabase.from("contracts").update({ signature_status: "signed" } as any).eq("id", contractId);
         }
       }
@@ -1020,15 +1003,17 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                   <FileSignature className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Assinatura
                   {signatureStats && signatureStats.total > 0 && (
                     <Badge
-                      variant={signatureStats.signed === signatureStats.total ? "default" : "secondary"}
+                      variant="secondary"
                       className={cn(
                         "ml-1 text-[9px] h-4 px-1.5 min-w-0",
                         signatureStats.signed === signatureStats.total
-                          ? "bg-green-600 text-white hover:bg-green-600"
-                          : "bg-amber-500/20 text-amber-600 hover:bg-amber-500/20"
+                          ? "bg-status-paid text-status-paid-foreground"
+                          : "bg-status-open text-status-open-foreground"
                       )}
                     >
-                      {signatureStats.signed}/{signatureStats.total}
+                      {signatureStats.signed === signatureStats.total
+                        ? "Aprovado"
+                        : `${signatureStats.signed}/${signatureStats.total} assinaturas`}
                     </Badge>
                   )}
                 </TabsTrigger>
