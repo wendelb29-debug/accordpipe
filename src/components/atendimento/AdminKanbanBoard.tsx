@@ -174,8 +174,19 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
                     <span className={cn("text-xs font-bold rounded-full px-2.5 py-0.5 bg-card border border-border/50 shadow-sm", colors.text)}>
                       {stage.count}
                     </span>
-                  </div>
+                  {stage.id === "cadastro-concluido" && (
+                    <Button
+                      variant={showOldConcluidos ? "default" : "ghost"}
+                      size="icon"
+                      className="h-6 w-6 rounded-lg"
+                      title={showOldConcluidos ? "Mostrar apenas últimas 24h" : "Mostrar todos (histórico)"}
+                      onClick={() => setShowOldConcluidos(!showOldConcluidos)}
+                    >
+                      <CalendarSearch className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                 </div>
+              </div>
               </div>
 
               {/* Cards */}
