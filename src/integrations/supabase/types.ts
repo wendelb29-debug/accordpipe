@@ -2451,6 +2451,37 @@ export type Database = {
         Args: { _contract_id: string }
         Returns: string
       }
+      get_pdf_contract_signers_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          id: string
+          name: string
+          sign_order: number
+          signed_at: string
+          status: string
+        }[]
+      }
+      get_pdf_signer_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          address: string
+          contract_id: string
+          cpf_cnpj: string
+          email: string
+          id: string
+          name: string
+          phone: string
+          sign_order: number
+          signature_address: string
+          signature_latitude: number
+          signature_longitude: number
+          signature_photo_url: string
+          signed_at: string
+          signer_ip: string
+          signing_token: string
+          status: string
+        }[]
+      }
       get_today_birthdays: {
         Args: { _company_id?: string }
         Returns: {
