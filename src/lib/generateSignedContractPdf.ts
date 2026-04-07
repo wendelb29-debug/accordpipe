@@ -134,7 +134,7 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
       const textX = stampX + textOffsetX;
       let ty = sy;
 
-      currentPage.drawText("✔ Assinado Digitalmente", {
+      currentPage.drawText("[OK] Assinado Digitalmente", {
         x: textX,
         y: ty,
         size: 10,
