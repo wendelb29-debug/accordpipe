@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { generateSignedContractPdf } from "@/lib/generateSignedContractPdf";
+import { buildSignedPdfBlob } from "@/lib/buildSignedPdfBlob";
 import { PdfSigningOverlay } from "./PdfSigningOverlay";
 import type { PdfContract, PdfContractSigner, PdfContractHistory } from "@/hooks/usePdfContracts";
 
@@ -130,69 +130,11 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
       return;
     }
 
-    const validationUrl = `${window.location.origin}/validar-documento/${contract.validation_code}`;
-    const signerData = signers.map(s => ({
-      id: s.id,
-      name: s.name,
-      role: "signatário",
-      email: s.email,
-      document: s.cpf_cnpj,
-      signed_at: s.signed_at,
-      ip: s.signer_ip,
-      signature_photo_url: s.signature_photo_url,
-    }));
-
-    const { data: sigFields } = await supabase
-      .from("pdf_contract_fields")
-      .select("page, pos_x, pos_y, width, height, signer_id")
-      .eq("contract_id", contract.id)
-      .eq("field_type", "signature");
-
-    const signaturePositions = (sigFields || []).map((f: any) => ({
-      page: f.page,
-      x: f.pos_x,
-      y: f.pos_y,
-      width: f.width,
-      height: f.height,
-      signerId: f.signer_id,
-    }));
-
-    let templateSigPositions: typeof signaturePositions = [];
-    if (signaturePositions.length === 0 && contract.servidor_id) {
-      const { data: templates } = await supabase
-        .from("company_contract_templates")
-        .select("id")
-        .eq("company_id", contract.servidor_id)
-        .limit(1);
-
-      if (templates?.[0]) {
-        const { data: tFields } = await supabase
-          .from("company_contract_template_fields")
-          .select("page, pos_x, pos_y, width, height")
-          .eq("template_id", templates[0].id)
-          .eq("field_type", "assinatura");
-
-        templateSigPositions = (tFields || []).map((f: any) => ({
-          page: f.page,
-          x: f.pos_x,
-          y: f.pos_y,
-          width: f.width,
-          height: f.height,
-          signerId: null,
-        }));
-      }
-    }
-
-    const blob = await generateSignedContractPdf({
-      pdfUrl: contract.pdf_url,
-      code: `PDF-${contract.id.slice(0, 8).toUpperCase()}`,
+    const blob = await buildSignedPdfBlob({
+      contract,
+      signers,
       companyName: contract.created_by_name || "Empresa",
-      documentHash: contract.document_hash,
-      validationCode: contract.validation_code,
-      signedAt: signers.find(s => s.signed_at)?.signed_at || new Date().toISOString(),
-      signers: signerData,
-      validationUrl,
-      signaturePositions: signaturePositions.length > 0 ? signaturePositions : templateSigPositions,
+      validationUrl: `${window.location.origin}/validar-documento/${contract.validation_code}`,
     });
 
     const url = URL.createObjectURL(blob);
