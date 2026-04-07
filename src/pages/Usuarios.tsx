@@ -93,6 +93,8 @@ export default function Usuarios() {
   // Form state
   const [formData, setFormData] = useState({
     name: "",
+    cpf: "",
+    birth_date: "",
     email: "",
     password: "",
     role: "leitura" as AppRole,
@@ -163,6 +165,8 @@ export default function Usuarios() {
       setEditingUser(user);
       setFormData({
         name: user.name,
+        cpf: (user as any).cpf || "",
+        birth_date: (user as any).birth_date || "",
         email: user.email,
         password: "",
         role: user.role,
@@ -172,6 +176,8 @@ export default function Usuarios() {
       setEditingUser(null);
       setFormData({
         name: "",
+        cpf: "",
+        birth_date: "",
         email: "",
         password: "",
         role: "leitura",
@@ -226,12 +232,16 @@ export default function Usuarios() {
         if (roleError) throw roleError;
       }
 
-      // Set company_id and status on profile
       const companyId = formData.company_id || (isMaster ? activeCompanyId : profile?.company_id) || null;
-      if (companyId) {
+      const profileUpdate: any = { status: "pendente", is_active: false };
+      if (companyId) profileUpdate.company_id = companyId;
+      if (formData.cpf) profileUpdate.cpf = formData.cpf.replace(/\D/g, "");
+      if (formData.birth_date) profileUpdate.birth_date = formData.birth_date;
+
+      if (Object.keys(profileUpdate).length > 0) {
         const { error: companyError } = await supabase
           .from("profiles")
-          .update({ company_id: companyId, status: "pendente", is_active: false })
+          .update(profileUpdate as any)
           .eq("user_id", authData.user.id);
         if (companyError) throw companyError;
       }
@@ -289,10 +299,16 @@ export default function Usuarios() {
 
     setIsSubmitting(true);
     try {
-      // Update profile with name and company_id
+      const updateData: any = { 
+        name: formData.name, 
+        company_id: formData.company_id || null,
+      };
+      if (formData.cpf) updateData.cpf = formData.cpf.replace(/\D/g, "");
+      if (formData.birth_date) updateData.birth_date = formData.birth_date;
+
       const { error: profileError } = await supabase
         .from("profiles")
-        .update({ name: formData.name, company_id: formData.company_id || null })
+        .update(updateData)
         .eq("id", editingUser.id);
 
       if (profileError) throw profileError;
@@ -628,6 +644,34 @@ export default function Usuarios() {
                     />
                   </div>
 
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="cpf">CPF</Label>
+                      <Input
+                        id="cpf"
+                        value={formData.cpf}
+                        onChange={(e) => {
+                          let v = e.target.value.replace(/\D/g, "").slice(0, 11);
+                          if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, "$1.$2.$3-$4");
+                          else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, "$1.$2.$3");
+                          else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, "$1.$2");
+                          setFormData({ ...formData, cpf: v });
+                        }}
+                        placeholder="000.000.000-00"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="birth_date">Data de Nascimento</Label>
+                      <Input
+                        id="birth_date"
+                        type="date"
+                        value={formData.birth_date}
+                        onChange={(e) =>
+                          setFormData({ ...formData, birth_date: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">E-mail</Label>
                     <Input
