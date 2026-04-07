@@ -4,6 +4,10 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import type { CompanyRow } from "./useCompanies";
 
+interface CreateContractOptions {
+  autoCreateSigners?: boolean;
+}
+
 export interface ContractRow {
   id: string;
   code: string;
@@ -214,7 +218,8 @@ ${company.responsavel || "[RESPONSÁVEL]"}`;
     signatureType: string,
     linkValidityDays: number,
     proposalClause?: string,
-    leadId?: string
+    leadId?: string,
+    options?: CreateContractOptions
   ) => {
     const { data: company, error: companyError } = await supabase
       .from("companies")
@@ -224,7 +229,7 @@ ${company.responsavel || "[RESPONSÁVEL]"}`;
 
     if (companyError || !company) {
       toast.error("Empresa não encontrada");
-      return false;
+      return null;
     }
 
     let content = generateContractContent(company as CompanyRow, foro, matrizNome);
@@ -264,27 +269,34 @@ ${company.responsavel || "[RESPONSÁVEL]"}`;
       return null;
     }
 
-    // Create 3 signature records (Matriz, Revendedor, Colaborador) + Vendedor
-    const roles = ["matriz", "revendedor", "colaborador", "vendedor"];
-    const signatureRecords = roles.map((role) => {
-      const token = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
-      return {
-        contract_id: insertedContract.id,
-        signer_role: role,
-        signing_token: token,
-        signer_name: role === "revendedor" ? (company as any).responsavel : null,
-        signer_document: role === "revendedor" ? (company as any).cnpj : null,
-      };
-    });
+    if (options?.autoCreateSigners !== false) {
+      const roles = ["matriz", "revendedor", "colaborador", "vendedor"];
+      const signatureRecords = roles.map((role) => {
+        const token = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+        return {
+          contract_id: insertedContract.id,
+          signer_role: role,
+          signing_token: token,
+          signer_name: role === "revendedor" ? (company as any).responsavel : null,
+          signer_document: role === "revendedor" ? (company as any).cnpj : null,
+        };
+      });
 
-    const { error: sigError } = await supabase.from("contract_signatures").insert(signatureRecords as any);
-    if (sigError) {
-      console.error("Erro ao criar assinaturas:", sigError);
+      const { error: sigError } = await supabase.from("contract_signatures").insert(signatureRecords as any);
+      if (sigError) {
+        console.error("Erro ao criar assinaturas:", sigError);
+      }
     }
 
     toast.success("Contrato gerado com sucesso!");
     await fetchContracts();
-    return { content, code: "Contrato", companyName: company.razao_social };
+    return {
+      id: insertedContract.id,
+      signatureLink: `${window.location.origin}/assinar/${signingToken}`,
+      content,
+      code: "Contrato",
+      companyName: company.razao_social,
+    };
   };
 
   const signContract = async (

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { getLeadContractSignatureStats } from "@/lib/contractSigners";
 import { CrmLeadDialog } from "./CrmLeadDialog";
 import { CrmLeadDetailView } from "./CrmLeadDetailView";
 import { FormLinkDialog } from "./FormLinkDialog";
@@ -97,6 +98,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
   const [leadsWithActivity, setLeadsWithActivity] = useState<Set<string>>(new Set());
   const [nextActivities, setNextActivities] = useState<Record<string, string>>({});
   const [lastCompletedActivities, setLastCompletedActivities] = useState<Record<string, string>>({});
+  const [signatureStatsByLead, setSignatureStatsByLead] = useState<Record<string, { signed: number; total: number; approved: boolean }>>({});
 
   // Drag-to-scroll
   const pipelineRef = useRef<HTMLDivElement>(null);
@@ -185,6 +187,86 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
       }
     };
     fetchActivityStatus();
+  }, [leads]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchSignatureStats = async () => {
+      if (leads.length === 0) {
+        if (isMounted) setSignatureStatsByLead({});
+        return;
+      }
+
+      const leadIds = leads.map((lead) => lead.id);
+      const { data: contracts, error: contractsError } = await supabase
+        .from("contracts")
+        .select("id, lead_id, created_at, signature_status")
+        .in("lead_id", leadIds)
+        .order("created_at", { ascending: false });
+
+      if (contractsError || !isMounted) return;
+
+      const latestContractsByLead = new Map<string, { id: string; lead_id: string; signature_status: string | null }>();
+
+      for (const contract of contracts || []) {
+        if (!contract.lead_id || latestContractsByLead.has(contract.lead_id)) continue;
+        latestContractsByLead.set(contract.lead_id, contract as { id: string; lead_id: string; signature_status: string | null });
+      }
+
+      const contractIds = Array.from(latestContractsByLead.values()).map((contract) => contract.id);
+
+      if (contractIds.length === 0) {
+        if (isMounted) setSignatureStatsByLead({});
+        return;
+      }
+
+      const { data: signers, error: signersError } = await supabase
+        .from("contract_signatures")
+        .select("id, contract_id, signer_role, signed_at, signer_name, signer_document")
+        .in("contract_id", contractIds);
+
+      if (signersError || !isMounted) return;
+
+      const signersByContract = new Map<string, any[]>();
+
+      for (const signer of signers || []) {
+        const current = signersByContract.get(signer.contract_id) || [];
+        current.push(signer);
+        signersByContract.set(signer.contract_id, current);
+      }
+
+      const nextStats: Record<string, { signed: number; total: number; approved: boolean }> = {};
+
+      for (const contract of latestContractsByLead.values()) {
+        const { signed, total, allSigned } = getLeadContractSignatureStats(signersByContract.get(contract.id) || []);
+
+        if (total === 0) continue;
+
+        nextStats[contract.lead_id] = {
+          signed,
+          total,
+          approved: allSigned || contract.signature_status === "signed",
+        };
+      }
+
+      if (isMounted) {
+        setSignatureStatsByLead(nextStats);
+      }
+    };
+
+    fetchSignatureStats();
+
+    const channel = supabase
+      .channel("crm-contract-signature-stats")
+      .on("postgres_changes", { event: "*", schema: "public", table: "contract_signatures" }, fetchSignatureStats)
+      .on("postgres_changes", { event: "*", schema: "public", table: "contracts" }, fetchSignatureStats)
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
   }, [leads]);
 
   // Fetch avatars for all lead creators
@@ -480,6 +562,7 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                   const hasActivity = leadsWithActivity.has(lead.id);
                   const noActivity = !hasActivity;
                   const progressColor = getProgressColor(lead, stage.id, hasActivity);
+                  const signatureStats = signatureStatsByLead[lead.id];
 
                   return (
                     <div
@@ -546,6 +629,25 @@ export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
                         <span className="text-muted-foreground/30">·</span>
                         <span className="text-muted-foreground">MRR <span className="font-bold text-primary">{formatCurrency(lead.value_mrr)}</span></span>
                       </div>
+
+                      {signatureStats && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          <Badge
+                            variant="secondary"
+                            className={cn(
+                              "text-[10px] gap-1 px-2 py-0.5",
+                              signatureStats.approved
+                                ? "bg-status-paid text-status-paid-foreground"
+                                : "bg-status-open text-status-open-foreground"
+                            )}
+                          >
+                            {signatureStats.approved ? <CheckCircle className="h-3 w-3" /> : <FileSignature className="h-3 w-3" />}
+                            {signatureStats.approved
+                              ? "Aprovado"
+                              : `${signatureStats.signed}/${signatureStats.total} assinaturas`}
+                          </Badge>
+                        </div>
+                      )}
 
                       {/* Won / Devolvido badges */}
                       {lead.lead_status === "won" && (
