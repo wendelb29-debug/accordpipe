@@ -93,6 +93,8 @@ export default function Usuarios() {
   // Form state
   const [formData, setFormData] = useState({
     name: "",
+    cpf: "",
+    birth_date: "",
     email: "",
     password: "",
     role: "leitura" as AppRole,

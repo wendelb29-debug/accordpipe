@@ -1815,6 +1815,7 @@ export type Database = {
           avatar_url: string | null
           birth_date: string | null
           company_id: string | null
+          cpf: string | null
           created_at: string
           email: string
           id: string
@@ -1833,6 +1834,7 @@ export type Database = {
           avatar_url?: string | null
           birth_date?: string | null
           company_id?: string | null
+          cpf?: string | null
           created_at?: string
           email: string
           id?: string
@@ -1851,6 +1853,7 @@ export type Database = {
           avatar_url?: string | null
           birth_date?: string | null
           company_id?: string | null
+          cpf?: string | null
           created_at?: string
           email?: string
           id?: string
