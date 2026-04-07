@@ -124,7 +124,7 @@ export function ContractSignersManager({
 
     const { error } = await supabase
       .from("client_contract_signers")
-      .insert(defaultSigners as any);
+      .insert(defaultSigners);
 
     if (!error) {
       await fetchSigners();
@@ -174,7 +174,7 @@ export function ContractSignersManager({
         is_required: newRequired,
         sign_order: maxOrder + 1,
         signer_document: newDocument.trim() || null,
-      } as any);
+      });
       if (error) throw error;
       toast.success("Signatário adicionado!");
       setNewName("");
