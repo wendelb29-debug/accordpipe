@@ -79,6 +79,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
   const [uploading, setUploading] = useState<string | null>(null);
   const [signedContracts, setSignedContracts] = useState<SignedContract[]>([]);
   const [signedPdfContracts, setSignedPdfContracts] = useState<SignedPdfContract[]>([]);
+  const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
 
   const fetchDocs = async () => {
     setLoading(true);
