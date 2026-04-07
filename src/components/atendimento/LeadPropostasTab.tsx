@@ -213,17 +213,34 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
   }, [signatureMode, lead.servidor_id]);
 
   const fetchSavedContract = async () => {
-    const companyId = lead.company_id || lead.servidor_id;
-    if (!companyId) return;
+    if (!lead.id) return;
     setLoadingSavedContract(true);
     try {
-      const { data } = await supabase
+      // First try to find by lead_id (new way)
+      let { data } = await supabase
         .from("contracts")
-        .select("id, code, signature_link, signature_status, pdf_url, contract_content, signing_token, created_at, companies(razao_social)")
-        .eq("company_id", companyId)
+        .select("id, code, signature_link, signature_status, pdf_url, contract_content, signing_token, created_at, lead_id, companies(razao_social)")
+        .eq("lead_id", lead.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      // Fallback: find by company_id (legacy contracts)
+      if (!data) {
+        const companyId = lead.company_id || lead.servidor_id;
+        if (companyId) {
+          const res = await supabase
+            .from("contracts")
+            .select("id, code, signature_link, signature_status, pdf_url, contract_content, signing_token, created_at, lead_id, companies(razao_social)")
+            .eq("company_id", companyId)
+            .is("lead_id", null)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          data = res.data;
+        }
+      }
+
       if (data) {
         setSavedContract({ ...data, company: data.companies });
         setGeneratedContractLink(data.signature_link);
