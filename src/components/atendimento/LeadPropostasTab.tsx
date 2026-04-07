@@ -255,22 +255,29 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
 
   const fetchContractSigners = useCallback(async (contractId: string) => {
     setLoadingSigners(true);
+    setContractSigners([]);
     const { data } = await supabase
       .from("contract_signatures")
       .select("*")
       .eq("contract_id", contractId)
       .order("created_at", { ascending: true });
-    setContractSigners(data || []);
+
+    const uniqueSigners = Array.from(
+      new Map((data || []).map((signer: any) => [signer.signer_role || signer.id, signer])).values()
+    );
+
+    setContractSigners(uniqueSigners);
     setLoadingSigners(false);
   }, []);
 
-  // Auto-add mandatory signers (vendedor + cliente) if missing
   const ensureDefaultSigners = useCallback(async (contractId: string, signers: any[]) => {
-    if (!profile?.name) return;
+    if (!profile?.name || signerInitRef.current === contractId) return;
+
+    const hasVendedor = signers.some((s: any) => s.signer_role === "vendedor");
+    const hasCliente = signers.some((s: any) => s.signer_role === "cliente");
     const inserts: any[] = [];
 
-    // Vendedor – pulls from logged-in user profile
-    if (!signers.some((s: any) => s.signer_role === "vendedor")) {
+    if (!hasVendedor) {
       inserts.push({
         contract_id: contractId,
         signer_role: "vendedor",
@@ -280,8 +287,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
       });
     }
 
-    // Cliente – pulls from lead data
-    if (!signers.some((s: any) => s.signer_role === "cliente")) {
+    if (!hasCliente) {
       inserts.push({
         contract_id: contractId,
         signer_role: "cliente",
@@ -291,16 +297,26 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
       });
     }
 
+    signerInitRef.current = contractId;
+
     if (inserts.length === 0) return;
     try {
       await supabase.from("contract_signatures").insert(inserts as any);
       await fetchContractSigners(contractId);
-    } catch { /* silent */ }
+    } catch {
+      signerInitRef.current = null;
+    }
   }, [profile, lead, fetchContractSigners]);
 
-  // Fetch signers when saved contract loads + realtime subscription
   useEffect(() => {
-    if (!savedContract?.id) return;
+    if (!savedContract?.id) {
+      signerInitRef.current = null;
+      setContractSigners([]);
+      return;
+    }
+
+    signerInitRef.current = null;
+    setContractSigners([]);
     fetchContractSigners(savedContract.id);
 
     const channel = supabase
@@ -313,12 +329,11 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     return () => { supabase.removeChannel(channel); };
   }, [savedContract?.id, fetchContractSigners]);
 
-  // Ensure default signers after signers load
   useEffect(() => {
-    if (savedContract?.id && !loadingSigners && contractSigners.length >= 0) {
+    if (savedContract?.id && !loadingSigners) {
       ensureDefaultSigners(savedContract.id, contractSigners);
     }
-  }, [savedContract?.id, loadingSigners]);
+  }, [savedContract?.id, loadingSigners, contractSigners, ensureDefaultSigners]);
 
   const handleAddContractSigner = async () => {
     if (!savedContract?.id || !newSignerName.trim()) {
@@ -344,6 +359,23 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
       toast.error("Erro: " + (err.message || ""));
     }
     setAddingSigner(false);
+  };
+
+  const handleDeleteSigner = async (signerId: string) => {
+    if (!savedContract?.id) return;
+    const { error } = await supabase
+      .from("contract_signatures")
+      .delete()
+      .eq("id", signerId)
+      .eq("contract_id", savedContract.id);
+
+    if (error) {
+      toast.error("Erro ao excluir signatário");
+      return;
+    }
+
+    toast.success("Signatário removido");
+    await fetchContractSigners(savedContract.id);
   };
 
   const handleCopySignerLink = (token: string, name: string) => {
