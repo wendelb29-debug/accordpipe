@@ -233,9 +233,42 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
           signature_photo_url: contract.signature_photo_url,
         }];
 
-    // Enrich signers with profile data
+    // Enrich signers with profile/lead data
     const signers = await Promise.all(
       baseSigner.map(async (s) => {
+        const isClient = s.role === "cliente" || s.role === "signatario";
+        const isVendor = s.role === "vendedor";
+
+        // For clients, enrich from lead data
+        if (isClient && lead) {
+          return {
+            ...s,
+            name: lead.contact_name || s.name,
+            email: s.email || lead.email || null,
+            document: s.document || lead.documento || null,
+            birth_date: s.birth_date,
+            company_name: lead.company_name || null,
+          };
+        }
+
+        // For vendors, enrich from profiles table
+        if (isVendor && s.name && s.name !== "---") {
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("email, cpf, birth_date")
+            .eq("name", s.name)
+            .maybeSingle();
+          if (profileData) {
+            return {
+              ...s,
+              email: s.email || (profileData as any).email || null,
+              document: s.document || (profileData as any).cpf || null,
+              birth_date: (profileData as any).birth_date || null,
+            };
+          }
+        }
+
+        // Fallback: try profile lookup by name
         if (s.name && s.name !== "---") {
           const { data: profileData } = await supabase
             .from("profiles")
@@ -251,6 +284,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
             };
           }
         }
+
         return s;
       })
     );
