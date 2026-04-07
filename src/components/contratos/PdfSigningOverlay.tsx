@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { FileSignature, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { PdfRenderer } from "./PdfRenderer";
+import { PdfAllPagesRenderer } from "./PdfAllPagesRenderer";
 
 interface SignField {
   id: string;
@@ -44,9 +44,8 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
   const [templateFields, setTemplateFields] = useState<TemplateField[]>([]);
   const [serverData, setServerData] = useState<any>(null);
   const [contractMeta, setContractMeta] = useState<any>(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+  const [pageSizes, setPageSizes] = useState<{ width: number; height: number }[]>([]);
   const [signerDetails, setSignerDetails] = useState<Record<string, any>>({});
   const scale = 1.2;
 
@@ -106,7 +105,6 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
         for (const s of signers) {
           signerMap[s.id] = s;
         }
-        // Store first signer as the primary client for field resolution
         setContractMeta((prev: any) => ({ ...prev, primarySigner: signers[0], allSigners: signers }));
       }
       setSignerDetails(signerMap);
@@ -120,7 +118,6 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
     const srvAddr = srv ? [srv.endereco, srv.numero && `nº ${srv.numero}`, srv.bairro, srv.cidade && srv.estado && `${srv.cidade}/${srv.estado}`, srv.cep && `CEP: ${srv.cep}`].filter(Boolean).join(", ") : "";
 
     switch (fieldType) {
-      // Servidor fields
       case "servidor_logo": return srv?.brand_logo_url || "";
       case "servidor_empresa": return srv?.razao_social || srv?.nome_fantasia || "";
       case "servidor_cnpj": {
@@ -136,8 +133,6 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
       }
       case "servidor_endereco": return srvAddr;
       case "servidor_email": return srv?.email || "";
-
-      // Client fields
       case "cnpj_cpf": return signer?.cpf_cnpj || "";
       case "empresa": {
         const nome = signer?.name || "";
@@ -161,8 +156,6 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
       case "cliente_endereco": return signer?.address || "";
       case "cliente_numero": return "";
       case "cliente_complemento": return "";
-
-      // Contract fields
       case "data": return new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
       case "assinatura": return "______________________________";
       case "plano": return "";
@@ -170,43 +163,34 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
       case "campo_proposta": return "";
       case "valor_ps": return "";
       case "valor_mrr": return "";
-
       default: return "";
     }
   }, [serverData, contractMeta]);
 
-  const handleCanvasReady = useCallback((canvas: HTMLCanvasElement) => {
-    setCanvasSize({ width: canvas.width, height: canvas.height });
-  }, []);
-
-  const pageFields = fields.filter(f => f.page === currentPage);
-  const myFields = pageFields.filter(f => f.signer_id === currentSignerId);
-  const otherFields = pageFields.filter(f => f.signer_id !== currentSignerId);
-  const pageTemplateFields = templateFields.filter(f => f.page === currentPage);
-  const orderedPageSignatureFields = [...pageFields.filter(f => f.field_type === "signature")].sort((a, b) => {
-    if (a.pos_y !== b.pos_y) return a.pos_y - b.pos_y;
-    return a.pos_x - b.pos_x;
-  });
-
-  const dataTemplateFields = pageTemplateFields.filter(f => f.field_type !== "assinatura");
-  const hasContractSignatureFields = fields.some(f => f.field_type === "signature");
-  const signatureTemplateFields = hasContractSignatureFields
-    ? []
-    : [...pageTemplateFields.filter(f => f.field_type === "assinatura")].sort((a, b) => {
-        if (a.page !== b.page) return a.page - b.page;
-        if (a.pos_y !== b.pos_y) return a.pos_y - b.pos_y;
-        return a.pos_x - b.pos_x;
-      });
   const orderedSigners = [...(contractMeta?.allSigners || [])].sort((a: any, b: any) => a.sign_order - b.sign_order);
-  const resolveSignatureSigner = (field: SignField) => {
+  const hasContractSignatureFields = fields.some(f => f.field_type === "signature");
+
+  const resolveSignatureSigner = useCallback((field: SignField, pageSignatureFields: SignField[]) => {
     if (field.signer_id && signerDetails[field.signer_id]) return signerDetails[field.signer_id];
-    const fieldIndex = orderedPageSignatureFields.findIndex(candidate => candidate.id === field.id);
+    const fieldIndex = pageSignatureFields.findIndex(candidate => candidate.id === field.id);
     return fieldIndex >= 0 ? orderedSigners[fieldIndex] : null;
-  };
-  const isSignatureFieldSigned = (field: SignField) => {
-    const signer = resolveSignatureSigner(field);
+  }, [signerDetails, orderedSigners]);
+
+  const isSignatureFieldSigned = useCallback((field: SignField, pageSignatureFields: SignField[]) => {
+    const signer = resolveSignatureSigner(field, pageSignatureFields);
     return signedFieldIds.includes(field.id) || Boolean(signer?.status === "assinado" && signer?.signed_at);
-  };
+  }, [resolveSignatureSigner, signedFieldIds]);
+
+  // Compute the vertical offset for each page (sum of all previous page heights + gap)
+  const PAGE_GAP = 16; // matches gap-4 = 1rem = 16px
+  const pageOffsets = pageSizes.reduce<number[]>((acc, size, i) => {
+    if (i === 0) {
+      acc.push(0);
+    } else {
+      acc.push(acc[i - 1] + pageSizes[i - 1].height + PAGE_GAP);
+    }
+    return acc;
+  }, []);
 
   if (fields.length === 0 && templateFields.length === 0) {
     return (
@@ -216,197 +200,205 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
     );
   }
 
-  return (
-    <div className="space-y-3">
-      <div className="relative mx-auto overflow-auto rounded-lg border bg-muted/20" style={{ maxHeight: "65vh" }}>
-        <div className="relative inline-block" style={{ width: canvasSize.width || "auto", height: canvasSize.height || "auto" }}>
-          <PdfRenderer
-            pdfUrl={pdfUrl}
-            currentPage={currentPage}
-            onTotalPages={setTotalPages}
-            scale={scale}
-            onCanvasReady={handleCanvasReady}
-          />
+  const renderPageOverlay = (pageNum: number) => {
+    const pageFields_ = fields.filter(f => f.page === pageNum);
+    const myFields = pageFields_.filter(f => f.signer_id === currentSignerId);
+    const otherFields = pageFields_.filter(f => f.signer_id !== currentSignerId);
+    const pageTemplateFields_ = templateFields.filter(f => f.page === pageNum);
+    const orderedPageSignatureFields = [...pageFields_.filter(f => f.field_type === "signature")].sort((a, b) => {
+      if (a.pos_y !== b.pos_y) return a.pos_y - b.pos_y;
+      return a.pos_x - b.pos_x;
+    });
 
-          {/* Template data fields (read-only, filled with resolved values) */}
-          {dataTemplateFields.map(field => {
-            const value = resolveTemplateFieldValue(field.field_type);
-            const isLogo = field.field_type === "servidor_logo";
-            if (!value) return null;
-            return (
-              <div
-                key={`tmpl-${field.id}`}
-                className="absolute overflow-hidden flex items-center pointer-events-none"
-                style={{
-                  left: field.pos_x * scale,
-                  top: field.pos_y * scale,
-                  width: field.width * scale,
-                  height: field.height * scale,
-                  fontSize: Math.min(field.height * 0.55, 13),
-                  background: "transparent",
-                }}
-              >
-                {isLogo && value ? (
-                  <img src={value} alt="Logo" className="h-full w-auto object-contain" />
-                ) : (
-                  <span className="whitespace-pre-wrap leading-tight" style={{ color: "#000", fontSize: field.field_type === "campo_proposta" || field.field_type === "clausula" ? 8 : 11, lineHeight: "1.3" }}>
-                    {value}
-                  </span>
-                )}
-              </div>
-            );
-          })}
+    const dataTemplateFields = pageTemplateFields_.filter(f => f.field_type !== "assinatura");
+    const signatureTemplateFields = hasContractSignatureFields
+      ? []
+      : [...pageTemplateFields_.filter(f => f.field_type === "assinatura")].sort((a, b) => {
+          if (a.pos_y !== b.pos_y) return a.pos_y - b.pos_y;
+          return a.pos_x - b.pos_x;
+        });
 
+    const pageSize = pageSizes[pageNum - 1];
+    if (!pageSize) return null;
+    const yOffset = pageOffsets[pageNum - 1] ?? 0;
 
-          {/* Signature stamps at template tag positions */}
-          {signatureTemplateFields.map((field, idx) => {
-            const signer = orderedSigners[idx];
-            const isSigned = signer?.status === "assinado" && signer?.signed_at;
-            return (
-              <div
-                key={`sig-tmpl-${field.id}`}
-                className="absolute overflow-hidden pointer-events-none"
-                style={{
-                  left: field.pos_x * scale,
-                  top: field.pos_y * scale,
-                  width: field.width * scale,
-                  height: field.height * scale,
-                }}
-              >
-                {isSigned ? (
-                  <div className="h-full w-full rounded-md border border-primary/30 bg-primary/5 p-1 flex items-center gap-2">
-                    {signer.signature_photo_url && (
-                      <img
-                        src={signer.signature_photo_url}
-                        alt="Foto"
-                        className="h-full w-auto rounded object-cover shrink-0"
-                        style={{ maxWidth: "35%" }}
-                      />
-                    )}
-                    <div className="flex min-w-0 flex-col gap-0.5 overflow-hidden">
-                      <div className="flex items-center gap-1">
-                        <CheckCircle className="h-3 w-3 shrink-0 text-primary" />
-                        <span className="truncate text-[8px] font-bold text-primary">Assinado Digitalmente</span>
-                      </div>
-                      <span className="truncate text-[7px] font-semibold text-foreground">{signer.name}</span>
-                      {signer.cpf_cnpj && <span className="truncate text-[6px] text-muted-foreground">CPF/CNPJ: {signer.cpf_cnpj}</span>}
-                      {signer.signed_at && <span className="truncate text-[6px] text-muted-foreground">{new Date(signer.signed_at).toLocaleString("pt-BR")}</span>}
-                      {signer.signer_ip && <span className="truncate text-[6px] text-muted-foreground">IP: {signer.signer_ip}</span>}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center border border-dashed border-muted-foreground/30 rounded-md">
-                    <span className="text-[9px] text-muted-foreground">{signer?.name ? `${signer.name} - Pendente` : "Assinatura"}</span>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+    return (
+      <div key={`overlay-page-${pageNum}`}>
+        {/* Template data fields */}
+        {dataTemplateFields.map(field => {
+          const value = resolveTemplateFieldValue(field.field_type);
+          const isLogo = field.field_type === "servidor_logo";
+          if (!value) return null;
+          return (
+            <div
+              key={`tmpl-${field.id}`}
+              className="absolute overflow-hidden flex items-center pointer-events-none"
+              style={{
+                left: field.pos_x * scale,
+                top: yOffset + field.pos_y * scale,
+                width: field.width * scale,
+                height: field.height * scale,
+                fontSize: Math.min(field.height * 0.55, 13),
+                background: "transparent",
+              }}
+            >
+              {isLogo && value ? (
+                <img src={value} alt="Logo" className="h-full w-auto object-contain" />
+              ) : (
+                <span className="whitespace-pre-wrap leading-tight" style={{ color: "#000", fontSize: field.field_type === "campo_proposta" || field.field_type === "clausula" ? 8 : 11, lineHeight: "1.3" }}>
+                  {value}
+                </span>
+              )}
+            </div>
+          );
+        })}
 
-          {otherFields.map(field => {
-            const signer = resolveSignatureSigner(field);
-            const isSigned = field.field_type === "signature" ? isSignatureFieldSigned(field) : signedFieldIds.includes(field.id);
-            return (
-              <div
-                key={field.id}
-                className={cn("absolute rounded-md border-2 flex pointer-events-none", isSigned ? "border-solid items-start p-1" : "border-dashed items-center justify-center opacity-50")}
-                style={{
-                  left: field.pos_x,
-                  top: field.pos_y,
-                  width: field.width,
-                  height: field.height,
-                  borderColor: field.signer_color || "#9ca3af",
-                  backgroundColor: isSigned ? `${field.signer_color || "#9ca3af"}15` : `${field.signer_color || "#9ca3af"}10`,
-                }}
-              >
-                {isSigned && signer?.status === "assinado" ? (
-                  <div className="flex flex-col gap-0.5 overflow-hidden w-full">
+        {/* Signature stamps at template tag positions */}
+        {signatureTemplateFields.map((field, idx) => {
+          const signer = orderedSigners[idx];
+          const isSigned = signer?.status === "assinado" && signer?.signed_at;
+          return (
+            <div
+              key={`sig-tmpl-${field.id}`}
+              className="absolute overflow-hidden pointer-events-none"
+              style={{
+                left: field.pos_x * scale,
+                top: yOffset + field.pos_y * scale,
+                width: field.width * scale,
+                height: field.height * scale,
+              }}
+            >
+              {isSigned ? (
+                <div className="h-full w-full rounded-md border border-primary/30 bg-primary/5 p-1 flex items-center gap-2">
+                  {signer.signature_photo_url && (
+                    <img
+                      src={signer.signature_photo_url}
+                      alt="Foto"
+                      className="h-full w-auto rounded object-cover shrink-0"
+                      style={{ maxWidth: "35%" }}
+                    />
+                  )}
+                  <div className="flex min-w-0 flex-col gap-0.5 overflow-hidden">
                     <div className="flex items-center gap-1">
-                      <CheckCircle className="h-3 w-3 shrink-0" style={{ color: field.signer_color || "#16a34a" }} />
-                      <span className="text-[8px] font-bold truncate" style={{ color: "#1e40af" }}>Assinado Digitalmente</span>
+                      <CheckCircle className="h-3 w-3 shrink-0 text-primary" />
+                      <span className="truncate text-[8px] font-bold text-primary">Assinado Digitalmente</span>
                     </div>
-                    <span className="text-[7px] font-semibold truncate" style={{ color: "#111" }}>{signer.name}</span>
-                    {signer.cpf_cnpj && <span className="text-[6px] truncate" style={{ color: "#555" }}>CPF/CNPJ: {signer.cpf_cnpj}</span>}
-                    {signer.signed_at && <span className="text-[6px] truncate" style={{ color: "#555" }}>{new Date(signer.signed_at).toLocaleString("pt-BR")}</span>}
+                    <span className="truncate text-[7px] font-semibold text-foreground">{signer.name}</span>
+                    {signer.cpf_cnpj && <span className="truncate text-[6px] text-muted-foreground">CPF/CNPJ: {signer.cpf_cnpj}</span>}
+                    {signer.signed_at && <span className="truncate text-[6px] text-muted-foreground">{new Date(signer.signed_at).toLocaleString("pt-BR")}</span>}
+                    {signer.signer_ip && <span className="truncate text-[6px] text-muted-foreground">IP: {signer.signer_ip}</span>}
                   </div>
-                ) : (
-                  <span className="text-[9px] font-medium" style={{ color: field.signer_color || "#9ca3af" }}>
-                    {field.label || "Assinatura"}
-                  </span>
-                )}
-              </div>
-            );
-          })}
+                </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center border border-dashed border-muted-foreground/30 rounded-md">
+                  <span className="text-[9px] text-muted-foreground">{signer?.name ? `${signer.name} - Pendente` : "Assinatura"}</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
 
-          {/* Current signer's fields */}
-          {myFields.map(field => {
-            const signer = resolveSignatureSigner(field);
-            const isSigned = field.field_type === "signature" ? isSignatureFieldSigned(field) : signedFieldIds.includes(field.id);
-            return (
-              <button
-                key={field.id}
-                disabled={isSigned}
-                onClick={() => !isSigned && onFieldClick(field)}
-                className={cn(
-                  "absolute rounded-md border-2 flex transition-all",
-                  isSigned
-                    ? "border-solid cursor-default items-start p-1"
-                    : "border-dashed cursor-pointer hover:shadow-lg hover:scale-[1.02] animate-pulse items-center justify-center"
-                )}
-                style={{
-                  left: field.pos_x,
-                  top: field.pos_y,
-                  width: field.width,
-                  height: field.height,
-                  borderColor: field.signer_color || "#3b82f6",
-                  backgroundColor: isSigned ? `${field.signer_color || "#3b82f6"}15` : `${field.signer_color || "#3b82f6"}15`,
-                }}
-              >
-                {isSigned && signer?.status === "assinado" ? (
-                  <div className="flex flex-col gap-0.5 overflow-hidden w-full">
-                    <div className="flex items-center gap-1">
-                      <CheckCircle className="h-3 w-3 shrink-0" style={{ color: "#16a34a" }} />
-                      <span className="text-[8px] font-bold truncate" style={{ color: "#1e40af" }}>Assinado Digitalmente</span>
-                    </div>
-                    <span className="text-[7px] font-semibold truncate" style={{ color: "#111" }}>{signer.name}</span>
-                    {signer.cpf_cnpj && <span className="text-[6px] truncate" style={{ color: "#555" }}>CPF/CNPJ: {signer.cpf_cnpj}</span>}
-                    {signer.signed_at && <span className="text-[6px] truncate" style={{ color: "#555" }}>{new Date(signer.signed_at).toLocaleString("pt-BR")}</span>}
+        {/* Other signers\' fields */}
+        {otherFields.map(field => {
+          const signer = resolveSignatureSigner(field, orderedPageSignatureFields);
+          const isSigned = field.field_type === "signature" ? isSignatureFieldSigned(field, orderedPageSignatureFields) : signedFieldIds.includes(field.id);
+          return (
+            <div
+              key={field.id}
+              className={cn("absolute rounded-md border-2 flex pointer-events-none", isSigned ? "border-solid items-start p-1" : "border-dashed items-center justify-center opacity-50")}
+              style={{
+                left: field.pos_x,
+                top: yOffset + field.pos_y,
+                width: field.width,
+                height: field.height,
+                borderColor: field.signer_color || "#9ca3af",
+                backgroundColor: isSigned ? `${field.signer_color || "#9ca3af"}15` : `${field.signer_color || "#9ca3af"}10`,
+              }}
+            >
+              {isSigned && signer?.status === "assinado" ? (
+                <div className="flex flex-col gap-0.5 overflow-hidden w-full">
+                  <div className="flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3 shrink-0" style={{ color: field.signer_color || "#16a34a" }} />
+                    <span className="text-[8px] font-bold truncate" style={{ color: "#1e40af" }}>Assinado Digitalmente</span>
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-0.5">
-                    <FileSignature className="h-5 w-5" style={{ color: field.signer_color || "#3b82f6" }} />
-                    <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: field.signer_color || "#3b82f6" }}>
-                      Assine Aqui
-                    </span>
+                  <span className="text-[7px] font-semibold truncate" style={{ color: "#111" }}>{signer.name}</span>
+                  {signer.cpf_cnpj && <span className="text-[6px] truncate" style={{ color: "#555" }}>CPF/CNPJ: {signer.cpf_cnpj}</span>}
+                  {signer.signed_at && <span className="text-[6px] truncate" style={{ color: "#555" }}>{new Date(signer.signed_at).toLocaleString("pt-BR")}</span>}
+                </div>
+              ) : (
+                <span className="text-[9px] font-medium" style={{ color: field.signer_color || "#9ca3af" }}>
+                  {field.label || "Assinatura"}
+                </span>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Current signer\\'s fields */}
+        {myFields.map(field => {
+          const signer = resolveSignatureSigner(field, orderedPageSignatureFields);
+          const isSigned = field.field_type === "signature" ? isSignatureFieldSigned(field, orderedPageSignatureFields) : signedFieldIds.includes(field.id);
+          return (
+            <button
+              key={field.id}
+              disabled={isSigned}
+              onClick={() => !isSigned && onFieldClick(field)}
+              className={cn(
+                "absolute rounded-md border-2 flex transition-all",
+                isSigned
+                  ? "border-solid cursor-default items-start p-1"
+                  : "border-dashed cursor-pointer hover:shadow-lg hover:scale-[1.02] animate-pulse items-center justify-center"
+              )}
+              style={{
+                left: field.pos_x,
+                top: yOffset + field.pos_y,
+                width: field.width,
+                height: field.height,
+                borderColor: field.signer_color || "#3b82f6",
+                backgroundColor: isSigned ? `${field.signer_color || "#3b82f6"}15` : `${field.signer_color || "#3b82f6"}15`,
+              }}
+            >
+              {isSigned && signer?.status === "assinado" ? (
+                <div className="flex flex-col gap-0.5 overflow-hidden w-full">
+                  <div className="flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3 shrink-0" style={{ color: "#16a34a" }} />
+                    <span className="text-[8px] font-bold truncate" style={{ color: "#1e40af" }}>Assinado Digitalmente</span>
                   </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
+                  <span className="text-[7px] font-semibold truncate" style={{ color: "#111" }}>{signer.name}</span>
+                  {signer.cpf_cnpj && <span className="text-[6px] truncate" style={{ color: "#555" }}>CPF/CNPJ: {signer.cpf_cnpj}</span>}
+                  {signer.signed_at && <span className="text-[6px] truncate" style={{ color: "#555" }}>{new Date(signer.signed_at).toLocaleString("pt-BR")}</span>}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-0.5">
+                  <FileSignature className="h-5 w-5" style={{ color: field.signer_color || "#3b82f6" }} />
+                  <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: field.signer_color || "#3b82f6" }}>
+                    Assine Aqui
+                  </span>
+                </div>
+              )}
+            </button>
+          );
+        })}
       </div>
+    );
+  };
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3">
-          <button
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            disabled={currentPage <= 1}
-            className="px-3 py-1.5 text-sm rounded-md border disabled:opacity-30 hover:bg-accent transition-colors"
-          >
-            ← Anterior
-          </button>
-          <span className="text-sm text-muted-foreground">
-            Página {currentPage} de {totalPages}
-          </span>
-          <button
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            disabled={currentPage >= totalPages}
-            className="px-3 py-1.5 text-sm rounded-md border disabled:opacity-30 hover:bg-accent transition-colors"
-          >
-            Próxima →
-          </button>
-        </div>
-      )}
+  const totalHeight = pageSizes.reduce((sum, s, i) => sum + s.height + (i < pageSizes.length - 1 ? PAGE_GAP : 0), 0);
+  const maxWidth = pageSizes.reduce((max, s) => Math.max(max, s.width), 0);
+
+  return (
+    <div className="relative mx-auto overflow-auto rounded-lg border bg-muted/20" style={{ maxHeight: "65vh" }}>
+      <div className="relative" style={{ width: maxWidth || "auto", height: totalHeight || "auto", margin: "0 auto" }}>
+        <PdfAllPagesRenderer
+          pdfUrl={pdfUrl}
+          scale={scale}
+          onTotalPages={setTotalPages}
+          onPageSizes={setPageSizes}
+        />
+
+        {/* Overlays for each page */}
+        {Array.from({ length: totalPages }, (_, i) => renderPageOverlay(i + 1))}
+      </div>
     </div>
   );
 }
