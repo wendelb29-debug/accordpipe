@@ -85,6 +85,7 @@ export default function AssinarContrato() {
   const [location, setLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
   const [signing, setSigning] = useState(false);
   const [signed, setSigned] = useState(false);
+  const [viewingContract, setViewingContract] = useState(false);
   const [signerNameInput, setSignerNameInput] = useState("");
   const [signerDocInput, setSignerDocInput] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -347,6 +348,40 @@ export default function AssinarContrato() {
 
   // ─── SIGNED SUCCESS ───
   if (signed) {
+    if (viewingContract) {
+      return (
+        <div className="min-h-screen pb-8" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)" }}>
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-4">
+            <div className="flex items-center justify-between">
+              <h1 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+                <FileText className="h-5 w-5 text-blue-400" />
+                Contrato {contract.code}
+              </h1>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                onClick={() => setViewingContract(false)}
+              >
+                Voltar
+              </Button>
+            </div>
+            <div className="h-[80vh] sm:h-[75vh] bg-slate-900/40 rounded-2xl p-1 sm:p-2">
+              <div className="h-full rounded-xl overflow-hidden">
+                {contract.pdf_url ? (
+                  <iframe src={contract.pdf_url} className="w-full h-full border-0" style={{ minHeight: "100%" }} title="Contrato PDF" />
+                ) : contract.contract_content ? (
+                  <ContractPdfEmbed content={contract.contract_content} code={contract.code} companyName={contract.company?.razao_social || ""} />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-400 text-sm">PDF não disponível</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)" }}>
         <div className="max-w-md w-full rounded-2xl border border-slate-700/50 bg-slate-800/80 backdrop-blur-xl p-8 text-center space-y-5 shadow-2xl">
@@ -362,6 +397,18 @@ export default function AssinarContrato() {
             )}
             O contrato <span className="font-mono font-semibold text-slate-200">{contract.code}</span> foi assinado com sucesso.
           </p>
+
+          {/* View Contract Button */}
+          {(contract.pdf_url || contract.contract_content) && (
+            <Button
+              onClick={() => setViewingContract(true)}
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white gap-2 shadow-lg shadow-blue-500/20"
+            >
+              <FileText className="h-4 w-4" />
+              Visualizar Contrato Assinado
+            </Button>
+          )}
+
           {contract.signatures && contract.signatures.length > 0 && (
             <div className="text-left space-y-2 pt-4 border-t border-slate-700/50">
               <p className="text-sm font-semibold text-slate-300 flex items-center gap-2"><Users className="h-4 w-4 text-blue-400" /> Status das Assinaturas</p>
