@@ -71,11 +71,11 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
   const PDF_SCALE = 1.2;
   if (positions.length === 0 && signedSigners.length > 0) {
     const lastPage = pages.length;
-    const stampW = 220;
-    const stampH = 60;
-    const gap = 10;
-    const startY = 140; // PDF-space distance from top where stamps begin on last page
+    const stampW = 280;
+    const stampH = 90;
+    const gap = 12;
     const { height: lpH } = pages[lastPage - 1].getSize();
+    const startY = lpH - 120; // PDF-space Y from bottom
     positions = signedSigners.map((_, idx) => ({
       page: lastPage,
       x: 40 * PDF_SCALE,
