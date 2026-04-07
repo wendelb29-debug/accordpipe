@@ -309,6 +309,13 @@ export function ContractTemplateTab({ companyId }: Props) {
   // Builder step
   return (
     <div className="space-y-4">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/pdf"
+        onChange={handleUpload}
+        className="hidden"
+      />
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex-1 min-w-[200px]">
           <Input value={templateName} onChange={e => setTemplateName(e.target.value)} className="text-sm" />
