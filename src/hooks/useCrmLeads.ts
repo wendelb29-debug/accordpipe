@@ -225,12 +225,17 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial")
         servidor_id: lead.servidor_id,
         nome_completo: lead.contact_name || lead.company_name || "",
         email: lead.email || "",
+        cpf: (lead as any).documento || null,
+        cep: (lead as any).cep || null,
+        endereco: (lead as any).endereco || null,
+        numero: (lead as any).numero || null,
+        bairro: (lead as any).bairro || null,
+        cidade: lead.cidade || null,
+        estado: lead.estado || null,
         created_by_user_id: profile?.user_id || null,
         created_by_name: profile?.name || null,
         plano_contratado: lead.notes?.includes("Plano:") ? lead.notes.split("Plano:")[1]?.trim().split("\n")[0] : null,
         valor_mensal: lead.value_mrr || 0,
-        cidade: lead.cidade || null,
-        estado: lead.estado || null,
       }).select("id").single();
       const regId = (regResult.data as any)?.id;
 
