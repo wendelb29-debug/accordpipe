@@ -148,13 +148,13 @@ export function ContractSignersManager({
   useEffect(() => {
     defaultSignersCreated.current = false;
     fetchSigners();
-  }, [fetchSigners]);
+  }, [contractId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!loading && signers.length === 0 && isPending && !defaultSignersCreated.current) {
       ensureDefaultSigners();
     }
-  }, [loading, signers.length, isPending, ensureDefaultSigners]);
+  }, [loading, signers.length, isPending]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Check if all required signed
   useEffect(() => {
