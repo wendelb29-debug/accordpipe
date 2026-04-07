@@ -167,77 +167,33 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
     }
   };
 
+  const handleViewClientContract = (contract: SignedContract) => {
+    const url = contract.pdf_assinado_url || contract.pdf_url;
+    if (url) {
+      window.open(url, "_blank", "noopener,noreferrer");
+    } else {
+      toast.error("PDF do contrato não disponível");
+    }
+  };
+
   const handleDownloadClientContract = async (contract: SignedContract) => {
+    const url = contract.pdf_assinado_url || contract.pdf_url;
+    if (!url) {
+      toast.error("PDF do contrato não disponível");
+      return;
+    }
+
     try {
-      // Fetch signers from contract_signatures
-      const { data: signers } = await supabase
-        .from("contract_signatures")
-        .select("*")
-        .eq("contract_id", contract.id);
-
-      const signerList = (signers && signers.length > 0)
-        ? signers.filter((s: any) => s.signed_at).map((s: any) => ({
-            id: s.id,
-            name: s.signer_name || "—",
-            role: s.signer_role || "signatário",
-            email: null,
-            document: s.signer_document,
-            signed_at: s.signed_at,
-            ip: s.signer_ip,
-            signature_photo_url: s.signature_photo_url,
-          }))
-        : [{
-            name: contract.signer_name || lead.company_name,
-            role: "signatário",
-            document: contract.signer_document,
-            signed_at: contract.signed_at,
-            ip: null,
-            signature_photo_url: contract.signature_photo_url,
-          }];
-
-      // Get company name
-      const { data: company } = await supabase
-        .from("companies")
-        .select("razao_social")
-        .eq("id", contract.company_id)
-        .single();
-
-      const companyName = company?.razao_social || lead.company_name;
-
-      // Use existing pdf_url or generate from content
-      let pdfUrl = "";
-      let tempUrl: string | null = null;
-
-      if (contract.pdf_url) {
-        pdfUrl = contract.pdf_url;
-      } else if (contract.contract_content) {
-        const basePdfBlob = generateContractPdf({
-          content: contract.contract_content,
-          code: contract.code,
-          companyName,
-        });
-        tempUrl = URL.createObjectURL(basePdfBlob);
-        pdfUrl = tempUrl;
-      } else {
-        toast.error("Conteúdo do contrato não disponível");
-        return;
-      }
-
-      await downloadSignedContractPdf({
-        pdfUrl,
-        code: contract.code,
-        companyName,
-        documentHash: contract.document_hash || "",
-        validationCode: contract.validation_code || "",
-        signedAt: contract.signed_at || new Date().toISOString(),
-        signers: signerList,
-        validationUrl: `${window.location.origin}/validar-documento/${contract.validation_code || ""}`,
-      });
-
-      if (tempUrl) URL.revokeObjectURL(tempUrl);
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `${contract.code}_assinado.pdf`;
+      link.click();
+      URL.revokeObjectURL(link.href);
       toast.success("Contrato assinado baixado com sucesso!");
-    } catch (err: any) {
-      toast.error("Erro ao baixar contrato: " + (err?.message || ""));
+    } catch {
+      window.open(url, "_blank");
     }
   };
 
