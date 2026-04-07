@@ -101,6 +101,7 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
       document: s.cpf_cnpj,
       signed_at: s.signed_at,
       ip: s.signer_ip,
+      signature_photo_url: s.signature_photo_url,
     }));
     const historyData = history.map(h => ({
       timestamp: h.created_at,
@@ -108,7 +109,7 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
       action: h.description || h.action,
     }));
 
-    const blob = generateSignedContractPdf({
+    const blob = await generateSignedContractPdf({
       content: `CONTRATO: ${contract.name}\n\n${contract.description || "Contrato PDF com assinatura digital."}`,
       code: `PDF-${contract.id.slice(0, 8).toUpperCase()}`,
       companyName: contract.created_by_name || "Empresa",

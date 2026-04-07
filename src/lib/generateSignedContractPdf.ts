@@ -9,6 +9,7 @@ interface SignerData {
   ip?: string | null;
   signature_hash?: string;
   birth_date?: string | null;
+  signature_photo_url?: string | null;
 }
 
 interface HistoryEntry {
@@ -54,7 +55,7 @@ function addPageBreakIfNeeded(doc: jsPDF, y: number, needed: number, marginTop: 
   return y;
 }
 
-export function generateSignedContractPdf(data: SignedContractPdfData): Blob {
+export async function generateSignedContractPdf(data: SignedContractPdfData): Promise<Blob> {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -62,6 +63,27 @@ export function generateSignedContractPdf(data: SignedContractPdfData): Blob {
   const uW = pageWidth - mL - mR;
   let y = mT;
   let signatureStampIndex = 0;
+
+  // Pre-load signature photos as base64 images
+  const signerPhotoImages: string[] = [];
+  for (const signer of data.signers) {
+    if (signer.signature_photo_url) {
+      try {
+        const resp = await fetch(signer.signature_photo_url);
+        const blob = await resp.blob();
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+        signerPhotoImages.push(base64);
+      } catch {
+        signerPhotoImages.push("");
+      }
+    } else {
+      signerPhotoImages.push("");
+    }
+  }
 
   // ── CONTRACT CONTENT ──
   const lines = data.content.split("\n");
@@ -115,7 +137,8 @@ export function generateSignedContractPdf(data: SignedContractPdfData): Blob {
         signatureStampIndex++;
         if (signer.signed_at) {
           // Stamp the signature visually
-          const stampHeight = 22;
+          const hasPhoto = !!signer.signature_photo_url;
+          const stampHeight = hasPhoto ? 30 : 22;
           y = addPageBreakIfNeeded(doc, y, stampHeight, mT, mB);
 
           // Draw signature box
@@ -123,22 +146,30 @@ export function generateSignedContractPdf(data: SignedContractPdfData): Blob {
           doc.setFillColor(245, 247, 255);
           doc.roundedRect(mL, y - 3, uW, stampHeight, 1.5, 1.5, "FD");
 
+          // If there's a signature photo, load and add it
+          const photoOffset = hasPhoto ? 28 : 0;
+          if (hasPhoto && signerPhotoImages[signatureStampIndex - 1]) {
+            try {
+              doc.addImage(signerPhotoImages[signatureStampIndex - 1], "JPEG", mL + 2, y - 1, 24, stampHeight - 4);
+            } catch {}
+          }
+
           // "Assinado digitalmente" label
           doc.setFont("helvetica", "bold");
           doc.setFontSize(9);
           doc.setTextColor(30, 64, 175);
-          doc.text("✔ Assinado Digitalmente", mL + 4, y + 1);
+          doc.text("✔ Assinado Digitalmente", mL + 4 + photoOffset, y + 1);
           doc.setTextColor(0);
 
           // Signer details
           doc.setFont("helvetica", "normal");
           doc.setFontSize(8);
-          doc.text(`Nome: ${signer.name}`, mL + 4, y + 5.5);
+          doc.text(`Nome: ${signer.name}`, mL + 4 + photoOffset, y + 5.5);
           if (signer.document) {
-            doc.text(`CPF/CNPJ: ${signer.document}`, mL + 4, y + 9.5);
+            doc.text(`CPF/CNPJ: ${signer.document}`, mL + 4 + photoOffset, y + 9.5);
           }
           const signedDate = new Date(signer.signed_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-          doc.text(`Data: ${signedDate}`, mL + 4, y + (signer.document ? 13.5 : 9.5));
+          doc.text(`Data: ${signedDate}`, mL + 4 + photoOffset, y + (signer.document ? 13.5 : 9.5));
           if (signer.ip) {
             doc.setFontSize(6);
             doc.setTextColor(120);
@@ -367,8 +398,8 @@ export function generateSignedContractPdf(data: SignedContractPdfData): Blob {
   return doc.output("blob");
 }
 
-export function downloadSignedContractPdf(data: SignedContractPdfData) {
-  const blob = generateSignedContractPdf(data);
+export async function downloadSignedContractPdf(data: SignedContractPdfData) {
+  const blob = await generateSignedContractPdf(data);
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
