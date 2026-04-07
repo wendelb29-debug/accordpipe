@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { PdfSigningOverlay } from "@/components/contratos/PdfSigningOverlay";
+import { PdfAllPagesRenderer } from "@/components/contratos/PdfAllPagesRenderer";
 import { buildSignedPdfBlob } from "@/lib/buildSignedPdfBlob";
 
 interface SignerInfo {
@@ -52,7 +53,11 @@ export default function AssinarPdf() {
 
   useEffect(() => {
     const load = async () => {
-      if (!token) { setError("Token inválido"); setLoading(false); return; }
+      if (!token) {
+        setError("Token inválido");
+        setLoading(false);
+        return;
+      }
 
       const { data: signerRows, error: signerErr } = await supabase
         .rpc("get_pdf_signer_by_token", { p_token: token });
@@ -71,36 +76,42 @@ export default function AssinarPdf() {
         .eq("id", signerData.contract_id)
         .single();
 
-      if (!contractData) {
+      const resolvedContract = contractData as any;
+      if (!resolvedContract) {
         setError("Contrato não encontrado.");
         setLoading(false);
         return;
       }
 
-      if (contractData.status === "cancelado") {
+      if (resolvedContract.status === "cancelado") {
         setError("Este contrato foi cancelado.");
         setLoading(false);
         return;
       }
 
-      // Load company branding
-      if (contractData.servidor_id) {
+      if (resolvedContract.servidor_id) {
         const { data: company } = await supabase
           .from("companies")
           .select("nome_fantasia, razao_social, brand_logo_url, brand_primary_color")
-          .eq("id", contractData.servidor_id)
+          .eq("id", resolvedContract.servidor_id)
           .single();
         if (company) setCompanyBrand(company);
       }
 
-      setContract(contractData);
+      setContract(resolvedContract);
+      if (resolvedContract.pdf_assinado_url) {
+        setSignedPdfUrl((prev) => {
+          if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+          return resolvedContract.pdf_assinado_url;
+        });
+      }
+
       setSigner(signerData);
 
       if (signerData.status === "assinado") {
         setSigned(true);
       }
 
-      // Load already-signed field IDs from the database
       const { data: signedFields } = await supabase
         .from("pdf_contract_fields")
         .select("id")
@@ -116,18 +127,62 @@ export default function AssinarPdf() {
       const sigList = (signersList as SignerInfo[]) || [];
       setAllSigners(sigList);
 
-      if (contractData.sign_mode === "sequential" && signerData.status !== "assinado") {
+      if (resolvedContract.sign_mode === "sequential" && signerData.status !== "assinado") {
         const myOrder = signerData.sign_order || 0;
-        const previousSigners = sigList.filter(s => s.sign_order < myOrder);
-        if (previousSigners.length > 0 && !previousSigners.every(s => s.status === "assinado")) {
+        const previousSigners = sigList.filter((s) => s.sign_order < myOrder);
+        if (previousSigners.length > 0 && !previousSigners.every((s) => s.status === "assinado")) {
           setBlocked(true);
         }
       }
 
       setLoading(false);
     };
-    load();
+
+    void load();
   }, [token]);
+
+  useEffect(() => {
+    if (!contract?.id) return;
+
+    const channel = supabase
+      .channel(`public-pdf-signing-${contract.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "pdf_contract_signers", filter: `contract_id=eq.${contract.id}` },
+        (payload) => {
+          const updatedSigner = payload.new as any;
+          setAllSigners((prev) => prev
+            .map((item) => (item.id === updatedSigner.id ? { ...item, ...updatedSigner } : item))
+            .sort((a, b) => a.sign_order - b.sign_order));
+
+          if (updatedSigner.id === signer?.id) {
+            setSigner((prev: any) => (prev ? { ...prev, ...updatedSigner } : prev));
+            if (updatedSigner.status === "assinado") {
+              setSigned(true);
+            }
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "pdf_contracts", filter: `id=eq.${contract.id}` },
+        (payload) => {
+          const updatedContract = payload.new as any;
+          setContract((prev: any) => (prev ? { ...prev, ...updatedContract } : updatedContract));
+          if (updatedContract.pdf_assinado_url) {
+            setSignedPdfUrl((prev) => {
+              if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+              return updatedContract.pdf_assinado_url;
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [contract?.id, signer?.id]);
 
   useEffect(() => {
     setLocationLoading(true);
@@ -377,6 +432,14 @@ export default function AssinarPdf() {
   useEffect(() => {
     if (!signed || !contract?.id) return;
 
+    if (contract.pdf_assinado_url) {
+      setSignedPdfUrl((prev) => {
+        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+        return contract.pdf_assinado_url;
+      });
+      return;
+    }
+
     let cancelled = false;
     let nextUrl: string | null = null;
 
@@ -400,7 +463,7 @@ export default function AssinarPdf() {
 
         nextUrl = URL.createObjectURL(blob);
         setSignedPdfUrl((prev) => {
-          if (prev) URL.revokeObjectURL(prev);
+          if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
           return nextUrl;
         });
       } catch (err) {
@@ -412,9 +475,9 @@ export default function AssinarPdf() {
 
     return () => {
       cancelled = true;
-      if (nextUrl) URL.revokeObjectURL(nextUrl);
+      if (nextUrl?.startsWith("blob:")) URL.revokeObjectURL(nextUrl);
     };
-  }, [signed, contract, companyName]);
+  }, [signed, contract?.id, contract?.pdf_url, contract?.pdf_assinado_url, contract?.document_hash, contract?.validation_code, companyName]);
 
   // ─── LOADING ───
   if (loading) {
@@ -449,9 +512,28 @@ export default function AssinarPdf() {
 
   // ─── SIGNED SUCCESS ───
   if (signed) {
+    const activeSignedPdfUrl = signedPdfUrl || contract?.pdf_assinado_url || contract?.pdf_url;
+
     const handleDownloadPdf = async () => {
       if (!contract) return;
+
       try {
+        if (contract.pdf_assinado_url) {
+          const response = await fetch(contract.pdf_assinado_url);
+          if (!response.ok) throw new Error("Falha ao baixar o PDF assinado");
+
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${contract.name || "contrato"}_assinado.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          return;
+        }
+
         const { data: fullSigners } = await supabase
           .from("pdf_contract_signers")
           .select("*")
@@ -472,13 +554,14 @@ export default function AssinarPdf() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       } catch {
-        window.open(signedPdfUrl || contract.pdf_url, "_blank");
+        if (activeSignedPdfUrl) {
+          window.open(activeSignedPdfUrl, "_blank");
+        }
       }
     };
 
     return (
       <div className="min-h-screen bg-[hsl(224,62%,8%)]">
-        {/* Header */}
         <header className="sticky top-0 z-50 bg-[hsl(224,50%,12%)]/95 backdrop-blur-md border-b border-[hsl(224,40%,18%)]">
           <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -500,7 +583,6 @@ export default function AssinarPdf() {
           </div>
         </header>
 
-        {/* Success banner */}
         <div className="bg-[hsl(152,55%,40%)]/5 border-b border-[hsl(152,55%,40%)]/10">
           <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-center gap-2 text-sm">
             <CheckCircle className="h-4 w-4 text-[hsl(152,55%,40%)]" />
@@ -510,7 +592,6 @@ export default function AssinarPdf() {
 
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-6">
           <div className="flex flex-col lg:flex-row gap-6">
-            {/* Left: PDF Viewer */}
             <div className="flex-1 min-w-0 space-y-4">
               <div className="flex items-center justify-between">
                 <h1 className="text-lg font-bold text-[hsl(0,0%,92%)] truncate">{contract?.name || "Contrato"}</h1>
@@ -518,7 +599,7 @@ export default function AssinarPdf() {
                   <Button
                     variant="ghost" size="icon"
                     className="h-8 w-8 text-[hsl(220,20%,60%)] hover:text-[hsl(0,0%,90%)] hover:bg-[hsl(224,50%,15%)]"
-                    onClick={() => setPdfZoom(z => Math.max(50, z - 25))}
+                    onClick={() => setPdfZoom((z) => Math.max(50, z - 25))}
                   >
                     <ZoomOut className="h-4 w-4" />
                   </Button>
@@ -526,7 +607,7 @@ export default function AssinarPdf() {
                   <Button
                     variant="ghost" size="icon"
                     className="h-8 w-8 text-[hsl(220,20%,60%)] hover:text-[hsl(0,0%,90%)] hover:bg-[hsl(224,50%,15%)]"
-                    onClick={() => setPdfZoom(z => Math.min(200, z + 25))}
+                    onClick={() => setPdfZoom((z) => Math.min(200, z + 25))}
                   >
                     <ZoomIn className="h-4 w-4" />
                   </Button>
@@ -538,23 +619,19 @@ export default function AssinarPdf() {
                   className="overflow-auto max-h-[calc(100vh-260px)] p-4"
                   style={{ transform: `scale(${pdfZoom / 100})`, transformOrigin: "top center" }}
                 >
-                  {contract && signer && (
-                    <PdfSigningOverlay
-                      contractId={contract.id}
-                      pdfUrl={signedPdfUrl || contract.pdf_url}
-                      currentSignerId={signer.id}
-                      onFieldClick={() => {}}
-                      signedFieldIds={signedFieldIds}
-                    />
+                  {activeSignedPdfUrl ? (
+                    <PdfAllPagesRenderer pdfUrl={activeSignedPdfUrl} scale={1.2} />
+                  ) : (
+                    <div className="flex min-h-[50vh] items-center justify-center text-sm text-[hsl(220,20%,60%)]">
+                      PDF assinado indisponível.
+                    </div>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Right: Details sidebar */}
             <aside className="w-full lg:w-[380px] shrink-0">
               <div className="lg:sticky lg:top-24 space-y-5">
-                {/* Signing details card */}
                 <Card className="bg-[hsl(224,50%,12%)] border-[hsl(224,40%,20%)] overflow-hidden">
                   <div className="h-1.5 bg-gradient-to-r from-[hsl(152,55%,40%)] to-[hsl(152,55%,55%)]" />
                   <CardHeader className="pb-3">
@@ -588,7 +665,6 @@ export default function AssinarPdf() {
                       </div>
                     </div>
 
-                    {/* Progress */}
                     {allSigners.length > 1 && (
                       <div className="space-y-3">
                         <div className="flex justify-between text-sm">
@@ -616,7 +692,6 @@ export default function AssinarPdf() {
                       </div>
                     )}
 
-                    {/* Action buttons */}
                     <div className="space-y-2 pt-2">
                       <Button
                         className="w-full h-12 bg-[hsl(152,55%,40%)] hover:bg-[hsl(152,55%,35%)] text-[hsl(0,0%,100%)] font-semibold rounded-xl"
@@ -627,7 +702,7 @@ export default function AssinarPdf() {
                       <Button
                         variant="outline"
                         className="w-full h-10 border-[hsl(224,40%,25%)] text-[hsl(220,20%,70%)] hover:bg-[hsl(224,50%,15%)] rounded-xl"
-                        onClick={() => window.open(signedPdfUrl || contract?.pdf_url, "_blank")}
+                        onClick={() => activeSignedPdfUrl && window.open(activeSignedPdfUrl, "_blank")}
                       >
                         <Eye className="h-4 w-4 mr-2" /> Abrir em Nova Aba
                       </Button>
