@@ -361,12 +361,12 @@ export function ContractSignersManager({
                           >
                             <MessageSquare className="h-3.5 w-3.5" />
                           </Button>
-                          {signer.signer_type !== "cliente" && signer.signer_type !== "vendedor" && isPending && (
+                          {isPending && (
                             <Button
                               variant="ghost"
                               size="icon"
                               className="h-7 w-7 text-destructive hover:text-destructive"
-                              onClick={() => handleDeleteSigner(signer.id, signer.signer_type)}
+                              onClick={() => handleDeleteSigner(signer.id)}
                               title="Remover"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
