@@ -172,7 +172,7 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
                     </div>
                     <span className="font-semibold text-sm text-foreground">{stage.title}</span>
                     <span className={cn("text-xs font-bold rounded-full px-2.5 py-0.5 bg-card border border-border/50 shadow-sm", colors.text)}>
-                      {stage.count}
+                      {stageLeads.length}
                     </span>
                   </div>
                   {stage.id === "cadastro-concluido" && (
