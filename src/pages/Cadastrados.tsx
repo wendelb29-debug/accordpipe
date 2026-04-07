@@ -562,7 +562,32 @@ export default function Cadastrados() {
                   <FileSignature className="h-3.5 w-3.5" /> Contratos Assinados
                 </h4>
                 {detailCrmContracts.map((c: any) => {
-                  const pdfUrl = c.pdf_assinado_url || c.pdf_url;
+                  const isGen = generatingPdf === `doc-${c.id}`;
+                  const signers = (c.signers || []).map((s: any) => ({
+                    name: s.signer_name || "—", role: s.signer_role || "signatário", email: null,
+                    document: s.signer_document, signed_at: s.signed_at, ip: s.signer_ip, signature_photo_url: s.signature_photo_url,
+                  }));
+                  if (signers.length === 0 && c.signer_name) {
+                    signers.push({ name: c.signer_name, role: "signatário", email: null, document: c.signer_document, signed_at: c.signed_at, ip: null, signature_photo_url: c.signature_photo_url });
+                  }
+                  const buildPdf = async () => {
+                    let pdfUrl = c.pdf_url || "";
+                    let tempUrl: string | null = null;
+                    if (!pdfUrl && c.contract_content) {
+                      const basePdfBlob = generateContractPdf({ content: c.contract_content, code: c.code, companyName: selectedReg?.crm_leads?.company_name || "" });
+                      tempUrl = URL.createObjectURL(basePdfBlob);
+                      pdfUrl = tempUrl;
+                    }
+                    if (!pdfUrl) throw new Error("PDF não disponível");
+                    try {
+                      return await generateSignedContractPdf({
+                        pdfUrl, code: c.code, companyName: selectedReg?.crm_leads?.company_name || selectedReg?.nome_completo || "",
+                        documentHash: c.document_hash || "", validationCode: c.validation_code || "",
+                        signedAt: c.signed_at || new Date().toISOString(), signers,
+                        validationUrl: `${window.location.origin}/validar-documento/${c.validation_code || ""}`,
+                      });
+                    } finally { if (tempUrl) URL.revokeObjectURL(tempUrl); }
+                  };
                   return (
                     <Card key={c.id} className="border-green-200/50 dark:border-green-800/50">
                       <CardContent className="p-4 flex items-center justify-between">
@@ -579,26 +604,26 @@ export default function Cadastrados() {
                           </div>
                         </div>
                         <div className="flex gap-1">
-                          {pdfUrl && (
-                            <>
-                              <Button size="sm" variant="ghost" title="Visualizar" onClick={() => window.open(pdfUrl, "_blank", "noopener,noreferrer")}>
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button size="sm" variant="outline" className="gap-1.5" onClick={async () => {
-                                try {
-                                  const res = await fetch(pdfUrl);
-                                  const blob = await res.blob();
-                                  const link = document.createElement("a");
-                                  link.href = URL.createObjectURL(blob);
-                                  link.download = `${c.code}_assinado.pdf`;
-                                  link.click();
-                                  URL.revokeObjectURL(link.href);
-                                } catch { window.open(pdfUrl, "_blank"); }
-                              }}>
-                                <Download className="h-4 w-4" /> Baixar
-                              </Button>
-                            </>
-                          )}
+                          <Button size="sm" variant="ghost" title="Visualizar" disabled={isGen} onClick={async () => {
+                            setGeneratingPdf(`doc-${c.id}`);
+                            try { window.open(URL.createObjectURL(await buildPdf()), "_blank"); } catch (e: any) { toast.error(e.message); }
+                            setGeneratingPdf(null);
+                          }}>
+                            {isGen ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                          </Button>
+                          <Button size="sm" variant="outline" className="gap-1.5" disabled={isGen} onClick={async () => {
+                            setGeneratingPdf(`doc-${c.id}`);
+                            try {
+                              const blob = await buildPdf();
+                              const url = URL.createObjectURL(blob);
+                              const link = document.createElement("a");
+                              link.href = url; link.download = `${c.code}_assinado.pdf`; link.click();
+                              URL.revokeObjectURL(url);
+                            } catch (e: any) { toast.error(e.message); }
+                            setGeneratingPdf(null);
+                          }}>
+                            <Download className="h-4 w-4" /> Baixar
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
