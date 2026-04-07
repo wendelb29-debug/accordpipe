@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { CadastradosCharts } from "@/components/cadastrados/CadastradosCharts";
+import { generateSignedContractPdf } from "@/lib/generateSignedContractPdf";
+import { generateContractPdf } from "@/lib/generateContractPdf";
 
 // ──────────── Status configs ────────────
 const registrationStatusLabels: Record<string, { label: string; color: string }> = {
@@ -103,7 +105,7 @@ export default function Cadastrados() {
   const [upsellDialogOpen, setUpsellDialogOpen] = useState(false);
   const [upsellForm, setUpsellForm] = useState({ name: "", description: "", amount: "", type: "mensal", start_date: new Date().toISOString().split("T")[0] });
   const [upsellSaving, setUpsellSaving] = useState(false);
-
+  const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
   // Manual Registration state (must be before any early return)
   const [manualRegOpen, setManualRegOpen] = useState(false);
   const [manualForm, setManualForm] = useState({
@@ -234,12 +236,32 @@ export default function Cadastrados() {
     ]);
 
     setDetailContracts(contractsRes.data || []);
-    setDetailCrmContracts(crmContractsRes.data || []);
     setDetailTransactions(transactionsRes.data || []);
     setDetailHistory(historyRes.data || []);
     setDetailUpsells((upsellsRes as any).data || []);
     setDetailDocuments((docsRes as any).data || []);
     setDetailLeadDocs(leadDocsRes.data || []);
+
+    // Fetch signers for each CRM contract (deduplicated by role)
+    const crmWithSigners: any[] = [];
+    for (const c of (crmContractsRes.data || [])) {
+      const { data: sigs } = await supabase
+        .from("contract_signatures")
+        .select("signer_name, signer_role, signer_document, signed_at, signer_ip, signature_photo_url")
+        .eq("contract_id", c.id)
+        .order("created_at", { ascending: true });
+
+      const roleMap = new Map<string, any>();
+      for (const s of (sigs || [])) {
+        const role = s.signer_role || "signatário";
+        const existing = roleMap.get(role);
+        if (!existing || (s.signed_at && !existing.signed_at)) {
+          roleMap.set(role, s);
+        }
+      }
+      crmWithSigners.push({ ...c, signers: Array.from(roleMap.values()) });
+    }
+    setDetailCrmContracts(crmWithSigners);
   };
 
   const handleSaveEdit = async () => {
@@ -540,7 +562,32 @@ export default function Cadastrados() {
                   <FileSignature className="h-3.5 w-3.5" /> Contratos Assinados
                 </h4>
                 {detailCrmContracts.map((c: any) => {
-                  const pdfUrl = c.pdf_assinado_url || c.pdf_url;
+                  const isGen = generatingPdf === `doc-${c.id}`;
+                  const signers = (c.signers || []).map((s: any) => ({
+                    name: s.signer_name || "—", role: s.signer_role || "signatário", email: null,
+                    document: s.signer_document, signed_at: s.signed_at, ip: s.signer_ip, signature_photo_url: s.signature_photo_url,
+                  }));
+                  if (signers.length === 0 && c.signer_name) {
+                    signers.push({ name: c.signer_name, role: "signatário", email: null, document: c.signer_document, signed_at: c.signed_at, ip: null, signature_photo_url: c.signature_photo_url });
+                  }
+                  const buildPdf = async () => {
+                    let pdfUrl = c.pdf_url || "";
+                    let tempUrl: string | null = null;
+                    if (!pdfUrl && c.contract_content) {
+                      const basePdfBlob = generateContractPdf({ content: c.contract_content, code: c.code, companyName: selectedReg?.crm_leads?.company_name || "" });
+                      tempUrl = URL.createObjectURL(basePdfBlob);
+                      pdfUrl = tempUrl;
+                    }
+                    if (!pdfUrl) throw new Error("PDF não disponível");
+                    try {
+                      return await generateSignedContractPdf({
+                        pdfUrl, code: c.code, companyName: selectedReg?.crm_leads?.company_name || selectedReg?.nome_completo || "",
+                        documentHash: c.document_hash || "", validationCode: c.validation_code || "",
+                        signedAt: c.signed_at || new Date().toISOString(), signers,
+                        validationUrl: `${window.location.origin}/validar-documento/${c.validation_code || ""}`,
+                      });
+                    } finally { if (tempUrl) URL.revokeObjectURL(tempUrl); }
+                  };
                   return (
                     <Card key={c.id} className="border-green-200/50 dark:border-green-800/50">
                       <CardContent className="p-4 flex items-center justify-between">
@@ -557,26 +604,26 @@ export default function Cadastrados() {
                           </div>
                         </div>
                         <div className="flex gap-1">
-                          {pdfUrl && (
-                            <>
-                              <Button size="sm" variant="ghost" title="Visualizar" onClick={() => window.open(pdfUrl, "_blank", "noopener,noreferrer")}>
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button size="sm" variant="outline" className="gap-1.5" onClick={async () => {
-                                try {
-                                  const res = await fetch(pdfUrl);
-                                  const blob = await res.blob();
-                                  const link = document.createElement("a");
-                                  link.href = URL.createObjectURL(blob);
-                                  link.download = `${c.code}_assinado.pdf`;
-                                  link.click();
-                                  URL.revokeObjectURL(link.href);
-                                } catch { window.open(pdfUrl, "_blank"); }
-                              }}>
-                                <Download className="h-4 w-4" /> Baixar
-                              </Button>
-                            </>
-                          )}
+                          <Button size="sm" variant="ghost" title="Visualizar" disabled={isGen} onClick={async () => {
+                            setGeneratingPdf(`doc-${c.id}`);
+                            try { window.open(URL.createObjectURL(await buildPdf()), "_blank"); } catch (e: any) { toast.error(e.message); }
+                            setGeneratingPdf(null);
+                          }}>
+                            {isGen ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                          </Button>
+                          <Button size="sm" variant="outline" className="gap-1.5" disabled={isGen} onClick={async () => {
+                            setGeneratingPdf(`doc-${c.id}`);
+                            try {
+                              const blob = await buildPdf();
+                              const url = URL.createObjectURL(blob);
+                              const link = document.createElement("a");
+                              link.href = url; link.download = `${c.code}_assinado.pdf`; link.click();
+                              URL.revokeObjectURL(url);
+                            } catch (e: any) { toast.error(e.message); }
+                            setGeneratingPdf(null);
+                          }}>
+                            <Download className="h-4 w-4" /> Baixar
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -705,7 +752,70 @@ export default function Cadastrados() {
                 <>
                   {/* CRM Signed Contracts (from contracts table) */}
                   {detailCrmContracts.map((c: any) => {
-                    const pdfUrl = c.pdf_assinado_url || c.pdf_url;
+                    const isGen = generatingPdf === c.id;
+                    const signers = (c.signers || []).map((s: any) => ({
+                      name: s.signer_name || "—",
+                      role: s.signer_role || "signatário",
+                      email: null,
+                      document: s.signer_document,
+                      signed_at: s.signed_at,
+                      ip: s.signer_ip,
+                      signature_photo_url: s.signature_photo_url,
+                    }));
+                    if (signers.length === 0 && c.signer_name) {
+                      signers.push({ name: c.signer_name, role: "signatário", email: null, document: c.signer_document, signed_at: c.signed_at, ip: null, signature_photo_url: c.signature_photo_url });
+                    }
+
+                    const buildPdf = async () => {
+                      let pdfUrl = c.pdf_url || "";
+                      let tempUrl: string | null = null;
+                      if (!pdfUrl && c.contract_content) {
+                        const basePdfBlob = generateContractPdf({ content: c.contract_content, code: c.code, companyName: selectedReg?.crm_leads?.company_name || "" });
+                        tempUrl = URL.createObjectURL(basePdfBlob);
+                        pdfUrl = tempUrl;
+                      }
+                      if (!pdfUrl) throw new Error("PDF do contrato não disponível");
+                      try {
+                        return await generateSignedContractPdf({
+                          pdfUrl,
+                          code: c.code,
+                          companyName: selectedReg?.crm_leads?.company_name || selectedReg?.nome_completo || "",
+                          documentHash: c.document_hash || "",
+                          validationCode: c.validation_code || "",
+                          signedAt: c.signed_at || new Date().toISOString(),
+                          signers,
+                          validationUrl: `${window.location.origin}/validar-documento/${c.validation_code || ""}`,
+                        });
+                      } finally {
+                        if (tempUrl) URL.revokeObjectURL(tempUrl);
+                      }
+                    };
+
+                    const handleView = async () => {
+                      setGeneratingPdf(c.id);
+                      try {
+                        const blob = await buildPdf();
+                        window.open(URL.createObjectURL(blob), "_blank");
+                      } catch (err: any) { toast.error(err.message || "Erro ao gerar PDF"); }
+                      setGeneratingPdf(null);
+                    };
+
+                    const handleDownload = async () => {
+                      setGeneratingPdf(c.id);
+                      try {
+                        const blob = await buildPdf();
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement("a");
+                        link.href = url;
+                        link.download = `${c.code}_assinado.pdf`;
+                        link.click();
+                        URL.revokeObjectURL(url);
+                      } catch (err: any) { toast.error(err.message || "Erro ao baixar contrato"); }
+                      setGeneratingPdf(null);
+                    };
+
+                    const roleLabels: Record<string, string> = { cliente: "Cliente", vendedor: "Vendedor", testemunha: "Testemunha", diretor: "Diretor/CEO" };
+
                     return (
                       <Card key={`crm-${c.id}`} className="border-green-200/50">
                         <CardContent className="p-5 space-y-4">
@@ -720,38 +830,40 @@ export default function Cadastrados() {
                               </div>
                             </div>
                             <div className="flex gap-1">
-                              {pdfUrl && (
-                                <>
-                                  <Button size="sm" variant="ghost" title="Visualizar" onClick={() => window.open(pdfUrl, "_blank", "noopener,noreferrer")}>
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                  <Button size="sm" variant="outline" className="gap-1.5" onClick={async () => {
-                                    try {
-                                      const res = await fetch(pdfUrl);
-                                      const blob = await res.blob();
-                                      const link = document.createElement("a");
-                                      link.href = URL.createObjectURL(blob);
-                                      link.download = `${c.code}_assinado.pdf`;
-                                      link.click();
-                                      URL.revokeObjectURL(link.href);
-                                    } catch { window.open(pdfUrl, "_blank"); }
-                                  }}>
-                                    <Download className="h-4 w-4" /> Baixar
-                                  </Button>
-                                </>
-                              )}
+                              <Button size="sm" variant="ghost" title="Visualizar" onClick={handleView} disabled={isGen}>
+                                {isGen ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                              </Button>
+                              <Button size="sm" variant="outline" className="gap-1.5" onClick={handleDownload} disabled={isGen}>
+                                <Download className="h-4 w-4" /> Baixar
+                              </Button>
                             </div>
                           </div>
+
+                          {/* Signers */}
+                          {signers.length > 0 && (
+                            <div className="border-t pt-3 space-y-1.5">
+                              {signers.map((s: any, idx: number) => (
+                                <div key={idx} className="flex items-center gap-2 text-xs">
+                                  <User className="h-3 w-3 text-muted-foreground shrink-0" />
+                                  <span className="font-medium">{s.name}</span>
+                                  <Badge variant="outline" className="text-[9px] px-1 py-0">
+                                    {roleLabels[s.role] || s.role}
+                                  </Badge>
+                                  {s.document && <span className="text-muted-foreground">{s.document}</span>}
+                                  {s.signed_at && (
+                                    <span className="text-muted-foreground ml-auto">
+                                      {new Date(s.signed_at).toLocaleDateString("pt-BR")} {new Date(s.signed_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
                           <Separator />
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                             {c.signed_at && (
                               <div><span className="text-muted-foreground">Data de Assinatura</span><p className="font-semibold text-foreground">{fmtDate(c.signed_at)}</p></div>
-                            )}
-                            {c.signer_name && (
-                              <div><span className="text-muted-foreground">Assinante</span><p className="font-semibold text-foreground">{c.signer_name}</p></div>
-                            )}
-                            {c.signer_document && (
-                              <div><span className="text-muted-foreground">Documento</span><p className="font-semibold text-foreground">{c.signer_document}</p></div>
                             )}
                             {c.validation_code && (
                               <div><span className="text-muted-foreground">Código de Validação</span><p className="font-semibold text-foreground">{c.validation_code}</p></div>
@@ -761,6 +873,8 @@ export default function Cadastrados() {
                       </Card>
                     );
                   })}
+
+
 
                   {/* Client Contracts (from client_contracts table) */}
                   {signedContracts.map(c => {
