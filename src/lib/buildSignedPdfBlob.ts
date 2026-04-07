@@ -65,6 +65,39 @@ export async function buildSignedPdfBlob({ contract, signers, companyName, code,
     }
   }
 
+  // Enrich signers with profile data (cpf, birth_date) when available
+  const enrichedSigners = await Promise.all(
+    signers.map(async (signer) => {
+      let cpf = signer.cpf_cnpj || null;
+      let birthDate: string | null = null;
+
+      // Try to find profile by email to get cpf and birth_date
+      if (signer.email) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("cpf, birth_date")
+          .eq("email", signer.email)
+          .maybeSingle();
+        if (profileData) {
+          if (!cpf && (profileData as any).cpf) cpf = (profileData as any).cpf;
+          birthDate = (profileData as any).birth_date || null;
+        }
+      }
+
+      return {
+        id: signer.id,
+        name: signer.name,
+        role: "signatario",
+        email: signer.email,
+        document: cpf,
+        birth_date: birthDate,
+        signed_at: signer.signed_at,
+        ip: signer.signer_ip,
+        signature_photo_url: signer.signature_photo_url,
+      };
+    })
+  );
+
   return generateSignedContractPdf({
     pdfUrl: contract.pdf_url,
     code: code || `PDF-${contract.id.slice(0, 8).toUpperCase()}`,
@@ -72,16 +105,7 @@ export async function buildSignedPdfBlob({ contract, signers, companyName, code,
     documentHash: contract.document_hash || "",
     validationCode: contract.validation_code || "",
     signedAt: signers.find((signer) => signer.signed_at)?.signed_at || new Date().toISOString(),
-    signers: signers.map((signer) => ({
-      id: signer.id,
-      name: signer.name,
-      role: "signatário",
-      email: signer.email,
-      document: signer.cpf_cnpj,
-      signed_at: signer.signed_at,
-      ip: signer.signer_ip,
-      signature_photo_url: signer.signature_photo_url,
-    })),
+    signers: enrichedSigners,
     validationUrl: validationUrl || `${window.location.origin}/validar-documento/${contract.validation_code || ""}`,
     signaturePositions,
   });

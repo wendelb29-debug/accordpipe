@@ -211,25 +211,49 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
   };
 
   const buildSignedPdfBlob = async (contract: SignedContract): Promise<Blob> => {
-    const signers = contract.signers.length > 0
+    const baseSigner = contract.signers.length > 0
       ? contract.signers.map((s) => ({
-          name: s.signer_name || "—",
-          role: s.signer_role || "signatário",
-          email: null,
+          name: s.signer_name || "---",
+          role: s.signer_role || "signatario",
+          email: null as string | null,
           document: s.signer_document,
+          birth_date: null as string | null,
           signed_at: s.signed_at,
           ip: s.signer_ip,
           signature_photo_url: s.signature_photo_url,
         }))
       : [{
-          name: contract.signer_name || "—",
-          role: "signatário",
-          email: null,
+          name: contract.signer_name || "---",
+          role: "signatario",
+          email: null as string | null,
           document: contract.signer_document,
+          birth_date: null as string | null,
           signed_at: contract.signed_at,
-          ip: null,
+          ip: null as string | null,
           signature_photo_url: contract.signature_photo_url,
         }];
+
+    // Enrich signers with profile data
+    const signers = await Promise.all(
+      baseSigner.map(async (s) => {
+        if (s.name && s.name !== "---") {
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("email, cpf, birth_date")
+            .eq("name", s.name)
+            .maybeSingle();
+          if (profileData) {
+            return {
+              ...s,
+              email: s.email || (profileData as any).email || null,
+              document: s.document || (profileData as any).cpf || null,
+              birth_date: (profileData as any).birth_date || null,
+            };
+          }
+        }
+        return s;
+      })
+    );
 
     let pdfUrl = contract.pdf_url || "";
     let tempUrl: string | null = null;

@@ -6,9 +6,24 @@ interface SignerData {
   role: string;
   email?: string | null;
   document?: string | null;
+  birth_date?: string | null;
   signed_at?: string | null;
   ip?: string | null;
   signature_photo_url?: string | null;
+}
+
+function formatCpf(cpf: string): string {
+  const digits = cpf.replace(/\D/g, "");
+  if (digits.length === 11) return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+  return cpf;
+}
+
+function formatBirthDate(d: string): string {
+  if (!d) return "";
+  // Handle ISO date (YYYY-MM-DD)
+  const parts = d.split("-");
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  return d;
 }
 
 interface SignaturePosition {
@@ -147,12 +162,14 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
       ty -= 12;
 
       if (signer.role) {
-        currentPage.drawText(`Função: ${signer.role}`, { x: textX, y: ty, size: 8, font, color: rgb(0.2, 0.2, 0.2) });
+        currentPage.drawText(`Funcao: ${signer.role}`, { x: textX, y: ty, size: 8, font, color: rgb(0.2, 0.2, 0.2) });
         ty -= 11;
       }
 
-      if (signer.document) {
-        currentPage.drawText(`CPF/CNPJ: ${signer.document}`, { x: textX, y: ty, size: 8, font, color: rgb(0.2, 0.2, 0.2) });
+      const cpfText = signer.document ? `CPF: ${formatCpf(signer.document)}` : "";
+      const birthText = signer.birth_date ? `Nasc: ${formatBirthDate(signer.birth_date)}` : "";
+      if (cpfText || birthText) {
+        currentPage.drawText([cpfText, birthText].filter(Boolean).join(" | "), { x: textX, y: ty, size: 8, font, color: rgb(0.2, 0.2, 0.2) });
         ty -= 11;
       }
 
@@ -265,13 +282,17 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
     proofPage.drawText(`${signer.name} (${signer.role})`, { x: 30, y, size: 10, font: fontBold, color: rgb(0, 0, 0) });
     y -= 12;
 
-    if (signer.email) {
-      proofPage.drawText(`E-mail: ${signer.email}`, { x: 30, y, size: 8, font, color: rgb(0.1, 0.1, 0.1) });
+    // CPF + Nascimento on same line
+    const cpfText = signer.document ? `CPF: ${formatCpf(signer.document)}` : "";
+    const birthText = signer.birth_date ? `Nascimento: ${formatBirthDate(signer.birth_date)}` : "";
+    if (cpfText || birthText) {
+      const combined = [cpfText, birthText].filter(Boolean).join(" | ");
+      proofPage.drawText(combined, { x: 30, y, size: 8, font, color: rgb(0.1, 0.1, 0.1) });
       y -= 10;
     }
 
-    if (signer.document) {
-      proofPage.drawText(`CPF: ${signer.document}`, { x: 30, y, size: 8, font, color: rgb(0.1, 0.1, 0.1) });
+    if (signer.email) {
+      proofPage.drawText(`E-mail: ${signer.email}`, { x: 30, y, size: 8, font, color: rgb(0.1, 0.1, 0.1) });
       y -= 10;
     }
 
