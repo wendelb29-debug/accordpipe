@@ -36,7 +36,7 @@ interface SignedContract {
   plan_name: string | null;
   created_at: string;
   contract_content: string | null;
-  pdf_url: string | null;
+  
   servidor_id: string;
   signer_name: string | null;
   signer_document: string | null;
