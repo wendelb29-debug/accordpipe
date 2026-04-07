@@ -1,6 +1,7 @@
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 
 interface SignerData {
+  id?: string;
   name: string;
   role: string;
   email?: string | null;
@@ -19,8 +20,14 @@ interface SignedContractPdfData {
   signedAt: string;
   signers: SignerData[];
   validationUrl: string;
-  /** Positions where signature stamps should be placed (from template fields) */
-  signaturePositions?: { page: number; x: number; y: number; width: number; height: number }[];
+  signaturePositions?: {
+    page: number;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    signerId?: string | null;
+  }[];
 }
 
 export async function generateSignedContractPdf(data: SignedContractPdfData): Promise<Blob> {

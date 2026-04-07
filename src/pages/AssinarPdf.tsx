@@ -395,6 +395,7 @@ export default function AssinarPdf() {
           .order("sign_order", { ascending: true });
 
         const signerData = (fullSigners || []).map((s: any) => ({
+          id: s.id,
           name: s.name,
           role: "signatário",
           email: s.email,
@@ -404,18 +405,21 @@ export default function AssinarPdf() {
           signature_photo_url: s.signature_photo_url,
         }));
 
-        // Load signature field positions
         const { data: sigFields } = await supabase
           .from("pdf_contract_fields")
-          .select("page, pos_x, pos_y, width, height")
+          .select("page, pos_x, pos_y, width, height, signer_id")
           .eq("contract_id", contract.id)
           .eq("field_type", "signature");
 
         let signaturePositions = (sigFields || []).map((f: any) => ({
-          page: f.page, x: f.pos_x, y: f.pos_y, width: f.width, height: f.height,
+          page: f.page,
+          x: f.pos_x,
+          y: f.pos_y,
+          width: f.width,
+          height: f.height,
+          signerId: f.signer_id,
         }));
 
-        // Fallback to template positions
         if (signaturePositions.length === 0 && contract.servidor_id) {
           const { data: templates } = await supabase
             .from("company_contract_templates")
@@ -429,7 +433,11 @@ export default function AssinarPdf() {
               .eq("template_id", templates[0].id)
               .eq("field_type", "assinatura");
             signaturePositions = (tFields || []).map((f: any) => ({
-              page: f.page, x: f.pos_x, y: f.pos_y, width: f.width, height: f.height,
+              page: f.page,
+              x: f.pos_x,
+              y: f.pos_y,
+              width: f.width,
+              height: f.height,
             }));
           }
         }
