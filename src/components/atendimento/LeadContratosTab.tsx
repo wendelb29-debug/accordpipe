@@ -139,21 +139,29 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
     await fetchContractSigners(contract.id);
   };
 
+  const vendorEnsuredRef = useRef<Set<string>>(new Set());
+
   const ensureVendorSigner = async (contractId: string, signers: ContractSigner[]) => {
     if (!profile?.name) return;
+    if (vendorEnsuredRef.current.has(contractId)) return;
 
     const hasVendor = signers.some((signer) => signer.signer_role === "vendedor");
-    if (hasVendor) return;
+    if (hasVendor) {
+      vendorEnsuredRef.current.add(contractId);
+      return;
+    }
+
+    vendorEnsuredRef.current.add(contractId);
 
     try {
       const token = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
-      await supabase.from("contract_signatures").insert({
+      await supabase.from("contract_signatures").upsert({
         contract_id: contractId,
         signer_role: "vendedor",
         signing_token: token,
         signer_name: profile.name,
         signer_document: null,
-      } as any);
+      } as any, { onConflict: "contract_id,signer_role" });
 
       await fetchContractSigners(contractId);
     } catch {
