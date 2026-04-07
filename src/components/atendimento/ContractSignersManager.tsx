@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Plus, Copy, CheckCircle2, Clock, User, UserPlus, Link2,
   Loader2, Trash2, MessageSquare, Shield, Users,
