@@ -1,14 +1,16 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   ArrowLeft, Building2, User, Mail, PhoneCall, MapPin, Calendar,
   DollarSign, FileSpreadsheet, Plus, Loader2, Send, Download,
   Edit, Trash2, MoreVertical, ThumbsUp, ThumbsDown, XCircle,
   Eye, CopyPlus, Link2, Briefcase, Hash, FileSignature, Copy, MessageSquare,
   ImageIcon, Settings2, Users, ChevronLeft, ChevronRight, AlertCircle,
+  CheckCircle2, Clock, Shield, UserPlus,
 } from "lucide-react";
 import { PdfRenderer } from "@/components/contratos/PdfRenderer";
 import { ProposalItemsManager, ProposalLineItem } from "./ProposalItemsManager";
-import { ContractSignersManager } from "./ContractSignersManager";
+import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useContracts } from "@/hooks/useContracts";
