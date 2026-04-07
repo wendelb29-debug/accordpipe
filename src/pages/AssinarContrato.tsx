@@ -478,10 +478,10 @@ export default function AssinarContrato() {
             </div>
             <h2 className="text-sm font-semibold text-slate-200">Conteúdo do Contrato</h2>
           </div>
-          <div className="h-[450px] sm:h-[550px] bg-slate-900/40 p-2 sm:p-4">
+          <div className="h-[80vh] sm:h-[550px] bg-slate-900/40 p-1 sm:p-4">
             <div className="h-full rounded-xl overflow-hidden shadow-2xl shadow-black/30 bg-white">
               {contract.pdf_url ? (
-                <iframe src={contract.pdf_url} className="w-full h-full border-0" title="Contrato PDF" />
+                <iframe src={contract.pdf_url} className="w-full h-full border-0" title="Contrato PDF" style={{ minHeight: "100%" }} />
               ) : (
                 <ContractPdfEmbed content={contract.contract_content || ""} code={contract.code} companyName={company?.razao_social || ""} />
               )}
