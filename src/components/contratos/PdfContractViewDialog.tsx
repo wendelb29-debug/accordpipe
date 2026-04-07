@@ -101,6 +101,7 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
       document: s.cpf_cnpj,
       signed_at: s.signed_at,
       ip: s.signer_ip,
+      signature_photo_url: s.signature_photo_url,
     }));
     const historyData = history.map(h => ({
       timestamp: h.created_at,
