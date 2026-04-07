@@ -177,7 +177,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     if (signatureMode) setShowSignatureSelect(true);
   }, [signatureMode]);
 
-  // Auto-load template in signature mode
+  // Auto-load template and check for existing contract in signature mode
   useEffect(() => {
     if (!signatureMode || !lead.servidor_id) return;
     const loadTemplate = async () => {
@@ -197,7 +197,30 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
       }
     };
     loadTemplate();
+    fetchSavedContract();
   }, [signatureMode, lead.servidor_id]);
+
+  const fetchSavedContract = async () => {
+    if (!lead.company_id) return;
+    setLoadingSavedContract(true);
+    try {
+      const { data } = await supabase
+        .from("contracts")
+        .select("id, code, signature_link, signature_status, pdf_url, contract_content, signing_token, created_at, companies(razao_social)")
+        .eq("company_id", lead.company_id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data) {
+        setSavedContract({ ...data, company: data.companies });
+        setGeneratedContractLink(data.signature_link);
+        setGeneratedContractId(data.id);
+      }
+    } catch (err) {
+      console.error("Error fetching saved contract:", err);
+    }
+    setLoadingSavedContract(false);
+  };
 
   const { createContract } = useContracts();
 
