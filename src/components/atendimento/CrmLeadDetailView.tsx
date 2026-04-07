@@ -569,9 +569,10 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     try {
       await onUpdate(lead.id, { lead_status: "lost", lost_reason: reasonText } as any);
       await addActivity({ type: "lost", title: "Oportunidade perdida", description: `Motivo: ${reasonText}` });
-      toast.info("Oportunidade marcada como perdida");
+      toast.info("Oportunidade marcada como perdida e enviada para o Descarte");
       setShowLostDialog(false);
       setSelectedLostReason("");
+      onBack();
     } catch (error) {
       console.error("Error marking lost:", error);
       toast.error("Erro ao marcar como perdido");
