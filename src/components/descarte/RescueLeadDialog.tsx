@@ -70,7 +70,8 @@ export function RescueLeadDialog({ open, onOpenChange, lead, onRescued }: Rescue
         .from("crm_leads")
         .update({
           lead_status: "open",
-          stage: "novo",
+          stage: "novos",
+          stage_entered_at: new Date().toISOString(),
           lost_reason: null,
           created_by_user_id: selectedUserId,
           created_by_name: selectedUser?.name || "",
