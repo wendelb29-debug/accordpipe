@@ -1,7 +1,7 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import {
   Clock, MoreVertical, Trash2, Mail, PhoneCall, Loader2,
-  Users, ClipboardList, FileCheck, FileWarning, Sparkles
+  Users, ClipboardList, FileCheck, FileWarning, Sparkles, CalendarSearch
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
