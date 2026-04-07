@@ -85,12 +85,12 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
   };
 
   const fetchSignedContracts = async () => {
-    const { data: clientContracts } = await supabase
-      .from("client_contracts")
-      .select("id, client_name, contract_status, signed_at, validation_code, document_hash, plan_name, created_at, contract_content, servidor_id, signer_name, signer_document, signature_photo_url")
+    const { data: signedContractsData } = await supabase
+      .from("contracts")
+      .select("id, code, signature_status, signed_at, validation_code, document_hash, pdf_url, created_at, contract_content, company_id, signer_name, signer_document, signature_photo_url")
       .eq("lead_id", lead.id)
-      .eq("contract_status", "assinado");
-    setSignedContracts((clientContracts as SignedContract[]) || []);
+      .eq("signature_status", "signed");
+    setSignedContracts((signedContractsData as unknown as SignedContract[]) || []);
 
     const { data: pdfContracts } = await supabase
       .from("pdf_contracts")
