@@ -5,365 +5,92 @@ import {
   MoreVertical, MessageSquare,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { downloadContractPdf } from "@/lib/generateContractPdf";
+import { downloadContractPdf, generateContractPdf } from "@/lib/generateContractPdf";
 import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
-import { useContracts } from "@/hooks/useContracts";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useCompanies } from "@/hooks/useCompanies";
-import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-import { CrmLead } from "@/hooks/useCrmLeads";
-import { toast } from "sonner";
-
-const statusConfig: Record<string, { label: string; icon: any; className: string }> = {
-  pending: { label: "Aguardando", icon: Clock, className: "bg-amber-100 text-amber-700 border-amber-300" },
-  signed: { label: "Assinado", icon: CheckCircle2, className: "bg-green-100 text-green-700 border-green-300" },
-  expired: { label: "Expirado", icon: AlertCircle, className: "bg-red-100 text-red-700 border-red-300" },
-};
-
-const roleLabels: Record<string, string> = {
-  matriz: "Matriz",
-  revendedor: "Revendedor",
-  colaborador: "Colaborador",
-  vendedor: "Vendedor",
-  testemunha: "Testemunha",
-  signatario: "Signatário",
-};
-
-interface ContractSigner {
-  id: string;
-  contract_id: string;
-  signer_role: string;
-  signing_token: string | null;
-  signed_at: string | null;
-  signer_name: string | null;
-  signer_document: string | null;
-  signature_photo_url: string | null;
-  signature_address: string | null;
-  signature_latitude: number | null;
-  signature_longitude: number | null;
-}
-
-interface LeadContratosTabProps {
-  lead: CrmLead;
-  addActivity: (data: any) => Promise<any>;
-}
-
-export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
-  const { profile } = useAuth();
-  const [contracts, setContracts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [signerCounts, setSignerCounts] = useState<Record<string, { signed: number; total: number }>>({});
-
-  // Create contract dialog
-  const [createOpen, setCreateOpen] = useState(false);
-  const [foro, setForo] = useState("");
-  const [signatureType, setSignatureType] = useState("govbr");
-  const [linkValidity, setLinkValidity] = useState("7");
-  const [generating, setGenerating] = useState(false);
-
-  // View contract dialog
-  const [viewContract, setViewContract] = useState<any | null>(null);
-  const [contractSigners, setContractSigners] = useState<ContractSigner[]>([]);
-  const [loadingSigners, setLoadingSigners] = useState(false);
-
-  // Add signer dialog
-  const [addSignerOpen, setAddSignerOpen] = useState(false);
-  const [newSignerName, setNewSignerName] = useState("");
-  const [newSignerEmail, setNewSignerEmail] = useState("");
-  const [newSignerDocument, setNewSignerDocument] = useState("");
-  const [newSignerRole, setNewSignerRole] = useState("signatario");
-  const [addingNewSigner, setAddingNewSigner] = useState(false);
-
-  // Sign contract dialog
-  const [signContract, setSignContract] = useState<any | null>(null);
-  const [cameraOpen, setCameraOpen] = useState(false);
-  const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [location, setLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
-  const [signing, setSigning] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-
-  const { createContract: createContractFn, signContract: signContractFn } = useContracts();
-
-  const fetchContractSigners = async (contractId: string) => {
-    setLoadingSigners(true);
-    const { data, error } = await supabase
-      .from("contract_signatures")
-      .select("*")
-      .eq("contract_id", contractId)
-      .order("created_at", { ascending: true });
-    if (!error) setContractSigners((data as ContractSigner[]) || []);
-    setLoadingSigners(false);
-  };
-
-  const handleViewContract = async (contract: any) => {
-    setViewContract(contract);
-    await fetchContractSigners(contract.id);
-  };
-
-  // After signers load, ensure vendor is present
-  useEffect(() => {
-    if (viewContract && contractSigners.length >= 0 && !loadingSigners) {
-      ensureVendorSigner(viewContract.id, contractSigners);
-    }
-  }, [viewContract?.id, loadingSigners]);
-
-  const handleAddSigner = async () => {
-    if (!viewContract || !newSignerName.trim()) {
-      toast.error("Preencha ao menos o nome do signatário");
-      return;
-    }
-    if (newSignerEmail.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(newSignerEmail.trim())) {
-        toast.error("E-mail inválido");
-        return;
-      }
-      const duplicate = contractSigners.find(
-        (s) => s.signer_name?.toLowerCase() === newSignerEmail.trim().toLowerCase()
-      );
-      if (duplicate) {
-        toast.error("Este e-mail já está na lista de envolvidos");
-        return;
-      }
-    }
-    setAddingNewSigner(true);
-    try {
-      const token = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
-      const { error } = await supabase.from("contract_signatures").insert({
-        contract_id: viewContract.id,
-        signer_role: newSignerRole,
-        signing_token: token,
-        signer_name: newSignerName.trim(),
-        signer_document: newSignerDocument.trim() || null,
-      } as any);
-      if (error) throw error;
-      toast.success("Signatário adicionado com sucesso!");
-      setNewSignerName("");
-      setNewSignerEmail("");
-      setNewSignerDocument("");
-      setNewSignerRole("signatario");
-      setAddSignerOpen(false);
-      await fetchContractSigners(viewContract.id);
-    } catch (err: any) {
-      toast.error("Erro ao adicionar signatário: " + (err.message || ""));
-    }
-    setAddingNewSigner(false);
-  };
-
-  // Auto-add vendor when viewing contract
-  const ensureVendorSigner = async (contractId: string, signers: ContractSigner[]) => {
-    if (!profile?.name) return;
-    const hasVendor = signers.some((s) => s.signer_role === "vendedor");
-    if (hasVendor) return;
-    try {
-      const token = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
-      await supabase.from("contract_signatures").insert({
-        contract_id: contractId,
-        signer_role: "vendedor",
-        signing_token: token,
-        signer_name: profile.name,
-        signer_document: null,
-      } as any);
-      await fetchContractSigners(contractId);
-    } catch { /* silent */ }
-  };
-
-  const getSigningLink = (token: string | null) => {
-    if (!token) return "";
-    return `${window.location.origin}/assinar/${token}`;
-  };
-
-  const handleCopySignerLink = (token: string | null, name: string | null) => {
-    if (!token) return;
-    const link = getSigningLink(token);
-    navigator.clipboard.writeText(link);
-    toast.success(`Link de assinatura copiado para ${name || "signatário"}!`);
-  };
-
-  const fetchContracts = async () => {
-    if (!lead.company_id) { setLoading(false); return; }
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("contracts")
-      .select("*, companies(razao_social, nome_fantasia, cnpj, responsavel, endereco, numero, bairro, cidade, estado, cep)")
-      .eq("company_id", lead.company_id)
-      .order("created_at", { ascending: false });
-    if (!error) {
-      const contractList = (data || []).map((c: any) => ({ ...c, company: c.companies }));
-      setContracts(contractList);
-      // Fetch signer counts for each contract
-      const counts: Record<string, { signed: number; total: number }> = {};
-      for (const c of contractList) {
-        const { data: signers } = await supabase
-          .from("contract_signatures")
-          .select("id, signed_at")
-          .eq("contract_id", c.id);
-        const all = signers || [];
-        counts[c.id] = { total: all.length, signed: all.filter((s: any) => !!s.signed_at).length };
-      }
-      setSignerCounts(counts);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => { fetchContracts(); }, [lead.company_id]);
-
-  const filteredContracts = contracts.filter(
-    (c) => c.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (c.company?.razao_social || "").toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Camera functions
-  const getLocation = useCallback(() => {
-    if (!navigator.geolocation) { toast.error("Geolocalização não suportada"); return; }
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        let address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
-          const geo = await res.json();
-          if (geo.display_name) address = geo.display_name;
-        } catch { /* keep coords */ }
-        setLocation({ lat: latitude, lng: longitude, address });
-      },
-      () => toast.error("Permita o acesso à localização"),
-      { enableHighAccuracy: true }
-    );
-  }, []);
-
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
-      });
-      streamRef.current = stream;
-      if (videoRef.current) videoRef.current.srcObject = stream;
-      setCameraOpen(true);
-      getLocation();
-    } catch { toast.error("Permita o acesso à câmera"); }
-  };
-
-  const stopCamera = () => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-    setCameraOpen(false);
-  };
-
-  const capturePhoto = () => {
-    if (!videoRef.current) return;
-    const canvas = document.createElement("canvas");
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    canvas.getContext("2d")?.drawImage(videoRef.current, 0, 0);
-    canvas.toBlob((blob) => {
-      if (blob) { setPhotoBlob(blob); setPhotoPreview(URL.createObjectURL(blob)); stopCamera(); }
-    }, "image/jpeg", 0.85);
-  };
-
-  const resetSigningState = () => {
-    stopCamera();
-    setPhotoBlob(null);
-    setPhotoPreview(null);
-    setLocation(null);
-    setSignContract(null);
-  };
-
-  const handleGenerate = async () => {
-    if (!lead.company_id) { toast.error("Lead sem empresa vinculada"); return; }
-    setGenerating(true);
-    const result = await createContractFn(lead.company_id, foro, "Save Car Brasil Tecnologia e Serviços Ltda", signatureType, parseInt(linkValidity) || 7);
-    if (result) {
-      downloadContractPdf(result);
-      await addActivity({ type: "signature", title: "Contrato gerado", description: `Novo contrato gerado para ${lead.company_name}` });
-      await fetchContracts();
-      setCreateOpen(false);
-      setForo("");
-    }
-    setGenerating(false);
-  };
-
-  const handleSign = async () => {
-    if (!signContract || !photoBlob || !location) {
-      toast.error("Tire a foto e permita a localização antes de assinar");
-      return;
-    }
-    setSigning(true);
-    const success = await signContractFn(
-      signContract.id, photoBlob, location,
-      signContract.company?.responsavel || "", signContract.company?.cnpj || ""
-    );
-    if (success) {
-      await addActivity({ type: "signature", title: `Contrato ${signContract.code} assinado`, description: "Contrato assinado internamente." });
-      await fetchContracts();
-      resetSigningState();
-    }
-    setSigning(false);
-  };
-
-  const handleCopyLink = (link: string, code: string) => {
-    navigator.clipboard.writeText(link);
-    toast.success("Link copiado!");
-    addActivity({ type: "signature_link", title: `Link copiado: ${code}`, description: `Link do contrato ${code} copiado.` });
-  };
-
+...
   const handleDownloadPdf = async (contract: any) => {
-    if (!contract.contract_content) { toast.error("Conteúdo não disponível"); return; }
+    let tempPdfUrl: string | null = null;
 
-    if (contract.signature_status === "signed" && contract.document_hash) {
-      // Fetch signers and generate signed PDF with proof
-      const { data: sigs } = await supabase
-        .from("contract_signatures")
-        .select("*")
-        .eq("contract_id", contract.id)
-        .order("created_at", { ascending: true });
+    try {
+      if (contract.signature_status === "signed" && contract.document_hash) {
+        const { data: sigs, error: sigsError } = await supabase
+          .from("contract_signatures")
+          .select("*")
+          .eq("contract_id", contract.id)
+          .order("created_at", { ascending: true });
 
-      const signers = (sigs || []).map((s: any) => ({
-        name: s.signer_name || "—",
-        role: s.signer_role || "signatário",
-        email: null,
-        document: s.signer_document,
-        signed_at: s.signed_at,
-        ip: s.signer_ip,
-        signature_hash: s.signer_ip ? undefined : undefined, // hash generated at sign time
-      }));
+        if (sigsError) throw sigsError;
 
-      const validationUrl = `${window.location.origin}/validar-documento/${contract.validation_code || ""}`;
+        const signerSource = (sigs && sigs.length > 0)
+          ? sigs
+          : [{
+              signer_name: contract.signer_name,
+              signer_role: "signatário",
+              signer_document: contract.signer_document,
+              signed_at: contract.signed_at,
+              signer_ip: null,
+              signature_photo_url: contract.signature_photo_url,
+            }];
 
-      downloadSignedContractPdf({
-        pdfUrl: contract.pdf_url || "",
-        code: contract.code,
-        companyName: contract.company?.razao_social || lead.company_name,
-        documentHash: contract.document_hash || "",
-        validationCode: contract.validation_code || "",
-        signedAt: contract.signed_at || new Date().toISOString(),
-        signers,
-        validationUrl,
-      });
-    } else {
-      downloadContractPdf({ content: contract.contract_content, code: contract.code, companyName: contract.company?.razao_social || lead.company_name });
+        const signers = signerSource.map((s: any) => ({
+          id: s.id,
+          name: s.signer_name || "—",
+          role: s.signer_role || "signatário",
+          email: null,
+          document: s.signer_document,
+          signed_at: s.signed_at,
+          ip: s.signer_ip,
+          signature_photo_url: s.signature_photo_url,
+        }));
+
+        let pdfUrl = contract.pdf_url || "";
+        if (!pdfUrl) {
+          if (!contract.contract_content) {
+            toast.error("Conteúdo do contrato não disponível");
+            return;
+          }
+
+          const basePdfBlob = generateContractPdf({
+            content: contract.contract_content,
+            code: contract.code,
+            companyName: contract.company?.razao_social || lead.company_name,
+          });
+
+          tempPdfUrl = URL.createObjectURL(basePdfBlob);
+          pdfUrl = tempPdfUrl;
+        }
+
+        const validationUrl = `${window.location.origin}/validar-documento/${contract.validation_code || ""}`;
+
+        await downloadSignedContractPdf({
+          pdfUrl,
+          code: contract.code,
+          companyName: contract.company?.razao_social || lead.company_name,
+          documentHash: contract.document_hash || "",
+          validationCode: contract.validation_code || "",
+          signedAt: contract.signed_at || new Date().toISOString(),
+          signers,
+          validationUrl,
+        });
+      } else {
+        if (!contract.contract_content) {
+          toast.error("Conteúdo não disponível");
+          return;
+        }
+
+        downloadContractPdf({
+          content: contract.contract_content,
+          code: contract.code,
+          companyName: contract.company?.razao_social || lead.company_name,
+        });
+      }
+
+      addActivity({ type: "pdf_download", title: `PDF ${contract.code} baixado`, description: `Download do PDF do contrato ${contract.code}.` });
+    } catch (error: any) {
+      toast.error("Erro ao baixar o contrato assinado: " + (error?.message || "tente novamente"));
+    } finally {
+      if (tempPdfUrl) URL.revokeObjectURL(tempPdfUrl);
     }
-
-    addActivity({ type: "pdf_download", title: `PDF ${contract.code} baixado`, description: `Download do PDF do contrato ${contract.code}.` });
   };
 
   const pendingCount = contracts.filter((c) => c.signature_status === "pending").length;

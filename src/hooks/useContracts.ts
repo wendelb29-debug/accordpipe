@@ -47,6 +47,14 @@ export interface ContractRow {
   };
 }
 
+async function generateDocumentHash(data: string): Promise<string> {
+  const encoded = new TextEncoder().encode(data);
+  const digest = await crypto.subtle.digest("SHA-256", encoded);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 export function useContracts() {
   const [contracts, setContracts] = useState<ContractRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -307,6 +315,13 @@ ${company.responsavel || "[RESPONSÁVEL]"}`;
     signerDocument: string
   ) => {
     try {
+      const contract = contracts.find((item) => item.id === contractId);
+      const signedAt = new Date().toISOString();
+      const documentHash = await generateDocumentHash(
+        `${contractId}|${contract?.contract_content || ""}|${signerName}|${signerDocument}|${signedAt}`
+      );
+      const validationCode = crypto.randomUUID().replace(/-/g, "").slice(0, 16).toUpperCase();
+
       const fileName = `${contractId}_${Date.now()}.jpg`;
       const { error: uploadErr } = await supabase.storage
         .from("signatures")
@@ -319,34 +334,18 @@ ${company.responsavel || "[RESPONSÁVEL]"}`;
         .from("contracts")
         .update({
           signature_status: "signed",
-          signed_at: new Date().toISOString(),
+          signed_at: signedAt,
           signature_photo_url: urlData.publicUrl,
           signature_latitude: location.lat,
           signature_longitude: location.lng,
           signature_address: location.address,
           signer_name: signerName,
           signer_document: signerDocument,
+          document_hash: documentHash,
+          validation_code: validationCode,
         } as any)
         .eq("id", contractId);
       if (updateErr) throw updateErr;
-
-      const contract = contracts.find(c => c.id === contractId);
-      if (contract) {
-        const contractBlob = new Blob([contract.contract_content || ""], { type: "text/plain" });
-        const docPath = `contratos/${contract.code}_assinado_${Date.now()}.txt`;
-        await supabase.storage.from("documents").upload(docPath, contractBlob);
-        const { data: docUrl } = supabase.storage.from("documents").getPublicUrl(docPath);
-        await supabase.from("documents").insert({
-          name: `Contrato ${contract.code} - ${contract.company?.razao_social || "Assinado"}`,
-          file_path: docPath,
-          file_url: docUrl.publicUrl,
-          file_size: contractBlob.size,
-          file_type: "text/plain",
-          category: "contrato",
-          company_id: contract.company_id,
-          uploaded_by: user?.id,
-        });
-      }
 
       toast.success("Contrato assinado com sucesso!");
       await fetchContracts();
