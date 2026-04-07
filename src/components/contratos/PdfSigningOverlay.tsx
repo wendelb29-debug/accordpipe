@@ -184,8 +184,9 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
   const otherFields = pageFields.filter(f => f.signer_id !== currentSignerId);
   const pageTemplateFields = templateFields.filter(f => f.page === currentPage);
 
-  // Filter out template fields that are signature-type (handled by signing fields)
+  // Separate signature-type template fields from data fields
   const dataTemplateFields = pageTemplateFields.filter(f => f.field_type !== "assinatura");
+  const signatureTemplateFields = pageTemplateFields.filter(f => f.field_type === "assinatura");
 
   if (fields.length === 0 && templateFields.length === 0) {
     return (
