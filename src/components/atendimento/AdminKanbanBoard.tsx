@@ -1,7 +1,7 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import {
   Clock, MoreVertical, Trash2, Mail, PhoneCall, Loader2,
-  Users, ClipboardList, FileCheck, FileWarning, Sparkles
+  Users, ClipboardList, FileCheck, FileWarning, Sparkles, CalendarSearch
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
   const [draggedLead, setDraggedLead] = useState<CrmLead | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [detailLead, setDetailLead] = useState<CrmLead | null>(null);
+  const [showOldConcluidos, setShowOldConcluidos] = useState(false);
 
   const pipelineRef = useRef<HTMLDivElement>(null);
   const isDraggingScroll = useRef(false);
@@ -70,16 +71,26 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
     if (el) { el.style.cursor = 'grab'; el.style.userSelect = ''; }
   }, []);
 
-  const filteredLeads = leads.filter((l) => {
-    if (!searchTerm) return true;
-    const s = searchTerm.toLowerCase();
-    return (
-      l.company_name.toLowerCase().includes(s) ||
-      l.contact_name?.toLowerCase().includes(s) ||
-      l.phone?.includes(s) ||
-      l.email?.toLowerCase().includes(s)
-    );
-  });
+  const filteredLeads = useMemo(() => {
+    return leads.filter((l) => {
+      if (searchTerm) {
+        const s = searchTerm.toLowerCase();
+        if (
+          !l.company_name.toLowerCase().includes(s) &&
+          !l.contact_name?.toLowerCase().includes(s) &&
+          !l.phone?.includes(s) &&
+          !l.email?.toLowerCase().includes(s)
+        ) return false;
+      }
+      // Hide "cadastro-concluido" cards older than 24h unless filter is active
+      if (l.stage === "cadastro-concluido" && !showOldConcluidos) {
+        const enteredAt = new Date(l.stage_entered_at).getTime();
+        const now = Date.now();
+        if (now - enteredAt > 24 * 60 * 60 * 1000) return false;
+      }
+      return true;
+    });
+  }, [leads, searchTerm, showOldConcluidos]);
 
   const handleDrop = async (e: React.DragEvent, targetStage: string) => {
     e.preventDefault();
@@ -161,9 +172,20 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
                     </div>
                     <span className="font-semibold text-sm text-foreground">{stage.title}</span>
                     <span className={cn("text-xs font-bold rounded-full px-2.5 py-0.5 bg-card border border-border/50 shadow-sm", colors.text)}>
-                      {stage.count}
+                      {stageLeads.length}
                     </span>
                   </div>
+                  {stage.id === "cadastro-concluido" && (
+                    <Button
+                      variant={showOldConcluidos ? "default" : "ghost"}
+                      size="icon"
+                      className="h-6 w-6 rounded-lg"
+                      title={showOldConcluidos ? "Mostrar apenas últimas 24h" : "Mostrar todos (histórico)"}
+                      onClick={() => setShowOldConcluidos(!showOldConcluidos)}
+                    >
+                      <CalendarSearch className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                 </div>
               </div>
 
