@@ -148,13 +148,13 @@ export function ContractSignersManager({
   useEffect(() => {
     defaultSignersCreated.current = false;
     fetchSigners();
-  }, [fetchSigners]);
+  }, [contractId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!loading && signers.length === 0 && isPending && !defaultSignersCreated.current) {
       ensureDefaultSigners();
     }
-  }, [loading, signers.length, isPending, ensureDefaultSigners]);
+  }, [loading, signers.length, isPending]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Check if all required signed
   useEffect(() => {
@@ -205,11 +205,7 @@ export function ContractSignersManager({
     setAdding(false);
   };
 
-  const handleDeleteSigner = async (id: string, type: string) => {
-    if (type === "cliente" || type === "vendedor") {
-      toast.error("Não é possível remover o cliente ou vendedor");
-      return;
-    }
+  const handleDeleteSigner = async (id: string) => {
     const { error } = await supabase
       .from("client_contract_signers")
       .delete()
@@ -365,12 +361,12 @@ export function ContractSignersManager({
                           >
                             <MessageSquare className="h-3.5 w-3.5" />
                           </Button>
-                          {signer.signer_type !== "cliente" && signer.signer_type !== "vendedor" && isPending && (
+                          {isPending && (
                             <Button
                               variant="ghost"
                               size="icon"
                               className="h-7 w-7 text-destructive hover:text-destructive"
-                              onClick={() => handleDeleteSigner(signer.id, signer.signer_type)}
+                              onClick={() => handleDeleteSigner(signer.id)}
                               title="Remover"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
