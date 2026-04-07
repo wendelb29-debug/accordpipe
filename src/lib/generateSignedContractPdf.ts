@@ -280,13 +280,17 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
     proofPage.drawText(`${signer.name} (${signer.role})`, { x: 30, y, size: 10, font: fontBold, color: rgb(0, 0, 0) });
     y -= 12;
 
-    if (signer.email) {
-      proofPage.drawText(`E-mail: ${signer.email}`, { x: 30, y, size: 8, font, color: rgb(0.1, 0.1, 0.1) });
+    // CPF + Nascimento on same line
+    const cpfText = signer.document ? `CPF: ${formatCpf(signer.document)}` : "";
+    const birthText = signer.birth_date ? `Nascimento: ${formatBirthDate(signer.birth_date)}` : "";
+    if (cpfText || birthText) {
+      const combined = [cpfText, birthText].filter(Boolean).join(" | ");
+      proofPage.drawText(combined, { x: 30, y, size: 8, font, color: rgb(0.1, 0.1, 0.1) });
       y -= 10;
     }
 
-    if (signer.document) {
-      proofPage.drawText(`CPF: ${signer.document}`, { x: 30, y, size: 8, font, color: rgb(0.1, 0.1, 0.1) });
+    if (signer.email) {
+      proofPage.drawText(`E-mail: ${signer.email}`, { x: 30, y, size: 8, font, color: rgb(0.1, 0.1, 0.1) });
       y -= 10;
     }
 
