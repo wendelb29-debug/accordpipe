@@ -28,16 +28,15 @@ interface LeadDoc {
 
 interface SignedContract {
   id: string;
-  client_name: string;
-  contract_status: string;
+  code: string;
+  signature_status: string;
   signed_at: string | null;
   validation_code: string | null;
   document_hash: string | null;
-  plan_name: string | null;
+  pdf_url: string | null;
   created_at: string;
   contract_content: string | null;
-  
-  servidor_id: string;
+  company_id: string;
   signer_name: string | null;
   signer_document: string | null;
   signature_photo_url: string | null;
