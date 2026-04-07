@@ -1414,7 +1414,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
           </div>
         </div>
 
-        {!generatedContractLink ? (
+        {!generatedContractLink && (
           <div className="flex justify-end gap-2">
             <Button size="sm" variant="outline" className="text-xs gap-1.5" onClick={() => { setContractPreview(null); setContractPreviewProposal(null); setTemplatePdfUrl(null); setTemplateFields([]); }}>
               <Edit className="h-3.5 w-3.5" /> Editar dados
@@ -1423,43 +1423,6 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
               {sendingToSign ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileSignature className="h-3.5 w-3.5" />}
               Confirmar contrato
             </Button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
-              <p className="text-xs font-semibold text-foreground mb-1">✅ Contrato gerado com sucesso!</p>
-              <p className="text-xs text-muted-foreground mb-2">Status: Contrato enviado para assinatura</p>
-              <div className="flex items-center gap-2 p-2 rounded bg-muted text-xs font-mono break-all">
-                {generatedContractLink}
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" className="text-xs gap-1.5 flex-1" onClick={handleCopySignatureLink}>
-                <Copy className="h-3.5 w-3.5" /> Copiar link
-              </Button>
-              <Button size="sm" className="text-xs gap-1.5 flex-1 bg-green-600 hover:bg-green-700 text-white" onClick={handleSendWhatsApp}>
-                <MessageSquare className="h-3.5 w-3.5" /> Enviar via WhatsApp
-              </Button>
-            </div>
-            <Button size="sm" variant="outline" className="text-xs gap-1.5 w-full" onClick={() => {
-              if (contractPreview && contractPreview !== "__template__") {
-                downloadContractPdf({ content: contractPreview, code: "Contrato", companyName: lead.company_name });
-              }
-            }}>
-              <Download className="h-3.5 w-3.5" /> Baixar contrato em PDF
-            </Button>
-
-            {/* Signers Manager */}
-            {generatedContractId && (
-              <div className="border-t border-border pt-4">
-                <ContractSignersManager
-                  contractId={generatedContractId}
-                  contractStatus="pendente"
-                  clientName={registrationData?.nome_completo || lead.contact_name || lead.company_name}
-                  clientCpf={registrationData?.cpf}
-                />
-              </div>
-            )}
           </div>
         )}
       </div>
