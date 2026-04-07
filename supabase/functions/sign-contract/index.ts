@@ -187,11 +187,11 @@ async function buildSignedPdfBytes(data: {
   const PDF_SCALE = 1.2;
   if (positions.length === 0 && signedSigners.length > 0) {
     const lastPage = pages.length;
-    const stampW = 220;
-    const stampH = 60;
-    const gap = 10;
-    const startY = 140;
+    const stampW = 280;
+    const stampH = 90;
+    const gap = 12;
     const { height: lastPageHeight } = pages[lastPage - 1].getSize();
+    const startY = lastPageHeight - 120;
     positions = signedSigners.map((_, idx) => ({
       page: lastPage,
       x: 40 * PDF_SCALE,
@@ -234,7 +234,7 @@ async function buildSignedPdfBytes(data: {
       borderWidth: 0.5,
     });
 
-    let textOffsetX = 3;
+    let textOffsetX = 5;
     const photoData = signerIndex >= 0 ? signerPhotos[signerIndex] : null;
     if (photoData) {
       try {
@@ -245,37 +245,36 @@ async function buildSignedPdfBytes(data: {
           image = await pdfDoc.embedPng(photoData);
         }
 
-        const photoW = Math.min(stampW * 0.3, stampH - 4);
-        const photoH = stampH - 4;
+        const photoSize = Math.min(stampH - 6, 70);
         page.drawImage(image, {
-          x: pdfX + 2,
-          y: pdfY + 2,
-          width: photoW,
-          height: photoH,
+          x: pdfX + 3,
+          y: pdfY + (stampH - photoSize) / 2,
+          width: photoSize,
+          height: photoSize,
         });
-        textOffsetX = photoW + 5;
+        textOffsetX = photoSize + 8;
       } catch {
         // ignore invalid image payloads
       }
     }
 
     const textX = pdfX + textOffsetX;
-    const lineH = 3.5;
-    let ty = pdfY + stampH - 5;
+    const lineH = 10;
+    let ty = pdfY + stampH - 12;
 
     page.drawText("Assinado Digitalmente", {
       x: textX,
       y: ty,
-      size: 7,
+      size: 8,
       font: fontBold,
       color: rgb(0.12, 0.25, 0.69),
     });
-    ty -= lineH + 1;
+    ty -= lineH;
 
     page.drawText(`Nome: ${signer.name}`, {
       x: textX,
       y: ty,
-      size: 6,
+      size: 7,
       font,
       color: rgb(0, 0, 0),
     });
@@ -285,7 +284,7 @@ async function buildSignedPdfBytes(data: {
       page.drawText(`CPF/CNPJ: ${signer.document}`, {
         x: textX,
         y: ty,
-        size: 6,
+        size: 7,
         font,
         color: rgb(0.2, 0.2, 0.2),
       });
@@ -296,7 +295,7 @@ async function buildSignedPdfBytes(data: {
     page.drawText(`Data: ${signedDateText}`, {
       x: textX,
       y: ty,
-      size: 6,
+      size: 7,
       font,
       color: rgb(0.2, 0.2, 0.2),
     });
@@ -306,7 +305,7 @@ async function buildSignedPdfBytes(data: {
       page.drawText(`IP: ${signer.ip}`, {
         x: textX,
         y: ty,
-        size: 5,
+        size: 6,
         font,
         color: rgb(0.5, 0.5, 0.5),
       });
@@ -396,36 +395,49 @@ async function buildSignedPdfBytes(data: {
   y -= 14;
 
   for (const signer of data.signers) {
-    proofPage.drawRectangle({
-      x: 25,
-      y: y - 35,
-      width: pw - 50,
-      height: 45,
-      color: rgb(0.98, 0.98, 1),
-      borderColor: rgb(0.8, 0.8, 0.8),
-      borderWidth: 0.5,
-    });
+    if (y < 100) {
+      const newPage = pdfDoc.addPage();
+      y = newPage.getSize().height - 40;
+    }
 
     proofPage.drawText(`${signer.name} (${signer.role})`, { x: 30, y, size: 10, font: fontBold, color: rgb(0, 0, 0) });
-    y -= 10;
+    y -= 12;
+
     if (signer.email) {
-      proofPage.drawText(`E-mail: ${signer.email}`, { x: 30, y, size: 8, font, color: rgb(0.2, 0.2, 0.2) });
-      y -= 9;
+      proofPage.drawText(`E-mail: ${signer.email}`, { x: 30, y, size: 8, font, color: rgb(0.1, 0.1, 0.1) });
+      y -= 10;
     }
+
     if (signer.document) {
-      proofPage.drawText(`CPF/CNPJ: ${signer.document}`, { x: 30, y, size: 8, font, color: rgb(0.2, 0.2, 0.2) });
-      y -= 9;
+      proofPage.drawText(`CPF: ${signer.document}`, { x: 30, y, size: 8, font, color: rgb(0.1, 0.1, 0.1) });
+      y -= 10;
     }
+
     if (signer.signed_at) {
       const signerSignedAt = new Date(signer.signed_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-      proofPage.drawText(`Assinou em: ${signerSignedAt}`, { x: 30, y, size: 8, font, color: rgb(0.2, 0.2, 0.2) });
-      y -= 9;
+      proofPage.drawText(`Assinou em: ${signerSignedAt}`, { x: 30, y, size: 8, font, color: rgb(0.1, 0.1, 0.1) });
+      y -= 10;
     }
+
     if (signer.ip) {
-      proofPage.drawText(`IP: ${signer.ip}`, { x: 30, y, size: 7, font, color: rgb(0.4, 0.4, 0.4) });
-      y -= 9;
+      proofPage.drawText(`IP: ${signer.ip}`, { x: 30, y, size: 8, font, color: rgb(0.1, 0.1, 0.1) });
+      y -= 10;
     }
-    proofPage.drawText(`Emitido por ${data.companyName}`, { x: 30, y, size: 7, font, color: rgb(0.5, 0.5, 0.5) });
+
+    if (data.documentHash) {
+      proofPage.drawText(`Hash da assinatura: ${data.documentHash}`, { x: 30, y, size: 7, font, color: rgb(0.3, 0.3, 0.3) });
+      y -= 10;
+    }
+
+    proofPage.drawText(`Emitido por ${data.companyName}.`, { x: 30, y, size: 7, font, color: rgb(0.3, 0.3, 0.3) });
+    y -= 8;
+
+    proofPage.drawLine({
+      start: { x: 25, y },
+      end: { x: pw - 25, y },
+      thickness: 0.5,
+      color: rgb(0.8, 0.8, 0.8),
+    });
     y -= 16;
   }
 
@@ -507,6 +519,94 @@ async function persistSignedPdfForPdfContract(
     url: cacheBustedUrl,
     path: signedPath,
   };
+}
+
+async function persistSignedPdfForContract(
+  supabase: ReturnType<typeof createClient>,
+  contractId: string,
+  origin: string,
+) {
+  const { data: contractData, error: contractError } = await supabase
+    .from("contracts")
+    .select("id, code, pdf_url, company_id, contract_content, document_hash, validation_code, signed_at, signer_name, signer_document, signature_photo_url")
+    .eq("id", contractId)
+    .single();
+
+  if (contractError || !contractData) throw contractError || new Error("Contract not found");
+
+  const { data: signers } = await supabase
+    .from("contract_signatures")
+    .select("id, signer_name, signer_role, signer_document, signed_at, signer_ip, signature_photo_url")
+    .eq("contract_id", contractId);
+
+  const signerList: SignedSignerData[] = (signers && signers.length > 0)
+    ? signers.filter((s: any) => s.signed_at).map((s: any) => ({
+        id: s.id,
+        name: s.signer_name || "—",
+        role: s.signer_role || "signatário",
+        document: s.signer_document,
+        signed_at: s.signed_at,
+        ip: s.signer_ip,
+        signature_photo_url: s.signature_photo_url,
+      }))
+    : contractData.signature_photo_url
+      ? [{
+          name: contractData.signer_name || "—",
+          role: "signatário",
+          document: contractData.signer_document,
+          signed_at: contractData.signed_at,
+          ip: null,
+          signature_photo_url: contractData.signature_photo_url,
+        }]
+      : [];
+
+  if (signerList.length === 0) return null;
+
+  const { data: company } = await supabase
+    .from("companies")
+    .select("nome_fantasia, razao_social")
+    .eq("id", contractData.company_id)
+    .maybeSingle();
+
+  const companyName = company?.nome_fantasia || company?.razao_social || "Empresa";
+
+  const signaturePositions = await resolveSignaturePositions(supabase, contractId, contractData.company_id);
+
+  const pdfUrl = contractData.pdf_url;
+  if (!pdfUrl) throw new Error("No PDF URL for contract");
+
+  const pdfBytes = await buildSignedPdfBytes({
+    pdfUrl,
+    code: contractData.code,
+    companyName,
+    documentHash: contractData.document_hash || "",
+    validationCode: contractData.validation_code || "",
+    signedAt: contractData.signed_at || new Date().toISOString(),
+    signers: signerList,
+    validationUrl: `${origin}/validar-documento/${contractData.validation_code || ""}`,
+    signaturePositions,
+  });
+
+  const signedPath = `contracts/${contractId}/contrato_assinado_${Date.now()}.pdf`;
+  await supabase.storage.from("contract-pdfs").remove([signedPath]);
+  const { error: uploadError } = await supabase.storage
+    .from("contract-pdfs")
+    .upload(signedPath, pdfBytes, { contentType: "application/pdf", upsert: true });
+
+  if (uploadError) throw uploadError;
+
+  const signedPublicUrl = buildSignedPdfPublicUrl(signedPath);
+  const cacheBustedUrl = `${signedPublicUrl}?v=${Date.now()}`;
+
+  await supabase
+    .from("contracts")
+    .update({
+      pdf_assinado_url: cacheBustedUrl,
+      pdf_assinado_path: signedPath,
+    } as any)
+    .eq("id", contractId);
+
+  return { url: cacheBustedUrl, path: signedPath };
 }
 
 Deno.serve(async (req) => {
@@ -636,6 +736,13 @@ Deno.serve(async (req) => {
             validation_code: validationCode,
           })
           .eq("id", contractId);
+
+        // Generate and persist the final signed PDF
+        try {
+          await persistSignedPdfForContract(supabase, contractId, origin);
+        } catch (pdfErr) {
+          console.error("Failed to persist signed PDF for contract:", pdfErr);
+        }
       }
 
       return new Response(
