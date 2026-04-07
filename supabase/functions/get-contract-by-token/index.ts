@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
       const { data, error } = await supabase
         .from("contracts")
         .select(
-          "id, code, contract_content, signature_status, signed_at, companies(razao_social, nome_fantasia, cnpj, responsavel, endereco, numero, complemento, bairro, cidade, estado, cep, email, telefone)"
+          "id, code, contract_content, pdf_url, signature_status, signed_at, companies(razao_social, nome_fantasia, cnpj, responsavel, endereco, numero, complemento, bairro, cidade, estado, cep, email, telefone)"
         )
         .eq("id", sigData.contract_id)
         .maybeSingle();
@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
           const { data: contract } = await supabase
             .from("contracts")
             .select(
-              "id, code, contract_content, signature_status, signed_at, companies(razao_social, nome_fantasia, cnpj, responsavel, endereco, numero, complemento, bairro, cidade, estado, cep, email, telefone)"
+              "id, code, contract_content, pdf_url, signature_status, signed_at, companies(razao_social, nome_fantasia, cnpj, responsavel, endereco, numero, complemento, bairro, cidade, estado, cep, email, telefone)"
             )
             .eq("id", ccSigner.contract_id)
             .maybeSingle();
@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
       const { data, error } = await supabase
         .from("contracts")
         .select(
-          "id, code, contract_content, signature_status, signing_token, signed_at, signature_photo_url, companies(razao_social, nome_fantasia, cnpj, responsavel, endereco, numero, complemento, bairro, cidade, estado, cep, email, telefone)"
+          "id, code, contract_content, pdf_url, signature_status, signing_token, signed_at, signature_photo_url, companies(razao_social, nome_fantasia, cnpj, responsavel, endereco, numero, complemento, bairro, cidade, estado, cep, email, telefone)"
         )
         .eq("signing_token", token)
         .maybeSingle();
