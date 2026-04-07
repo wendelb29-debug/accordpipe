@@ -34,6 +34,7 @@ interface SignedContract {
   validation_code: string | null;
   document_hash: string | null;
   pdf_url: string | null;
+  pdf_assinado_url: string | null;
   created_at: string;
   contract_content: string | null;
   company_id: string;
