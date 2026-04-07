@@ -36,9 +36,12 @@ export default function AssinarPdf() {
   const [location, setLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
   const [locationLoading, setLocationLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownStartedRef = useRef(false);
+  const photoPreviewUrlRef = useRef<string | null>(null);
   const [signedFieldIds, setSignedFieldIds] = useState<string[]>([]);
   const [selectedField, setSelectedField] = useState<any>(null);
   const [pdfZoom, setPdfZoom] = useState(100);
@@ -140,51 +143,145 @@ export default function AssinarPdf() {
     );
   }, []);
 
-  const capturePhoto = useCallback(() => {
-    if (!videoRef.current) return;
-    const canvas = document.createElement("canvas");
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    canvas.getContext("2d")?.drawImage(videoRef.current, 0, 0);
-    canvas.toBlob((blob) => {
-      if (blob) {
-        setPhoto(blob);
-        setPhotoPreview(URL.createObjectURL(blob));
-      }
-    }, "image/jpeg", 0.8);
-    const stream = videoRef.current.srcObject as MediaStream;
-    stream?.getTracks().forEach(t => t.stop());
+  const revokePhotoPreview = useCallback(() => {
+    if (photoPreviewUrlRef.current) {
+      URL.revokeObjectURL(photoPreviewUrlRef.current);
+      photoPreviewUrlRef.current = null;
+    }
+  }, []);
+
+  const resetCapturedPhoto = useCallback(() => {
+    revokePhotoPreview();
+    setPhoto(null);
+    setPhotoPreview(null);
+  }, [revokePhotoPreview]);
+
+  const stopCamera = useCallback(() => {
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
+
+    countdownStartedRef.current = false;
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+
     setCameraActive(false);
     setCountdown(null);
   }, []);
 
+  const capturePhoto = useCallback(() => {
+    const video = videoRef.current;
+
+    if (!video || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+      setError("A câmera ainda está carregando. Tente novamente.");
+      stopCamera();
+      return;
+    }
+
+    const width = video.videoWidth || 640;
+    const height = video.videoHeight || 480;
+
+    if (!width || !height) {
+      setError("Não foi possível capturar a foto. Tente novamente.");
+      stopCamera();
+      return;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext("2d")?.drawImage(video, 0, 0, width, height);
+
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        setError("Falha ao gerar a foto. Tente novamente.");
+        stopCamera();
+        return;
+      }
+
+      revokePhotoPreview();
+      const previewUrl = URL.createObjectURL(blob);
+      photoPreviewUrlRef.current = previewUrl;
+      setPhoto(blob);
+      setPhotoPreview(previewUrl);
+      stopCamera();
+    }, "image/jpeg", 0.85);
+  }, [revokePhotoPreview, stopCamera]);
+
+  const beginCountdown = useCallback(() => {
+    if (countdownStartedRef.current) return;
+
+    countdownStartedRef.current = true;
+    let count = 6;
+    setCountdown(count);
+
+    countdownRef.current = setInterval(() => {
+      count -= 1;
+
+      if (count <= 0) {
+        if (countdownRef.current) {
+          clearInterval(countdownRef.current);
+          countdownRef.current = null;
+        }
+
+        setCountdown(null);
+        window.setTimeout(capturePhoto, 150);
+        return;
+      }
+
+      setCountdown(count);
+    }, 1000);
+  }, [capturePhoto]);
+
   const startCamera = async () => {
     try {
+      stopCamera();
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        setCameraActive(true);
-        let count = 6;
-        setCountdown(count);
-        countdownRef.current = setInterval(() => {
-          count--;
-          if (count <= 0) {
-            clearInterval(countdownRef.current!);
-            setCountdown(null);
-            setTimeout(() => capturePhoto(), 100);
-          } else {
-            setCountdown(count);
-          }
-        }, 1000);
-      }
+      streamRef.current = stream;
+      setError(null);
+      setCameraActive(true);
     } catch {
       setError("Não foi possível acessar a câmera.");
     }
   };
 
   useEffect(() => {
-    return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
-  }, []);
+    if (!cameraActive || !streamRef.current || !videoRef.current) return;
+
+    const video = videoRef.current;
+    let cancelled = false;
+
+    const handleVideoReady = () => {
+      void video.play().catch(() => undefined).finally(() => {
+        if (!cancelled) beginCountdown();
+      });
+    };
+
+    video.srcObject = streamRef.current;
+
+    if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
+      handleVideoReady();
+    } else {
+      video.addEventListener("loadedmetadata", handleVideoReady, { once: true });
+    }
+
+    return () => {
+      cancelled = true;
+      video.removeEventListener("loadedmetadata", handleVideoReady);
+    };
+  }, [cameraActive, beginCountdown]);
+
+  useEffect(() => {
+    return () => {
+      stopCamera();
+      revokePhotoPreview();
+    };
+  }, [revokePhotoPreview, stopCamera]);
 
   const getClientIp = async (): Promise<string> => {
     try {
@@ -503,7 +600,7 @@ export default function AssinarPdf() {
               <p className="text-sm text-[hsl(152,55%,40%)] font-medium">Foto capturada</p>
               <button
                 className="text-xs text-primary hover:underline"
-                onClick={() => { setPhoto(null); setPhotoPreview(null); }}
+                    onClick={() => { resetCapturedPhoto(); startCamera(); }}
               >
                 Tirar outra
               </button>
