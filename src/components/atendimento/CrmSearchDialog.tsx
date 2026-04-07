@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Building2, Users, Mail, PhoneCall, X, AlertTriangle } from "lucide-react";
+import { Search, Building2, Users, Mail, PhoneCall, X, AlertTriangle, Lock } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ALL_STAGES } from "@/hooks/useCrmLeads";
 import type { CrmLead } from "@/hooks/useCrmLeads";
+import { toast } from "sonner";
 
 interface CrmSearchDialogProps {
   open: boolean;
@@ -17,10 +18,12 @@ interface CrmSearchDialogProps {
 }
 
 export function CrmSearchDialog({ open, onOpenChange, onSelectLead }: CrmSearchDialogProps) {
-  const { profile } = useAuth();
+  const { profile, role } = useAuth();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<CrmLead[]>([]);
   const [searching, setSearching] = useState(false);
+
+  const canAccessAnyLead = role === "admin" || role === "ceo" || profile?.is_master;
 
   useEffect(() => {
     if (!open) {
@@ -59,6 +62,19 @@ export function CrmSearchDialog({ open, onOpenChange, onSelectLead }: CrmSearchD
 
   const formatCurrency = (v: number) =>
     v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  const handleSelectLead = (lead: CrmLead) => {
+    const isOwnLead = lead.created_by_user_id === profile?.user_id;
+    const isUnassigned = !lead.created_by_user_id;
+
+    if (!canAccessAnyLead && !isOwnLead && !isUnassigned) {
+      toast.error("Você não tem permissão para acessar este card. Apenas Admin, CEO ou Master podem acessar cards de outros usuários.");
+      return;
+    }
+
+    onSelectLead(lead);
+    onOpenChange(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -106,19 +122,22 @@ export function CrmSearchDialog({ open, onOpenChange, onSelectLead }: CrmSearchD
             {results.map((lead) => {
               const stage = getStageInfo(lead.stage);
               const isLost = lead.lead_status === "lost";
+              const isOwnLead = lead.created_by_user_id === profile?.user_id;
+              const isUnassigned = !lead.created_by_user_id;
+              const isBlocked = !canAccessAnyLead && !isOwnLead && !isUnassigned;
 
               return (
                 <button
                   key={lead.id}
-                  onClick={() => {
-                    onSelectLead(lead);
-                    onOpenChange(false);
-                  }}
+                  onClick={() => handleSelectLead(lead)}
                   className={cn(
-                    "w-full text-left rounded-lg p-2.5 hover:bg-muted/80 transition-colors border",
+                    "w-full text-left rounded-lg p-2.5 transition-colors border",
                     isLost
                       ? "border-red-200 bg-red-50/50 dark:border-red-900/50 dark:bg-red-950/20"
-                      : "border-transparent"
+                      : "border-transparent",
+                    isBlocked
+                      ? "opacity-60 cursor-not-allowed"
+                      : "hover:bg-muted/80"
                   )}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -126,12 +145,18 @@ export function CrmSearchDialog({ open, onOpenChange, onSelectLead }: CrmSearchD
                       <div className="flex items-center gap-1.5">
                         <Building2 className="h-3 w-3 text-muted-foreground shrink-0" />
                         <span className="text-xs font-semibold truncate">{lead.company_name}</span>
+                        {isBlocked && <Lock className="h-3 w-3 text-muted-foreground shrink-0" />}
                       </div>
                       {lead.contact_name && (
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <Users className="h-3 w-3 text-muted-foreground shrink-0" />
                           <span className="text-[11px] text-muted-foreground truncate">{lead.contact_name}</span>
                         </div>
+                      )}
+                      {lead.created_by_name && !isOwnLead && (
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          Responsável: {lead.created_by_name}
+                        </p>
                       )}
                       <div className="flex items-center gap-3 mt-0.5">
                         {lead.email && (
