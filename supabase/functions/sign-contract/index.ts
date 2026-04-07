@@ -886,6 +886,111 @@ Deno.serve(async (req) => {
           description: `Todas as assinaturas obrigatórias foram concluídas.\nHash: ${documentHash}\nCódigo: ${validationCode}`,
           created_by_name: "Sistema",
         });
+
+        // Archive signed contract PDF to lead_documents
+        try {
+          const { data: fullCC } = await supabase
+            .from("client_contracts")
+            .select("lead_id, servidor_id, client_name, plan_name, monthly_value")
+            .eq("id", contractId)
+            .single();
+
+          if (fullCC?.lead_id && fullCC?.servidor_id) {
+            const { data: allSignerDetails } = await supabase
+              .from("client_contract_signers")
+              .select("id, name, signer_type, signer_document, email, signed_at, signer_ip, signature_photo_url, sign_order")
+              .eq("contract_id", contractId)
+              .order("sign_order", { ascending: true });
+
+            const { data: template } = await supabase
+              .from("company_contract_templates")
+              .select("id, pdf_url")
+              .eq("company_id", fullCC.servidor_id)
+              .limit(1)
+              .maybeSingle();
+
+            const { data: company } = await supabase
+              .from("companies")
+              .select("nome_fantasia, razao_social")
+              .eq("id", fullCC.servidor_id)
+              .maybeSingle();
+
+            const companyName = company?.nome_fantasia || company?.razao_social || "Empresa";
+            const pdfSourceUrl = template?.pdf_url;
+
+            if (pdfSourceUrl) {
+              let sigPositions: SignaturePosition[] = [];
+              if (template?.id) {
+                const { data: templateFields } = await supabase
+                  .from("company_contract_template_fields")
+                  .select("page, pos_x, pos_y, width, height")
+                  .eq("template_id", template.id)
+                  .in("field_type", ["assinatura", "signature"]);
+
+                const SCALE = 1.2;
+                sigPositions = (templateFields || []).map((f: any) => ({
+                  page: f.page,
+                  x: f.pos_x * SCALE,
+                  y: f.pos_y * SCALE,
+                  width: f.width * SCALE,
+                  height: f.height * SCALE,
+                  signerId: null,
+                }));
+              }
+
+              const signedPdfBytes = await buildSignedPdfBytes({
+                pdfUrl: pdfSourceUrl,
+                code: `CC-${contractId.slice(0, 8).toUpperCase()}`,
+                companyName,
+                documentHash,
+                validationCode,
+                signedAt,
+                signers: (allSignerDetails || []).map((s: any) => ({
+                  id: s.id,
+                  name: s.name,
+                  role: s.signer_type || "signatário",
+                  email: s.email,
+                  document: s.signer_document,
+                  signed_at: s.signed_at,
+                  ip: s.signer_ip,
+                  signature_photo_url: s.signature_photo_url,
+                })),
+                validationUrl: `${origin}/validar-documento/${validationCode}`,
+                signaturePositions: sigPositions,
+              });
+
+              const clientName = (fullCC.client_name || "Lead").replace(/[^a-zA-Z0-9_-]/g, "_");
+              const dateStr = new Date().toISOString().slice(0, 10);
+              const archivePath = `lead-docs/${fullCC.lead_id}/contrato_assinado_${Date.now()}.pdf`;
+
+              await supabase.storage.from("contract-pdfs").upload(archivePath, signedPdfBytes, {
+                contentType: "application/pdf",
+                upsert: true,
+              });
+
+              const archiveUrl = buildSignedPdfPublicUrl(archivePath);
+
+              // Remove old versions to avoid duplicates
+              await supabase
+                .from("lead_documents")
+                .delete()
+                .eq("lead_id", fullCC.lead_id)
+                .eq("doc_type", "contrato_assinado");
+
+              await supabase.from("lead_documents").insert({
+                lead_id: fullCC.lead_id,
+                servidor_id: fullCC.servidor_id,
+                doc_type: "contrato_assinado",
+                file_name: `Contrato_Assinado_${clientName}_${dateStr}.pdf`,
+                file_url: archiveUrl,
+                file_path: archivePath,
+                uploaded_by_name: "Sistema",
+              });
+            }
+          }
+        } catch (archiveErr) {
+          console.error("Failed to archive signed contract to lead docs:", archiveErr);
+        }
       }
 
       await supabase.from("client_contract_history").insert({
