@@ -1,13 +1,418 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
-  FileSignature, Plus, Eye, Download, Copy, Camera, MapPin, User, X,
-  Clock, CheckCircle2, AlertCircle, Loader2, Search, UserPlus, Link2, Mail,
-  MoreVertical, MessageSquare,
+  FileSignature,
+  Plus,
+  Eye,
+  Download,
+  Copy,
+  Camera,
+  MapPin,
+  User,
+  X,
+  Clock,
+  CheckCircle2,
+  Loader2,
+  Search,
+  UserPlus,
+  Link2,
+  MoreVertical,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadContractPdf, generateContractPdf } from "@/lib/generateContractPdf";
 import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
-...
+import { useContracts } from "@/hooks/useContracts";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import type { CrmLead } from "@/hooks/useCrmLeads";
+import { toast } from "sonner";
+
+const roleLabels: Record<string, string> = {
+  matriz: "Matriz",
+  revendedor: "Revendedor",
+  colaborador: "Colaborador",
+  vendedor: "Vendedor",
+  testemunha: "Testemunha",
+  signatario: "Signatário",
+};
+
+interface ContractSigner {
+  id: string;
+  contract_id: string;
+  signer_role: string;
+  signing_token: string | null;
+  signed_at: string | null;
+  signer_name: string | null;
+  signer_document: string | null;
+  signature_photo_url: string | null;
+  signature_address: string | null;
+  signature_latitude: number | null;
+  signature_longitude: number | null;
+}
+
+interface LeadContratosTabProps {
+  lead: CrmLead;
+  addActivity: (data: any) => Promise<any>;
+}
+
+export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
+  const { profile } = useAuth();
+  const [contracts, setContracts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [signerCounts, setSignerCounts] = useState<Record<string, { signed: number; total: number }>>({});
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const [foro, setForo] = useState("");
+  const [signatureType, setSignatureType] = useState("govbr");
+  const [linkValidity, setLinkValidity] = useState("7");
+  const [generating, setGenerating] = useState(false);
+
+  const [viewContract, setViewContract] = useState<any | null>(null);
+  const [contractSigners, setContractSigners] = useState<ContractSigner[]>([]);
+  const [loadingSigners, setLoadingSigners] = useState(false);
+
+  const [addSignerOpen, setAddSignerOpen] = useState(false);
+  const [newSignerName, setNewSignerName] = useState("");
+  const [newSignerEmail, setNewSignerEmail] = useState("");
+  const [newSignerDocument, setNewSignerDocument] = useState("");
+  const [newSignerRole, setNewSignerRole] = useState("signatario");
+  const [addingNewSigner, setAddingNewSigner] = useState(false);
+
+  const [signContract, setSignContract] = useState<any | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [location, setLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
+  const [signing, setSigning] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  const { createContract: createContractFn, signContract: signContractFn } = useContracts();
+
+  const fetchContractSigners = async (contractId: string) => {
+    setLoadingSigners(true);
+    const { data, error } = await supabase
+      .from("contract_signatures")
+      .select("*")
+      .eq("contract_id", contractId)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      toast.error("Erro ao carregar signatários");
+    } else {
+      setContractSigners((data as ContractSigner[]) || []);
+    }
+
+    setLoadingSigners(false);
+  };
+
+  const handleViewContract = async (contract: any) => {
+    setViewContract(contract);
+    await fetchContractSigners(contract.id);
+  };
+
+  const ensureVendorSigner = async (contractId: string, signers: ContractSigner[]) => {
+    if (!profile?.name) return;
+
+    const hasVendor = signers.some((signer) => signer.signer_role === "vendedor");
+    if (hasVendor) return;
+
+    try {
+      const token = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+      await supabase.from("contract_signatures").insert({
+        contract_id: contractId,
+        signer_role: "vendedor",
+        signing_token: token,
+        signer_name: profile.name,
+        signer_document: null,
+      } as any);
+
+      await fetchContractSigners(contractId);
+    } catch {
+      // silent
+    }
+  };
+
+  useEffect(() => {
+    if (viewContract && !loadingSigners) {
+      ensureVendorSigner(viewContract.id, contractSigners);
+    }
+  }, [viewContract, contractSigners, loadingSigners, profile?.name]);
+
+  const handleAddSigner = async () => {
+    if (!viewContract || !newSignerName.trim()) {
+      toast.error("Preencha ao menos o nome do signatário");
+      return;
+    }
+
+    if (newSignerEmail.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(newSignerEmail.trim())) {
+        toast.error("E-mail inválido");
+        return;
+      }
+    }
+
+    setAddingNewSigner(true);
+
+    try {
+      const token = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+      const { error } = await supabase.from("contract_signatures").insert({
+        contract_id: viewContract.id,
+        signer_role: newSignerRole,
+        signing_token: token,
+        signer_name: newSignerName.trim(),
+        signer_document: newSignerDocument.trim() || null,
+      } as any);
+
+      if (error) throw error;
+
+      toast.success("Signatário adicionado com sucesso!");
+      setNewSignerName("");
+      setNewSignerEmail("");
+      setNewSignerDocument("");
+      setNewSignerRole("signatario");
+      setAddSignerOpen(false);
+      await fetchContractSigners(viewContract.id);
+    } catch (err: any) {
+      toast.error("Erro ao adicionar signatário: " + (err.message || ""));
+    }
+
+    setAddingNewSigner(false);
+  };
+
+  const getSigningLink = (token: string | null) => {
+    if (!token) return "";
+    return `${window.location.origin}/assinar/${token}`;
+  };
+
+  const handleCopySignerLink = (token: string | null, name: string | null) => {
+    if (!token) return;
+    navigator.clipboard.writeText(getSigningLink(token));
+    toast.success(`Link de assinatura copiado para ${name || "signatário"}!`);
+  };
+
+  const fetchContracts = async () => {
+    if (!lead.company_id) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("contracts")
+      .select("*, companies(razao_social, nome_fantasia, cnpj, responsavel, endereco, numero, bairro, cidade, estado, cep)")
+      .eq("company_id", lead.company_id)
+      .order("created_at", { ascending: false });
+
+    if (!error) {
+      const contractList = (data || []).map((contract: any) => ({
+        ...contract,
+        company: contract.companies,
+      }));
+
+      setContracts(contractList);
+
+      const counts: Record<string, { signed: number; total: number }> = {};
+      for (const contract of contractList) {
+        const { data: signers } = await supabase
+          .from("contract_signatures")
+          .select("id, signed_at")
+          .eq("contract_id", contract.id);
+
+        const all = signers || [];
+        counts[contract.id] = {
+          total: all.length,
+          signed: all.filter((signer: any) => !!signer.signed_at).length,
+        };
+      }
+
+      setSignerCounts(counts);
+    }
+
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchContracts();
+  }, [lead.company_id]);
+
+  const filteredContracts = contracts.filter(
+    (contract) =>
+      contract.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (contract.company?.razao_social || "").toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const getLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocalização não suportada");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        let address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+          );
+          const geo = await res.json();
+          if (geo.display_name) address = geo.display_name;
+        } catch {
+          // keep coords
+        }
+
+        setLocation({ lat: latitude, lng: longitude, address });
+      },
+      () => toast.error("Permita o acesso à localização"),
+      { enableHighAccuracy: true }
+    );
+  }, []);
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
+      });
+
+      streamRef.current = stream;
+      if (videoRef.current) videoRef.current.srcObject = stream;
+      setCameraOpen(true);
+      getLocation();
+    } catch {
+      toast.error("Permita o acesso à câmera");
+    }
+  };
+
+  const stopCamera = () => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    setCameraOpen(false);
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    canvas.getContext("2d")?.drawImage(videoRef.current, 0, 0);
+
+    canvas.toBlob((blob) => {
+      if (blob) {
+        setPhotoBlob(blob);
+        setPhotoPreview(URL.createObjectURL(blob));
+        stopCamera();
+      }
+    }, "image/jpeg", 0.85);
+  };
+
+  const resetSigningState = () => {
+    stopCamera();
+    setPhotoBlob(null);
+    setPhotoPreview(null);
+    setLocation(null);
+    setSignContract(null);
+  };
+
+  const handleGenerate = async () => {
+    if (!lead.company_id) {
+      toast.error("Lead sem empresa vinculada");
+      return;
+    }
+
+    setGenerating(true);
+    const result = await createContractFn(
+      lead.company_id,
+      foro,
+      "Save Car Brasil Tecnologia e Serviços Ltda",
+      signatureType,
+      parseInt(linkValidity) || 7
+    );
+
+    if (result) {
+      downloadContractPdf(result);
+      await addActivity({
+        type: "signature",
+        title: "Contrato gerado",
+        description: `Novo contrato gerado para ${lead.company_name}`,
+      });
+      await fetchContracts();
+      setCreateOpen(false);
+      setForo("");
+    }
+
+    setGenerating(false);
+  };
+
+  const handleSign = async () => {
+    if (!signContract || !photoBlob || !location) {
+      toast.error("Tire a foto e permita a localização antes de assinar");
+      return;
+    }
+
+    setSigning(true);
+    const success = await signContractFn(
+      signContract.id,
+      photoBlob,
+      location,
+      signContract.company?.responsavel || "",
+      signContract.company?.cnpj || ""
+    );
+
+    if (success) {
+      await addActivity({
+        type: "signature",
+        title: `Contrato ${signContract.code} assinado`,
+        description: "Contrato assinado internamente.",
+      });
+      await fetchContracts();
+      resetSigningState();
+    }
+
+    setSigning(false);
+  };
+
+  const handleCopyLink = (link: string, code: string) => {
+    navigator.clipboard.writeText(link);
+    toast.success("Link copiado!");
+    addActivity({
+      type: "signature_link",
+      title: `Link copiado: ${code}`,
+      description: `Link do contrato ${code} copiado.`,
+    });
+  };
+
   const handleDownloadPdf = async (contract: any) => {
     let tempPdfUrl: string | null = null;
 
@@ -21,26 +426,28 @@ import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
 
         if (sigsError) throw sigsError;
 
-        const signerSource = (sigs && sigs.length > 0)
+        const signerSource = sigs && sigs.length > 0
           ? sigs
-          : [{
-              signer_name: contract.signer_name,
-              signer_role: "signatário",
-              signer_document: contract.signer_document,
-              signed_at: contract.signed_at,
-              signer_ip: null,
-              signature_photo_url: contract.signature_photo_url,
-            }];
+          : [
+              {
+                signer_name: contract.signer_name,
+                signer_role: "signatário",
+                signer_document: contract.signer_document,
+                signed_at: contract.signed_at,
+                signer_ip: null,
+                signature_photo_url: contract.signature_photo_url,
+              },
+            ];
 
-        const signers = signerSource.map((s: any) => ({
-          id: s.id,
-          name: s.signer_name || "—",
-          role: s.signer_role || "signatário",
+        const signers = signerSource.map((signer: any) => ({
+          id: signer.id,
+          name: signer.signer_name || "—",
+          role: signer.signer_role || "signatário",
           email: null,
-          document: s.signer_document,
-          signed_at: s.signed_at,
-          ip: s.signer_ip,
-          signature_photo_url: s.signature_photo_url,
+          document: signer.signer_document,
+          signed_at: signer.signed_at,
+          ip: signer.signer_ip,
+          signature_photo_url: signer.signature_photo_url,
         }));
 
         let pdfUrl = contract.pdf_url || "";
@@ -60,8 +467,6 @@ import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
           pdfUrl = tempPdfUrl;
         }
 
-        const validationUrl = `${window.location.origin}/validar-documento/${contract.validation_code || ""}`;
-
         await downloadSignedContractPdf({
           pdfUrl,
           code: contract.code,
@@ -70,7 +475,7 @@ import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
           validationCode: contract.validation_code || "",
           signedAt: contract.signed_at || new Date().toISOString(),
           signers,
-          validationUrl,
+          validationUrl: `${window.location.origin}/validar-documento/${contract.validation_code || ""}`,
         });
       } else {
         if (!contract.contract_content) {
@@ -85,7 +490,11 @@ import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
         });
       }
 
-      addActivity({ type: "pdf_download", title: `PDF ${contract.code} baixado`, description: `Download do PDF do contrato ${contract.code}.` });
+      await addActivity({
+        type: "pdf_download",
+        title: `PDF ${contract.code} baixado`,
+        description: `Download do PDF do contrato ${contract.code}.`,
+      });
     } catch (error: any) {
       toast.error("Erro ao baixar o contrato assinado: " + (error?.message || "tente novamente"));
     } finally {
@@ -93,11 +502,15 @@ import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
     }
   };
 
-  const pendingCount = contracts.filter((c) => c.signature_status === "pending").length;
-  const signedCount = contracts.filter((c) => c.signature_status === "signed").length;
+  const pendingCount = contracts.filter((contract) => contract.signature_status === "pending").length;
+  const signedCount = contracts.filter((contract) => contract.signature_status === "signed").length;
 
   if (loading) {
-    return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return (
+      <div className="flex justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   if (!lead.company_id) {
@@ -111,7 +524,6 @@ import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold flex items-center gap-1.5">
           <FileSignature className="h-4 w-4" /> Contratos
@@ -121,7 +533,6 @@ import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
         </Button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-lg border border-amber-300/30 bg-amber-50/50 dark:bg-amber-950/20 p-3 flex items-center gap-2">
           <Clock className="h-4 w-4 text-amber-600" />
@@ -139,15 +550,18 @@ import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
         </div>
       </div>
 
-      {/* Search */}
       {contracts.length > 3 && (
         <div className="relative">
           <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input className="h-8 text-xs pl-8" placeholder="Buscar contratos..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          <Input
+            className="h-8 text-xs pl-8"
+            placeholder="Buscar contratos..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
       )}
 
-      {/* Contracts table */}
       {contracts.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <FileSignature className="h-10 w-10 mx-auto mb-3 opacity-30" />
@@ -167,13 +581,12 @@ import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
               </tr>
             </thead>
             <tbody>
-              {filteredContracts.map((c) => {
-                const status = statusConfig[c.signature_status] || statusConfig.pending;
-                const StatusIcon = status.icon;
-                const counts = signerCounts[c.id] || { signed: 0, total: 0 };
+              {filteredContracts.map((contract) => {
+                const counts = signerCounts[contract.id] || { signed: 0, total: 0 };
                 const allSigned = counts.total > 0 && counts.signed === counts.total;
+
                 return (
-                  <tr key={c.id} className="border-b last:border-0 hover:bg-muted/30">
+                  <tr key={contract.id} className="border-b last:border-0 hover:bg-muted/30">
                     <td className="p-2.5">
                       {allSigned ? (
                         <CheckCircle2 className="h-5 w-5 text-green-500" />
@@ -184,19 +597,20 @@ import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
                     <td className="p-2.5">
                       <button
                         className="text-primary hover:underline text-left font-medium"
-                        onClick={() => handleViewContract(c)}
+                        onClick={() => handleViewContract(contract)}
                       >
-                        {c.code} — {c.company?.razao_social || lead.company_name}
+                        {contract.code} — {contract.company?.razao_social || lead.company_name}
                       </button>
                     </td>
                     <td className="p-2.5 text-muted-foreground">
-                      {new Date(c.created_at).toLocaleDateString("pt-BR")} {new Date(c.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                      {new Date(contract.created_at).toLocaleDateString("pt-BR")}{" "}
+                      {new Date(contract.created_at).toLocaleTimeString("pt-BR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </td>
                     <td className="p-2.5">
-                      <span className={cn(
-                        "font-semibold",
-                        allSigned ? "text-green-600" : "text-amber-600"
-                      )}>
+                      <span className={cn("font-semibold", allSigned ? "text-green-600" : "text-amber-600")}>
                         {counts.signed}/{counts.total}
                       </span>
                     </td>
@@ -208,19 +622,19 @@ import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleViewContract(c)}>
+                          <DropdownMenuItem onClick={() => handleViewContract(contract)}>
                             <Eye className="h-3.5 w-3.5 mr-2" /> Visualizar
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDownloadPdf(c)}>
+                          <DropdownMenuItem onClick={() => handleDownloadPdf(contract)}>
                             <Download className="h-3.5 w-3.5 mr-2" /> Baixar PDF
                           </DropdownMenuItem>
-                          {c.signature_link && (
-                            <DropdownMenuItem onClick={() => handleCopyLink(c.signature_link, c.code)}>
+                          {contract.signature_link && (
+                            <DropdownMenuItem onClick={() => handleCopyLink(contract.signature_link, contract.code)}>
                               <Copy className="h-3.5 w-3.5 mr-2" /> Copiar link
                             </DropdownMenuItem>
                           )}
-                          {c.signature_status === "pending" && (
-                            <DropdownMenuItem onClick={() => setSignContract(c)}>
+                          {contract.signature_status === "pending" && (
+                            <DropdownMenuItem onClick={() => setSignContract(contract)}>
                               <FileSignature className="h-3.5 w-3.5 mr-2" /> Assinar
                             </DropdownMenuItem>
                           )}
@@ -235,7 +649,6 @@ import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
         </div>
       )}
 
-      {/* Create Contract Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -254,7 +667,9 @@ import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
             <div className="grid gap-2">
               <Label className="text-xs">Tipo de Assinatura</Label>
               <Select value={signatureType} onValueChange={setSignatureType}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="govbr">Gov.br (Digital)</SelectItem>
                   <SelectItem value="manual">Manual Autenticada</SelectItem>
@@ -272,16 +687,21 @@ import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
         </DialogContent>
       </Dialog>
 
-      {/* View Contract Dialog */}
-      <Dialog open={!!viewContract} onOpenChange={(open) => { if (!open) { setViewContract(null); setContractSigners([]); } }}>
+      <Dialog open={!!viewContract} onOpenChange={(open) => {
+        if (!open) {
+          setViewContract(null);
+          setContractSigners([]);
+        }
+      }}>
         <DialogContent className="max-w-3xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Contrato {viewContract?.code}</DialogTitle>
           </DialogHeader>
           <ScrollArea className="max-h-[70vh]">
-            <pre className="whitespace-pre-wrap text-sm leading-relaxed font-sans p-4">{viewContract?.contract_content || "Conteúdo não disponível"}</pre>
+            <pre className="whitespace-pre-wrap text-sm leading-relaxed font-sans p-4">
+              {viewContract?.contract_content || "Conteúdo não disponível"}
+            </pre>
 
-            {/* Signers / Envolvidos Section */}
             <Separator className="my-4" />
             <div className="p-4 space-y-4">
               <div className="flex items-center justify-between">
@@ -296,7 +716,9 @@ import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
               </div>
 
               {loadingSigners ? (
-                <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+                <div className="flex justify-center py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
               ) : contractSigners.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">Nenhum signatário encontrado</p>
               ) : (
@@ -304,13 +726,15 @@ import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
                   {contractSigners.map((signer) => {
                     const isSigned = !!signer.signed_at;
                     const isVendor = signer.signer_role === "vendedor";
+
                     return (
-                      <Card key={signer.id} className={cn(
-                        "border-l-4 overflow-hidden",
-                        isSigned
-                          ? "border-l-green-500 bg-green-50 dark:bg-green-950/30"
-                          : "border-l-amber-400 bg-card"
-                      )}>
+                      <Card
+                        key={signer.id}
+                        className={cn(
+                          "border-l-4 overflow-hidden",
+                          isSigned ? "border-l-green-500 bg-green-50 dark:bg-green-950/30" : "border-l-amber-400 bg-card"
+                        )}
+                      >
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div className="space-y-1.5">
@@ -369,9 +793,8 @@ import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
                 </div>
               )}
 
-              {/* Cancel button */}
               {viewContract?.signature_status === "pending" && (
-                <Button variant="destructive" className="w-full gap-2" size="sm" onClick={() => { /* cancel logic if needed */ }}>
+                <Button variant="destructive" className="w-full gap-2" size="sm" onClick={() => undefined}>
                   <X className="h-4 w-4" /> Cancelar assinatura do documento
                 </Button>
               )}
@@ -380,7 +803,6 @@ import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
         </DialogContent>
       </Dialog>
 
-      {/* Add Signer Dialog */}
       <Dialog open={addSignerOpen} onOpenChange={setAddSignerOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -403,7 +825,9 @@ import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
             <div className="grid gap-2">
               <Label className="text-xs">Papel</Label>
               <Select value={newSignerRole} onValueChange={setNewSignerRole}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="signatario">Signatário</SelectItem>
                   <SelectItem value="testemunha">Testemunha</SelectItem>
@@ -423,8 +847,9 @@ import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
         </DialogContent>
       </Dialog>
 
-      {/* Sign Contract Dialog */}
-      <Dialog open={!!signContract} onOpenChange={(open) => { if (!open) resetSigningState(); }}>
+      <Dialog open={!!signContract} onOpenChange={(open) => {
+        if (!open) resetSigningState();
+      }}>
         <DialogContent className="max-w-lg max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Assinar {signContract?.code}</DialogTitle>
@@ -433,34 +858,60 @@ import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
           <ScrollArea className="max-h-[65vh]">
             <div className="space-y-4 p-1">
               <Card className="p-4 space-y-2">
-                <div className="flex items-center gap-2 text-sm font-semibold"><User className="h-4 w-4 text-primary" /> Responsável</div>
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <User className="h-4 w-4 text-primary" /> Responsável
+                </div>
                 <p className="text-sm text-muted-foreground">{signContract?.company?.responsavel || "-"}</p>
                 <p className="text-sm font-mono text-muted-foreground">{signContract?.company?.cnpj || "-"}</p>
               </Card>
+
               <Card className="p-4 space-y-2">
-                <div className="flex items-center gap-2 text-sm font-semibold"><MapPin className="h-4 w-4 text-primary" /> Localização</div>
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <MapPin className="h-4 w-4 text-primary" /> Localização
+                </div>
                 {location ? (
                   <div>
                     <p className="text-sm text-muted-foreground">{location.address}</p>
-                    <p className="text-xs font-mono text-muted-foreground">({location.lat.toFixed(6)}, {location.lng.toFixed(6)})</p>
+                    <p className="text-xs font-mono text-muted-foreground">
+                      ({location.lat.toFixed(6)}, {location.lng.toFixed(6)})
+                    </p>
                   </div>
-                ) : <p className="text-sm text-muted-foreground">Será capturada ao abrir a câmera</p>}
+                ) : (
+                  <p className="text-sm text-muted-foreground">Será capturada ao abrir a câmera</p>
+                )}
               </Card>
+
               <Card className="p-4 space-y-3">
-                <div className="flex items-center gap-2 text-sm font-semibold"><Camera className="h-4 w-4 text-primary" /> Foto</div>
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <Camera className="h-4 w-4 text-primary" /> Foto
+                </div>
                 {cameraOpen && (
                   <div className="space-y-3">
-                    <div className="rounded-lg overflow-hidden bg-muted"><video ref={videoRef} autoPlay playsInline muted className="w-full" /></div>
+                    <div className="rounded-lg overflow-hidden bg-muted">
+                      <video ref={videoRef} autoPlay playsInline muted className="w-full" />
+                    </div>
                     <div className="flex gap-2">
-                      <Button onClick={capturePhoto} className="flex-1 gap-2"><Camera className="h-4 w-4" /> Tirar Foto</Button>
-                      <Button variant="outline" size="icon" onClick={stopCamera}><X className="h-4 w-4" /></Button>
+                      <Button onClick={capturePhoto} className="flex-1 gap-2">
+                        <Camera className="h-4 w-4" /> Tirar Foto
+                      </Button>
+                      <Button variant="outline" size="icon" onClick={stopCamera}>
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 )}
                 {photoPreview && !cameraOpen && (
                   <div className="space-y-3">
                     <img src={photoPreview} alt="Foto" className="w-full max-w-xs mx-auto rounded-lg border" />
-                    <Button variant="outline" onClick={() => { setPhotoBlob(null); setPhotoPreview(null); startCamera(); }} className="w-full gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setPhotoBlob(null);
+                        setPhotoPreview(null);
+                        startCamera();
+                      }}
+                      className="w-full gap-2"
+                    >
                       <Camera className="h-4 w-4" /> Tirar Nova Foto
                     </Button>
                   </div>
