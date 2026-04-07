@@ -1721,7 +1721,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
                 <div className="space-y-2">
                   {contractSigners.map((signer: any) => {
                     const isSigned = !!signer.signed_at;
-                    const roleLabel: Record<string, string> = { vendedor: "Vendedor", testemunha: "Testemunha", signatario: "Signatário", matriz: "Matriz" };
+                    const roleLabel: Record<string, string> = { cliente: "Cliente", vendedor: "Vendedor", testemunha: "Testemunha", signatario: "Signatário", matriz: "Matriz" };
                     return (
                       <Card key={signer.id} className={cn("border-l-4", isSigned ? "border-l-green-500" : "border-l-amber-400")}>
                         <CardContent className="p-3">
