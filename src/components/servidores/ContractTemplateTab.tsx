@@ -314,8 +314,9 @@ export function ContractTemplateTab({ companyId }: Props) {
           <Input value={templateName} onChange={e => setTemplateName(e.target.value)} className="text-sm" />
         </div>
         <Badge variant="outline" className="shrink-0">{fields.length} campo(s)</Badge>
-        <Button variant="outline" size="sm" onClick={() => { setPdfUrl(null); setPdfPath(null); setFields([]); setTemplateId(null); }} className="gap-1 text-xs">
-          <Trash2 className="h-3.5 w-3.5" /> Trocar PDF
+        <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="gap-1 text-xs">
+          {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+          Trocar PDF
         </Button>
         <Button size="sm" onClick={saveFields} disabled={saving} className="gap-1 text-xs">
           {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
