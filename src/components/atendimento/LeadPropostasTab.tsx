@@ -263,28 +263,45 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     setLoadingSigners(false);
   }, []);
 
-  // Auto-add vendor signer if missing
-  const ensureVendorSigner = useCallback(async (contractId: string, signers: any[]) => {
+  // Auto-add mandatory signers (vendedor + cliente) if missing
+  const ensureDefaultSigners = useCallback(async (contractId: string, signers: any[]) => {
     if (!profile?.name) return;
-    if (signers.some((s: any) => s.signer_role === "vendedor")) return;
-    try {
-      const token = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
-      await supabase.from("contract_signatures").insert({
+    const inserts: any[] = [];
+
+    // Vendedor – pulls from logged-in user profile
+    if (!signers.some((s: any) => s.signer_role === "vendedor")) {
+      inserts.push({
         contract_id: contractId,
         signer_role: "vendedor",
-        signing_token: token,
+        signing_token: crypto.randomUUID().replace(/-/g, '').slice(0, 16),
         signer_name: profile.name,
-      } as any);
+        signer_document: null,
+      });
+    }
+
+    // Cliente – pulls from lead data
+    if (!signers.some((s: any) => s.signer_role === "cliente")) {
+      inserts.push({
+        contract_id: contractId,
+        signer_role: "cliente",
+        signing_token: crypto.randomUUID().replace(/-/g, '').slice(0, 16),
+        signer_name: lead.contact_name || lead.company_name || "Cliente",
+        signer_document: lead.documento || null,
+      });
+    }
+
+    if (inserts.length === 0) return;
+    try {
+      await supabase.from("contract_signatures").insert(inserts as any);
       await fetchContractSigners(contractId);
     } catch { /* silent */ }
-  }, [profile, fetchContractSigners]);
+  }, [profile, lead, fetchContractSigners]);
 
   // Fetch signers when saved contract loads + realtime subscription
   useEffect(() => {
     if (!savedContract?.id) return;
     fetchContractSigners(savedContract.id);
 
-    // Realtime subscription for live updates
     const channel = supabase
       .channel(`contract-signers-${savedContract.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'contract_signatures', filter: `contract_id=eq.${savedContract.id}` }, () => {
@@ -295,10 +312,10 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     return () => { supabase.removeChannel(channel); };
   }, [savedContract?.id, fetchContractSigners]);
 
-  // Ensure vendor after signers load
+  // Ensure default signers after signers load
   useEffect(() => {
     if (savedContract?.id && !loadingSigners && contractSigners.length >= 0) {
-      ensureVendorSigner(savedContract.id, contractSigners);
+      ensureDefaultSigners(savedContract.id, contractSigners);
     }
   }, [savedContract?.id, loadingSigners]);
 
