@@ -157,7 +157,116 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 2. Check client_contract_signers table (multi-signer for client_contracts)
+    // 2. Check pdf_contract_signers table (public PDF signing flow)
+    const { data: pdfSigner } = await supabase
+      .from("pdf_contract_signers")
+      .select("id, contract_id, name, cpf_cnpj, status, signed_at")
+      .eq("signing_token", token)
+      .maybeSingle();
+
+    if (pdfSigner) {
+      if (pdfSigner.signed_at || pdfSigner.status === "assinado") {
+        return new Response(
+          JSON.stringify({ error: "This signature has already been completed" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const contractId = pdfSigner.contract_id;
+      const fileName = `pdf_signer_${pdfSigner.id}_${Date.now()}.jpg`;
+      const arrayBuffer = await photo.arrayBuffer();
+      const { error: uploadErr } = await supabase.storage
+        .from("signatures")
+        .upload(fileName, arrayBuffer, { contentType: photo.type });
+
+      if (uploadErr) {
+        return new Response(
+          JSON.stringify({ error: "Failed to upload photo" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
+      const signatureHash = await generateHash(
+        `${contractId}|${signerName || pdfSigner.name || ""}|${signerDocument || pdfSigner.cpf_cnpj || ""}|${signedAt}|${clientIp}`
+      );
+
+      const { error: updateErr } = await supabase
+        .from("pdf_contract_signers")
+        .update({
+          status: "assinado",
+          signed_at: signedAt,
+          signature_photo_url: urlData.publicUrl,
+          signature_latitude: latitude,
+          signature_longitude: longitude,
+          signature_address: address,
+          signer_ip: clientIp,
+        })
+        .eq("id", pdfSigner.id);
+
+      if (updateErr) {
+        return new Response(
+          JSON.stringify({ error: "Failed to update signer" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      await supabase.from("pdf_contract_history").insert({
+        contract_id: contractId,
+        action: "assinado",
+        description: [
+          `Assinatura realizada por: ${signerName || pdfSigner.name || "—"}`,
+          signerDocument || pdfSigner.cpf_cnpj ? `Documento: ${signerDocument || pdfSigner.cpf_cnpj}` : null,
+          `Data: ${new Date(signedAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}`,
+          `IP: ${clientIp}`,
+          `Local: ${address || "—"}`,
+        ].filter(Boolean).join("\n"),
+        created_by_name: signerName || pdfSigner.name || "Agente Externo",
+      });
+
+      const { data: allSigners } = await supabase
+        .from("pdf_contract_signers")
+        .select("status")
+        .eq("contract_id", contractId);
+
+      const allSigned = allSigners && allSigners.every((s: any) => s.status === "assinado");
+
+      if (allSigned) {
+        const { data: contractData } = await supabase
+          .from("pdf_contracts")
+          .select("pdf_url, name")
+          .eq("id", contractId)
+          .single();
+
+        const documentHash = await generateHash(
+          `${contractId}|${contractData?.pdf_url || contractData?.name || ""}|${signedAt}`
+        );
+        const validationCode = crypto.randomUUID().replace(/-/g, "").slice(0, 16).toUpperCase();
+
+        await supabase
+          .from("pdf_contracts")
+          .update({
+            status: "assinado",
+            document_hash: documentHash,
+            validation_code: validationCode,
+          })
+          .eq("id", contractId);
+
+        await supabase.from("pdf_contract_history").insert({
+          contract_id: contractId,
+          action: "concluido",
+          description: `Todas as assinaturas foram coletadas. Hash: ${documentHash.slice(0, 16)}... Código: ${validationCode}`,
+          created_by_name: "Sistema",
+        });
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, signature_hash: signatureHash, photo_url: urlData.publicUrl }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 3. Check client_contract_signers table (multi-signer for client_contracts)
     const { data: ccSigner } = await supabase
       .from("client_contract_signers")
       .select("id, contract_id, signer_type, status, signed_at")
@@ -266,7 +375,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 3. Check client_contracts table (legacy single-signer)
+    // 4. Check client_contracts table (legacy single-signer)
     const { data: clientContract } = await supabase
       .from("client_contracts")
       .select("id, contract_status, client_name, client_cpf, plan_name, monthly_value, servidor_id")
@@ -347,7 +456,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 4. Legacy single-signer flow (contracts table)
+    // 5. Legacy single-signer flow (contracts table)
     const { data: contract, error: fetchErr } = await supabase
       .from("contracts")
       .select("id, signature_status, contract_content")

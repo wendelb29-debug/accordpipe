@@ -304,65 +304,31 @@ export default function AssinarPdf() {
     if (!signer || !photo || !location) return;
     setSigning(true);
     try {
-      const clientIp = await getClientIp();
-      const fileName = `pdf_${signer.id}_${Date.now()}.jpg`;
-      const { error: uploadErr } = await supabase.storage
-        .from("signatures")
-        .upload(fileName, photo, { contentType: "image/jpeg" });
-      if (uploadErr) throw uploadErr;
+      const formData = new FormData();
+      formData.append("token", token || "");
+      formData.append("photo", photo, "signature.jpg");
+      formData.append("latitude", location.lat.toString());
+      formData.append("longitude", location.lng.toString());
+      formData.append("address", location.address);
+      formData.append("signer_name", signer.name || "");
+      formData.append("signer_document", signer.cpf_cnpj || "");
 
-      const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/sign-contract`,
+        { method: "POST", body: formData }
+      );
 
-      const { error: updateErr } = await supabase
-        .from("pdf_contract_signers")
-        .update({
-          status: "assinado",
-          signed_at: new Date().toISOString(),
-          signature_photo_url: urlData.publicUrl,
-          signature_latitude: location.lat,
-          signature_longitude: location.lng,
-          signature_address: location.address,
-          signer_ip: clientIp,
-        } as any)
-        .eq("id", signer.id);
-      if (updateErr) throw updateErr;
+      const result = await response.json();
+      if (!response.ok || result.error) {
+        throw new Error(result.error || "Erro ao registrar assinatura");
+      }
 
       if (selectedField) {
         setSignedFieldIds(prev => [...prev, selectedField.id]);
         await supabase.from("pdf_contract_fields")
           .update({ value: "signed" } as any)
           .eq("id", selectedField.id);
-      }
-
-      await supabase.from("pdf_contract_history").insert({
-        contract_id: signer.contract_id,
-        action: "assinado",
-        description: `${signer.name} assinou o contrato em ${new Date().toLocaleString("pt-BR")}. Local: ${location.address}. IP: ${clientIp}`,
-      } as any);
-
-      const { data: updatedSigners } = await supabase
-        .from("pdf_contract_signers")
-        .select("status")
-        .eq("contract_id", signer.contract_id);
-
-      if (updatedSigners && updatedSigners.every((s: any) => s.status === "assinado")) {
-        const now = new Date().toISOString();
-        const hashInput = `${signer.contract_id}|${now}|pdf_contract`;
-        const encoder = new TextEncoder();
-        const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(hashInput));
-        const documentHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
-        const validationCode = crypto.randomUUID().replace(/-/g, "").slice(0, 16).toUpperCase();
-
-        await supabase
-          .from("pdf_contracts")
-          .update({ status: "assinado", document_hash: documentHash, validation_code: validationCode } as any)
-          .eq("id", signer.contract_id);
-
-        await supabase.from("pdf_contract_history").insert({
-          contract_id: signer.contract_id,
-          action: "concluido",
-          description: `Todas as assinaturas foram coletadas. Hash: ${documentHash.slice(0, 16)}... Código: ${validationCode}`,
-        } as any);
       }
 
       setSigned(true);
