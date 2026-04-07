@@ -252,13 +252,15 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     const loadSignerStats = async (contractId: string) => {
       const { data: signers } = await supabase
         .from("contract_signatures")
-        .select("signed_at")
+        .select("signed_at, signer_role")
         .eq("contract_id", contractId);
       if (signers) {
-        const signed = signers.filter(s => !!s.signed_at).length;
-        setSignatureStats({ signed, total: signers.length });
-        // Auto-update contract status when all signed
-        if (signed > 0 && signed === signers.length) {
+        const uniqueSigners = Array.from(
+          new Map(signers.map((signer) => [signer.signer_role || crypto.randomUUID(), signer])).values()
+        );
+        const signed = uniqueSigners.filter(s => !!s.signed_at).length;
+        setSignatureStats({ signed, total: uniqueSigners.length });
+        if (signed > 0 && signed === uniqueSigners.length) {
           await supabase.from("contracts").update({ signature_status: "signed" } as any).eq("id", contractId);
         }
       }

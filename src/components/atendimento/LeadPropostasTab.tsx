@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   ArrowLeft, Building2, User, Mail, PhoneCall, MapPin, Calendar,
   DollarSign, FileSpreadsheet, Plus, Loader2, Send, Download,
@@ -165,6 +165,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
   const [newSignerDoc, setNewSignerDoc] = useState("");
   const [newSignerRole, setNewSignerRole] = useState("testemunha");
   const [addingSigner, setAddingSigner] = useState(false);
+  const signerInitRef = useRef<string | null>(null);
 
   // Template PDF state
   const [templatePdfUrl, setTemplatePdfUrl] = useState<string | null>(null);
