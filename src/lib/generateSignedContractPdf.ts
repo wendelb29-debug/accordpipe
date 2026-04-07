@@ -115,18 +115,6 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
       // Stamp background
       const stampX = 30;
       const stampW = spW - 60;
-      const stampH = 100;
-
-      currentPage.drawRectangle({
-        x: stampX,
-        y: sy - stampH + 12,
-        width: stampW,
-        height: stampH,
-        color: rgb(0.96, 0.97, 1),
-        borderColor: rgb(0.12, 0.25, 0.69),
-        borderWidth: 0.5,
-      });
-
       // Calculate needed height based on fields
       let fieldCount = 3; // name, role, date are always shown
       if (signer.document || signer.birth_date) fieldCount++;
