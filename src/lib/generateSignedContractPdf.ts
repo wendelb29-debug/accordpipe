@@ -64,6 +64,27 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
   let y = mT;
   let signatureStampIndex = 0;
 
+  // Pre-load signature photos as base64 images
+  const signerPhotoImages: string[] = [];
+  for (const signer of data.signers) {
+    if (signer.signature_photo_url) {
+      try {
+        const resp = await fetch(signer.signature_photo_url);
+        const blob = await resp.blob();
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+        signerPhotoImages.push(base64);
+      } catch {
+        signerPhotoImages.push("");
+      }
+    } else {
+      signerPhotoImages.push("");
+    }
+  }
+
   // ── CONTRACT CONTENT ──
   const lines = data.content.split("\n");
   for (const line of lines) {
