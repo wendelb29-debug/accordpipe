@@ -283,6 +283,11 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
     proofPage.drawText(`${signer.name} (${signer.role})`, { x: 30, y, size: 10, font: fontBold, color: rgb(0, 0, 0) });
     y -= 12;
 
+    if (signer.company_name) {
+      proofPage.drawText(`Empresa: ${signer.company_name}`, { x: 30, y, size: 8, font, color: rgb(0.1, 0.1, 0.1) });
+      y -= 10;
+    }
+
     // CPF + Nascimento on same line
     const cpfText = signer.document ? `CPF: ${formatCpf(signer.document)}` : "";
     const birthText = signer.birth_date ? `Nascimento: ${formatBirthDate(signer.birth_date)}` : "";
