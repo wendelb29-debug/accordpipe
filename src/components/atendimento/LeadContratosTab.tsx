@@ -207,7 +207,21 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
       .select("*, companies(razao_social, nome_fantasia, cnpj, responsavel, endereco, numero, bairro, cidade, estado, cep)")
       .eq("company_id", lead.company_id)
       .order("created_at", { ascending: false });
-    if (!error) setContracts((data || []).map((c: any) => ({ ...c, company: c.companies })));
+    if (!error) {
+      const contractList = (data || []).map((c: any) => ({ ...c, company: c.companies }));
+      setContracts(contractList);
+      // Fetch signer counts for each contract
+      const counts: Record<string, { signed: number; total: number }> = {};
+      for (const c of contractList) {
+        const { data: signers } = await supabase
+          .from("contract_signatures")
+          .select("id, signed_at")
+          .eq("contract_id", c.id);
+        const all = signers || [];
+        counts[c.id] = { total: all.length, signed: all.filter((s: any) => !!s.signed_at).length };
+      }
+      setSignerCounts(counts);
+    }
     setLoading(false);
   };
 
