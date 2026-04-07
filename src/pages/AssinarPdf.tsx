@@ -404,16 +404,46 @@ export default function AssinarPdf() {
           signature_photo_url: s.signature_photo_url,
         }));
 
+        // Load signature field positions
+        const { data: sigFields } = await supabase
+          .from("pdf_contract_fields")
+          .select("page, pos_x, pos_y, width, height")
+          .eq("contract_id", contract.id)
+          .eq("field_type", "signature");
+
+        let signaturePositions = (sigFields || []).map((f: any) => ({
+          page: f.page, x: f.pos_x, y: f.pos_y, width: f.width, height: f.height,
+        }));
+
+        // Fallback to template positions
+        if (signaturePositions.length === 0 && contract.servidor_id) {
+          const { data: templates } = await supabase
+            .from("company_contract_templates")
+            .select("id")
+            .eq("company_id", contract.servidor_id)
+            .limit(1);
+          if (templates?.[0]) {
+            const { data: tFields } = await supabase
+              .from("company_contract_template_fields")
+              .select("page, pos_x, pos_y, width, height")
+              .eq("template_id", templates[0].id)
+              .eq("field_type", "assinatura");
+            signaturePositions = (tFields || []).map((f: any) => ({
+              page: f.page, x: f.pos_x, y: f.pos_y, width: f.width, height: f.height,
+            }));
+          }
+        }
+
         const blob = await generateSignedContractPdf({
-          content: `CONTRATO: ${contract.name}\n\n${contract.description || "Contrato PDF com assinatura digital."}`,
+          pdfUrl: contract.pdf_url,
           code: `PDF-${contract.id.slice(0, 8).toUpperCase()}`,
           companyName: companyName,
           documentHash: contract.document_hash || "",
           validationCode: contract.validation_code || "",
           signedAt: fullSigners?.find((s: any) => s.signed_at)?.signed_at || new Date().toISOString(),
           signers: signerData,
-          history: [],
           validationUrl: `${window.location.origin}/validar-documento/${contract.validation_code || ""}`,
+          signaturePositions,
         });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
