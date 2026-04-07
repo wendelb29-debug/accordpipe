@@ -279,11 +279,20 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     } catch { /* silent */ }
   }, [profile, fetchContractSigners]);
 
-  // Fetch signers when saved contract loads
+  // Fetch signers when saved contract loads + realtime subscription
   useEffect(() => {
-    if (savedContract?.id) {
-      fetchContractSigners(savedContract.id);
-    }
+    if (!savedContract?.id) return;
+    fetchContractSigners(savedContract.id);
+
+    // Realtime subscription for live updates
+    const channel = supabase
+      .channel(`contract-signers-${savedContract.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contract_signatures', filter: `contract_id=eq.${savedContract.id}` }, () => {
+        fetchContractSigners(savedContract.id);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [savedContract?.id, fetchContractSigners]);
 
   // Ensure vendor after signers load
