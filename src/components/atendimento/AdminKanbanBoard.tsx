@@ -38,6 +38,7 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
   const [draggedLead, setDraggedLead] = useState<CrmLead | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [detailLead, setDetailLead] = useState<CrmLead | null>(null);
+  const [showOldConcluidos, setShowOldConcluidos] = useState(false);
 
   const pipelineRef = useRef<HTMLDivElement>(null);
   const isDraggingScroll = useRef(false);
