@@ -147,7 +147,11 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial")
       toast.error("Erro ao atualizar lead");
       return false;
     }
-    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...updates } : l)));
+    if (updates.lead_status === "lost") {
+      setLeads((prev) => prev.filter((l) => l.id !== id));
+    } else {
+      setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...updates } : l)));
+    }
     return true;
   };
 
