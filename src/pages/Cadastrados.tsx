@@ -236,12 +236,32 @@ export default function Cadastrados() {
     ]);
 
     setDetailContracts(contractsRes.data || []);
-    setDetailCrmContracts(crmContractsRes.data || []);
     setDetailTransactions(transactionsRes.data || []);
     setDetailHistory(historyRes.data || []);
     setDetailUpsells((upsellsRes as any).data || []);
     setDetailDocuments((docsRes as any).data || []);
     setDetailLeadDocs(leadDocsRes.data || []);
+
+    // Fetch signers for each CRM contract (deduplicated by role)
+    const crmWithSigners: any[] = [];
+    for (const c of (crmContractsRes.data || [])) {
+      const { data: sigs } = await supabase
+        .from("contract_signatures")
+        .select("signer_name, signer_role, signer_document, signed_at, signer_ip, signature_photo_url")
+        .eq("contract_id", c.id)
+        .order("created_at", { ascending: true });
+
+      const roleMap = new Map<string, any>();
+      for (const s of (sigs || [])) {
+        const role = s.signer_role || "signatário";
+        const existing = roleMap.get(role);
+        if (!existing || (s.signed_at && !existing.signed_at)) {
+          roleMap.set(role, s);
+        }
+      }
+      crmWithSigners.push({ ...c, signers: Array.from(roleMap.values()) });
+    }
+    setDetailCrmContracts(crmWithSigners);
   };
 
   const handleSaveEdit = async () => {
