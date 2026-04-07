@@ -1748,6 +1748,8 @@ export type Database = {
           document_hash: string | null
           id: string
           name: string
+          pdf_assinado_path: string | null
+          pdf_assinado_url: string | null
           pdf_path: string
           pdf_url: string
           servidor_id: string
@@ -1764,6 +1766,8 @@ export type Database = {
           document_hash?: string | null
           id?: string
           name: string
+          pdf_assinado_path?: string | null
+          pdf_assinado_url?: string | null
           pdf_path: string
           pdf_url: string
           servidor_id: string
@@ -1780,6 +1784,8 @@ export type Database = {
           document_hash?: string | null
           id?: string
           name?: string
+          pdf_assinado_path?: string | null
+          pdf_assinado_url?: string | null
           pdf_path?: string
           pdf_url?: string
           servidor_id?: string
