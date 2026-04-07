@@ -1014,8 +1014,21 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                 <TabsTrigger value="propostas" className="text-[11px] sm:text-xs gap-1">
                   <FileSpreadsheet className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Propostas
                 </TabsTrigger>
-                <TabsTrigger value="assinatura" className="text-[11px] sm:text-xs gap-1">
+                <TabsTrigger value="assinatura" className="text-[11px] sm:text-xs gap-1 relative">
                   <FileSignature className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Assinatura
+                  {signatureStats && signatureStats.total > 0 && (
+                    <Badge
+                      variant={signatureStats.signed === signatureStats.total ? "default" : "secondary"}
+                      className={cn(
+                        "ml-1 text-[9px] h-4 px-1.5 min-w-0",
+                        signatureStats.signed === signatureStats.total
+                          ? "bg-green-600 text-white hover:bg-green-600"
+                          : "bg-amber-500/20 text-amber-600 hover:bg-amber-500/20"
+                      )}
+                    >
+                      {signatureStats.signed}/{signatureStats.total}
+                    </Badge>
+                  )}
                 </TabsTrigger>
                 <TabsTrigger value="docs" className="text-[11px] sm:text-xs gap-1">
                   <Paperclip className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Docs
