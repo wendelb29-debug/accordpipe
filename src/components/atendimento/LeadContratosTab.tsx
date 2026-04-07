@@ -2,11 +2,15 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import {
   FileSignature, Plus, Eye, Download, Copy, Camera, MapPin, User, X,
   Clock, CheckCircle2, AlertCircle, Loader2, Search, UserPlus, Link2, Mail,
+  MoreVertical, MessageSquare,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadContractPdf } from "@/lib/generateContractPdf";
 import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
 import { useContracts } from "@/hooks/useContracts";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
