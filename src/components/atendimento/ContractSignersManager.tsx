@@ -84,6 +84,7 @@ export function ContractSignersManager({
   const [newType, setNewType] = useState("testemunha");
   const [newRequired, setNewRequired] = useState(false);
   const [adding, setAdding] = useState(false);
+  const defaultSignersCreated = useRef(false);
 
   const isPending = contractStatus === "pendente";
 
@@ -98,9 +99,22 @@ export function ContractSignersManager({
     setLoading(false);
   }, [contractId]);
 
-  // Auto-create default signers (client + vendedor) if none exist
+  // Auto-create default signers (client + vendedor) if none exist — runs once
   const ensureDefaultSigners = useCallback(async () => {
-    if (signers.length > 0 || !isPending) return;
+    if (defaultSignersCreated.current || !isPending) return;
+    defaultSignersCreated.current = true;
+
+    // Double-check DB to avoid duplicates
+    const { data: existing } = await supabase
+      .from("client_contract_signers")
+      .select("id")
+      .eq("contract_id", contractId)
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      await fetchSigners();
+      return;
+    }
 
     const defaultSigners = [
       {
@@ -129,14 +143,15 @@ export function ContractSignersManager({
     if (!error) {
       await fetchSigners();
     }
-  }, [contractId, clientName, clientCpf, profile, signers.length, isPending, fetchSigners]);
+  }, [contractId, clientName, clientCpf, profile, isPending, fetchSigners]);
 
   useEffect(() => {
+    defaultSignersCreated.current = false;
     fetchSigners();
   }, [fetchSigners]);
 
   useEffect(() => {
-    if (!loading && signers.length === 0 && isPending) {
+    if (!loading && signers.length === 0 && isPending && !defaultSignersCreated.current) {
       ensureDefaultSigners();
     }
   }, [loading, signers.length, isPending, ensureDefaultSigners]);
