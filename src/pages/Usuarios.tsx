@@ -232,12 +232,16 @@ export default function Usuarios() {
         if (roleError) throw roleError;
       }
 
-      // Set company_id and status on profile
       const companyId = formData.company_id || (isMaster ? activeCompanyId : profile?.company_id) || null;
-      if (companyId) {
+      const profileUpdate: any = { status: "pendente", is_active: false };
+      if (companyId) profileUpdate.company_id = companyId;
+      if (formData.cpf) profileUpdate.cpf = formData.cpf.replace(/\D/g, "");
+      if (formData.birth_date) profileUpdate.birth_date = formData.birth_date;
+
+      if (Object.keys(profileUpdate).length > 0) {
         const { error: companyError } = await supabase
           .from("profiles")
-          .update({ company_id: companyId, status: "pendente", is_active: false })
+          .update(profileUpdate as any)
           .eq("user_id", authData.user.id);
         if (companyError) throw companyError;
       }
@@ -295,10 +299,16 @@ export default function Usuarios() {
 
     setIsSubmitting(true);
     try {
-      // Update profile with name and company_id
+      const updateData: any = { 
+        name: formData.name, 
+        company_id: formData.company_id || null,
+      };
+      if (formData.cpf) updateData.cpf = formData.cpf.replace(/\D/g, "");
+      if (formData.birth_date) updateData.birth_date = formData.birth_date;
+
       const { error: profileError } = await supabase
         .from("profiles")
-        .update({ name: formData.name, company_id: formData.company_id || null })
+        .update(updateData)
         .eq("id", editingUser.id);
 
       if (profileError) throw profileError;
