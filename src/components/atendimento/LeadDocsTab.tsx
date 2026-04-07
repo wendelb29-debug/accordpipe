@@ -35,6 +35,12 @@ interface SignedContract {
   document_hash: string | null;
   plan_name: string | null;
   created_at: string;
+  contract_content: string | null;
+  pdf_url: string | null;
+  servidor_id: string;
+  signer_name: string | null;
+  signer_document: string | null;
+  signature_photo_url: string | null;
 }
 
 interface SignedPdfContract {
