@@ -87,6 +87,7 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial")
       .from("crm_leads")
       .select("*")
       .in("stage", stageIds)
+      .neq("lead_status", "lost")
       .order("created_at", { ascending: false });
 
     // User isolation: non-admin/non-master users only see their own leads
