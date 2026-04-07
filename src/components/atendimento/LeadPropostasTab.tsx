@@ -1464,8 +1464,136 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
     );
   }
 
-  // ---- SIGNATURE MODE: only show selection panel ----
+  // ---- SIGNATURE MODE: show saved contract or selection panel ----
   if (signatureMode) {
+    // If a contract already exists for this lead, show it
+    if (loadingSavedContract) {
+      return (
+        <div className="flex justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      );
+    }
+
+    if (savedContract && !contractPreview) {
+      return (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <FileSignature className="h-5 w-5 text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">Contrato Gerado</h3>
+          </div>
+
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+            <p className="text-xs font-semibold text-foreground mb-1">✅ Contrato salvo com sucesso!</p>
+            <p className="text-xs text-muted-foreground mb-1">Código: <span className="font-mono font-semibold">{savedContract.code}</span></p>
+            <p className="text-xs text-muted-foreground mb-2">Status: {savedContract.signature_status === "signed" ? "Assinado" : "Aguardando assinatura"}</p>
+            {savedContract.signature_link && (
+              <div className="flex items-center gap-2 p-2 rounded bg-muted text-xs font-mono break-all">
+                {savedContract.signature_link}
+              </div>
+            )}
+          </div>
+
+          {/* Contract PDF preview */}
+          {(savedContract.pdf_url || templatePdfUrl) && (
+            <div className="relative rounded-lg border border-border overflow-auto bg-muted/20" style={{ maxHeight: 450 }}>
+              <div className="relative inline-block">
+                <PdfRenderer
+                  pdfUrl={savedContract.pdf_url || templatePdfUrl!}
+                  currentPage={templateCurrentPage}
+                  onTotalPages={setTemplateTotalPages}
+                  scale={0.9}
+                />
+                {/* If using template (no pdf_url), show overlays */}
+                {!savedContract.pdf_url && templatePdfUrl && templateFields
+                  .filter((f: any) => f.page === templateCurrentPage)
+                  .map((f: any) => {
+                    const value = resolveFieldValue(f.field_type);
+                    const isLogo = f.field_type === "servidor_logo";
+                    const s = 0.9;
+                    if (!value) return null;
+                    return (
+                      <div
+                        key={f.id}
+                        className="absolute flex items-start"
+                        style={{
+                          left: f.pos_x * s,
+                          top: f.pos_y * s,
+                          width: f.width * s,
+                          minHeight: f.height * s,
+                          fontSize: Math.min(f.height * 0.5, 12),
+                          background: "transparent",
+                        }}
+                      >
+                        {isLogo && value ? (
+                          <img src={value} alt="Logo" className="h-full w-auto object-contain" />
+                        ) : (
+                          <span className="whitespace-pre-wrap break-words leading-tight" style={{ color: "#000", fontSize: f.field_type === "campo_proposta" || f.field_type === "clausula" || f.field_type === "empresa" || f.field_type === "servidor_cnpj" ? 8 : 10, lineHeight: "1.2" }}>
+                            {value}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          {templateTotalPages > 1 && (
+            <div className="flex items-center justify-center gap-2">
+              <Button variant="outline" size="icon" className="h-7 w-7" disabled={templateCurrentPage <= 1} onClick={() => setTemplateCurrentPage(p => p - 1)}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-xs text-muted-foreground">{templateCurrentPage} / {templateTotalPages}</span>
+              <Button variant="outline" size="icon" className="h-7 w-7" disabled={templateCurrentPage >= templateTotalPages} onClick={() => setTemplateCurrentPage(p => p + 1)}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={downloadContractWithOverlay}>
+              <Download className="h-3.5 w-3.5" /> Imprimir / Baixar PDF
+            </Button>
+          </div>
+
+          <div className="flex gap-2">
+            {savedContract.signature_link && (
+              <>
+                <Button size="sm" variant="outline" className="text-xs gap-1.5 flex-1" onClick={() => {
+                  navigator.clipboard.writeText(savedContract.signature_link);
+                  toast.success("Link copiado!");
+                }}>
+                  <Copy className="h-3.5 w-3.5" /> Copiar link
+                </Button>
+                <Button size="sm" className="text-xs gap-1.5 flex-1" onClick={() => {
+                  const clientName = registrationData?.nome_completo || lead.contact_name || lead.company_name;
+                  const message = `Olá ${clientName},\nsegue o link para assinatura do seu contrato.\n\n${savedContract.signature_link}\n\nApós a assinatura o sistema confirmará automaticamente.`;
+                  const phone = lead.phone?.replace(/\D/g, "") || "";
+                  const url = `https://wa.me/${phone.startsWith("55") ? phone : "55" + phone}?text=${encodeURIComponent(message)}`;
+                  window.open(url, "_blank");
+                }}>
+                  <MessageSquare className="h-3.5 w-3.5" /> Enviar via WhatsApp
+                </Button>
+              </>
+            )}
+          </div>
+
+          {/* Signers Manager */}
+          {savedContract.id && (
+            <div className="border-t border-border pt-4">
+              <ContractSignersManager
+                contractId={savedContract.id}
+                contractStatus={savedContract.signature_status === "signed" ? "assinado" : "pendente"}
+                clientName={registrationData?.nome_completo || lead.contact_name || lead.company_name}
+                clientCpf={registrationData?.cpf}
+              />
+            </div>
+          )}
+        </div>
+      );
+    }
+
     const availableProposals = proposals.filter(p => {
       const st = (p.metadata as any)?.status;
       return st !== "cancelada" && st !== "declinada";
