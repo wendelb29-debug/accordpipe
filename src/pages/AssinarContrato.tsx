@@ -91,10 +91,11 @@ export default function AssinarContrato() {
   const streamRef = useRef<MediaStream | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownStartedRef = useRef(false);
+  const photoPreviewUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
     fetchContract();
-    return () => { stopCamera(); if (countdownRef.current) clearInterval(countdownRef.current); };
   }, [token]);
 
   const fetchContract = async () => {
@@ -143,48 +144,148 @@ export default function AssinarContrato() {
     );
   }, []);
 
+  const revokePhotoPreview = useCallback(() => {
+    if (photoPreviewUrlRef.current) {
+      URL.revokeObjectURL(photoPreviewUrlRef.current);
+      photoPreviewUrlRef.current = null;
+    }
+  }, []);
+
+  const resetCapturedPhoto = useCallback(() => {
+    revokePhotoPreview();
+    setPhotoBlob(null);
+    setPhotoPreview(null);
+  }, [revokePhotoPreview]);
+
+  const stopCamera = useCallback(() => {
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
+
+    countdownStartedRef.current = false;
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+
+    setCameraOpen(false);
+    setCountdown(null);
+  }, []);
+
+  const capturePhoto = useCallback(() => {
+    const video = videoRef.current;
+
+    if (!video || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+      toast.error("A câmera ainda está carregando. Tente novamente.");
+      stopCamera();
+      return;
+    }
+
+    const width = video.videoWidth || 640;
+    const height = video.videoHeight || 480;
+
+    if (!width || !height) {
+      toast.error("Não foi possível capturar a foto. Tente novamente.");
+      stopCamera();
+      return;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext("2d")?.drawImage(video, 0, 0, width, height);
+
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        toast.error("Falha ao gerar a foto. Tente novamente.");
+        stopCamera();
+        return;
+      }
+
+      revokePhotoPreview();
+      const previewUrl = URL.createObjectURL(blob);
+      photoPreviewUrlRef.current = previewUrl;
+      setPhotoBlob(blob);
+      setPhotoPreview(previewUrl);
+      stopCamera();
+    }, "image/jpeg", 0.85);
+  }, [revokePhotoPreview, stopCamera]);
+
+  const beginCountdown = useCallback(() => {
+    if (countdownStartedRef.current) return;
+
+    countdownStartedRef.current = true;
+    let count = 6;
+    setCountdown(count);
+
+    countdownRef.current = setInterval(() => {
+      count -= 1;
+
+      if (count <= 0) {
+        if (countdownRef.current) {
+          clearInterval(countdownRef.current);
+          countdownRef.current = null;
+        }
+
+        setCountdown(null);
+        window.setTimeout(capturePhoto, 150);
+        return;
+      }
+
+      setCountdown(count);
+    }, 1000);
+  }, [capturePhoto]);
+
   const startCamera = async () => {
     try {
+      stopCamera();
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
       });
+
       streamRef.current = stream;
-      if (videoRef.current) videoRef.current.srcObject = stream;
       setCameraOpen(true);
       getLocation();
-      let count = 6;
-      setCountdown(count);
-      countdownRef.current = setInterval(() => {
-        count--;
-        if (count <= 0) {
-          clearInterval(countdownRef.current!);
-          setCountdown(null);
-          setTimeout(() => capturePhoto(), 100);
-        } else {
-          setCountdown(count);
-        }
-      }, 1000);
     } catch {
       toast.error("Permita o acesso à câmera para assinar");
     }
   };
 
-  const stopCamera = () => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-    setCameraOpen(false);
-  };
+  useEffect(() => {
+    if (!cameraOpen || !streamRef.current || !videoRef.current) return;
 
-  const capturePhoto = () => {
-    if (!videoRef.current) return;
-    const canvas = document.createElement("canvas");
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    canvas.getContext("2d")?.drawImage(videoRef.current, 0, 0);
-    canvas.toBlob((blob) => {
-      if (blob) { setPhotoBlob(blob); setPhotoPreview(URL.createObjectURL(blob)); stopCamera(); }
-    }, "image/jpeg", 0.85);
-  };
+    const video = videoRef.current;
+    let cancelled = false;
+
+    const handleVideoReady = () => {
+      void video.play().catch(() => undefined).finally(() => {
+        if (!cancelled) beginCountdown();
+      });
+    };
+
+    video.srcObject = streamRef.current;
+
+    if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
+      handleVideoReady();
+    } else {
+      video.addEventListener("loadedmetadata", handleVideoReady, { once: true });
+    }
+
+    return () => {
+      cancelled = true;
+      video.removeEventListener("loadedmetadata", handleVideoReady);
+    };
+  }, [cameraOpen, beginCountdown]);
+
+  useEffect(() => {
+    return () => {
+      stopCamera();
+      revokePhotoPreview();
+    };
+  }, [revokePhotoPreview, stopCamera]);
 
   const handleSign = async () => {
     if (!contract || !photoBlob || !location || !token) {
@@ -441,7 +542,7 @@ export default function AssinarContrato() {
               <img src={photoPreview} alt="Foto de assinatura" className="w-full max-w-xs mx-auto rounded-xl ring-1 ring-slate-700/50" />
               <Button
                 variant="outline"
-                onClick={() => { setPhotoBlob(null); setPhotoPreview(null); startCamera(); }}
+                onClick={() => { resetCapturedPhoto(); startCamera(); }}
                 className="w-full gap-2 border-slate-700 text-slate-300 hover:bg-slate-700/50 rounded-xl"
               >
                 <Camera className="h-4 w-4" /> Tirar Nova Foto
