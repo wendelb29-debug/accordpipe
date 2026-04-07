@@ -974,6 +974,80 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
     setGeneratedContractLink(null);
   };
 
+  const generateTemplatePdfBlob = async (): Promise<Blob | null> => {
+    if (!templatePdfUrl) return null;
+    try {
+      const pdfjsLib = await import("pdfjs-dist");
+      const { default: jsPDF } = await import("jspdf");
+      const pdfDoc = await pdfjsLib.getDocument(templatePdfUrl).promise;
+      const totalPg = pdfDoc.numPages;
+      const scale = 2;
+      let pdf: any = null;
+
+      for (let pg = 1; pg <= totalPg; pg++) {
+        const page = await pdfDoc.getPage(pg);
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement("canvas");
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext("2d")!;
+        await page.render({ canvasContext: ctx, viewport }).promise;
+
+        const pageFields = templateFields.filter((f: any) => f.page === pg);
+        for (const f of pageFields) {
+          const value = resolveFieldValue(f.field_type);
+          if (!value) continue;
+          const isLogo = f.field_type === "servidor_logo";
+          if (isLogo) {
+            try {
+              const img = new Image();
+              img.crossOrigin = "anonymous";
+              await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = () => rej(); img.src = value; });
+              ctx.drawImage(img, f.pos_x * scale, f.pos_y * scale, f.width * scale, f.height * scale);
+            } catch { /* skip */ }
+          } else {
+            ctx.fillStyle = "#000";
+            const fontSize = (f.field_type === "campo_proposta" || f.field_type === "clausula") ? 8 * scale : 11 * scale;
+            ctx.font = `${fontSize}px Arial, sans-serif`;
+            const maxW = f.width * scale;
+            const words = value.split(" ");
+            let line = "";
+            let ly = f.pos_y * scale + fontSize;
+            const lineH = fontSize * 1.3;
+            for (const word of words) {
+              const test = line ? line + " " + word : word;
+              if (ctx.measureText(test).width > maxW && line) {
+                ctx.fillText(line, f.pos_x * scale, ly);
+                line = word;
+                ly += lineH;
+              } else {
+                line = test;
+              }
+            }
+            if (line) ctx.fillText(line, f.pos_x * scale, ly);
+          }
+        }
+
+        const imgData = canvas.toDataURL("image/jpeg", 0.92);
+        const pxToMm = (px: number) => px * 25.4 / 96 / (scale / 1);
+        const wMm = pxToMm(viewport.width);
+        const hMm = pxToMm(viewport.height);
+
+        if (pg === 1) {
+          pdf = new jsPDF({ orientation: wMm > hMm ? "landscape" : "portrait", unit: "mm", format: [wMm, hMm] });
+        } else {
+          pdf.addPage([wMm, hMm], wMm > hMm ? "landscape" : "portrait");
+        }
+        pdf.addImage(imgData, "JPEG", 0, 0, wMm, hMm);
+      }
+
+      return pdf.output("blob");
+    } catch (err) {
+      console.error("Error generating template PDF blob:", err);
+      return null;
+    }
+  };
+
   const handleConfirmAndGenerate = async () => {
     if (!contractPreviewProposal) return;
     const companyId = lead.company_id || lead.servidor_id;
@@ -993,7 +1067,6 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
       );
 
       if (result) {
-        // Get the generated contract to retrieve the link and ID
         const { data: latestContract } = await supabase
           .from("contracts")
           .select("id, signature_link")
@@ -1005,6 +1078,25 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
         const link = latestContract?.signature_link || "";
         setGeneratedContractLink(link);
         setGeneratedContractId(latestContract?.id || null);
+
+        // If using template PDF, generate the final rendered PDF and upload
+        if (templatePdfUrl && latestContract?.id) {
+          try {
+            const pdfBlob = await generateTemplatePdfBlob();
+            if (pdfBlob) {
+              const pdfFileName = `contracts/${latestContract.id}_${Date.now()}.pdf`;
+              const { error: uploadErr } = await supabase.storage
+                .from("contract-pdfs")
+                .upload(pdfFileName, pdfBlob, { contentType: "application/pdf" });
+              if (!uploadErr) {
+                const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(pdfFileName);
+                await supabase.from("contracts").update({ pdf_url: urlData.publicUrl } as any).eq("id", latestContract.id);
+              }
+            }
+          } catch (e) {
+            console.error("Error uploading template PDF:", e);
+          }
+        }
 
         await addActivity({
           type: "signature",

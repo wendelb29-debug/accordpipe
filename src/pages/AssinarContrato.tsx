@@ -26,6 +26,7 @@ interface ContractData {
   id: string;
   code: string;
   contract_content: string | null;
+  pdf_url: string | null;
   signature_status: string;
   signed_at: string | null;
   signer_role?: string;
@@ -353,7 +354,11 @@ export default function AssinarContrato() {
 
         <Card className="p-5">
           <h2 className="font-semibold text-foreground mb-3">Conteúdo do Contrato</h2>
-          <ContractPdfEmbed content={contract.contract_content || ""} code={contract.code} companyName={company?.razao_social || ""} />
+          {contract.pdf_url ? (
+            <iframe src={contract.pdf_url} className="w-full h-[500px] rounded-md border" title="Contrato PDF" />
+          ) : (
+            <ContractPdfEmbed content={contract.contract_content || ""} code={contract.code} companyName={company?.razao_social || ""} />
+          )}
         </Card>
 
 

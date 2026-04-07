@@ -631,6 +631,7 @@ export type Database = {
           matriz_cnpj: string | null
           matriz_endereco: string | null
           matriz_nome: string | null
+          pdf_url: string | null
           signature_address: string | null
           signature_latitude: number | null
           signature_link: string | null
@@ -659,6 +660,7 @@ export type Database = {
           matriz_cnpj?: string | null
           matriz_endereco?: string | null
           matriz_nome?: string | null
+          pdf_url?: string | null
           signature_address?: string | null
           signature_latitude?: number | null
           signature_link?: string | null
@@ -687,6 +689,7 @@ export type Database = {
           matriz_cnpj?: string | null
           matriz_endereco?: string | null
           matriz_nome?: string | null
+          pdf_url?: string | null
           signature_address?: string | null
           signature_latitude?: number | null
           signature_link?: string | null
