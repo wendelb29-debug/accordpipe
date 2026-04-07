@@ -26,11 +26,9 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // First try to find by contract signing_token (legacy)
     let contractData = null;
-    let signerRole = null;
 
-    // Check contract_signatures table first (new multi-signer flow)
+    // 1. Check contract_signatures table (multi-signer flow for contracts table)
     const { data: sigData } = await supabase
       .from("contract_signatures")
       .select("contract_id, signer_role, signer_name, signer_document, signed_at")
@@ -38,7 +36,6 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (sigData) {
-      signerRole = sigData.signer_role;
       const { data, error } = await supabase
         .from("contracts")
         .select(
@@ -58,8 +55,90 @@ Deno.serve(async (req) => {
       }
     }
 
+    // 2. Check client_contract_signers table (multi-signer flow for client_contracts)
     if (!contractData) {
-      // Fallback: legacy single-signer token on contracts table
+      const { data: ccSigner } = await supabase
+        .from("client_contract_signers")
+        .select("id, contract_id, name, email, signer_type, signer_document, status, signed_at, signature_photo_url")
+        .eq("signing_token", token)
+        .maybeSingle();
+
+      if (ccSigner) {
+        // The contract_id may reference contracts OR client_contracts table
+        // Try client_contracts first
+        const { data: clientContract } = await supabase
+          .from("client_contracts")
+          .select("id, client_name, client_cpf, plan_name, monthly_value, contract_content, contract_status, signed_at, servidor_id")
+          .eq("id", ccSigner.contract_id)
+          .maybeSingle();
+
+        if (clientContract) {
+          const { data: company } = await supabase
+            .from("companies")
+            .select("razao_social, nome_fantasia, cnpj, responsavel, endereco, numero, complemento, bairro, cidade, estado, cep, email, telefone")
+            .eq("id", clientContract.servidor_id)
+            .maybeSingle();
+
+          // Fetch all signers for progress display
+          const { data: allSigners } = await supabase
+            .from("client_contract_signers")
+            .select("name, signer_type, status, signed_at, signature_photo_url")
+            .eq("contract_id", ccSigner.contract_id)
+            .order("sign_order");
+
+          contractData = {
+            id: clientContract.id,
+            code: `CC-${clientContract.id.substring(0, 8).toUpperCase()}`,
+            contract_content: clientContract.contract_content,
+            signature_status: clientContract.contract_status === "pendente" ? "pending" : clientContract.contract_status,
+            signed_at: clientContract.signed_at,
+            signer_role: ccSigner.signer_type,
+            signer_name: ccSigner.name,
+            signer_document: ccSigner.signer_document,
+            signer_signed_at: ccSigner.signed_at,
+            companies: company,
+            is_client_contract: true,
+            is_multi_signer: true,
+            signer_id: ccSigner.id,
+            client_name: clientContract.client_name,
+            client_cpf: clientContract.client_cpf,
+            plan_name: clientContract.plan_name,
+            monthly_value: clientContract.monthly_value,
+            signatures: (allSigners || []).map(s => ({
+              signer_role: s.signer_type,
+              signer_name: s.name,
+              signed_at: s.signed_at,
+              signature_photo_url: s.signature_photo_url,
+              signature_address: null,
+            })),
+          };
+        } else {
+          // Try contracts table
+          const { data: contract } = await supabase
+            .from("contracts")
+            .select(
+              "id, code, contract_content, signature_status, signed_at, companies(razao_social, nome_fantasia, cnpj, responsavel, endereco, numero, complemento, bairro, cidade, estado, cep, email, telefone)"
+            )
+            .eq("id", ccSigner.contract_id)
+            .maybeSingle();
+
+          if (contract) {
+            contractData = {
+              ...contract,
+              signer_role: ccSigner.signer_type,
+              signer_name: ccSigner.name,
+              signer_document: ccSigner.signer_document,
+              signer_signed_at: ccSigner.signed_at,
+              is_multi_signer: true,
+              signer_id: ccSigner.id,
+            };
+          }
+        }
+      }
+    }
+
+    // 3. Fallback: legacy single-signer token on contracts table
+    if (!contractData) {
       const { data, error } = await supabase
         .from("contracts")
         .select(
@@ -73,7 +152,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Check client_contracts table
+    // 4. Check client_contracts table (legacy single-signer)
     if (!contractData) {
       const { data: clientContract, error: ccErr } = await supabase
         .from("client_contracts")
@@ -82,7 +161,6 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (!ccErr && clientContract) {
-        // Fetch company info for display
         const { data: company } = await supabase
           .from("companies")
           .select("razao_social, nome_fantasia, cnpj, responsavel, endereco, numero, complemento, bairro, cidade, estado, cep, email, telefone")
@@ -116,8 +194,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Also fetch all signatures for this contract (only for contracts table)
-    if (!contractData.is_client_contract) {
+    // Fetch all signatures for contracts table (if not already loaded)
+    if (!contractData.is_client_contract && !contractData.signatures) {
       const { data: allSigs } = await supabase
         .from("contract_signatures")
         .select("signer_role, signer_name, signed_at, signature_photo_url, signature_address")
