@@ -88,9 +88,11 @@ export default function Cadastrados() {
   // Detail view
   const [selectedReg, setSelectedReg] = useState<any | null>(null);
   const [detailContracts, setDetailContracts] = useState<any[]>([]);
+  const [detailCrmContracts, setDetailCrmContracts] = useState<any[]>([]);
   const [detailTransactions, setDetailTransactions] = useState<any[]>([]);
   const [detailHistory, setDetailHistory] = useState<any[]>([]);
   const [detailDocuments, setDetailDocuments] = useState<any[]>([]);
+  const [detailLeadDocs, setDetailLeadDocs] = useState<any[]>([]);
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState<any>({});
   const [saving, setSaving] = useState(false);
