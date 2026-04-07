@@ -237,7 +237,52 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
             );
           })}
 
-          {/* Other signers' fields */}
+
+          {/* Signature stamps at template tag positions */}
+          {signatureTemplateFields.map((field, idx) => {
+            const allSignersList = contractMeta?.allSigners || [];
+            const signer = allSignersList[idx];
+            const isSigned = signer?.status === "assinado" && signer?.signed_at;
+            return (
+              <div
+                key={`sig-tmpl-${field.id}`}
+                className="absolute overflow-hidden pointer-events-none"
+                style={{
+                  left: field.pos_x * scale,
+                  top: field.pos_y * scale,
+                  width: field.width * scale,
+                  height: field.height * scale,
+                }}
+              >
+                {isSigned ? (
+                  <div className="w-full h-full flex items-center gap-2 rounded-md border border-primary/30 p-1" style={{ backgroundColor: "rgba(245,247,255,0.95)" }}>
+                    {signer.signature_photo_url && (
+                      <img
+                        src={signer.signature_photo_url}
+                        alt="Foto"
+                        className="h-full w-auto rounded object-cover shrink-0"
+                        style={{ maxWidth: "35%" }}
+                      />
+                    )}
+                    <div className="flex flex-col gap-0.5 overflow-hidden min-w-0">
+                      <div className="flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3 shrink-0 text-green-600" />
+                        <span className="text-[8px] font-bold truncate" style={{ color: "#1e40af" }}>Assinado Digitalmente</span>
+                      </div>
+                      <span className="text-[7px] font-semibold truncate" style={{ color: "#111" }}>{signer.name}</span>
+                      {signer.cpf_cnpj && <span className="text-[6px] truncate" style={{ color: "#555" }}>CPF/CNPJ: {signer.cpf_cnpj}</span>}
+                      {signer.signed_at && <span className="text-[6px] truncate" style={{ color: "#555" }}>{new Date(signer.signed_at).toLocaleString("pt-BR")}</span>}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center border border-dashed border-muted-foreground/30 rounded-md">
+                    <span className="text-[9px] text-muted-foreground">{signer?.name ? `${signer.name} - Pendente` : "Assinatura"}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
           {otherFields.map(field => {
             const isSigned = signedFieldIds.includes(field.id);
             const signer = field.signer_id ? signerDetails[field.signer_id] : null;
