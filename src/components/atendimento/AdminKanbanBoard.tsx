@@ -174,6 +174,7 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
                     <span className={cn("text-xs font-bold rounded-full px-2.5 py-0.5 bg-card border border-border/50 shadow-sm", colors.text)}>
                       {stage.count}
                     </span>
+                  </div>
                   {stage.id === "cadastro-concluido" && (
                     <Button
                       variant={showOldConcluidos ? "default" : "ghost"}
@@ -186,7 +187,6 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
                     </Button>
                   )}
                 </div>
-              </div>
               </div>
 
               {/* Cards */}
