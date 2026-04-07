@@ -279,36 +279,54 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
   y -= 14;
 
   for (const signer of data.signers) {
-    proofPage.drawRectangle({
-      x: 25,
-      y: y - 35,
-      width: pw - 50,
-      height: 45,
-      color: rgb(0.98, 0.98, 1),
-      borderColor: rgb(0.8, 0.8, 0.8),
-      borderWidth: 0.5,
-    });
+    // Check if we need a new page
+    if (y < 100) {
+      const newPage = pdfDoc.addPage();
+      y = newPage.getSize().height - 40;
+    }
 
+    const blockStartY = y;
+
+    // Name + role (bold)
     proofPage.drawText(`${signer.name} (${signer.role})`, { x: 30, y, size: 10, font: fontBold, color: rgb(0, 0, 0) });
-    y -= 10;
+    y -= 12;
+
     if (signer.email) {
-      proofPage.drawText(`E-mail: ${signer.email}`, { x: 30, y, size: 8, font, color: rgb(0.2, 0.2, 0.2) });
-      y -= 9;
+      proofPage.drawText(`E-mail: ${signer.email}`, { x: 30, y, size: 8, font, color: rgb(0.1, 0.1, 0.1) });
+      y -= 10;
     }
+
     if (signer.document) {
-      proofPage.drawText(`CPF/CNPJ: ${signer.document}`, { x: 30, y, size: 8, font, color: rgb(0.2, 0.2, 0.2) });
-      y -= 9;
+      proofPage.drawText(`CPF: ${signer.document}`, { x: 30, y, size: 8, font, color: rgb(0.1, 0.1, 0.1) });
+      y -= 10;
     }
+
     if (signer.signed_at) {
       const signerSignedAt = new Date(signer.signed_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-      proofPage.drawText(`Assinou em: ${signerSignedAt}`, { x: 30, y, size: 8, font, color: rgb(0.2, 0.2, 0.2) });
-      y -= 9;
+      proofPage.drawText(`Assinou em: ${signerSignedAt}`, { x: 30, y, size: 8, font, color: rgb(0.1, 0.1, 0.1) });
+      y -= 10;
     }
+
     if (signer.ip) {
-      proofPage.drawText(`IP: ${signer.ip}`, { x: 30, y, size: 7, font, color: rgb(0.4, 0.4, 0.4) });
-      y -= 9;
+      proofPage.drawText(`IP: ${signer.ip}`, { x: 30, y, size: 8, font, color: rgb(0.1, 0.1, 0.1) });
+      y -= 10;
     }
-    proofPage.drawText(`Emitido por ${data.companyName}`, { x: 30, y, size: 7, font, color: rgb(0.5, 0.5, 0.5) });
+
+    if (data.documentHash) {
+      proofPage.drawText(`Hash da assinatura: ${data.documentHash}`, { x: 30, y, size: 7, font, color: rgb(0.3, 0.3, 0.3) });
+      y -= 10;
+    }
+
+    proofPage.drawText(`Emitido por ${data.companyName}.`, { x: 30, y, size: 7, font, color: rgb(0.3, 0.3, 0.3) });
+    y -= 8;
+
+    // Draw separator line
+    proofPage.drawLine({
+      start: { x: 25, y },
+      end: { x: pw - 25, y },
+      thickness: 0.5,
+      color: rgb(0.8, 0.8, 0.8),
+    });
     y -= 16;
   }
 
