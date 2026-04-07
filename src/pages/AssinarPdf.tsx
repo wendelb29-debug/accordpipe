@@ -377,82 +377,190 @@ export default function AssinarPdf() {
 
   // ─── SIGNED SUCCESS ───
   if (signed) {
+    const handleDownloadPdf = async () => {
+      if (!contract?.pdf_url) return;
+      try {
+        const resp = await fetch(contract.pdf_url);
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${contract.name || "contrato"}_assinado.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch {
+        window.open(contract.pdf_url, "_blank");
+      }
+    };
+
     return (
-      <div className="min-h-screen bg-[hsl(224,62%,8%)] flex items-center justify-center p-4">
-        <div className="w-full max-w-lg space-y-6">
-          <Card className="bg-[hsl(224,50%,12%)] border-[hsl(224,40%,20%)] overflow-hidden">
-            <div className="h-1.5 bg-gradient-to-r from-[hsl(152,55%,40%)] to-[hsl(152,55%,55%)]" />
-            <CardHeader className="text-center pt-10 pb-4">
-              <div className="w-20 h-20 rounded-full bg-[hsl(152,55%,40%)]/10 flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="h-10 w-10 text-[hsl(152,55%,40%)]" />
-              </div>
-              <CardTitle className="text-2xl text-[hsl(0,0%,95%)]">Contrato Assinado!</CardTitle>
-              <CardDescription className="text-[hsl(220,20%,60%)] text-base">
-                Sua assinatura foi registrada com sucesso e possui validade jurídica.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6 pb-8">
-              {/* Signing details */}
-              <div className="bg-[hsl(224,50%,15%)] rounded-xl p-4 space-y-3">
-                <div className="flex items-center gap-2 text-sm text-[hsl(220,20%,60%)]">
-                  <Shield className="h-4 w-4 text-[hsl(152,55%,40%)]" />
-                  <span>Detalhes da assinatura</span>
+      <div className="min-h-screen bg-[hsl(224,62%,8%)]">
+        {/* Header */}
+        <header className="sticky top-0 z-50 bg-[hsl(224,50%,12%)]/95 backdrop-blur-md border-b border-[hsl(224,40%,18%)]">
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {companyBrand?.brand_logo_url ? (
+                <img src={companyBrand.brand_logo_url} alt="" className="h-8 w-auto object-contain" />
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                  <FileSignature className="h-4 w-4 text-primary" />
                 </div>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <p className="text-[hsl(220,20%,50%)] text-xs">Assinante</p>
-                    <p className="text-[hsl(0,0%,90%)] font-medium">{signer?.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-[hsl(220,20%,50%)] text-xs">Data</p>
-                    <p className="text-[hsl(0,0%,90%)] font-medium">{currentDate}</p>
-                  </div>
+              )}
+              <div className="hidden sm:block">
+                <p className="text-sm font-semibold text-[hsl(0,0%,92%)] leading-tight">{companyName}</p>
+                <p className="text-xs text-[hsl(220,20%,50%)]">Assinatura Digital</p>
+              </div>
+            </div>
+            <Badge className="bg-[hsl(152,55%,40%)]/10 text-[hsl(152,55%,40%)] border-[hsl(152,55%,40%)]/20 text-xs">
+              <CheckCircle className="h-3 w-3 mr-1" /> Assinado
+            </Badge>
+          </div>
+        </header>
+
+        {/* Success banner */}
+        <div className="bg-[hsl(152,55%,40%)]/5 border-b border-[hsl(152,55%,40%)]/10">
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-center gap-2 text-sm">
+            <CheckCircle className="h-4 w-4 text-[hsl(152,55%,40%)]" />
+            <span className="text-[hsl(152,55%,40%)]">Sua assinatura foi registrada com sucesso e possui validade jurídica.</span>
+          </div>
+        </div>
+
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-6">
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Left: PDF Viewer */}
+            <div className="flex-1 min-w-0 space-y-4">
+              <div className="flex items-center justify-between">
+                <h1 className="text-lg font-bold text-[hsl(0,0%,92%)] truncate">{contract?.name || "Contrato"}</h1>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost" size="icon"
+                    className="h-8 w-8 text-[hsl(220,20%,60%)] hover:text-[hsl(0,0%,90%)] hover:bg-[hsl(224,50%,15%)]"
+                    onClick={() => setPdfZoom(z => Math.max(50, z - 25))}
+                  >
+                    <ZoomOut className="h-4 w-4" />
+                  </Button>
+                  <span className="text-xs text-[hsl(220,20%,55%)] min-w-[40px] text-center">{pdfZoom}%</span>
+                  <Button
+                    variant="ghost" size="icon"
+                    className="h-8 w-8 text-[hsl(220,20%,60%)] hover:text-[hsl(0,0%,90%)] hover:bg-[hsl(224,50%,15%)]"
+                    onClick={() => setPdfZoom(z => Math.min(200, z + 25))}
+                  >
+                    <ZoomIn className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
 
-              {/* Progress */}
-              {allSigners.length > 1 && (
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[hsl(220,20%,60%)]">{signedCount} de {allSigners.length} assinaturas</span>
-                    <span className="text-[hsl(0,0%,90%)] font-medium">{Math.round(progressPercent)}%</span>
-                  </div>
-                  <Progress value={progressPercent} className="h-2 bg-[hsl(224,50%,18%)]" />
-                  <div className="space-y-2">
-                    {allSigners.map((s) => (
-                      <div key={s.id} className="flex items-center gap-3 text-sm">
-                        {s.status === "assinado" ? (
-                          <CheckCircle className="h-4 w-4 text-[hsl(152,55%,40%)] shrink-0" />
-                        ) : (
-                          <Clock className="h-4 w-4 text-[hsl(45,93%,47%)] shrink-0" />
+              <div className="bg-[hsl(224,50%,15%)] rounded-2xl border border-[hsl(224,40%,20%)] overflow-hidden shadow-2xl shadow-[hsl(224,62%,4%)]/50">
+                <div
+                  className="overflow-auto max-h-[calc(100vh-260px)] p-4"
+                  style={{ transform: `scale(${pdfZoom / 100})`, transformOrigin: "top center" }}
+                >
+                  {contract && signer && (
+                    <PdfSigningOverlay
+                      contractId={contract.id}
+                      pdfUrl={contract.pdf_url}
+                      currentSignerId={signer.id}
+                      onFieldClick={() => {}}
+                      signedFieldIds={signedFieldIds}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Details sidebar */}
+            <aside className="w-full lg:w-[380px] shrink-0">
+              <div className="lg:sticky lg:top-24 space-y-5">
+                {/* Signing details card */}
+                <Card className="bg-[hsl(224,50%,12%)] border-[hsl(224,40%,20%)] overflow-hidden">
+                  <div className="h-1.5 bg-gradient-to-r from-[hsl(152,55%,40%)] to-[hsl(152,55%,55%)]" />
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base text-[hsl(0,0%,95%)] flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-[hsl(152,55%,40%)]" /> Detalhes da Assinatura
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 pb-6">
+                    <div className="bg-[hsl(224,50%,15%)] rounded-xl p-4 space-y-3">
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-[hsl(220,20%,50%)] text-xs">Assinante</p>
+                          <p className="text-[hsl(0,0%,90%)] font-medium">{signer?.name}</p>
+                        </div>
+                        <div>
+                          <p className="text-[hsl(220,20%,50%)] text-xs">Data</p>
+                          <p className="text-[hsl(0,0%,90%)] font-medium">{currentDate}</p>
+                        </div>
+                        {signer?.cpf_cnpj && (
+                          <div>
+                            <p className="text-[hsl(220,20%,50%)] text-xs">CPF/CNPJ</p>
+                            <p className="text-[hsl(0,0%,90%)] text-sm">{signer.cpf_cnpj}</p>
+                          </div>
                         )}
-                        <span className="text-[hsl(220,20%,70%)]">{s.name}</span>
-                        {s.status === "assinado" && s.signed_at && (
-                          <span className="text-[hsl(220,20%,45%)] text-xs ml-auto">
-                            {new Date(s.signed_at).toLocaleDateString("pt-BR")}
-                          </span>
+                        {signer?.email && (
+                          <div>
+                            <p className="text-[hsl(220,20%,50%)] text-xs">E-mail</p>
+                            <p className="text-[hsl(0,0%,90%)] text-sm">{signer.email}</p>
+                          </div>
                         )}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                    </div>
 
-              {contract?.pdf_url && (
-                <Button
-                  className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-                  onClick={() => window.open(contract.pdf_url, "_blank")}
-                >
-                  <Download className="h-5 w-5 mr-2" /> Baixar Documento PDF
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+                    {/* Progress */}
+                    {allSigners.length > 1 && (
+                      <div className="space-y-3">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-[hsl(220,20%,60%)]">{signedCount} de {allSigners.length} assinaturas</span>
+                          <span className="text-[hsl(0,0%,90%)] font-medium">{Math.round(progressPercent)}%</span>
+                        </div>
+                        <Progress value={progressPercent} className="h-2 bg-[hsl(224,50%,18%)]" />
+                        <div className="space-y-2">
+                          {allSigners.map((s) => (
+                            <div key={s.id} className="flex items-center gap-3 text-sm">
+                              {s.status === "assinado" ? (
+                                <CheckCircle className="h-4 w-4 text-[hsl(152,55%,40%)] shrink-0" />
+                              ) : (
+                                <Clock className="h-4 w-4 text-[hsl(45,93%,47%)] shrink-0" />
+                              )}
+                              <span className="text-[hsl(220,20%,70%)]">{s.name}</span>
+                              {s.status === "assinado" && s.signed_at && (
+                                <span className="text-[hsl(220,20%,45%)] text-xs ml-auto">
+                                  {new Date(s.signed_at).toLocaleDateString("pt-BR")}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-          <p className="text-center text-xs text-[hsl(220,20%,40%)]">
-            <Shield className="h-3 w-3 inline mr-1" />
-            Documento protegido com criptografia SHA-256 · Accord
-          </p>
+                    {/* Action buttons */}
+                    <div className="space-y-2 pt-2">
+                      <Button
+                        className="w-full h-12 bg-[hsl(152,55%,40%)] hover:bg-[hsl(152,55%,35%)] text-[hsl(0,0%,100%)] font-semibold rounded-xl"
+                        onClick={handleDownloadPdf}
+                      >
+                        <Download className="h-5 w-5 mr-2" /> Baixar Contrato Assinado
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full h-10 border-[hsl(224,40%,25%)] text-[hsl(220,20%,70%)] hover:bg-[hsl(224,50%,15%)] rounded-xl"
+                        onClick={() => window.open(contract?.pdf_url, "_blank")}
+                      >
+                        <Eye className="h-4 w-4 mr-2" /> Abrir em Nova Aba
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <p className="text-center text-xs text-[hsl(220,20%,40%)]">
+                  <Shield className="h-3 w-3 inline mr-1" />
+                  Documento protegido com criptografia SHA-256 · Accord
+                </p>
+              </div>
+            </aside>
+          </div>
         </div>
       </div>
     );
