@@ -64,8 +64,8 @@ export const STAGES = [
 export const ADMIN_STAGES = [
   { id: "cadastro-pendente", title: "Cadastro Pendente", daysLimit: "", color: "bg-amber-500" },
   { id: "dados-em-analise", title: "Dados em Análise", daysLimit: "", color: "bg-blue-500" },
-  { id: "cadastro-concluido", title: "Cadastro Concluído", daysLimit: "", color: "bg-green-500" },
   { id: "documentacao-pendente", title: "Doc. Pendente", daysLimit: "", color: "bg-red-500" },
+  { id: "cadastro-concluido", title: "Cadastro Concluído", daysLimit: "", color: "bg-green-500" },
 ] as const;
 
 export const ALL_STAGES = [...STAGES, ...ADMIN_STAGES];
