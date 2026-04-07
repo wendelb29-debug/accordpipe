@@ -162,12 +162,14 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
       ty -= 12;
 
       if (signer.role) {
-        currentPage.drawText(`Função: ${signer.role}`, { x: textX, y: ty, size: 8, font, color: rgb(0.2, 0.2, 0.2) });
+        currentPage.drawText(`Funcao: ${signer.role}`, { x: textX, y: ty, size: 8, font, color: rgb(0.2, 0.2, 0.2) });
         ty -= 11;
       }
 
-      if (signer.document) {
-        currentPage.drawText(`CPF/CNPJ: ${signer.document}`, { x: textX, y: ty, size: 8, font, color: rgb(0.2, 0.2, 0.2) });
+      const cpfText = signer.document ? `CPF: ${formatCpf(signer.document)}` : "";
+      const birthText = signer.birth_date ? `Nasc: ${formatBirthDate(signer.birth_date)}` : "";
+      if (cpfText || birthText) {
+        currentPage.drawText([cpfText, birthText].filter(Boolean).join(" | "), { x: textX, y: ty, size: 8, font, color: rgb(0.2, 0.2, 0.2) });
         ty -= 11;
       }
 
