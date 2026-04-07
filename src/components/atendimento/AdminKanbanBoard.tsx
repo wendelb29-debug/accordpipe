@@ -71,16 +71,26 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
     if (el) { el.style.cursor = 'grab'; el.style.userSelect = ''; }
   }, []);
 
-  const filteredLeads = leads.filter((l) => {
-    if (!searchTerm) return true;
-    const s = searchTerm.toLowerCase();
-    return (
-      l.company_name.toLowerCase().includes(s) ||
-      l.contact_name?.toLowerCase().includes(s) ||
-      l.phone?.includes(s) ||
-      l.email?.toLowerCase().includes(s)
-    );
-  });
+  const filteredLeads = useMemo(() => {
+    return leads.filter((l) => {
+      if (searchTerm) {
+        const s = searchTerm.toLowerCase();
+        if (
+          !l.company_name.toLowerCase().includes(s) &&
+          !l.contact_name?.toLowerCase().includes(s) &&
+          !l.phone?.includes(s) &&
+          !l.email?.toLowerCase().includes(s)
+        ) return false;
+      }
+      // Hide "cadastro-concluido" cards older than 24h unless filter is active
+      if (l.stage === "cadastro-concluido" && !showOldConcluidos) {
+        const enteredAt = new Date(l.stage_entered_at).getTime();
+        const now = Date.now();
+        if (now - enteredAt > 24 * 60 * 60 * 1000) return false;
+      }
+      return true;
+    });
+  }, [leads, searchTerm, showOldConcluidos]);
 
   const handleDrop = async (e: React.DragEvent, targetStage: string) => {
     e.preventDefault();
