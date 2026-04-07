@@ -86,16 +86,13 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
   };
 
   const fetchSignedContracts = async () => {
-    // Fetch signed client_contracts for this lead
     const { data: clientContracts } = await supabase
       .from("client_contracts")
-      .select("id, client_name, contract_status, signed_at, validation_code, document_hash, plan_name, created_at")
+      .select("id, client_name, contract_status, signed_at, validation_code, document_hash, plan_name, created_at, contract_content, servidor_id, signer_name, signer_document, signature_photo_url")
       .eq("lead_id", lead.id)
       .eq("contract_status", "assinado");
     setSignedContracts((clientContracts as SignedContract[]) || []);
 
-    // Fetch signed pdf_contracts linked via drive_files or direct
-    // Check pdf_contracts that have status 'concluido' and are linked to this lead's servidor
     const { data: pdfContracts } = await supabase
       .from("pdf_contracts")
       .select("id, name, status, pdf_assinado_url, pdf_url, validation_code, document_hash, created_at")
