@@ -414,6 +414,19 @@ export default function AssinarPdf() {
 
       if (refreshedContract) {
         setContract(refreshedContract);
+        if (refreshedContract.pdf_assinado_url) {
+          setSignedPdfUrl((prev) => {
+            if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+            return refreshedContract.pdf_assinado_url;
+          });
+        }
+      }
+
+      if (result.signed_pdf_url) {
+        setSignedPdfUrl((prev) => {
+          if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+          return result.signed_pdf_url;
+        });
       }
 
       setSigned(true);
@@ -430,7 +443,7 @@ export default function AssinarPdf() {
   const currentDate = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
 
   useEffect(() => {
-    if (!signed || !contract?.id) return;
+    if (!signed || !contract?.id || contract?.pdf_assinado_url) return;
 
     if (contract.pdf_assinado_url) {
       setSignedPdfUrl((prev) => {

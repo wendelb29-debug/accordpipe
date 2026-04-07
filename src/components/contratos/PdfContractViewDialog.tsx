@@ -76,6 +76,26 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
   }, [currentContract?.id]);
 
   useEffect(() => {
+    if (!currentContract?.id) return;
+
+    const refreshContract = async () => {
+      const { data } = await supabase
+        .from("pdf_contracts")
+        .select("*")
+        .eq("id", currentContract.id)
+        .single();
+
+      if (data) {
+        setCurrentContract((prev) => (prev ? { ...prev, ...(data as any) } : (data as any)));
+      }
+    };
+
+    if (signers.length > 0 && signers.every((signer) => signer.status === "assinado")) {
+      void refreshContract();
+    }
+  }, [currentContract?.id, signers]);
+
+  useEffect(() => {
     if (!currentContract?.id) {
       setSignedFieldIds([]);
       return;
