@@ -65,29 +65,23 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
   const signedSigners = data.signers.filter((signer) => Boolean(signer.signed_at));
 
   // Fallback: if no signature positions defined, create default positions
-  // at the bottom of the last page for each signed signer
+  // at the bottom of the last page for each signed signer.
+  // Positions must be in screen coordinates (×1.2) since the rendering
+  // loop divides by 1.2 to convert back to PDF coordinates.
+  const PDF_SCALE = 1.2;
   if (positions.length === 0 && signedSigners.length > 0) {
     const lastPage = pages.length;
-    const { width: lpW, height: lpH } = pages[lastPage - 1].getSize();
     const stampW = 220;
     const stampH = 60;
     const gap = 10;
-    const startY = 120; // from bottom of page
+    const startY = 140; // PDF-space distance from top where stamps begin on last page
+    const { height: lpH } = pages[lastPage - 1].getSize();
     positions = signedSigners.map((_, idx) => ({
       page: lastPage,
-      x: 40 * scale,
-      y: (lpH - startY - (stampH + gap) * idx) * scale / lpH * lpH,
-      width: stampW * scale,
-      height: stampH * scale,
-      signerId: null,
-    }));
-    // Recalculate y in screen coordinates (scale-aware)
-    positions = signedSigners.map((_, idx) => ({
-      page: lastPage,
-      x: 40 * scale,
-      y: (startY + (stampH + gap) * idx) * scale,
-      width: stampW * scale,
-      height: stampH * scale,
+      x: 40 * PDF_SCALE,
+      y: (lpH - startY + (stampH + gap) * idx) * PDF_SCALE,
+      width: stampW * PDF_SCALE,
+      height: stampH * PDF_SCALE,
       signerId: null,
     }));
   }
