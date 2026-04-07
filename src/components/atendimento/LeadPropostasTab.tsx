@@ -1140,6 +1140,8 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
         });
 
         toast.success("Contrato gerado com sucesso!");
+        // Refresh saved contract so signature mode shows it
+        await fetchSavedContract();
       }
     } catch (err) {
       console.error("Error creating contract from proposal:", err);
