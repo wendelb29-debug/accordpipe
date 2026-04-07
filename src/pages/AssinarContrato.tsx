@@ -2,9 +2,12 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Camera, CheckCircle2, MapPin, User, FileSignature, AlertCircle, X, Users } from "lucide-react";
+import {
+  Loader2, Camera, CheckCircle2, MapPin, User, FileSignature,
+  AlertCircle, Users, Clock, Building2, Mail, Phone, Hash, MapPinned,
+  ShieldCheck, FileText,
+} from "lucide-react";
 import { toast } from "sonner";
 import { generateContractPdf } from "@/lib/generateContractPdf";
 
@@ -12,6 +15,10 @@ const roleLabels: Record<string, string> = {
   matriz: "Representante da Matriz",
   revendedor: "Revendedor / Contratante",
   colaborador: "Colaborador",
+  vendedor: "Vendedor",
+  testemunha: "Testemunha",
+  signatario: "Signatário",
+  cliente: "Cliente",
 };
 
 interface SignatureInfo {
@@ -64,7 +71,7 @@ function ContractPdfEmbed({ content, code, companyName }: { content: string; cod
 
   if (!pdfUrl) return <p className="text-sm text-muted-foreground">Conteúdo não disponível</p>;
 
-  return <iframe src={pdfUrl} className="w-full h-[400px] rounded-md border" title="Contrato PDF" />;
+  return <iframe src={pdfUrl} className="w-full h-full rounded-xl border-0" title="Contrato PDF" />;
 }
 
 export default function AssinarContrato() {
@@ -92,21 +99,16 @@ export default function AssinarContrato() {
 
   const fetchContract = async () => {
     if (!token) { setError("Token inválido"); setLoading(false); return; }
-    
     try {
       const { data, error: fnError } = await supabase.functions.invoke("get-contract-by-token", {
         body: { token },
       });
-
       if (fnError || !data || data.error) {
         setError("Contrato não encontrado ou link inválido.");
         setLoading(false);
         return;
       }
-
       const contractData: ContractData = { ...data, company: data.companies };
-      
-      // Check if this specific signer already signed
       if (contractData.signer_signed_at) {
         setSigned(true);
       } else if (contractData.signature_status === "signed" && !contractData.signer_role) {
@@ -114,11 +116,8 @@ export default function AssinarContrato() {
       } else if (data.is_client_contract && contractData.signature_status === "assinado") {
         setSigned(true);
       }
-      
-      // Pre-fill signer info
       if (contractData.signer_name) setSignerNameInput(contractData.signer_name);
       if (contractData.signer_document) setSignerDocInput(contractData.signer_document);
-      
       setContract(contractData);
     } catch {
       setError("Erro ao carregar contrato.");
@@ -127,10 +126,7 @@ export default function AssinarContrato() {
   };
 
   const getLocation = useCallback(() => {
-    if (!navigator.geolocation) {
-      toast.error("Geolocalização não suportada neste dispositivo");
-      return;
-    }
+    if (!navigator.geolocation) { toast.error("Geolocalização não suportada neste dispositivo"); return; }
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude, longitude } = pos.coords;
@@ -156,7 +152,6 @@ export default function AssinarContrato() {
       if (videoRef.current) videoRef.current.srcObject = stream;
       setCameraOpen(true);
       getLocation();
-      // Auto-capture after 6 seconds
       let count = 6;
       setCountdown(count);
       countdownRef.current = setInterval(() => {
@@ -187,11 +182,7 @@ export default function AssinarContrato() {
     canvas.height = videoRef.current.videoHeight;
     canvas.getContext("2d")?.drawImage(videoRef.current, 0, 0);
     canvas.toBlob((blob) => {
-      if (blob) {
-        setPhotoBlob(blob);
-        setPhotoPreview(URL.createObjectURL(blob));
-        stopCamera();
-      }
+      if (blob) { setPhotoBlob(blob); setPhotoPreview(URL.createObjectURL(blob)); stopCamera(); }
     }, "image/jpeg", 0.85);
   };
 
@@ -216,12 +207,8 @@ export default function AssinarContrato() {
         `https://${projectId}.supabase.co/functions/v1/sign-contract`,
         { method: "POST", body: formData }
       );
-
       const result = await response.json();
-      if (!response.ok || result.error) {
-        throw new Error(result.error || "Erro ao assinar");
-      }
-
+      if (!response.ok || result.error) throw new Error(result.error || "Erro ao assinar");
       setSigned(true);
       toast.success("Assinatura registrada com sucesso!");
     } catch (e: any) {
@@ -230,172 +217,220 @@ export default function AssinarContrato() {
     setSigning(false);
   };
 
+  // ─── LOADING ───
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)" }}>
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-10 w-10 animate-spin text-blue-400" />
+          <p className="text-sm text-slate-400">Carregando contrato...</p>
+        </div>
       </div>
     );
   }
 
+  // ─── ERROR ───
   if (error || !contract) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="max-w-md w-full p-8 text-center space-y-4">
-          <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
-          <h1 className="text-xl font-bold text-foreground">{error || "Contrato não encontrado"}</h1>
-          <p className="text-muted-foreground">Verifique o link e tente novamente.</p>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)" }}>
+        <div className="max-w-md w-full rounded-2xl border border-slate-700/50 bg-slate-800/80 backdrop-blur-xl p-8 text-center space-y-4 shadow-2xl">
+          <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto">
+            <AlertCircle className="h-8 w-8 text-red-400" />
+          </div>
+          <h1 className="text-xl font-bold text-slate-100">{error || "Contrato não encontrado"}</h1>
+          <p className="text-slate-400 text-sm">Verifique o link e tente novamente.</p>
+        </div>
       </div>
     );
   }
 
+  // ─── SIGNED SUCCESS ───
   if (signed) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="max-w-md w-full p-8 text-center space-y-4">
-          <CheckCircle2 className="h-16 w-16 text-primary mx-auto" />
-          <h1 className="text-2xl font-bold text-foreground">Assinatura Registrada!</h1>
-          <p className="text-muted-foreground">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)" }}>
+        <div className="max-w-md w-full rounded-2xl border border-slate-700/50 bg-slate-800/80 backdrop-blur-xl p-8 text-center space-y-5 shadow-2xl">
+          <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto ring-2 ring-emerald-500/20">
+            <CheckCircle2 className="h-10 w-10 text-emerald-400" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-100">Assinatura Registrada!</h1>
+          <p className="text-slate-400">
             {contract.signer_role && (
-              <span className="block mb-1">
-                <Badge variant="secondary">{roleLabels[contract.signer_role] || contract.signer_role}</Badge>
+              <span className="block mb-2">
+                <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-xs">{roleLabels[contract.signer_role] || contract.signer_role}</Badge>
               </span>
             )}
-            O contrato <span className="font-mono font-semibold">{contract.code}</span> foi assinado com sucesso.
+            O contrato <span className="font-mono font-semibold text-slate-200">{contract.code}</span> foi assinado com sucesso.
           </p>
-          {/* Signatures status */}
           {contract.signatures && contract.signatures.length > 0 && (
-            <div className="text-left space-y-2 pt-4 border-t">
-              <p className="text-sm font-semibold text-foreground flex items-center gap-2"><Users className="h-4 w-4" /> Status das Assinaturas</p>
+            <div className="text-left space-y-2 pt-4 border-t border-slate-700/50">
+              <p className="text-sm font-semibold text-slate-300 flex items-center gap-2"><Users className="h-4 w-4 text-blue-400" /> Status das Assinaturas</p>
               {contract.signatures.map((sig, i) => (
                 <div key={i} className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">{roleLabels[sig.signer_role] || sig.signer_role}</span>
+                  <span className="text-slate-400">{roleLabels[sig.signer_role] || sig.signer_role}</span>
                   {sig.signed_at ? (
-                    <Badge className="bg-status-paid/10 text-status-paid border-status-paid/30"><CheckCircle2 className="h-3 w-3 mr-1" /> Assinado</Badge>
+                    <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-xs gap-1"><CheckCircle2 className="h-3 w-3" /> Assinado</Badge>
                   ) : (
-                    <Badge variant="outline">Pendente</Badge>
+                    <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-xs gap-1"><Clock className="h-3 w-3" /> Pendente</Badge>
                   )}
                 </div>
               ))}
             </div>
           )}
-        </Card>
+        </div>
       </div>
     );
   }
 
   const company = contract.company;
   const signerRole = contract.signer_role || "revendedor";
+  const fullAddress = company ? [
+    company.endereco,
+    company.numero ? `nº ${company.numero}` : null,
+    company.complemento,
+    company.bairro,
+    company.cep ? `CEP: ${company.cep}` : null,
+    company.cidade && company.estado ? `${company.cidade}/${company.estado}` : company.cidade || company.estado,
+  ].filter(Boolean).join(", ") : "";
+
+  const canSign = !!photoBlob && !!location;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-6">
-        <div className="text-center space-y-2">
-          <FileSignature className="h-10 w-10 text-primary mx-auto" />
-          <h1 className="text-2xl font-bold text-foreground">Assinatura de Contrato</h1>
-          <p className="font-mono text-muted-foreground">{contract.code}</p>
-          <Badge variant="secondary" className="text-sm">{roleLabels[signerRole] || signerRole}</Badge>
+    <div className="min-h-screen pb-28 sm:pb-8" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)" }}>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-5">
+
+        {/* ─── HEADER ─── */}
+        <div className="text-center space-y-3">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mx-auto shadow-lg shadow-blue-500/20">
+            <FileSignature className="h-7 w-7 text-white" />
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-100">Assinatura de Contrato</h1>
+          <p className="font-mono text-slate-400 text-sm">{contract.code}</p>
+          <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-xs">{roleLabels[signerRole] || signerRole}</Badge>
         </div>
 
-        {/* Signatures progress */}
+        {/* ─── SIGNATURES GRID ─── */}
         {contract.signatures && contract.signatures.length > 0 && (
-          <Card className="p-4">
-            <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
-              <Users className="h-4 w-4 text-primary" /> Assinaturas do Contrato
-            </div>
-            <div className="space-y-2">
-              {contract.signatures.map((sig, i) => (
-                <div key={i} className="flex items-center justify-between text-sm">
-                  <div>
-                    <span className="text-foreground">{roleLabels[sig.signer_role] || sig.signer_role}</span>
-                    {sig.signer_name && <span className="text-muted-foreground ml-2">({sig.signer_name})</span>}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
+              <Users className="h-4 w-4 text-blue-400" /> Assinaturas do Contrato
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+              {contract.signatures.map((sig, i) => {
+                const isSigned = !!sig.signed_at;
+                return (
+                  <div
+                    key={i}
+                    className={`rounded-xl border p-3 text-center transition-all ${
+                      isSigned
+                        ? "border-emerald-500/30 bg-emerald-500/5"
+                        : "border-slate-700/50 bg-slate-800/50"
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2 ${
+                      isSigned ? "bg-emerald-500/15" : "bg-amber-500/15"
+                    }`}>
+                      {isSigned
+                        ? <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                        : <Clock className="h-4 w-4 text-amber-400" />
+                      }
+                    </div>
+                    <p className="text-xs font-medium text-slate-300 truncate">{roleLabels[sig.signer_role] || sig.signer_role}</p>
+                    {sig.signer_name && <p className="text-[10px] text-slate-500 truncate mt-0.5">{sig.signer_name}</p>}
+                    <p className={`text-[10px] font-medium mt-1 ${isSigned ? "text-emerald-400" : "text-amber-400"}`}>
+                      {isSigned ? "Assinado" : "Pendente"}
+                    </p>
                   </div>
-                  {sig.signed_at ? (
-                    <Badge className="bg-status-paid/10 text-status-paid border-status-paid/30"><CheckCircle2 className="h-3 w-3 mr-1" /> Assinado</Badge>
-                  ) : (
-                    <Badge variant="outline">Pendente</Badge>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
-          </Card>
+          </div>
         )}
 
-        <Card className="p-5 space-y-3">
-          <div className="flex items-center gap-2 text-foreground font-semibold">
-            <User className="h-5 w-5 text-primary" />
-            Dados Pessoais
+        {/* ─── DADOS PESSOAIS ─── */}
+        <div className="rounded-2xl border border-slate-700/50 bg-slate-800/60 backdrop-blur-sm p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+              <User className="h-4 w-4 text-blue-400" />
+            </div>
+            <h2 className="text-sm font-semibold text-slate-200">Dados Pessoais</h2>
           </div>
-          <div className="grid gap-2 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Razão Social:</span><span className="font-medium text-foreground">{company?.razao_social || "-"}</span></div>
-            {company?.nome_fantasia && <div className="flex justify-between"><span className="text-muted-foreground">Nome Fantasia:</span><span className="font-medium text-foreground">{company.nome_fantasia}</span></div>}
-            <div className="flex justify-between"><span className="text-muted-foreground">CNPJ:</span><span className="font-mono font-medium text-foreground">{company?.cnpj || "-"}</span></div>
-            {company?.responsavel && <div className="flex justify-between"><span className="text-muted-foreground">Responsável:</span><span className="font-medium text-foreground">{company.responsavel}</span></div>}
-            {company?.email && <div className="flex justify-between"><span className="text-muted-foreground">E-mail:</span><span className="font-medium text-foreground">{company.email}</span></div>}
-            {company?.telefone && <div className="flex justify-between"><span className="text-muted-foreground">Telefone:</span><span className="font-medium text-foreground">{company.telefone}</span></div>}
-            {(company?.endereco || company?.cidade) && (
-              <div className="flex justify-between gap-4">
-                <span className="text-muted-foreground shrink-0">Endereço:</span>
-                <span className="font-medium text-foreground text-right">
-                  {[
-                    company?.endereco,
-                    company?.numero ? `nº ${company.numero}` : null,
-                    company?.complemento,
-                    company?.bairro,
-                    company?.cep ? `CEP: ${company.cep}` : null,
-                    company?.cidade && company?.estado ? `${company.cidade}/${company.estado}` : company?.cidade || company?.estado,
-                  ].filter(Boolean).join(", ")}
-                </span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <DataRow icon={Building2} label="Razão Social" value={company?.razao_social || "-"} />
+            {company?.nome_fantasia && <DataRow icon={Building2} label="Nome Fantasia" value={company.nome_fantasia} />}
+            <DataRow icon={Hash} label="CNPJ" value={company?.cnpj || "-"} mono />
+            {company?.responsavel && <DataRow icon={User} label="Responsável" value={company.responsavel} />}
+            {company?.email && <DataRow icon={Mail} label="E-mail" value={company.email} />}
+            {company?.telefone && <DataRow icon={Phone} label="Telefone" value={company.telefone} />}
+            {fullAddress && (
+              <div className="sm:col-span-2">
+                <DataRow icon={MapPinned} label="Endereço" value={fullAddress} />
               </div>
             )}
           </div>
-        </Card>
+        </div>
 
-        <Card className="p-5">
-          <h2 className="font-semibold text-foreground mb-3">Conteúdo do Contrato</h2>
-          {contract.pdf_url ? (
-            <iframe src={contract.pdf_url} className="w-full h-[500px] rounded-md border" title="Contrato PDF" />
-          ) : (
-            <ContractPdfEmbed content={contract.contract_content || ""} code={contract.code} companyName={company?.razao_social || ""} />
-          )}
-        </Card>
+        {/* ─── CONTEÚDO DO CONTRATO ─── */}
+        <div className="rounded-2xl border border-slate-700/50 bg-slate-800/60 backdrop-blur-sm overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-700/50">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+              <FileText className="h-4 w-4 text-blue-400" />
+            </div>
+            <h2 className="text-sm font-semibold text-slate-200">Conteúdo do Contrato</h2>
+          </div>
+          <div className="h-[450px] sm:h-[550px] bg-slate-900/40 p-2 sm:p-4">
+            <div className="h-full rounded-xl overflow-hidden shadow-2xl shadow-black/30 bg-white">
+              {contract.pdf_url ? (
+                <iframe src={contract.pdf_url} className="w-full h-full border-0" title="Contrato PDF" />
+              ) : (
+                <ContractPdfEmbed content={contract.contract_content || ""} code={contract.code} companyName={company?.razao_social || ""} />
+              )}
+            </div>
+          </div>
+        </div>
 
-
-        <Card className="p-5 space-y-3">
-          <div className="flex items-center gap-2 text-foreground font-semibold">
-            <MapPin className="h-5 w-5 text-primary" />
-            Localização
+        {/* ─── LOCALIZAÇÃO ─── */}
+        <div className="rounded-2xl border border-slate-700/50 bg-slate-800/60 backdrop-blur-sm p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+              <MapPin className="h-4 w-4 text-blue-400" />
+            </div>
+            <h2 className="text-sm font-semibold text-slate-200">Localização</h2>
           </div>
           {location ? (
-            <div className="text-sm space-y-1">
-              <p className="text-muted-foreground">{location.address}</p>
-              <p className="font-mono text-xs text-muted-foreground">({location.lat.toFixed(6)}, {location.lng.toFixed(6)})</p>
+            <div className="flex items-start gap-2 text-sm">
+              <ShieldCheck className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-slate-300">{location.address}</p>
+                <p className="font-mono text-xs text-slate-500 mt-0.5">({location.lat.toFixed(6)}, {location.lng.toFixed(6)})</p>
+              </div>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">A localização será capturada ao abrir a câmera.</p>
+            <p className="text-sm text-slate-500">A localização será capturada automaticamente ao abrir a câmera.</p>
           )}
-        </Card>
+        </div>
 
-        <Card className="p-5 space-y-4">
-          <div className="flex items-center gap-2 text-foreground font-semibold">
-            <Camera className="h-5 w-5 text-primary" />
-            Foto do Signatário
+        {/* ─── FOTO DO SIGNATÁRIO ─── */}
+        <div className="rounded-2xl border border-slate-700/50 bg-slate-800/60 backdrop-blur-sm p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+              <Camera className="h-4 w-4 text-blue-400" />
+            </div>
+            <h2 className="text-sm font-semibold text-slate-200">Foto do Signatário</h2>
           </div>
 
           {cameraOpen && (
             <div className="space-y-3">
-              <div className="relative rounded-lg overflow-hidden bg-black">
+              <div className="relative rounded-xl overflow-hidden bg-black ring-1 ring-slate-700/50">
                 <video ref={videoRef} autoPlay playsInline muted className="w-full" />
                 {countdown !== null && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                    <span className="text-5xl font-bold text-white bg-black/60 rounded-full w-20 h-20 flex items-center justify-center">
-                      {countdown}
-                    </span>
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="w-20 h-20 rounded-full bg-blue-500/20 ring-2 ring-blue-400/40 flex items-center justify-center">
+                      <span className="text-4xl font-bold text-blue-300">{countdown}</span>
+                    </div>
                   </div>
                 )}
               </div>
-              <p className="text-center text-sm text-muted-foreground">
+              <p className="text-center text-xs text-slate-500">
                 {countdown !== null ? `Foto será capturada em ${countdown}s...` : "Preparando..."}
               </p>
             </div>
@@ -403,39 +438,88 @@ export default function AssinarContrato() {
 
           {photoPreview && !cameraOpen && (
             <div className="space-y-3">
-              <img src={photoPreview} alt="Foto de assinatura" className="w-full max-w-sm mx-auto rounded-lg border" />
-              <Button variant="outline" onClick={() => { setPhotoBlob(null); setPhotoPreview(null); startCamera(); }} className="w-full gap-2">
+              <img src={photoPreview} alt="Foto de assinatura" className="w-full max-w-xs mx-auto rounded-xl ring-1 ring-slate-700/50" />
+              <Button
+                variant="outline"
+                onClick={() => { setPhotoBlob(null); setPhotoPreview(null); startCamera(); }}
+                className="w-full gap-2 border-slate-700 text-slate-300 hover:bg-slate-700/50 rounded-xl"
+              >
                 <Camera className="h-4 w-4" /> Tirar Nova Foto
               </Button>
             </div>
           )}
 
           {!cameraOpen && !photoPreview && (
-            <Button variant="outline" onClick={startCamera} className="w-full gap-2">
+            <Button
+              variant="outline"
+              onClick={startCamera}
+              className="w-full gap-2 border-slate-700 text-slate-300 hover:bg-slate-700/50 rounded-xl h-12"
+            >
               <Camera className="h-4 w-4" /> Abrir Câmera
             </Button>
           )}
-        </Card>
+        </div>
 
-        <Button
-          size="lg"
-          className="w-full gap-2 text-lg py-6"
-          disabled={!photoBlob || !location || signing}
+        {/* ─── DESKTOP SIGN BUTTON ─── */}
+        <div className="hidden sm:block">
+          <button
+            disabled={!canSign || signing}
+            onClick={handleSign}
+            className="w-full h-14 rounded-2xl font-semibold text-base text-white disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30"
+            style={{
+              background: canSign && !signing
+                ? "linear-gradient(135deg, #3b82f6, #6366f1)"
+                : "linear-gradient(135deg, #334155, #475569)",
+            }}
+          >
+            {signing ? <Loader2 className="h-5 w-5 animate-spin" /> : <FileSignature className="h-5 w-5" />}
+            Assinar Documento
+          </button>
+          {!canSign && (
+            <p className="text-center text-xs text-slate-500 mt-2">
+              {!photoBlob && !location
+                ? "Tire uma foto e permita a localização para assinar"
+                : !photoBlob
+                ? "Tire uma foto para assinar"
+                : "Permita a localização para assinar"}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* ─── MOBILE FIXED BOTTOM BAR ─── */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 p-4 bg-slate-900/95 backdrop-blur-xl border-t border-slate-700/50 safe-area-pb z-50">
+        <button
+          disabled={!canSign || signing}
           onClick={handleSign}
+          className="w-full h-12 rounded-xl font-semibold text-sm text-white disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/20"
+          style={{
+            background: canSign && !signing
+              ? "linear-gradient(135deg, #3b82f6, #6366f1)"
+              : "linear-gradient(135deg, #334155, #475569)",
+          }}
         >
           {signing ? <Loader2 className="h-5 w-5 animate-spin" /> : <FileSignature className="h-5 w-5" />}
-          Assinar
-        </Button>
-
-        {(!photoBlob || !location) && (
-          <p className="text-center text-sm text-muted-foreground">
-            {!photoBlob && !location
-              ? "Tire uma foto e permita a localização para assinar"
-              : !photoBlob
-              ? "Tire uma foto para assinar"
-              : "Permita a localização para assinar"}
+          Assinar Documento
+        </button>
+        {!canSign && (
+          <p className="text-center text-[10px] text-slate-500 mt-1.5">
+            {!photoBlob ? "Tire uma foto" : "Permita a localização"} para assinar
           </p>
         )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── DATA ROW HELPER ─── */
+function DataRow({ icon: Icon, label, value, mono }: { icon: any; label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="flex items-start gap-2.5">
+      <Icon className="h-3.5 w-3.5 text-slate-500 mt-0.5 shrink-0" />
+      <div className="min-w-0">
+        <p className="text-[11px] text-slate-500 uppercase tracking-wider">{label}</p>
+        <p className={`text-slate-200 truncate ${mono ? "font-mono" : ""}`}>{value}</p>
       </div>
     </div>
   );
