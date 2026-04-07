@@ -192,13 +192,62 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
     return acc;
   }, []);
 
-  if (fields.length === 0 && templateFields.length === 0) {
+  const hasAnyFields = fields.length > 0 || templateFields.length > 0;
+
+  const renderDefaultSignatureStamps = (pageNum: number) => {
+    if (hasAnyFields) return null;
+    if (pageNum !== totalPages || totalPages === 0) return null;
+    const pageSize = pageSizes[pageNum - 1];
+    if (!pageSize) return null;
+    const yOffset = pageOffsets[pageNum - 1] ?? 0;
+    const stampW = 220 * scale;
+    const stampH = 60 * scale;
+    const gap = 10 * scale;
+    const startYFromBottom = 140 * scale;
+
     return (
-      <div className="rounded-lg border overflow-hidden">
-        <iframe src={`${pdfUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`} className="w-full h-[60vh] rounded-lg" title="Contrato" style={{ border: "none" }} />
+      <div key={`default-stamps-${pageNum}`}>
+        {orderedSigners.map((signer: any, idx: number) => {
+          const isSigned = signer?.status === "assinado" && signer?.signed_at;
+          const yPos = pageSize.height - startYFromBottom + (stampH + gap) * idx;
+          return (
+            <div
+              key={`default-sig-${signer.id}`}
+              className="absolute overflow-hidden pointer-events-none"
+              style={{
+                left: 40 * scale,
+                top: yOffset + yPos,
+                width: stampW,
+                height: stampH,
+              }}
+            >
+              {isSigned ? (
+                <div className="h-full w-full rounded-md border border-primary/30 bg-primary/5 p-1 flex items-center gap-2">
+                  {signer.signature_photo_url && (
+                    <img src={signer.signature_photo_url} alt="Foto" className="h-full w-auto rounded object-cover shrink-0" style={{ maxWidth: "35%" }} />
+                  )}
+                  <div className="flex min-w-0 flex-col gap-0.5 overflow-hidden">
+                    <div className="flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3 shrink-0 text-primary" />
+                      <span className="truncate text-[8px] font-bold text-primary">Assinado Digitalmente</span>
+                    </div>
+                    <span className="truncate text-[7px] font-semibold text-foreground">{signer.name}</span>
+                    {signer.cpf_cnpj && <span className="truncate text-[6px] text-muted-foreground">CPF/CNPJ: {signer.cpf_cnpj}</span>}
+                    {signer.signed_at && <span className="truncate text-[6px] text-muted-foreground">{new Date(signer.signed_at).toLocaleString("pt-BR")}</span>}
+                    {signer.signer_ip && <span className="truncate text-[6px] text-muted-foreground">IP: {signer.signer_ip}</span>}
+                  </div>
+                </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center border border-dashed border-muted-foreground/30 rounded-md">
+                  <span className="text-[9px] text-muted-foreground">{signer?.name ? `${signer.name} - Pendente` : "Assinatura"}</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
-  }
+  };
 
   const renderPageOverlay = (pageNum: number) => {
     const pageFields_ = fields.filter(f => f.page === pageNum);
@@ -298,7 +347,7 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
           );
         })}
 
-        {/* Other signers\' fields */}
+        {/* Other signers' fields */}
         {otherFields.map(field => {
           const signer = resolveSignatureSigner(field, orderedPageSignatureFields);
           const isSigned = field.field_type === "signature" ? isSignatureFieldSigned(field, orderedPageSignatureFields) : signedFieldIds.includes(field.id);
@@ -334,7 +383,7 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
           );
         })}
 
-        {/* Current signer\\'s fields */}
+        {/* Current signer's fields */}
         {myFields.map(field => {
           const signer = resolveSignatureSigner(field, orderedPageSignatureFields);
           const isSigned = field.field_type === "signature" ? isSignatureFieldSigned(field, orderedPageSignatureFields) : signedFieldIds.includes(field.id);
@@ -398,6 +447,8 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
 
         {/* Overlays for each page */}
         {Array.from({ length: totalPages }, (_, i) => renderPageOverlay(i + 1))}
+        {/* Default signature stamps when no fields exist */}
+        {Array.from({ length: totalPages }, (_, i) => renderDefaultSignatureStamps(i + 1))}
       </div>
     </div>
   );

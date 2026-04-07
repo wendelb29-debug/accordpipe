@@ -56,13 +56,36 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
     }
   }
 
-  const positions = [...(data.signaturePositions || [])].sort((a, b) => {
+  let positions = [...(data.signaturePositions || [])].sort((a, b) => {
     if (a.page !== b.page) return a.page - b.page;
     if (a.y !== b.y) return a.y - b.y;
     return a.x - b.x;
   });
 
   const signedSigners = data.signers.filter((signer) => Boolean(signer.signed_at));
+
+  // Fallback: if no signature positions defined, create default positions
+  // at the bottom of the last page for each signed signer.
+  // Positions must be in screen coordinates (×1.2) since the rendering
+  // loop divides by 1.2 to convert back to PDF coordinates.
+  const PDF_SCALE = 1.2;
+  if (positions.length === 0 && signedSigners.length > 0) {
+    const lastPage = pages.length;
+    const stampW = 220;
+    const stampH = 60;
+    const gap = 10;
+    const startY = 140; // PDF-space distance from top where stamps begin on last page
+    const { height: lpH } = pages[lastPage - 1].getSize();
+    positions = signedSigners.map((_, idx) => ({
+      page: lastPage,
+      x: 40 * PDF_SCALE,
+      y: (lpH - startY + (stampH + gap) * idx) * PDF_SCALE,
+      width: stampW * PDF_SCALE,
+      height: stampH * PDF_SCALE,
+      signerId: null,
+    }));
+  }
+
   const usedSignerIds = new Set<string>();
 
   for (const pos of positions) {
