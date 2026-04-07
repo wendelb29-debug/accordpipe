@@ -213,17 +213,34 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
   }, [signatureMode, lead.servidor_id]);
 
   const fetchSavedContract = async () => {
-    const companyId = lead.company_id || lead.servidor_id;
-    if (!companyId) return;
+    if (!lead.id) return;
     setLoadingSavedContract(true);
     try {
-      const { data } = await supabase
+      // First try to find by lead_id (new way)
+      let { data } = await supabase
         .from("contracts")
-        .select("id, code, signature_link, signature_status, pdf_url, contract_content, signing_token, created_at, companies(razao_social)")
-        .eq("company_id", companyId)
+        .select("id, code, signature_link, signature_status, pdf_url, contract_content, signing_token, created_at, lead_id, companies(razao_social)")
+        .eq("lead_id", lead.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      // Fallback: find by company_id (legacy contracts)
+      if (!data) {
+        const companyId = lead.company_id || lead.servidor_id;
+        if (companyId) {
+          const res = await supabase
+            .from("contracts")
+            .select("id, code, signature_link, signature_status, pdf_url, contract_content, signing_token, created_at, lead_id, companies(razao_social)")
+            .eq("company_id", companyId)
+            .is("lead_id", null)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          data = res.data;
+        }
+      }
+
       if (data) {
         setSavedContract({ ...data, company: data.companies });
         setGeneratedContractLink(data.signature_link);
@@ -262,11 +279,20 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     } catch { /* silent */ }
   }, [profile, fetchContractSigners]);
 
-  // Fetch signers when saved contract loads
+  // Fetch signers when saved contract loads + realtime subscription
   useEffect(() => {
-    if (savedContract?.id) {
-      fetchContractSigners(savedContract.id);
-    }
+    if (!savedContract?.id) return;
+    fetchContractSigners(savedContract.id);
+
+    // Realtime subscription for live updates
+    const channel = supabase
+      .channel(`contract-signers-${savedContract.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contract_signatures', filter: `contract_id=eq.${savedContract.id}` }, () => {
+        fetchContractSigners(savedContract.id);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [savedContract?.id, fetchContractSigners]);
 
   // Ensure vendor after signers load
@@ -1182,7 +1208,8 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
         "Save Car Brasil Tecnologia e Serviços Ltda",
         "manual",
         7,
-        clause
+        clause,
+        lead.id
       );
 
       if (result) {

@@ -213,7 +213,8 @@ ${company.responsavel || "[RESPONSÁVEL]"}`;
     matrizNome: string,
     signatureType: string,
     linkValidityDays: number,
-    proposalClause?: string
+    proposalClause?: string,
+    leadId?: string
   ) => {
     const { data: company, error: companyError } = await supabase
       .from("companies")
@@ -254,6 +255,7 @@ ${company.responsavel || "[RESPONSÁVEL]"}`;
       signing_token: signingToken,
       signature_link: `${window.location.origin}/assinar/${signingToken}`,
       created_by: user?.id,
+      lead_id: leadId || null,
     } as any).select("id").maybeSingle();
 
     if (error || !insertedContract) {
