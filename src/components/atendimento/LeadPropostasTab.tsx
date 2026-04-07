@@ -213,13 +213,14 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
   }, [signatureMode, lead.servidor_id]);
 
   const fetchSavedContract = async () => {
-    if (!lead.company_id) return;
+    const companyId = lead.company_id || lead.servidor_id;
+    if (!companyId) return;
     setLoadingSavedContract(true);
     try {
       const { data } = await supabase
         .from("contracts")
         .select("id, code, signature_link, signature_status, pdf_url, contract_content, signing_token, created_at, companies(razao_social)")
-        .eq("company_id", lead.company_id)
+        .eq("company_id", companyId)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
