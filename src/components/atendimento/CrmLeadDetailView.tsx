@@ -777,8 +777,24 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                           .eq("lead_id", lead.id)
                           .maybeSingle();
                         if (reg) {
+                          // Copy lead data into registration
+                          const regUpdate: any = {
+                            client_status: "ativo",
+                            status: "concluido",
+                            nome_completo: lead.contact_name || lead.company_name || null,
+                            cpf: lead.documento || null,
+                            email: lead.email || null,
+                            cep: lead.cep || null,
+                            endereco: lead.endereco || null,
+                            numero: lead.numero || null,
+                            bairro: lead.bairro || null,
+                            cidade: lead.cidade || null,
+                            estado: lead.estado || null,
+                            plano_contratado: null,
+                            valor_mensal: lead.value_mrr || 0,
+                          };
                           await supabase.from("crm_client_registrations")
-                            .update({ client_status: "ativo", status: "concluido" } as any)
+                            .update(regUpdate)
                             .eq("id", reg.id);
                         }
                         // Remove "Pendente de Correção" tag if present
@@ -786,7 +802,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                         const cleanTags = currentTags.filter(t => t !== "Pendente de Correção");
                         await onUpdate(lead.id, { stage: "cadastro-concluido", tags: cleanTags } as any);
                         await addActivity({ type: "won", title: "Cadastro aprovado pelo administrativo", description: `Cliente aprovado e ativado na **Base de Clientes** por ${profile?.name || "Admin"}.` });
-                        toast.success("✅ Cliente aprovado e ativado na Base de Clientes!");
+                        toast.success("Cliente aprovado e ativado na Base de Clientes!");
                         onBack();
                       } catch (err) {
                         toast.error("Erro ao aprovar cadastro");
