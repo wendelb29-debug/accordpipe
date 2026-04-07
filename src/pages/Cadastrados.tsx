@@ -754,16 +754,17 @@ export default function Cadastrados() {
                   {detailCrmContracts.map((c: any) => {
                     const isGen = generatingPdf === c.id;
                     const signers = (c.signers || []).map((s: any) => ({
-                      name: s.signer_name || "—",
-                      role: s.signer_role || "signatário",
+                      name: s.signer_name || "---",
+                      role: s.signer_role || "signatario",
                       email: null,
                       document: s.signer_document,
+                      birth_date: null,
                       signed_at: s.signed_at,
                       ip: s.signer_ip,
                       signature_photo_url: s.signature_photo_url,
                     }));
                     if (signers.length === 0 && c.signer_name) {
-                      signers.push({ name: c.signer_name, role: "signatário", email: null, document: c.signer_document, signed_at: c.signed_at, ip: null, signature_photo_url: c.signature_photo_url });
+                      signers.push({ name: c.signer_name, role: "signatario", email: null, document: c.signer_document, birth_date: null, signed_at: c.signed_at, ip: null, signature_photo_url: c.signature_photo_url });
                     }
 
                     const buildPdf = async () => {
