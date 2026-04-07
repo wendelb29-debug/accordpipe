@@ -2,11 +2,15 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import {
   FileSignature, Plus, Eye, Download, Copy, Camera, MapPin, User, X,
   Clock, CheckCircle2, AlertCircle, Loader2, Search, UserPlus, Link2, Mail,
+  MoreVertical, MessageSquare,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadContractPdf } from "@/lib/generateContractPdf";
 import { downloadSignedContractPdf } from "@/lib/generateSignedContractPdf";
 import { useContracts } from "@/hooks/useContracts";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -65,6 +69,7 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
   const [contracts, setContracts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [signerCounts, setSignerCounts] = useState<Record<string, { signed: number; total: number }>>({});
 
   // Create contract dialog
   const [createOpen, setCreateOpen] = useState(false);
@@ -202,7 +207,21 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
       .select("*, companies(razao_social, nome_fantasia, cnpj, responsavel, endereco, numero, bairro, cidade, estado, cep)")
       .eq("company_id", lead.company_id)
       .order("created_at", { ascending: false });
-    if (!error) setContracts((data || []).map((c: any) => ({ ...c, company: c.companies })));
+    if (!error) {
+      const contractList = (data || []).map((c: any) => ({ ...c, company: c.companies }));
+      setContracts(contractList);
+      // Fetch signer counts for each contract
+      const counts: Record<string, { signed: number; total: number }> = {};
+      for (const c of contractList) {
+        const { data: signers } = await supabase
+          .from("contract_signatures")
+          .select("id, signed_at")
+          .eq("contract_id", c.id);
+        const all = signers || [];
+        counts[c.id] = { total: all.length, signed: all.filter((s: any) => !!s.signed_at).length };
+      }
+      setSignerCounts(counts);
+    }
     setLoading(false);
   };
 
@@ -419,8 +438,9 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
             <thead>
               <tr className="border-b bg-muted/50">
                 <th className="text-left p-2.5 font-medium text-muted-foreground">Status</th>
-                <th className="text-left p-2.5 font-medium text-muted-foreground">Código</th>
+                <th className="text-left p-2.5 font-medium text-muted-foreground">Nome</th>
                 <th className="text-left p-2.5 font-medium text-muted-foreground">Data</th>
+                <th className="text-left p-2.5 font-medium text-muted-foreground">Assinaturas</th>
                 <th className="text-right p-2.5 font-medium text-muted-foreground">Ações</th>
               </tr>
             </thead>
@@ -428,37 +448,62 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
               {filteredContracts.map((c) => {
                 const status = statusConfig[c.signature_status] || statusConfig.pending;
                 const StatusIcon = status.icon;
+                const counts = signerCounts[c.id] || { signed: 0, total: 0 };
+                const allSigned = counts.total > 0 && counts.signed === counts.total;
                 return (
                   <tr key={c.id} className="border-b last:border-0 hover:bg-muted/30">
                     <td className="p-2.5">
-                      <Badge variant="outline" className={cn("text-[10px]", status.className)}>
-                        <StatusIcon className="h-3 w-3 mr-1" />
-                        {status.label}
-                      </Badge>
-                    </td>
-                    <td className="p-2.5 font-medium text-foreground">{c.code}</td>
-                    <td className="p-2.5 text-muted-foreground">
-                      {new Date(c.created_at).toLocaleDateString("pt-BR")}
+                      {allSigned ? (
+                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <Clock className="h-5 w-5 text-amber-500" />
+                      )}
                     </td>
                     <td className="p-2.5">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleViewContract(c)} title="Visualizar">
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDownloadPdf(c)} title="Baixar PDF">
-                          <Download className="h-3 w-3" />
-                        </Button>
-                        {c.signature_link && (
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleCopyLink(c.signature_link, c.code)} title="Copiar link">
-                            <Copy className="h-3 w-3" />
+                      <button
+                        className="text-primary hover:underline text-left font-medium"
+                        onClick={() => handleViewContract(c)}
+                      >
+                        {c.code} — {c.company?.razao_social || lead.company_name}
+                      </button>
+                    </td>
+                    <td className="p-2.5 text-muted-foreground">
+                      {new Date(c.created_at).toLocaleDateString("pt-BR")} {new Date(c.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                    </td>
+                    <td className="p-2.5">
+                      <span className={cn(
+                        "font-semibold",
+                        allSigned ? "text-green-600" : "text-amber-600"
+                      )}>
+                        {counts.signed}/{counts.total}
+                      </span>
+                    </td>
+                    <td className="p-2.5 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
+                            Ações <MoreVertical className="h-3 w-3" />
                           </Button>
-                        )}
-                        {c.signature_status === "pending" && (
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSignContract(c)} title="Assinar">
-                            <FileSignature className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleViewContract(c)}>
+                            <Eye className="h-3.5 w-3.5 mr-2" /> Visualizar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDownloadPdf(c)}>
+                            <Download className="h-3.5 w-3.5 mr-2" /> Baixar PDF
+                          </DropdownMenuItem>
+                          {c.signature_link && (
+                            <DropdownMenuItem onClick={() => handleCopyLink(c.signature_link, c.code)}>
+                              <Copy className="h-3.5 w-3.5 mr-2" /> Copiar link
+                            </DropdownMenuItem>
+                          )}
+                          {c.signature_status === "pending" && (
+                            <DropdownMenuItem onClick={() => setSignContract(c)}>
+                              <FileSignature className="h-3.5 w-3.5 mr-2" /> Assinar
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </td>
                   </tr>
                 );
