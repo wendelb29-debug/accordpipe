@@ -350,19 +350,14 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
       const validationUrl = `${window.location.origin}/validar-documento/${contract.validation_code || ""}`;
 
       downloadSignedContractPdf({
-        content: contract.contract_content,
+        pdfUrl: contract.pdf_url || "",
         code: contract.code,
         companyName: contract.company?.razao_social || lead.company_name,
         documentHash: contract.document_hash || "",
         validationCode: contract.validation_code || "",
         signedAt: contract.signed_at || new Date().toISOString(),
         signers,
-        history: [
-          { timestamp: contract.created_at, user: "Sistema", action: "gerou o documento." },
-          ...(contract.signed_at ? [{ timestamp: contract.signed_at, user: signers[0]?.name || "Signatário", action: "assinou o documento." }] : []),
-        ],
         validationUrl,
-        companyEmitter: "Save Car Brasil Tecnologia e Serviços Ltda",
       });
     } else {
       downloadContractPdf({ content: contract.contract_content, code: contract.code, companyName: contract.company?.razao_social || lead.company_name });
