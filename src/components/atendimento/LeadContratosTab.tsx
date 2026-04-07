@@ -69,6 +69,7 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
   const [contracts, setContracts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [signerCounts, setSignerCounts] = useState<Record<string, { signed: number; total: number }>>({});
 
   // Create contract dialog
   const [createOpen, setCreateOpen] = useState(false);
