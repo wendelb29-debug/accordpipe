@@ -116,7 +116,8 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
         signatureStampIndex++;
         if (signer.signed_at) {
           // Stamp the signature visually
-          const stampHeight = 22;
+          const hasPhoto = !!signer.signature_photo_url;
+          const stampHeight = hasPhoto ? 30 : 22;
           y = addPageBreakIfNeeded(doc, y, stampHeight, mT, mB);
 
           // Draw signature box
@@ -124,22 +125,30 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
           doc.setFillColor(245, 247, 255);
           doc.roundedRect(mL, y - 3, uW, stampHeight, 1.5, 1.5, "FD");
 
+          // If there's a signature photo, load and add it
+          const photoOffset = hasPhoto ? 28 : 0;
+          if (hasPhoto && signerPhotoImages[signatureStampIndex - 1]) {
+            try {
+              doc.addImage(signerPhotoImages[signatureStampIndex - 1], "JPEG", mL + 2, y - 1, 24, stampHeight - 4);
+            } catch {}
+          }
+
           // "Assinado digitalmente" label
           doc.setFont("helvetica", "bold");
           doc.setFontSize(9);
           doc.setTextColor(30, 64, 175);
-          doc.text("✔ Assinado Digitalmente", mL + 4, y + 1);
+          doc.text("✔ Assinado Digitalmente", mL + 4 + photoOffset, y + 1);
           doc.setTextColor(0);
 
           // Signer details
           doc.setFont("helvetica", "normal");
           doc.setFontSize(8);
-          doc.text(`Nome: ${signer.name}`, mL + 4, y + 5.5);
+          doc.text(`Nome: ${signer.name}`, mL + 4 + photoOffset, y + 5.5);
           if (signer.document) {
-            doc.text(`CPF/CNPJ: ${signer.document}`, mL + 4, y + 9.5);
+            doc.text(`CPF/CNPJ: ${signer.document}`, mL + 4 + photoOffset, y + 9.5);
           }
           const signedDate = new Date(signer.signed_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-          doc.text(`Data: ${signedDate}`, mL + 4, y + (signer.document ? 13.5 : 9.5));
+          doc.text(`Data: ${signedDate}`, mL + 4 + photoOffset, y + (signer.document ? 13.5 : 9.5));
           if (signer.ip) {
             doc.setFontSize(6);
             doc.setTextColor(120);
