@@ -28,16 +28,15 @@ interface LeadDoc {
 
 interface SignedContract {
   id: string;
-  client_name: string;
-  contract_status: string;
+  code: string;
+  signature_status: string;
   signed_at: string | null;
   validation_code: string | null;
   document_hash: string | null;
-  plan_name: string | null;
+  pdf_url: string | null;
   created_at: string;
   contract_content: string | null;
-  
-  servidor_id: string;
+  company_id: string;
   signer_name: string | null;
   signer_document: string | null;
   signature_photo_url: string | null;
@@ -86,12 +85,12 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
   };
 
   const fetchSignedContracts = async () => {
-    const { data: clientContracts } = await supabase
-      .from("client_contracts")
-      .select("id, client_name, contract_status, signed_at, validation_code, document_hash, plan_name, created_at, contract_content, servidor_id, signer_name, signer_document, signature_photo_url")
+    const { data: signedContractsData } = await supabase
+      .from("contracts")
+      .select("id, code, signature_status, signed_at, validation_code, document_hash, pdf_url, created_at, contract_content, company_id, signer_name, signer_document, signature_photo_url")
       .eq("lead_id", lead.id)
-      .eq("contract_status", "assinado");
-    setSignedContracts((clientContracts as SignedContract[]) || []);
+      .eq("signature_status", "signed");
+    setSignedContracts((signedContractsData as unknown as SignedContract[]) || []);
 
     const { data: pdfContracts } = await supabase
       .from("pdf_contracts")
@@ -169,26 +168,25 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
 
   const handleDownloadClientContract = async (contract: SignedContract) => {
     try {
-      // Fetch signers from client_contract_signers
+      // Fetch signers from contract_signatures
       const { data: signers } = await supabase
-        .from("client_contract_signers")
+        .from("contract_signatures")
         .select("*")
-        .eq("contract_id", contract.id)
-        .order("sign_order", { ascending: true });
+        .eq("contract_id", contract.id);
 
       const signerList = (signers && signers.length > 0)
-        ? signers.map((s: any) => ({
+        ? signers.filter((s: any) => s.signed_at).map((s: any) => ({
             id: s.id,
-            name: s.name || s.signer_name || "—",
-            role: s.signer_type || "signatário",
-            email: s.email,
+            name: s.signer_name || "—",
+            role: s.signer_role || "signatário",
+            email: null,
             document: s.signer_document,
             signed_at: s.signed_at,
             ip: s.signer_ip,
             signature_photo_url: s.signature_photo_url,
           }))
         : [{
-            name: contract.signer_name || contract.client_name,
+            name: contract.signer_name || lead.company_name,
             role: "signatário",
             document: contract.signer_document,
             signed_at: contract.signed_at,
@@ -200,19 +198,21 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
       const { data: company } = await supabase
         .from("companies")
         .select("razao_social")
-        .eq("id", contract.servidor_id)
+        .eq("id", contract.company_id)
         .single();
 
       const companyName = company?.razao_social || lead.company_name;
 
-      // Generate base PDF from contract_content if no pdf_url
+      // Use existing pdf_url or generate from content
       let pdfUrl = "";
       let tempUrl: string | null = null;
 
-      if (contract.contract_content) {
+      if (contract.pdf_url) {
+        pdfUrl = contract.pdf_url;
+      } else if (contract.contract_content) {
         const basePdfBlob = generateContractPdf({
           content: contract.contract_content,
-          code: `CTR-${contract.id.slice(0, 8).toUpperCase()}`,
+          code: contract.code,
           companyName,
         });
         tempUrl = URL.createObjectURL(basePdfBlob);
@@ -224,7 +224,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
 
       await downloadSignedContractPdf({
         pdfUrl,
-        code: `CTR-${contract.id.slice(0, 8).toUpperCase()}`,
+        code: contract.code,
         companyName,
         documentHash: contract.document_hash || "",
         validationCode: contract.validation_code || "",
@@ -272,11 +272,10 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
                       <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium">Contrato de Adesão — {contract.client_name}</p>
+                      <p className="text-sm font-medium">{contract.code} — {lead.company_name}</p>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        {contract.plan_name && <span>{contract.plan_name}</span>}
                         {contract.signed_at && (
-                          <span>• Assinado em {new Date(contract.signed_at).toLocaleDateString("pt-BR")}</span>
+                          <span>Assinado em {new Date(contract.signed_at).toLocaleDateString("pt-BR")}</span>
                         )}
                       </div>
                       {contract.validation_code && (
