@@ -183,6 +183,10 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
   const myFields = pageFields.filter(f => f.signer_id === currentSignerId);
   const otherFields = pageFields.filter(f => f.signer_id !== currentSignerId);
   const pageTemplateFields = templateFields.filter(f => f.page === currentPage);
+  const orderedPageSignatureFields = [...pageFields.filter(f => f.field_type === "signature")].sort((a, b) => {
+    if (a.pos_y !== b.pos_y) return a.pos_y - b.pos_y;
+    return a.pos_x - b.pos_x;
+  });
 
   const dataTemplateFields = pageTemplateFields.filter(f => f.field_type !== "assinatura");
   const hasContractSignatureFields = fields.some(f => f.field_type === "signature");
@@ -194,6 +198,15 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
         return a.pos_x - b.pos_x;
       });
   const orderedSigners = [...(contractMeta?.allSigners || [])].sort((a: any, b: any) => a.sign_order - b.sign_order);
+  const resolveSignatureSigner = (field: SignField) => {
+    if (field.signer_id && signerDetails[field.signer_id]) return signerDetails[field.signer_id];
+    const fieldIndex = orderedPageSignatureFields.findIndex(candidate => candidate.id === field.id);
+    return fieldIndex >= 0 ? orderedSigners[fieldIndex] : null;
+  };
+  const isSignatureFieldSigned = (field: SignField) => {
+    const signer = resolveSignatureSigner(field);
+    return signedFieldIds.includes(field.id) || Boolean(signer?.status === "assinado" && signer?.signed_at);
+  };
 
   if (fields.length === 0 && templateFields.length === 0) {
     return (
@@ -291,8 +304,8 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
           })}
 
           {otherFields.map(field => {
-            const isSigned = signedFieldIds.includes(field.id);
-            const signer = field.signer_id ? signerDetails[field.signer_id] : null;
+            const signer = resolveSignatureSigner(field);
+            const isSigned = field.field_type === "signature" ? isSignatureFieldSigned(field) : signedFieldIds.includes(field.id);
             return (
               <div
                 key={field.id}
@@ -327,8 +340,8 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
 
           {/* Current signer's fields */}
           {myFields.map(field => {
-            const isSigned = signedFieldIds.includes(field.id);
-            const signer = field.signer_id ? signerDetails[field.signer_id] : null;
+            const signer = resolveSignatureSigner(field);
+            const isSigned = field.field_type === "signature" ? isSignatureFieldSigned(field) : signedFieldIds.includes(field.id);
             return (
               <button
                 key={field.id}
