@@ -159,7 +159,7 @@ export type Database = {
             foreignKeyName: "client_contract_signers_contract_id_fkey"
             columns: ["contract_id"]
             isOneToOne: false
-            referencedRelation: "client_contracts"
+            referencedRelation: "contracts"
             referencedColumns: ["id"]
           },
         ]
@@ -2397,6 +2397,10 @@ export type Database = {
           _type?: string
           _user_id: string
         }
+        Returns: string
+      }
+      get_contract_company_id: {
+        Args: { _contract_id: string }
         Returns: string
       }
       get_drive_file_servidor: { Args: { _file_id: string }; Returns: string }
