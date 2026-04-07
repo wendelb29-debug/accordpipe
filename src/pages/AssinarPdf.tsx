@@ -52,11 +52,10 @@ export default function AssinarPdf() {
     const load = async () => {
       if (!token) { setError("Token inválido"); setLoading(false); return; }
 
-      const { data: signerData, error: signerErr } = await supabase
-        .from("pdf_contract_signers")
-        .select("*")
-        .eq("signing_token", token)
-        .single();
+      const { data: signerRows, error: signerErr } = await supabase
+        .rpc("get_pdf_signer_by_token", { p_token: token });
+
+      const signerData = signerRows?.[0] || null;
 
       if (signerErr || !signerData) {
         setError("Link de assinatura inválido ou expirado.");
@@ -100,10 +99,7 @@ export default function AssinarPdf() {
       }
 
       const { data: signersList } = await supabase
-        .from("pdf_contract_signers")
-        .select("id, name, sign_order, status, signed_at")
-        .eq("contract_id", signerData.contract_id)
-        .order("sign_order", { ascending: true });
+        .rpc("get_pdf_contract_signers_by_token", { p_token: token });
 
       const sigList = (signersList as SignerInfo[]) || [];
       setAllSigners(sigList);
