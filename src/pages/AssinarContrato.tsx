@@ -78,10 +78,12 @@ export default function AssinarContrato() {
   const [signerDocInput, setSignerDocInput] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     fetchContract();
-    return () => stopCamera();
+    return () => { stopCamera(); if (countdownRef.current) clearInterval(countdownRef.current); };
   }, [token]);
 
   const fetchContract = async () => {
@@ -150,6 +152,19 @@ export default function AssinarContrato() {
       if (videoRef.current) videoRef.current.srcObject = stream;
       setCameraOpen(true);
       getLocation();
+      // Auto-capture after 6 seconds
+      let count = 6;
+      setCountdown(count);
+      countdownRef.current = setInterval(() => {
+        count--;
+        if (count <= 0) {
+          clearInterval(countdownRef.current!);
+          setCountdown(null);
+          setTimeout(() => capturePhoto(), 100);
+        } else {
+          setCountdown(count);
+        }
+      }, 1000);
     } catch {
       toast.error("Permita o acesso à câmera para assinar");
     }
@@ -346,15 +361,17 @@ export default function AssinarContrato() {
             <div className="space-y-3">
               <div className="relative rounded-lg overflow-hidden bg-black">
                 <video ref={videoRef} autoPlay playsInline muted className="w-full" />
+                {countdown !== null && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                    <span className="text-5xl font-bold text-white bg-black/60 rounded-full w-20 h-20 flex items-center justify-center">
+                      {countdown}
+                    </span>
+                  </div>
+                )}
               </div>
-              <div className="flex gap-2">
-                <Button onClick={capturePhoto} className="flex-1 gap-2">
-                  <Camera className="h-4 w-4" /> Tirar Foto
-                </Button>
-                <Button variant="outline" onClick={stopCamera}>
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
+              <p className="text-center text-sm text-muted-foreground">
+                {countdown !== null ? `Foto será capturada em ${countdown}s...` : "Preparando..."}
+              </p>
             </div>
           )}
 
