@@ -250,7 +250,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
                       size="icon"
                       variant="ghost"
                       className="h-7 w-7"
-                      onClick={() => handleDownloadClientContract(contract)}
+                      onClick={() => handleViewClientContract(contract)}
                       title="Visualizar contrato assinado"
                     >
                       <Eye className="h-3.5 w-3.5" />
