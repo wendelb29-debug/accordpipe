@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { PdfSigningOverlay } from "@/components/contratos/PdfSigningOverlay";
+import { generateSignedContractPdf } from "@/lib/generateSignedContractPdf";
 
 interface SignerInfo {
   id: string;
@@ -96,6 +97,16 @@ export default function AssinarPdf() {
 
       if (signerData.status === "assinado") {
         setSigned(true);
+      }
+
+      // Load already-signed field IDs from the database
+      const { data: signedFields } = await supabase
+        .from("pdf_contract_fields")
+        .select("id")
+        .eq("contract_id", signerData.contract_id)
+        .eq("value", "signed");
+      if (signedFields) {
+        setSignedFieldIds(signedFields.map((f: any) => f.id));
       }
 
       const { data: signersList } = await supabase
@@ -374,10 +385,36 @@ export default function AssinarPdf() {
   // ─── SIGNED SUCCESS ───
   if (signed) {
     const handleDownloadPdf = async () => {
-      if (!contract?.pdf_url) return;
+      if (!contract) return;
       try {
-        const resp = await fetch(contract.pdf_url);
-        const blob = await resp.blob();
+        // Load full signer details for the PDF
+        const { data: fullSigners } = await supabase
+          .from("pdf_contract_signers")
+          .select("*")
+          .eq("contract_id", contract.id)
+          .order("sign_order", { ascending: true });
+
+        const signerData = (fullSigners || []).map((s: any) => ({
+          name: s.name,
+          role: "signatário",
+          email: s.email,
+          document: s.cpf_cnpj,
+          signed_at: s.signed_at,
+          ip: s.signer_ip,
+          signature_photo_url: s.signature_photo_url,
+        }));
+
+        const blob = await generateSignedContractPdf({
+          content: `CONTRATO: ${contract.name}\n\n${contract.description || "Contrato PDF com assinatura digital."}`,
+          code: `PDF-${contract.id.slice(0, 8).toUpperCase()}`,
+          companyName: companyName,
+          documentHash: contract.document_hash || "",
+          validationCode: contract.validation_code || "",
+          signedAt: fullSigners?.find((s: any) => s.signed_at)?.signed_at || new Date().toISOString(),
+          signers: signerData,
+          history: [],
+          validationUrl: `${window.location.origin}/validar-documento/${contract.validation_code || ""}`,
+        });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
