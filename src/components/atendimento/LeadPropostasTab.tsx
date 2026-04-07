@@ -1199,7 +1199,8 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
         "Save Car Brasil Tecnologia e Serviços Ltda",
         "manual",
         7,
-        clause
+        clause,
+        lead.id
       );
 
       if (result) {
