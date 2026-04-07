@@ -689,8 +689,9 @@ export default function Cadastrados() {
             {(() => {
               const signedContracts = detailContracts.filter(c => c.contract_status === "assinado");
               const pendingContracts = detailContracts.filter(c => c.contract_status === "pendente");
+              const hasCrmContracts = detailCrmContracts.length > 0;
 
-              if (signedContracts.length === 0 && pendingContracts.length === 0) {
+              if (signedContracts.length === 0 && pendingContracts.length === 0 && !hasCrmContracts) {
                 return (
                   <div className="text-center py-12 text-muted-foreground">
                     <FileSignature className="h-10 w-10 mx-auto mb-3 opacity-30" />
@@ -702,6 +703,66 @@ export default function Cadastrados() {
 
               return (
                 <>
+                  {/* CRM Signed Contracts (from contracts table) */}
+                  {detailCrmContracts.map((c: any) => {
+                    const pdfUrl = c.pdf_assinado_url || c.pdf_url;
+                    return (
+                      <Card key={`crm-${c.id}`} className="border-green-200/50">
+                        <CardContent className="p-5 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2.5 rounded-lg bg-green-500/10">
+                                <FileSignature className="h-5 w-5 text-green-600" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-foreground">{c.code} — Contrato CRM Assinado</p>
+                                <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-400 dark:border-green-800 mt-1">Assinado</Badge>
+                              </div>
+                            </div>
+                            <div className="flex gap-1">
+                              {pdfUrl && (
+                                <>
+                                  <Button size="sm" variant="ghost" title="Visualizar" onClick={() => window.open(pdfUrl, "_blank", "noopener,noreferrer")}>
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button size="sm" variant="outline" className="gap-1.5" onClick={async () => {
+                                    try {
+                                      const res = await fetch(pdfUrl);
+                                      const blob = await res.blob();
+                                      const link = document.createElement("a");
+                                      link.href = URL.createObjectURL(blob);
+                                      link.download = `${c.code}_assinado.pdf`;
+                                      link.click();
+                                      URL.revokeObjectURL(link.href);
+                                    } catch { window.open(pdfUrl, "_blank"); }
+                                  }}>
+                                    <Download className="h-4 w-4" /> Baixar
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <Separator />
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                            {c.signed_at && (
+                              <div><span className="text-muted-foreground">Data de Assinatura</span><p className="font-semibold text-foreground">{fmtDate(c.signed_at)}</p></div>
+                            )}
+                            {c.signer_name && (
+                              <div><span className="text-muted-foreground">Assinante</span><p className="font-semibold text-foreground">{c.signer_name}</p></div>
+                            )}
+                            {c.signer_document && (
+                              <div><span className="text-muted-foreground">Documento</span><p className="font-semibold text-foreground">{c.signer_document}</p></div>
+                            )}
+                            {c.validation_code && (
+                              <div><span className="text-muted-foreground">Código de Validação</span><p className="font-semibold text-foreground">{c.validation_code}</p></div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+
+                  {/* Client Contracts (from client_contracts table) */}
                   {signedContracts.map(c => {
                     const contractName = `Contrato_${(selectedReg.nome_completo || "Cliente").replace(/\s+/g, "_")}_${fmtDate(c.signed_at || c.created_at).replace(/\//g, "-")}.pdf`;
                     return (
