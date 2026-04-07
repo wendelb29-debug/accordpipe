@@ -27,23 +27,23 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch Z-API credentials from the company record
-    const { data: company, error: companyError } = await supabase
-      .from("companies")
+    // Fetch Z-API credentials from the secure credentials table
+    const { data: creds, error: credsError } = await supabase
+      .from("company_api_credentials")
       .select("zapi_instance_id, zapi_token, zapi_client_token")
-      .eq("id", company_id)
+      .eq("company_id", company_id)
       .maybeSingle();
 
-    if (companyError || !company) {
+    if (credsError || !creds) {
       return new Response(
-        JSON.stringify({ error: "Company not found" }),
+        JSON.stringify({ error: "API credentials not found for this company" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const INSTANCE_ID = company.zapi_instance_id;
-    const TOKEN = company.zapi_token;
-    const CLIENT_TOKEN = company.zapi_client_token;
+    const INSTANCE_ID = creds.zapi_instance_id;
+    const TOKEN = creds.zapi_token;
+    const CLIENT_TOKEN = creds.zapi_client_token;
 
     if (!INSTANCE_ID || !TOKEN || !CLIENT_TOKEN) {
       return new Response(
