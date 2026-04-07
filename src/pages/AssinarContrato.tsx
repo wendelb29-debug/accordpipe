@@ -85,6 +85,7 @@ export default function AssinarContrato() {
   const [location, setLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
   const [signing, setSigning] = useState(false);
   const [signed, setSigned] = useState(false);
+  const [viewingContract, setViewingContract] = useState(false);
   const [signerNameInput, setSignerNameInput] = useState("");
   const [signerDocInput, setSignerDocInput] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
