@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Paperclip, Upload, Trash2, Eye, Download, Loader2, FileText, CreditCard, MapPin, Building2 } from "lucide-react";
+import { Paperclip, Upload, Trash2, Eye, Download, Loader2, FileText, CreditCard, MapPin, Building2, FileSignature, CheckCircle2, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,28 @@ interface LeadDoc {
   created_at: string;
 }
 
+interface SignedContract {
+  id: string;
+  client_name: string;
+  contract_status: string;
+  signed_at: string | null;
+  validation_code: string | null;
+  document_hash: string | null;
+  plan_name: string | null;
+  created_at: string;
+}
+
+interface SignedPdfContract {
+  id: string;
+  name: string;
+  status: string;
+  pdf_assinado_url: string | null;
+  pdf_url: string;
+  validation_code: string | null;
+  document_hash: string | null;
+  created_at: string;
+}
+
 const DOC_TYPES = [
   { key: "cnh", label: "CNH", icon: CreditCard, description: "Carteira Nacional de Habilitação" },
   { key: "cnpj", label: "CNPJ", icon: Building2, description: "Cartão CNPJ ou Contrato Social" },
@@ -37,6 +59,8 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
   const [docs, setDocs] = useState<LeadDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [signedContracts, setSignedContracts] = useState<SignedContract[]>([]);
+  const [signedPdfContracts, setSignedPdfContracts] = useState<SignedPdfContract[]>([]);
 
   const fetchDocs = async () => {
     setLoading(true);
@@ -53,8 +77,28 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
     setLoading(false);
   };
 
+  const fetchSignedContracts = async () => {
+    // Fetch signed client_contracts for this lead
+    const { data: clientContracts } = await supabase
+      .from("client_contracts")
+      .select("id, client_name, contract_status, signed_at, validation_code, document_hash, plan_name, created_at")
+      .eq("lead_id", lead.id)
+      .eq("contract_status", "assinado");
+    setSignedContracts((clientContracts as SignedContract[]) || []);
+
+    // Fetch signed pdf_contracts linked via drive_files or direct
+    // Check pdf_contracts that have status 'concluido' and are linked to this lead's servidor
+    const { data: pdfContracts } = await supabase
+      .from("pdf_contracts")
+      .select("id, name, status, pdf_assinado_url, pdf_url, validation_code, document_hash, created_at")
+      .eq("servidor_id", lead.servidor_id)
+      .eq("status", "concluido");
+    setSignedPdfContracts((pdfContracts as SignedPdfContract[]) || []);
+  };
+
   useEffect(() => {
     fetchDocs();
+    fetchSignedContracts();
   }, [lead.id]);
 
   const handleUpload = async (docType: string, file: File) => {
@@ -100,6 +144,24 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
 
   const getDocsForType = (type: string) => docs.filter((d) => d.doc_type === type);
 
+  const handleViewSignedPdf = (url: string) => {
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const handleDownloadSignedPdf = async (url: string, fileName: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = fileName;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch {
+      window.open(url, "_blank");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -108,11 +170,117 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
     );
   }
 
+  const hasSignedContracts = signedContracts.length > 0 || signedPdfContracts.length > 0;
+
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-semibold flex items-center gap-2">
         <Paperclip className="h-4 w-4" /> Documentos do Lead
       </h3>
+
+      {/* Signed Contracts Section */}
+      {hasSignedContracts && (
+        <div className="space-y-3">
+          <h4 className="text-xs font-semibold flex items-center gap-1.5 text-green-700 dark:text-green-400">
+            <FileSignature className="h-3.5 w-3.5" /> Contratos Assinados
+          </h4>
+
+          {signedContracts.map((contract) => (
+            <Card key={contract.id} className="border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">Contrato de Adesão — {contract.client_name}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {contract.plan_name && <span>{contract.plan_name}</span>}
+                        {contract.signed_at && (
+                          <span>• Assinado em {new Date(contract.signed_at).toLocaleDateString("pt-BR")}</span>
+                        )}
+                      </div>
+                      {contract.validation_code && (
+                        <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <Shield className="h-3 w-3" /> Código: {contract.validation_code}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Badge variant="secondary" className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border-0">
+                      Assinado
+                    </Badge>
+                    {contract.validation_code && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        onClick={() => window.open(`/validar-documento/${contract.validation_code}`, "_blank")}
+                        title="Validar documento"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+          {signedPdfContracts.map((contract) => {
+            const pdfUrl = contract.pdf_assinado_url || contract.pdf_url;
+            return (
+              <Card key={contract.id} className="border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">{contract.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Concluído em {new Date(contract.created_at).toLocaleDateString("pt-BR")}
+                        </p>
+                        {contract.validation_code && (
+                          <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <Shield className="h-3 w-3" /> Código: {contract.validation_code}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Badge variant="secondary" className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border-0">
+                        Assinado
+                      </Badge>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        onClick={() => handleViewSignedPdf(pdfUrl)}
+                        title="Visualizar contrato"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        onClick={() => handleDownloadSignedPdf(pdfUrl, `${contract.name}.pdf`)}
+                        title="Baixar contrato"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       <div className="grid gap-3">
         {DOC_TYPES.map((dt) => {
