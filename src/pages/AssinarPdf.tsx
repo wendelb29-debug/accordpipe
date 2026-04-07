@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { PdfSigningOverlay } from "@/components/contratos/PdfSigningOverlay";
+import { generateSignedContractPdf } from "@/lib/generateSignedContractPdf";
 
 interface SignerInfo {
   id: string;
