@@ -215,6 +215,68 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     }
   }, [lead, editing]);
 
+  // Fetch signature stats for this lead's contract
+  useEffect(() => {
+    const fetchSignatureStats = async () => {
+      const { data: contract } = await supabase
+        .from("contracts")
+        .select("id")
+        .eq("lead_id", lead.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!contract) {
+        // Fallback: check by company_id
+        const companyId = lead.company_id || lead.servidor_id;
+        if (companyId) {
+          const { data: legacyContract } = await supabase
+            .from("contracts")
+            .select("id")
+            .eq("company_id", companyId)
+            .is("lead_id", null)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (legacyContract) {
+            await loadSignerStats(legacyContract.id);
+            return;
+          }
+        }
+        setSignatureStats(null);
+        return;
+      }
+      await loadSignerStats(contract.id);
+    };
+
+    const loadSignerStats = async (contractId: string) => {
+      const { data: signers } = await supabase
+        .from("contract_signatures")
+        .select("signed_at")
+        .eq("contract_id", contractId);
+      if (signers) {
+        const signed = signers.filter(s => !!s.signed_at).length;
+        setSignatureStats({ signed, total: signers.length });
+        // Auto-update contract status when all signed
+        if (signed > 0 && signed === signers.length) {
+          await supabase.from("contracts").update({ signature_status: "signed" } as any).eq("id", contractId);
+        }
+      }
+    };
+
+    fetchSignatureStats();
+
+    // Realtime subscription for signature updates
+    const channel = supabase
+      .channel(`sig-status-${lead.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contract_signatures' }, () => {
+        fetchSignatureStats();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [lead.id, lead.company_id, lead.servidor_id]);
+
   const pipelineStages = isAdminPipeline ? ADMIN_STAGES : STAGES;
   const currentStageIndex = pipelineStages.findIndex((s) => s.id === lead.stage);
 
