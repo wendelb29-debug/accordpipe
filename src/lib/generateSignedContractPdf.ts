@@ -409,4 +409,3 @@ export async function downloadSignedContractPdf(data: SignedContractPdfData) {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
-}
