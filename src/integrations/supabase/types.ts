@@ -154,15 +154,7 @@ export type Database = {
           signing_token?: string
           status?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "client_contract_signers_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "contracts"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       client_contracts: {
         Row: {
