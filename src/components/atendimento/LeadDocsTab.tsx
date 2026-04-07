@@ -167,6 +167,79 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
     }
   };
 
+  const handleDownloadClientContract = async (contract: SignedContract) => {
+    try {
+      // Fetch signers from client_contract_signers
+      const { data: signers } = await supabase
+        .from("client_contract_signers")
+        .select("*")
+        .eq("contract_id", contract.id)
+        .order("sign_order", { ascending: true });
+
+      const signerList = (signers && signers.length > 0)
+        ? signers.map((s: any) => ({
+            id: s.id,
+            name: s.name || s.signer_name || "—",
+            role: s.signer_type || "signatário",
+            email: s.email,
+            document: s.signer_document,
+            signed_at: s.signed_at,
+            ip: s.signer_ip,
+            signature_photo_url: s.signature_photo_url,
+          }))
+        : [{
+            name: contract.signer_name || contract.client_name,
+            role: "signatário",
+            document: contract.signer_document,
+            signed_at: contract.signed_at,
+            ip: null,
+            signature_photo_url: contract.signature_photo_url,
+          }];
+
+      // Get company name
+      const { data: company } = await supabase
+        .from("companies")
+        .select("razao_social")
+        .eq("id", contract.servidor_id)
+        .single();
+
+      const companyName = company?.razao_social || lead.company_name;
+
+      // Generate base PDF from contract_content if no pdf_url
+      let pdfUrl = "";
+      let tempUrl: string | null = null;
+
+      if (contract.contract_content) {
+        const basePdfBlob = generateContractPdf({
+          content: contract.contract_content,
+          code: `CTR-${contract.id.slice(0, 8).toUpperCase()}`,
+          companyName,
+        });
+        tempUrl = URL.createObjectURL(basePdfBlob);
+        pdfUrl = tempUrl;
+      } else {
+        toast.error("Conteúdo do contrato não disponível");
+        return;
+      }
+
+      await downloadSignedContractPdf({
+        pdfUrl,
+        code: `CTR-${contract.id.slice(0, 8).toUpperCase()}`,
+        companyName,
+        documentHash: contract.document_hash || "",
+        validationCode: contract.validation_code || "",
+        signedAt: contract.signed_at || new Date().toISOString(),
+        signers: signerList,
+        validationUrl: `${window.location.origin}/validar-documento/${contract.validation_code || ""}`,
+      });
+
+      if (tempUrl) URL.revokeObjectURL(tempUrl);
+      toast.success("Contrato assinado baixado com sucesso!");
+    } catch (err: any) {
+      toast.error("Erro ao baixar contrato: " + (err?.message || ""));
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
