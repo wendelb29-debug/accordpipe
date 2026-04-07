@@ -848,16 +848,8 @@ export default function Cadastrados() {
                       </Card>
                     );
                   })}
-                              <div><span className="text-muted-foreground">Documento</span><p className="font-semibold text-foreground">{c.signer_document}</p></div>
-                            )}
-                            {c.validation_code && (
-                              <div><span className="text-muted-foreground">Código de Validação</span><p className="font-semibold text-foreground">{c.validation_code}</p></div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
+
+
 
                   {/* Client Contracts (from client_contracts table) */}
                   {signedContracts.map(c => {
