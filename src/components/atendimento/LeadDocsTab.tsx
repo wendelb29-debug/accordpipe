@@ -272,11 +272,10 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
                       <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium">Contrato de Adesão — {contract.client_name}</p>
+                      <p className="text-sm font-medium">{contract.code} — {lead.company_name}</p>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        {contract.plan_name && <span>{contract.plan_name}</span>}
                         {contract.signed_at && (
-                          <span>• Assinado em {new Date(contract.signed_at).toLocaleDateString("pt-BR")}</span>
+                          <span>Assinado em {new Date(contract.signed_at).toLocaleDateString("pt-BR")}</span>
                         )}
                       </div>
                       {contract.validation_code && (
