@@ -290,17 +290,24 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
                     <Badge variant="secondary" className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border-0">
                       Assinado
                     </Badge>
-                    {contract.validation_code && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7"
-                        onClick={() => window.open(`/validar-documento/${contract.validation_code}`, "_blank")}
-                        title="Validar documento"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={() => handleDownloadClientContract(contract)}
+                      title="Visualizar contrato assinado"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={() => handleDownloadClientContract(contract)}
+                      title="Baixar contrato assinado"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 </div>
               </CardContent>
