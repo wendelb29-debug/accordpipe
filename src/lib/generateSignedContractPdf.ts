@@ -127,6 +127,24 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
         borderWidth: 0.5,
       });
 
+      // Calculate needed height based on fields
+      let fieldCount = 3; // name, role, date are always shown
+      if (signer.document || signer.birth_date) fieldCount++;
+      if (signer.email) fieldCount++;
+      if (signer.company_name) fieldCount++;
+      if (signer.ip) fieldCount++;
+      const stampH = Math.max(100, 24 + fieldCount * 12);
+
+      currentPage.drawRectangle({
+        x: stampX,
+        y: sy - stampH + 12,
+        width: stampW,
+        height: stampH,
+        color: rgb(0.96, 0.97, 1),
+        borderColor: rgb(0.12, 0.25, 0.69),
+        borderWidth: 0.5,
+      });
+
       let textOffsetX = 10;
 
       // Photo
@@ -134,7 +152,7 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
         try {
           let image;
           try { image = await pdfDoc.embedJpg(photoData); } catch { image = await pdfDoc.embedPng(photoData); }
-          const photoSize = 75;
+          const photoSize = Math.min(75, stampH - 10);
           currentPage.drawImage(image, {
             x: stampX + 5,
             y: sy - stampH + 12 + (stampH - photoSize) / 2,
@@ -167,10 +185,20 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
         ty -= 11;
       }
 
+      if (signer.company_name) {
+        currentPage.drawText(`Empresa: ${signer.company_name}`, { x: textX, y: ty, size: 8, font, color: rgb(0.2, 0.2, 0.2) });
+        ty -= 11;
+      }
+
       const cpfText = signer.document ? `CPF: ${formatCpf(signer.document)}` : "";
       const birthText = signer.birth_date ? `Nasc: ${formatBirthDate(signer.birth_date)}` : "";
       if (cpfText || birthText) {
         currentPage.drawText([cpfText, birthText].filter(Boolean).join(" | "), { x: textX, y: ty, size: 8, font, color: rgb(0.2, 0.2, 0.2) });
+        ty -= 11;
+      }
+
+      if (signer.email) {
+        currentPage.drawText(`E-mail: ${signer.email}`, { x: textX, y: ty, size: 8, font, color: rgb(0.2, 0.2, 0.2) });
         ty -= 11;
       }
 
