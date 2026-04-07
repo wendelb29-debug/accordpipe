@@ -165,6 +165,8 @@ export default function Usuarios() {
       setEditingUser(user);
       setFormData({
         name: user.name,
+        cpf: (user as any).cpf || "",
+        birth_date: (user as any).birth_date || "",
         email: user.email,
         password: "",
         role: user.role,
@@ -174,6 +176,8 @@ export default function Usuarios() {
       setEditingUser(null);
       setFormData({
         name: "",
+        cpf: "",
+        birth_date: "",
         email: "",
         password: "",
         role: "leitura",
@@ -630,6 +634,34 @@ export default function Usuarios() {
                     />
                   </div>
 
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="cpf">CPF</Label>
+                      <Input
+                        id="cpf"
+                        value={formData.cpf}
+                        onChange={(e) => {
+                          let v = e.target.value.replace(/\D/g, "").slice(0, 11);
+                          if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, "$1.$2.$3-$4");
+                          else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, "$1.$2.$3");
+                          else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, "$1.$2");
+                          setFormData({ ...formData, cpf: v });
+                        }}
+                        placeholder="000.000.000-00"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="birth_date">Data de Nascimento</Label>
+                      <Input
+                        id="birth_date"
+                        type="date"
+                        value={formData.birth_date}
+                        onChange={(e) =>
+                          setFormData({ ...formData, birth_date: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">E-mail</Label>
                     <Input
