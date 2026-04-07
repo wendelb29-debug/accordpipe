@@ -627,6 +627,7 @@ export type Database = {
           document_hash: string | null
           foro: string | null
           id: string
+          lead_id: string | null
           link_expires_at: string | null
           matriz_cnpj: string | null
           matriz_endereco: string | null
@@ -656,6 +657,7 @@ export type Database = {
           document_hash?: string | null
           foro?: string | null
           id?: string
+          lead_id?: string | null
           link_expires_at?: string | null
           matriz_cnpj?: string | null
           matriz_endereco?: string | null
@@ -685,6 +687,7 @@ export type Database = {
           document_hash?: string | null
           foro?: string | null
           id?: string
+          lead_id?: string | null
           link_expires_at?: string | null
           matriz_cnpj?: string | null
           matriz_endereco?: string | null
@@ -710,6 +713,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
             referencedColumns: ["id"]
           },
         ]
