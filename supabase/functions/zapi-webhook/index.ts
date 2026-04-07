@@ -36,16 +36,16 @@ Deno.serve(async (req) => {
 
     // If it's a received message, map to tenant and store
     if (eventType === "ReceivedCallback" && phone && !isFromMe) {
-      // Find company by zapi_instance_id
+      // Find company by zapi_instance_id from secure credentials table
       let companyId: string | null = null;
 
       if (instanceId) {
-        const { data: company } = await supabase
-          .from("companies")
-          .select("id")
+        const { data: creds } = await supabase
+          .from("company_api_credentials")
+          .select("company_id")
           .eq("zapi_instance_id", instanceId)
           .maybeSingle();
-        companyId = company?.id || null;
+        companyId = creds?.company_id || null;
       }
 
       if (companyId && messageText) {
