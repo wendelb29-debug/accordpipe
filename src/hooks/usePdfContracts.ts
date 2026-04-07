@@ -10,6 +10,8 @@ export interface PdfContract {
   description: string | null;
   pdf_url: string;
   pdf_path: string;
+  pdf_assinado_url?: string | null;
+  pdf_assinado_path?: string | null;
   status: string;
   created_by_user_id: string | null;
   created_by_name: string | null;
@@ -111,7 +113,6 @@ export function usePdfContracts() {
     }
 
     try {
-      // Upload PDF
       const filePath = `${profile.company_id}/${Date.now()}_${pdfFile.name}`;
       const { error: uploadErr } = await supabase.storage
         .from("contract-pdfs")
@@ -120,7 +121,6 @@ export function usePdfContracts() {
 
       const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(filePath);
 
-      // Create contract
       const { data: contract, error: contractErr } = await supabase
         .from("pdf_contracts")
         .insert({
@@ -137,7 +137,6 @@ export function usePdfContracts() {
 
       if (contractErr || !contract) throw contractErr;
 
-      // Create signers
       const signerRecords = signers.map((s, i) => ({
         contract_id: contract.id,
         name: s.name,
@@ -153,7 +152,6 @@ export function usePdfContracts() {
         .insert(signerRecords as any);
       if (signerErr) throw signerErr;
 
-      // Add history
       await supabase.from("pdf_contract_history").insert({
         contract_id: contract.id,
         action: "criado",
