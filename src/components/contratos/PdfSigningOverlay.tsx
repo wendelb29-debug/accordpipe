@@ -47,6 +47,7 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+  const [signerDetails, setSignerDetails] = useState<Record<string, any>>({});
   const scale = 1.2;
 
   useEffect(() => {
@@ -93,17 +94,22 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
         }
       }
 
-      // Load signer details for client data resolution
+      // Load signer details for signature stamp rendering
       const { data: signers } = await supabase
         .from("pdf_contract_signers")
         .select("*")
         .eq("contract_id", contractId)
         .order("sign_order", { ascending: true });
 
-      if (signers && signers.length > 0) {
+      const signerMap: Record<string, any> = {};
+      if (signers) {
+        for (const s of signers) {
+          signerMap[s.id] = s;
+        }
         // Store first signer as the primary client for field resolution
         setContractMeta((prev: any) => ({ ...prev, primarySigner: signers[0], allSigners: signers }));
       }
+      setSignerDetails(signerMap);
     };
     load();
   }, [contractId]);
