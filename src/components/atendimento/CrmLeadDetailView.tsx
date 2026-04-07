@@ -164,6 +164,9 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const [transferUserId, setTransferUserId] = useState("");
   const [transferUsers, setTransferUsers] = useState<{ user_id: string; name: string }[]>([]);
 
+  // Signature status tracking
+  const [signatureStats, setSignatureStats] = useState<{ signed: number; total: number } | null>(null);
+
   // Note compose state
   const [noteText, setNoteText] = useState("");
   const [noteImage, setNoteImage] = useState<File | null>(null);
