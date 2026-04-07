@@ -1635,15 +1635,119 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
             )}
           </div>
 
-          {/* Signers Manager */}
+          {/* Signers Status */}
           {savedContract.id && (
-            <div className="border-t border-border pt-4">
-              <ContractSignersManager
-                contractId={savedContract.id}
-                contractStatus={savedContract.signature_status === "signed" ? "assinado" : "pendente"}
-                clientName={registrationData?.nome_completo || lead.contact_name || lead.company_name}
-                clientCpf={registrationData?.cpf}
-              />
+            <div className="border-t border-border pt-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                  <Users className="h-4 w-4 text-primary" /> Assinaturas do Contrato
+                </h3>
+                {savedContract.signature_status !== "signed" && (
+                  <Button size="sm" variant="outline" onClick={() => setAddSignerOpen(true)} className="gap-1.5 text-xs">
+                    <Plus className="h-3.5 w-3.5" /> Adicionar
+                  </Button>
+                )}
+              </div>
+
+              {/* Progress */}
+              {contractSigners.length > 0 && (() => {
+                const signedCount = contractSigners.filter((s: any) => !!s.signed_at).length;
+                const total = contractSigners.length;
+                const progress = (signedCount / total) * 100;
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">{signedCount} de {total} assinaturas concluídas</span>
+                      <span className={cn("font-semibold", signedCount === total ? "text-green-600" : "text-amber-600")}>
+                        {signedCount === total ? "✅ Todos assinaram" : `⏳ ${total - signedCount} pendente(s)`}
+                      </span>
+                    </div>
+                    <Progress value={progress} className="h-2" />
+                  </div>
+                );
+              })()}
+
+              {/* Signers list */}
+              {loadingSigners ? (
+                <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+              ) : contractSigners.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">Nenhum signatário cadastrado</p>
+              ) : (
+                <div className="space-y-2">
+                  {contractSigners.map((signer: any) => {
+                    const isSigned = !!signer.signed_at;
+                    const roleLabel: Record<string, string> = { vendedor: "Vendedor", testemunha: "Testemunha", signatario: "Signatário", matriz: "Matriz" };
+                    return (
+                      <Card key={signer.id} className={cn("border-l-4", isSigned ? "border-l-green-500" : "border-l-amber-400")}>
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex-1 space-y-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {isSigned ? <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" /> : <Clock className="h-4 w-4 text-amber-500 shrink-0" />}
+                                <span className="text-sm font-semibold text-foreground truncate">{signer.signer_name || "—"}</span>
+                                <Badge variant="outline" className="text-[10px] h-5 shrink-0">
+                                  {roleLabel[signer.signer_role] || signer.signer_role}
+                                </Badge>
+                              </div>
+                              {signer.signer_document && <p className="text-[11px] font-mono text-muted-foreground ml-6">{signer.signer_document}</p>}
+                              {isSigned && signer.signed_at && (
+                                <p className="text-[11px] text-green-600 ml-6">✅ Assinado em {new Date(signer.signed_at).toLocaleString("pt-BR")}</p>
+                              )}
+                              {!isSigned && signer.signing_token && (
+                                <button onClick={() => handleCopySignerLink(signer.signing_token, signer.signer_name)} className="flex items-center gap-1 text-[11px] text-primary hover:underline ml-6 cursor-pointer">
+                                  <Link2 className="h-3 w-3" /> Link para assinatura
+                                </button>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {!isSigned && signer.signing_token && (
+                                <>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopySignerLink(signer.signing_token, signer.signer_name)} title="Copiar link">
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleSendSignerWhatsApp(signer.signing_token, signer.signer_name)} title="WhatsApp">
+                                    <MessageSquare className="h-3.5 w-3.5" />
+                                  </Button>
+                                </>
+                              )}
+                              {signer.signature_photo_url && (
+                                <img src={signer.signature_photo_url} alt="Foto" className="h-8 w-8 rounded object-cover border" />
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Add Signer Dialog */}
+              {addSignerOpen && (
+                <div className="rounded-lg border border-border p-4 space-y-3 bg-muted/30">
+                  <p className="text-sm font-semibold flex items-center gap-2"><UserPlus className="h-4 w-4 text-primary" /> Adicionar Assinante</p>
+                  <div className="grid gap-3">
+                    <div><Label className="text-xs">Nome *</Label><Input placeholder="Nome completo" value={newSignerName} onChange={(e) => setNewSignerName(e.target.value)} /></div>
+                    <div><Label className="text-xs">CPF/CNPJ</Label><Input placeholder="000.000.000-00" value={newSignerDoc} onChange={(e) => setNewSignerDoc(e.target.value)} /></div>
+                    <div>
+                      <Label className="text-xs">Tipo</Label>
+                      <Select value={newSignerRole} onValueChange={setNewSignerRole}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="testemunha">Testemunha</SelectItem>
+                          <SelectItem value="signatario">Signatário</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" size="sm" onClick={() => setAddSignerOpen(false)}>Cancelar</Button>
+                    <Button size="sm" onClick={handleAddContractSigner} disabled={addingSigner || !newSignerName.trim()} className="gap-1.5">
+                      {addingSigner ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />} Adicionar
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
