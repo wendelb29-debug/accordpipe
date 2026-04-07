@@ -205,11 +205,7 @@ export function ContractSignersManager({
     setAdding(false);
   };
 
-  const handleDeleteSigner = async (id: string, type: string) => {
-    if (type === "cliente" || type === "vendedor") {
-      toast.error("Não é possível remover o cliente ou vendedor");
-      return;
-    }
+  const handleDeleteSigner = async (id: string) => {
     const { error } = await supabase
       .from("client_contract_signers")
       .delete()
