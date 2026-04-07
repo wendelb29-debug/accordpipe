@@ -56,13 +56,42 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
     }
   }
 
-  const positions = [...(data.signaturePositions || [])].sort((a, b) => {
+  let positions = [...(data.signaturePositions || [])].sort((a, b) => {
     if (a.page !== b.page) return a.page - b.page;
     if (a.y !== b.y) return a.y - b.y;
     return a.x - b.x;
   });
 
   const signedSigners = data.signers.filter((signer) => Boolean(signer.signed_at));
+
+  // Fallback: if no signature positions defined, create default positions
+  // at the bottom of the last page for each signed signer
+  if (positions.length === 0 && signedSigners.length > 0) {
+    const lastPage = pages.length;
+    const { width: lpW, height: lpH } = pages[lastPage - 1].getSize();
+    const stampW = 220;
+    const stampH = 60;
+    const gap = 10;
+    const startY = 120; // from bottom of page
+    positions = signedSigners.map((_, idx) => ({
+      page: lastPage,
+      x: 40 * scale,
+      y: (lpH - startY - (stampH + gap) * idx) * scale / lpH * lpH,
+      width: stampW * scale,
+      height: stampH * scale,
+      signerId: null,
+    }));
+    // Recalculate y in screen coordinates (scale-aware)
+    positions = signedSigners.map((_, idx) => ({
+      page: lastPage,
+      x: 40 * scale,
+      y: (startY + (stampH + gap) * idx) * scale,
+      width: stampW * scale,
+      height: stampH * scale,
+      signerId: null,
+    }));
+  }
+
   const usedSignerIds = new Set<string>();
 
   for (const pos of positions) {

@@ -50,12 +50,16 @@ export async function buildSignedPdfBlob({ contract, signers, companyName, code,
         .eq("template_id", templates[0].id)
         .eq("field_type", "assinatura");
 
+      // Template fields are stored in unscaled PDF coordinates.
+      // generateSignedContractPdf expects screen coordinates (scale 1.2),
+      // so we pre-multiply here.
+      const SCALE = 1.2;
       signaturePositions = (templateFields || []).map((field: any) => ({
         page: field.page,
-        x: field.pos_x,
-        y: field.pos_y,
-        width: field.width,
-        height: field.height,
+        x: field.pos_x * SCALE,
+        y: field.pos_y * SCALE,
+        width: field.width * SCALE,
+        height: field.height * SCALE,
         signerId: null,
       }));
     }
