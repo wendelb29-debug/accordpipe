@@ -56,143 +56,117 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
     }
   }
 
-  let positions = [...(data.signaturePositions || [])].sort((a, b) => {
-    if (a.page !== b.page) return a.page - b.page;
-    if (a.y !== b.y) return a.y - b.y;
-    return a.x - b.x;
-  });
-
+  // ── Signature page: dedicated page for all signed signers ──
   const signedSigners = data.signers.filter((signer) => Boolean(signer.signed_at));
 
-  // Fallback: if no signature positions defined, create default positions
-  // at the bottom of the last page for each signed signer.
-  // Positions must be in screen coordinates (×1.2) since the rendering
-  // loop divides by 1.2 to convert back to PDF coordinates.
-  const PDF_SCALE = 1.2;
-  if (positions.length === 0 && signedSigners.length > 0) {
-    const lastPage = pages.length;
-    const stampW = 280;
-    const stampH = 90;
-    const gap = 12;
-    const { height: lpH } = pages[lastPage - 1].getSize();
-    const startY = lpH - 120; // PDF-space Y from bottom
-    positions = signedSigners.map((_, idx) => ({
-      page: lastPage,
-      x: 40 * PDF_SCALE,
-      y: (lpH - startY + (stampH + gap) * idx) * PDF_SCALE,
-      width: stampW * PDF_SCALE,
-      height: stampH * PDF_SCALE,
-      signerId: null,
-    }));
-  }
+  if (signedSigners.length > 0) {
+    const sigPage = pdfDoc.addPage();
+    const { width: spW, height: spH } = sigPage.getSize();
+    let sy = spH - 40;
 
-  const usedSignerIds = new Set<string>();
-
-  for (const pos of positions) {
-    const signer = pos.signerId
-      ? signedSigners.find((candidate) => candidate.id === pos.signerId)
-      : signedSigners.find((candidate) => !candidate.id || !usedSignerIds.has(candidate.id));
-
-    if (!signer || !signer.signed_at) continue;
-    if (signer.id) usedSignerIds.add(signer.id);
-
-    const signerIndex = data.signers.findIndex((candidate) => candidate.id === signer.id);
-    const pageIdx = pos.page - 1;
-    if (pageIdx < 0 || pageIdx >= pages.length) continue;
-
-    const page = pages[pageIdx];
-    const { height: pageHeight } = page.getSize();
-    const scale = 1.2;
-    const pdfX = pos.x / scale;
-    const pdfY = pageHeight - pos.y / scale - pos.height / scale;
-    const stampW = pos.width / scale;
-    const stampH = pos.height / scale;
-
-    page.drawRectangle({
-      x: pdfX,
-      y: pdfY,
-      width: stampW,
-      height: stampH,
-      color: rgb(0.96, 0.97, 1),
-      borderColor: rgb(0.12, 0.25, 0.69),
-      borderWidth: 0.5,
-    });
-
-    let textOffsetX = 5;
-    const photoData = signerIndex >= 0 ? signerPhotos[signerIndex] : null;
-    if (photoData) {
-      try {
-        let image;
-        try {
-          image = await pdfDoc.embedJpg(photoData);
-        } catch {
-          image = await pdfDoc.embedPng(photoData);
-        }
-
-        const photoSize = Math.min(stampH - 6, 70);
-        page.drawImage(image, {
-          x: pdfX + 3,
-          y: pdfY + (stampH - photoSize) / 2,
-          width: photoSize,
-          height: photoSize,
-        });
-        textOffsetX = photoSize + 8;
-      } catch {
-        // ignore invalid image payloads
-      }
-    }
-
-    const textX = pdfX + textOffsetX;
-    const lineH = 10;
-    let ty = pdfY + stampH - 12;
-
-    page.drawText("Assinado Digitalmente", {
-      x: textX,
-      y: ty,
-      size: 8,
+    sigPage.drawText("Comprovação de Assinaturas", {
+      x: spW / 2 - 90,
+      y: sy,
+      size: 16,
       font: fontBold,
       color: rgb(0.12, 0.25, 0.69),
     });
-    ty -= lineH;
+    sy -= 14;
 
-    page.drawText(`Nome: ${signer.name}`, {
-      x: textX,
-      y: ty,
-      size: 7,
+    sigPage.drawText("Este documento foi assinado digitalmente com validade jurídica.", {
+      x: spW / 2 - 140,
+      y: sy,
+      size: 9,
       font,
-      color: rgb(0, 0, 0),
+      color: rgb(0.4, 0.4, 0.4),
     });
-    ty -= lineH;
+    sy -= 24;
 
-    if (signer.document) {
-      page.drawText(`CPF/CNPJ: ${signer.document}`, {
+    for (let si = 0; si < signedSigners.length; si++) {
+      const signer = signedSigners[si];
+      const signerIndex = data.signers.findIndex((c) => c === signer);
+      const photoData = signerIndex >= 0 ? signerPhotos[signerIndex] : null;
+
+      // Check if we need a new page
+      if (sy < 160) {
+        const newPage = pdfDoc.addPage();
+        sy = newPage.getSize().height - 40;
+        // Draw on new page instead — we use pages array at the end
+      }
+
+      const currentPage = pdfDoc.getPages()[pdfDoc.getPageCount() - 1];
+
+      // Stamp background
+      const stampX = 30;
+      const stampW = spW - 60;
+      const stampH = 100;
+
+      currentPage.drawRectangle({
+        x: stampX,
+        y: sy - stampH + 12,
+        width: stampW,
+        height: stampH,
+        color: rgb(0.96, 0.97, 1),
+        borderColor: rgb(0.12, 0.25, 0.69),
+        borderWidth: 0.5,
+      });
+
+      let textOffsetX = 10;
+
+      // Photo
+      if (photoData) {
+        try {
+          let image;
+          try { image = await pdfDoc.embedJpg(photoData); } catch { image = await pdfDoc.embedPng(photoData); }
+          const photoSize = 75;
+          currentPage.drawImage(image, {
+            x: stampX + 5,
+            y: sy - stampH + 12 + (stampH - photoSize) / 2,
+            width: photoSize,
+            height: photoSize,
+          });
+          textOffsetX = 90;
+        } catch {
+          // ignore
+        }
+      }
+
+      const textX = stampX + textOffsetX;
+      let ty = sy;
+
+      currentPage.drawText("✔ Assinado Digitalmente", {
         x: textX,
         y: ty,
-        size: 7,
-        font,
-        color: rgb(0.2, 0.2, 0.2),
+        size: 10,
+        font: fontBold,
+        color: rgb(0.12, 0.25, 0.69),
       });
-      ty -= lineH;
-    }
+      ty -= 13;
 
-    const signedDateText = new Date(signer.signed_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-    page.drawText(`Data: ${signedDateText}`, {
-      x: textX,
-      y: ty,
-      size: 7,
-      font,
-      color: rgb(0.2, 0.2, 0.2),
-    });
-    ty -= lineH;
+      currentPage.drawText(`Nome: ${signer.name}`, { x: textX, y: ty, size: 9, font, color: rgb(0, 0, 0) });
+      ty -= 12;
 
-    if (signer.ip) {
-      page.drawText(`IP: ${signer.ip}`, {
-        x: textX,
-        y: ty,
-        size: 6,
-        font,
-        color: rgb(0.5, 0.5, 0.5),
-      });
+      if (signer.role) {
+        currentPage.drawText(`Função: ${signer.role}`, { x: textX, y: ty, size: 8, font, color: rgb(0.2, 0.2, 0.2) });
+        ty -= 11;
+      }
+
+      if (signer.document) {
+        currentPage.drawText(`CPF/CNPJ: ${signer.document}`, { x: textX, y: ty, size: 8, font, color: rgb(0.2, 0.2, 0.2) });
+        ty -= 11;
+      }
+
+      if (signer.signed_at) {
+        const signedDateText = new Date(signer.signed_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+        currentPage.drawText(`Data: ${signedDateText}`, { x: textX, y: ty, size: 8, font, color: rgb(0.2, 0.2, 0.2) });
+        ty -= 11;
+      }
+
+      if (signer.ip) {
+        currentPage.drawText(`IP: ${signer.ip}`, { x: textX, y: ty, size: 7, font, color: rgb(0.5, 0.5, 0.5) });
+      }
+
+      sy -= stampH + 18;
     }
   }
 
