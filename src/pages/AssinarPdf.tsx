@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { PdfSigningOverlay } from "@/components/contratos/PdfSigningOverlay";
-import { generateSignedContractPdf } from "@/lib/generateSignedContractPdf";
+import { buildSignedPdfBlob } from "@/lib/buildSignedPdfBlob";
 
 interface SignerInfo {
   id: string;
@@ -48,6 +48,7 @@ export default function AssinarPdf() {
   const [pdfZoom, setPdfZoom] = useState(100);
   const [showMobileSigning, setShowMobileSigning] = useState(false);
   const [companyBrand, setCompanyBrand] = useState<any>(null);
+  const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -311,6 +312,7 @@ export default function AssinarPdf() {
     if (!signer || !photo || !location) return;
     setSigning(true);
     try {
+      const signedAt = new Date().toISOString();
       const formData = new FormData();
       formData.append("token", token || "");
       formData.append("photo", photo, "signature.jpg");
@@ -332,10 +334,31 @@ export default function AssinarPdf() {
       }
 
       if (selectedField) {
-        setSignedFieldIds(prev => [...prev, selectedField.id]);
+        setSignedFieldIds(prev => Array.from(new Set([...prev, selectedField.id])));
         await supabase.from("pdf_contract_fields")
           .update({ value: "signed" } as any)
           .eq("id", selectedField.id);
+      }
+
+      setSigner((prev: any) => prev ? {
+        ...prev,
+        status: "assinado",
+        signed_at: signedAt,
+        signature_photo_url: result.photo_url || prev.signature_photo_url,
+      } : prev);
+
+      setAllSigners((prev) => prev.map((item) => (
+        item.id === signer.id ? { ...item, status: "assinado", signed_at: signedAt } : item
+      )));
+
+      const { data: refreshedContract } = await supabase
+        .from("pdf_contracts")
+        .select("*")
+        .eq("id", signer.contract_id)
+        .single();
+
+      if (refreshedContract) {
+        setContract(refreshedContract);
       }
 
       setSigned(true);
@@ -350,6 +373,48 @@ export default function AssinarPdf() {
   const progressPercent = allSigners.length > 0 ? (signedCount / allSigners.length) * 100 : 0;
   const companyName = companyBrand?.nome_fantasia || companyBrand?.razao_social || "Accord";
   const currentDate = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+
+  useEffect(() => {
+    if (!signed || !contract?.id) return;
+
+    let cancelled = false;
+    let nextUrl: string | null = null;
+
+    const prepareSignedPdf = async () => {
+      try {
+        const { data: fullSigners } = await supabase
+          .from("pdf_contract_signers")
+          .select("*")
+          .eq("contract_id", contract.id)
+          .order("sign_order", { ascending: true });
+
+        if (!fullSigners?.length) return;
+
+        const blob = await buildSignedPdfBlob({
+          contract,
+          signers: fullSigners as any,
+          companyName,
+        });
+
+        if (cancelled) return;
+
+        nextUrl = URL.createObjectURL(blob);
+        setSignedPdfUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return nextUrl;
+        });
+      } catch (err) {
+        console.error("Erro ao preparar PDF assinado:", err);
+      }
+    };
+
+    void prepareSignedPdf();
+
+    return () => {
+      cancelled = true;
+      if (nextUrl) URL.revokeObjectURL(nextUrl);
+    };
+  }, [signed, contract, companyName]);
 
   // ─── LOADING ───
   if (loading) {
@@ -387,72 +452,16 @@ export default function AssinarPdf() {
     const handleDownloadPdf = async () => {
       if (!contract) return;
       try {
-        // Load full signer details for the PDF
         const { data: fullSigners } = await supabase
           .from("pdf_contract_signers")
           .select("*")
           .eq("contract_id", contract.id)
           .order("sign_order", { ascending: true });
 
-        const signerData = (fullSigners || []).map((s: any) => ({
-          id: s.id,
-          name: s.name,
-          role: "signatário",
-          email: s.email,
-          document: s.cpf_cnpj,
-          signed_at: s.signed_at,
-          ip: s.signer_ip,
-          signature_photo_url: s.signature_photo_url,
-        }));
-
-        const { data: sigFields } = await supabase
-          .from("pdf_contract_fields")
-          .select("page, pos_x, pos_y, width, height, signer_id")
-          .eq("contract_id", contract.id)
-          .eq("field_type", "signature");
-
-        let signaturePositions = (sigFields || []).map((f: any) => ({
-          page: f.page,
-          x: f.pos_x,
-          y: f.pos_y,
-          width: f.width,
-          height: f.height,
-          signerId: f.signer_id,
-        }));
-
-        if (signaturePositions.length === 0 && contract.servidor_id) {
-          const { data: templates } = await supabase
-            .from("company_contract_templates")
-            .select("id")
-            .eq("company_id", contract.servidor_id)
-            .limit(1);
-          if (templates?.[0]) {
-            const { data: tFields } = await supabase
-              .from("company_contract_template_fields")
-              .select("page, pos_x, pos_y, width, height")
-              .eq("template_id", templates[0].id)
-              .eq("field_type", "assinatura");
-            signaturePositions = (tFields || []).map((f: any) => ({
-              page: f.page,
-              x: f.pos_x,
-              y: f.pos_y,
-              width: f.width,
-              height: f.height,
-              signerId: null,
-            }));
-          }
-        }
-
-        const blob = await generateSignedContractPdf({
-          pdfUrl: contract.pdf_url,
-          code: `PDF-${contract.id.slice(0, 8).toUpperCase()}`,
-          companyName: companyName,
-          documentHash: contract.document_hash || "",
-          validationCode: contract.validation_code || "",
-          signedAt: fullSigners?.find((s: any) => s.signed_at)?.signed_at || new Date().toISOString(),
-          signers: signerData,
-          validationUrl: `${window.location.origin}/validar-documento/${contract.validation_code || ""}`,
-          signaturePositions,
+        const blob = await buildSignedPdfBlob({
+          contract,
+          signers: (fullSigners || []) as any,
+          companyName,
         });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -463,7 +472,7 @@ export default function AssinarPdf() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       } catch {
-        window.open(contract.pdf_url, "_blank");
+        window.open(signedPdfUrl || contract.pdf_url, "_blank");
       }
     };
 
@@ -532,7 +541,7 @@ export default function AssinarPdf() {
                   {contract && signer && (
                     <PdfSigningOverlay
                       contractId={contract.id}
-                      pdfUrl={contract.pdf_url}
+                      pdfUrl={signedPdfUrl || contract.pdf_url}
                       currentSignerId={signer.id}
                       onFieldClick={() => {}}
                       signedFieldIds={signedFieldIds}
@@ -618,7 +627,7 @@ export default function AssinarPdf() {
                       <Button
                         variant="outline"
                         className="w-full h-10 border-[hsl(224,40%,25%)] text-[hsl(220,20%,70%)] hover:bg-[hsl(224,50%,15%)] rounded-xl"
-                        onClick={() => window.open(contract?.pdf_url, "_blank")}
+                        onClick={() => window.open(signedPdfUrl || contract?.pdf_url, "_blank")}
                       >
                         <Eye className="h-4 w-4 mr-2" /> Abrir em Nova Aba
                       </Button>
