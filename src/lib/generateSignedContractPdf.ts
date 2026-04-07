@@ -398,8 +398,8 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
   return doc.output("blob");
 }
 
-export function downloadSignedContractPdf(data: SignedContractPdfData) {
-  const blob = generateSignedContractPdf(data);
+export async function downloadSignedContractPdf(data: SignedContractPdfData) {
+  const blob = await generateSignedContractPdf(data);
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -408,4 +408,5 @@ export function downloadSignedContractPdf(data: SignedContractPdfData) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
 }
