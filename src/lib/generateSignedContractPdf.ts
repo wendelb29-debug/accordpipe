@@ -55,7 +55,7 @@ function addPageBreakIfNeeded(doc: jsPDF, y: number, needed: number, marginTop: 
   return y;
 }
 
-export function generateSignedContractPdf(data: SignedContractPdfData): Blob {
+export async function generateSignedContractPdf(data: SignedContractPdfData): Promise<Blob> {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
