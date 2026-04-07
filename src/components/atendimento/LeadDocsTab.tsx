@@ -41,6 +41,16 @@ interface SignedContract {
   signer_name: string | null;
   signer_document: string | null;
   signature_photo_url: string | null;
+  signers: ContractSigner[];
+}
+
+interface ContractSigner {
+  signer_name: string | null;
+  signer_role: string;
+  signer_document: string | null;
+  signed_at: string | null;
+  signer_ip: string | null;
+  signature_photo_url: string | null;
 }
 
 interface SignedPdfContract {
