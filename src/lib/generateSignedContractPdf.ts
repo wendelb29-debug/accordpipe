@@ -6,9 +6,24 @@ interface SignerData {
   role: string;
   email?: string | null;
   document?: string | null;
+  birth_date?: string | null;
   signed_at?: string | null;
   ip?: string | null;
   signature_photo_url?: string | null;
+}
+
+function formatCpf(cpf: string): string {
+  const digits = cpf.replace(/\D/g, "");
+  if (digits.length === 11) return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+  return cpf;
+}
+
+function formatBirthDate(d: string): string {
+  if (!d) return "";
+  // Handle ISO date (YYYY-MM-DD)
+  const parts = d.split("-");
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  return d;
 }
 
 interface SignaturePosition {
