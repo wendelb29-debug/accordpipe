@@ -98,6 +98,16 @@ export default function AssinarPdf() {
         setSigned(true);
       }
 
+      // Load already-signed field IDs from the database
+      const { data: signedFields } = await supabase
+        .from("pdf_contract_fields")
+        .select("id")
+        .eq("contract_id", signerData.contract_id)
+        .eq("value", "signed");
+      if (signedFields) {
+        setSignedFieldIds(signedFields.map((f: any) => f.id));
+      }
+
       const { data: signersList } = await supabase
         .rpc("get_pdf_contract_signers_by_token", { p_token: token });
 
