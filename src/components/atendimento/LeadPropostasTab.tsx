@@ -1786,6 +1786,11 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
                                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleSendSignerWhatsApp(signer.signing_token, signer.signer_name)} title="WhatsApp">
                                     <MessageSquare className="h-3.5 w-3.5" />
                                   </Button>
+                                  {savedContract.signature_status !== "signed" && (
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDeleteSigner(signer.id)} title="Excluir assinante">
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  )}
                                 </>
                               )}
                               {signer.signature_photo_url && (
