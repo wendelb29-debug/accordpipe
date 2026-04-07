@@ -2442,6 +2442,38 @@ export type Database = {
         }
         Returns: string
       }
+      get_client_contract_signers_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          id: string
+          name: string
+          sign_order: number
+          signed_at: string
+          signer_type: string
+          status: string
+        }[]
+      }
+      get_client_signer_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          contract_id: string
+          email: string
+          id: string
+          is_required: boolean
+          name: string
+          sign_order: number
+          signature_address: string
+          signature_latitude: number
+          signature_longitude: number
+          signature_photo_url: string
+          signed_at: string
+          signer_document: string
+          signer_ip: string
+          signer_type: string
+          signing_token: string
+          status: string
+        }[]
+      }
       get_contract_company_id: {
         Args: { _contract_id: string }
         Returns: string
