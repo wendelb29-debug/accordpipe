@@ -456,8 +456,18 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
       await supabase.from("crm_client_registrations" as any).insert({
         lead_id: lead.id,
         servidor_id: lead.servidor_id,
-        nome_completo: lead.contact_name || "",
+        nome_completo: lead.contact_name || lead.company_name || "",
         email: lead.email || "",
+        cpf: (lead as any).documento || null,
+        cep: lead.cep || null,
+        endereco: lead.endereco || null,
+        numero: lead.numero || null,
+        bairro: lead.bairro || null,
+        cidade: lead.cidade || null,
+        estado: lead.estado || null,
+        valor_mensal: lead.value_mrr || 0,
+        created_by_user_id: profile?.user_id || null,
+        created_by_name: profile?.name || null,
       } as any);
 
       const { data: adminProfiles } = await supabase
