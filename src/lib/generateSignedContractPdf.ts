@@ -7,6 +7,7 @@ interface SignerData {
   email?: string | null;
   document?: string | null;
   birth_date?: string | null;
+  company_name?: string | null;
   signed_at?: string | null;
   ip?: string | null;
   signature_photo_url?: string | null;
