@@ -156,6 +156,16 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
   const [savedContract, setSavedContract] = useState<any | null>(null);
   const [loadingSavedContract, setLoadingSavedContract] = useState(false);
 
+  // Contract signers state (from contract_signatures table)
+  const [contractSigners, setContractSigners] = useState<any[]>([]);
+  const [loadingSigners, setLoadingSigners] = useState(false);
+  const [addSignerOpen, setAddSignerOpen] = useState(false);
+  const [newSignerName, setNewSignerName] = useState("");
+  const [newSignerEmail, setNewSignerEmail] = useState("");
+  const [newSignerDoc, setNewSignerDoc] = useState("");
+  const [newSignerRole, setNewSignerRole] = useState("testemunha");
+  const [addingSigner, setAddingSigner] = useState(false);
+
   // Template PDF state
   const [templatePdfUrl, setTemplatePdfUrl] = useState<string | null>(null);
   const [templateFields, setTemplateFields] = useState<any[]>([]);
