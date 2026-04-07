@@ -438,8 +438,9 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
             <thead>
               <tr className="border-b bg-muted/50">
                 <th className="text-left p-2.5 font-medium text-muted-foreground">Status</th>
-                <th className="text-left p-2.5 font-medium text-muted-foreground">Código</th>
+                <th className="text-left p-2.5 font-medium text-muted-foreground">Nome</th>
                 <th className="text-left p-2.5 font-medium text-muted-foreground">Data</th>
+                <th className="text-left p-2.5 font-medium text-muted-foreground">Assinaturas</th>
                 <th className="text-right p-2.5 font-medium text-muted-foreground">Ações</th>
               </tr>
             </thead>
@@ -447,37 +448,62 @@ export function LeadContratosTab({ lead, addActivity }: LeadContratosTabProps) {
               {filteredContracts.map((c) => {
                 const status = statusConfig[c.signature_status] || statusConfig.pending;
                 const StatusIcon = status.icon;
+                const counts = signerCounts[c.id] || { signed: 0, total: 0 };
+                const allSigned = counts.total > 0 && counts.signed === counts.total;
                 return (
                   <tr key={c.id} className="border-b last:border-0 hover:bg-muted/30">
                     <td className="p-2.5">
-                      <Badge variant="outline" className={cn("text-[10px]", status.className)}>
-                        <StatusIcon className="h-3 w-3 mr-1" />
-                        {status.label}
-                      </Badge>
-                    </td>
-                    <td className="p-2.5 font-medium text-foreground">{c.code}</td>
-                    <td className="p-2.5 text-muted-foreground">
-                      {new Date(c.created_at).toLocaleDateString("pt-BR")}
+                      {allSigned ? (
+                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <Clock className="h-5 w-5 text-amber-500" />
+                      )}
                     </td>
                     <td className="p-2.5">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleViewContract(c)} title="Visualizar">
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDownloadPdf(c)} title="Baixar PDF">
-                          <Download className="h-3 w-3" />
-                        </Button>
-                        {c.signature_link && (
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleCopyLink(c.signature_link, c.code)} title="Copiar link">
-                            <Copy className="h-3 w-3" />
+                      <button
+                        className="text-primary hover:underline text-left font-medium"
+                        onClick={() => handleViewContract(c)}
+                      >
+                        {c.code} — {c.company?.razao_social || lead.company_name}
+                      </button>
+                    </td>
+                    <td className="p-2.5 text-muted-foreground">
+                      {new Date(c.created_at).toLocaleDateString("pt-BR")} {new Date(c.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                    </td>
+                    <td className="p-2.5">
+                      <span className={cn(
+                        "font-semibold",
+                        allSigned ? "text-green-600" : "text-amber-600"
+                      )}>
+                        {counts.signed}/{counts.total}
+                      </span>
+                    </td>
+                    <td className="p-2.5 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
+                            Ações <MoreVertical className="h-3 w-3" />
                           </Button>
-                        )}
-                        {c.signature_status === "pending" && (
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSignContract(c)} title="Assinar">
-                            <FileSignature className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleViewContract(c)}>
+                            <Eye className="h-3.5 w-3.5 mr-2" /> Visualizar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDownloadPdf(c)}>
+                            <Download className="h-3.5 w-3.5 mr-2" /> Baixar PDF
+                          </DropdownMenuItem>
+                          {c.signature_link && (
+                            <DropdownMenuItem onClick={() => handleCopyLink(c.signature_link, c.code)}>
+                              <Copy className="h-3.5 w-3.5 mr-2" /> Copiar link
+                            </DropdownMenuItem>
+                          )}
+                          {c.signature_status === "pending" && (
+                            <DropdownMenuItem onClick={() => setSignContract(c)}>
+                              <FileSignature className="h-3.5 w-3.5 mr-2" /> Assinar
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </td>
                   </tr>
                 );
