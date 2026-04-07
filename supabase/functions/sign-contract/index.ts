@@ -521,6 +521,94 @@ async function persistSignedPdfForPdfContract(
   };
 }
 
+async function persistSignedPdfForContract(
+  supabase: ReturnType<typeof createClient>,
+  contractId: string,
+  origin: string,
+) {
+  const { data: contractData, error: contractError } = await supabase
+    .from("contracts")
+    .select("id, code, pdf_url, company_id, contract_content, document_hash, validation_code, signed_at, signer_name, signer_document, signature_photo_url")
+    .eq("id", contractId)
+    .single();
+
+  if (contractError || !contractData) throw contractError || new Error("Contract not found");
+
+  const { data: signers } = await supabase
+    .from("contract_signatures")
+    .select("id, signer_name, signer_role, signer_document, signed_at, signer_ip, signature_photo_url")
+    .eq("contract_id", contractId);
+
+  const signerList: SignedSignerData[] = (signers && signers.length > 0)
+    ? signers.filter((s: any) => s.signed_at).map((s: any) => ({
+        id: s.id,
+        name: s.signer_name || "—",
+        role: s.signer_role || "signatário",
+        document: s.signer_document,
+        signed_at: s.signed_at,
+        ip: s.signer_ip,
+        signature_photo_url: s.signature_photo_url,
+      }))
+    : contractData.signature_photo_url
+      ? [{
+          name: contractData.signer_name || "—",
+          role: "signatário",
+          document: contractData.signer_document,
+          signed_at: contractData.signed_at,
+          ip: null,
+          signature_photo_url: contractData.signature_photo_url,
+        }]
+      : [];
+
+  if (signerList.length === 0) return null;
+
+  const { data: company } = await supabase
+    .from("companies")
+    .select("nome_fantasia, razao_social")
+    .eq("id", contractData.company_id)
+    .maybeSingle();
+
+  const companyName = company?.nome_fantasia || company?.razao_social || "Empresa";
+
+  const signaturePositions = await resolveSignaturePositions(supabase, contractId, contractData.company_id);
+
+  const pdfUrl = contractData.pdf_url;
+  if (!pdfUrl) throw new Error("No PDF URL for contract");
+
+  const pdfBytes = await buildSignedPdfBytes({
+    pdfUrl,
+    code: contractData.code,
+    companyName,
+    documentHash: contractData.document_hash || "",
+    validationCode: contractData.validation_code || "",
+    signedAt: contractData.signed_at || new Date().toISOString(),
+    signers: signerList,
+    validationUrl: `${origin}/validar-documento/${contractData.validation_code || ""}`,
+    signaturePositions,
+  });
+
+  const signedPath = `contracts/${contractId}/contrato_assinado_${Date.now()}.pdf`;
+  await supabase.storage.from("contract-pdfs").remove([signedPath]);
+  const { error: uploadError } = await supabase.storage
+    .from("contract-pdfs")
+    .upload(signedPath, pdfBytes, { contentType: "application/pdf", upsert: true });
+
+  if (uploadError) throw uploadError;
+
+  const signedPublicUrl = buildSignedPdfPublicUrl(signedPath);
+  const cacheBustedUrl = `${signedPublicUrl}?v=${Date.now()}`;
+
+  await supabase
+    .from("contracts")
+    .update({
+      pdf_assinado_url: cacheBustedUrl,
+      pdf_assinado_path: signedPath,
+    } as any)
+    .eq("id", contractId);
+
+  return { url: cacheBustedUrl, path: signedPath };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
