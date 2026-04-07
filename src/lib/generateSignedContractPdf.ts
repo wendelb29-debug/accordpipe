@@ -9,6 +9,7 @@ interface SignerData {
   ip?: string | null;
   signature_hash?: string;
   birth_date?: string | null;
+  signature_photo_url?: string | null;
 }
 
 interface HistoryEntry {
