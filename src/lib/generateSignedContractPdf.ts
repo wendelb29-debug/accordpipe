@@ -71,11 +71,11 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
   const PDF_SCALE = 1.2;
   if (positions.length === 0 && signedSigners.length > 0) {
     const lastPage = pages.length;
-    const stampW = 220;
-    const stampH = 60;
-    const gap = 10;
-    const startY = 140; // PDF-space distance from top where stamps begin on last page
+    const stampW = 280;
+    const stampH = 90;
+    const gap = 12;
     const { height: lpH } = pages[lastPage - 1].getSize();
+    const startY = lpH - 120; // PDF-space Y from bottom
     positions = signedSigners.map((_, idx) => ({
       page: lastPage,
       x: 40 * PDF_SCALE,
@@ -118,7 +118,7 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
       borderWidth: 0.5,
     });
 
-    let textOffsetX = 3;
+    let textOffsetX = 5;
     const photoData = signerIndex >= 0 ? signerPhotos[signerIndex] : null;
     if (photoData) {
       try {
@@ -129,37 +129,36 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
           image = await pdfDoc.embedPng(photoData);
         }
 
-        const photoW = Math.min(stampW * 0.3, stampH - 4);
-        const photoH = stampH - 4;
+        const photoSize = Math.min(stampH - 6, 70);
         page.drawImage(image, {
-          x: pdfX + 2,
-          y: pdfY + 2,
-          width: photoW,
-          height: photoH,
+          x: pdfX + 3,
+          y: pdfY + (stampH - photoSize) / 2,
+          width: photoSize,
+          height: photoSize,
         });
-        textOffsetX = photoW + 5;
+        textOffsetX = photoSize + 8;
       } catch {
         // ignore invalid image payloads
       }
     }
 
     const textX = pdfX + textOffsetX;
-    const lineH = 3.5;
-    let ty = pdfY + stampH - 5;
+    const lineH = 10;
+    let ty = pdfY + stampH - 12;
 
     page.drawText("Assinado Digitalmente", {
       x: textX,
       y: ty,
-      size: 7,
+      size: 8,
       font: fontBold,
       color: rgb(0.12, 0.25, 0.69),
     });
-    ty -= lineH + 1;
+    ty -= lineH;
 
     page.drawText(`Nome: ${signer.name}`, {
       x: textX,
       y: ty,
-      size: 6,
+      size: 7,
       font,
       color: rgb(0, 0, 0),
     });
@@ -169,7 +168,7 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
       page.drawText(`CPF/CNPJ: ${signer.document}`, {
         x: textX,
         y: ty,
-        size: 6,
+        size: 7,
         font,
         color: rgb(0.2, 0.2, 0.2),
       });
@@ -180,7 +179,7 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
     page.drawText(`Data: ${signedDateText}`, {
       x: textX,
       y: ty,
-      size: 6,
+      size: 7,
       font,
       color: rgb(0.2, 0.2, 0.2),
     });
@@ -190,7 +189,7 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
       page.drawText(`IP: ${signer.ip}`, {
         x: textX,
         y: ty,
-        size: 5,
+        size: 6,
         font,
         color: rgb(0.5, 0.5, 0.5),
       });
