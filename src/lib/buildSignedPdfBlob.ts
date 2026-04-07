@@ -25,7 +25,7 @@ export async function buildSignedPdfBlob({ contract, signers, companyName, code,
     .from("pdf_contract_fields")
     .select("page, pos_x, pos_y, width, height, signer_id")
     .eq("contract_id", contract.id)
-    .eq("field_type", "signature");
+    .in("field_type", ["signature", "assinatura"]);
 
   let signaturePositions = (sigFields || []).map((field: any) => ({
     page: field.page,
@@ -48,7 +48,7 @@ export async function buildSignedPdfBlob({ contract, signers, companyName, code,
         .from("company_contract_template_fields")
         .select("page, pos_x, pos_y, width, height")
         .eq("template_id", templates[0].id)
-        .eq("field_type", "assinatura");
+        .in("field_type", ["assinatura", "signature"]);
 
       // Template fields are stored in unscaled PDF coordinates.
       // generateSignedContractPdf expects screen coordinates (scale 1.2),

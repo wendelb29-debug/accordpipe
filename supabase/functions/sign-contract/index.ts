@@ -95,7 +95,7 @@ async function resolveSignaturePositions(supabase: ReturnType<typeof createClien
     .from("pdf_contract_fields")
     .select("page, pos_x, pos_y, width, height, signer_id")
     .eq("contract_id", contractId)
-    .eq("field_type", "signature");
+    .in("field_type", ["signature", "assinatura"]);
 
   if (sigFieldsError) throw sigFieldsError;
 
@@ -122,7 +122,7 @@ async function resolveSignaturePositions(supabase: ReturnType<typeof createClien
         .from("company_contract_template_fields")
         .select("page, pos_x, pos_y, width, height")
         .eq("template_id", templates[0].id)
-        .eq("field_type", "assinatura");
+        .in("field_type", ["assinatura", "signature"]);
 
       if (templateFieldsError) throw templateFieldsError;
 
@@ -143,6 +143,11 @@ async function resolveSignaturePositions(supabase: ReturnType<typeof createClien
     if (a.y !== b.y) return a.y - b.y;
     return a.x - b.x;
   });
+}
+
+function buildSignedPdfPublicUrl(path: string) {
+  const baseUrl = Deno.env.get("SUPABASE_URL")!;
+  return `${baseUrl}/storage/v1/object/public/contract-pdfs/${path}`;
 }
 
 async function buildSignedPdfBytes(data: {
@@ -479,17 +484,19 @@ async function persistSignedPdfForPdfContract(
   });
 
   const signedPath = `${contract.servidor_id}/${contract.id}/contrato_assinado.pdf`;
+  await supabase.storage.from("contract-pdfs").remove([signedPath]);
   const { error: uploadSignedError } = await supabase.storage
     .from("contract-pdfs")
     .upload(signedPath, pdfBytes, { contentType: "application/pdf", upsert: true });
 
   if (uploadSignedError) throw uploadSignedError;
 
-  const { data: signedUrlData } = supabase.storage.from("contract-pdfs").getPublicUrl(signedPath);
+  const signedPublicUrl = buildSignedPdfPublicUrl(signedPath);
+  const cacheBustedUrl = `${signedPublicUrl}?v=${Date.now()}`;
   const { error: updatePdfUrlError } = await supabase
     .from("pdf_contracts")
     .update({
-      pdf_assinado_url: signedUrlData.publicUrl,
+      pdf_assinado_url: cacheBustedUrl,
       pdf_assinado_path: signedPath,
     })
     .eq("id", contract.id);
@@ -497,7 +504,7 @@ async function persistSignedPdfForPdfContract(
   if (updatePdfUrlError) throw updatePdfUrlError;
 
   return {
-    url: signedUrlData.publicUrl,
+    url: cacheBustedUrl,
     path: signedPath,
   };
 }
