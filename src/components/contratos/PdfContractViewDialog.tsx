@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { generateSignedContractPdf } from "@/lib/generateSignedContractPdf";
+import { PdfSigningOverlay } from "./PdfSigningOverlay";
 import type { PdfContract, PdfContractSigner, PdfContractHistory } from "@/hooks/usePdfContracts";
 
 const signerStatusConfig: Record<string, { label: string; className: string; emoji: string }> = {
@@ -31,15 +32,15 @@ interface Props {
 
 export function PdfContractViewDialog({ contract, signers: initialSigners, history, onClose, canManage, onCancel }: Props) {
   const [signers, setSigners] = useState(initialSigners);
+  const [signedFieldIds, setSignedFieldIds] = useState<string[]>([]);
 
-  // Sync when props change
   useEffect(() => {
     setSigners(initialSigners);
   }, [initialSigners]);
 
-  // Realtime subscription for signer status changes
   useEffect(() => {
     if (!contract?.id) return;
+
     const channel = supabase
       .channel(`pdf-signers-${contract.id}`)
       .on(
@@ -54,7 +55,42 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
         }
       )
       .subscribe();
+
     return () => { supabase.removeChannel(channel); };
+  }, [contract?.id]);
+
+  useEffect(() => {
+    if (!contract?.id) {
+      setSignedFieldIds([]);
+      return;
+    }
+
+    const loadSignedFields = async () => {
+      const { data } = await supabase
+        .from("pdf_contract_fields")
+        .select("id")
+        .eq("contract_id", contract.id)
+        .eq("value", "signed");
+
+      setSignedFieldIds((data || []).map((field: any) => field.id));
+    };
+
+    void loadSignedFields();
+
+    const channel = supabase
+      .channel(`pdf-contract-fields-${contract.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "pdf_contract_fields", filter: `contract_id=eq.${contract.id}` },
+        () => {
+          void loadSignedFields();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [contract?.id]);
 
   if (!contract) return null;
@@ -93,8 +129,10 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
       toast.error("Documento sem dados de validação");
       return;
     }
+
     const validationUrl = `${window.location.origin}/validar-documento/${contract.validation_code}`;
     const signerData = signers.map(s => ({
+      id: s.id,
       name: s.name,
       role: "signatário",
       email: s.email,
@@ -103,13 +141,7 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
       ip: s.signer_ip,
       signature_photo_url: s.signature_photo_url,
     }));
-    const historyData = history.map(h => ({
-      timestamp: h.created_at,
-      user: h.created_by_name || "Sistema",
-      action: h.description || h.action,
-    }));
 
-    // Load signature field positions for overlay
     const { data: sigFields } = await supabase
       .from("pdf_contract_fields")
       .select("page, pos_x, pos_y, width, height, signer_id")
@@ -117,10 +149,14 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
       .eq("field_type", "signature");
 
     const signaturePositions = (sigFields || []).map((f: any) => ({
-      page: f.page, x: f.pos_x, y: f.pos_y, width: f.width, height: f.height,
+      page: f.page,
+      x: f.pos_x,
+      y: f.pos_y,
+      width: f.width,
+      height: f.height,
+      signerId: f.signer_id,
     }));
 
-    // Load template signature positions as fallback
     let templateSigPositions: typeof signaturePositions = [];
     if (signaturePositions.length === 0 && contract.servidor_id) {
       const { data: templates } = await supabase
@@ -128,14 +164,21 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
         .select("id")
         .eq("company_id", contract.servidor_id)
         .limit(1);
+
       if (templates?.[0]) {
         const { data: tFields } = await supabase
           .from("company_contract_template_fields")
           .select("page, pos_x, pos_y, width, height")
           .eq("template_id", templates[0].id)
           .eq("field_type", "assinatura");
+
         templateSigPositions = (tFields || []).map((f: any) => ({
-          page: f.page, x: f.pos_x, y: f.pos_y, width: f.width, height: f.height,
+          page: f.page,
+          x: f.pos_x,
+          y: f.pos_y,
+          width: f.width,
+          height: f.height,
+          signerId: null,
         }));
       }
     }
@@ -151,6 +194,7 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
       validationUrl,
       signaturePositions: signaturePositions.length > 0 ? signaturePositions : templateSigPositions,
     });
+
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -180,7 +224,6 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
         </DialogHeader>
 
         <div className="space-y-5">
-          {/* Status & Info */}
           <div className="flex items-center gap-3 flex-wrap">
             <Badge variant="outline" className={cn("text-sm", {
               "bg-yellow-100 text-yellow-800 border-yellow-300": contract.status === "pendente",
@@ -199,7 +242,6 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
             <p className="text-sm text-muted-foreground">{contract.description}</p>
           )}
 
-          {/* Progress bar */}
           {signers.length > 0 && (
             <div className="space-y-2">
               <div className="flex justify-between text-xs text-muted-foreground">
@@ -210,7 +252,6 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
             </div>
           )}
 
-          {/* Send All WhatsApp Button */}
           {canManage && contract.status === "pendente" && signers.some(s => s.status === "pendente" && s.phone) && (
             <Button onClick={sendAllWhatsApp} variant="outline" className="w-full gap-2">
               <MessageSquare className="h-4 w-4" />
@@ -218,7 +259,6 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
             </Button>
           )}
 
-          {/* Legal Validity Block */}
           {isSigned && contract.document_hash && contract.validation_code && (
             <Card className="border-primary/30 bg-primary/5">
               <CardContent className="p-4 space-y-3">
@@ -251,36 +291,22 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
             </Card>
           )}
 
-          {/* PDF Viewer */}
-          <div className="rounded-lg border overflow-hidden">
-            <iframe
-              src={contract.pdf_url}
-              className="w-full h-[50vh]"
-              title="Visualização do contrato PDF"
-            />
-            {/* Signature stamps overlay below PDF */}
-            {signers.some(s => s.status === "assinado") && (
-              <div className="border-t bg-muted/30 p-4 space-y-3">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Assinaturas Registradas no Documento</p>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {signers.filter(s => s.status === "assinado").map(signer => (
-                    <div key={signer.id} className="rounded-md border border-primary/20 bg-primary/5 p-3 space-y-1">
-                      <div className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-                        <span className="text-xs font-bold text-foreground">Assinado Digitalmente</span>
-                      </div>
-                      <p className="text-xs font-semibold">{signer.name}</p>
-                      {signer.cpf_cnpj && <p className="text-[10px] text-muted-foreground">CPF/CNPJ: {signer.cpf_cnpj}</p>}
-                      {signer.signed_at && <p className="text-[10px] text-muted-foreground">Data: {new Date(signer.signed_at).toLocaleString("pt-BR")}</p>}
-                      {signer.signer_ip && <p className="text-[10px] text-muted-foreground">IP: {signer.signer_ip}</p>}
-                    </div>
-                  ))}
-                </div>
+          <div className="rounded-lg border overflow-hidden bg-muted/20">
+            {contract.pdf_url ? (
+              <PdfSigningOverlay
+                contractId={contract.id}
+                pdfUrl={contract.pdf_url}
+                currentSignerId=""
+                onFieldClick={() => undefined}
+                signedFieldIds={signedFieldIds}
+              />
+            ) : (
+              <div className="flex h-[50vh] items-center justify-center text-sm text-muted-foreground">
+                PDF do contrato indisponível.
               </div>
             )}
           </div>
 
-          {/* Signers */}
           <div className="space-y-3">
             <h3 className="font-semibold text-foreground text-sm">Contratantes ({signers.length})</h3>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -335,7 +361,6 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
             </div>
           </div>
 
-          {/* Cancel Button */}
           {canManage && contract.status === "pendente" && (
             <div className="flex justify-end">
               <Button variant="destructive" size="sm" onClick={() => onCancel(contract.id)}>
@@ -344,7 +369,6 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
             </div>
           )}
 
-          {/* History */}
           {history.length > 0 && (
             <div className="border-t pt-4 space-y-3">
               <h3 className="font-semibold text-foreground text-sm">Histórico</h3>

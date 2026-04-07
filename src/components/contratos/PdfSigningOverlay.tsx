@@ -184,9 +184,16 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
   const otherFields = pageFields.filter(f => f.signer_id !== currentSignerId);
   const pageTemplateFields = templateFields.filter(f => f.page === currentPage);
 
-  // Separate signature-type template fields from data fields
   const dataTemplateFields = pageTemplateFields.filter(f => f.field_type !== "assinatura");
-  const signatureTemplateFields = pageTemplateFields.filter(f => f.field_type === "assinatura");
+  const hasContractSignatureFields = fields.some(f => f.field_type === "signature");
+  const signatureTemplateFields = hasContractSignatureFields
+    ? []
+    : [...pageTemplateFields.filter(f => f.field_type === "assinatura")].sort((a, b) => {
+        if (a.page !== b.page) return a.page - b.page;
+        if (a.pos_y !== b.pos_y) return a.pos_y - b.pos_y;
+        return a.pos_x - b.pos_x;
+      });
+  const orderedSigners = [...(contractMeta?.allSigners || [])].sort((a: any, b: any) => a.sign_order - b.sign_order);
 
   if (fields.length === 0 && templateFields.length === 0) {
     return (
@@ -240,8 +247,7 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
 
           {/* Signature stamps at template tag positions */}
           {signatureTemplateFields.map((field, idx) => {
-            const allSignersList = contractMeta?.allSigners || [];
-            const signer = allSignersList[idx];
+            const signer = orderedSigners[idx];
             const isSigned = signer?.status === "assinado" && signer?.signed_at;
             return (
               <div
@@ -255,7 +261,7 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
                 }}
               >
                 {isSigned ? (
-                  <div className="w-full h-full flex items-center gap-2 rounded-md border border-primary/30 p-1" style={{ backgroundColor: "rgba(245,247,255,0.95)" }}>
+                  <div className="h-full w-full rounded-md border border-primary/30 bg-primary/5 p-1 flex items-center gap-2">
                     {signer.signature_photo_url && (
                       <img
                         src={signer.signature_photo_url}
@@ -264,14 +270,15 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
                         style={{ maxWidth: "35%" }}
                       />
                     )}
-                    <div className="flex flex-col gap-0.5 overflow-hidden min-w-0">
+                    <div className="flex min-w-0 flex-col gap-0.5 overflow-hidden">
                       <div className="flex items-center gap-1">
-                        <CheckCircle className="h-3 w-3 shrink-0 text-green-600" />
-                        <span className="text-[8px] font-bold truncate" style={{ color: "#1e40af" }}>Assinado Digitalmente</span>
+                        <CheckCircle className="h-3 w-3 shrink-0 text-primary" />
+                        <span className="truncate text-[8px] font-bold text-primary">Assinado Digitalmente</span>
                       </div>
-                      <span className="text-[7px] font-semibold truncate" style={{ color: "#111" }}>{signer.name}</span>
-                      {signer.cpf_cnpj && <span className="text-[6px] truncate" style={{ color: "#555" }}>CPF/CNPJ: {signer.cpf_cnpj}</span>}
-                      {signer.signed_at && <span className="text-[6px] truncate" style={{ color: "#555" }}>{new Date(signer.signed_at).toLocaleString("pt-BR")}</span>}
+                      <span className="truncate text-[7px] font-semibold text-foreground">{signer.name}</span>
+                      {signer.cpf_cnpj && <span className="truncate text-[6px] text-muted-foreground">CPF/CNPJ: {signer.cpf_cnpj}</span>}
+                      {signer.signed_at && <span className="truncate text-[6px] text-muted-foreground">{new Date(signer.signed_at).toLocaleString("pt-BR")}</span>}
+                      {signer.signer_ip && <span className="truncate text-[6px] text-muted-foreground">IP: {signer.signer_ip}</span>}
                     </div>
                   </div>
                 ) : (
