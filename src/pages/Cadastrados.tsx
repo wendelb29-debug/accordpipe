@@ -194,7 +194,7 @@ export default function Cadastrados() {
     // Fetch contracts, transactions, history, upsells in parallel
     const contractIds = (await supabase.from("client_contracts").select("id").eq("registration_id", reg.id)).data?.map((c: any) => c.id) || [];
 
-    const [contractsRes, transactionsRes, historyRes, upsellsRes, docsRes] = await Promise.all([
+    const [contractsRes, transactionsRes, historyRes, upsellsRes, docsRes, crmContractsRes, leadDocsRes] = await Promise.all([
       supabase
         .from("client_contracts")
         .select("*")
@@ -221,13 +221,25 @@ export default function Cadastrados() {
         .eq("servidor_id", reg.servidor_id)
         .eq("type", "file")
         .order("created_at", { ascending: false }) : Promise.resolve({ data: [] }),
+      reg.lead_id ? supabase
+        .from("contracts")
+        .select("id, code, signature_status, signed_at, validation_code, document_hash, pdf_url, pdf_assinado_url, signer_name, signer_document, signature_photo_url, created_at")
+        .eq("lead_id", reg.lead_id)
+        .eq("signature_status", "signed") : Promise.resolve({ data: [] }),
+      reg.lead_id ? (supabase as any)
+        .from("lead_documents")
+        .select("*")
+        .eq("lead_id", reg.lead_id)
+        .order("created_at", { ascending: false }) : Promise.resolve({ data: [] }),
     ]);
 
     setDetailContracts(contractsRes.data || []);
+    setDetailCrmContracts(crmContractsRes.data || []);
     setDetailTransactions(transactionsRes.data || []);
     setDetailHistory(historyRes.data || []);
     setDetailUpsells((upsellsRes as any).data || []);
     setDetailDocuments((docsRes as any).data || []);
+    setDetailLeadDocs(leadDocsRes.data || []);
   };
 
   const handleSaveEdit = async () => {
