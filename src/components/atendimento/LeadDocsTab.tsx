@@ -47,7 +47,6 @@ interface SignedPdfContract {
 }
 
 const DOC_TYPES = [
-  { key: "contrato_assinado", label: "Contrato Assinado", icon: FileSignature, description: "Contrato finalizado com assinaturas digitais" },
   { key: "cnh", label: "CNH", icon: CreditCard, description: "Carteira Nacional de Habilitação" },
   { key: "cnpj", label: "CNPJ", icon: Building2, description: "Cartão CNPJ ou Contrato Social" },
   { key: "comprovante_endereco", label: "Comprovante de Endereço", icon: MapPin, description: "Conta de luz, água ou telefone" },
