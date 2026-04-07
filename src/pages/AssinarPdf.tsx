@@ -164,7 +164,7 @@ export default function AssinarPdf() {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setCameraActive(true);
-        let count = 5;
+        let count = 6;
         setCountdown(count);
         countdownRef.current = setInterval(() => {
           count--;
@@ -484,7 +484,7 @@ export default function AssinarPdf() {
                 </div>
               )}
               <p className="text-center text-xs text-[hsl(220,20%,50%)] py-2">
-                {countdown !== null ? `Capturando em ${countdown}s...` : "Preparando..."}
+                {countdown !== null ? `Foto será capturada em ${countdown}s...` : "Preparando..."}
               </p>
             </div>
           ) : (
