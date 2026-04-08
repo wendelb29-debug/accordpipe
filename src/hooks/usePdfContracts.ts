@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { toast } from "sonner";
 
 export interface PdfContract {
