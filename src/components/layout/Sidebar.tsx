@@ -206,6 +206,27 @@ export function Sidebar() {
             ACCORD
           </span>
         </div>
+        {/* Pin/Toggle button - visible when expanded */}
+        {!collapsed && (
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setPinned(!pinned)}
+                className={cn(
+                  "ml-auto flex h-7 w-7 items-center justify-center rounded-lg transition-all duration-200",
+                  pinned
+                    ? "bg-sidebar-primary/20 text-sidebar-primary hover:bg-sidebar-primary/30"
+                    : "text-sidebar-foreground/30 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground/60"
+                )}
+              >
+                {pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="font-medium text-xs">
+              {pinned ? "Desafixar sidebar" : "Fixar sidebar"}
+            </TooltipContent>
+          </Tooltip>
+        )}
       </div>
 
       {/* ACCORD Stack Button */}
