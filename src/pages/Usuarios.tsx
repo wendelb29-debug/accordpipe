@@ -849,12 +849,12 @@ export default function Usuarios() {
           </Dialog>
         </TabsContent>
 
-        {(isMaster || isCeo) && (
+        {isMaster && (
           <TabsContent value="servidores">
             <ServidoresTab />
           </TabsContent>
         )}
-        {(isMaster || isCeo) && (
+        {isMaster && (
           <TabsContent value="servidores-teste">
             <ServidoresTesteTab />
           </TabsContent>
