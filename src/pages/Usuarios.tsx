@@ -759,7 +759,7 @@ export default function Usuarios() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="admin">Administrador</SelectItem>
-                        <SelectItem value="ceo">CEO</SelectItem>
+                        {(isMaster || isCeo) && <SelectItem value="ceo">CEO</SelectItem>}
                         <SelectItem value="operador">Operador</SelectItem>
                         <SelectItem value="administrativo">Administrativo</SelectItem>
                         <SelectItem value="financeiro">Financeiro</SelectItem>
