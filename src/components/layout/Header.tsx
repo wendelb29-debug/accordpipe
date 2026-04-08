@@ -133,15 +133,6 @@ export function Header() {
           />
         </div>
 
-      <div className="flex items-center gap-1 shrink-0">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-xl h-9 w-9 text-muted-foreground hover:text-foreground"
-          onClick={handleThemeToggle}
-        >
-          {currentTheme === "dark" ? <Sun className="h-[17px] w-[17px]" /> : <Moon className="h-[17px] w-[17px]" />}
-        </Button>
 
         <NotificationBell />
 
