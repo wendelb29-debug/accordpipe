@@ -169,8 +169,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Set active company
       const savedCompanyId = localStorage.getItem("accord_active_company");
-      if (isMasterUser || isCeoUser) {
-        setActiveCompanyIdState(savedCompanyId || null);
+      if (isMasterUser) {
+        // True master (is_master flag) can switch tenants freely
+        setActiveCompanyIdState(savedCompanyId || typedProfile?.company_id || null);
+      } else if (isCeoUser && typedProfile?.company_id) {
+        // CEO of a non-master tenant — always use their own company
+        setActiveCompanyIdState(typedProfile.company_id);
       } else if (typedProfile?.company_id) {
         setActiveCompanyIdState(typedProfile.company_id);
       }
