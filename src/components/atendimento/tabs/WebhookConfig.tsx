@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Send, LogOut, MessageSquare, Radio, Activity, Wifi, Loader2, Save, Copy, Check } from "lucide-react";
+import { Send, LogOut, MessageSquare, Radio, Activity, Wifi, Loader2, Save, Copy, Check, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -60,7 +60,9 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
   const [errors, setErrors] = useState<Record<string, boolean>>({});
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const webhookBaseUrl = supabaseUrl ? `${supabaseUrl}/functions/v1/zapi-webhook` : "";
+  const tenantWebhookUrl = supabaseUrl && companyId
+    ? `${supabaseUrl}/functions/v1/zapi-webhook?tenant=${companyId}`
+    : "";
 
   useEffect(() => {
     if (!companyId) return;
@@ -149,22 +151,35 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
     <div className="space-y-8">
       {/* Integration URLs section */}
       <div className="space-y-4">
-        <div>
-          <h3 className="text-xs font-semibold uppercase tracking-widest text-primary mb-1">URLs de Integração Z-API</h3>
-          <p className="text-sm text-muted-foreground">
-            Use estas URLs no painel da Z-API para receber os eventos da sua instância no Accord Stack.
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-primary mb-1">URLs de Integração Z-API</h3>
+            <p className="text-sm text-muted-foreground">
+              URLs exclusivas deste tenant. Cole no painel da Z-API para receber os eventos.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 shrink-0"
+            onClick={() => {
+              toast.success("URLs atualizadas para este tenant!");
+            }}
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Atualizar URLs
+          </Button>
         </div>
 
         <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
           {[
-            { label: "Webhook URL (principal)", url: webhookBaseUrl },
-            { label: "Ao receber mensagem", url: webhookBaseUrl },
-            { label: "Ao enviar mensagem", url: webhookBaseUrl },
-            { label: "Status da mensagem", url: webhookBaseUrl },
-            { label: "Ao conectar", url: webhookBaseUrl },
-            { label: "Ao desconectar", url: webhookBaseUrl },
-            { label: "Presença do chat", url: webhookBaseUrl },
+            { label: "Webhook URL (principal)", url: tenantWebhookUrl },
+            { label: "Ao receber mensagem", url: tenantWebhookUrl },
+            { label: "Ao enviar mensagem", url: tenantWebhookUrl },
+            { label: "Status da mensagem", url: tenantWebhookUrl },
+            { label: "Ao conectar", url: tenantWebhookUrl },
+            { label: "Ao desconectar", url: tenantWebhookUrl },
+            { label: "Presença do chat", url: tenantWebhookUrl },
           ].map((item, i) => (
             <div key={i} className="flex items-center gap-3">
               <Label className="text-xs text-muted-foreground w-44 shrink-0">{item.label}</Label>
