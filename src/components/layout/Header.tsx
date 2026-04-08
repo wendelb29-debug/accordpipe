@@ -1,5 +1,5 @@
-import { useNavigate } from "react-router-dom";
-import { Search, User, Moon, Sun } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Search, User, Moon, Sun, Clock } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { MobileSidebar } from "./MobileSidebar";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,29 @@ import { useState, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const ROUTE_TITLES: Record<string, string> = {
+  "/home": "Início",
+  "/dashboard": "Dashboard",
+  "/atendimento": "Workspaces",
+  "/formularios": "Formulários",
+  "/atividades": "Atividades",
+  "/financeiro": "Financeiro",
+  "/documentos": "Documentos",
+  "/relatorios": "Relatórios",
+  "/contratos": "Contratos",
+  "/gestao-vendas": "Gestão de Vendas",
+  "/cadastrados": "Base de Clientes",
+  "/descarte": "Descarte",
+  "/perfil": "Meu Perfil",
+  "/accord-stack": "ACCORD Stack",
+  "/configuracoes/usuarios": "Usuários",
+  "/configuracoes/assinaturas": "Assinaturas",
+};
+
+const ROUTE_SUBTITLES: Record<string, string> = {
+  "/atendimento": "Selecione um kanban para gerenciar",
+};
 
 const roleLabels: Record<string, string> = {
   admin: "Administrador",
