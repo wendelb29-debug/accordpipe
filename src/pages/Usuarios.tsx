@@ -182,7 +182,7 @@ export default function Usuarios() {
         email: "",
         password: "",
         role: "leitura",
-        company_id: "",
+        company_id: activeCompanyId || "",
       });
     }
     setDialogOpen(true);
@@ -721,29 +721,35 @@ export default function Usuarios() {
                     </div>
                   )}
 
-                  {/* Only master sees company selector; tenant admins auto-assign */}
-                  {isMaster && (
-                    <div className="space-y-2">
-                      <Label htmlFor="company">Empresa vinculada</Label>
-                      <Select
-                        value={formData.company_id}
-                        onValueChange={(value: string) =>
-                          setFormData({ ...formData, company_id: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a empresa" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {allCompanies.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>
-                              {c.nome_fantasia || c.razao_social} - {c.cnpj}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="company">Empresa vinculada</Label>
+                    <Select
+                      value={formData.company_id || activeCompanyId || ""}
+                      onValueChange={(value: string) =>
+                        setFormData({ ...formData, company_id: value })
+                      }
+                      disabled={!isMaster}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a empresa" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {isMaster
+                          ? allCompanies.map((c) => (
+                              <SelectItem key={c.id} value={c.id}>
+                                {c.nome_fantasia || c.razao_social} - {c.cnpj}
+                              </SelectItem>
+                            ))
+                          : allCompanies
+                              .filter((c) => c.id === activeCompanyId)
+                              .map((c) => (
+                                <SelectItem key={c.id} value={c.id}>
+                                  {c.nome_fantasia || c.razao_social} - {c.cnpj}
+                                </SelectItem>
+                              ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="role">Perfil</Label>
