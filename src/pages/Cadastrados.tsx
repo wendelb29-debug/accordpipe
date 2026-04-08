@@ -305,7 +305,7 @@ export default function Cadastrados() {
 
   // ──────── Create Upsell ────────
   const handleCreateUpsell = async () => {
-    if (!selectedReg?.id || !profile?.company_id || !upsellForm.name || !upsellForm.amount) {
+    if (!selectedReg?.id || !companyId || !upsellForm.name || !upsellForm.amount) {
       toast.error("Preencha nome e valor do upsell");
       return;
     }
@@ -1200,7 +1200,7 @@ export default function Cadastrados() {
   };
 
   const handleManualRegister = async () => {
-    if (!manualForm.nome_completo || !profile?.company_id) {
+    if (!manualForm.nome_completo || !companyId) {
       toast.error("Nome completo é obrigatório");
       return;
     }
