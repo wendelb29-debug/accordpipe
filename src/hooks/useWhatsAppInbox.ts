@@ -15,6 +15,8 @@ export interface InboxContact {
   assigned_to: string | null;
   labels: string[];
   company_id: string;
+  workspace_id: string | null;
+  lead_id: string | null;
 }
 
 export interface InboxMessage {
