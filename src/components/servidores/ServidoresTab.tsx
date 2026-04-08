@@ -645,6 +645,14 @@ export default function ServidoresTab() {
                 />
               </TabsContent>
 
+              <TabsContent value="webhooks" className="mt-0">
+                {editingCompany ? (
+                  <WebhookConfig companyIdOverride={editingCompany.id} />
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">Salve o tenant primeiro para configurar webhooks.</p>
+                )}
+              </TabsContent>
+
               <TabsContent value="contrato" className="mt-0">
                 <ContractTemplateTab companyId={editingCompany?.id || null} />
               </TabsContent>
