@@ -19,7 +19,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const hasAvatar = !!(profile as any)?.avatar_url;
   useActivityReminders();
   const location = useLocation();
-  const hideHeader = location.pathname === "/atendimento";
+  const hideHeader = false;
   const isMobile = useIsMobile();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
