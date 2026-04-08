@@ -317,7 +317,7 @@ export default function Cadastrados() {
       // Create upsell
       await supabase.from("client_upsells" as any).insert({
         registration_id: selectedReg.id,
-        servidor_id: profile.company_id,
+        servidor_id: companyId,
         lead_id: selectedReg.lead_id,
         name: upsellForm.name,
         description: upsellForm.description,
@@ -333,7 +333,7 @@ export default function Cadastrados() {
       if (dueDate < new Date()) dueDate.setMonth(dueDate.getMonth() + 1);
 
       await supabase.from("financial_transactions").insert({
-        servidor_id: profile.company_id,
+        servidor_id: companyId,
         registration_id: selectedReg.id,
         lead_id: selectedReg.lead_id,
         amount,
@@ -1208,7 +1208,7 @@ export default function Cadastrados() {
     try {
       // Create a lead first
       const { data: leadData, error: leadErr } = await supabase.from("crm_leads").insert({
-        servidor_id: profile.company_id,
+        servidor_id: companyId,
         company_name: manualForm.empresa || manualForm.nome_completo,
         contact_name: manualForm.nome_completo,
         email: manualForm.email || null,
@@ -1227,7 +1227,7 @@ export default function Cadastrados() {
       // Create registration
       const { error: regErr } = await supabase.from("crm_client_registrations").insert({
         lead_id: leadData.id,
-        servidor_id: profile.company_id,
+        servidor_id: companyId,
         nome_completo: manualForm.nome_completo,
         cpf: manualForm.cpf || null,
         email: manualForm.email || null,
