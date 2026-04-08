@@ -154,6 +154,15 @@ function applyBrandColors(brand: {
     root.style.setProperty("--sidebar-accent", sidebarAccent);
     root.style.setProperty("--sidebar-border", sidebarBorder);
     root.style.setProperty("--sidebar-foreground", DEFAULTS.sidebarForeground);
+
+    // Dynamic button gradients from brand colors
+    const glowHsl = accentHsl || secondaryHsl || lightenHsl(primaryHsl, 15);
+    const primaryCss = `hsl(${primaryHsl})`;
+    const glowCss = `hsl(${glowHsl})`;
+    const darkPrimaryCss = `hsl(${darkenHsl(primaryHsl, 20)})`;
+
+    root.style.setProperty("--gradient-accord-btn", `linear-gradient(135deg, ${primaryCss}, ${glowCss})`);
+    root.style.setProperty("--gradient-primary", `linear-gradient(135deg, ${darkPrimaryCss} 0%, ${primaryCss} 45%, ${glowCss} 100%)`);
   }
 
   if (accentHsl) {
