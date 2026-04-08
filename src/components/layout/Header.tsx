@@ -1,5 +1,5 @@
-import { useNavigate } from "react-router-dom";
-import { Search, User, Moon, Sun } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Search, User, Moon, Sun, Clock } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { MobileSidebar } from "./MobileSidebar";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,29 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
+const ROUTE_TITLES: Record<string, string> = {
+  "/home": "Início",
+  "/dashboard": "Dashboard",
+  "/atendimento": "Workspaces",
+  "/formularios": "Formulários",
+  "/atividades": "Atividades",
+  "/financeiro": "Financeiro",
+  "/documentos": "Documentos",
+  "/relatorios": "Relatórios",
+  "/contratos": "Contratos",
+  "/gestao-vendas": "Gestão de Vendas",
+  "/cadastrados": "Base de Clientes",
+  "/descarte": "Descarte",
+  "/perfil": "Meu Perfil",
+  "/accord-stack": "ACCORD Stack",
+  "/configuracoes/usuarios": "Usuários",
+  "/configuracoes/assinaturas": "Assinaturas",
+};
+
+const ROUTE_SUBTITLES: Record<string, string> = {
+  "/atendimento": "Selecione um kanban para gerenciar",
+};
+
 const roleLabels: Record<string, string> = {
   admin: "Administrador",
   operador: "Operador",
@@ -32,8 +55,18 @@ const roleLabels: Record<string, string> = {
 export function Header() {
   const { profile, role, signOut, loading } = useAuth();
   const [currentTheme, setCurrentTheme] = useState(() => document.documentElement.classList.contains("dark") ? "dark" : "light");
+  const [currentTime, setCurrentTime] = useState(new Date());
   const navigate = useNavigate();
+  const location = useLocation();
   const isMobile = useIsMobile();
+
+  const pageTitle = ROUTE_TITLES[location.pathname] || "";
+  const pageSubtitle = ROUTE_SUBTITLES[location.pathname] || "";
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleThemeToggle = async () => {
     const newTheme = currentTheme === "dark" ? "light" : "dark";
@@ -54,26 +87,52 @@ export function Header() {
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/50 bg-card/95 backdrop-blur-xl px-3 sm:px-6 lg:px-8 shadow-sm gap-2" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       {isMobile && <MobileSidebar />}
-      <div className="flex items-center flex-1 min-w-0 overflow-hidden">
-        <div className="relative w-full min-w-0 max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
-          <Input
-            type="search"
-            placeholder="Buscar leads, clientes, documentos..."
-            className="pl-9 pr-2 bg-muted/40 border-border/40 focus-visible:ring-1 focus-visible:ring-primary/50 rounded-xl h-9 sm:h-10 text-xs sm:text-sm w-full truncate"
-          />
+
+      {/* Page title */}
+      <div className="flex items-center gap-3 min-w-0 shrink-0">
+        {pageTitle && (
+          <div className="min-w-0">
+            <h1 className="text-sm font-bold text-foreground truncate">{pageTitle}</h1>
+            {pageSubtitle && <p className="text-[10px] text-muted-foreground truncate">{pageSubtitle}</p>}
+          </div>
+        )}
+      </div>
+
+      {/* Center: Clock + Theme */}
+      <div className="hidden sm:flex items-center gap-2">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Clock className="h-3.5 w-3.5" />
+          <span className="tabular-nums">
+            {currentTime.toLocaleDateString("pt-BR")} {currentTime.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+          </span>
+        </div>
+        <div className="flex items-center bg-muted/50 rounded-full p-0.5">
+          <button
+            onClick={() => { if (currentTheme !== "light") handleThemeToggle(); }}
+            className={`h-6 w-6 flex items-center justify-center rounded-full transition-all ${currentTheme === "light" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
+          >
+            <Sun className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => { if (currentTheme !== "dark") handleThemeToggle(); }}
+            className={`h-6 w-6 flex items-center justify-center rounded-full transition-all ${currentTheme === "dark" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
+          >
+            <Moon className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
 
+      {/* Right: Search + Notifications + User */}
       <div className="flex items-center gap-1 shrink-0">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-xl h-9 w-9 text-muted-foreground hover:text-foreground"
-          onClick={handleThemeToggle}
-        >
-          {currentTheme === "dark" ? <Sun className="h-[17px] w-[17px]" /> : <Moon className="h-[17px] w-[17px]" />}
-        </Button>
+        <div className="relative hidden md:block w-48 lg:w-64">
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
+          <Input
+            type="search"
+            placeholder="Buscar..."
+            className="pl-8 pr-2 bg-muted/40 border-border/40 focus-visible:ring-1 focus-visible:ring-primary/50 rounded-xl h-8 text-xs w-full"
+          />
+        </div>
+
 
         <NotificationBell />
 
