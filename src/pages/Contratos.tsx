@@ -104,8 +104,8 @@ export default function Contratos() {
   };
 
   useEffect(() => {
-    if (profile?.company_id) fetchContracts();
-  }, [profile]);
+    if (companyId) fetchContracts();
+  }, [companyId]);
 
   const openContract = async (contract: ClientContract) => {
     setViewContract(contract);
