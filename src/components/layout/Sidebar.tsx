@@ -13,17 +13,14 @@ import {
   Users,
   LogOut,
   MessageSquare,
-  PanelLeftClose,
-  PanelLeft,
   CalendarCheck,
   Rocket,
   Webhook,
   ClipboardList,
   Trash2,
-  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -35,7 +32,6 @@ const navigation = [
   { name: "Accord Sales", href: "/atendimento", icon: MessageSquare, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
   { name: "Formulários", href: "/formularios", icon: ClipboardList, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
   { name: "Atividades", href: "/atividades", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
-  
   { name: "Financeiro", href: "/financeiro", icon: Receipt, roles: ["admin", "ceo", "financeiro"] },
   { name: "Documentos", href: "/documentos", icon: FileText, roles: ["admin", "ceo", "administrativo", "financeiro"] },
   { name: "Relatórios", href: "/relatorios", icon: BarChart3, roles: ["admin", "leitura", "ceo", "administrativo", "financeiro"] },
@@ -52,13 +48,27 @@ const configNavigation = [
 
 export function Sidebar() {
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
+  const [hovered, setHovered] = useState(false);
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const toggleCollapsed = (value: boolean) => {
-    setCollapsed(value);
-    localStorage.setItem("sidebar-collapsed", String(value));
-    window.dispatchEvent(new CustomEvent("sidebar-toggle", { detail: value }));
+  // The sidebar is always collapsed by default, expands on hover
+  const collapsed = !hovered;
+
+  // Notify AppLayout about the sidebar width
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("sidebar-toggle", { detail: collapsed }));
+    localStorage.setItem("sidebar-collapsed", String(collapsed));
+  }, [collapsed]);
+
+  const handleMouseEnter = () => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    setHovered(true);
   };
+
+  const handleMouseLeave = () => {
+    hoverTimeoutRef.current = setTimeout(() => setHovered(false), 200);
+  };
+
   const [overdueCount, setOverdueCount] = useState(0);
   const { role, signOut, profile } = useAuth();
 
@@ -91,9 +101,7 @@ export function Sidebar() {
   const { hasPermission } = usePermissions();
 
   const filteredNavigation = navigation.filter((item) => {
-    // Role-based filter (legacy)
     if (role && !item.roles.includes(role)) return false;
-    // Permission-based filter
     const perm = ROUTE_PERMISSIONS[item.href];
     if (perm && !hasPermission(perm)) return false;
     return true;
@@ -122,7 +130,6 @@ export function Sidebar() {
             : "text-sidebar-foreground/45 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground/80"
         )}
       >
-        {/* Active indicator bar — purple glow */}
         {isActive && (
           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-sidebar-primary shadow-[0_0_8px_rgba(122,63,242,0.5)]" />
         )}
@@ -137,9 +144,12 @@ export function Sidebar() {
             </span>
           )}
         </div>
-        {!collapsed && (
-          <span className="truncate flex-1">{item.name}</span>
-        )}
+        <span className={cn(
+          "truncate flex-1 transition-all duration-300 whitespace-nowrap",
+          collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 w-auto"
+        )}>
+          {item.name}
+        </span>
         {!collapsed && badge > 0 && (
           <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive/80 text-[10px] font-bold text-destructive-foreground px-1">
             {badge}
@@ -164,28 +174,32 @@ export function Sidebar() {
 
   return (
     <aside
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       className={cn(
-        "fixed left-0 top-0 z-40 h-screen border-r border-sidebar-border bg-sidebar transition-all duration-300 flex flex-col",
+        "fixed left-0 top-0 z-40 h-screen border-r border-sidebar-border bg-sidebar flex flex-col",
+        "transition-[width] duration-300 ease-in-out",
         collapsed ? "w-[52px]" : "w-56"
       )}
     >
       {/* Logo */}
-      <div className={cn("flex h-16 items-center border-b border-sidebar-border/30 shrink-0 select-none", collapsed ? "justify-center px-2" : "justify-between px-5")}>
-        {!collapsed && (
-          <div className="flex items-center gap-2.5 cursor-default" onClick={(e) => e.preventDefault()}>
-            <img src={accordLogo} alt="ACCORD" className="h-8 w-auto" />
-            <span className="text-[15px] font-bold tracking-tight text-sidebar-foreground/90">ACCORD</span>
-          </div>
-        )}
-        {collapsed && (
-          <div className="flex items-center justify-center cursor-default" onClick={(e) => e.preventDefault()}>
-            <img src={accordLogo} alt="ACCORD" className="h-7 w-auto" />
-          </div>
-        )}
+      <div className={cn(
+        "flex h-16 items-center border-b border-sidebar-border/30 shrink-0 select-none overflow-hidden",
+        collapsed ? "justify-center px-2" : "justify-start px-5"
+      )}>
+        <div className="flex items-center gap-2.5 cursor-default shrink-0" onClick={(e) => e.preventDefault()}>
+          <img src={accordLogo} alt="ACCORD" className={cn("transition-all duration-300", collapsed ? "h-7" : "h-8")} />
+          <span className={cn(
+            "text-[15px] font-bold tracking-tight text-sidebar-foreground/90 whitespace-nowrap transition-all duration-300",
+            collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 w-auto"
+          )}>
+            ACCORD
+          </span>
+        </div>
       </div>
 
       {/* ACCORD Stack Button */}
-      <div className={cn("shrink-0", collapsed ? "px-2 py-3" : "px-3 py-3")}>
+      <div className={cn("shrink-0 overflow-hidden", collapsed ? "px-2 py-3" : "px-3 py-3")}>
         {collapsed ? (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
@@ -205,25 +219,15 @@ export function Sidebar() {
             style={location.pathname === "/accord-stack" ? { background: 'linear-gradient(135deg, #7A3FF2, #D94FD5)' } : undefined}
           >
             <Rocket className="h-3.5 w-3.5" />
-            ACCORD Stack
+            <span className="transition-opacity duration-300">ACCORD Stack</span>
           </Link>
         )}
-      </div>
-
-      {/* Toggle */}
-      <div className={cn("flex shrink-0 py-1", collapsed ? "justify-center px-2" : "px-3")}>
-        <button
-          onClick={() => toggleCollapsed(!collapsed)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-sidebar-foreground/25 hover:bg-sidebar-accent hover:text-sidebar-foreground/60 transition-all duration-200"
-        >
-          {collapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-        </button>
       </div>
 
       {/* Navigation */}
       <nav className={cn("flex-1 space-y-0.5 overflow-y-auto py-4", collapsed ? "px-2" : "px-3")}>
         {!collapsed && (
-          <p className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-sidebar-foreground/20">
+          <p className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-sidebar-foreground/20 transition-opacity duration-300">
             Menu
           </p>
         )}
@@ -237,7 +241,7 @@ export function Sidebar() {
         {filteredConfigNavigation.length > 0 && (
           <div className="space-y-0.5 mb-4">
             {!collapsed && (
-              <p className="px-3 pb-3 text-[9px] font-bold uppercase tracking-[0.2em] text-sidebar-foreground/15">
+              <p className="px-3 pb-3 text-[9px] font-bold uppercase tracking-[0.2em] text-sidebar-foreground/15 transition-opacity duration-300">
                 Config
               </p>
             )}
@@ -295,7 +299,10 @@ export function Sidebar() {
               className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-sidebar-foreground/30 hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
             >
               <LogOut className="h-[18px] w-[18px] shrink-0" />
-              {!collapsed && <span>Sair</span>}
+              <span className={cn(
+                "transition-all duration-300 whitespace-nowrap",
+                collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 w-auto"
+              )}>Sair</span>
             </button>
           </TooltipTrigger>
           {collapsed && (
