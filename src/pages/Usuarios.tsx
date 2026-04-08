@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Search, User, MoreHorizontal, Pencil, Power, Shield, Eye, EyeOff, Building2, Server, CheckCircle, XCircle, Clock, FlaskConical } from "lucide-react";
+import { Plus, Search, User, MoreHorizontal, Pencil, Power, Shield, Eye, EyeOff, Building2, Server, CheckCircle, XCircle, Clock, FlaskConical, Send, MessageCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ServidoresTab from "@/components/servidores/ServidoresTab";
 import ServidoresTesteTab from "@/components/servidores/ServidoresTesteTab";
@@ -97,6 +97,7 @@ export default function Usuarios() {
     cpf: "",
     birth_date: "",
     email: "",
+    whatsapp: "",
     password: "",
     role: "leitura" as AppRole,
     company_id: "" as string,
@@ -169,6 +170,7 @@ export default function Usuarios() {
         cpf: (user as any).cpf || "",
         birth_date: (user as any).birth_date || "",
         email: user.email,
+        whatsapp: (user as any).whatsapp || "",
         password: "",
         role: user.role,
         company_id: user.company_id || "",
@@ -180,6 +182,7 @@ export default function Usuarios() {
         cpf: "",
         birth_date: "",
         email: "",
+        whatsapp: "",
         password: "",
         role: "leitura",
         company_id: activeCompanyId || "",
