@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { toast } from "sonner";
 
 export interface DriveFile {
@@ -23,19 +24,20 @@ export interface DriveFile {
 
 export function useDriveFiles(parentId: string | null) {
   const { profile, isMaster, isCeo } = useAuth();
+  const companyId = useActiveCompanyId();
   const [files, setFiles] = useState<DriveFile[]>([]);
   const [loading, setLoading] = useState(true);
 
   const canManage = isMaster || isCeo || (profile as any)?.is_master;
 
   const fetchFiles = useCallback(async () => {
-    if (!profile?.company_id) return;
+    if (!companyId) return;
     setLoading(true);
 
     let query = supabase
       .from("drive_files")
       .select("*")
-      .eq("servidor_id", profile.company_id)
+      .eq("servidor_id", companyId)
       .order("type", { ascending: true })
       .order("name", { ascending: true });
 
@@ -52,18 +54,18 @@ export function useDriveFiles(parentId: string | null) {
     }
     setFiles((data as DriveFile[]) || []);
     setLoading(false);
-  }, [profile?.company_id, parentId]);
+  }, [companyId, parentId]);
 
   useEffect(() => {
-    if (profile?.company_id) fetchFiles();
+    if (companyId) fetchFiles();
   }, [fetchFiles]);
 
   const createFolder = async (name: string) => {
-    if (!profile?.company_id) return null;
+    if (!companyId) return null;
     const { data, error } = await supabase
       .from("drive_files")
       .insert({
-        servidor_id: profile.company_id,
+        servidor_id: companyId,
         parent_id: parentId,
         name,
         type: "folder",
@@ -82,8 +84,8 @@ export function useDriveFiles(parentId: string | null) {
   };
 
   const uploadFile = async (file: File) => {
-    if (!profile?.company_id) return null;
-    const filePath = `${profile.company_id}/${Date.now()}_${file.name}`;
+    if (!companyId) return null;
+    const filePath = `${companyId}/${Date.now()}_${file.name}`;
     const { error: uploadErr } = await supabase.storage
       .from("contract-pdfs")
       .upload(filePath, file, { contentType: file.type });
@@ -96,7 +98,7 @@ export function useDriveFiles(parentId: string | null) {
     const { data, error } = await supabase
       .from("drive_files")
       .insert({
-        servidor_id: profile.company_id,
+        servidor_id: companyId,
         parent_id: parentId,
         name: file.name,
         type: "file",

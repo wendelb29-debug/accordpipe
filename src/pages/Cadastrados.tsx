@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -81,6 +82,7 @@ function getClientHealth(reg: any, transactions: any[], contracts: any[]) {
 // ──────────── Main Component ────────────
 export default function Cadastrados() {
   const { profile } = useAuth();
+  const companyId = useActiveCompanyId();
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -124,12 +126,12 @@ export default function Cadastrados() {
   }, [profile]);
 
   const fetchRegistrations = async () => {
-    if (!profile?.company_id) return;
+    if (!companyId) return;
     setLoading(true);
     const { data } = await supabase
       .from("crm_client_registrations")
       .select("*, crm_leads(*), crm_client_dependents(*)")
-      .eq("servidor_id", profile.company_id)
+      .eq("servidor_id", companyId)
       .order("created_at", { ascending: false });
     setRegistrations(data || []);
     setLoading(false);
@@ -303,7 +305,7 @@ export default function Cadastrados() {
 
   // ──────── Create Upsell ────────
   const handleCreateUpsell = async () => {
-    if (!selectedReg?.id || !profile?.company_id || !upsellForm.name || !upsellForm.amount) {
+    if (!selectedReg?.id || !companyId || !upsellForm.name || !upsellForm.amount) {
       toast.error("Preencha nome e valor do upsell");
       return;
     }
@@ -315,7 +317,7 @@ export default function Cadastrados() {
       // Create upsell
       await supabase.from("client_upsells" as any).insert({
         registration_id: selectedReg.id,
-        servidor_id: profile.company_id,
+        servidor_id: companyId,
         lead_id: selectedReg.lead_id,
         name: upsellForm.name,
         description: upsellForm.description,
@@ -331,7 +333,7 @@ export default function Cadastrados() {
       if (dueDate < new Date()) dueDate.setMonth(dueDate.getMonth() + 1);
 
       await supabase.from("financial_transactions").insert({
-        servidor_id: profile.company_id,
+        servidor_id: companyId,
         registration_id: selectedReg.id,
         lead_id: selectedReg.lead_id,
         amount,
@@ -1198,7 +1200,7 @@ export default function Cadastrados() {
   };
 
   const handleManualRegister = async () => {
-    if (!manualForm.nome_completo || !profile?.company_id) {
+    if (!manualForm.nome_completo || !companyId) {
       toast.error("Nome completo é obrigatório");
       return;
     }
@@ -1206,7 +1208,7 @@ export default function Cadastrados() {
     try {
       // Create a lead first
       const { data: leadData, error: leadErr } = await supabase.from("crm_leads").insert({
-        servidor_id: profile.company_id,
+        servidor_id: companyId,
         company_name: manualForm.empresa || manualForm.nome_completo,
         contact_name: manualForm.nome_completo,
         email: manualForm.email || null,
@@ -1225,7 +1227,7 @@ export default function Cadastrados() {
       // Create registration
       const { error: regErr } = await supabase.from("crm_client_registrations").insert({
         lead_id: leadData.id,
-        servidor_id: profile.company_id,
+        servidor_id: companyId,
         nome_completo: manualForm.nome_completo,
         cpf: manualForm.cpf || null,
         email: manualForm.email || null,

@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { toast } from "sonner";
 import {
   Upload, Download, FileSpreadsheet, CheckCircle2, Loader2,
@@ -34,6 +35,7 @@ type DistributionMethod = "round-robin" | "tags" | "cpf-cnpj";
 
 export function ImportarPlanilha() {
   const { profile } = useAuth();
+  const companyId = useActiveCompanyId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [parsedData, setParsedData] = useState<ParsedLead[]>([]);
   const [fileName, setFileName] = useState("");
@@ -113,7 +115,7 @@ export function ImportarPlanilha() {
   };
 
   const handleImport = async () => {
-    if (!profile?.company_id || parsedData.length === 0) return;
+    if (!companyId || parsedData.length === 0) return;
     setImporting(true);
 
     try {
@@ -121,7 +123,7 @@ export function ImportarPlanilha() {
       const { data: operators } = await supabase
         .from("profiles")
         .select("user_id, name, tags, last_assigned_at")
-        .eq("company_id", profile.company_id)
+        .eq("company_id", companyId)
         .eq("is_active", true)
         .order("last_assigned_at", { ascending: true, nullsFirst: true });
 
@@ -135,7 +137,7 @@ export function ImportarPlanilha() {
           const { data: existingLeads } = await supabase
             .from("crm_leads")
             .select("documento, created_by_user_id, created_by_name")
-            .eq("servidor_id", profile.company_id)
+            .eq("servidor_id", companyId)
             .not("documento", "is", null);
           
           if (existingLeads) {
@@ -210,7 +212,7 @@ export function ImportarPlanilha() {
         }
 
         return {
-          servidor_id: profile.company_id,
+          servidor_id: companyId,
           company_name: lead.empresa || "Lead via Planilha",
           contact_name: lead.nome || null,
           email: lead.email || null,

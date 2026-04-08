@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { toast } from "sonner";
 
 export interface CrmForm {
@@ -32,6 +33,7 @@ export function useCrmForms() {
   const [forms, setForms] = useState<CrmForm[]>([]);
   const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
+  const companyId = useActiveCompanyId();
 
   const fetchForms = useCallback(async () => {
     setLoading(true);
@@ -76,7 +78,7 @@ export function useCrmForms() {
   }, [fetchForms]);
 
   const getServidorId = async () => {
-    if (profile?.company_id) return profile.company_id;
+    if (companyId) return companyId;
     const { data } = await supabase
       .from("companies")
       .select("id")

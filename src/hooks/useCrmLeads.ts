@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { toast } from "sonner";
 
 export interface CrmLead {
@@ -75,6 +76,7 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial",
   const [leads, setLeads] = useState<CrmLead[]>([]);
   const [loading, setLoading] = useState(true);
   const { profile, role } = useAuth();
+  const companyId = useActiveCompanyId();
 
   const activeStages = pipelineType === "admin" ? ADMIN_STAGES : STAGES;
 
@@ -117,7 +119,7 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial",
   }, [fetchLeads]);
 
   const getServidorId = async () => {
-    if (profile?.company_id) return profile.company_id;
+    if (companyId) return companyId;
     const { data } = await supabase
       .from("companies")
       .select("id")

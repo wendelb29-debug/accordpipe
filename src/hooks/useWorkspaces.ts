@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { toast } from "sonner";
 
 export interface Workspace {
@@ -31,17 +32,18 @@ export function useWorkspaces() {
   );
   const [loading, setLoading] = useState(true);
   const { profile, role } = useAuth();
+  const companyId = useActiveCompanyId();
 
   const isAdminOrCeo = role === "admin" || role === "ceo" || profile?.is_master;
 
   const fetchWorkspaces = useCallback(async () => {
-    if (!profile?.company_id) return;
+    if (!companyId) return;
     setLoading(true);
 
     const { data, error } = await supabase
       .from("workspaces")
       .select("*")
-      .eq("servidor_id", profile.company_id)
+      .eq("servidor_id", companyId)
       .order("is_default", { ascending: false })
       .order("name");
 
@@ -65,7 +67,7 @@ export function useWorkspaces() {
       }
     }
     setLoading(false);
-  }, [profile?.company_id]);
+  }, [companyId]);
 
   useEffect(() => {
     fetchWorkspaces();
@@ -77,14 +79,14 @@ export function useWorkspaces() {
   };
 
   const createWorkspace = async (name: string, color = "#7C3AED") => {
-    if (!profile?.company_id) return null;
+    if (!companyId) return null;
     const { data, error } = await supabase
       .from("workspaces")
       .insert({
         name,
-        servidor_id: profile.company_id,
+        servidor_id: companyId,
         color,
-        created_by_user_id: profile.user_id,
+        created_by_user_id: profile?.user_id,
         is_default: workspaces.length === 0,
       } as any)
       .select()

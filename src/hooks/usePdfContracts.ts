@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { toast } from "sonner";
 
 export interface PdfContract {
@@ -53,18 +54,19 @@ export interface PdfContractHistory {
 
 export function usePdfContracts() {
   const { profile, isMaster, isCeo } = useAuth();
+  const companyId = useActiveCompanyId();
   const [contracts, setContracts] = useState<PdfContract[]>([]);
   const [loading, setLoading] = useState(true);
 
   const canManage = isMaster || isCeo || profile?.is_master;
 
   const fetchContracts = async () => {
-    if (!profile?.company_id) return;
+    if (!companyId) return;
     setLoading(true);
     const { data, error } = await supabase
       .from("pdf_contracts")
       .select("*")
-      .eq("servidor_id", profile.company_id)
+      .eq("servidor_id", companyId)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -107,13 +109,13 @@ export function usePdfContracts() {
     pdfFile: File,
     signers: { name: string; email: string; phone: string; cpf_cnpj: string; address: string }[]
   ) => {
-    if (!profile?.company_id || !canManage) {
+    if (!companyId || !canManage) {
       toast.error("Sem permissão para criar contratos");
       return null;
     }
 
     try {
-      const filePath = `${profile.company_id}/${Date.now()}_${pdfFile.name}`;
+      const filePath = `${companyId}/${Date.now()}_${pdfFile.name}`;
       const { error: uploadErr } = await supabase.storage
         .from("contract-pdfs")
         .upload(filePath, pdfFile, { contentType: "application/pdf" });
@@ -124,7 +126,7 @@ export function usePdfContracts() {
       const { data: contract, error: contractErr } = await supabase
         .from("pdf_contracts")
         .insert({
-          servidor_id: profile.company_id,
+          servidor_id: companyId,
           name,
           description: description || null,
           pdf_url: urlData.publicUrl,
@@ -190,7 +192,7 @@ export function usePdfContracts() {
   };
 
   useEffect(() => {
-    if (profile?.company_id) fetchContracts();
+    if (companyId) fetchContracts();
   }, [profile]);
 
   return {
