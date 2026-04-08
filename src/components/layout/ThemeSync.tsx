@@ -85,10 +85,11 @@ export function ThemeSync() {
     }
   }, [user, profile, loading]);
 
-  // Tenant brand colors sync
+  // Tenant brand colors sync — master tenant always uses ACCORD defaults
+  const isMasterTenant = profile?.is_master && (!activeCompanyId || activeCompanyId === profile?.company_id);
+
   useEffect(() => {
-    if (!activeCompanyId || !user) {
-      // Reset to defaults
+    if (!activeCompanyId || !user || isMasterTenant) {
       applyBrandColors(null);
       return;
     }
