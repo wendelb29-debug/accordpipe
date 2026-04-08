@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  Building2, Palette, FileSignature, Search, Loader2, Save,
+  Building2, Palette, FileSignature, Search, Loader2, Save, Webhook,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast as sonnerToast } from "sonner";
 import { BrandIdentityFields } from "@/components/empresas/BrandIdentityFields";
 import { ContractTemplateTab } from "@/components/servidores/ContractTemplateTab";
+import { WebhookConfig } from "@/components/atendimento/tabs/WebhookConfig";
 import { useEffect } from "react";
 
 const cleanDigits = (v: string) => v.replace(/\D/g, "");
@@ -240,14 +241,17 @@ export default function NovoServidor() {
             { value: "cadastro", icon: Building2, label: "Dados Cadastrais" },
             { value: "identidade", icon: Palette, label: "Identidade Visual" },
             { value: "contrato", icon: FileSignature, label: "Contrato" },
+            { value: "vendas", icon: Webhook, label: "Vendas", disabled: !editId },
           ].map((item) => (
             <button
               key={item.value}
-              onClick={() => setActiveTab(item.value)}
+              onClick={() => !item.disabled && setActiveTab(item.value)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-left ${
-                activeTab === item.value
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                item.disabled
+                  ? "text-muted-foreground/50 cursor-not-allowed"
+                  : activeTab === item.value
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
               <item.icon className="h-4 w-4 shrink-0" />
@@ -391,6 +395,20 @@ export default function NovoServidor() {
             <Card>
               <CardContent className="pt-6">
                 <ContractTemplateTab companyId={editId || null} />
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === "vendas" && (
+            <Card>
+              <CardContent className="pt-6">
+                {editId ? (
+                  <WebhookConfig companyIdOverride={editId} />
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Salve o tenant primeiro para configurar webhooks de vendas.
+                  </p>
+                )}
               </CardContent>
             </Card>
           )}
