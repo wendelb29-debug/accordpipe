@@ -16,8 +16,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
+} from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -192,33 +192,37 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
         )}
       </div>
 
-      {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editingId ? "Editar Workspace" : "Novo Workspace"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+      {/* Create/Edit Sheet */}
+      <Sheet open={dialogOpen} onOpenChange={setDialogOpen}>
+        <SheetContent className="sm:max-w-lg flex flex-col">
+          <SheetHeader>
+            <SheetTitle>{editingId ? "Editar Workspace" : "Nova Solicitação"}</SheetTitle>
+            <p className="text-sm text-muted-foreground">
+              {editingId ? "Edite as informações do workspace" : "Abra uma nova solicitação em qualquer workspace do seu tenant"}
+            </p>
+          </SheetHeader>
+          <div className="flex-1 space-y-6 py-6">
             <div className="space-y-2">
-              <Label>Nome</Label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: Comercial, Parcerias..."
-                autoFocus
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Tipo</Label>
+              <Label>Workspace *</Label>
               <Select value={type} onValueChange={setType}>
-                <SelectTrigger>
-                  <SelectValue />
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Selecione um workspace..." />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="vendas">Vendas</SelectItem>
                   <SelectItem value="tarefas">Tarefas</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Nome *</Label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ex: Comercial, Parcerias..."
+                className="h-11"
+                autoFocus
+              />
             </div>
             <div className="space-y-2">
               <Label className="flex items-center gap-1.5">
@@ -230,7 +234,7 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
                     key={c}
                     onClick={() => setColor(c)}
                     className={cn(
-                      "h-7 w-7 rounded-full border-2 transition-all",
+                      "h-8 w-8 rounded-full border-2 transition-all",
                       color === c ? "border-foreground scale-110" : "border-transparent hover:scale-105"
                     )}
                     style={{ backgroundColor: c }}
@@ -239,14 +243,16 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={!name.trim()}>
-              {editingId ? "Salvar" : "Criar"}
+          <div className="flex gap-3 pt-4 border-t border-border/50">
+            <Button variant="outline" className="flex-1 h-11" onClick={() => setDialogOpen(false)}>
+              Cancelar
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <Button className="flex-1 h-11" onClick={handleSave} disabled={!name.trim()}>
+              {editingId ? "Salvar" : "Criar Solicitação"}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
