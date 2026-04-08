@@ -41,6 +41,7 @@ import Assinaturas from "./pages/Assinaturas";
 import ValidarDocumento from "./pages/ValidarDocumento";
 import Servidores from "./pages/Servidores";
 import NovoServidor from "./pages/NovoServidor";
+import AceitarConvite from "./pages/AceitarConvite";
 
 const queryClient = new QueryClient();
 
@@ -263,6 +264,7 @@ const App = () => (
             <Route path="/contato" element={<FormularioContato />} />
             <Route path="/form/:formId" element={<FormPublico />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/aceitar-convite" element={<AceitarConvite />} />
             <Route
               path="/onboarding/assinatura"
               element={
