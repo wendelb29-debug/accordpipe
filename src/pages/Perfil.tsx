@@ -354,18 +354,21 @@ function NotificacoesPushCard() {
   const { enabled, permissionState, enableNotifications, disableNotifications, sendTestNotification } = useNotificationManager();
   const notifSupported = "Notification" in window;
 
-  const handleToggle = () => {
+  const handleToggle = async () => {
     if (enabled) {
       disableNotifications();
       toast.success("Notificações desativadas");
     } else {
-      enableNotifications().then(() => {
-        if (Notification.permission === "granted") {
-          toast.success("Notificações ativadas!");
-        } else {
-          toast.error("Permissão de notificação negada pelo navegador");
-        }
-      });
+      if ("Notification" in window && Notification.permission === "denied") {
+        toast.error("Notificações bloqueadas pelo navegador. Acesse as configurações do site no navegador e permita notificações, depois tente novamente.");
+        return;
+      }
+      const granted = await enableNotifications();
+      if (granted) {
+        toast.success("Notificações ativadas!");
+      } else {
+        toast.error("Permissão de notificação negada pelo navegador. Verifique as configurações do site.");
+      }
     }
   };
 

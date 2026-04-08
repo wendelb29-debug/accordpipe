@@ -88,14 +88,22 @@ export function useNotificationManager() {
     return result === "granted";
   }, []);
 
-  const enableNotifications = useCallback(async () => {
-    if (!user) return;
+  const enableNotifications = useCallback(async (): Promise<boolean> => {
+    if (!user) return false;
+    if (!("Notification" in window)) return false;
+    
+    // If previously denied, guide the user
+    if (Notification.permission === "denied") {
+      return false;
+    }
+    
     const granted = await requestPermission();
     if (granted) {
       localStorage.setItem(PREF_KEY(user.id), "true");
       setEnabled(true);
       setBannerVisible(false);
     }
+    return granted;
   }, [user, requestPermission]);
 
   const disableNotifications = useCallback(() => {
