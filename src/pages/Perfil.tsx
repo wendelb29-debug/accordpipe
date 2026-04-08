@@ -160,7 +160,7 @@ export default function Perfil() {
               </p>
               <div className="flex items-center gap-2 mt-1.5 justify-center sm:justify-start flex-wrap">
                 <Badge variant="outline" className="text-xs">{roleLabels[role || ""] || role}</Badge>
-                {isMaster && <Badge className="bg-primary text-primary-foreground text-[10px]">Master</Badge>}
+                {profile?.is_master === true && <Badge className="bg-primary text-primary-foreground text-[10px]">Master</Badge>}
               </div>
             </div>
 
