@@ -33,6 +33,7 @@ export interface CrmLead {
   lead_status: string;
   lost_reason: string | null;
   tags?: string[] | null;
+  workspace_id?: string | null;
 }
 
 export interface CrmLeadActivity {
@@ -70,7 +71,7 @@ export const ADMIN_STAGES = [
 
 export const ALL_STAGES = [...STAGES, ...ADMIN_STAGES];
 
-export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial") {
+export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial", workspaceId?: string | null) {
   const [leads, setLeads] = useState<CrmLead[]>([]);
   const [loading, setLoading] = useState(true);
   const { profile, role } = useAuth();
@@ -95,6 +96,11 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial")
       query = query.eq("created_by_user_id", profile.user_id);
     }
 
+    // Workspace filter
+    if (workspaceId) {
+      query = query.eq("workspace_id", workspaceId);
+    }
+
     const { data, error } = await query;
 
     if (error) {
@@ -104,7 +110,7 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial")
       setLeads((data as CrmLead[]) || []);
     }
     setLoading(false);
-  }, [pipelineType, canSeeAll, profile?.user_id]);
+  }, [pipelineType, canSeeAll, profile?.user_id, workspaceId]);
 
   useEffect(() => {
     fetchLeads();
