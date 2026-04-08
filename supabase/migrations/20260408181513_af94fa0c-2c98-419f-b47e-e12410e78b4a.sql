@@ -1,0 +1,1 @@
+UPDATE crm_leads SET workspace_id = w.id FROM workspaces w WHERE crm_leads.servidor_id = w.servidor_id AND w.is_default = true AND crm_leads.workspace_id IS NULL;
