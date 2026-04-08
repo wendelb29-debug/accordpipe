@@ -75,17 +75,10 @@ export function useNotificationManager() {
     }
   }, [user]);
 
-  // Show banner for users who never dismissed it and haven't enabled notifications
+  // Show banner only when notifications are not enabled — no dismiss option
   useEffect(() => {
     if (!user) return;
-    const dismissed = localStorage.getItem(BANNER_DISMISSED_KEY(user.id));
-    if (dismissed) {
-      setBannerVisible(false);
-    } else if (!enabled) {
-      setBannerVisible(true);
-    } else {
-      setBannerVisible(false);
-    }
+    setBannerVisible(!enabled);
   }, [user, enabled]);
 
   const requestPermission = useCallback(async () => {
