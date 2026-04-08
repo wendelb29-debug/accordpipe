@@ -3,20 +3,33 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CrmKanbanBoard } from "@/components/atendimento/CrmKanbanBoard";
 import { AdminKanbanBoard } from "@/components/atendimento/AdminKanbanBoard";
 import { ImportarPlanilha } from "@/components/atendimento/ImportarPlanilha";
+import { WorkspaceSelector } from "@/components/atendimento/WorkspaceSelector";
+import { WorkspaceProvider, useWorkspaceContext } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { MessageSquare, ClipboardList, FileSpreadsheet } from "lucide-react";
 
-export default function Atendimento() {
+function AtendimentoContent() {
   const [crmSearch] = useState("");
   const { role, isMaster } = useAuth();
+  const { activeWorkspaceId, workspaces, loading: wsLoading } = useWorkspaceContext();
 
   const canSeeCommercial = isMaster || role === "admin" || role === "operador" || role === "ceo" || role === "comercial";
   const canSeeAdmin = isMaster || role === "admin" || role === "administrativo" || role === "ceo";
+
+  const workspaceBar = (
+    <div className="flex items-center gap-2 px-3 pt-2 pb-1">
+      <WorkspaceSelector />
+      {!wsLoading && workspaces.length === 0 && (
+        <span className="text-xs text-muted-foreground">Crie um workspace para organizar seus funis</span>
+      )}
+    </div>
+  );
 
   // If user only has access to admin pipeline
   if (canSeeAdmin && !canSeeCommercial) {
     return (
       <div className="h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
+        {workspaceBar}
         <AdminKanbanBoard searchTerm={crmSearch} />
       </div>
     );
@@ -26,7 +39,8 @@ export default function Atendimento() {
   if (canSeeCommercial && !canSeeAdmin) {
     return (
       <div className="h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
-        <CrmKanbanBoard searchTerm={crmSearch} />
+        {workspaceBar}
+        <CrmKanbanBoard searchTerm={crmSearch} workspaceId={activeWorkspaceId} />
       </div>
     );
   }
@@ -35,7 +49,8 @@ export default function Atendimento() {
   if (!canSeeAdmin) {
     return (
       <div className="h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
-        <CrmKanbanBoard searchTerm={crmSearch} />
+        {workspaceBar}
+        <CrmKanbanBoard searchTerm={crmSearch} workspaceId={activeWorkspaceId} />
       </div>
     );
   }
@@ -43,6 +58,7 @@ export default function Atendimento() {
   // Both pipelines accessible
   return (
     <div className="h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
+      {workspaceBar}
       <Tabs defaultValue="comercial" className="flex-1 flex flex-col overflow-hidden">
         <TabsList className="mx-3 mt-1 mb-0 w-fit h-8">
           <TabsTrigger value="comercial" className="gap-1 text-[11px] h-7 px-3">
@@ -56,7 +72,7 @@ export default function Atendimento() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="comercial" className="flex-1 overflow-hidden mt-0">
-          <CrmKanbanBoard searchTerm={crmSearch} />
+          <CrmKanbanBoard searchTerm={crmSearch} workspaceId={activeWorkspaceId} />
         </TabsContent>
         <TabsContent value="cadastro" className="flex-1 overflow-hidden mt-0">
           <AdminKanbanBoard searchTerm={crmSearch} />
@@ -66,5 +82,13 @@ export default function Atendimento() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function Atendimento() {
+  return (
+    <WorkspaceProvider>
+      <AtendimentoContent />
+    </WorkspaceProvider>
   );
 }
