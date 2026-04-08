@@ -182,7 +182,7 @@ export default function Usuarios() {
         email: "",
         password: "",
         role: "leitura",
-        company_id: "",
+        company_id: activeCompanyId || "",
       });
     }
     setDialogOpen(true);
