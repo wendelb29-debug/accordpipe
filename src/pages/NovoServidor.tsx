@@ -235,7 +235,7 @@ export default function NovoServidor() {
       {/* Content */}
       <div className="flex gap-0 h-[calc(100vh-3.5rem-73px)]">
         {/* Vertical sidebar navigation */}
-        <div className="w-56 shrink-0 space-y-1">
+        <div className="w-56 shrink-0 border-r border-border bg-card p-4 space-y-1 overflow-y-auto">
           {[
             { value: "cadastro", icon: Building2, label: "Dados Cadastrais" },
             { value: "identidade", icon: Palette, label: "Identidade Visual" },
