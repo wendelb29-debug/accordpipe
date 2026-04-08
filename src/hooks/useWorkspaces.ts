@@ -79,14 +79,14 @@ export function useWorkspaces() {
   };
 
   const createWorkspace = async (name: string, color = "#7C3AED") => {
-    if (!profile?.company_id) return null;
+    if (!companyId) return null;
     const { data, error } = await supabase
       .from("workspaces")
       .insert({
         name,
-        servidor_id: profile.company_id,
+        servidor_id: companyId,
         color,
-        created_by_user_id: profile.user_id,
+        created_by_user_id: profile?.user_id,
         is_default: workspaces.length === 0,
       } as any)
       .select()
