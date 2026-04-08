@@ -53,7 +53,7 @@ const roleLabels: Record<string, string> = {
 };
 
 export function Header() {
-  const { profile, role, signOut, loading, companies, activeCompanyId, setActiveCompanyId } = useAuth();
+  const { profile, role, signOut, loading, companies, activeCompanyId, setActiveCompanyId, isMaster, isCeo } = useAuth();
   const [currentTheme, setCurrentTheme] = useState(() => document.documentElement.classList.contains("dark") ? "dark" : "light");
   const [currentTime, setCurrentTime] = useState(new Date());
   const navigate = useNavigate();
@@ -177,11 +177,15 @@ export function Header() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
 
-            <DropdownMenuItem className="rounded-lg cursor-pointer gap-2" onClick={() => navigate("/servidores")}>
-              <Building2 className="h-4 w-4" />
-              Servidores
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            {(isMaster || isCeo) && profile?.is_master && (
+              <>
+                <DropdownMenuItem className="rounded-lg cursor-pointer gap-2" onClick={() => navigate("/servidores")}>
+                  <Building2 className="h-4 w-4" />
+                  Tenants
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
 
             <DropdownMenuItem className="rounded-lg cursor-pointer" onClick={() => navigate("/perfil")}>Meu Perfil</DropdownMenuItem>
             <DropdownMenuItem className="rounded-lg cursor-pointer" onClick={() => navigate("/perfil")}>Alterar Senha</DropdownMenuItem>
