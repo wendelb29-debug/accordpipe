@@ -257,7 +257,7 @@ export default function NovoServidor() {
         </div>
 
         {/* Content area */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 overflow-y-auto p-6">
           {activeTab === "cadastro" && (
             <Card>
               <CardContent className="pt-6 space-y-6">
