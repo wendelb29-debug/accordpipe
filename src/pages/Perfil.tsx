@@ -349,3 +349,102 @@ export default function Perfil() {
     </div>
   );
 }
+
+function NotificacoesPushCard() {
+  const { enabled, permissionState, enableNotifications, disableNotifications, sendTestNotification } = useNotificationManager();
+  const notifSupported = "Notification" in window;
+
+  const handleToggle = () => {
+    if (enabled) {
+      disableNotifications();
+      toast.success("Notificações desativadas");
+    } else {
+      enableNotifications().then(() => {
+        if (Notification.permission === "granted") {
+          toast.success("Notificações ativadas!");
+        } else {
+          toast.error("Permissão de notificação negada pelo navegador");
+        }
+      });
+    }
+  };
+
+  const handleTest = () => {
+    if (permissionState !== "granted") {
+      toast.error("Permita as notificações primeiro");
+      return;
+    }
+    sendTestNotification();
+    toast.success("Notificação de teste enviada!");
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Bell className="h-4 w-4 text-primary" /> Notificações Push
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {!notifSupported ? (
+          <Badge variant="destructive" className="text-xs">
+            <XCircle className="h-3 w-3 mr-1" /> Navegador não suporta notificações
+          </Badge>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-xs",
+                permissionState === "granted"
+                  ? "text-emerald-500 border-emerald-500/30"
+                  : "text-destructive border-destructive/30"
+              )}
+            >
+              {permissionState === "granted" ? (
+                <><CheckCircle2 className="h-3 w-3 mr-1" /> Permissão concedida</>
+              ) : (
+                <><XCircle className="h-3 w-3 mr-1" /> Permissão pendente</>
+              )}
+            </Badge>
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-xs",
+                enabled
+                  ? "text-emerald-500 border-emerald-500/30"
+                  : "text-muted-foreground border-border"
+              )}
+            >
+              {enabled ? (
+                <><CheckCircle2 className="h-3 w-3 mr-1" /> Ativas</>
+              ) : (
+                <><BellOff className="h-3 w-3 mr-1" /> Desativadas</>
+              )}
+            </Badge>
+          </div>
+        )}
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 text-xs gap-1.5"
+            onClick={handleToggle}
+            disabled={!notifSupported}
+          >
+            {enabled ? <><BellOff className="h-3.5 w-3.5" /> Desativar</> : <><Bell className="h-3.5 w-3.5" /> Ativar</>}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 text-xs gap-1.5"
+            onClick={handleTest}
+            disabled={!notifSupported || !enabled}
+          >
+            <TestTube className="h-3.5 w-3.5" /> Testar Notificação
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
