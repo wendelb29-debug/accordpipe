@@ -194,9 +194,9 @@ export default function Perfil() {
                   </Badge>
                 </div>
               </div>
-              {activeCompany && (
+              {activeCompany && !isMaster && (
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-2">Servidor</p>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Tenant Vinculado</p>
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border/50">
                     <Building2 className="h-5 w-5 text-primary shrink-0" />
                     <div className="min-w-0">
