@@ -2243,10 +2243,12 @@ export type Database = {
           labels: string[] | null
           last_message: string | null
           last_message_at: string | null
+          lead_id: string | null
           name: string
           notes: string | null
           phone: string
           updated_at: string
+          workspace_id: string | null
         }
         Insert: {
           assigned_to?: string | null
@@ -2257,10 +2259,12 @@ export type Database = {
           labels?: string[] | null
           last_message?: string | null
           last_message_at?: string | null
+          lead_id?: string | null
           name: string
           notes?: string | null
           phone: string
           updated_at?: string
+          workspace_id?: string | null
         }
         Update: {
           assigned_to?: string | null
@@ -2271,10 +2275,12 @@ export type Database = {
           labels?: string[] | null
           last_message?: string | null
           last_message_at?: string | null
+          lead_id?: string | null
           name?: string
           notes?: string | null
           phone?: string
           updated_at?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -2282,6 +2288,20 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_contacts_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_contacts_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -2375,6 +2395,57 @@ export type Database = {
           },
         ]
       }
+      whatsapp_routing_rules: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          priority: number
+          rule_type: string
+          rule_value: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          priority?: number
+          rule_type?: string
+          rule_value: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          priority?: number
+          rule_type?: string
+          rule_value?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_routing_rules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_routing_rules_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_sessions: {
         Row: {
           company_id: string
@@ -2409,6 +2480,48 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_workspace_config: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          is_default: boolean
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_workspace_config_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_workspace_config_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
