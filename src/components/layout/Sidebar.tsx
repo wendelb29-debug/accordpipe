@@ -82,6 +82,7 @@ export function Sidebar() {
   };
 
   const [overdueCount, setOverdueCount] = useState(0);
+  const [configOpen, setConfigOpen] = useState(false);
   const { role, signOut, profile } = useAuth();
 
   const fetchOverdueActivities = useCallback(async () => {
