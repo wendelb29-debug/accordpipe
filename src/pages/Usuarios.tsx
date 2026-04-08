@@ -200,6 +200,11 @@ export default function Usuarios() {
 
     setIsSubmitting(true);
     try {
+      // Determine company_id: for non-master, always use their own company
+      const companyId = isMaster
+        ? (formData.company_id || activeCompanyId)
+        : profile?.company_id;
+
       // Create user via Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
@@ -208,6 +213,7 @@ export default function Usuarios() {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
             name: formData.name,
+            company_id: companyId || undefined,
           },
         },
       });
@@ -233,7 +239,6 @@ export default function Usuarios() {
         if (roleError) throw roleError;
       }
 
-      const companyId = formData.company_id || (isMaster ? activeCompanyId : profile?.company_id) || null;
       const profileUpdate: any = { status: "pendente", is_active: false };
       if (companyId) profileUpdate.company_id = companyId;
       if (formData.cpf) profileUpdate.cpf = formData.cpf.replace(/\D/g, "");
