@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import {
   Send, Paperclip, Smile, Mic, MoreVertical, Bot, Loader2,
   Check, CheckCheck, Clock, AlertCircle, UserPlus, ArrowRightLeft,
-  Phone, Info, Tag,
+  Phone, Info, Tag, ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
 
 interface InboxChatProps {
   contact: InboxContact | null;
@@ -41,6 +42,7 @@ export function InboxChat({ contact, messages, onSendMessage, onTransfer, onAssi
   const [inputValue, setInputValue] = useState("");
   const [accordLoading, setAccordLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -170,6 +172,11 @@ export function InboxChat({ contact, messages, onSendMessage, onTransfer, onAssi
               {isAdmin && (
                 <DropdownMenuItem onClick={() => onTransfer(contact.id)}>
                   <ArrowRightLeft className="h-4 w-4 mr-2" /> Transferir
+                </DropdownMenuItem>
+              )}
+              {(contact as any).lead_id && (
+                <DropdownMenuItem onClick={() => navigate(`/atendimento?lead=${(contact as any).lead_id}`)}>
+                  <ExternalLink className="h-4 w-4 mr-2" /> Abrir no CRM
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
