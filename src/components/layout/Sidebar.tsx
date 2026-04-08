@@ -15,7 +15,6 @@ import {
   MessageSquare,
   CalendarCheck,
   Rocket,
-  Webhook,
   ClipboardList,
   Trash2,
   PanelLeftClose,
