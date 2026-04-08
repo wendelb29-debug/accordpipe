@@ -447,13 +447,13 @@ export default function Usuarios() {
             <User className="h-4 w-4" />
             Usuários
           </TabsTrigger>
-          {(isMaster || isCeo) && (
+          {isMaster && (
             <TabsTrigger value="servidores" className="gap-2">
               <Server className="h-4 w-4" />
               Servidores
             </TabsTrigger>
           )}
-          {(isMaster || isCeo) && (
+          {isMaster && (
             <TabsTrigger value="servidores-teste" className="gap-2">
               <FlaskConical className="h-4 w-4" />
               Servidores Teste
