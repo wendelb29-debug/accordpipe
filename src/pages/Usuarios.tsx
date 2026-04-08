@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Search, User, MoreHorizontal, Pencil, Power, Shield, Eye, EyeOff, Building2, Server, CheckCircle, XCircle, Clock, FlaskConical } from "lucide-react";
+import { Plus, Search, User, MoreHorizontal, Pencil, Power, Shield, Eye, EyeOff, Building2, Server, CheckCircle, XCircle, Clock, FlaskConical, Send, MessageCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ServidoresTab from "@/components/servidores/ServidoresTab";
 import ServidoresTesteTab from "@/components/servidores/ServidoresTesteTab";
@@ -97,6 +97,7 @@ export default function Usuarios() {
     cpf: "",
     birth_date: "",
     email: "",
+    whatsapp: "",
     password: "",
     role: "leitura" as AppRole,
     company_id: "" as string,
@@ -169,6 +170,7 @@ export default function Usuarios() {
         cpf: (user as any).cpf || "",
         birth_date: (user as any).birth_date || "",
         email: user.email,
+        whatsapp: (user as any).whatsapp || "",
         password: "",
         role: user.role,
         company_id: user.company_id || "",
@@ -180,6 +182,7 @@ export default function Usuarios() {
         cpf: "",
         birth_date: "",
         email: "",
+        whatsapp: "",
         password: "",
         role: "leitura",
         company_id: activeCompanyId || "",
@@ -189,10 +192,10 @@ export default function Usuarios() {
   };
 
   const handleCreateUser = async () => {
-    if (!formData.name || !formData.email || !formData.password) {
+    if (!formData.name || !formData.email || !formData.cpf || !formData.birth_date || !formData.whatsapp) {
       toast({
         title: "Campos obrigatórios",
-        description: "Preencha todos os campos para criar um usuário.",
+        description: "Preencha Nome, CPF, Data de Nascimento, E-mail e WhatsApp.",
         variant: "destructive",
       });
       return;
@@ -200,91 +203,46 @@ export default function Usuarios() {
 
     setIsSubmitting(true);
     try {
-      // Determine company_id: for non-master, always use their own company
       const companyId = isMaster
         ? (formData.company_id || activeCompanyId)
         : profile?.company_id;
 
-      // Create user via Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            name: formData.name,
-            company_id: companyId || undefined,
-          },
-        },
+      // Get company name
+      const company = allCompanies.find(c => c.id === companyId);
+      const companyName = company?.nome_fantasia || company?.razao_social || "";
+
+      // Create invitation record
+      const { data: invitation, error: invError } = await supabase
+        .from("user_invitations")
+        .insert({
+          inviter_user_id: profile?.user_id,
+          inviter_name: profile?.name || "Administrador",
+          invitee_name: formData.name,
+          invitee_email: formData.email,
+          invitee_cpf: formData.cpf.replace(/\D/g, ""),
+          invitee_birth_date: formData.birth_date,
+          invitee_whatsapp: formData.whatsapp.replace(/\D/g, ""),
+          company_id: companyId || null,
+          company_name: companyName,
+          role: formData.role,
+        } as any)
+        .select()
+        .single();
+
+      if (invError) throw invError;
+
+      // Send the invite via edge function
+      const { error: sendError } = await supabase.functions.invoke("send-invite", {
+        body: { invitation_id: invitation.id },
       });
 
-      if (authError) {
-        if (authError.message.includes("already registered")) {
-          throw new Error("Este e-mail já está cadastrado.");
-        }
-        throw authError;
-      }
-
-      if (!authData.user) {
-        throw new Error("Erro ao criar usuário.");
-      }
-
-      // Update role if not default
-      if (formData.role !== "leitura") {
-        const { error: roleError } = await supabase
-          .from("user_roles")
-          .update({ role: formData.role })
-          .eq("user_id", authData.user.id);
-
-        if (roleError) throw roleError;
-      }
-
-      const profileUpdate: any = { status: "ativo", is_active: true };
-      if (companyId) profileUpdate.company_id = companyId;
-      if (formData.cpf) profileUpdate.cpf = formData.cpf.replace(/\D/g, "");
-      if (formData.birth_date) profileUpdate.birth_date = formData.birth_date;
-
-      if (Object.keys(profileUpdate).length > 0) {
-        const { error: companyError } = await supabase
-          .from("profiles")
-          .update(profileUpdate as any)
-          .eq("user_id", authData.user.id);
-        if (companyError) throw companyError;
-      }
-
-      // Notify admins of the same servidor about pending user
-      const servidorId = companyId;
-      if (servidorId) {
-        const { data: adminProfiles } = await supabase
-          .from("profiles")
-          .select("user_id")
-          .eq("company_id", servidorId)
-          .neq("user_id", authData.user.id);
-        
-        if (adminProfiles) {
-          for (const admin of adminProfiles) {
-            // Check if admin has admin role
-            const { data: roleData } = await supabase
-              .from("user_roles")
-              .select("role")
-              .eq("user_id", admin.user_id)
-              .maybeSingle();
-            
-            if (roleData?.role === "admin") {
-              await supabase.rpc("create_notification", {
-                _user_id: admin.user_id,
-                _title: "Novo usuário pendente",
-                _message: `${formData.name} (${formData.email}) aguarda aprovação.`,
-                _type: "user_pending",
-              });
-            }
-          }
-        }
+      if (sendError) {
+        console.error("Send invite error:", sendError);
       }
 
       toast({
-        title: "Usuário criado",
-        description: "O usuário foi criado com sucesso. Um e-mail de confirmação foi enviado.",
+        title: "Convite enviado!",
+        description: `Convite enviado para ${formData.email} via e-mail e WhatsApp.`,
       });
 
       setDialogOpen(false);
@@ -292,7 +250,7 @@ export default function Usuarios() {
     } catch (error: any) {
       toast({
         title: "Erro",
-        description: error.message || "Não foi possível criar o usuário.",
+        description: error.message || "Não foi possível enviar o convite.",
         variant: "destructive",
       });
     } finally {
@@ -692,34 +650,22 @@ export default function Usuarios() {
                     />
                   </div>
 
-                  {!editingUser && (
-                    <div className="space-y-2">
-                      <Label htmlFor="password">Senha</Label>
-                      <div className="relative">
-                        <Input
-                          id="password"
-                          type={showPassword ? "text" : "password"}
-                          value={formData.password}
-                          onChange={(e) =>
-                            setFormData({ ...formData, password: e.target.value })
-                          }
-                          placeholder="Mínimo 6 caracteres"
-                          className="pr-10"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="whatsapp" className="flex items-center gap-1.5">
+                      <MessageCircle className="h-3.5 w-3.5 text-emerald-500" /> WhatsApp
+                    </Label>
+                    <Input
+                      id="whatsapp"
+                      value={formData.whatsapp}
+                      onChange={(e) => {
+                        let v = e.target.value.replace(/\D/g, "").slice(0, 11);
+                        if (v.length > 6) v = v.replace(/(\d{2})(\d{5})(\d{0,4})/, "($1) $2-$3");
+                        else if (v.length > 2) v = v.replace(/(\d{2})(\d{0,5})/, "($1) $2");
+                        setFormData({ ...formData, whatsapp: v });
+                      }}
+                      placeholder="(00) 00000-0000"
+                    />
+                  </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="company">Tenant vinculado</Label>
@@ -787,8 +733,14 @@ export default function Usuarios() {
                   <Button
                     onClick={editingUser ? handleUpdateUser : handleCreateUser}
                     disabled={isSubmitting}
+                    className="gap-2"
                   >
-                    {isSubmitting ? "Salvando..." : editingUser ? "Salvar" : "Criar"}
+                    {isSubmitting ? "Enviando..." : editingUser ? "Salvar" : (
+                      <>
+                        <Send className="h-4 w-4" />
+                        Enviar Convite
+                      </>
+                    )}
                   </Button>
                 </DialogFooter>
               </DialogContent>

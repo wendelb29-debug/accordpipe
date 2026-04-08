@@ -1839,6 +1839,7 @@ export type Database = {
           theme: string
           updated_at: string
           user_id: string
+          whatsapp: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -1858,6 +1859,7 @@ export type Database = {
           theme?: string
           updated_at?: string
           user_id: string
+          whatsapp?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -1877,6 +1879,7 @@ export type Database = {
           theme?: string
           updated_at?: string
           user_id?: string
+          whatsapp?: string | null
         }
         Relationships: [
           {
@@ -2044,6 +2047,71 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_invitations: {
+        Row: {
+          accepted_at: string | null
+          company_id: string | null
+          company_name: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          invitee_birth_date: string | null
+          invitee_cpf: string | null
+          invitee_email: string
+          invitee_name: string
+          invitee_whatsapp: string | null
+          inviter_name: string | null
+          inviter_user_id: string
+          role: string
+          status: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          company_id?: string | null
+          company_name?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invitee_birth_date?: string | null
+          invitee_cpf?: string | null
+          invitee_email: string
+          invitee_name: string
+          invitee_whatsapp?: string | null
+          inviter_name?: string | null
+          inviter_user_id: string
+          role?: string
+          status?: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          company_id?: string | null
+          company_name?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invitee_birth_date?: string | null
+          invitee_cpf?: string | null
+          invitee_email?: string
+          invitee_name?: string
+          invitee_whatsapp?: string | null
+          inviter_name?: string | null
+          inviter_user_id?: string
+          role?: string
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_invitations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
