@@ -32,6 +32,7 @@ export function useWorkspaces() {
   );
   const [loading, setLoading] = useState(true);
   const { profile, role } = useAuth();
+  const companyId = useActiveCompanyId();
 
   const isAdminOrCeo = role === "admin" || role === "ceo" || profile?.is_master;
 
