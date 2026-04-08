@@ -6,7 +6,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -239,27 +238,34 @@ export default function NovoServidor() {
       </div>
 
       {/* Content */}
-      <div className="max-w-5xl mx-auto px-6 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 mb-8">
-            <TabsTrigger value="cadastro" className="gap-2">
-              <Building2 className="h-4 w-4" />
-              Dados Cadastrais
-            </TabsTrigger>
-            <TabsTrigger value="identidade" className="gap-2">
-              <Palette className="h-4 w-4" />
-              Identidade Visual
-            </TabsTrigger>
-            <TabsTrigger value="contrato" className="gap-2">
-              <FileSignature className="h-4 w-4" />
-              Contrato
-            </TabsTrigger>
-          </TabsList>
+      <div className="max-w-6xl mx-auto px-6 py-8 flex gap-6">
+        {/* Vertical sidebar navigation */}
+        <div className="w-56 shrink-0 space-y-1">
+          {[
+            { value: "cadastro", icon: Building2, label: "Dados Cadastrais" },
+            { value: "identidade", icon: Palette, label: "Identidade Visual" },
+            { value: "contrato", icon: FileSignature, label: "Contrato" },
+          ].map((item) => (
+            <button
+              key={item.value}
+              onClick={() => setActiveTab(item.value)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-left ${
+                activeTab === item.value
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              <item.icon className="h-4 w-4 shrink-0" />
+              {item.label}
+            </button>
+          ))}
+        </div>
 
-          <TabsContent value="cadastro" className="mt-0">
+        {/* Content area */}
+        <div className="flex-1 min-w-0">
+          {activeTab === "cadastro" && (
             <Card>
               <CardContent className="pt-6 space-y-6">
-                {/* CNPJ */}
                 <div className="space-y-2">
                   <Label className="font-semibold">CNPJ *</Label>
                   <div className="flex gap-2">
@@ -354,9 +360,9 @@ export default function NovoServidor() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
-          <TabsContent value="identidade" className="mt-0">
+          {activeTab === "identidade" && (
             <Card>
               <CardContent className="pt-6">
                 <BrandIdentityFields
@@ -384,16 +390,16 @@ export default function NovoServidor() {
                 />
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
-          <TabsContent value="contrato" className="mt-0">
+          {activeTab === "contrato" && (
             <Card>
               <CardContent className="pt-6">
                 <ContractTemplateTab companyId={editId || null} />
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </div>
     </div>
   );
