@@ -722,7 +722,7 @@ export default function Usuarios() {
                   )}
 
                   <div className="space-y-2">
-                    <Label htmlFor="company">Empresa vinculada</Label>
+                    <Label htmlFor="company">Tenant vinculado</Label>
                     <Select
                       value={formData.company_id || activeCompanyId || ""}
                       onValueChange={(value: string) =>
@@ -731,7 +731,7 @@ export default function Usuarios() {
                       disabled={!isMaster}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione a empresa" />
+                        <SelectValue placeholder="Selecione o tenant" />
                       </SelectTrigger>
                       <SelectContent>
                         {isMaster
