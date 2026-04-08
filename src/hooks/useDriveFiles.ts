@@ -54,7 +54,7 @@ export function useDriveFiles(parentId: string | null) {
     }
     setFiles((data as DriveFile[]) || []);
     setLoading(false);
-  }, [profile?.company_id, parentId]);
+  }, [companyId, parentId]);
 
   useEffect(() => {
     if (companyId) fetchFiles();

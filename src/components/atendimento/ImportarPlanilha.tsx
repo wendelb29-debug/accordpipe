@@ -115,7 +115,7 @@ export function ImportarPlanilha() {
   };
 
   const handleImport = async () => {
-    if (!profile?.company_id || parsedData.length === 0) return;
+    if (!companyId || parsedData.length === 0) return;
     setImporting(true);
 
     try {

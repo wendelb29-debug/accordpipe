@@ -192,7 +192,7 @@ export function usePdfContracts() {
   };
 
   useEffect(() => {
-    if (profile?.company_id) fetchContracts();
+    if (companyId) fetchContracts();
   }, [profile]);
 
   return {
