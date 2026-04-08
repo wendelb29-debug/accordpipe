@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Search, User, Moon, Sun, Clock } from "lucide-react";
+import { Search, User, Moon, Sun, Clock, ChevronLeft } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { MobileSidebar } from "./MobileSidebar";
 import { Button } from "@/components/ui/button";
