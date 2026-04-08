@@ -123,7 +123,7 @@ export function ImportarPlanilha() {
       const { data: operators } = await supabase
         .from("profiles")
         .select("user_id, name, tags, last_assigned_at")
-        .eq("company_id", profile.company_id)
+        .eq("company_id", companyId)
         .eq("is_active", true)
         .order("last_assigned_at", { ascending: true, nullsFirst: true });
 
@@ -137,7 +137,7 @@ export function ImportarPlanilha() {
           const { data: existingLeads } = await supabase
             .from("crm_leads")
             .select("documento, created_by_user_id, created_by_name")
-            .eq("servidor_id", profile.company_id)
+            .eq("servidor_id", companyId)
             .not("documento", "is", null);
           
           if (existingLeads) {
@@ -212,7 +212,7 @@ export function ImportarPlanilha() {
         }
 
         return {
-          servidor_id: profile.company_id,
+          servidor_id: companyId,
           company_name: lead.empresa || "Lead via Planilha",
           contact_name: lead.nome || null,
           email: lead.email || null,
