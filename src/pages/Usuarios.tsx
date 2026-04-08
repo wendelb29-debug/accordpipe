@@ -239,7 +239,7 @@ export default function Usuarios() {
         if (roleError) throw roleError;
       }
 
-      const profileUpdate: any = { status: "pendente", is_active: false };
+      const profileUpdate: any = { status: "ativo", is_active: true };
       if (companyId) profileUpdate.company_id = companyId;
       if (formData.cpf) profileUpdate.cpf = formData.cpf.replace(/\D/g, "");
       if (formData.birth_date) profileUpdate.birth_date = formData.birth_date;
