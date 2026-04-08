@@ -126,12 +126,12 @@ export default function Cadastrados() {
   }, [profile]);
 
   const fetchRegistrations = async () => {
-    if (!profile?.company_id) return;
+    if (!companyId) return;
     setLoading(true);
     const { data } = await supabase
       .from("crm_client_registrations")
       .select("*, crm_leads(*), crm_client_dependents(*)")
-      .eq("servidor_id", profile.company_id)
+      .eq("servidor_id", companyId)
       .order("created_at", { ascending: false });
     setRegistrations(data || []);
     setLoading(false);
