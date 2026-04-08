@@ -328,9 +328,9 @@ export default function ServidoresTab() {
           <p className="text-sm text-muted-foreground">Ambientes independentes vinculados por CNPJ</p>
         </div>
         {isMaster && (
-          <Button className="gap-2" onClick={() => handleOpenDialog()}>
+          <Button className="gap-2" onClick={() => navigate("/servidores/novo")}>
             <Plus className="h-4 w-4" />
-            Novo Servidor
+            Novo Tenant
           </Button>
         )}
       </div>
