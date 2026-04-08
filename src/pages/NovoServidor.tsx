@@ -208,22 +208,17 @@ export default function NovoServidor() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-muted/30">
+    <div className="min-h-[calc(100vh-3.5rem)]">
       {/* Top bar */}
       <div className="border-b border-border bg-card px-6 py-4">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">
-                {editId ? "Editar Tenant" : "Novo Tenant"}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {editId ? "Atualize os dados do ambiente." : "Configure um novo ambiente independente para uma empresa."}
-              </p>
-            </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-foreground">
+              {editId ? "Editar Tenant" : "Novo Tenant"}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {editId ? "Atualize os dados do ambiente." : "Configure um novo ambiente independente para uma empresa."}
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="outline" onClick={() => navigate(-1)} disabled={isSubmitting}>
@@ -238,7 +233,7 @@ export default function NovoServidor() {
       </div>
 
       {/* Content */}
-      <div className="max-w-6xl mx-auto px-6 py-8 flex gap-6">
+      <div className="flex gap-0 h-[calc(100vh-3.5rem-73px)]">
         {/* Vertical sidebar navigation */}
         <div className="w-56 shrink-0 space-y-1">
           {[
