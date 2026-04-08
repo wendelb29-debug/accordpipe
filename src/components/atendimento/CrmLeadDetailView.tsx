@@ -16,6 +16,8 @@ import { LeadContratosTab } from "./LeadContratosTab";
 import { LeadDocsTab } from "./LeadDocsTab";
 import { LeadPosVendaTab } from "./LeadPosVendaTab";
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { LeadCadastroTab } from "./LeadCadastroTab";
 import { LeadWhatsAppTab } from "./LeadWhatsAppTab";
 import { Button } from "@/components/ui/button";
