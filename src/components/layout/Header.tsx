@@ -53,7 +53,7 @@ const roleLabels: Record<string, string> = {
 };
 
 export function Header() {
-  const { profile, role, signOut, loading, companies, activeCompanyId, setActiveCompanyId, isMaster, isCeo } = useAuth();
+  const { profile, role, signOut, loading, companies, activeCompanyId, setActiveCompanyId, activeCompany, isMaster, isCeo } = useAuth();
   const [currentTheme, setCurrentTheme] = useState(() => document.documentElement.classList.contains("dark") ? "dark" : "light");
   const [currentTime, setCurrentTime] = useState(new Date());
   const navigate = useNavigate();
