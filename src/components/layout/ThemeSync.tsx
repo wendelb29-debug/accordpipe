@@ -63,7 +63,7 @@ const DEFAULTS = {
 };
 
 export function ThemeSync() {
-  const { user, profile, loading, activeCompanyId } = useAuth();
+  const { user, profile, loading, activeCompanyId, isMaster } = useAuth();
 
   // Theme sync (dark/light)
   useEffect(() => {
