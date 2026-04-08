@@ -52,6 +52,7 @@ function getDateRange(period: PeriodFilter, customStart?: string, customEnd?: st
 
 export default function Dashboard() {
   const { role, profile } = useAuth();
+  const companyId = useActiveCompanyId();
   const [period, setPeriod] = useState<PeriodFilter>("month");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
@@ -71,10 +72,10 @@ export default function Dashboard() {
   const isAdministrativo = role === "administrativo";
 
   const fetchData = async () => {
-    if (!profile?.company_id) return;
+    if (!companyId) return;
     setLoading(true);
 
-    const servId = profile.company_id;
+    const servId = companyId;
     const { start, end } = dateRange;
 
     const [compRes, payRes, leadRes, regRes] = await Promise.all([
