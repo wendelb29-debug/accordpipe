@@ -650,34 +650,22 @@ export default function Usuarios() {
                     />
                   </div>
 
-                  {!editingUser && (
-                    <div className="space-y-2">
-                      <Label htmlFor="password">Senha</Label>
-                      <div className="relative">
-                        <Input
-                          id="password"
-                          type={showPassword ? "text" : "password"}
-                          value={formData.password}
-                          onChange={(e) =>
-                            setFormData({ ...formData, password: e.target.value })
-                          }
-                          placeholder="Mínimo 6 caracteres"
-                          className="pr-10"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="whatsapp" className="flex items-center gap-1.5">
+                      <MessageCircle className="h-3.5 w-3.5 text-emerald-500" /> WhatsApp
+                    </Label>
+                    <Input
+                      id="whatsapp"
+                      value={formData.whatsapp}
+                      onChange={(e) => {
+                        let v = e.target.value.replace(/\D/g, "").slice(0, 11);
+                        if (v.length > 6) v = v.replace(/(\d{2})(\d{5})(\d{0,4})/, "($1) $2-$3");
+                        else if (v.length > 2) v = v.replace(/(\d{2})(\d{0,5})/, "($1) $2");
+                        setFormData({ ...formData, whatsapp: v });
+                      }}
+                      placeholder="(00) 00000-0000"
+                    />
+                  </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="company">Tenant vinculado</Label>
@@ -745,8 +733,14 @@ export default function Usuarios() {
                   <Button
                     onClick={editingUser ? handleUpdateUser : handleCreateUser}
                     disabled={isSubmitting}
+                    className="gap-2"
                   >
-                    {isSubmitting ? "Salvando..." : editingUser ? "Salvar" : "Criar"}
+                    {isSubmitting ? "Enviando..." : editingUser ? "Salvar" : (
+                      <>
+                        <Send className="h-4 w-4" />
+                        Enviar Convite
+                      </>
+                    )}
                   </Button>
                 </DialogFooter>
               </DialogContent>
