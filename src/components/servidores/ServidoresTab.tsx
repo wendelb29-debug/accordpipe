@@ -432,7 +432,7 @@ export default function ServidoresTab() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {isMaster && (
+                    {isMaster && company.id !== profile?.company_id && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -450,6 +450,11 @@ export default function ServidoresTab() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                    )}
+                    {company.id === profile?.company_id && (
+                      <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-600">
+                        <Shield className="h-3 w-3 mr-1" /> Master
+                      </Badge>
                     )}
                   </TableCell>
                 </TableRow>
