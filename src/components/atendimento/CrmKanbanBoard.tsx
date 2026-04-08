@@ -49,6 +49,7 @@ const stageColors: Record<string, { bg: string; text: string; icon: string; bord
 
 interface CrmKanbanBoardProps {
   searchTerm: string;
+  workspaceId?: string | null;
 }
 
 const formatCurrency = (v: number) =>
@@ -76,8 +77,8 @@ const getProgressColor = (lead: CrmLead, stageId: string, hasActivity: boolean):
   return "bg-red-400";
 };
 
-export function CrmKanbanBoard({ searchTerm }: CrmKanbanBoardProps) {
-  const { leads, loading, createLead, updateLead, deleteLead, moveToStage, markAsWonAndTransfer, totalLeads, totalPS, totalMRR, stageStats } = useCrmLeads("commercial");
+export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps) {
+  const { leads, loading, createLead, updateLead, deleteLead, moveToStage, markAsWonAndTransfer, totalLeads, totalPS, totalMRR, stageStats } = useCrmLeads("commercial", workspaceId);
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [draggedLead, setDraggedLead] = useState<CrmLead | null>(null);
