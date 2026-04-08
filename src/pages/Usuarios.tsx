@@ -450,13 +450,13 @@ export default function Usuarios() {
           {profile?.is_master && (
             <TabsTrigger value="servidores" className="gap-2">
               <Server className="h-4 w-4" />
-              Servidores
+              Tenants
             </TabsTrigger>
           )}
           {profile?.is_master && (
             <TabsTrigger value="servidores-teste" className="gap-2">
               <FlaskConical className="h-4 w-4" />
-              Servidores Teste
+              Tenants Teste
             </TabsTrigger>
           )}
         </TabsList>
