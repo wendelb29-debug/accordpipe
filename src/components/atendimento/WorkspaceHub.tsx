@@ -224,24 +224,6 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
                 autoFocus
               />
             </div>
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1.5">
-                <Palette className="h-3.5 w-3.5" /> Cor
-              </Label>
-              <div className="flex gap-2 flex-wrap">
-                {WORKSPACE_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => setColor(c)}
-                    className={cn(
-                      "h-8 w-8 rounded-full border-2 transition-all",
-                      color === c ? "border-foreground scale-110" : "border-transparent hover:scale-105"
-                    )}
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-              </div>
-            </div>
           </div>
           <div className="flex gap-3 pt-4 border-t border-border/50">
             <Button variant="outline" className="flex-1 h-11" onClick={() => setDialogOpen(false)}>
