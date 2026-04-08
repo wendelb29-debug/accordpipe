@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import {
-  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature,
+  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ContractTemplateTab } from "./ContractTemplateTab";
@@ -79,7 +79,7 @@ export default function ServidoresTab() {
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
   const { toast } = useToast();
-  const { isMaster } = useAuth();
+  const { isMaster, profile } = useAuth();
 
   const [formData, setFormData] = useState({
     razao_social: "",
