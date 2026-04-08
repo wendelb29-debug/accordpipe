@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Search, User, Moon, Sun, Clock, ChevronLeft } from "lucide-react";
+import { Search, User, Moon, Sun, Clock, ChevronLeft, Building2 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { MobileSidebar } from "./MobileSidebar";
 import { Button } from "@/components/ui/button";
@@ -53,7 +53,7 @@ const roleLabels: Record<string, string> = {
 };
 
 export function Header() {
-  const { profile, role, signOut, loading } = useAuth();
+  const { profile, role, signOut, loading, companies, activeCompanyId, setActiveCompanyId } = useAuth();
   const [currentTheme, setCurrentTheme] = useState(() => document.documentElement.classList.contains("dark") ? "dark" : "light");
   const [currentTime, setCurrentTime] = useState(new Date());
   const navigate = useNavigate();
