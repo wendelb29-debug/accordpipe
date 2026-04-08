@@ -80,6 +80,7 @@ const getProgressColor = (lead: CrmLead, stageId: string, hasActivity: boolean):
 export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps) {
   const { leads, loading, createLead, updateLead, deleteLead, moveToStage, markAsWonAndTransfer, totalLeads, totalPS, totalMRR, stageStats } = useCrmLeads("commercial", workspaceId);
   const { profile } = useAuth();
+  const companyId = useActiveCompanyId();
   const navigate = useNavigate();
   const [draggedLead, setDraggedLead] = useState<CrmLead | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
