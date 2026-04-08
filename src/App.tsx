@@ -40,6 +40,7 @@ import AssinaturaOnboarding from "./pages/AssinaturaOnboarding";
 import Assinaturas from "./pages/Assinaturas";
 import ValidarDocumento from "./pages/ValidarDocumento";
 import Servidores from "./pages/Servidores";
+import NovoServidor from "./pages/NovoServidor";
 
 const queryClient = new QueryClient();
 
@@ -286,6 +287,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <Servidores />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/servidores/novo"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <NovoServidor />
                   </AppLayout>
                 </ProtectedRoute>
               }
