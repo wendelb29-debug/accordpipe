@@ -438,7 +438,7 @@ export default function Usuarios() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Gestão de Acesso</h1>
-        <p className="text-muted-foreground">Gerencie usuários e servidores do sistema</p>
+        <p className="text-muted-foreground">Gerencie usuários e tenants do sistema</p>
       </div>
 
       <Tabs defaultValue="usuarios" className="space-y-6">
@@ -450,13 +450,13 @@ export default function Usuarios() {
           {profile?.is_master && (
             <TabsTrigger value="servidores" className="gap-2">
               <Server className="h-4 w-4" />
-              Servidores
+              Tenants
             </TabsTrigger>
           )}
           {profile?.is_master && (
             <TabsTrigger value="servidores-teste" className="gap-2">
               <FlaskConical className="h-4 w-4" />
-              Servidores Teste
+              Tenants Teste
             </TabsTrigger>
           )}
         </TabsList>
