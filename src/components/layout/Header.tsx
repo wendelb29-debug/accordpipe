@@ -136,6 +136,20 @@ export function Header() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="rounded-xl h-9 gap-2.5 px-2 hover:bg-muted/60">
+              {loading ? (
+                <Skeleton className="hidden md:block h-4 w-20 rounded" />
+              ) : profile ? (
+                <div className="hidden md:flex flex-col items-end max-w-[140px]">
+                  <span className="text-sm font-medium text-foreground truncate w-full text-right">
+                    {profile.name}
+                  </span>
+                  {activeCompany && (
+                    <span className="text-[10px] text-muted-foreground truncate w-full leading-tight text-right">
+                      {activeCompany.nome_fantasia || activeCompany.razao_social}
+                    </span>
+                  )}
+                </div>
+              ) : null}
               <div className="flex h-8 w-8 items-center justify-center rounded-lg overflow-hidden" style={{ background: 'linear-gradient(135deg, #2563EB, #7A3FF2)' }}>
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
@@ -143,20 +157,6 @@ export function Header() {
                   <User className="h-4 w-4 text-primary-foreground" />
                 )}
               </div>
-              {loading ? (
-                <Skeleton className="hidden md:block h-4 w-20 rounded" />
-              ) : profile ? (
-                <div className="hidden md:flex flex-col items-start max-w-[140px]">
-                  <span className="text-sm font-medium text-foreground truncate w-full">
-                    {profile.name}
-                  </span>
-                  {activeCompany && (
-                    <span className="text-[10px] text-muted-foreground truncate w-full leading-tight">
-                      {activeCompany.nome_fantasia || activeCompany.razao_social}
-                    </span>
-                  )}
-                </div>
-              ) : null}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-64 rounded-xl shadow-lg max-h-[80vh] overflow-y-auto">
