@@ -87,7 +87,8 @@ export default function Usuarios() {
   const [permUserName, setPermUserName] = useState("");
   const [permUserIsCeo, setPermUserIsCeo] = useState(false);
   const { toast } = useToast();
-  const { isMaster, isCeo, activeCompanyId, profile } = useAuth();
+  const { isMaster, isCeo, isAdmin, activeCompanyId, profile, role } = useAuth();
+  const canManageUsers = isMaster || isCeo || isAdmin;
   const [allCompanies, setAllCompanies] = useState<{id: string; nome_fantasia: string | null; razao_social: string; cnpj: string}[]>([]);
 
   // Form state
