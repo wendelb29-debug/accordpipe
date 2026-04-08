@@ -287,6 +287,7 @@ export default function ServidoresTab() {
   };
 
   const handleToggleStatus = async (company: Company) => {
+    if (company.id === profile?.company_id) return;
     const newStatus = company.status === "active" ? "inactive" : "active";
     try {
       const { error } = await supabase.from("companies").update({ status: newStatus }).eq("id", company.id);
