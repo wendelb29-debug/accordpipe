@@ -161,7 +161,7 @@ export function Header() {
               ) : null}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-lg">
+          <DropdownMenuContent align="end" className="w-64 rounded-xl shadow-lg max-h-[80vh] overflow-y-auto">
             <DropdownMenuLabel>
               <div className="flex flex-col">
                 <span className="font-semibold">{profile?.name || "Usuário"}</span>
@@ -176,8 +176,35 @@ export function Header() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="rounded-lg cursor-pointer" onClick={() => navigate("/perfil")}>Perfil</DropdownMenuItem>
-            <DropdownMenuItem className="rounded-lg cursor-pointer">Configurações</DropdownMenuItem>
+
+            {companies.length > 0 && (
+              <>
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium flex items-center gap-1.5">
+                  <Building2 className="h-3 w-3" />
+                  Meus Servidores
+                </DropdownMenuLabel>
+                {companies.map((company) => (
+                  <DropdownMenuItem
+                    key={company.id}
+                    className={`rounded-lg cursor-pointer gap-2 text-xs ${activeCompanyId === company.id ? "bg-primary/10 text-primary font-semibold" : ""}`}
+                    onClick={() => {
+                      setActiveCompanyId(company.id);
+                      navigate("/home");
+                    }}
+                  >
+                    <div className={`h-2 w-2 rounded-full shrink-0 ${activeCompanyId === company.id ? "bg-primary" : "bg-muted-foreground/30"}`} />
+                    <span className="truncate">{company.nome_fantasia || company.razao_social}</span>
+                    {activeCompanyId === company.id && (
+                      <Badge variant="outline" className="ml-auto text-[9px] px-1 py-0 border-primary/30 text-primary">Ativo</Badge>
+                    )}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+              </>
+            )}
+
+            <DropdownMenuItem className="rounded-lg cursor-pointer" onClick={() => navigate("/perfil")}>Meu Perfil</DropdownMenuItem>
+            <DropdownMenuItem className="rounded-lg cursor-pointer" onClick={() => navigate("/perfil")}>Alterar Senha</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-destructive rounded-lg cursor-pointer"
