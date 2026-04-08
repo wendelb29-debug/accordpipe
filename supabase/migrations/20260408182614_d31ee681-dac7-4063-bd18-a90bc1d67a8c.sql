@@ -1,0 +1,1 @@
+ALTER TABLE public.whatsapp_contacts ADD COLUMN IF NOT EXISTS conversation_status text NOT NULL DEFAULT 'aguardando';

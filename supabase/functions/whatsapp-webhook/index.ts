@@ -29,14 +29,15 @@ Deno.serve(async (req) => {
 
     const { event, data } = await req.json();
 
-    // Handle incoming message from microservice
+    // ──────────────────────────────────────────────
+    // HANDLE INCOMING MESSAGE
+    // ──────────────────────────────────────────────
     if (event === "message.received") {
       const { company_id, phone, message, sender_name, message_type = "text", media_url } = data;
 
-      // --- Workspace routing ---
+      // --- 1. Workspace routing ---
       let workspace_id: string | null = null;
 
-      // 1) Check routing rules (keyword match on message)
       const { data: rules } = await supabase
         .from("whatsapp_routing_rules")
         .select("workspace_id, rule_type, rule_value")
@@ -61,7 +62,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      // 2) Fallback to default workspace config
+      // Fallback to default workspace
       if (!workspace_id) {
         const { data: defaultWs } = await supabase
           .from("whatsapp_workspace_config")
@@ -72,15 +73,18 @@ Deno.serve(async (req) => {
         if (defaultWs) workspace_id = defaultWs.workspace_id;
       }
 
-      // Find or create contact
+      // --- 2. Find or create contact (with deduplication) ---
       let { data: contact } = await supabase
         .from("whatsapp_contacts")
-        .select("id, lead_id")
+        .select("id, lead_id, conversation_status")
         .eq("company_id", company_id)
         .eq("phone", phone)
         .maybeSingle();
 
+      let isNewContact = false;
+
       if (!contact) {
+        isNewContact = true;
         const { data: newContact, error } = await supabase
           .from("whatsapp_contacts")
           .insert({
@@ -90,58 +94,98 @@ Deno.serve(async (req) => {
             last_message: message,
             last_message_at: new Date().toISOString(),
             workspace_id,
+            conversation_status: "aguardando",
           })
-          .select("id, lead_id")
+          .select("id, lead_id, conversation_status")
           .single();
 
         if (error) throw error;
         contact = newContact;
-
-        // --- Auto-create lead in CRM ---
-        const leadInsert: any = {
-          servidor_id: company_id,
-          company_name: sender_name || phone,
-          contact_name: sender_name || null,
-          phone,
-          source: "WhatsApp",
-          stage: "novos",
-          tags: ["WhatsApp", "Inbound"],
+      } else {
+        // Update existing contact
+        const updates: any = {
+          last_message: message,
+          last_message_at: new Date().toISOString(),
         };
-        if (workspace_id) leadInsert.workspace_id = workspace_id;
+        // If conversation was finalized, reopen it
+        if (contact.conversation_status === "finalizado") {
+          updates.conversation_status = "aguardando";
+        }
+        await supabase.from("whatsapp_contacts").update(updates).eq("id", contact.id);
+      }
 
-        const { data: newLead, error: leadErr } = await supabase
+      // --- 3. Ensure lead exists (dedup by phone + company) ---
+      if (!contact!.lead_id) {
+        // Check if a lead with this phone already exists (dedup)
+        const { data: existingLead } = await supabase
           .from("crm_leads")
-          .insert(leadInsert)
           .select("id")
-          .single();
+          .eq("servidor_id", company_id)
+          .eq("phone", phone)
+          .maybeSingle();
 
-        if (!leadErr && newLead) {
-          // Link contact to lead
-          await supabase
-            .from("whatsapp_contacts")
-            .update({ lead_id: newLead.id })
-            .eq("id", contact!.id);
+        let leadId: string;
+
+        if (existingLead) {
+          leadId = existingLead.id;
+        } else {
+          const leadInsert: any = {
+            servidor_id: company_id,
+            company_name: sender_name || phone,
+            contact_name: sender_name || null,
+            phone,
+            source: "WhatsApp",
+            stage: "novos",
+            tags: ["WhatsApp", "Inbound"],
+          };
+          if (workspace_id) leadInsert.workspace_id = workspace_id;
+
+          const { data: newLead, error: leadErr } = await supabase
+            .from("crm_leads")
+            .insert(leadInsert)
+            .select("id")
+            .single();
+
+          if (leadErr) throw leadErr;
+          leadId = newLead.id;
 
           // Log activity
           await supabase.from("crm_lead_activities").insert({
-            lead_id: newLead.id,
+            lead_id: leadId,
             servidor_id: company_id,
             type: "created",
             title: "Lead criado automaticamente via WhatsApp",
-            description: `Contato recebeu mensagem de ${sender_name || phone}.`,
+            description: `Contato: ${sender_name || phone}`,
           });
         }
-      } else {
+
+        // Link contact to lead
         await supabase
           .from("whatsapp_contacts")
-          .update({
-            last_message: message,
-            last_message_at: new Date().toISOString(),
-          })
-          .eq("id", contact.id);
+          .update({ lead_id: leadId })
+          .eq("id", contact!.id);
+
+        contact!.lead_id = leadId;
       }
 
-      // Save message
+      // --- 4. Auto-move lead stage on new inbound message ---
+      if (contact!.lead_id) {
+        const { data: lead } = await supabase
+          .from("crm_leads")
+          .select("stage")
+          .eq("id", contact!.lead_id)
+          .single();
+
+        // If lead is in standby, move to novos on new message
+        if (lead && lead.stage === "standby") {
+          await supabase
+            .from("crm_leads")
+            .update({ stage: "novos", stage_entered_at: new Date().toISOString() })
+            .eq("id", contact!.lead_id);
+        }
+      }
+
+      // --- 5. Save message ---
       const { error: msgError } = await supabase
         .from("whatsapp_messages")
         .insert({
@@ -157,13 +201,47 @@ Deno.serve(async (req) => {
 
       if (msgError) throw msgError;
 
+      // --- 6. Create notification for assigned user or all company users ---
+      const assignedTo = (contact as any)?.assigned_to;
+      if (assignedTo) {
+        await supabase.from("notifications").insert({
+          user_id: assignedTo,
+          title: "Nova mensagem WhatsApp",
+          message: `${sender_name || phone}: ${(message || "").slice(0, 100)}`,
+          type: "whatsapp",
+          link: "/atendimento",
+        });
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, lead_id: contact!.lead_id }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ──────────────────────────────────────────────
+    // HANDLE OUTBOUND MESSAGE (agent replied)
+    // ──────────────────────────────────────────────
+    if (event === "message.sent") {
+      const { company_id, phone, contact_id } = data;
+
+      // Update conversation status to "em_atendimento"
+      if (contact_id) {
+        await supabase
+          .from("whatsapp_contacts")
+          .update({ conversation_status: "em_atendimento" })
+          .eq("id", contact_id);
+      }
+
       return new Response(
         JSON.stringify({ success: true }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Handle session status updates
+    // ──────────────────────────────────────────────
+    // HANDLE SESSION STATUS
+    // ──────────────────────────────────────────────
     if (event === "session.status") {
       const { company_id, status, phone_number } = data;
 
@@ -182,7 +260,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Handle message status updates (sent, delivered, read)
+    // ──────────────────────────────────────────────
+    // HANDLE MESSAGE STATUS UPDATES
+    // ──────────────────────────────────────────────
     if (event === "message.status") {
       const { message_id, status } = data;
 

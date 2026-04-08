@@ -2238,6 +2238,7 @@ export type Database = {
           assigned_to: string | null
           avatar_url: string | null
           company_id: string
+          conversation_status: string
           created_at: string
           id: string
           labels: string[] | null
@@ -2254,6 +2255,7 @@ export type Database = {
           assigned_to?: string | null
           avatar_url?: string | null
           company_id: string
+          conversation_status?: string
           created_at?: string
           id?: string
           labels?: string[] | null
@@ -2270,6 +2272,7 @@ export type Database = {
           assigned_to?: string | null
           avatar_url?: string | null
           company_id?: string
+          conversation_status?: string
           created_at?: string
           id?: string
           labels?: string[] | null
