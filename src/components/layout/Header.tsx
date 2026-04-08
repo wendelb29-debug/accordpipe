@@ -87,16 +87,51 @@ export function Header() {
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/50 bg-card/95 backdrop-blur-xl px-3 sm:px-6 lg:px-8 shadow-sm gap-2" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       {isMobile && <MobileSidebar />}
-      <div className="flex items-center flex-1 min-w-0 overflow-hidden">
-        <div className="relative w-full min-w-0 max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
-          <Input
-            type="search"
-            placeholder="Buscar leads, clientes, documentos..."
-            className="pl-9 pr-2 bg-muted/40 border-border/40 focus-visible:ring-1 focus-visible:ring-primary/50 rounded-xl h-9 sm:h-10 text-xs sm:text-sm w-full truncate"
-          />
+
+      {/* Page title */}
+      <div className="flex items-center gap-3 min-w-0 shrink-0">
+        {pageTitle && (
+          <div className="min-w-0">
+            <h1 className="text-sm font-bold text-foreground truncate">{pageTitle}</h1>
+            {pageSubtitle && <p className="text-[10px] text-muted-foreground truncate">{pageSubtitle}</p>}
+          </div>
+        )}
+      </div>
+
+      {/* Center: Clock + Theme */}
+      <div className="hidden sm:flex items-center gap-2">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Clock className="h-3.5 w-3.5" />
+          <span className="tabular-nums">
+            {currentTime.toLocaleDateString("pt-BR")} {currentTime.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+          </span>
+        </div>
+        <div className="flex items-center bg-muted/50 rounded-full p-0.5">
+          <button
+            onClick={() => { if (currentTheme !== "light") handleThemeToggle(); }}
+            className={`h-6 w-6 flex items-center justify-center rounded-full transition-all ${currentTheme === "light" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
+          >
+            <Sun className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => { if (currentTheme !== "dark") handleThemeToggle(); }}
+            className={`h-6 w-6 flex items-center justify-center rounded-full transition-all ${currentTheme === "dark" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
+          >
+            <Moon className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
+
+      {/* Right: Search + Notifications + User */}
+      <div className="flex items-center gap-1 shrink-0">
+        <div className="relative hidden md:block w-48 lg:w-64">
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
+          <Input
+            type="search"
+            placeholder="Buscar..."
+            className="pl-8 pr-2 bg-muted/40 border-border/40 focus-visible:ring-1 focus-visible:ring-primary/50 rounded-xl h-8 text-xs w-full"
+          />
+        </div>
 
       <div className="flex items-center gap-1 shrink-0">
         <Button
