@@ -53,10 +53,16 @@ const configNavigation = [
 export function Sidebar() {
   const location = useLocation();
   const [hovered, setHovered] = useState(false);
+  const [pinned, setPinned] = useState(() => localStorage.getItem("sidebar-pinned") === "true");
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // The sidebar is always collapsed by default, expands on hover
-  const collapsed = !hovered;
+  // Sidebar is expanded when pinned OR hovered
+  const collapsed = !pinned && !hovered;
+
+  // Persist pin state
+  useEffect(() => {
+    localStorage.setItem("sidebar-pinned", String(pinned));
+  }, [pinned]);
 
   // Notify AppLayout about the sidebar width
   useEffect(() => {
