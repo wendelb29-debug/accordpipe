@@ -87,7 +87,8 @@ export default function Usuarios() {
   const [permUserName, setPermUserName] = useState("");
   const [permUserIsCeo, setPermUserIsCeo] = useState(false);
   const { toast } = useToast();
-  const { isMaster, isCeo, activeCompanyId, profile } = useAuth();
+  const { isMaster, isCeo, isAdmin, activeCompanyId, profile, role } = useAuth();
+  const canManageUsers = isMaster || isCeo || isAdmin;
   const [allCompanies, setAllCompanies] = useState<{id: string; nome_fantasia: string | null; razao_social: string; cnpj: string}[]>([]);
 
   // Form state
@@ -199,6 +200,11 @@ export default function Usuarios() {
 
     setIsSubmitting(true);
     try {
+      // Determine company_id: for non-master, always use their own company
+      const companyId = isMaster
+        ? (formData.company_id || activeCompanyId)
+        : profile?.company_id;
+
       // Create user via Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
@@ -207,6 +213,7 @@ export default function Usuarios() {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
             name: formData.name,
+            company_id: companyId || undefined,
           },
         },
       });
@@ -232,7 +239,6 @@ export default function Usuarios() {
         if (roleError) throw roleError;
       }
 
-      const companyId = formData.company_id || (isMaster ? activeCompanyId : profile?.company_id) || null;
       const profileUpdate: any = { status: "pendente", is_active: false };
       if (companyId) profileUpdate.company_id = companyId;
       if (formData.cpf) profileUpdate.cpf = formData.cpf.replace(/\D/g, "");
@@ -715,26 +721,29 @@ export default function Usuarios() {
                     </div>
                   )}
 
-                  <div className="space-y-2">
-                    <Label htmlFor="company">Empresa vinculada</Label>
-                    <Select
-                      value={formData.company_id}
-                      onValueChange={(value: string) =>
-                        setFormData({ ...formData, company_id: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a empresa" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {allCompanies.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>
-                            {c.nome_fantasia || c.razao_social} - {c.cnpj}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* Only master sees company selector; tenant admins auto-assign */}
+                  {isMaster && (
+                    <div className="space-y-2">
+                      <Label htmlFor="company">Empresa vinculada</Label>
+                      <Select
+                        value={formData.company_id}
+                        onValueChange={(value: string) =>
+                          setFormData({ ...formData, company_id: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a empresa" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {allCompanies.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.nome_fantasia || c.razao_social} - {c.cnpj}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="role">Perfil</Label>
@@ -750,7 +759,7 @@ export default function Usuarios() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="admin">Administrador</SelectItem>
-                        <SelectItem value="ceo">CEO</SelectItem>
+                        {(isMaster || isCeo) && <SelectItem value="ceo">CEO</SelectItem>}
                         <SelectItem value="operador">Operador</SelectItem>
                         <SelectItem value="administrativo">Administrativo</SelectItem>
                         <SelectItem value="financeiro">Financeiro</SelectItem>
