@@ -842,9 +842,22 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               </div>
             )}
             {canTransferOwnership && (
-              <Button size="sm" variant="ghost" onClick={handleTransferOwnership} disabled={saving} title="Transferir propriedade" className="h-7 w-7 sm:h-8 sm:w-8 p-0">
-                <UserRoundPen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button onClick={handleTransferOwnership} disabled={saving} className="focus:outline-none">
+                    <Avatar className="h-7 w-7 sm:h-8 sm:w-8 ring-2 ring-primary/20 cursor-pointer hover:ring-primary/40 transition-all">
+                      <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">
+                        {lead.created_by_name
+                          ? lead.created_by_name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()
+                          : "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs font-medium">
+                  {lead.created_by_name || "Sem responsável"} — Clique para transferir
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
         </div>
