@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import {
-  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature,
+  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ContractTemplateTab } from "./ContractTemplateTab";
@@ -79,7 +79,7 @@ export default function ServidoresTab() {
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
   const { toast } = useToast();
-  const { isMaster } = useAuth();
+  const { isMaster, profile } = useAuth();
 
   const [formData, setFormData] = useState({
     razao_social: "",
@@ -287,6 +287,7 @@ export default function ServidoresTab() {
   };
 
   const handleToggleStatus = async (company: Company) => {
+    if (company.id === profile?.company_id) return;
     const newStatus = company.status === "active" ? "inactive" : "active";
     try {
       const { error } = await supabase.from("companies").update({ status: newStatus }).eq("id", company.id);
@@ -432,7 +433,7 @@ export default function ServidoresTab() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {isMaster && (
+                    {isMaster && company.id !== profile?.company_id && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -450,6 +451,11 @@ export default function ServidoresTab() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                    )}
+                    {company.id === profile?.company_id && (
+                      <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-600">
+                        <Shield className="h-3 w-3 mr-1" /> Master
+                      </Badge>
                     )}
                   </TableCell>
                 </TableRow>

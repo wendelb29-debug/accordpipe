@@ -1,12 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Building2, Check, ChevronRight } from "lucide-react";
+import { Building2, Check, ChevronRight, Shield } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export default function Servidores() {
   const navigate = useNavigate();
-  const { companies, activeCompanyId, setActiveCompanyId } = useAuth();
+  const { companies, activeCompanyId, setActiveCompanyId, profile } = useAuth();
+
+  const isMasterTenant = (companyId: string) => companyId === profile?.company_id;
 
   const handleSelect = (companyId: string) => {
     setActiveCompanyId(companyId);
@@ -35,6 +37,7 @@ export default function Servidores() {
           <div className="flex flex-col gap-3">
             {companies.map((company) => {
               const isActive = activeCompanyId === company.id;
+              const isMaster = isMasterTenant(company.id);
               return (
                 <Card
                   key={company.id}
@@ -46,12 +49,19 @@ export default function Servidores() {
                   <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${
                     isActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                   }`}>
-                    <Building2 className="h-5 w-5" />
+                    {isMaster ? <Shield className="h-5 w-5" /> : <Building2 className="h-5 w-5" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`font-semibold truncate ${isActive ? "text-primary" : "text-foreground"}`}>
-                      {company.nome_fantasia || company.razao_social}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className={`font-semibold truncate ${isActive ? "text-primary" : "text-foreground"}`}>
+                        {company.nome_fantasia || company.razao_social}
+                      </p>
+                      {isMaster && (
+                        <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-600 shrink-0">
+                          Master
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground truncate">{company.cnpj}</p>
                   </div>
                   {isActive ? (
