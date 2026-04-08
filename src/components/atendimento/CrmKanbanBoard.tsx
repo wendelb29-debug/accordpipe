@@ -294,7 +294,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   };
 
   useEffect(() => {
-    if (!isAdminOrMaster || !profile?.company_id) return;
+    if (!isAdminOrMaster || !companyId) return;
     const fetchTeam = async () => {
       const { data: roleData } = await supabase
         .from("user_roles")
@@ -306,13 +306,13 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
       const { data } = await supabase
         .from("profiles")
         .select("user_id, name, avatar_url")
-        .eq("company_id", profile.company_id)
+        .eq("company_id", companyId)
         .eq("is_active", true)
         .order("name");
       if (data) setTeamMembers(data);
     };
     fetchTeam();
-  }, [isAdminOrMaster, profile?.company_id, profile?.user_id, profile?.is_master]);
+  }, [isAdminOrMaster, companyId, profile?.user_id, profile?.is_master]);
 
   const copyFormLink = async () => {
     let companyId = profile?.company_id;
