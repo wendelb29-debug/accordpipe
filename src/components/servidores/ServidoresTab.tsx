@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield,
 } from "lucide-react";
@@ -70,6 +71,7 @@ const formatPhone = (v: string) => {
 };
 
 export default function ServidoresTab() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
@@ -326,9 +328,9 @@ export default function ServidoresTab() {
           <p className="text-sm text-muted-foreground">Ambientes independentes vinculados por CNPJ</p>
         </div>
         {isMaster && (
-          <Button className="gap-2" onClick={() => handleOpenDialog()}>
+          <Button className="gap-2" onClick={() => navigate("/servidores/novo")}>
             <Plus className="h-4 w-4" />
-            Novo Servidor
+            Novo Tenant
           </Button>
         )}
       </div>
@@ -441,7 +443,7 @@ export default function ServidoresTab() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem className="gap-2" onClick={() => handleOpenDialog(company)}>
+                          <DropdownMenuItem className="gap-2" onClick={() => navigate(`/servidores/novo?id=${company.id}`)}>
                             <Pencil className="h-4 w-4" />
                             Editar
                           </DropdownMenuItem>
