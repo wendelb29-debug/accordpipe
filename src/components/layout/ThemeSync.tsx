@@ -109,7 +109,7 @@ export function ThemeSync() {
     };
 
     fetchBrand();
-  }, [activeCompanyId, user]);
+  }, [activeCompanyId, user, isMasterTenant]);
 
   return null;
 }

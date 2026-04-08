@@ -112,7 +112,7 @@ export default function Usuarios() {
       .from("companies")
       .select("id, nome_fantasia, razao_social, cnpj")
       .is("servidor_id", null)
-      .eq("status", "active")
+      .in("status", ["active", "teste"])
       .order("razao_social");
     setAllCompanies(data || []);
   };
