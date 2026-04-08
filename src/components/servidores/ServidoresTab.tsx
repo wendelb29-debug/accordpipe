@@ -443,7 +443,7 @@ export default function ServidoresTab() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem className="gap-2" onClick={() => handleOpenDialog(company)}>
+                          <DropdownMenuItem className="gap-2" onClick={() => navigate(`/servidores/novo?id=${company.id}`)}>
                             <Pencil className="h-4 w-4" />
                             Editar
                           </DropdownMenuItem>
