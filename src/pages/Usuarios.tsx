@@ -534,8 +534,8 @@ export default function Usuarios() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={roleBadgeVariants[user.role]}>
-                          {roleLabels[user.role]}
+                        <Badge variant={user.is_master ? "default" : roleBadgeVariants[user.role]}>
+                          {user.is_master ? "Master" : roleLabels[user.role]}
                         </Badge>
                       </TableCell>
                       <TableCell>
