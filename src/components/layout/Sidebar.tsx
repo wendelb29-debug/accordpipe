@@ -18,6 +18,10 @@ import {
   Webhook,
   ClipboardList,
   Trash2,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Pin,
+  PinOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useCallback, useRef } from "react";
