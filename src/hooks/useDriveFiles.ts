@@ -57,15 +57,15 @@ export function useDriveFiles(parentId: string | null) {
   }, [profile?.company_id, parentId]);
 
   useEffect(() => {
-    if (profile?.company_id) fetchFiles();
+    if (companyId) fetchFiles();
   }, [fetchFiles]);
 
   const createFolder = async (name: string) => {
-    if (!profile?.company_id) return null;
+    if (!companyId) return null;
     const { data, error } = await supabase
       .from("drive_files")
       .insert({
-        servidor_id: profile.company_id,
+        servidor_id: companyId,
         parent_id: parentId,
         name,
         type: "folder",
@@ -84,8 +84,8 @@ export function useDriveFiles(parentId: string | null) {
   };
 
   const uploadFile = async (file: File) => {
-    if (!profile?.company_id) return null;
-    const filePath = `${profile.company_id}/${Date.now()}_${file.name}`;
+    if (!companyId) return null;
+    const filePath = `${companyId}/${Date.now()}_${file.name}`;
     const { error: uploadErr } = await supabase.storage
       .from("contract-pdfs")
       .upload(filePath, file, { contentType: file.type });
@@ -98,7 +98,7 @@ export function useDriveFiles(parentId: string | null) {
     const { data, error } = await supabase
       .from("drive_files")
       .insert({
-        servidor_id: profile.company_id,
+        servidor_id: companyId,
         parent_id: parentId,
         name: file.name,
         type: "file",

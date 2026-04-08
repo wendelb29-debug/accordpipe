@@ -109,13 +109,13 @@ export function usePdfContracts() {
     pdfFile: File,
     signers: { name: string; email: string; phone: string; cpf_cnpj: string; address: string }[]
   ) => {
-    if (!profile?.company_id || !canManage) {
+    if (!companyId || !canManage) {
       toast.error("Sem permissão para criar contratos");
       return null;
     }
 
     try {
-      const filePath = `${profile.company_id}/${Date.now()}_${pdfFile.name}`;
+      const filePath = `${companyId}/${Date.now()}_${pdfFile.name}`;
       const { error: uploadErr } = await supabase.storage
         .from("contract-pdfs")
         .upload(filePath, pdfFile, { contentType: "application/pdf" });
@@ -126,7 +126,7 @@ export function usePdfContracts() {
       const { data: contract, error: contractErr } = await supabase
         .from("pdf_contracts")
         .insert({
-          servidor_id: profile.company_id,
+          servidor_id: companyId,
           name,
           description: description || null,
           pdf_url: urlData.publicUrl,
