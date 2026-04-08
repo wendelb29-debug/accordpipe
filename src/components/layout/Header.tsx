@@ -113,20 +113,12 @@ export function Header() {
               {currentTime.toLocaleDateString("pt-BR")} {currentTime.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
             </span>
           </div>
-          <div className="flex items-center bg-muted/50 rounded-full p-0.5">
-            <button
-              onClick={() => { if (currentTheme !== "light") handleThemeToggle(); }}
-              className={`h-6 w-6 flex items-center justify-center rounded-full transition-all ${currentTheme === "light" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
-            >
-              <Sun className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={() => { if (currentTheme !== "dark") handleThemeToggle(); }}
-              className={`h-6 w-6 flex items-center justify-center rounded-full transition-all ${currentTheme === "dark" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
-            >
-              <Moon className="h-3.5 w-3.5" />
-            </button>
-          </div>
+          <button
+            onClick={handleThemeToggle}
+            className="h-7 w-7 flex items-center justify-center rounded-full bg-muted/50 hover:bg-muted transition-all text-muted-foreground hover:text-foreground"
+          >
+            {currentTheme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+          </button>
         </div>
 
         <div className="relative hidden md:block w-48 lg:w-64">
