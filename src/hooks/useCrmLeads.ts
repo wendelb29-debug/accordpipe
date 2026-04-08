@@ -133,9 +133,11 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial",
       toast.error("Erro ao criar oportunidade - empresa não encontrada");
       return null;
     }
+    const insertData: any = { ...lead, servidor_id: servidorId };
+    if (workspaceId) insertData.workspace_id = workspaceId;
     const { data, error } = await supabase
       .from("crm_leads")
-      .insert({ ...lead, servidor_id: servidorId } as any)
+      .insert(insertData)
       .select()
       .single();
     if (error) {
