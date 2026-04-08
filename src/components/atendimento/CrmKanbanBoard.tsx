@@ -143,17 +143,16 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
 
   useEffect(() => {
     const fetchTags = async () => {
-      const servidorId = profile?.company_id;
-      if (!servidorId) return;
+      if (!companyId) return;
       const { data } = await supabase
         .from("crm_tags")
         .select("id, name, color")
-        .eq("servidor_id", servidorId)
+        .eq("servidor_id", companyId)
         .order("name");
       if (data) setAvailableTags(data);
     };
     fetchTags();
-  }, [profile?.company_id]);
+  }, [companyId]);
 
   useEffect(() => {
     const fetchActivityStatus = async () => {
