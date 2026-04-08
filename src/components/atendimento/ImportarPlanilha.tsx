@@ -35,6 +35,7 @@ type DistributionMethod = "round-robin" | "tags" | "cpf-cnpj";
 
 export function ImportarPlanilha() {
   const { profile } = useAuth();
+  const companyId = useActiveCompanyId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [parsedData, setParsedData] = useState<ParsedLead[]>([]);
   const [fileName, setFileName] = useState("");
