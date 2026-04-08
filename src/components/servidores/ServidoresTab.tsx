@@ -71,6 +71,7 @@ const formatPhone = (v: string) => {
 };
 
 export default function ServidoresTab() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
