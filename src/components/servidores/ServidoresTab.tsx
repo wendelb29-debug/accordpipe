@@ -140,7 +140,7 @@ export default function ServidoresTab() {
       setCompanies(enriched);
     } catch (error) {
       console.error("Error fetching companies:", error);
-      toast({ title: "Erro", description: "Não foi possível carregar os servidores.", variant: "destructive" });
+      toast({ title: "Erro", description: "Não foi possível carregar os tenants.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -273,11 +273,11 @@ export default function ServidoresTab() {
       if (editingCompany) {
         const { error } = await supabase.from("companies").update(payload).eq("id", editingCompany.id);
         if (error) throw error;
-        toast({ title: "Servidor atualizado", description: "Os dados do servidor foram atualizados." });
+        toast({ title: "Tenant atualizado", description: "Os dados do tenant foram atualizados." });
       } else {
         const { error } = await supabase.from("companies").insert(payload);
         if (error) throw error;
-        toast({ title: "Servidor criado", description: "O novo servidor foi criado com sucesso." });
+        toast({ title: "Tenant criado", description: "O novo tenant foi criado com sucesso." });
       }
       setDialogOpen(false);
       fetchCompanies();
@@ -295,7 +295,7 @@ export default function ServidoresTab() {
       const { error } = await supabase.from("companies").update({ status: newStatus }).eq("id", company.id);
       if (error) throw error;
       toast({
-        title: newStatus === "active" ? "Servidor ativado" : "Servidor bloqueado",
+        title: newStatus === "active" ? "Tenant ativado" : "Tenant bloqueado",
         description: `${company.nome_fantasia || company.razao_social} foi ${newStatus === "active" ? "ativado" : "bloqueado"}.`,
       });
       fetchCompanies();
