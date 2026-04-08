@@ -104,32 +104,31 @@ export function Header() {
         )}
       </div>
 
-      {/* Center: Clock + Theme */}
-      <div className="hidden sm:flex items-center gap-2">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Clock className="h-3.5 w-3.5" />
-          <span className="tabular-nums">
-            {currentTime.toLocaleDateString("pt-BR")} {currentTime.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-          </span>
-        </div>
-        <div className="flex items-center bg-muted/50 rounded-full p-0.5">
-          <button
-            onClick={() => { if (currentTheme !== "light") handleThemeToggle(); }}
-            className={`h-6 w-6 flex items-center justify-center rounded-full transition-all ${currentTheme === "light" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
-          >
-            <Sun className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={() => { if (currentTheme !== "dark") handleThemeToggle(); }}
-            className={`h-6 w-6 flex items-center justify-center rounded-full transition-all ${currentTheme === "dark" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
-          >
-            <Moon className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Right: Search + Notifications + User */}
+      {/* Right: Clock + Theme + Search + Notifications + User */}
       <div className="flex items-center gap-1 shrink-0">
+        <div className="hidden sm:flex items-center gap-2 mr-2">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Clock className="h-3.5 w-3.5" />
+            <span className="tabular-nums">
+              {currentTime.toLocaleDateString("pt-BR")} {currentTime.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          </div>
+          <div className="flex items-center bg-muted/50 rounded-full p-0.5">
+            <button
+              onClick={() => { if (currentTheme !== "light") handleThemeToggle(); }}
+              className={`h-6 w-6 flex items-center justify-center rounded-full transition-all ${currentTheme === "light" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
+            >
+              <Sun className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => { if (currentTheme !== "dark") handleThemeToggle(); }}
+              className={`h-6 w-6 flex items-center justify-center rounded-full transition-all ${currentTheme === "dark" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
+            >
+              <Moon className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+
         <div className="relative hidden md:block w-48 lg:w-64">
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
           <Input
