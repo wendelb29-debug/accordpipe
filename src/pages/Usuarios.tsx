@@ -721,26 +721,29 @@ export default function Usuarios() {
                     </div>
                   )}
 
-                  <div className="space-y-2">
-                    <Label htmlFor="company">Empresa vinculada</Label>
-                    <Select
-                      value={formData.company_id}
-                      onValueChange={(value: string) =>
-                        setFormData({ ...formData, company_id: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a empresa" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {allCompanies.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>
-                            {c.nome_fantasia || c.razao_social} - {c.cnpj}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* Only master sees company selector; tenant admins auto-assign */}
+                  {isMaster && (
+                    <div className="space-y-2">
+                      <Label htmlFor="company">Empresa vinculada</Label>
+                      <Select
+                        value={formData.company_id}
+                        onValueChange={(value: string) =>
+                          setFormData({ ...formData, company_id: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a empresa" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {allCompanies.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.nome_fantasia || c.razao_social} - {c.cnpj}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="role">Perfil</Label>
