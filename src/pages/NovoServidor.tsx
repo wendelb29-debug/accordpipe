@@ -245,13 +245,11 @@ export default function NovoServidor() {
           ].map((item) => (
             <button
               key={item.value}
-              onClick={() => !item.disabled && setActiveTab(item.value)}
+              onClick={() => setActiveTab(item.value)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-left ${
-                item.disabled
-                  ? "text-muted-foreground/50 cursor-not-allowed"
-                  : activeTab === item.value
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                activeTab === item.value
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
               <item.icon className="h-4 w-4 shrink-0" />
