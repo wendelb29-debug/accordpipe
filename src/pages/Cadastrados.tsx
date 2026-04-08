@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -81,6 +82,7 @@ function getClientHealth(reg: any, transactions: any[], contracts: any[]) {
 // ──────────── Main Component ────────────
 export default function Cadastrados() {
   const { profile } = useAuth();
+  const companyId = useActiveCompanyId();
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
