@@ -25,6 +25,7 @@ import { useCrmLeads, CrmLead, STAGES } from "@/hooks/useCrmLeads";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 
 const stageIcons: Record<string, React.ElementType> = {
   "novos": Sparkles,
