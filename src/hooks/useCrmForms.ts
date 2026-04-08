@@ -78,7 +78,7 @@ export function useCrmForms() {
   }, [fetchForms]);
 
   const getServidorId = async () => {
-    if (profile?.company_id) return profile.company_id;
+    if (companyId) return companyId;
     const { data } = await supabase
       .from("companies")
       .select("id")
