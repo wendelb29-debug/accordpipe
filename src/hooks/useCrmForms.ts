@@ -33,6 +33,7 @@ export function useCrmForms() {
   const [forms, setForms] = useState<CrmForm[]>([]);
   const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
+  const companyId = useActiveCompanyId();
 
   const fetchForms = useCallback(async () => {
     setLoading(true);

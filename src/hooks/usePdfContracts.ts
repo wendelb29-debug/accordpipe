@@ -54,18 +54,19 @@ export interface PdfContractHistory {
 
 export function usePdfContracts() {
   const { profile, isMaster, isCeo } = useAuth();
+  const companyId = useActiveCompanyId();
   const [contracts, setContracts] = useState<PdfContract[]>([]);
   const [loading, setLoading] = useState(true);
 
   const canManage = isMaster || isCeo || profile?.is_master;
 
   const fetchContracts = async () => {
-    if (!profile?.company_id) return;
+    if (!companyId) return;
     setLoading(true);
     const { data, error } = await supabase
       .from("pdf_contracts")
       .select("*")
-      .eq("servidor_id", profile.company_id)
+      .eq("servidor_id", companyId)
       .order("created_at", { ascending: false });
 
     if (error) {

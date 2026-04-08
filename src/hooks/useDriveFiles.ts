@@ -24,19 +24,20 @@ export interface DriveFile {
 
 export function useDriveFiles(parentId: string | null) {
   const { profile, isMaster, isCeo } = useAuth();
+  const companyId = useActiveCompanyId();
   const [files, setFiles] = useState<DriveFile[]>([]);
   const [loading, setLoading] = useState(true);
 
   const canManage = isMaster || isCeo || (profile as any)?.is_master;
 
   const fetchFiles = useCallback(async () => {
-    if (!profile?.company_id) return;
+    if (!companyId) return;
     setLoading(true);
 
     let query = supabase
       .from("drive_files")
       .select("*")
-      .eq("servidor_id", profile.company_id)
+      .eq("servidor_id", companyId)
       .order("type", { ascending: true })
       .order("name", { ascending: true });
 
