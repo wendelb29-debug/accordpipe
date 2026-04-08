@@ -241,17 +241,15 @@ export default function NovoServidor() {
             { value: "cadastro", icon: Building2, label: "Dados Cadastrais" },
             { value: "identidade", icon: Palette, label: "Identidade Visual" },
             { value: "contrato", icon: FileSignature, label: "Contrato" },
-            { value: "vendas", icon: Webhook, label: "Webhooks Z-API", disabled: !editId },
+            { value: "vendas", icon: Webhook, label: "Webhooks Z-API" },
           ].map((item) => (
             <button
               key={item.value}
-              onClick={() => !item.disabled && setActiveTab(item.value)}
+              onClick={() => setActiveTab(item.value)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-left ${
-                item.disabled
-                  ? "text-muted-foreground/50 cursor-not-allowed"
-                  : activeTab === item.value
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                activeTab === item.value
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
               <item.icon className="h-4 w-4 shrink-0" />
