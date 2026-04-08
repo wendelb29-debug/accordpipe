@@ -17,6 +17,7 @@ import { LeadDocsTab } from "./LeadDocsTab";
 import { LeadPosVendaTab } from "./LeadPosVendaTab";
 
 import { LeadCadastroTab } from "./LeadCadastroTab";
+import { LeadWhatsAppTab } from "./LeadWhatsAppTab";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1047,6 +1048,9 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                 <TabsTrigger value="docs" className="text-[11px] sm:text-xs gap-1">
                   <Paperclip className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Docs
                 </TabsTrigger>
+                <TabsTrigger value="whatsapp" className="text-[11px] sm:text-xs gap-1">
+                  <MessageSquare className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> WhatsApp
+                </TabsTrigger>
                 {(isAdminPipeline || role === "administrativo" || role === "admin" || role === "ceo" || profile?.is_master) && (
                   <TabsTrigger value="pos-venda" className="text-[11px] sm:text-xs gap-1">
                     <Headphones className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Pós-Venda
@@ -1272,12 +1276,17 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               <LeadPropostasTab lead={lead} addActivity={addActivity} signatureMode onUpdateLead={onUpdate} />
             </TabsContent>
 
-            {/* Docs */}
+             {/* Docs */}
             <TabsContent value="docs" className="flex-1 overflow-y-auto p-4 mt-0">
               <LeadDocsTab lead={lead} />
             </TabsContent>
 
-            {/* Pós-Venda */}
+            {/* WhatsApp */}
+            <TabsContent value="whatsapp" className="flex-1 overflow-y-auto p-2 sm:p-4 mt-0">
+              <LeadWhatsAppTab lead={lead} />
+            </TabsContent>
+
+             {/* Pós-Venda */}
             {(isAdminPipeline || role === "administrativo" || role === "admin" || role === "ceo" || profile?.is_master) && (
               <TabsContent value="pos-venda" className="flex-1 overflow-y-auto p-4 mt-0">
                 <LeadPosVendaTab lead={lead} />

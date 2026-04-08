@@ -12,8 +12,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // This endpoint is called by the external microservice
-    // Validate using a shared secret instead of user JWT
     const webhookSecret = req.headers.get("x-whatsapp-secret");
     const expectedSecret = Deno.env.get("WHATSAPP_WEBHOOK_SECRET");
 
@@ -35,10 +33,49 @@ Deno.serve(async (req) => {
     if (event === "message.received") {
       const { company_id, phone, message, sender_name, message_type = "text", media_url } = data;
 
+      // --- Workspace routing ---
+      let workspace_id: string | null = null;
+
+      // 1) Check routing rules (keyword match on message)
+      const { data: rules } = await supabase
+        .from("whatsapp_routing_rules")
+        .select("workspace_id, rule_type, rule_value")
+        .eq("company_id", company_id)
+        .eq("is_active", true)
+        .order("priority", { ascending: false });
+
+      if (rules && message) {
+        for (const rule of rules) {
+          if (rule.rule_type === "keyword" && message.toLowerCase().includes(rule.rule_value.toLowerCase())) {
+            workspace_id = rule.workspace_id;
+            break;
+          }
+          if (rule.rule_type === "ddd") {
+            const phoneClean = phone.replace(/\D/g, "");
+            const ddd = phoneClean.length >= 12 ? phoneClean.slice(2, 4) : phoneClean.slice(0, 2);
+            if (ddd === rule.rule_value) {
+              workspace_id = rule.workspace_id;
+              break;
+            }
+          }
+        }
+      }
+
+      // 2) Fallback to default workspace config
+      if (!workspace_id) {
+        const { data: defaultWs } = await supabase
+          .from("whatsapp_workspace_config")
+          .select("workspace_id")
+          .eq("company_id", company_id)
+          .eq("is_default", true)
+          .maybeSingle();
+        if (defaultWs) workspace_id = defaultWs.workspace_id;
+      }
+
       // Find or create contact
       let { data: contact } = await supabase
         .from("whatsapp_contacts")
-        .select("id")
+        .select("id, lead_id")
         .eq("company_id", company_id)
         .eq("phone", phone)
         .maybeSingle();
@@ -52,12 +89,48 @@ Deno.serve(async (req) => {
             name: sender_name || phone,
             last_message: message,
             last_message_at: new Date().toISOString(),
+            workspace_id,
           })
-          .select("id")
+          .select("id, lead_id")
           .single();
 
         if (error) throw error;
         contact = newContact;
+
+        // --- Auto-create lead in CRM ---
+        const leadInsert: any = {
+          servidor_id: company_id,
+          company_name: sender_name || phone,
+          contact_name: sender_name || null,
+          phone,
+          source: "WhatsApp",
+          stage: "novos",
+          tags: ["WhatsApp", "Inbound"],
+        };
+        if (workspace_id) leadInsert.workspace_id = workspace_id;
+
+        const { data: newLead, error: leadErr } = await supabase
+          .from("crm_leads")
+          .insert(leadInsert)
+          .select("id")
+          .single();
+
+        if (!leadErr && newLead) {
+          // Link contact to lead
+          await supabase
+            .from("whatsapp_contacts")
+            .update({ lead_id: newLead.id })
+            .eq("id", contact!.id);
+
+          // Log activity
+          await supabase.from("crm_lead_activities").insert({
+            lead_id: newLead.id,
+            servidor_id: company_id,
+            type: "created",
+            title: "Lead criado automaticamente via WhatsApp",
+            description: `Contato recebeu mensagem de ${sender_name || phone}.`,
+          });
+        }
       } else {
         await supabase
           .from("whatsapp_contacts")
@@ -73,7 +146,7 @@ Deno.serve(async (req) => {
         .from("whatsapp_messages")
         .insert({
           company_id,
-          contact_id: contact.id,
+          contact_id: contact!.id,
           phone,
           message,
           direction: "inbound",
