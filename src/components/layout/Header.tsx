@@ -55,8 +55,18 @@ const roleLabels: Record<string, string> = {
 export function Header() {
   const { profile, role, signOut, loading } = useAuth();
   const [currentTheme, setCurrentTheme] = useState(() => document.documentElement.classList.contains("dark") ? "dark" : "light");
+  const [currentTime, setCurrentTime] = useState(new Date());
   const navigate = useNavigate();
+  const location = useLocation();
   const isMobile = useIsMobile();
+
+  const pageTitle = ROUTE_TITLES[location.pathname] || "";
+  const pageSubtitle = ROUTE_SUBTITLES[location.pathname] || "";
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleThemeToggle = async () => {
     const newTheme = currentTheme === "dark" ? "light" : "dark";
