@@ -155,9 +155,16 @@ export function Header() {
               {loading ? (
                 <Skeleton className="hidden md:block h-4 w-20 rounded" />
               ) : profile ? (
-                <span className="hidden text-sm font-medium text-foreground md:block max-w-[120px] truncate">
-                  {profile.name}
-                </span>
+                <div className="hidden md:flex flex-col items-start max-w-[140px]">
+                  <span className="text-sm font-medium text-foreground truncate w-full">
+                    {profile.name}
+                  </span>
+                  {activeCompany && (
+                    <span className="text-[10px] text-muted-foreground truncate w-full leading-tight">
+                      {activeCompany.nome_fantasia || activeCompany.razao_social}
+                    </span>
+                  )}
+                </div>
               ) : null}
             </Button>
           </DropdownMenuTrigger>
