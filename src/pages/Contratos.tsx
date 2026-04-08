@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -62,6 +63,7 @@ interface ClientContract {
 
 export default function Contratos() {
   const { isMaster, isCeo, isAdmin, profile, role } = useAuth();
+  const companyId = useActiveCompanyId();
   const isAdministrativo = role === "administrativo";
   const isFinanceiro = role === "financeiro";
   const isOperador = role === "operador";
@@ -79,12 +81,12 @@ export default function Contratos() {
   const [history, setHistory] = useState<any[]>([]);
 
   const fetchContracts = async () => {
-    if (!profile?.company_id) return;
+    if (!companyId) return;
     setLoading(true);
     let query = supabase
       .from("client_contracts")
       .select("*")
-      .eq("servidor_id", profile.company_id)
+      .eq("servidor_id", companyId)
       .order("created_at", { ascending: false });
 
     // Operador only sees own contracts
