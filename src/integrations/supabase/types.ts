@@ -2565,6 +2565,7 @@ export type Database = {
           is_default: boolean
           name: string
           servidor_id: string
+          type: string
           updated_at: string
         }
         Insert: {
@@ -2576,6 +2577,7 @@ export type Database = {
           is_default?: boolean
           name: string
           servidor_id: string
+          type?: string
           updated_at?: string
         }
         Update: {
@@ -2587,6 +2589,7 @@ export type Database = {
           is_default?: boolean
           name?: string
           servidor_id?: string
+          type?: string
           updated_at?: string
         }
         Relationships: [

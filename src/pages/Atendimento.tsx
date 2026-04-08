@@ -3,25 +3,48 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CrmKanbanBoard } from "@/components/atendimento/CrmKanbanBoard";
 import { AdminKanbanBoard } from "@/components/atendimento/AdminKanbanBoard";
 import { ImportarPlanilha } from "@/components/atendimento/ImportarPlanilha";
-import { WorkspaceSelector } from "@/components/atendimento/WorkspaceSelector";
+import { WorkspaceHub } from "@/components/atendimento/WorkspaceHub";
 import { WorkspaceProvider, useWorkspaceContext } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { MessageSquare, ClipboardList, FileSpreadsheet } from "lucide-react";
+import { MessageSquare, ClipboardList, FileSpreadsheet, ChevronLeft } from "lucide-react";
 
 function AtendimentoContent() {
   const [crmSearch] = useState("");
   const { role, isMaster } = useAuth();
-  const { activeWorkspaceId, workspaces, loading: wsLoading } = useWorkspaceContext();
+  const { activeWorkspaceId, workspaces, loading: wsLoading, selectWorkspace, activeWorkspace } = useWorkspaceContext();
+  const [selectedWsId, setSelectedWsId] = useState<string | null>(null);
 
   const canSeeCommercial = isMaster || role === "admin" || role === "operador" || role === "ceo" || role === "comercial";
   const canSeeAdmin = isMaster || role === "admin" || role === "administrativo" || role === "ceo";
 
-  const workspaceBar = (
-    <div className="flex items-center gap-2 px-3 pt-2 pb-1">
-      <WorkspaceSelector />
-      {!wsLoading && workspaces.length === 0 && (
-        <span className="text-xs text-muted-foreground">Crie um workspace para organizar seus funis</span>
-      )}
+  // Show hub if no workspace selected yet
+  if (!selectedWsId) {
+    return (
+      <div className="h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
+        <WorkspaceHub
+          onSelectWorkspace={(id) => {
+            selectWorkspace(id);
+            setSelectedWsId(id);
+          }}
+        />
+      </div>
+    );
+  }
+
+  const handleBack = () => setSelectedWsId(null);
+
+  const backButton = (
+    <div className="flex items-center gap-3 px-4 pt-3 pb-1">
+      <button
+        onClick={handleBack}
+        className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+      <div>
+        <h2 className="text-sm font-bold text-foreground">{activeWorkspace?.name || "Workspace"}</h2>
+        <p className="text-[10px] text-muted-foreground">Clique na seta para voltar aos workspaces</p>
+      </div>
     </div>
   );
 
@@ -29,7 +52,7 @@ function AtendimentoContent() {
   if (canSeeAdmin && !canSeeCommercial) {
     return (
       <div className="h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
-        {workspaceBar}
+        {backButton}
         <AdminKanbanBoard searchTerm={crmSearch} />
       </div>
     );
@@ -39,18 +62,18 @@ function AtendimentoContent() {
   if (canSeeCommercial && !canSeeAdmin) {
     return (
       <div className="h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
-        {workspaceBar}
-        <CrmKanbanBoard searchTerm={crmSearch} workspaceId={activeWorkspaceId} />
+        {backButton}
+        <CrmKanbanBoard searchTerm={crmSearch} workspaceId={selectedWsId} />
       </div>
     );
   }
 
-  // Only commercial (fallback for users with no specific access)
+  // Only commercial (fallback)
   if (!canSeeAdmin) {
     return (
       <div className="h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
-        {workspaceBar}
-        <CrmKanbanBoard searchTerm={crmSearch} workspaceId={activeWorkspaceId} />
+        {backButton}
+        <CrmKanbanBoard searchTerm={crmSearch} workspaceId={selectedWsId} />
       </div>
     );
   }
@@ -58,7 +81,7 @@ function AtendimentoContent() {
   // Both pipelines accessible
   return (
     <div className="h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
-      {workspaceBar}
+      {backButton}
       <Tabs defaultValue="comercial" className="flex-1 flex flex-col overflow-hidden">
         <TabsList className="mx-3 mt-1 mb-0 w-fit h-8">
           <TabsTrigger value="comercial" className="gap-1 text-[11px] h-7 px-3">
@@ -72,7 +95,7 @@ function AtendimentoContent() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="comercial" className="flex-1 overflow-hidden mt-0">
-          <CrmKanbanBoard searchTerm={crmSearch} workspaceId={activeWorkspaceId} />
+          <CrmKanbanBoard searchTerm={crmSearch} workspaceId={selectedWsId} />
         </TabsContent>
         <TabsContent value="cadastro" className="flex-1 overflow-hidden mt-0">
           <AdminKanbanBoard searchTerm={crmSearch} />
