@@ -37,13 +37,13 @@ export function useWorkspaces() {
   const isAdminOrCeo = role === "admin" || role === "ceo" || profile?.is_master;
 
   const fetchWorkspaces = useCallback(async () => {
-    if (!profile?.company_id) return;
+    if (!companyId) return;
     setLoading(true);
 
     const { data, error } = await supabase
       .from("workspaces")
       .select("*")
-      .eq("servidor_id", profile.company_id)
+      .eq("servidor_id", companyId)
       .order("is_default", { ascending: false })
       .order("name");
 
@@ -67,7 +67,7 @@ export function useWorkspaces() {
       }
     }
     setLoading(false);
-  }, [profile?.company_id]);
+  }, [companyId]);
 
   useEffect(() => {
     fetchWorkspaces();
