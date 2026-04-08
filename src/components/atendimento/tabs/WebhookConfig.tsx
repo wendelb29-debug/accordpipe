@@ -49,9 +49,9 @@ function CopyButton({ value }: { value: string }) {
   );
 }
 
-export function WebhookConfig() {
+export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: string | null } = {}) {
   const { profile } = useAuth();
-  const companyId = profile?.company_id;
+  const companyId = companyIdOverride ?? profile?.company_id;
 
   const [values, setValues] = useState<Record<string, string>>({});
   const [notifyMe, setNotifyMe] = useState(false);

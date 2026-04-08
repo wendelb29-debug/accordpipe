@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield,
+  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield, Webhook,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ContractTemplateTab } from "./ContractTemplateTab";
+import { WebhookConfig } from "@/components/atendimento/tabs/WebhookConfig";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -480,7 +481,7 @@ export default function ServidoresTab() {
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="cadastro" className="gap-2">
                 <Building2 className="h-4 w-4" />
                 Dados Cadastrais
@@ -488,6 +489,10 @@ export default function ServidoresTab() {
               <TabsTrigger value="identidade" className="gap-2">
                 <Palette className="h-4 w-4" />
                 Identidade Visual
+              </TabsTrigger>
+              <TabsTrigger value="webhooks" className="gap-2" disabled={!editingCompany}>
+                <Webhook className="h-4 w-4" />
+                Webhooks
               </TabsTrigger>
               <TabsTrigger value="contrato" className="gap-2">
                 <FileSignature className="h-4 w-4" />
