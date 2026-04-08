@@ -1041,6 +1041,7 @@ export type Database = {
           updated_at: string
           value_mrr: number
           value_ps: number
+          workspace_id: string | null
         }
         Insert: {
           bairro?: string | null
@@ -1073,6 +1074,7 @@ export type Database = {
           updated_at?: string
           value_mrr?: number
           value_ps?: number
+          workspace_id?: string | null
         }
         Update: {
           bairro?: string | null
@@ -1105,6 +1107,7 @@ export type Database = {
           updated_at?: string
           value_mrr?: number
           value_ps?: number
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -1126,6 +1129,13 @@ export type Database = {
             columns: ["servidor_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_leads_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -2397,6 +2407,79 @@ export type Database = {
           {
             foreignKeyName: "whatsapp_sessions_company_id_fkey"
             columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_members: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspaces: {
+        Row: {
+          color: string
+          created_at: string
+          created_by_user_id: string | null
+          icon: string
+          id: string
+          is_default: boolean
+          name: string
+          servidor_id: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          icon?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          servidor_id: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          icon?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          servidor_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspaces_servidor_id_fkey"
+            columns: ["servidor_id"]
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
