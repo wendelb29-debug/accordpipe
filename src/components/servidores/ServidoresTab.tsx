@@ -480,27 +480,27 @@ export default function ServidoresTab() {
             </DialogDescription>
           </DialogHeader>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="cadastro" className="gap-2">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-row gap-4">
+            <TabsList className="flex flex-col items-stretch h-auto bg-transparent gap-1 w-48 shrink-0 pt-2">
+              <TabsTrigger value="cadastro" className="justify-start gap-2 px-3 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg">
                 <Building2 className="h-4 w-4" />
                 Dados Cadastrais
               </TabsTrigger>
-              <TabsTrigger value="identidade" className="gap-2">
+              <TabsTrigger value="identidade" className="justify-start gap-2 px-3 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg">
                 <Palette className="h-4 w-4" />
                 Identidade Visual
               </TabsTrigger>
-              <TabsTrigger value="webhooks" className="gap-2" disabled={!editingCompany}>
-                <Webhook className="h-4 w-4" />
-                Webhooks
-              </TabsTrigger>
-              <TabsTrigger value="contrato" className="gap-2">
+              <TabsTrigger value="contrato" className="justify-start gap-2 px-3 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg">
                 <FileSignature className="h-4 w-4" />
                 Contrato
               </TabsTrigger>
+              <TabsTrigger value="webhooks" className="justify-start gap-2 px-3 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg" disabled={!editingCompany}>
+                <Webhook className="h-4 w-4" />
+                Vendas
+              </TabsTrigger>
             </TabsList>
 
-            <div className="flex-1 overflow-y-auto py-4">
+            <div className="flex-1 overflow-y-auto py-2">
               <TabsContent value="cadastro" className="mt-0">
                 <div className="grid gap-4">
                   {/* CNPJ with search */}
