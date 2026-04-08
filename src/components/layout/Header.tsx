@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Search, User, Moon, Sun, Clock } from "lucide-react";
+import { Search, User, Moon, Sun, Clock, ChevronLeft } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { MobileSidebar } from "./MobileSidebar";
 import { Button } from "@/components/ui/button";
@@ -88,8 +88,14 @@ export function Header() {
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/50 bg-card/95 backdrop-blur-xl px-3 sm:px-6 lg:px-8 shadow-sm gap-2" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       {isMobile && <MobileSidebar />}
 
-      {/* Page title */}
-      <div className="flex items-center gap-3 min-w-0 shrink-0">
+      {/* Back arrow + Page title */}
+      <div className="flex items-center gap-2 min-w-0 shrink-0">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
         {pageTitle && (
           <div className="min-w-0">
             <h1 className="text-sm font-bold text-foreground truncate">{pageTitle}</h1>
