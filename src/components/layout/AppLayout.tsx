@@ -45,7 +45,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       )}>
         {/* Notification activation banner */}
         {bannerVisible && (
-          <div className="flex items-center justify-center gap-3 bg-primary text-primary-foreground text-sm font-medium py-2.5 px-4">
+          <div className="flex items-center justify-center gap-3 bg-red-500/80 text-white text-sm font-medium py-2.5 px-4">
             <Bell className="h-4 w-4 shrink-0" />
             <span>Ative as notificações para não perder mensagens e lembretes!</span>
             <Button
@@ -56,9 +56,6 @@ export function AppLayout({ children }: AppLayoutProps) {
             >
               Ativar agora
             </Button>
-            <button onClick={dismissBanner} className="ml-1 opacity-70 hover:opacity-100">
-              <X className="h-4 w-4" />
-            </button>
           </div>
         )}
 
