@@ -22,6 +22,8 @@ import {
   PanelLeftOpen,
   Pin,
   PinOff,
+  Settings,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useCallback, useRef } from "react";
