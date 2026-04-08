@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Send, LogOut, MessageSquare, Radio, Activity, Wifi, Loader2, Save, Copy, Check, RefreshCw } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -8,30 +7,26 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-interface WebhookField {
+interface WebhookFieldDef {
   key: string;
+  eventType: string;
   label: string;
   icon: React.ReactNode;
-  placeholder: string;
 }
 
-const webhookFields: WebhookField[] = [
-  { key: "zapi_webhook_on_send", label: "Ao enviar", icon: <Send className="h-4 w-4 text-primary" />, placeholder: "Ao enviar" },
-  { key: "zapi_webhook_chat_presence", label: "Presença do chat", icon: <Radio className="h-4 w-4 text-primary" />, placeholder: "Presença do chat" },
-  { key: "zapi_webhook_on_disconnect", label: "Ao desconectar", icon: <LogOut className="h-4 w-4 text-primary" />, placeholder: "Ao desconectar" },
-  { key: "zapi_webhook_message_status", label: "Receber status da mensagem", icon: <Activity className="h-4 w-4 text-primary" />, placeholder: "Receber status da mensagem" },
-  { key: "zapi_webhook_on_receive", label: "Ao receber", icon: <MessageSquare className="h-4 w-4 text-primary" />, placeholder: "Ao receber" },
-  { key: "zapi_webhook_on_connect", label: "Ao conectar", icon: <Wifi className="h-4 w-4 text-primary" />, placeholder: "Ao conectar" },
+const webhookFields: WebhookFieldDef[] = [
+  { key: "zapi_webhook_on_send", eventType: "on-send", label: "Ao enviar", icon: <Send className="h-4 w-4 text-primary" /> },
+  { key: "zapi_webhook_chat_presence", eventType: "chat-presence", label: "Presença do chat", icon: <Radio className="h-4 w-4 text-primary" /> },
+  { key: "zapi_webhook_on_disconnect", eventType: "on-disconnect", label: "Ao desconectar", icon: <LogOut className="h-4 w-4 text-primary" /> },
+  { key: "zapi_webhook_message_status", eventType: "message-status", label: "Receber status da mensagem", icon: <Activity className="h-4 w-4 text-primary" /> },
+  { key: "zapi_webhook_on_receive", eventType: "on-receive", label: "Ao receber", icon: <MessageSquare className="h-4 w-4 text-primary" /> },
+  { key: "zapi_webhook_on_connect", eventType: "on-connect", label: "Ao conectar", icon: <Wifi className="h-4 w-4 text-primary" /> },
 ];
 
-function isValidUrl(url: string): boolean {
-  if (!url) return true;
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
+function generateHash(): string {
+  return Array.from(crypto.getRandomValues(new Uint8Array(8)))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 function CopyButton({ value }: { value: string }) {
@@ -43,26 +38,35 @@ function CopyButton({ value }: { value: string }) {
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={handleCopy}>
+    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={handleCopy} title="Copiar URL">
       {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
     </Button>
   );
+}
+
+function buildUrl(baseUrl: string, companyId: string, eventType: string, hash: string): string {
+  return `${baseUrl}/functions/v1/zapi-webhook/${companyId}/${eventType}/${hash}`;
 }
 
 export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: string | null } = {}) {
   const { profile } = useAuth();
   const companyId = companyIdOverride ?? profile?.company_id;
 
-  const [values, setValues] = useState<Record<string, string>>({});
+  const [urls, setUrls] = useState<Record<string, string>>({});
   const [notifyMe, setNotifyMe] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [errors, setErrors] = useState<Record<string, boolean>>({});
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const tenantWebhookUrl = supabaseUrl && companyId
-    ? `${supabaseUrl}/functions/v1/zapi-webhook?tenant=${companyId}`
-    : "";
+
+  const initializeUrls = useCallback(() => {
+    if (!supabaseUrl || !companyId) return {};
+    const newUrls: Record<string, string> = {};
+    webhookFields.forEach((f) => {
+      newUrls[f.key] = buildUrl(supabaseUrl, companyId, f.eventType, generateHash());
+    });
+    return newUrls;
+  }, [supabaseUrl, companyId]);
 
   useEffect(() => {
     if (!companyId) return;
@@ -74,37 +78,56 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
         .single();
       if (data) {
         const vals: Record<string, string> = {};
-        webhookFields.forEach(f => { vals[f.key] = (data as any)[f.key] || ""; });
-        setValues(vals);
+        let hasAnyUrl = false;
+        webhookFields.forEach((f) => {
+          const stored = (data as any)[f.key];
+          if (stored) {
+            vals[f.key] = stored;
+            hasAnyUrl = true;
+          }
+        });
+        if (hasAnyUrl) {
+          // Fill missing ones
+          webhookFields.forEach((f) => {
+            if (!vals[f.key] && supabaseUrl) {
+              vals[f.key] = buildUrl(supabaseUrl, companyId, f.eventType, generateHash());
+            }
+          });
+          setUrls(vals);
+        } else {
+          setUrls(initializeUrls());
+        }
         setNotifyMe((data as any).zapi_webhook_notify_me || false);
+      } else {
+        setUrls(initializeUrls());
       }
       setLoading(false);
     })();
-  }, [companyId]);
+  }, [companyId, supabaseUrl, initializeUrls]);
 
-  const handleChange = (key: string, value: string) => {
-    setValues(prev => ({ ...prev, [key]: value }));
-    if (value && !isValidUrl(value)) {
-      setErrors(prev => ({ ...prev, [key]: true }));
-    } else {
-      setErrors(prev => ({ ...prev, [key]: false }));
-    }
+  const refreshUrl = (key: string) => {
+    const field = webhookFields.find((f) => f.key === key);
+    if (!field || !supabaseUrl || !companyId) return;
+    setUrls((prev) => ({
+      ...prev,
+      [key]: buildUrl(supabaseUrl, companyId, field.eventType, generateHash()),
+    }));
+    toast.success("URL atualizada!");
+  };
+
+  const refreshAllUrls = () => {
+    setUrls(initializeUrls());
+    toast.success("Todas as URLs foram atualizadas!");
   };
 
   const handleSave = async () => {
-    const hasErrors = Object.entries(values).some(([key, val]) => val && !isValidUrl(val));
-    if (hasErrors) {
-      toast.error("Corrija as URLs inválidas antes de salvar.");
-      return;
-    }
     if (!companyId) return;
-
     setSaving(true);
     try {
       const { error } = await supabase
         .from("companies")
         .update({
-          ...values,
+          ...urls,
           zapi_webhook_notify_me: notifyMe,
         } as any)
         .eq("id", companyId);
@@ -117,12 +140,12 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
             action: "update-webhooks",
             company_id: companyId,
             webhooks: {
-              onSend: values.zapi_webhook_on_send || null,
-              onDisconnect: values.zapi_webhook_on_disconnect || null,
-              onReceive: values.zapi_webhook_on_receive || null,
-              chatPresence: values.zapi_webhook_chat_presence || null,
-              messageStatus: values.zapi_webhook_message_status || null,
-              onConnect: values.zapi_webhook_on_connect || null,
+              onSend: urls.zapi_webhook_on_send || null,
+              onDisconnect: urls.zapi_webhook_on_disconnect || null,
+              onReceive: urls.zapi_webhook_on_receive || null,
+              chatPresence: urls.zapi_webhook_chat_presence || null,
+              messageStatus: urls.zapi_webhook_message_status || null,
+              onConnect: urls.zapi_webhook_on_connect || null,
               notifyMe,
             },
           },
@@ -148,82 +171,49 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
   }
 
   return (
-    <div className="space-y-8">
-      {/* Integration URLs section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-primary mb-1">URLs de Integração Z-API</h3>
-            <p className="text-sm text-muted-foreground">
-              URLs exclusivas deste tenant. Cole no painel da Z-API para receber os eventos.
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 shrink-0"
-            onClick={() => {
-              toast.success("URLs atualizadas para este tenant!");
-            }}
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-            Atualizar URLs
-          </Button>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-xs font-semibold uppercase tracking-widest text-primary mb-1">
+            Webhooks Z-API — URLs por Tenant
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Cada URL é exclusiva deste tenant. Cole no painel da Z-API.
+          </p>
         </div>
-
-        <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
-          {[
-            { label: "Webhook URL (principal)", url: tenantWebhookUrl },
-            { label: "Ao receber mensagem", url: tenantWebhookUrl },
-            { label: "Ao enviar mensagem", url: tenantWebhookUrl },
-            { label: "Status da mensagem", url: tenantWebhookUrl },
-            { label: "Ao conectar", url: tenantWebhookUrl },
-            { label: "Ao desconectar", url: tenantWebhookUrl },
-            { label: "Presença do chat", url: tenantWebhookUrl },
-          ].map((item, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <Label className="text-xs text-muted-foreground w-44 shrink-0">{item.label}</Label>
-              <div className="flex-1 flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2">
-                <code className="text-xs text-foreground truncate flex-1">{item.url}</code>
-                <CopyButton value={item.url} />
-              </div>
-            </div>
-          ))}
-        </div>
+        <Button variant="outline" size="sm" className="gap-2 shrink-0" onClick={refreshAllUrls}>
+          <RefreshCw className="h-3.5 w-3.5" />
+          Atualizar Todas
+        </Button>
       </div>
 
-      {/* Custom webhook overrides */}
-      <div>
-        <h3 className="text-xs font-semibold uppercase tracking-widest text-primary mb-1">Configure Webhooks</h3>
-        <p className="text-sm text-muted-foreground">
-          Opcionalmente, defina URLs personalizadas para encaminhar eventos para outros sistemas.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Webhook fields grid - 2 columns like the image */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {webhookFields.map((field) => (
           <div key={field.key} className="space-y-2">
             <Label className="text-sm font-semibold text-foreground">{field.label}</Label>
-            <div className="relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                {field.icon}
-              </div>
-              <Input
-                value={values[field.key] || ""}
-                onChange={(e) => handleChange(field.key, e.target.value)}
-                placeholder={field.placeholder}
-                className={`pl-10 bg-muted/30 border-border text-foreground placeholder:text-muted-foreground ${
-                  errors[field.key] ? "border-destructive focus-visible:ring-destructive" : ""
-                }`}
-              />
+            <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+              <div className="shrink-0">{field.icon}</div>
+              <code className="text-xs text-foreground truncate flex-1 ml-2">
+                {urls[field.key] || field.label}
+              </code>
+              <CopyButton value={urls[field.key] || ""} />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={() => refreshUrl(field.key)}
+                title="Gerar nova URL"
+              >
+                <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+              </Button>
             </div>
-            {errors[field.key] && (
-              <p className="text-xs text-destructive">URL inválida</p>
-            )}
           </div>
         ))}
       </div>
 
+      {/* Toggle */}
       <div className="flex items-center gap-3 pt-2">
         <Switch checked={notifyMe} onCheckedChange={setNotifyMe} />
         <Label className="text-sm text-foreground cursor-pointer" onClick={() => setNotifyMe(!notifyMe)}>
@@ -231,6 +221,7 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
         </Label>
       </div>
 
+      {/* Save button */}
       <Button onClick={handleSave} disabled={saving} className="gap-2">
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
         Salvar Configurações
