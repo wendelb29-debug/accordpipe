@@ -134,6 +134,8 @@ function applyBrandColors(brand: {
     root.style.setProperty("--sidebar-accent", DEFAULTS.sidebarAccent);
     root.style.setProperty("--sidebar-border", DEFAULTS.sidebarBorder);
     root.style.setProperty("--sidebar-ring", DEFAULTS.sidebarPrimary);
+    root.style.setProperty("--gradient-accord-btn", "linear-gradient(135deg, #2563EB, #7A3FF2)");
+    root.style.setProperty("--gradient-primary", "linear-gradient(135deg, #0F1C3F 0%, #3B3F9C 35%, #7A3FF2 70%, #D94FD5 100%)");
     return;
   }
 
@@ -154,6 +156,15 @@ function applyBrandColors(brand: {
     root.style.setProperty("--sidebar-accent", sidebarAccent);
     root.style.setProperty("--sidebar-border", sidebarBorder);
     root.style.setProperty("--sidebar-foreground", DEFAULTS.sidebarForeground);
+
+    // Dynamic button gradients from brand colors
+    const glowHsl = accentHsl || secondaryHsl || lightenHsl(primaryHsl, 15);
+    const primaryCss = `hsl(${primaryHsl})`;
+    const glowCss = `hsl(${glowHsl})`;
+    const darkPrimaryCss = `hsl(${darkenHsl(primaryHsl, 20)})`;
+
+    root.style.setProperty("--gradient-accord-btn", `linear-gradient(135deg, ${primaryCss}, ${glowCss})`);
+    root.style.setProperty("--gradient-primary", `linear-gradient(135deg, ${darkPrimaryCss} 0%, ${primaryCss} 45%, ${glowCss} 100%)`);
   }
 
   if (accentHsl) {
