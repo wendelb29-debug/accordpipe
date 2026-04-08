@@ -274,14 +274,35 @@ export function Sidebar() {
       <div className={cn("shrink-0 border-t border-sidebar-border/40", collapsed ? "px-2 py-3" : "px-3 py-3")}>
         {filteredConfigNavigation.length > 0 && (
           <div className="space-y-0.5 mb-4">
-            {!collapsed && (
-              <p className="px-3 pb-3 text-[9px] font-bold uppercase tracking-[0.2em] text-sidebar-foreground/15 transition-opacity duration-300">
-                Config
-              </p>
+            {collapsed ? (
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setConfigOpen(!configOpen)}
+                    className="flex justify-center w-full p-2 rounded-lg text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Configurações</TooltipContent>
+              </Tooltip>
+            ) : (
+              <button
+                onClick={() => setConfigOpen(!configOpen)}
+                className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors text-xs font-semibold"
+              >
+                <Settings className="h-4 w-4" />
+                <span className="flex-1 text-left">Configurações</span>
+                <ChevronDown className={cn("h-3 w-3 transition-transform", configOpen && "rotate-180")} />
+              </button>
             )}
-            {filteredConfigNavigation.map((item) => (
-              <NavItem key={item.name} item={item} isActive={location.pathname === item.href} />
-            ))}
+            {configOpen && (
+              <div className="space-y-0.5 pl-1">
+                {filteredConfigNavigation.map((item) => (
+                  <NavItem key={item.name} item={item} isActive={location.pathname === item.href} />
+                ))}
+              </div>
+            )}
           </div>
         )}
 
