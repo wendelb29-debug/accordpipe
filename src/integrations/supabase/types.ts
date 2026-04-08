@@ -2731,6 +2731,7 @@ export type Database = {
           status: string
         }[]
       }
+      get_profile_company_id: { Args: { _user_id: string }; Returns: string }
       get_today_birthdays: {
         Args: { _company_id?: string }
         Returns: {
