@@ -324,7 +324,7 @@ export default function ServidoresTab() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Servidores (Empresas)</h2>
+          <h2 className="text-lg font-semibold text-foreground">Tenants</h2>
           <p className="text-sm text-muted-foreground">Ambientes independentes vinculados por CNPJ</p>
         </div>
         {isMaster && (
@@ -355,7 +355,7 @@ export default function ServidoresTab() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{companies.length}</p>
-              <p className="text-xs text-muted-foreground">Total de Servidores</p>
+              <p className="text-xs text-muted-foreground">Total de Tenants</p>
             </div>
           </div>
         </div>
@@ -388,7 +388,7 @@ export default function ServidoresTab() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Servidor</TableHead>
+              <TableHead>Tenant</TableHead>
               <TableHead>CNPJ</TableHead>
               <TableHead>Responsável</TableHead>
               <TableHead>Usuários</TableHead>
@@ -400,7 +400,7 @@ export default function ServidoresTab() {
             {filteredCompanies.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                  Nenhum servidor encontrado.
+                  Nenhum tenant encontrado.
                 </TableCell>
               </TableRow>
             ) : (
@@ -471,11 +471,11 @@ export default function ServidoresTab() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>{editingCompany ? "Editar Servidor" : "Novo Servidor"}</DialogTitle>
+            <DialogTitle>{editingCompany ? "Editar Tenant" : "Novo Tenant"}</DialogTitle>
             <DialogDescription>
               {editingCompany
-                ? "Atualize os dados do servidor/empresa."
-                : "Cadastre uma nova empresa como ambiente independente."}
+                ? "Atualize os dados do tenant."
+                : "Cadastre um novo tenant como ambiente independente."}
             </DialogDescription>
           </DialogHeader>
 
@@ -649,7 +649,7 @@ export default function ServidoresTab() {
           <DialogFooter className="border-t border-border pt-4">
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>Cancelar</Button>
             <Button onClick={handleSave} disabled={isSubmitting}>
-              {isSubmitting ? "Salvando..." : editingCompany ? "Salvar" : "Criar Servidor"}
+              {isSubmitting ? "Salvando..." : editingCompany ? "Salvar" : "Criar Tenant"}
             </Button>
           </DialogFooter>
         </DialogContent>
