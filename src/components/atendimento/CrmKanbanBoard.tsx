@@ -314,8 +314,8 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   }, [isAdminOrMaster, companyId, profile?.user_id, profile?.is_master]);
 
   const copyFormLink = async () => {
-    let companyId = profile?.company_id;
-    if (!companyId) {
+    let cId = companyId;
+    if (!cId) {
       const { data } = await supabase
         .from("companies")
         .select("id")
@@ -323,13 +323,13 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
         .in("status", ["active", "teste"])
         .limit(1)
         .maybeSingle();
-      companyId = data?.id || null;
+      cId = data?.id || null;
     }
-    if (!companyId) {
+    if (!cId) {
       toast.error("Nenhuma empresa encontrada");
       return;
     }
-    const url = `${window.location.origin}/captura/${companyId}`;
+    const url = `${window.location.origin}/captura/${cId}`;
     navigator.clipboard.writeText(url);
     setLinkCopied(true);
     toast.success("Link do formulário copiado!");
