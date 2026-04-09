@@ -165,6 +165,8 @@ export default function NovoServidor() {
   const [searchParams] = useSearchParams();
   const editId = searchParams.get("id");
   const { toast } = useToast();
+  // Pre-generate ID for new tenants so child components can use it
+  const [pendingNewId] = useState(() => editId ? null : crypto.randomUUID());
   const { isMaster } = useAuth();
 
   const [activeTab, setActiveTab] = useState("cadastro");
@@ -300,8 +302,8 @@ export default function NovoServidor() {
         if (error) throw error;
         toast({ title: "Tenant atualizado", description: "Os dados foram salvos." });
       } else {
-        // Include webhook URLs when creating a new tenant
-        const newId = crypto.randomUUID();
+        // Use the pre-generated ID
+        const newId = pendingNewId!;
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
         const generateHash = () => Array.from(crypto.getRandomValues(new Uint8Array(8))).map((b) => b.toString(16).padStart(2, "0")).join("");
         
@@ -321,7 +323,7 @@ export default function NovoServidor() {
           webhookPayload.zapi_webhook_notify_me = webhookNotifyMe;
         }
 
-        const { error } = await supabase.from("companies").insert({ id: newId, ...payload, ...webhookPayload });
+        const { error } = await supabase.from("companies").upsert({ id: newId, ...payload, ...webhookPayload }, { onConflict: "id" });
         if (error) throw error;
         toast({ title: "Tenant criado", description: "O novo tenant foi criado com sucesso." });
       }
@@ -530,7 +532,7 @@ export default function NovoServidor() {
           {activeTab === "contrato" && (
             <Card>
               <CardContent className="pt-6">
-                <ContractTemplateTab companyId={editId || null} />
+                <ContractTemplateTab companyId={editId || pendingNewId} />
               </CardContent>
             </Card>
           )}

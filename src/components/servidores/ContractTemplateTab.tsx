@@ -113,6 +113,25 @@ export function ContractTemplateTab({ companyId }: Props) {
     load();
   }, [companyId]);
 
+  // Ensure company row exists (for new tenants that haven't been saved yet)
+  const ensureCompanyExists = async () => {
+    if (!companyId) return false;
+    const { data } = await supabase.from("companies").select("id").eq("id", companyId).maybeSingle();
+    if (!data) {
+      // Create a minimal placeholder row so FK constraints pass
+      const { error } = await supabase.from("companies").insert({
+        id: companyId,
+        cnpj: "00000000000000",
+        razao_social: "Novo Tenant (pendente)",
+      } as any);
+      if (error) {
+        console.error("Failed to create placeholder company:", error);
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !companyId) return;
@@ -123,6 +142,10 @@ export function ContractTemplateTab({ companyId }: Props) {
 
     setUploading(true);
     try {
+      // Ensure company exists for FK constraint
+      const ok = await ensureCompanyExists();
+      if (!ok) throw new Error("Não foi possível preparar o tenant");
+
       const sanitizedName = file.name
         .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-zA-Z0-9._-]/g, "_")
@@ -267,14 +290,7 @@ export function ContractTemplateTab({ companyId }: Props) {
     );
   }
 
-  if (!companyId) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-3 h-40 text-center">
-        <AlertCircle className="h-8 w-8 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Salve o servidor primeiro para configurar o contrato padrão.</p>
-      </div>
-    );
-  }
+  // No longer blocking when companyId is null — it should always be provided now
 
   // Upload step
   if (!pdfUrl) {
