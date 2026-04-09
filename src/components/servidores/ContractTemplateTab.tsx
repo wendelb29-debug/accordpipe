@@ -76,10 +76,12 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
   const [templateName, setTemplateName] = useState("Contrato Padrão");
   const [contractContent, setContractContent] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [copiedTag, setCopiedTag] = useState<string | null>(null);
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
 
   // Builder state
   const [fields, setFields] = useState<TemplateField[]>([]);
