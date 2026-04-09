@@ -100,8 +100,11 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
     }
   });
 
-  // Order groups by position
-  const orderedGroups = groups.filter((g) => groupedByGroup[g.id]?.length > 0 || filterGroup === "all");
+  // Order groups by position, filter by selected group
+  const orderedGroups = groups.filter((g) => {
+    if (filterGroup !== "all" && g.id !== filterGroup) return false;
+    return (groupedByGroup[g.id]?.length ?? 0) > 0;
+  });
 
   return (
     <div className="flex flex-col h-full">
