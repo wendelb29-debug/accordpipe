@@ -29,6 +29,87 @@ import { addAnnexPage } from "@/lib/generateContractAnnex";
 import type { AnnexData, AnnexLineItem } from "@/lib/generateContractAnnex";
 import type { CrmLead } from "@/hooks/useCrmLeads";
 
+const ACCEPTED_STATUSES = new Set(["aceita", "accepted", "aprovada", "approved"]);
+
+function activityToProposal(activity: any) {
+  if (!activity) return null;
+  const meta = activity.metadata || {};
+  return {
+    id: activity.id,
+    titulo: (activity.title || "").replace(/^Proposta:\s*/i, ""),
+    descricao: meta.introduction || meta.description || "",
+    valor: meta.value_mrr || meta.value_ps || 0,
+    created_by_user_id: activity.created_by_user_id,
+    proposal_items: (meta.line_items || []).map((item: any) => ({
+      nome: item.name || "",
+      descricao: item.description || item.descricao || "",
+      quantidade: Number(item.quantity) || 1,
+      valor: Number(item.total ?? item.unitValue) || 0,
+    })),
+    installments: meta.installments || [],
+    payment_frequency: meta.payment_frequency || "",
+    number_of_installments: meta.number_of_installments || 1,
+    sigla: meta.sigla || "",
+    first_payment_date: meta.first_payment_date || "",
+    payment_method: meta.payment_method || "",
+  };
+}
+
+function buildRenderedContractContent(templateContent: string, lead: CrmLead, tenant?: any, proposal?: any, vendor?: any, registration?: any, contractCode?: string) {
+  const fmtCurrency = (v: number) => v != null ? v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "";
+
+  let servicosContratados = "";
+  let valorTotal = "";
+  let nomeItem = proposal?.titulo || "";
+  let descricaoItem = proposal?.descricao || "";
+
+  if (proposal?.proposal_items?.length) {
+    servicosContratados = proposal.proposal_items
+      .map((item: any) => {
+        const parts = [`Serviço: ${item.nome || ""}`];
+        if (item.descricao) parts.push(`Descrição: ${item.descricao}`);
+        if ((item.quantidade || 1) > 1) parts.push(`Quantidade: ${item.quantidade}`);
+        if (item.valor) parts.push(`Valor Total: ${fmtCurrency(Number(item.valor) || 0)}`);
+        return parts.join("\n");
+      })
+      .join("\n\n");
+
+    const total = proposal.proposal_items.reduce((sum: number, item: any) => sum + (Number(item.valor) || 0), 0);
+    valorTotal = total > 0 ? fmtCurrency(total) : "";
+
+    if (proposal.proposal_items.length === 1) {
+      nomeItem = nomeItem || proposal.proposal_items[0]?.nome || "";
+      descricaoItem = descricaoItem || proposal.proposal_items[0]?.descricao || "";
+    }
+  }
+
+  const vars: Record<string, string> = {
+    "{{Codigo_Contrato}}": contractCode || "",
+    "{{nome_completo}}": registration?.nome_completo || lead.contact_name || lead.company_name || "",
+    "{{documento_contratante}}": registration?.cpf || lead.documento || "",
+    "{{razao_social}}": lead.company_name || "",
+    "{{email}}": lead.email || registration?.email || "",
+    "{{telefone}}": lead.phone || "",
+    "{{tenant_nome}}": tenant?.nome_fantasia || tenant?.razao_social || "",
+    "{{tenant_cnpj}}": tenant?.cnpj || "",
+    "{{tenant_endereco}}": [tenant?.endereco, tenant?.numero].filter(Boolean).join(", "),
+    "{{tenant_cidade}}": tenant?.cidade || "",
+    "{{tenant_estado}}": tenant?.estado || "",
+    "{{servicos_contratados}}": servicosContratados,
+    "{{valor_total}}": valorTotal,
+    "{{nome_item}}": nomeItem,
+    "{{descricao_item}}": descricaoItem,
+    "{{nome_vendedor}}": vendor?.name || "",
+    "{{email_vendedor}}": vendor?.email || "",
+  };
+
+  let rendered = templateContent || "";
+  Object.entries(vars).forEach(([key, value]) => {
+    rendered = rendered.replace(new RegExp(key.replace(/[{}]/g, "\\$&"), "g"), value || "");
+  });
+  return rendered;
+}
+
 interface LeadDocsTabProps {
   lead: CrmLead;
 }
@@ -181,98 +262,104 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
     try {
       const docName = template.name;
 
-      // Generate hash and validation code
       const hashData = `${lead.id}-${template.id}-${Date.now()}`;
       const encoded = new TextEncoder().encode(hashData);
       const digest = await crypto.subtle.digest("SHA-256", encoded);
       const documentHash = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, "0")).join("");
       const validationCode = documentHash.substring(0, 12).toUpperCase();
 
-      // Fetch approved proposal for this lead to build annex
-      let finalPdfUrl = template.pdf_url;
-      const { data: proposalActivities } = await supabase
-        .from("crm_lead_activities")
-        .select("*")
-        .eq("lead_id", lead.id)
-        .eq("type", "proposal")
-        .order("created_at", { ascending: false });
+      const [proposalActivitiesRes, tenantRes, registrationRes] = await Promise.all([
+        supabase
+          .from("crm_lead_activities")
+          .select("*")
+          .eq("lead_id", lead.id)
+          .eq("type", "proposal")
+          .order("created_at", { ascending: false }),
+        supabase.from("companies").select("*").eq("id", lead.servidor_id).maybeSingle(),
+        supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
+      ]);
 
-      const approvedProposal = (proposalActivities || []).find(
-        (p: any) => (p.metadata as any)?.status === "aceita"
-      );
+      const activities = proposalActivitiesRes.data || [];
+      const selectedActivity = activities.find(
+        (p: any) => ACCEPTED_STATUSES.has(String((p.metadata as any)?.status || "").toLowerCase())
+      ) || activities[0] || null;
 
-      // If there's an approved proposal with items, generate PDF with annex
-      if (approvedProposal && template.contract_content) {
-        const meta = (approvedProposal as any).metadata || {};
-        const lineItems: any[] = meta.line_items || [];
-        const installments: any[] = meta.installments || [];
+      const proposal = activityToProposal(selectedActivity);
+      const tenant = tenantRes.data;
+      const registration = registrationRes.data;
 
-        if (lineItems.length > 0) {
-          const annexItems: AnnexLineItem[] = lineItems.map((item: any) => ({
-            name: item.name || "---",
-            unitValue: Number(item.unitValue) || 0,
-            quantity: Number(item.quantity) || 1,
-            discountType: item.discountType === "fixed" ? "fixed" : "percent",
-            discountValue: Number(item.discountValue) || 0,
-            total: Number(item.total) || 0,
-          }));
-
-          const freqMap: Record<string, string> = {
-            mensal: "mensal",
-            trimestral: "trimestral",
-            semestral: "semestral",
-            anual: "anual",
-            unica: "avista",
-          };
-
-          const payMethodMap: Record<string, string> = {
-            Boleto: "boleto",
-            boleto: "boleto",
-            PIX: "pix",
-            pix: "pix",
-            Cartao: "cartao",
-            cartao: "cartao",
-            Transferencia: "transferencia",
-            transferencia: "transferencia",
-          };
-
-          // Determine payment method from first installment
-          const firstInstallment = installments[0];
-          const payMethod = firstInstallment?.paymentMethod || meta.payment_method || "";
-
-          const annexData: AnnexData = {
-            clientName: lead.contact_name || lead.company_name || "---",
-            clientCnpj: lead.documento || "",
-            items: annexItems,
-            paymentMethod: payMethodMap[payMethod] || payMethod || "---",
-            paymentFrequency: freqMap[meta.payment_frequency] || meta.payment_frequency || "---",
-            numberOfInstallments: Number(meta.number_of_installments) || installments.length || 1,
-            sigla: meta.sigla || "",
-            firstPaymentDate: firstInstallment?.dueDate || meta.first_payment_date || "",
-            totalContract: installments.reduce((sum: number, inst: any) => sum + (Number(inst.value) || 0), 0) || 0,
-          };
-
-          // Generate PDF with annex
-          const pdfBlob = generateContractPdf({
-            content: template.contract_content,
-            code: validationCode,
-            companyName: lead.company_name,
-            annexData,
-          });
-
-          // Upload generated PDF to storage
-          const filePath = `generated/${lead.servidor_id}/${Date.now()}_${template.name.replace(/\s+/g, "_")}.pdf`;
-          const { error: uploadErr } = await supabase.storage
-            .from("contract-pdfs")
-            .upload(filePath, pdfBlob, { contentType: "application/pdf" });
-          if (uploadErr) throw uploadErr;
-
-          const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(filePath);
-          finalPdfUrl = urlData.publicUrl;
-        }
+      let vendor: any = null;
+      if (proposal?.created_by_user_id) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("name, email")
+          .eq("user_id", proposal.created_by_user_id)
+          .maybeSingle();
+        vendor = data;
       }
 
-      // Create contract record linked to this lead
+      let renderedContent = buildRenderedContractContent(
+        template.contract_content || "",
+        lead,
+        tenant,
+        proposal,
+        vendor,
+        registration,
+        validationCode,
+      );
+
+      console.log("HTML FINAL:", renderedContent);
+
+      let finalPdfUrl = template.pdf_url;
+      if (renderedContent) {
+        let annexData: AnnexData | undefined;
+
+        if (proposal?.proposal_items?.length) {
+          const annexItems: AnnexLineItem[] = proposal.proposal_items.map((item: any) => ({
+            name: item.nome || "---",
+            unitValue: Number(item.valor) || 0,
+            quantity: Number(item.quantidade) || 1,
+            discountType: "percent",
+            discountValue: 0,
+            total: Number(item.valor) || 0,
+          }));
+
+          const installments: any[] = proposal.installments || [];
+          const firstInstallment = installments[0];
+          const payMethod = firstInstallment?.paymentMethod || proposal.payment_method || "";
+          const freqMap: Record<string, string> = { mensal: "mensal", trimestral: "trimestral", semestral: "semestral", anual: "anual", unica: "avista" };
+          const payMethodMap: Record<string, string> = { Boleto: "boleto", boleto: "boleto", PIX: "pix", pix: "pix", Cartao: "cartao", cartao: "cartao", Transferencia: "transferencia", transferencia: "transferencia" };
+
+          annexData = {
+            clientName: registration?.nome_completo || lead.contact_name || lead.company_name || "---",
+            clientCnpj: registration?.cpf || lead.documento || "",
+            items: annexItems,
+            paymentMethod: payMethodMap[payMethod] || payMethod || "---",
+            paymentFrequency: freqMap[proposal.payment_frequency] || proposal.payment_frequency || "---",
+            numberOfInstallments: Number(proposal.number_of_installments) || installments.length || 1,
+            sigla: proposal.sigla || "",
+            firstPaymentDate: firstInstallment?.dueDate || proposal.first_payment_date || "",
+            totalContract: annexItems.reduce((sum, item) => sum + (Number(item.total) || 0), 0),
+          };
+        }
+
+        const pdfBlob = generateContractPdf({
+          content: renderedContent,
+          code: validationCode,
+          companyName: lead.company_name,
+          annexData,
+        });
+
+        const filePath = `generated/${lead.servidor_id}/${Date.now()}_${template.name.replace(/\s+/g, "_")}.pdf`;
+        const { error: uploadErr } = await supabase.storage
+          .from("contract-pdfs")
+          .upload(filePath, pdfBlob, { contentType: "application/pdf" });
+        if (uploadErr) throw uploadErr;
+
+        const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(filePath);
+        finalPdfUrl = urlData.publicUrl;
+      }
+
       const { data: contract, error } = await supabase
         .from("contracts")
         .insert({
@@ -281,10 +368,11 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
           contract_type: "new",
           signature_status: "pending",
           pdf_url: finalPdfUrl,
-          contract_content: template.contract_content || null,
+          contract_content: renderedContent || null,
           document_hash: documentHash,
           validation_code: validationCode,
-          signer_name: lead.contact_name || lead.company_name,
+          signer_name: registration?.nome_completo || lead.contact_name || lead.company_name,
+          signer_document: registration?.cpf || lead.documento || null,
           matriz_nome: docName,
         } as any)
         .select("id, code")
@@ -292,10 +380,9 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
 
       if (error) throw error;
 
-      // Replace {{Codigo_Contrato}} tag in contract_content with actual code
-      if (contract?.code && template.contract_content?.includes("{{Codigo_Contrato}}")) {
-        const updatedContent = template.contract_content.replace(/\{\{Codigo_Contrato\}\}/g, contract.code);
-        await supabase.from("contracts").update({ contract_content: updatedContent } as any).eq("id", contract.id);
+      if (contract?.code && renderedContent.includes(validationCode)) {
+        renderedContent = renderedContent.replace(new RegExp(validationCode, "g"), contract.code);
+        await supabase.from("contracts").update({ contract_content: renderedContent } as any).eq("id", contract.id);
       }
 
       toast.success(`Documento "${contract?.code} — ${template.name}" gerado com sucesso!`);
