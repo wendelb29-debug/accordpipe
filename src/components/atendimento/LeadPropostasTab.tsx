@@ -15,6 +15,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useContracts } from "@/hooks/useContracts";
 import { generateContractPdf, downloadContractPdf } from "@/lib/generateContractPdf";
+import { addAnnexPage } from "@/lib/generateContractAnnex";
+import type { AnnexLineItem } from "@/lib/generateContractAnnex";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
