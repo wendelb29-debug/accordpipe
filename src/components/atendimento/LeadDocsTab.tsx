@@ -606,29 +606,30 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
           <h3 className="text-sm font-semibold flex items-center gap-2">
             <FileText className="h-4 w-4" /> Documentos Gerados ({signedContracts.length + signedPdfContracts.length})
           </h3>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-                <Plus className="h-3.5 w-3.5" />
-                Gerar Documento
-                <ChevronDown className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[280px]">
-              {contractTemplates.length > 0 ? (
-                contractTemplates.map((tpl) => (
-                  <DropdownMenuItem key={tpl.id} onClick={() => toast.info(`Gerando documento: ${tpl.name}`)}>
+          {contractTemplates.length > 0 ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs" disabled={generatingDoc}>
+                  {generatingDoc ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+                  Gerar Documento
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[280px]">
+                {contractTemplates.map((tpl) => (
+                  <DropdownMenuItem key={tpl.id} onClick={() => handleGenerateFromTemplate(tpl)} disabled={generatingDoc}>
                     <FileSignature className="h-4 w-4 mr-2 shrink-0" />
                     <span className="truncate">{tpl.name}</span>
                   </DropdownMenuItem>
-                ))
-              ) : (
-                <DropdownMenuItem disabled>
-                  <span className="text-muted-foreground text-xs">Nenhum modelo de contrato configurado</span>
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs" disabled title="Nenhum contrato padrão configurado. Entre em contato com o administrador do servidor.">
+              <Plus className="h-3.5 w-3.5" />
+              Gerar Documento
+            </Button>
+          )}
         </div>
 
         {hasSignedContracts ? (
