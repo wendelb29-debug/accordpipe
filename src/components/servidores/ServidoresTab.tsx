@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield, Webhook,
+  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield, Webhook, Briefcase,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ContractTemplateTab } from "./ContractTemplateTab";
+import { WorkspacesTab } from "./WorkspacesTab";
 import { WebhookConfig } from "@/components/atendimento/tabs/WebhookConfig";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -567,6 +568,10 @@ export default function ServidoresTab() {
                 <Webhook className="h-4 w-4" />
                 Vendas
               </TabsTrigger>
+              <TabsTrigger value="workspaces" className="justify-start gap-2 px-3 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg" disabled={!editingCompany}>
+                <Briefcase className="h-4 w-4" />
+                Workspaces
+              </TabsTrigger>
             </TabsList>
 
             <div className="flex-1 overflow-y-auto py-2">
@@ -724,6 +729,13 @@ export default function ServidoresTab() {
 
               <TabsContent value="contrato" className="mt-0">
                 <ContractTemplateTab companyId={editingCompany?.id || null} />
+              </TabsContent>
+              <TabsContent value="workspaces" className="mt-0">
+                {editingCompany ? (
+                  <WorkspacesTab companyId={editingCompany.id} />
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">Salve o tenant primeiro para configurar workspaces.</p>
+                )}
               </TabsContent>
             </div>
           </Tabs>
