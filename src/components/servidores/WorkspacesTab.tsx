@@ -98,6 +98,20 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
   const [dragGroupId, setDragGroupId] = useState<string | null>(null);
   const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
 
+  // Move ungrouped dialog
+  const [moveUngroupedOpen, setMoveUngroupedOpen] = useState(false);
+  const [moveUngroupedTarget, setMoveUngroupedTarget] = useState("");
+  const [groups, setGroups] = useState<WorkspaceGroup[]>([]);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [columns, setColumns] = useState<Record<string, KanbanColumn[]>>({});
+  const [loading, setLoading] = useState(true);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [expandedWs, setExpandedWs] = useState<Record<string, boolean>>({});
+
+  // Group drag reorder
+  const [dragGroupId, setDragGroupId] = useState<string | null>(null);
+  const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
+
   // Group dialog
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<WorkspaceGroup | null>(null);
