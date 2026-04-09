@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Building2, Palette, FileSignature, Search, Loader2, Save, Webhook,
-  Send, LogOut, MessageSquare, Radio, Activity, Wifi, Copy, Check, RefreshCw,
+  Send, LogOut, MessageSquare, Radio, Activity, Wifi, Copy, Check, RefreshCw, LayoutGrid,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
