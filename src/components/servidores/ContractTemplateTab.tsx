@@ -76,10 +76,12 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
   const [templateName, setTemplateName] = useState("Contrato Padrão");
   const [contractContent, setContractContent] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [copiedTag, setCopiedTag] = useState<string | null>(null);
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
 
   // Builder state
   const [fields, setFields] = useState<TemplateField[]>([]);
@@ -161,6 +163,14 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
     }
 
     setUploading(true);
+    setUploadProgress(0);
+    setSelectedFileName(file.name);
+
+    // Simulate progress
+    const progressInterval = setInterval(() => {
+      setUploadProgress(prev => Math.min(prev + Math.random() * 20, 90));
+    }, 300);
+
     try {
       const ok = await ensureCompanyExists();
       if (!ok) throw new Error("Não foi possível preparar o tenant");
@@ -204,13 +214,33 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
       setPdfPath(filePath);
       setFields([]);
       setCurrentPage(1);
+      setUploadProgress(100);
       toast.success("PDF do contrato enviado com sucesso!");
     } catch (err: any) {
       toast.error("Erro ao enviar PDF: " + (err.message || ""));
+      setSelectedFileName(null);
     } finally {
+      clearInterval(progressInterval);
       setUploading(false);
+      setTimeout(() => setUploadProgress(0), 1000);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  };
+
+  const handleRemovePdf = async () => {
+    if (pdfPath) {
+      await supabase.storage.from("contract-pdfs").remove([pdfPath]);
+    }
+    if (templateId) {
+      await supabase.from("company_contract_template_fields").delete().eq("template_id", templateId);
+      await supabase.from("company_contract_templates").delete().eq("id", templateId);
+    }
+    setPdfUrl(null);
+    setPdfPath(null);
+    setTemplateId(null);
+    setSelectedFileName(null);
+    setFields([]);
+    toast.success("PDF removido");
   };
 
   const pushUndo = () => {
@@ -411,18 +441,46 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
                 <p className="text-sm font-medium text-foreground">Faça upload do PDF do contrato modelo</p>
                 <p className="text-xs text-muted-foreground mt-1">Este PDF será usado como base para todos os contratos gerados após finalizar vendas</p>
               </div>
-              <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="gap-2">
+
+              {uploading && (
+                <div className="w-full max-w-xs space-y-1">
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">{selectedFileName} — {Math.round(uploadProgress)}%</p>
+                </div>
+              )}
+
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
+              >
                 {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                 {uploading ? "Enviando..." : "Selecionar PDF"}
               </Button>
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="flex items-center gap-3 flex-wrap">
-                <Badge variant="outline" className="shrink-0">{fields.length} campo(s)</Badge>
-                <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="gap-1 text-xs">
-                  {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+              {/* Uploaded file info */}
+              <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{selectedFileName || pdfPath?.split("/").pop() || "Contrato PDF"}</p>
+                  <p className="text-xs text-muted-foreground">PDF enviado com sucesso</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="gap-1 text-xs shrink-0">
+                  {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
                   Trocar PDF
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleRemovePdf} className="gap-1 text-xs text-destructive hover:text-destructive shrink-0">
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Remover
                 </Button>
               </div>
 
