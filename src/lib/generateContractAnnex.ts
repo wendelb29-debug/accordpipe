@@ -17,6 +17,8 @@ export interface AnnexData {
   paymentFrequency: string;
   numberOfInstallments: number;
   sigla: string;
+  firstPaymentDate?: string;
+  totalContract?: number;
 }
 
 const fmtCur = (v: number) =>
