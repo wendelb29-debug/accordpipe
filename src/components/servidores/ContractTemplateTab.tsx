@@ -335,7 +335,7 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
   const getPreviewContent = () => {
     let content = contractContent;
     DYNAMIC_TAGS.forEach(t => {
-      content = content.replaceAll(t.tag, t.mock);
+      content = content.split(t.tag).join(t.mock);
     });
     return content;
   };
