@@ -179,8 +179,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
     if (generatingDoc) return;
     setGeneratingDoc(true);
     try {
-      const dateStr = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-");
-      const docName = `${template.name} — ${dateStr}`;
+      const docName = template.name;
 
       // Generate hash and validation code
       const hashData = `${lead.id}-${template.id}-${Date.now()}`;
