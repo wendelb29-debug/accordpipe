@@ -399,42 +399,106 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         return;
       }
 
-      // Generate PDF with variable substitution
-      let pdfUrl = template.arquivo_url;
-      if (template.arquivo_url) {
-        try {
-          const pdfBytes = await fetch(template.arquivo_url).then(r => r.arrayBuffer());
-          const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
-          const modifiedPdfBytes = await pdfDoc.save();
-          const blob = new Blob([modifiedPdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
-          const filePath = `generated/${servidorId}/${Date.now()}_${template.nome.replace(/\s+/g, "_")}.pdf`;
-          const { error: uploadErr } = await supabase.storage
-            .from("contract-pdfs")
-            .upload(filePath, blob, { contentType: "application/pdf" });
-
-          if (!uploadErr) {
-            const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(filePath);
-            pdfUrl = urlData.publicUrl;
-          }
-        } catch (pdfErr) {
-          console.warn("PDF processing failed, using original:", pdfErr);
-        }
-      }
-
-      // Build HTML content with variable substitution
-      let htmlContent = template.arquivo_url
-        ? `<p>Documento gerado a partir do modelo: ${template.nome}</p>`
-        : `<h1>${template.nome}</h1><p>Documento gerado automaticamente.</p>`;
-
+      // Build HTML content with variable substitution FIRST
       const contentTemplate = (template as any).content_template;
+      let htmlContent: string;
       if (contentTemplate) {
         htmlContent = contentTemplate;
         Object.entries(vars).forEach(([key, val]) => {
-          // Skip signature placeholders — keep them as-is
           const varName = key.replace(/\{\{|\}\}/g, "");
           if (SIGNATURE_VARS.has(varName)) return;
           htmlContent = htmlContent.replace(new RegExp(key.replace(/[{}]/g, "\\$&"), "g"), val);
         });
+      } else {
+        htmlContent = `<h1>${template.nome}</h1><p>Documento gerado automaticamente.</p>`;
+      }
+
+      // Generate PDF from the RENDERED content (not from template PDF)
+      let pdfUrl: string | null = null;
+      try {
+        const pdfDoc = await PDFDocument.create();
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+        const fontSize = 10;
+        const titleFontSize = 14;
+        const margin = 50;
+        const lineHeight = fontSize * 1.4;
+
+        // Strip HTML tags and decode entities for plain-text PDF rendering
+        const plainText = htmlContent
+          .replace(/<br\s*\/?>/gi, "\n")
+          .replace(/<\/p>/gi, "\n\n")
+          .replace(/<\/h[1-6]>/gi, "\n\n")
+          .replace(/<\/li>/gi, "\n")
+          .replace(/<[^>]+>/g, "")
+          .replace(/&amp;/g, "&")
+          .replace(/&lt;/g, "<")
+          .replace(/&gt;/g, ">")
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/&nbsp;/g, " ")
+          .replace(/\n{3,}/g, "\n\n");
+
+        // Word-wrap and paginate
+        const maxWidth = 595 - margin * 2; // A4 width
+        const pageHeight = 842; // A4 height
+        const contentBottom = margin;
+
+        const lines: string[] = [];
+        for (const paragraph of plainText.split("\n")) {
+          if (paragraph.trim() === "") {
+            lines.push("");
+            continue;
+          }
+          const words = paragraph.split(/\s+/);
+          let currentLine = "";
+          for (const word of words) {
+            const testLine = currentLine ? `${currentLine} ${word}` : word;
+            const testWidth = font.widthOfTextAtSize(testLine, fontSize);
+            if (testWidth > maxWidth && currentLine) {
+              lines.push(currentLine);
+              currentLine = word;
+            } else {
+              currentLine = testLine;
+            }
+          }
+          if (currentLine) lines.push(currentLine);
+        }
+
+        let page = pdfDoc.addPage([595, pageHeight]);
+        let y = pageHeight - margin;
+
+        // Title
+        const title = (docName.trim() || template.nome).substring(0, 80);
+        page.drawText(title, { x: margin, y, font: boldFont, size: titleFontSize, color: rgb(0.1, 0.1, 0.1) });
+        y -= titleFontSize * 2;
+
+        for (const line of lines) {
+          if (y < contentBottom + lineHeight) {
+            page = pdfDoc.addPage([595, pageHeight]);
+            y = pageHeight - margin;
+          }
+          if (line.trim() === "") {
+            y -= lineHeight * 0.5;
+            continue;
+          }
+          page.drawText(line, { x: margin, y, font, size: fontSize, color: rgb(0.15, 0.15, 0.15) });
+          y -= lineHeight;
+        }
+
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
+        const filePath = `generated/${servidorId}/${Date.now()}_${template.nome.replace(/\s+/g, "_")}.pdf`;
+        const { error: uploadErr } = await supabase.storage
+          .from("contract-pdfs")
+          .upload(filePath, blob, { contentType: "application/pdf" });
+
+        if (!uploadErr) {
+          const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(filePath);
+          pdfUrl = urlData.publicUrl;
+        }
+      } catch (pdfErr) {
+        console.warn("PDF generation failed:", pdfErr);
       }
 
       // Build structured snapshot
