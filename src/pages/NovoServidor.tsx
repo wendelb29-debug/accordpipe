@@ -174,10 +174,36 @@ export default function NovoServidor() {
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(!!editId);
+  const [companyPreCreated, setCompanyPreCreated] = useState(false);
 
   // Webhook state for new tenants
   const [webhookUrls, setWebhookUrls] = useState<Record<string, string>>({});
   const [webhookNotifyMe, setWebhookNotifyMe] = useState(false);
+
+  // Called by ContractTemplateTab to ensure company exists before upload
+  const handleEnsureCompany = async (): Promise<boolean> => {
+    if (editId || companyPreCreated) return true;
+    if (!formData.cnpj || !formData.razao_social) {
+      sonnerToast.error("Preencha Razão Social e CNPJ antes de configurar o contrato");
+      setActiveTab("cadastro");
+      return false;
+    }
+    try {
+      const { error } = await supabase.from("companies").insert({
+        id: pendingNewId,
+        cnpj: formData.cnpj,
+        razao_social: formData.razao_social,
+        nome_fantasia: formData.nome_fantasia || null,
+      } as any);
+      if (error) throw error;
+      setCompanyPreCreated(true);
+      return true;
+    } catch (err: any) {
+      console.error("Failed to pre-create company:", err);
+      sonnerToast.error("Erro ao preparar tenant: " + (err.message || ""));
+      return false;
+    }
+  };
 
   const [formData, setFormData] = useState({
     razao_social: "", nome_fantasia: "", cnpj: "", email: "", telefone: "",
