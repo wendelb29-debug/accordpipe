@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Paperclip, Upload, Trash2, Eye, Download, Loader2, FileText, CreditCard, MapPin, Building2, FileSignature, CheckCircle2, Shield, User, Plus, ChevronDown, FolderOpen, ImageIcon } from "lucide-react";
+import { Paperclip, Upload, Trash2, Eye, Download, Loader2, FileText, CreditCard, MapPin, Building2, FileSignature, CheckCircle2, Shield, User, Plus, ChevronDown, FolderOpen, ImageIcon, Link2, Clock, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -105,22 +105,21 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
   };
 
   const fetchSignedContracts = async () => {
-    const { data: signedContractsData } = await supabase
+    // Fetch ALL contracts for this lead (not just signed)
+    const { data: allContractsData } = await supabase
       .from("contracts")
       .select("id, code, signature_status, signed_at, validation_code, document_hash, pdf_url, pdf_assinado_url, created_at, contract_content, company_id, signer_name, signer_document, signature_photo_url")
       .eq("lead_id", lead.id)
-      .eq("signature_status", "signed");
+      .order("created_at", { ascending: false });
 
-    // Fetch signers for each signed contract (deduplicated by role)
     const contractsWithSigners: SignedContract[] = [];
-    for (const contract of (signedContractsData || [])) {
+    for (const contract of (allContractsData || [])) {
       const { data: sigs } = await supabase
         .from("contract_signatures")
         .select("signer_name, signer_role, signer_document, signed_at, signer_ip, signature_photo_url")
         .eq("contract_id", contract.id)
         .order("created_at", { ascending: true });
 
-      // Deduplicate by signer_role - keep the signed one or latest
       const roleMap = new Map<string, ContractSigner>();
       for (const s of (sigs || []) as any[]) {
         const role = s.signer_role || "signatário";
@@ -144,11 +143,12 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
     }
     setSignedContracts(contractsWithSigners);
 
+    // Fetch ALL pdf_contracts for this server (linked by lead context)
     const { data: pdfContracts } = await supabase
       .from("pdf_contracts")
       .select("id, name, status, pdf_assinado_url, pdf_url, validation_code, document_hash, created_at")
       .eq("servidor_id", lead.servidor_id)
-      .eq("status", "concluido");
+      .order("created_at", { ascending: false });
     setSignedPdfContracts((pdfContracts as SignedPdfContract[]) || []);
   };
 
@@ -164,6 +164,24 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
     fetchDocs();
     fetchSignedContracts();
     fetchContractTemplates();
+
+    // Realtime subscription for contracts
+    const channel = supabase
+      .channel(`docs-contracts-${lead.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contracts', filter: `lead_id=eq.${lead.id}` }, () => {
+        fetchSignedContracts();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contract_signatures' }, () => {
+        fetchSignedContracts();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pdf_contracts', filter: `servidor_id=eq.${lead.servidor_id}` }, () => {
+        fetchSignedContracts();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [lead.id]);
 
   const handleUpload = async (docType: string, file: File) => {
@@ -407,6 +425,58 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
   const hasSignedContracts = signedContracts.length > 0 || signedPdfContracts.length > 0;
   const allDocs = docs;
 
+  const getContractStatusBadge = (status: string) => {
+    switch (status) {
+      case "signed":
+        return <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-green-500/50 text-green-600 dark:text-green-400"><CheckCircle2 className="h-3 w-3 mr-0.5" />Assinado</Badge>;
+      case "pending":
+        return <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-yellow-500/50 text-yellow-600 dark:text-yellow-400"><Clock className="h-3 w-3 mr-0.5" />Aguardando Assinatura</Badge>;
+      case "cancelled":
+        return <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-red-500/50 text-red-600 dark:text-red-400"><XCircle className="h-3 w-3 mr-0.5" />Cancelado</Badge>;
+      default:
+        return <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-muted-foreground/50 text-muted-foreground"><Clock className="h-3 w-3 mr-0.5" />{status}</Badge>;
+    }
+  };
+
+  const getPdfContractStatusBadge = (status: string) => {
+    switch (status) {
+      case "assinado":
+      case "concluido":
+        return <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-green-500/50 text-green-600 dark:text-green-400"><CheckCircle2 className="h-3 w-3 mr-0.5" />Assinado</Badge>;
+      case "pendente":
+      case "enviado":
+        return <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-yellow-500/50 text-yellow-600 dark:text-yellow-400"><Clock className="h-3 w-3 mr-0.5" />Aguardando Assinatura</Badge>;
+      case "cancelado":
+        return <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-red-500/50 text-red-600 dark:text-red-400"><XCircle className="h-3 w-3 mr-0.5" />Cancelado</Badge>;
+      default:
+        return <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-muted-foreground/50 text-muted-foreground">{status}</Badge>;
+    }
+  };
+
+  const handleCopyLink = (contract: SignedContract) => {
+    const url = contract.validation_code
+      ? `${window.location.origin}/validar-documento/${contract.validation_code}`
+      : contract.pdf_url || "";
+    if (url) {
+      navigator.clipboard.writeText(url);
+      toast.success("Link copiado!");
+    } else {
+      toast.error("Link não disponível");
+    }
+  };
+
+  const handleCopyPdfLink = (contract: SignedPdfContract) => {
+    const url = contract.validation_code
+      ? `${window.location.origin}/validar-documento/${contract.validation_code}`
+      : contract.pdf_assinado_url || contract.pdf_url;
+    if (url) {
+      navigator.clipboard.writeText(url);
+      toast.success("Link copiado!");
+    } else {
+      toast.error("Link não disponível");
+    }
+  };
+
   return (
     <div className="space-y-6" onPaste={handlePaste}>
       {/* Documentos Gerados Section */}
@@ -444,12 +514,6 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
           <div className="space-y-2">
             {signedContracts.map((contract) => {
               const isGenerating = generatingPdf === contract.id;
-              const roleLabels: Record<string, string> = {
-                cliente: "Cliente",
-                vendedor: "Vendedor",
-                testemunha: "Testemunha",
-                diretor: "Diretor/CEO",
-              };
               return (
                 <Card key={contract.id} className="border-border/50">
                   <CardContent className="p-4">
@@ -460,15 +524,9 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-medium">{contract.code} — {lead.company_name}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            {contract.signed_at && (
-                              <span>{new Date(contract.signed_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}</span>
-                            )}
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-yellow-500/50 text-yellow-600 dark:text-yellow-400">
-                              {contract.signature_status === "signed"
-                                ? "Assinado"
-                                : `Enviado p/ Assinatura (${contract.signers.filter(s => s.signed_at).length}/${contract.signers.length})`}
-                            </Badge>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                            <span>{new Date(contract.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                            {getContractStatusBadge(contract.signature_status)}
                           </div>
                         </div>
                       </div>
@@ -478,6 +536,9 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
                         </Button>
                         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDownloadClientContract(contract)} disabled={isGenerating} title="Baixar">
                           <Download className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleCopyLink(contract)} title="Copiar Link">
+                          <Link2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </div>
@@ -498,11 +559,9 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-medium">{contract.name}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>{new Date(contract.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}</span>
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-green-500/50 text-green-600 dark:text-green-400">
-                              Concluído
-                            </Badge>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                            <span>{new Date(contract.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                            {getPdfContractStatusBadge(contract.status)}
                           </div>
                         </div>
                       </div>
@@ -512,6 +571,9 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
                         </Button>
                         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDownloadSignedPdf(pdfUrl, `${contract.name}.pdf`)} title="Baixar">
                           <Download className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleCopyPdfLink(contract)} title="Copiar Link">
+                          <Link2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </div>
