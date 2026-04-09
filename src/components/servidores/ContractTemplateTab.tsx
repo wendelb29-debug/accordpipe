@@ -47,7 +47,7 @@ interface Props {
   onEnsureCompany?: () => Promise<boolean>;
 }
 
-export function ContractTemplateTab({ companyId }: Props) {
+export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfPath, setPdfPath] = useState<string | null>(null);
