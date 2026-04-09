@@ -376,7 +376,7 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
           </Button>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {filteredGroups.map((group) => {
             const groupWs = getGroupWorkspaces(group.id);
             const isExpanded = expandedGroups[group.id] ?? true;
@@ -384,20 +384,54 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
             const TypeIcon = typeConf.icon;
 
             return (
-              <div key={group.id} className="border border-border/60 rounded-2xl bg-card/80 backdrop-blur-sm overflow-hidden transition-all duration-200">
-                {/* Group header */}
+              <div key={group.id} className="rounded-2xl overflow-hidden transition-all duration-300">
+                {/* Folder tab header */}
                 <div
-                  className="flex items-center gap-3 px-5 py-3.5 cursor-pointer select-none hover:bg-muted/30 transition-colors"
+                  className={cn(
+                    "flex items-center gap-3 px-5 py-3 cursor-pointer select-none transition-all duration-200 rounded-t-2xl border border-b-0",
+                    isExpanded
+                      ? "bg-card border-border/60"
+                      : "bg-card/60 border-border/40 rounded-b-2xl hover:bg-card/80 hover:border-border/60"
+                  )}
                   onClick={() => setExpandedGroups((p) => ({ ...p, [group.id]: !p[group.id] }))}
                 >
-                  <div className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: group.color + "18" }}>
-                    <TypeIcon className="h-4.5 w-4.5" style={{ color: group.color }} />
+                  {/* Folder icon */}
+                  <div className="relative">
+                    <div
+                      className={cn(
+                        "h-10 w-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200",
+                        isExpanded ? "shadow-lg" : "shadow-sm"
+                      )}
+                      style={{ backgroundColor: group.color + "20", boxShadow: isExpanded ? `0 4px 14px -3px ${group.color}30` : undefined }}
+                    >
+                      {isExpanded
+                        ? <FolderOpen className="h-5 w-5 transition-transform duration-200" style={{ color: group.color }} />
+                        : <Folder className="h-5 w-5 transition-transform duration-200" style={{ color: group.color }} />
+                      }
+                    </div>
+                    {/* Badge count */}
+                    <span
+                      className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full text-[9px] font-bold flex items-center justify-center text-white"
+                      style={{ backgroundColor: group.color }}
+                    >
+                      {groupWs.length}
+                    </span>
                   </div>
+
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-foreground">{group.name}</p>
-                    <span className="text-[11px] text-muted-foreground">{groupWs.length} workspace{groupWs.length !== 1 ? "s" : ""}</span>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-sm text-foreground">{group.name}</p>
+                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-border/40" style={{ color: typeConf.color, borderColor: typeConf.color + "40" }}>
+                        <TypeIcon className="h-2.5 w-2.5 mr-0.5" />
+                        {typeConf.label}
+                      </Badge>
+                    </div>
+                    <span className="text-[11px] text-muted-foreground">
+                      {groupWs.length} workspace{groupWs.length !== 1 ? "s" : ""}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+
+                  <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openGroupDialog(group)}>
                       <Pencil className="h-3 w-3" />
                     </Button>
@@ -408,24 +442,30 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
                       <Plus className="h-3 w-3" />
                     </Button>
                   </div>
-                  <div className="text-muted-foreground">
-                    {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  <div className={cn("text-muted-foreground transition-transform duration-200", isExpanded && "rotate-180")}>
+                    <ChevronDown className="h-4 w-4" />
                   </div>
                 </div>
 
-                {/* Group content */}
+                {/* Folder content area */}
                 {isExpanded && (
-                  <div className="border-t border-border/30 px-5 py-3 bg-muted/5 animate-in slide-in-from-top-1 duration-200">
+                  <div
+                    className="border border-t-0 border-border/60 rounded-b-2xl bg-muted/5 animate-in slide-in-from-top-2 duration-300"
+                    style={{ borderLeft: `3px solid ${group.color}30` }}
+                  >
                     {groupWs.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-8 text-center">
-                        <Folder className="h-6 w-6 text-muted-foreground/30 mb-2" />
-                        <p className="text-xs text-muted-foreground mb-2">Nenhum workspace nesta camada</p>
-                        <Button size="sm" variant="outline" className="gap-1 text-[11px] h-7" onClick={() => openWsDialog(undefined, group.id)}>
-                          <Plus className="h-3 w-3" /> Criar workspace
+                      <div className="flex flex-col items-center justify-center py-10 text-center">
+                        <div className="h-12 w-12 rounded-2xl bg-muted/30 flex items-center justify-center mb-3">
+                          <Folder className="h-6 w-6 text-muted-foreground/30" />
+                        </div>
+                        <p className="text-xs font-medium text-muted-foreground mb-1">Nenhum workspace nesta pasta</p>
+                        <p className="text-[10px] text-muted-foreground/60 mb-3">Crie um workspace para começar</p>
+                        <Button size="sm" variant="outline" className="gap-1.5 text-[11px] h-7 hover:border-primary/40 hover:text-primary" onClick={() => openWsDialog(undefined, group.id)}>
+                          <Plus className="h-3 w-3" /> Novo workspace nesta pasta
                         </Button>
                       </div>
                     ) : (
-                      <div className="space-y-3">
+                      <div className="p-3 space-y-2">
                         {groupWs.map((ws) => (
                           <WorkspaceGroupSection
                             key={ws.id}
@@ -441,6 +481,13 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
                             onRefresh={fetchData}
                           />
                         ))}
+                        {/* Add workspace inside folder */}
+                        <button
+                          onClick={() => openWsDialog(undefined, group.id)}
+                          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-border/40 hover:border-primary/40 hover:bg-primary/5 text-muted-foreground/50 hover:text-primary transition-all text-[11px]"
+                        >
+                          <Plus className="h-3 w-3" /> Novo workspace nesta pasta
+                        </button>
                       </div>
                     )}
                   </div>
@@ -449,32 +496,56 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
             );
           })}
 
-          {/* Ungrouped workspaces */}
+          {/* Ungrouped workspaces - special folder */}
           {ungroupedWorkspaces.length > 0 && (
-            <div className="border border-border/60 rounded-2xl bg-card/80 backdrop-blur-sm overflow-hidden">
-              <div className="px-5 py-3.5">
-                <p className="font-bold text-sm text-foreground flex items-center gap-2">
-                  <Folder className="h-4 w-4 text-muted-foreground" /> Sem Camada
-                </p>
-                <span className="text-[11px] text-muted-foreground">{ungroupedWorkspaces.length} workspace{ungroupedWorkspaces.length !== 1 ? "s" : ""}</span>
+            <div className="rounded-2xl overflow-hidden">
+              <div
+                className={cn(
+                  "flex items-center gap-3 px-5 py-3 cursor-pointer select-none transition-all duration-200 rounded-t-2xl border border-b-0",
+                  (expandedGroups["__ungrouped"] ?? true)
+                    ? "bg-card border-border/60"
+                    : "bg-card/60 border-border/40 rounded-b-2xl hover:bg-card/80"
+                )}
+                onClick={() => setExpandedGroups((p) => ({ ...p, __ungrouped: !(p.__ungrouped ?? true) }))}
+              >
+                <div className="relative">
+                  <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0 bg-muted/30">
+                    {(expandedGroups["__ungrouped"] ?? true)
+                      ? <FolderOpen className="h-5 w-5 text-muted-foreground" />
+                      : <Folder className="h-5 w-5 text-muted-foreground" />
+                    }
+                  </div>
+                  <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full text-[9px] font-bold flex items-center justify-center bg-muted-foreground/60 text-background">
+                    {ungroupedWorkspaces.length}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm text-foreground">Sem Camada</p>
+                  <span className="text-[10px] text-muted-foreground/60">Workspaces ainda não organizados em uma pasta</span>
+                </div>
+                <div className={cn("text-muted-foreground transition-transform duration-200", (expandedGroups["__ungrouped"] ?? true) && "rotate-180")}>
+                  <ChevronDown className="h-4 w-4" />
+                </div>
               </div>
-              <div className="border-t border-border/30 px-5 py-3 bg-muted/5 space-y-3">
-                {ungroupedWorkspaces.map((ws) => (
-                  <WorkspaceGroupSection
-                    key={ws.id}
-                    ws={ws}
-                    columns={columns}
-                    setColumns={setColumns}
-                    expandedWs={expandedWs}
-                    setExpandedWs={setExpandedWs}
-                    onEdit={(w) => openWsDialog(w)}
-                    onDelete={(w) => setDeleteWs(w)}
-                    onDuplicate={handleDuplicateWorkspace}
-                    onSetDefault={handleSetDefault}
-                    onRefresh={fetchData}
-                  />
-                ))}
-              </div>
+              {(expandedGroups["__ungrouped"] ?? true) && (
+                <div className="border border-t-0 border-border/60 rounded-b-2xl bg-muted/5 p-3 space-y-2 animate-in slide-in-from-top-2 duration-300" style={{ borderLeft: "3px solid hsl(var(--muted-foreground) / 0.15)" }}>
+                  {ungroupedWorkspaces.map((ws) => (
+                    <WorkspaceGroupSection
+                      key={ws.id}
+                      ws={ws}
+                      columns={columns}
+                      setColumns={setColumns}
+                      expandedWs={expandedWs}
+                      setExpandedWs={setExpandedWs}
+                      onEdit={(w) => openWsDialog(w)}
+                      onDelete={(w) => setDeleteWs(w)}
+                      onDuplicate={handleDuplicateWorkspace}
+                      onSetDefault={handleSetDefault}
+                      onRefresh={fetchData}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
