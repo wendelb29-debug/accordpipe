@@ -186,11 +186,8 @@ export function buildAuditReport(
 
   // Missing essential variables
   const foundNames = new Set(found.keys());
-  const missingEssential = Object.entries(OFFICIAL_VARIABLES)
-    .filter(([, d]) => d.essential && !foundNames.has(_))
-    .map(([name]) => name);
   // Fix: correct filter
-  const missingEssentialFixed = Object.entries(OFFICIAL_VARIABLES)
+  const missingEssentialCalc = Object.entries(OFFICIAL_VARIABLES)
     .filter(([name, d]) => d.essential && !foundNames.has(name))
     .map(([name]) => name);
 
