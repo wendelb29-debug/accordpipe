@@ -3,6 +3,12 @@ import { Paperclip, Upload, Trash2, Eye, Download, Loader2, FileText, CreditCard
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -81,6 +87,8 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
   const [signedPdfContracts, setSignedPdfContracts] = useState<SignedPdfContract[]>([]);
   const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
 
+  const [contractTemplates, setContractTemplates] = useState<{ id: string; name: string }[]>([]);
+
   const fetchDocs = async () => {
     setLoading(true);
     const { data, error } = await (supabase as any)
@@ -144,9 +152,18 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
     setSignedPdfContracts((pdfContracts as SignedPdfContract[]) || []);
   };
 
+  const fetchContractTemplates = async () => {
+    const { data } = await supabase
+      .from("company_contract_templates")
+      .select("id, name")
+      .eq("company_id", lead.servidor_id);
+    setContractTemplates((data as any[]) || []);
+  };
+
   useEffect(() => {
     fetchDocs();
     fetchSignedContracts();
+    fetchContractTemplates();
   }, [lead.id]);
 
   const handleUpload = async (docType: string, file: File) => {
@@ -398,11 +415,29 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
           <h3 className="text-sm font-semibold flex items-center gap-2">
             <FileText className="h-4 w-4" /> Documentos Gerados ({signedContracts.length + signedPdfContracts.length})
           </h3>
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-            <Plus className="h-3.5 w-3.5" />
-            Gerar Documento
-            <ChevronDown className="h-3 w-3" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                <Plus className="h-3.5 w-3.5" />
+                Gerar Documento
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[280px]">
+              {contractTemplates.length > 0 ? (
+                contractTemplates.map((tpl) => (
+                  <DropdownMenuItem key={tpl.id} onClick={() => toast.info(`Gerando documento: ${tpl.name}`)}>
+                    <FileSignature className="h-4 w-4 mr-2 shrink-0" />
+                    <span className="truncate">{tpl.name}</span>
+                  </DropdownMenuItem>
+                ))
+              ) : (
+                <DropdownMenuItem disabled>
+                  <span className="text-muted-foreground text-xs">Nenhum modelo de contrato configurado</span>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {hasSignedContracts ? (
