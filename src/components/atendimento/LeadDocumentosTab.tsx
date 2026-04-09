@@ -661,21 +661,38 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
               <Label className="text-xs">Nome do documento (opcional)</Label>
               <Input value={docName} onChange={(e) => setDocName(e.target.value)} placeholder="Deixe vazio para usar o nome do modelo" />
             </div>
-            {selectedTemplate && (
-              <div className="rounded-lg border bg-muted/30 p-3">
-                <p className="text-xs font-medium text-muted-foreground mb-2">Variáveis preenchidas:</p>
-                <div className="grid grid-cols-2 gap-1 text-[11px]">
-                  {Object.entries(buildVariableMap(lead)).map(([key, val]) =>
-                    val ? (
+            {selectedTemplate && (() => {
+              const tpl = templates.find(t => t.id === selectedTemplate);
+              const tplPlaceholders = (tpl as any)?.placeholders_json as string[] | null;
+              const vars = buildVariableMap(lead);
+              const relevantVars = tplPlaceholders && tplPlaceholders.length > 0
+                ? Object.entries(vars).filter(([key]) => tplPlaceholders.includes(key.replace(/\{\{|\}\}/g, "")))
+                : Object.entries(vars);
+              return (
+                <div className="rounded-lg border bg-muted/30 p-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">
+                    Variáveis do modelo ({relevantVars.length}):
+                  </p>
+                  <div className="grid grid-cols-2 gap-1 text-[11px]">
+                    {relevantVars.map(([key, val]) => (
                       <div key={key} className="flex items-center gap-1 text-muted-foreground">
-                        <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" />
+                        {val ? (
+                          <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" />
+                        ) : (
+                          <AlertCircle className="h-3 w-3 text-amber-500 shrink-0" />
+                        )}
                         <span className="truncate">{key.replace(/\{\{|\}\}/g, "")}</span>
                       </div>
-                    ) : null
-                  ).filter(Boolean).slice(0, 10)}
+                    )).slice(0, 16)}
+                  </div>
+                  {relevantVars.filter(([, v]) => !v).length > 0 && (
+                    <p className="text-[10px] text-amber-600 mt-2">
+                      Variáveis sem valor serão preenchidas durante a assinatura ou deixadas em branco
+                    </p>
+                  )}
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setGenerateOpen(false)}>Cancelar</Button>
