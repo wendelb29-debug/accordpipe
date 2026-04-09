@@ -42,6 +42,7 @@ import ValidarDocumento from "./pages/ValidarDocumento";
 import Servidores from "./pages/Servidores";
 import NovoServidor from "./pages/NovoServidor";
 import AceitarConvite from "./pages/AceitarConvite";
+import AssinarDocumento from "./pages/AssinarDocumento";
 
 const queryClient = new QueryClient();
 
