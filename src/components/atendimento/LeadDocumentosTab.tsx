@@ -240,7 +240,7 @@ function buildVariableMap(
     "{{servicos_contratados}}": servicosContratados,
     "{{nome_vendedor}}": vendor?.name || "",
     "{{email_vendedor}}": vendor?.email || "",
-    "{{telefone_vendedor}}": vendor?.phone || "",
+    "{{telefone_vendedor}}": vendor?.whatsapp || "",
     "{{data_nascimento_vendedor}}": vendor?.birth_date || "",
     "{{data_assinatura_cliente}}": "",
     "{{hora_assinatura_cliente}}": "",
