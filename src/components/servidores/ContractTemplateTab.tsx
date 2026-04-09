@@ -114,23 +114,17 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
     load();
   }, [companyId]);
 
-  // Ensure company row exists (for new tenants that haven't been saved yet)
+  // Ensure company row exists before uploading (delegates to parent for new tenants)
   const ensureCompanyExists = async () => {
     if (!companyId) return false;
+    // Check if already exists
     const { data } = await supabase.from("companies").select("id").eq("id", companyId).maybeSingle();
-    if (!data) {
-      // Create a minimal placeholder row so FK constraints pass
-      const { error } = await supabase.from("companies").insert({
-        id: companyId,
-        cnpj: "00000000000000",
-        razao_social: "Novo Tenant (pendente)",
-      } as any);
-      if (error) {
-        console.error("Failed to create placeholder company:", error);
-        return false;
-      }
+    if (data) return true;
+    // Ask parent to create the company first
+    if (onEnsureCompany) {
+      return await onEnsureCompany();
     }
-    return true;
+    return false;
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
