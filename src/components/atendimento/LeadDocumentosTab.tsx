@@ -114,6 +114,13 @@ interface Props {
   addActivity?: (data: any) => Promise<any>;
 }
 
+const SIGNATURE_VARS = new Set([
+  "data_assinatura_cliente", "hora_assinatura_cliente", "geolocalizacao_cliente", "selfie_cliente",
+  "data_assinatura_vendedor", "hora_assinatura_vendedor", "geolocalizacao_vendedor", "selfie_vendedor",
+]);
+
+const CRITICAL_VARS = ["nome_completo", "documento_contratante", "tenant_nome", "tenant_cnpj"];
+
 function buildVariableMap(
   lead: CrmLead,
   tenant?: any,
@@ -125,7 +132,6 @@ function buildVariableMap(
   const fmtCurrency = (v: number) =>
     v != null ? v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "";
 
-  // Build services list from proposal items if available
   let servicosContratados = "";
   let nomeItem = "";
   let descricaoItem = "";
@@ -136,7 +142,7 @@ function buildVariableMap(
     nomeItem = proposal.titulo || "";
     descricaoItem = proposal.descricao || "";
     valorProposta = proposal.valor != null ? fmtCurrency(proposal.valor) : "";
-    valorTotal = valorProposta; // same source
+    valorTotal = valorProposta;
 
     if (proposal.proposal_items && Array.isArray(proposal.proposal_items) && proposal.proposal_items.length > 0) {
       servicosContratados = proposal.proposal_items
@@ -154,14 +160,12 @@ function buildVariableMap(
         .filter(Boolean)
         .join("\n\n");
 
-      // If only 1 item, use it as nome_item/descricao_item too
       if (proposal.proposal_items.length === 1) {
         const firstItem = proposal.proposal_items[0];
         nomeItem = nomeItem || firstItem.nome || firstItem.name || "";
         descricaoItem = descricaoItem || firstItem.descricao || "";
       }
 
-      // Compute total from items
       const itemsTotal = proposal.proposal_items.reduce(
         (sum: number, it: any) => sum + (Number(it.valor) || 0), 0
       );
@@ -171,16 +175,12 @@ function buildVariableMap(
     }
   }
 
-  // Determine documento_contratante — prefer CPF from registration, then lead.documento
   const cpfValue = registration?.cpf || lead.documento || "";
   const cnpjValue = lead.documento || "";
   const documentoContratante = cpfValue || cnpjValue;
-
-  // Data nascimento from registration if available
   const dataNascimento = registration?.data_nascimento || "";
 
   return {
-    // Lead / Client
     "{{nome_completo}}": registration?.nome_completo || lead.contact_name || lead.company_name || "",
     "{{cpf}}": cpfValue,
     "{{cnpj}}": cnpjValue,
@@ -198,7 +198,6 @@ function buildVariableMap(
     "{{cep}}": registration?.cep || lead.cep || "",
     "{{nome_empresa}}": lead.company_name || "",
     "{{data_atual}}": now.toLocaleDateString("pt-BR"),
-    // Tenant
     "{{tenant_nome}}": tenant?.nome_fantasia || tenant?.razao_social || "",
     "{{tenant_cnpj}}": tenant?.cnpj || "",
     "{{tenant_razao_social}}": tenant?.razao_social || "",
@@ -207,18 +206,15 @@ function buildVariableMap(
     "{{tenant_endereco}}": [tenant?.endereco, tenant?.numero].filter(Boolean).join(", ") || "",
     "{{tenant_cidade}}": tenant?.cidade || "",
     "{{tenant_estado}}": tenant?.estado || "",
-    // Proposal
     "{{nome_item}}": nomeItem,
     "{{descricao_item}}": descricaoItem,
     "{{valor_proposta}}": valorProposta,
     "{{valor_total}}": valorTotal,
     "{{servicos_contratados}}": servicosContratados,
-    // Vendor
     "{{nome_vendedor}}": vendor?.name || "",
     "{{email_vendedor}}": vendor?.email || "",
     "{{telefone_vendedor}}": vendor?.phone || "",
     "{{data_nascimento_vendedor}}": vendor?.birth_date || "",
-    // Signature placeholders (filled at sign time)
     "{{data_assinatura_cliente}}": "",
     "{{hora_assinatura_cliente}}": "",
     "{{geolocalizacao_cliente}}": "",
@@ -228,6 +224,38 @@ function buildVariableMap(
     "{{geolocalizacao_vendedor}}": "",
     "{{selfie_vendedor}}": "",
   };
+}
+
+function buildSnapshot(vars: Record<string, string>) {
+  const sourceMap: Record<string, string> = {
+    nome_completo: "lead", cpf: "lead", cnpj: "lead", razao_social: "lead",
+    documento_contratante: "lead", email: "lead", telefone: "lead", whatsapp: "lead",
+    data_nascimento: "lead", endereco: "lead", numero: "lead", bairro: "lead",
+    cidade: "lead", estado: "lead", cep: "lead", nome_empresa: "lead", data_atual: "sistema",
+    tenant_nome: "tenant", tenant_cnpj: "tenant", tenant_razao_social: "tenant",
+    tenant_email: "tenant", tenant_telefone: "tenant", tenant_endereco: "tenant",
+    tenant_cidade: "tenant", tenant_estado: "tenant",
+    nome_item: "proposta", descricao_item: "proposta", valor_proposta: "proposta",
+    valor_total: "proposta", servicos_contratados: "proposta",
+    nome_vendedor: "vendedor", email_vendedor: "vendedor",
+    telefone_vendedor: "vendedor", data_nascimento_vendedor: "vendedor",
+    data_assinatura_cliente: "assinatura", hora_assinatura_cliente: "assinatura",
+    geolocalizacao_cliente: "assinatura", selfie_cliente: "assinatura",
+    data_assinatura_vendedor: "assinatura", hora_assinatura_vendedor: "assinatura",
+    geolocalizacao_vendedor: "assinatura", selfie_vendedor: "assinatura",
+  };
+
+  const snapshot: Record<string, any> = { _generated_at: new Date().toISOString() };
+  for (const [key, value] of Object.entries(vars)) {
+    const varName = key.replace(/\{\{|\}\}/g, "");
+    const isSig = SIGNATURE_VARS.has(varName);
+    snapshot[varName] = {
+      value: isSig ? null : (value || null),
+      source: sourceMap[varName] || "unknown",
+      status: isSig ? "pending_signature" : (value ? "filled" : "empty"),
+    };
+  }
+  return snapshot;
 }
 
 export function LeadDocumentosTab({ lead, addActivity }: Props) {
