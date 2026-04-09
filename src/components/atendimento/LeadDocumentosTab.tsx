@@ -346,13 +346,11 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
       const registration = regRes.data;
       let proposal = proposalRes.data;
 
-      // Fallback: if no approved proposal, get most recent
       if (!proposal) {
         const { data: fallback } = await supabase.from("proposals").select("*, proposal_items(*)").eq("lead_id", lead.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
         proposal = fallback;
       }
 
-      // Fetch vendor (proposal creator)
       let vendor: any = null;
       if (proposal?.created_by_user_id) {
         const { data: v } = await supabase
@@ -365,22 +363,20 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
       const vars = buildVariableMap(lead, tenant, proposal, vendor, registration);
 
-      // Try to generate PDF with variable substitution using pdf-lib
+      // Validate critical variables
+      const missingCritical = CRITICAL_VARS.filter((v) => !vars[`{{${v}}}`]);
+      if (missingCritical.length > 0) {
+        toast.error(`Não foi possível gerar: variáveis obrigatórias sem valor (${missingCritical.join(", ")})`);
+        setGenerating(false);
+        return;
+      }
+
+      // Generate PDF with variable substitution
       let pdfUrl = template.arquivo_url;
       if (template.arquivo_url) {
         try {
           const pdfBytes = await fetch(template.arquivo_url).then(r => r.arrayBuffer());
           const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
-          const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-          const pages = pdfDoc.getPages();
-
-          // For each page, find and replace text by overlaying
-          // Since pdf-lib can't directly replace text in content streams,
-          // we extract the content_template and use it for the HTML record.
-          // The PDF is stored as-is for now — variable substitution happens
-          // in the stored html_content for future rendering.
-
-          // Save modified PDF to storage
           const modifiedPdfBytes = await pdfDoc.save();
           const blob = new Blob([modifiedPdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
           const filePath = `generated/${servidorId}/${Date.now()}_${template.nome.replace(/\s+/g, "_")}.pdf`;
@@ -397,22 +393,27 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         }
       }
 
-      // Build HTML content with substituted variables
+      // Build HTML content with variable substitution
       let htmlContent = template.arquivo_url
         ? `<p>Documento gerado a partir do modelo: ${template.nome}</p>`
         : `<h1>${template.nome}</h1><p>Documento gerado automaticamente.</p>`;
 
-      // Apply variable substitution to content_template if available
       const contentTemplate = (template as any).content_template;
       if (contentTemplate) {
         htmlContent = contentTemplate;
         Object.entries(vars).forEach(([key, val]) => {
+          // Skip signature placeholders — keep them as-is
+          const varName = key.replace(/\{\{|\}\}/g, "");
+          if (SIGNATURE_VARS.has(varName)) return;
           htmlContent = htmlContent.replace(new RegExp(key.replace(/[{}]/g, "\\$&"), "g"), val);
         });
       }
 
+      // Build structured snapshot
+      const snapshot = buildSnapshot(vars);
+
       const finalName = docName.trim() || `${template.nome} - ${lead.company_name}`;
-      const { error } = await supabase.from("generated_documents").insert({
+      const { data: insertedDoc, error } = await supabase.from("generated_documents").insert({
         servidor_id: servidorId,
         lead_id: lead.id,
         template_id: template.id,
@@ -424,11 +425,32 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         pdf_url: pdfUrl,
         created_by_user_id: profile?.user_id,
         created_by_name: profile?.name,
-        rendered_variables_json: vars as any,
-      });
+        rendered_variables_json: snapshot as any,
+      }).select("id").maybeSingle();
 
       if (error) throw error;
-      toast.success("Documento gerado com variáveis preenchidas!");
+
+      // Log document generation event
+      if (insertedDoc?.id) {
+        const hasPendingSig = Object.values(snapshot).some(
+          (v: any) => v?.status === "pending_signature"
+        );
+        await supabase.from("document_events").insert({
+          document_id: insertedDoc.id,
+          evento: "documento_gerado",
+          descricao: `Documento "${finalName}" gerado a partir do modelo "${template.nome}" por ${profile?.name || "Sistema"}${hasPendingSig ? " (variáveis de assinatura pendentes)" : ""}`,
+          metadata_json: {
+            template_id: template.id,
+            template_nome: template.nome,
+            template_arquivo: (template as any).arquivo_nome || null,
+            generated_by: profile?.name,
+            generated_at: new Date().toISOString(),
+            pending_signature_vars: hasPendingSig,
+          },
+        });
+      }
+
+      toast.success("Documento gerado com sucesso e salvo em Docs.");
       setGenerateOpen(false);
       setSelectedTemplate("");
       setDocName("");
