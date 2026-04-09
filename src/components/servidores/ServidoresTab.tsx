@@ -735,6 +735,89 @@ export default function ServidoresTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Users Dialog */}
+      <Dialog open={usersDialogOpen} onOpenChange={setUsersDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Usuários — {usersDialogCompany?.nome_fantasia || usersDialogCompany?.razao_social}
+            </DialogTitle>
+            <DialogDescription>
+              Gerencie os usuários vinculados a este tenant.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto">
+            {loadingUsers ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : tenantUsers.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Nenhum usuário vinculado a este tenant.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Usuário</TableHead>
+                    <TableHead>Papel</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-12" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {tenantUsers.map((u) => (
+                    <TableRow key={u.user_id}>
+                      <TableCell>
+                        <div>
+                          <p className="text-sm font-medium">{u.name}</p>
+                          <p className="text-xs text-muted-foreground">{u.email}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={u.role}
+                          onValueChange={(val) => handleUpdateUserRole(u.user_id, val)}
+                        >
+                          <SelectTrigger className="h-8 w-36 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="admin">Administrador</SelectItem>
+                            <SelectItem value="operador">Operador</SelectItem>
+                            <SelectItem value="leitura">Leitura</SelectItem>
+                            <SelectItem value="ceo">CEO</SelectItem>
+                            <SelectItem value="administrativo">Administrativo</SelectItem>
+                            <SelectItem value="financeiro">Financeiro</SelectItem>
+                            <SelectItem value="comercial">Comercial</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={u.is_active ? "default" : "secondary"} className="text-[10px]">
+                          {u.is_active ? "Ativo" : "Bloqueado"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => handleToggleUserStatus(u.user_id, u.is_active)}
+                          title={u.is_active ? "Bloquear usuário" : "Ativar usuário"}
+                        >
+                          <Power className="h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
