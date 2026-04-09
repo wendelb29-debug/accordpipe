@@ -633,6 +633,12 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
           )}
         </div>
 
+        {contractTemplates.length === 0 && (
+          <p className="text-xs text-muted-foreground mb-3">
+            ⚠️ Nenhum contrato padrão configurado. Entre em contato com o administrador do servidor.
+          </p>
+        )}
+
         {hasSignedContracts ? (
           <div className="space-y-2">
             {signedContracts.map((contract) => {
