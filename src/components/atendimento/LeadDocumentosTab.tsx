@@ -1006,7 +1006,9 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                 <h4 className="text-sm font-semibold">Signatários</h4>
               </div>
 
-              {signers.map((signer, idx) => (
+              {signers.map((signer, idx) => {
+                const isOwner = signer.papel === "proprietario_proposta";
+                return (
                 <Card key={idx} className="border">
                   <CardContent className="p-3 space-y-2">
                     <div className="flex items-center justify-between">
