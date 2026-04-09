@@ -591,6 +591,9 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
           <div className="space-y-2">
             {signedContracts.map((contract) => {
               const isGenerating = generatingPdf === contract.id;
+              const isPending = contract.signature_status === "pending";
+              const signedCount = contract.signers.filter(s => s.signed_at).length;
+              const totalSigners = contract.signers.length;
               return (
                 <Card key={contract.id} className="border-border/50">
                   <CardContent className="p-4">
@@ -602,22 +605,43 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
                         <div className="min-w-0">
                           <p className="text-sm font-medium">{contract.code} — {lead.company_name}</p>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                            <span>{new Date(contract.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                            <span>{new Date(contract.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}</span>
                             {getContractStatusBadge(contract.signature_status)}
+                            {isPending && totalSigners > 0 && (
+                              <span className="text-muted-foreground">({signedCount}/{totalSigners})</span>
+                            )}
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleViewClientContract(contract)} disabled={isGenerating} title="Visualizar">
-                          {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDownloadClientContract(contract)} disabled={isGenerating} title="Baixar">
-                          <Download className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleCopyLink(contract)} title="Copiar Link">
-                          <Link2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="min-w-[200px]">
+                          <DropdownMenuItem onClick={() => handleViewClientContract(contract)} disabled={isGenerating}>
+                            <Eye className="h-4 w-4 mr-2" /> Visualizar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleViewSignature(contract)} disabled={!isPending && contract.signature_status !== "signed"}>
+                            <PenTool className="h-4 w-4 mr-2" /> Ver Assinatura
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => handleCancelContractSignatures(contract.id)}
+                            disabled={!isPending}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <XCircle className="h-4 w-4 mr-2" /> Cancelar Assinaturas
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setConfirmDelete({ type: "contract", id: contract.id })}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </CardContent>
                 </Card>
@@ -626,6 +650,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
 
             {signedPdfContracts.map((contract) => {
               const pdfUrl = contract.pdf_assinado_url || contract.pdf_url;
+              const isPending = contract.status === "pendente" || contract.status === "enviado";
               return (
                 <Card key={contract.id} className="border-border/50">
                   <CardContent className="p-4">
@@ -637,22 +662,40 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
                         <div className="min-w-0">
                           <p className="text-sm font-medium">{contract.name}</p>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                            <span>{new Date(contract.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                            <span>{new Date(contract.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}</span>
                             {getPdfContractStatusBadge(contract.status)}
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleViewSignedPdf(pdfUrl)} title="Visualizar">
-                          <Eye className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDownloadSignedPdf(pdfUrl, `${contract.name}.pdf`)} title="Baixar">
-                          <Download className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleCopyPdfLink(contract)} title="Copiar Link">
-                          <Link2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="min-w-[200px]">
+                          <DropdownMenuItem onClick={() => handleViewSignedPdf(pdfUrl)}>
+                            <Eye className="h-4 w-4 mr-2" /> Visualizar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleViewPdfSignature(contract)} disabled={!isPending && contract.status !== "assinado" && contract.status !== "concluido"}>
+                            <PenTool className="h-4 w-4 mr-2" /> Ver Assinatura
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => handleCancelPdfContractSignatures(contract.id)}
+                            disabled={!isPending}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <XCircle className="h-4 w-4 mr-2" /> Cancelar Assinaturas
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setConfirmDelete({ type: "pdf", id: contract.id })}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </CardContent>
                 </Card>
