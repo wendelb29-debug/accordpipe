@@ -107,6 +107,8 @@ interface GeneratedDoc {
   proposal_id: string | null;
   sent_for_signature_at: string | null;
   signed_at: string | null;
+  validation_code: string | null;
+  document_hash: string | null;
   document_templates?: { nome: string } | null;
 }
 

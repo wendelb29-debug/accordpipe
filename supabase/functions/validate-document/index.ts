@@ -28,11 +28,30 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Search in contracts table
+    // Search in generated_documents first (new flow)
     let contract: any = null;
     let contractType = "";
 
     if (code) {
+      const { data: gd } = await supabase
+        .from("generated_documents")
+        .select("id, nome, tipo, status, created_at, signed_at, document_hash, validation_code, servidor_id")
+        .eq("validation_code", code)
+        .maybeSingle();
+      if (gd) { contract = gd; contractType = "generated_document"; }
+    }
+
+    if (!contract && hash) {
+      const { data: gd } = await supabase
+        .from("generated_documents")
+        .select("id, nome, tipo, status, created_at, signed_at, document_hash, validation_code, servidor_id")
+        .eq("document_hash", hash)
+        .maybeSingle();
+      if (gd) { contract = gd; contractType = "generated_document"; }
+    }
+
+    // Search in contracts table
+    if (!contract && code) {
       const { data: c1 } = await supabase
         .from("contracts")
         .select("id, code, signature_status, signed_at, created_at, document_hash, validation_code, contract_content")
@@ -50,7 +69,7 @@ Deno.serve(async (req) => {
       if (c2) { contract = c2; contractType = "contract"; }
     }
 
-    // Search client_contracts if not found
+    // Search client_contracts
     if (!contract && code) {
       const { data: cc1 } = await supabase
         .from("client_contracts")
@@ -69,7 +88,7 @@ Deno.serve(async (req) => {
       if (cc2) { contract = cc2; contractType = "client_contract"; }
     }
 
-    // Search pdf_contracts if not found
+    // Search pdf_contracts
     if (!contract && code) {
       const { data: pc1 } = await supabase
         .from("pdf_contracts")
@@ -95,9 +114,24 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get signers for contracts
+    // Get signers
     let signers: any[] = [];
-    if (contractType === "contract") {
+
+    if (contractType === "generated_document") {
+      const { data: docSigners } = await supabase
+        .from("document_signers")
+        .select("nome_completo, papel, signed_at, cpf, ip_address, location_text")
+        .eq("document_id", contract.id)
+        .order("ordem", { ascending: true });
+      signers = (docSigners || []).map((s: any) => ({
+        name: s.nome_completo || "—",
+        role: s.papel || "signatário",
+        signed_at: s.signed_at,
+        document_masked: s.cpf
+          ? s.cpf.replace(/(\d{3})\.\d{3}\.\d{3}(-\d{2})/, "$1.***.***$2")
+          : null,
+      }));
+    } else if (contractType === "contract") {
       const { data: sigs } = await supabase
         .from("contract_signatures")
         .select("signer_name, signer_role, signed_at, signer_document, signer_ip")
@@ -136,7 +170,9 @@ Deno.serve(async (req) => {
       }];
     }
 
-    const isSigned = contractType === "contract"
+    const isSigned = contractType === "generated_document"
+      ? contract.status === "signed"
+      : contractType === "contract"
       ? contract.signature_status === "signed"
       : contractType === "pdf_contract"
       ? contract.status === "assinado"
@@ -146,7 +182,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         valid: true,
         status: isSigned ? "signed" : "pending",
-        document_id: contract.code || contract.id,
+        document_id: contract.code || contract.nome || contract.id,
         created_at: contract.created_at,
         signed_at: contract.signed_at,
         document_hash: contract.document_hash,
