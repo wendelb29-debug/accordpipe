@@ -558,7 +558,7 @@ export default function NovoServidor() {
           {activeTab === "contrato" && (
             <Card>
               <CardContent className="pt-6">
-                <ContractTemplateTab companyId={editId || pendingNewId} />
+                <ContractTemplateTab companyId={editId || pendingNewId} onEnsureCompany={editId ? undefined : handleEnsureCompany} />
               </CardContent>
             </Card>
           )}
