@@ -339,27 +339,28 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     setGenerating(true);
 
     try {
-      // Fetch tenant, proposal, registration in parallel
-      const [tenantRes, proposalRes, regRes] = await Promise.all([
+      // Fetch tenant, proposal (from crm_lead_activities), registration in parallel
+      const [tenantRes, activityRes, regRes] = await Promise.all([
         supabase.from("companies").select("*").eq("id", servidorId).maybeSingle(),
-        supabase.from("proposals").select("*, proposal_items(*)").eq("lead_id", lead.id).eq("status", "approved").order("approved_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("crm_lead_activities").select("*").eq("lead_id", lead.id).eq("type", "proposal").order("created_at", { ascending: false }),
         supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
       ]);
       const tenant = tenantRes.data;
       const registration = regRes.data;
-      let proposal = proposalRes.data;
 
-      if (!proposal) {
-        const { data: fallback } = await supabase.from("proposals").select("*, proposal_items(*)").eq("lead_id", lead.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
-        proposal = fallback;
-      }
+      // Find accepted proposal first, fallback to most recent
+      const activities = activityRes.data || [];
+      const acceptedActivity = activities.find((a: any) => (a.metadata as any)?.status === "aceita")
+        || activities[0] || null;
+
+      const proposal = activityToProposal(acceptedActivity);
 
       let vendor: any = null;
-      if (proposal?.created_by_user_id) {
+      if (acceptedActivity?.created_by_user_id) {
         const { data: v } = await supabase
           .from("profiles")
           .select("name, email, phone, birth_date")
-          .eq("user_id", proposal.created_by_user_id)
+          .eq("user_id", acceptedActivity.created_by_user_id)
           .maybeSingle();
         vendor = v;
       }
