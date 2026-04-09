@@ -680,7 +680,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
             {selectedTemplate && (() => {
               const tpl = templates.find(t => t.id === selectedTemplate);
               const tplPlaceholders = (tpl as any)?.placeholders_json as string[] | null;
-              const vars = buildVariableMap(lead);
+              const vars = buildVariableMap(lead, previewTenant, previewProposal, previewVendor);
               const relevantVars = tplPlaceholders && tplPlaceholders.length > 0
                 ? Object.entries(vars).filter(([key]) => tplPlaceholders.includes(key.replace(/\{\{|\}\}/g, "")))
                 : Object.entries(vars);
