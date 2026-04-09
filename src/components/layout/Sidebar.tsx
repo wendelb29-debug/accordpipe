@@ -84,6 +84,34 @@ export function Sidebar() {
   const [overdueCount, setOverdueCount] = useState(0);
   const [configOpen, setConfigOpen] = useState(false);
   const { role, signOut, profile } = useAuth();
+  const activeCompanyId = useActiveCompanyId();
+  const [tenantLogoUrl, setTenantLogoUrl] = useState<string | null>(null);
+
+  // Fetch tenant logo when active company changes
+  useEffect(() => {
+    if (!activeCompanyId) { setTenantLogoUrl(null); return; }
+    const fetchLogo = async () => {
+      const { data } = await supabase
+        .from("companies")
+        .select("brand_logo_url, servidor_id")
+        .eq("id", activeCompanyId)
+        .single();
+      // Master tenant uses Accord logo
+      if (data && data.servidor_id !== null && data.brand_logo_url) {
+        setTenantLogoUrl(data.brand_logo_url);
+      } else {
+        setTenantLogoUrl(null);
+      }
+    };
+    fetchLogo();
+    const handler = () => fetchLogo();
+    window.addEventListener("brand-colors-updated", handler);
+    window.addEventListener("tenant-switched", handler);
+    return () => {
+      window.removeEventListener("brand-colors-updated", handler);
+      window.removeEventListener("tenant-switched", handler);
+    };
+  }, [activeCompanyId]);
 
   const fetchOverdueActivities = useCallback(async () => {
     if (!profile?.user_id) return;
