@@ -703,6 +703,11 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                             <CheckCircle2 className="h-3 w-3" /> Assinado {fmtDate(doc.signed_at)}
                           </span>
                         )}
+                        {doc.validation_code && (
+                          <span className="text-[10px] font-mono text-muted-foreground">
+                            {doc.validation_code}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <DropdownMenu>
