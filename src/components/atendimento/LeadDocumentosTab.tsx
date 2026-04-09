@@ -361,7 +361,11 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
   const uploadGeneratedPdf = useCallback(async (documentId: string, fileName: string, pdfBytes: Uint8Array) => {
     const arrayBuf = pdfBytes.buffer.slice(pdfBytes.byteOffset, pdfBytes.byteOffset + pdfBytes.byteLength) as ArrayBuffer;
     const blob = new Blob([arrayBuf], { type: "application/pdf" });
-    const safeName = fileName.replace(/\s+/g, "_");
+    const safeName = fileName
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9_\-]/g, "_")
+      .replace(/_+/g, "_")
+      .substring(0, 100);
     const filePath = `generated/${servidorId}/${documentId}_${safeName}.pdf`;
 
     const { error: uploadErr } = await supabase.storage
