@@ -608,6 +608,12 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
                       <ArrowRight className="h-3 w-3" />
                     </Button>
                   )}
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" title="Criar camada a partir destes" onClick={() => { setConvertUngroupedOpen(true); setConvertUngroupedName(""); }}>
+                    <FolderOpen className="h-3 w-3" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" title="Excluir todos sem camada" onClick={() => setDeleteAllUngroupedOpen(true)}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
                 </div>
                 <div className={cn("text-muted-foreground transition-transform duration-200", (expandedGroups["__ungrouped"] ?? true) && "rotate-180")}>
                   <ChevronDown className="h-4 w-4" />
