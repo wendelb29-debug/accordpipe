@@ -4,6 +4,7 @@ import {
   Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield, Webhook,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ContractTemplateTab } from "./ContractTemplateTab";
 import { WebhookConfig } from "@/components/atendimento/tabs/WebhookConfig";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -81,6 +82,11 @@ export default function ServidoresTab() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
+  const [usersDialogOpen, setUsersDialogOpen] = useState(false);
+  const [usersDialogCompany, setUsersDialogCompany] = useState<Company | null>(null);
+  const [tenantUsers, setTenantUsers] = useState<{ user_id: string; name: string; email: string; is_active: boolean; role: string; status: string }[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [editingUser, setEditingUser] = useState<any | null>(null);
   const { toast } = useToast();
   const { isMaster, profile } = useAuth();
 
@@ -144,6 +150,61 @@ export default function ServidoresTab() {
       toast({ title: "Erro", description: "Não foi possível carregar os tenants.", variant: "destructive" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpenUsersDialog = async (company: Company) => {
+    setUsersDialogCompany(company);
+    setUsersDialogOpen(true);
+    setLoadingUsers(true);
+    setEditingUser(null);
+    try {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, name, email, is_active, status")
+        .eq("company_id", company.id);
+
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+
+      const roleMap: Record<string, string> = {};
+      (roles || []).forEach((r: any) => { roleMap[r.user_id] = r.role; });
+
+      setTenantUsers(
+        (profiles || []).map((p: any) => ({
+          user_id: p.user_id,
+          name: p.name || "---",
+          email: p.email || "",
+          is_active: p.is_active,
+          role: roleMap[p.user_id] || "leitura",
+          status: p.status || "ativo",
+        }))
+      );
+    } catch {
+      setTenantUsers([]);
+    }
+    setLoadingUsers(false);
+  };
+
+  const handleUpdateUserRole = async (userId: string, newRole: string) => {
+    try {
+      await supabase.from("user_roles").update({ role: newRole } as any).eq("user_id", userId);
+      sonnerToast.success("Papel atualizado!");
+      if (usersDialogCompany) handleOpenUsersDialog(usersDialogCompany);
+    } catch {
+      sonnerToast.error("Erro ao atualizar papel");
+    }
+  };
+
+  const handleToggleUserStatus = async (userId: string, currentActive: boolean) => {
+    try {
+      await supabase.from("profiles").update({ is_active: !currentActive, status: currentActive ? "bloqueado" : "ativo" } as any).eq("user_id", userId);
+      sonnerToast.success(currentActive ? "Usuário bloqueado" : "Usuário ativado");
+      if (usersDialogCompany) handleOpenUsersDialog(usersDialogCompany);
+      fetchCompanies();
+    } catch {
+      sonnerToast.error("Erro ao alterar status");
     }
   };
 
@@ -427,7 +488,11 @@ export default function ServidoresTab() {
                   <TableCell className="font-mono text-sm">{company.cnpj}</TableCell>
                   <TableCell>{company.responsavel || "—"}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="gap-1">
+                    <Badge
+                      variant="outline"
+                      className="gap-1 cursor-pointer hover:bg-primary/10 transition-colors"
+                      onClick={() => handleOpenUsersDialog(company)}
+                    >
                       <Users className="h-3 w-3" />
                       {company.user_count || 0}
                     </Badge>
@@ -669,6 +734,89 @@ export default function ServidoresTab() {
               {isSubmitting ? "Salvando..." : editingCompany ? "Salvar" : "Criar Tenant"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Users Dialog */}
+      <Dialog open={usersDialogOpen} onOpenChange={setUsersDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Usuários — {usersDialogCompany?.nome_fantasia || usersDialogCompany?.razao_social}
+            </DialogTitle>
+            <DialogDescription>
+              Gerencie os usuários vinculados a este tenant.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto">
+            {loadingUsers ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : tenantUsers.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Nenhum usuário vinculado a este tenant.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Usuário</TableHead>
+                    <TableHead>Papel</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-12" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {tenantUsers.map((u) => (
+                    <TableRow key={u.user_id}>
+                      <TableCell>
+                        <div>
+                          <p className="text-sm font-medium">{u.name}</p>
+                          <p className="text-xs text-muted-foreground">{u.email}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={u.role}
+                          onValueChange={(val) => handleUpdateUserRole(u.user_id, val)}
+                        >
+                          <SelectTrigger className="h-8 w-36 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="admin">Administrador</SelectItem>
+                            <SelectItem value="operador">Operador</SelectItem>
+                            <SelectItem value="leitura">Leitura</SelectItem>
+                            <SelectItem value="ceo">CEO</SelectItem>
+                            <SelectItem value="administrativo">Administrativo</SelectItem>
+                            <SelectItem value="financeiro">Financeiro</SelectItem>
+                            <SelectItem value="comercial">Comercial</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={u.is_active ? "default" : "secondary"} className="text-[10px]">
+                          {u.is_active ? "Ativo" : "Bloqueado"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => handleToggleUserStatus(u.user_id, u.is_active)}
+                          title={u.is_active ? "Bloquear usuário" : "Ativar usuário"}
+                        >
+                          <Power className="h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
