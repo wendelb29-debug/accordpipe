@@ -152,6 +152,61 @@ export default function ServidoresTab() {
     }
   };
 
+  const handleOpenUsersDialog = async (company: Company) => {
+    setUsersDialogCompany(company);
+    setUsersDialogOpen(true);
+    setLoadingUsers(true);
+    setEditingUser(null);
+    try {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, name, email, is_active, status")
+        .eq("company_id", company.id);
+
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+
+      const roleMap: Record<string, string> = {};
+      (roles || []).forEach((r: any) => { roleMap[r.user_id] = r.role; });
+
+      setTenantUsers(
+        (profiles || []).map((p: any) => ({
+          user_id: p.user_id,
+          name: p.name || "---",
+          email: p.email || "",
+          is_active: p.is_active,
+          role: roleMap[p.user_id] || "leitura",
+          status: p.status || "ativo",
+        }))
+      );
+    } catch {
+      setTenantUsers([]);
+    }
+    setLoadingUsers(false);
+  };
+
+  const handleUpdateUserRole = async (userId: string, newRole: string) => {
+    try {
+      await supabase.from("user_roles").update({ role: newRole } as any).eq("user_id", userId);
+      sonnerToast.success("Papel atualizado!");
+      if (usersDialogCompany) handleOpenUsersDialog(usersDialogCompany);
+    } catch {
+      sonnerToast.error("Erro ao atualizar papel");
+    }
+  };
+
+  const handleToggleUserStatus = async (userId: string, currentActive: boolean) => {
+    try {
+      await supabase.from("profiles").update({ is_active: !currentActive, status: currentActive ? "bloqueado" : "ativo" } as any).eq("user_id", userId);
+      sonnerToast.success(currentActive ? "Usuário bloqueado" : "Usuário ativado");
+      if (usersDialogCompany) handleOpenUsersDialog(usersDialogCompany);
+      fetchCompanies();
+    } catch {
+      sonnerToast.error("Erro ao alterar status");
+    }
+  };
+
   const defaultBrand = { brandLogoUrl: "", brandLogoPath: "", brandPrimaryColor: "#1E2952", brandSecondaryColor: "#4F46E5", brandAccentColor: "#10B981", brandBgColor: "#F3F4F6", brandTextColor: "#1F2937" };
 
   const handleOpenDialog = (company?: Company) => {
