@@ -358,6 +358,61 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     fetchTemplates();
   }, [fetchDocuments, fetchTemplates]);
 
+  const uploadGeneratedPdf = useCallback(async (documentId: string, fileName: string, pdfBytes: Uint8Array) => {
+    const arrayBuf = pdfBytes.buffer.slice(pdfBytes.byteOffset, pdfBytes.byteOffset + pdfBytes.byteLength) as ArrayBuffer;
+    const blob = new Blob([arrayBuf], { type: "application/pdf" });
+    const safeName = fileName.replace(/\s+/g, "_");
+    const filePath = `generated/${servidorId}/${documentId}_${safeName}.pdf`;
+
+    const { error: uploadErr } = await supabase.storage
+      .from("contract-pdfs")
+      .upload(filePath, blob, { contentType: "application/pdf", upsert: true });
+
+    if (uploadErr) {
+      throw new Error("Falha ao salvar PDF no storage: " + uploadErr.message);
+    }
+
+    const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(filePath);
+    return urlData.publicUrl;
+  }, [servidorId]);
+
+  const ensureDocumentPdfUrl = useCallback(async (doc: GeneratedDoc) => {
+    if (doc.status === "signed" && doc.signed_pdf_url) return doc.signed_pdf_url;
+    if (doc.pdf_url) return doc.pdf_url;
+    if (!doc.html_content) throw new Error("Documento sem conteúdo renderizado para gerar PDF");
+
+    const pdfBytes = await renderGeneratedDocumentPdf(doc.nome, doc.html_content);
+    const pdfUrl = await uploadGeneratedPdf(doc.id, doc.nome, pdfBytes);
+
+    const { error } = await supabase
+      .from("generated_documents")
+      .update({ pdf_url: pdfUrl } as any)
+      .eq("id", doc.id);
+
+    if (error) throw new Error("PDF gerado, mas não foi possível salvar a URL: " + error.message);
+
+    setDocuments((prev) => prev.map((item) => item.id === doc.id ? { ...item, pdf_url: pdfUrl } : item));
+    return pdfUrl;
+  }, [uploadGeneratedPdf]);
+
+  const handleOpenDocument = useCallback(async (doc: GeneratedDoc) => {
+    try {
+      const resolvedUrl = await ensureDocumentPdfUrl(doc);
+      setViewDoc({ ...doc, pdf_url: resolvedUrl });
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao abrir documento");
+    }
+  }, [ensureDocumentPdfUrl]);
+
+  const handleDownloadDocument = useCallback(async (doc: GeneratedDoc) => {
+    try {
+      const resolvedUrl = await ensureDocumentPdfUrl(doc);
+      window.open(resolvedUrl, "_blank", "noopener,noreferrer");
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao baixar documento");
+    }
+  }, [ensureDocumentPdfUrl]);
+
   const handleGenerate = async () => {
     if (!selectedTemplate) return toast.error("Selecione um modelo");
     const template = templates.find((t) => t.id === selectedTemplate);
@@ -365,7 +420,6 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     setGenerating(true);
 
     try {
-      // Fetch tenant, proposal (from crm_lead_activities), registration in parallel
       const [tenantRes, activityRes, regRes] = await Promise.all([
         supabase.from("companies").select("*").eq("id", servidorId).maybeSingle(),
         supabase.from("crm_lead_activities").select("*").eq("lead_id", lead.id).eq("type", "proposal").order("created_at", { ascending: false }),
@@ -374,7 +428,6 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
       const tenant = tenantRes.data;
       const registration = regRes.data;
 
-      // Find accepted proposal first, fallback to most recent
       const activities = activityRes.data || [];
       const acceptedActivity = activities.find((a: any) => ACCEPTED_STATUSES.has(((a.metadata as any)?.status || "").toLowerCase()))
         || activities[0] || null;
@@ -392,8 +445,6 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
       }
 
       const vars = buildVariableMap(lead, tenant, proposal, vendor, registration);
-
-      // Validate critical variables
       const missingCritical = CRITICAL_VARS.filter((v) => !vars[`{{${v}}}`]);
       if (missingCritical.length > 0) {
         toast.error(`Não foi possível gerar: variáveis obrigatórias sem valor (${missingCritical.join(", ")})`);
@@ -401,7 +452,6 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         return;
       }
 
-      // Build HTML content with variable substitution FIRST
       const contentTemplate = (template as any).content_template;
       let htmlContent: string;
       if (contentTemplate) {
@@ -415,104 +465,9 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         htmlContent = `<h1>${template.nome}</h1><p>Documento gerado automaticamente.</p>`;
       }
 
-      // Generate PDF from the RENDERED content (not from template PDF)
-      let pdfUrl: string | null = null;
-      try {
-        const pdfDoc = await PDFDocument.create();
-        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-        const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-        const fontSize = 10;
-        const titleFontSize = 14;
-        const margin = 50;
-        const lineHeight = fontSize * 1.4;
-
-        // Strip HTML tags and decode entities for plain-text PDF rendering
-        const plainText = htmlContent
-          .replace(/<br\s*\/?>/gi, "\n")
-          .replace(/<\/p>/gi, "\n\n")
-          .replace(/<\/h[1-6]>/gi, "\n\n")
-          .replace(/<\/li>/gi, "\n")
-          .replace(/<[^>]+>/g, "")
-          .replace(/&amp;/g, "&")
-          .replace(/&lt;/g, "<")
-          .replace(/&gt;/g, ">")
-          .replace(/&quot;/g, '"')
-          .replace(/&#39;/g, "'")
-          .replace(/&nbsp;/g, " ")
-          .replace(/\n{3,}/g, "\n\n");
-
-        // Word-wrap and paginate
-        const maxWidth = 595 - margin * 2; // A4 width
-        const pageHeight = 842; // A4 height
-        const contentBottom = margin;
-
-        const lines: string[] = [];
-        for (const paragraph of plainText.split("\n")) {
-          if (paragraph.trim() === "") {
-            lines.push("");
-            continue;
-          }
-          const words = paragraph.split(/\s+/);
-          let currentLine = "";
-          for (const word of words) {
-            const testLine = currentLine ? `${currentLine} ${word}` : word;
-            const testWidth = font.widthOfTextAtSize(testLine, fontSize);
-            if (testWidth > maxWidth && currentLine) {
-              lines.push(currentLine);
-              currentLine = word;
-            } else {
-              currentLine = testLine;
-            }
-          }
-          if (currentLine) lines.push(currentLine);
-        }
-
-        let page = pdfDoc.addPage([595, pageHeight]);
-        let y = pageHeight - margin;
-
-        // Title
-        const title = (docName.trim() || template.nome).substring(0, 80);
-        page.drawText(title, { x: margin, y, font: boldFont, size: titleFontSize, color: rgb(0.1, 0.1, 0.1) });
-        y -= titleFontSize * 2;
-
-        for (const line of lines) {
-          if (y < contentBottom + lineHeight) {
-            page = pdfDoc.addPage([595, pageHeight]);
-            y = pageHeight - margin;
-          }
-          if (line.trim() === "") {
-            y -= lineHeight * 0.5;
-            continue;
-          }
-          page.drawText(line, { x: margin, y, font, size: fontSize, color: rgb(0.15, 0.15, 0.15) });
-          y -= lineHeight;
-        }
-
-        const pdfBytes = await pdfDoc.save();
-        const arrayBuf = pdfBytes.buffer.slice(pdfBytes.byteOffset, pdfBytes.byteOffset + pdfBytes.byteLength) as ArrayBuffer;
-        const blob = new Blob([arrayBuf], { type: "application/pdf" });
-        const filePath = `generated/${servidorId}/${Date.now()}_${template.nome.replace(/\s+/g, "_")}.pdf`;
-        console.log("PDF generated, size:", pdfBytes.length, "uploading to:", filePath);
-        const { error: uploadErr } = await supabase.storage
-          .from("contract-pdfs")
-          .upload(filePath, blob, { contentType: "application/pdf", upsert: true });
-
-        if (uploadErr) {
-          console.error("PDF upload error:", uploadErr);
-          throw new Error("Falha ao salvar PDF no storage: " + uploadErr.message);
-        }
-        const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(filePath);
-        pdfUrl = urlData.publicUrl;
-        console.log("PDF uploaded, URL:", pdfUrl);
-      } catch (pdfErr: any) {
-        console.error("PDF generation/upload failed:", pdfErr);
-        throw new Error("Erro ao gerar/salvar PDF: " + (pdfErr.message || ""));
-      }
-
-      // Build structured snapshot
+      const finalName = docName.trim() || `${template.nome} - ${lead.company_name}`;
       const snapshot = buildSnapshot(vars);
 
-      const finalName = docName.trim() || `${template.nome} - ${lead.company_name}`;
       const { data: insertedDoc, error } = await supabase.from("generated_documents").insert({
         servidor_id: servidorId,
         lead_id: lead.id,
@@ -522,33 +477,38 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         tipo: template.tipo,
         status: "gerado",
         html_content: htmlContent,
-        pdf_url: pdfUrl,
+        pdf_url: null,
         created_by_user_id: profile?.user_id,
         created_by_name: profile?.name,
         rendered_variables_json: snapshot as any,
       }).select("id").maybeSingle();
 
-      if (error) throw error;
+      if (error || !insertedDoc?.id) throw error || new Error("Documento não foi criado");
 
-      // Log document generation event
-      if (insertedDoc?.id) {
-        const hasPendingSig = Object.values(snapshot).some(
-          (v: any) => v?.status === "pending_signature"
-        );
-        await supabase.from("document_events").insert({
-          document_id: insertedDoc.id,
-          evento: "documento_gerado",
-          descricao: `Documento "${finalName}" gerado a partir do modelo "${template.nome}" por ${profile?.name || "Sistema"}${hasPendingSig ? " (variáveis de assinatura pendentes)" : ""}`,
-          metadata_json: {
-            template_id: template.id,
-            template_nome: template.nome,
-            template_arquivo: (template as any).arquivo_nome || null,
-            generated_by: profile?.name,
-            generated_at: new Date().toISOString(),
-            pending_signature_vars: hasPendingSig,
-          },
-        });
-      }
+      const pdfBytes = await renderGeneratedDocumentPdf(finalName, htmlContent);
+      const pdfUrl = await uploadGeneratedPdf(insertedDoc.id, finalName, pdfBytes);
+
+      const { error: updateError } = await supabase
+        .from("generated_documents")
+        .update({ pdf_url: pdfUrl } as any)
+        .eq("id", insertedDoc.id);
+
+      if (updateError) throw updateError;
+
+      const hasPendingSig = Object.values(snapshot).some((v: any) => v?.status === "pending_signature");
+      await supabase.from("document_events").insert({
+        document_id: insertedDoc.id,
+        evento: "documento_gerado",
+        descricao: `Documento "${finalName}" gerado a partir do modelo "${template.nome}" por ${profile?.name || "Sistema"}${hasPendingSig ? " (variáveis de assinatura pendentes)" : ""}`,
+        metadata_json: {
+          template_id: template.id,
+          template_nome: template.nome,
+          template_arquivo: (template as any).arquivo_nome || null,
+          generated_by: profile?.name,
+          generated_at: new Date().toISOString(),
+          pending_signature_vars: hasPendingSig,
+        },
+      });
 
       toast.success("Documento gerado com sucesso e salvo em Docs.");
       setGenerateOpen(false);
