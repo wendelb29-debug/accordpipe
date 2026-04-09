@@ -374,7 +374,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
       // Find accepted proposal first, fallback to most recent
       const activities = activityRes.data || [];
-      const acceptedActivity = activities.find((a: any) => (a.metadata as any)?.status === "aceita")
+      const acceptedActivity = activities.find((a: any) => ACCEPTED_STATUSES.has(((a.metadata as any)?.status || "").toLowerCase()))
         || activities[0] || null;
 
       const proposal = activityToProposal(acceptedActivity);
@@ -668,7 +668,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
           setPreviewTenant(tenantRes.data);
           setPreviewRegistration(regRes.data);
           const activities = activityRes.data || [];
-          const acceptedActivity = activities.find((a: any) => (a.metadata as any)?.status === "aceita")
+          const acceptedActivity = activities.find((a: any) => ACCEPTED_STATUSES.has(((a.metadata as any)?.status || "").toLowerCase()))
             || activities[0] || null;
           const p = activityToProposal(acceptedActivity);
           setPreviewProposal(p);
