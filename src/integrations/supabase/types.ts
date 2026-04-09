@@ -1444,10 +1444,13 @@ export type Database = {
       }
       kanban_columns: {
         Row: {
+          active: boolean
           color: string
           created_at: string
           icon: string
           id: string
+          is_default: boolean
+          is_final: boolean
           name: string
           position: number
           sla_days: number
@@ -1455,10 +1458,13 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          active?: boolean
           color?: string
           created_at?: string
           icon?: string
           id?: string
+          is_default?: boolean
+          is_final?: boolean
           name: string
           position?: number
           sla_days?: number
@@ -1466,10 +1472,13 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          active?: boolean
           color?: string
           created_at?: string
           icon?: string
           id?: string
+          is_default?: boolean
+          is_final?: boolean
           name?: string
           position?: number
           sla_days?: number
