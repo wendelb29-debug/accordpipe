@@ -301,7 +301,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
           // Save modified PDF to storage
           const modifiedPdfBytes = await pdfDoc.save();
-          const blob = new Blob([modifiedPdfBytes], { type: "application/pdf" });
+          const blob = new Blob([modifiedPdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
           const filePath = `generated/${servidorId}/${Date.now()}_${template.nome.replace(/\s+/g, "_")}.pdf`;
           const { error: uploadErr } = await supabase.storage
             .from("contract-pdfs")
