@@ -756,6 +756,8 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
         onSave={handleSave}
         onDelete={deleteLead}
         isNew={isNew}
+        dynamicStages={hasDynamicColumns ? dynamicStages : undefined}
+        stagesLoading={colsLoading}
       />
       <FormLinkDialog open={formLinkOpen} onOpenChange={setFormLinkOpen} />
       <CrmSearchDialog
