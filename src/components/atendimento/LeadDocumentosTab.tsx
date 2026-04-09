@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { ContractVariableAudit } from "./ContractVariableAudit";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { renderGeneratedDocumentPdf } from "@/lib/renderGeneratedDocumentPdf";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
