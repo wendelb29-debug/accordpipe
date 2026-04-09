@@ -758,15 +758,16 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                 <ContractVariableAudit
                   templateText={templateText}
                   resolvedValues={vars}
+                  onValidationChange={setCanGenerate}
                 />
               );
             })()}
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setGenerateOpen(false)}>Cancelar</Button>
-            <Button size="sm" onClick={handleGenerate} disabled={generating || !selectedTemplate}>
+            <Button size="sm" onClick={handleGenerate} disabled={generating || !selectedTemplate || !canGenerate}>
               {generating && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
-              Gerar Documento
+              {!canGenerate ? "Dados obrigatórios ausentes" : "Gerar Documento"}
             </Button>
           </DialogFooter>
         </DialogContent>
