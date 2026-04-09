@@ -124,6 +124,8 @@ const SIGNATURE_VARS = new Set([
 
 const CRITICAL_VARS = ["nome_completo", "documento_contratante", "tenant_nome", "tenant_cnpj"];
 
+const ACCEPTED_STATUSES = new Set(["aceita", "accepted", "aprovada", "approved"]);
+
 /** Convert a crm_lead_activities proposal activity into the shape buildVariableMap expects */
 function activityToProposal(activity: any): any {
   if (!activity) return null;
