@@ -525,32 +525,8 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ success: false, error: "CPF ou data de nascimento nao conferem" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
-      await supabase.from("document_signers").update({ status: "validation_started", validated_at: new Date().toISOString() }).eq("id", signer.id);
-      await supabase.from("document_events").insert({ document_id: signer.document_id, signer_id: signer.id, evento: "validacao_iniciada", descricao: "CPF e data de nascimento validados" });
-      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    // ── SEND_CODE ──
-    if (action === "send_code") {
-      const code = String(Math.floor(100000 + Math.random() * 900000));
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-      await supabase.from("document_signers").update({ validation_code: code, validation_code_expires_at: expiresAt, status: "code_sent" }).eq("id", signer.id);
-      await supabase.from("document_events").insert({ document_id: signer.document_id, signer_id: signer.id, evento: "codigo_enviado", descricao: `Codigo enviado para ${signer.email || "--"}` });
-      console.log(`[SIGN-DOCUMENT] Code for ${signer.nome_completo}: ${code}`);
-      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    // ── VERIFY_CODE ──
-    if (action === "verify_code") {
-      const { code } = body;
-      if (signer.validation_code !== code) {
-        return new Response(JSON.stringify({ success: false, error: "Codigo invalido" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-      if (signer.validation_code_expires_at && new Date(signer.validation_code_expires_at) < new Date()) {
-        return new Response(JSON.stringify({ success: false, error: "Codigo expirado." }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-      await supabase.from("document_signers").update({ status: "validated", validation_code: null, validation_code_expires_at: null }).eq("id", signer.id);
-      await supabase.from("document_events").insert({ document_id: signer.document_id, signer_id: signer.id, evento: "codigo_confirmado", descricao: "Codigo confirmado com sucesso" });
+      await supabase.from("document_signers").update({ status: "validated", validated_at: new Date().toISOString() }).eq("id", signer.id);
+      await supabase.from("document_events").insert({ document_id: signer.document_id, signer_id: signer.id, evento: "validacao_iniciada", descricao: "CPF e data de nascimento validados - identidade confirmada" });
       return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
