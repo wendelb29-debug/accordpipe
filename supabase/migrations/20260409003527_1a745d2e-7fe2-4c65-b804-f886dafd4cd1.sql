@@ -1,0 +1,1 @@
+ALTER TABLE public.company_contract_templates ADD COLUMN contract_content text;
