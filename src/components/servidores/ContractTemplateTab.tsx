@@ -441,18 +441,46 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
                 <p className="text-sm font-medium text-foreground">Faça upload do PDF do contrato modelo</p>
                 <p className="text-xs text-muted-foreground mt-1">Este PDF será usado como base para todos os contratos gerados após finalizar vendas</p>
               </div>
-              <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="gap-2">
+
+              {uploading && (
+                <div className="w-full max-w-xs space-y-1">
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">{selectedFileName} — {Math.round(uploadProgress)}%</p>
+                </div>
+              )}
+
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
+              >
                 {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                 {uploading ? "Enviando..." : "Selecionar PDF"}
               </Button>
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="flex items-center gap-3 flex-wrap">
-                <Badge variant="outline" className="shrink-0">{fields.length} campo(s)</Badge>
-                <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="gap-1 text-xs">
-                  {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+              {/* Uploaded file info */}
+              <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{selectedFileName || pdfPath?.split("/").pop() || "Contrato PDF"}</p>
+                  <p className="text-xs text-muted-foreground">PDF enviado com sucesso</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="gap-1 text-xs shrink-0">
+                  {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
                   Trocar PDF
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleRemovePdf} className="gap-1 text-xs text-destructive hover:text-destructive shrink-0">
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Remover
                 </Button>
               </div>
 
