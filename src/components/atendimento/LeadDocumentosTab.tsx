@@ -381,7 +381,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     if (doc.pdf_url) return doc.pdf_url;
     if (!doc.html_content) throw new Error("Documento sem conteúdo renderizado para gerar PDF");
 
-    const pdfBytes = await renderGeneratedDocumentPdf(doc.nome, doc.html_content);
+    const pdfBytes = await renderGeneratedDocumentPdf(doc.nome, doc.html_content, undefined);
     const pdfUrl = await uploadGeneratedPdf(doc.id, doc.nome, pdfBytes);
 
     const { error } = await supabase
@@ -485,7 +485,12 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
       if (error || !insertedDoc?.id) throw error || new Error("Documento não foi criado");
 
-      const pdfBytes = await renderGeneratedDocumentPdf(finalName, htmlContent);
+      const pdfBytes = await renderGeneratedDocumentPdf(finalName, htmlContent, {
+        logoUrl: tenant?.brand_logo_url || undefined,
+        primaryColor: tenant?.brand_primary_color || undefined,
+        tenantName: tenant?.nome_fantasia || tenant?.razao_social || undefined,
+        tenantCnpj: tenant?.cnpj || undefined,
+      });
       const pdfUrl = await uploadGeneratedPdf(insertedDoc.id, finalName, pdfBytes);
 
       const { error: updateError } = await supabase
