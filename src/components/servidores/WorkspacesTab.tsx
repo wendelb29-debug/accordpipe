@@ -3,7 +3,7 @@ import {
   Plus, Trash2, GripVertical, Pencil, Check, X, Briefcase, BarChart3, Settings2, Loader2,
   ChevronDown, ChevronUp, Copy, Power, Layers, Clock, Hash, Sparkles,
   HeadphonesIcon, DollarSign, Users, Cog, LayoutGrid, Save, Star, Flag, Palette,
-  AlertTriangle, ArrowRight, FolderOpen, Folder,
+  AlertTriangle, ArrowRight, FolderOpen, Folder, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
