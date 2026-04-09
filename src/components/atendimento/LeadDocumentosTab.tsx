@@ -381,7 +381,15 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     if (doc.pdf_url) return doc.pdf_url;
     if (!doc.html_content) throw new Error("Documento sem conteúdo renderizado para gerar PDF");
 
-    const pdfBytes = await renderGeneratedDocumentPdf(doc.nome, doc.html_content, undefined);
+    // Fetch branding for regeneration
+    const { data: tenant } = await supabase.from("companies").select("brand_logo_url, brand_primary_color, nome_fantasia, razao_social, cnpj").eq("id", servidorId).maybeSingle();
+
+    const pdfBytes = await renderGeneratedDocumentPdf(doc.nome, doc.html_content, {
+      logoUrl: tenant?.brand_logo_url || undefined,
+      primaryColor: tenant?.brand_primary_color || undefined,
+      tenantName: tenant?.nome_fantasia || tenant?.razao_social || undefined,
+      tenantCnpj: tenant?.cnpj || undefined,
+    });
     const pdfUrl = await uploadGeneratedPdf(doc.id, doc.nome, pdfBytes);
 
     const { error } = await supabase
@@ -393,7 +401,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
     setDocuments((prev) => prev.map((item) => item.id === doc.id ? { ...item, pdf_url: pdfUrl } : item));
     return pdfUrl;
-  }, [uploadGeneratedPdf]);
+  }, [uploadGeneratedPdf, servidorId]);
 
   const handleOpenDocument = useCallback(async (doc: GeneratedDoc) => {
     try {
