@@ -357,246 +357,230 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
     );
   }
 
+  // General file upload
+  const generalFileRef = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
+
+  const handleGeneralUpload = async (files: FileList | File[]) => {
+    for (const file of Array.from(files)) {
+      await handleUpload("outro", file);
+    }
+  };
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    if (e.dataTransfer.files.length > 0) {
+      handleGeneralUpload(e.dataTransfer.files);
+    }
+  }, []);
+
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+    const files: File[] = [];
+    for (const item of Array.from(items)) {
+      if (item.kind === "file") {
+        const file = item.getAsFile();
+        if (file) files.push(file);
+      }
+    }
+    if (files.length > 0) handleGeneralUpload(files);
+  }, []);
+
   const hasSignedContracts = signedContracts.length > 0 || signedPdfContracts.length > 0;
+  const allDocs = docs;
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-sm font-semibold flex items-center gap-2">
-        <Paperclip className="h-4 w-4" /> Documentos do Lead
-      </h3>
+    <div className="space-y-6" onPaste={handlePaste}>
+      {/* Documentos Gerados Section */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <FileText className="h-4 w-4" /> Documentos Gerados ({signedContracts.length + signedPdfContracts.length})
+          </h3>
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+            <Plus className="h-3.5 w-3.5" />
+            Gerar Documento
+            <ChevronDown className="h-3 w-3" />
+          </Button>
+        </div>
 
-      {/* Signed Contracts Section */}
-      {hasSignedContracts && (
-        <div className="space-y-3">
-          <h4 className="text-xs font-semibold flex items-center gap-1.5 text-green-700 dark:text-green-400">
-            <FileSignature className="h-3.5 w-3.5" /> Contratos Assinados
-          </h4>
-
-          {signedContracts.map((contract) => {
-            const isGenerating = generatingPdf === contract.id;
-            const roleLabels: Record<string, string> = {
-              cliente: "Cliente",
-              vendedor: "Vendedor",
-              testemunha: "Testemunha",
-              diretor: "Diretor/CEO",
-            };
-            return (
-              <Card key={contract.id} className="border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center shrink-0">
-                        <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium">{contract.code} — {lead.company_name}</p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          {contract.signed_at && (
-                            <span>Assinado em {new Date(contract.signed_at).toLocaleDateString("pt-BR")}</span>
-                          )}
+        {hasSignedContracts ? (
+          <div className="space-y-2">
+            {signedContracts.map((contract) => {
+              const isGenerating = generatingPdf === contract.id;
+              const roleLabels: Record<string, string> = {
+                cliente: "Cliente",
+                vendedor: "Vendedor",
+                testemunha: "Testemunha",
+                diretor: "Diretor/CEO",
+              };
+              return (
+                <Card key={contract.id} className="border-border/50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                          <FileText className="h-5 w-5 text-muted-foreground" />
                         </div>
-                        {contract.validation_code && (
-                          <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                            <Shield className="h-3 w-3" /> Código: {contract.validation_code}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Badge variant="secondary" className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border-0">
-                        Assinado
-                      </Badge>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7"
-                        onClick={() => handleViewClientContract(contract)}
-                        disabled={isGenerating}
-                        title="Visualizar contrato assinado"
-                      >
-                        {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7"
-                        onClick={() => handleDownloadClientContract(contract)}
-                        disabled={isGenerating}
-                        title="Baixar contrato assinado"
-                      >
-                        <Download className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Signers details */}
-                  {contract.signers.length > 0 && (
-                    <div className="mt-3 border-t pt-3 space-y-1.5">
-                      {contract.signers.map((signer, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-xs">
-                          <User className="h-3 w-3 text-muted-foreground shrink-0" />
-                          <span className="font-medium">{signer.signer_name || "—"}</span>
-                          <Badge variant="outline" className="text-[9px] px-1 py-0">
-                            {roleLabels[signer.signer_role] || signer.signer_role}
-                          </Badge>
-                          {signer.signer_document && (
-                            <span className="text-muted-foreground">{signer.signer_document}</span>
-                          )}
-                          {signer.signed_at && (
-                            <span className="text-muted-foreground ml-auto">
-                              {new Date(signer.signed_at).toLocaleDateString("pt-BR")} {new Date(signer.signed_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                            </span>
-                          )}
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">{contract.code} — {lead.company_name}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            {contract.signed_at && (
+                              <span>{new Date(contract.signed_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}</span>
+                            )}
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-yellow-500/50 text-yellow-600 dark:text-yellow-400">
+                              {contract.signature_status === "signed"
+                                ? "Assinado"
+                                : `Enviado p/ Assinatura (${contract.signers.filter(s => s.signed_at).length}/${contract.signers.length})`}
+                            </Badge>
+                          </div>
                         </div>
-                      ))}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleViewClientContract(contract)} disabled={isGenerating} title="Visualizar">
+                          {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDownloadClientContract(contract)} disabled={isGenerating} title="Baixar">
+                          <Download className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
+                  </CardContent>
+                </Card>
+              );
+            })}
 
-          {signedPdfContracts.map((contract) => {
-            const pdfUrl = contract.pdf_assinado_url || contract.pdf_url;
-            return (
-              <Card key={contract.id} className="border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center shrink-0">
-                        <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+            {signedPdfContracts.map((contract) => {
+              const pdfUrl = contract.pdf_assinado_url || contract.pdf_url;
+              return (
+                <Card key={contract.id} className="border-border/50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                          <FileText className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">{contract.name}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>{new Date(contract.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}</span>
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-green-500/50 text-green-600 dark:text-green-400">
+                              Concluído
+                            </Badge>
+                          </div>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium">{contract.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Concluído em {new Date(contract.created_at).toLocaleDateString("pt-BR")}
-                        </p>
-                        {contract.validation_code && (
-                          <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                            <Shield className="h-3 w-3" /> Código: {contract.validation_code}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleViewSignedPdf(pdfUrl)} title="Visualizar">
+                          <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDownloadSignedPdf(pdfUrl, `${contract.name}.pdf`)} title="Baixar">
+                          <Download className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        ) : (
+          <Card className="border-dashed border-border/50">
+            <CardContent className="p-6 text-center text-muted-foreground">
+              <p className="text-sm">Nenhum documento gerado ainda.</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* General Upload Area */}
+      <div>
+        <input
+          ref={generalFileRef}
+          type="file"
+          className="hidden"
+          multiple
+          accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx"
+          onChange={(e) => {
+            if (e.target.files) handleGeneralUpload(e.target.files);
+            e.target.value = "";
+          }}
+        />
+        <div
+          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
+            dragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+          }`}
+          onClick={() => generalFileRef.current?.click()}
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={handleDrop}
+        >
+          <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+          <p className="text-sm font-medium text-foreground flex items-center justify-center gap-1.5">
+            <Upload className="h-4 w-4" /> Enviar arquivos
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">Arraste arquivos ou clique para selecionar</p>
+        </div>
+        <p className="text-xs text-muted-foreground text-center mt-2">Dica: Cole imagens diretamente com Ctrl+V</p>
+      </div>
+
+      {/* Uploaded Files List */}
+      {allDocs.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
+            <FolderOpen className="h-4 w-4" /> Arquivos Enviados ({allDocs.length})
+          </h3>
+          <div className="space-y-2">
+            {allDocs.map((doc) => {
+              const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(doc.file_name);
+              return (
+                <Card key={doc.id} className="border-border/50">
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                          {isImage ? <ImageIcon className="h-4 w-4 text-muted-foreground" /> : <FileText className="h-4 w-4 text-muted-foreground" />}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{doc.file_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {doc.uploaded_by_name || "—"} • {new Date(doc.created_at).toLocaleDateString("pt-BR")}
+                            {doc.doc_type !== "outro" && (
+                              <> • <Badge variant="outline" className="text-[9px] px-1 py-0 ml-1">{DOC_TYPES.find(d => d.key === doc.doc_type)?.label || doc.doc_type}</Badge></>
+                            )}
                           </p>
-                        )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button size="icon" variant="ghost" className="h-7 w-7" asChild>
+                          <a href={doc.file_url} target="_blank" rel="noopener noreferrer"><Eye className="h-3.5 w-3.5" /></a>
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" asChild>
+                          <a href={doc.file_url} download={doc.file_name}><Download className="h-3.5 w-3.5" /></a>
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleDelete(doc)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Badge variant="secondary" className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border-0">
-                        Assinado
-                      </Badge>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7"
-                        onClick={() => handleViewSignedPdf(pdfUrl)}
-                        title="Visualizar contrato"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7"
-                        onClick={() => handleDownloadSignedPdf(pdfUrl, `${contract.name}.pdf`)}
-                        title="Baixar contrato"
-                      >
-                        <Download className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </div>
       )}
 
-      <div className="grid gap-3">
-        {DOC_TYPES.map((dt) => {
-          const typeDocs = getDocsForType(dt.key);
-          const Icon = dt.icon;
-          return (
-            <Card key={dt.key} className="border-border/50">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Icon className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium">{dt.label}</p>
-                      <p className="text-xs text-muted-foreground">{dt.description}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {typeDocs.length > 0 && (
-                      <Badge variant="secondary" className="text-[10px]">
-                        {typeDocs.length} arquivo{typeDocs.length > 1 ? "s" : ""}
-                      </Badge>
-                    )}
-                    <label>
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept=".pdf,.jpg,.jpeg,.png,.webp"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) handleUpload(dt.key, f);
-                          e.target.value = "";
-                        }}
-                      />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="gap-1 text-xs"
-                        asChild
-                        disabled={uploading === dt.key}
-                      >
-                        <span>
-                          {uploading === dt.key ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <Upload className="h-3 w-3" />
-                          )}
-                          Upload
-                        </span>
-                      </Button>
-                    </label>
-                  </div>
-                </div>
-
-                {typeDocs.length > 0 && (
-                  <div className="mt-3 space-y-2 border-t pt-3">
-                    {typeDocs.map((doc) => (
-                      <div key={doc.id} className="flex items-center justify-between gap-2 text-xs bg-muted/30 rounded-md px-3 py-2">
-                        <div className="min-w-0">
-                          <p className="truncate font-medium">{doc.file_name}</p>
-                          <p className="text-muted-foreground">
-                            {doc.uploaded_by_name || "—"} • {new Date(doc.created_at).toLocaleDateString("pt-BR")}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <Button size="icon" variant="ghost" className="h-7 w-7" asChild>
-                            <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                              <Eye className="h-3.5 w-3.5" />
-                            </a>
-                          </Button>
-                          <Button size="icon" variant="ghost" className="h-7 w-7" asChild>
-                            <a href={doc.file_url} download={doc.file_name}>
-                              <Download className="h-3.5 w-3.5" />
-                            </a>
-                          </Button>
-                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleDelete(doc)}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      {/* Empty state for files */}
+      {allDocs.length === 0 && (
+        <Card className="border-dashed border-border/50">
+          <CardContent className="p-8 text-center">
+            <FolderOpen className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">Nenhum arquivo enviado</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
