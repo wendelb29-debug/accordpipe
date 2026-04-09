@@ -113,16 +113,34 @@ interface Props {
   addActivity?: (data: any) => Promise<any>;
 }
 
-function buildVariableMap(lead: CrmLead) {
+function buildVariableMap(
+  lead: CrmLead,
+  tenant?: any,
+  proposal?: any,
+  vendor?: any,
+) {
   const now = new Date();
+  const fmtCurrency = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  // Build services list from proposal items if available
+  let servicosContratados = "";
+  if (proposal?.proposal_items) {
+    servicosContratados = (proposal.proposal_items as any[])
+      .map((item: any) => `${item.nome} - ${fmtCurrency(item.valor)}`)
+      .join("; ");
+  }
+
   return {
+    // Lead / Client
     "{{nome_completo}}": lead.contact_name || lead.company_name || "",
     "{{cpf}}": lead.documento || "",
     "{{cnpj}}": lead.documento || "",
     "{{razao_social}}": lead.company_name || "",
+    "{{documento_contratante}}": lead.documento || "",
     "{{email}}": lead.email || "",
     "{{telefone}}": lead.phone || "",
     "{{whatsapp}}": lead.phone || "",
+    "{{data_nascimento}}": "",
     "{{endereco}}": lead.endereco || "",
     "{{numero}}": lead.numero || "",
     "{{bairro}}": lead.bairro || "",
@@ -131,7 +149,35 @@ function buildVariableMap(lead: CrmLead) {
     "{{cep}}": lead.cep || "",
     "{{nome_empresa}}": lead.company_name || "",
     "{{data_atual}}": now.toLocaleDateString("pt-BR"),
-    "{{valor_proposta}}": lead.value_mrr?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) || "R$ 0,00",
+    // Tenant
+    "{{tenant_nome}}": tenant?.nome_fantasia || tenant?.razao_social || "",
+    "{{tenant_cnpj}}": tenant?.cnpj || "",
+    "{{tenant_razao_social}}": tenant?.razao_social || "",
+    "{{tenant_email}}": tenant?.email || "",
+    "{{tenant_telefone}}": tenant?.telefone || "",
+    "{{tenant_endereco}}": [tenant?.endereco, tenant?.numero].filter(Boolean).join(", ") || "",
+    "{{tenant_cidade}}": tenant?.cidade || "",
+    "{{tenant_estado}}": tenant?.estado || "",
+    // Proposal
+    "{{nome_item}}": proposal?.titulo || "",
+    "{{descricao_item}}": proposal?.descricao || "",
+    "{{valor_proposta}}": proposal ? fmtCurrency(proposal.valor) : "",
+    "{{valor_total}}": proposal ? fmtCurrency(proposal.valor) : "",
+    "{{servicos_contratados}}": servicosContratados,
+    // Vendor
+    "{{nome_vendedor}}": vendor?.name || "",
+    "{{email_vendedor}}": vendor?.email || "",
+    "{{telefone_vendedor}}": vendor?.phone || "",
+    "{{data_nascimento_vendedor}}": vendor?.birth_date || "",
+    // Signature placeholders (filled at sign time)
+    "{{data_assinatura_cliente}}": "",
+    "{{hora_assinatura_cliente}}": "",
+    "{{geolocalizacao_cliente}}": "",
+    "{{selfie_cliente}}": "",
+    "{{data_assinatura_vendedor}}": "",
+    "{{hora_assinatura_vendedor}}": "",
+    "{{geolocalizacao_vendedor}}": "",
+    "{{selfie_vendedor}}": "",
   };
 }
 
