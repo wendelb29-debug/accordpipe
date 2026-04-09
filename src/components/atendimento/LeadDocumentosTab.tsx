@@ -142,11 +142,17 @@ function buildVariableMap(
       servicosContratados = proposal.proposal_items
         .map((item: any) => {
           const name = item.nome || item.name || "";
+          const desc = item.descricao || "";
+          const qty = item.quantidade || 1;
           const val = item.valor != null ? fmtCurrency(item.valor) : "";
-          return val ? `${name} - ${val}` : name;
+          const parts = [`Serviço: ${name}`];
+          if (desc) parts.push(`Descrição: ${desc}`);
+          if (qty > 1) parts.push(`Quantidade: ${qty}`);
+          if (val) parts.push(`Valor Total: ${val}`);
+          return parts.join("\n");
         })
         .filter(Boolean)
-        .join("; ");
+        .join("\n\n");
 
       // If only 1 item, use it as nome_item/descricao_item too
       if (proposal.proposal_items.length === 1) {
