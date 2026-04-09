@@ -553,16 +553,32 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     setSignStep("config");
     setGeneratedSigners([]);
 
+    // Validate owner profile data
+    const missingFields: string[] = [];
+    if (!profile?.name?.trim()) missingFields.push("Nome completo");
+    if (!profile?.email?.trim()) missingFields.push("E-mail");
+    if (!profile?.cpf?.trim()) missingFields.push("CPF");
+    if (!profile?.whatsapp?.trim()) missingFields.push("Telefone");
+    if (!profile?.birth_date) missingFields.push("Data de nascimento");
+
+    if (missingFields.length > 0) {
+      toast.error(
+        `Complete os dados obrigatórios do seu perfil para enviar para assinatura: ${missingFields.join(", ")}`,
+        { duration: 6000 }
+      );
+      return;
+    }
+
     // Auto-fill signers
     const autoSigners: typeof signers = [];
 
-    // Signer 1: proposal owner (current user / creator)
+    // Signer 1: proposal owner (current user) — fixed, read-only
     autoSigners.push({
-      nome_completo: profile?.name || "",
-      email: profile?.email || "",
-      telefone: "",
-      cpf: "",
-      data_nascimento: "",
+      nome_completo: profile.name,
+      email: profile.email,
+      telefone: profile.whatsapp || "",
+      cpf: profile.cpf || "",
+      data_nascimento: profile.birth_date || "",
       papel: "proprietario_proposta",
       obrigatorio: true,
     });
@@ -590,21 +606,29 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     if (!signDoc) return;
     if (signers.some((s) => !s.nome_completo.trim())) return toast.error("Todos os signatários precisam de nome");
 
+    // Server-side enforcement: always use fresh profile data for owner signer
+    if (!profile?.name || !profile?.email || !profile?.cpf) {
+      return toast.error("Complete os dados obrigatórios do seu perfil antes de enviar para assinatura.");
+    }
+
     setSendingSignature(true);
 
-    // Create signers in DB
-    const signersToInsert = signers.map((s, i) => ({
-      document_id: signDoc.id,
-      nome_completo: s.nome_completo,
-      email: s.email || null,
-      telefone: s.telefone || null,
-      cpf: s.cpf || null,
-      data_nascimento: s.data_nascimento || null,
-      papel: s.papel,
-      obrigatorio: s.obrigatorio,
-      ordem: i + 1,
-      status: "pending",
-    }));
+    // Create signers in DB — enforce owner data from profile
+    const signersToInsert = signers.map((s, i) => {
+      const isOwner = s.papel === "proprietario_proposta";
+      return {
+        document_id: signDoc.id,
+        nome_completo: isOwner ? profile.name : s.nome_completo,
+        email: isOwner ? profile.email : (s.email || null),
+        telefone: isOwner ? (profile.whatsapp || null) : (s.telefone || null),
+        cpf: isOwner ? (profile.cpf || null) : (s.cpf || null),
+        data_nascimento: isOwner ? (profile.birth_date || null) : (s.data_nascimento || null),
+        papel: s.papel,
+        obrigatorio: s.obrigatorio,
+        ordem: i + 1,
+        status: "pending",
+      };
+    });
 
     const { data: insertedSigners, error: signersError } = await supabase
       .from("document_signers")
@@ -990,7 +1014,9 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                 <h4 className="text-sm font-semibold">Signatários</h4>
               </div>
 
-              {signers.map((signer, idx) => (
+              {signers.map((signer, idx) => {
+                const isOwner = signer.papel === "proprietario_proposta";
+                return (
                 <Card key={idx} className="border">
                   <CardContent className="p-3 space-y-2">
                     <div className="flex items-center justify-between">
@@ -1010,6 +1036,8 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                           value={signer.nome_completo}
                           onChange={(e) => updateSigner(idx, "nome_completo", e.target.value)}
                           className="h-8 text-xs"
+                          readOnly={isOwner}
+                          disabled={isOwner}
                         />
                       </div>
                       <div>
@@ -1018,6 +1046,8 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                           value={signer.email}
                           onChange={(e) => updateSigner(idx, "email", e.target.value)}
                           className="h-8 text-xs"
+                          readOnly={isOwner}
+                          disabled={isOwner}
                         />
                       </div>
                       <div>
@@ -1026,6 +1056,8 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                           value={signer.telefone}
                           onChange={(e) => updateSigner(idx, "telefone", e.target.value)}
                           className="h-8 text-xs"
+                          readOnly={isOwner}
+                          disabled={isOwner}
                         />
                       </div>
                       <div>
@@ -1034,6 +1066,8 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                           value={signer.cpf}
                           onChange={(e) => updateSigner(idx, "cpf", e.target.value)}
                           className="h-8 text-xs"
+                          readOnly={isOwner}
+                          disabled={isOwner}
                         />
                       </div>
                       <div>
@@ -1043,12 +1077,20 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                           value={signer.data_nascimento}
                           onChange={(e) => updateSigner(idx, "data_nascimento", e.target.value)}
                           className="h-8 text-xs"
+                          readOnly={isOwner}
+                          disabled={isOwner}
                         />
                       </div>
                     </div>
+                    {isOwner && (
+                      <p className="text-[10px] text-muted-foreground italic mt-1">
+                        Dados preenchidos automaticamente com base no usuário responsável pela proposta.
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
-              ))}
+              );
+              })}
 
               <Separator />
 

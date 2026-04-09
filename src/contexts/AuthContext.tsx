@@ -18,6 +18,8 @@ interface Profile {
   updated_at: string;
   birth_date: string | null;
   theme: string;
+  cpf: string | null;
+  whatsapp: string | null;
 }
 
 interface CompanyOption {
