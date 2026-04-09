@@ -58,6 +58,7 @@ interface SignedContract {
   signer_name: string | null;
   signer_document: string | null;
   signature_photo_url: string | null;
+  matriz_nome: string | null;
   signers: ContractSigner[];
 }
 
