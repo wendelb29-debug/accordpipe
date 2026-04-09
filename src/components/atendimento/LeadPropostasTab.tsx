@@ -1269,6 +1269,31 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
         pdf.addImage(imgData, "JPEG", 0, 0, wMm, hMm);
       }
 
+      // Add ANEXO I page with proposal items
+      if (contractPreviewProposal && pdf) {
+        const meta = (contractPreviewProposal.metadata as any) || {};
+        const lineItems: AnnexLineItem[] = (meta.line_items || []).map((it: any) => ({
+          name: it.name || "",
+          unitValue: it.unitValue || 0,
+          quantity: it.quantity || 1,
+          discountType: it.discountType || "percent",
+          discountValue: it.discountValue || 0,
+          total: it.total || 0,
+        }));
+
+        if (lineItems.length > 0) {
+          addAnnexPage(pdf, {
+            clientName: lead.contact_name || lead.company_name || "---",
+            clientCnpj: lead.documento || "[CNPJ nao informado]",
+            items: lineItems,
+            paymentMethod: meta.payment_method || "",
+            paymentFrequency: meta.payment_frequency || "avista",
+            numberOfInstallments: meta.number_of_installments || 1,
+            sigla: meta.sigla || "",
+          });
+        }
+      }
+
       return pdf.output("blob");
     } catch (err) {
       console.error("Error generating template PDF blob:", err);
