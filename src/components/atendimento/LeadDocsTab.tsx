@@ -25,6 +25,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { generateSignedContractPdf } from "@/lib/generateSignedContractPdf";
 import { generateContractPdf } from "@/lib/generateContractPdf";
+import { addAnnexPage } from "@/lib/generateContractAnnex";
+import type { AnnexData, AnnexLineItem } from "@/lib/generateContractAnnex";
 import type { CrmLead } from "@/hooks/useCrmLeads";
 
 interface LeadDocsTabProps {
