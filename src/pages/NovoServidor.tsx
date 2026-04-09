@@ -557,6 +557,14 @@ export default function NovoServidor() {
             </Card>
           )}
 
+          {activeTab === "workspaces" && (
+            <Card>
+              <CardContent className="pt-6">
+                <WorkspacesTab companyId={editId || pendingNewId} />
+              </CardContent>
+            </Card>
+          )}
+
           {activeTab === "contrato" && (
             <Card>
               <CardContent className="pt-6">
