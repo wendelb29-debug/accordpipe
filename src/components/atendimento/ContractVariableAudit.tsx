@@ -51,6 +51,22 @@ const OFFICIAL_VARIABLES: Record<string, VarDefinition> = {
   valor_proposta: { source: "proposta", description: "Valor da proposta" },
   valor_total: { source: "proposta", description: "Valor total" },
   servicos_contratados: { source: "proposta", description: "Lista de serviços contratados" },
+  // Payment MRR
+  forma_pagamento_mrr: { source: "proposta", description: "Forma de pagamento MRR" },
+  quantidade_parcelas_mrr: { source: "proposta", description: "Quantidade de parcelas MRR" },
+  data_primeira_parcela_mrr: { source: "proposta", description: "Data da 1ª parcela MRR" },
+  dia_vencimento_mrr: { source: "proposta", description: "Dia de vencimento MRR" },
+  meio_pagamento_mrr: { source: "proposta", description: "Meio de pagamento MRR" },
+  valor_parcela_mrr: { source: "proposta", description: "Valor da parcela MRR" },
+  valor_total_mrr: { source: "proposta", description: "Valor mensal MRR" },
+  valor_total_contrato_mrr: { source: "proposta", description: "Valor total do contrato MRR" },
+  resumo_pagamento_mrr: { source: "proposta", description: "Resumo do pagamento MRR" },
+  parcelas_mrr: { source: "proposta", description: "Lista de parcelas MRR" },
+  // Payment P&S
+  forma_pagamento_ps: { source: "proposta", description: "Forma de pagamento P&S" },
+  quantidade_parcelas_ps: { source: "proposta", description: "Quantidade de parcelas P&S" },
+  valor_total_ps: { source: "proposta", description: "Valor total P&S" },
+  resumo_pagamento_ps: { source: "proposta", description: "Resumo do pagamento P&S" },
   // Vendor
   nome_vendedor: { source: "vendedor", description: "Nome do vendedor" },
   email_vendedor: { source: "vendedor", description: "E-mail do vendedor" },
