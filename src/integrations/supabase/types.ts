@@ -1647,6 +1647,7 @@ export type Database = {
           created_at: string
           created_by_name: string | null
           created_by_user_id: string | null
+          document_hash: string | null
           expires_at: string | null
           html_content: string | null
           id: string
@@ -1663,12 +1664,14 @@ export type Database = {
           template_id: string | null
           tipo: string
           updated_at: string
+          validation_code: string | null
         }
         Insert: {
           cancelled_at?: string | null
           created_at?: string
           created_by_name?: string | null
           created_by_user_id?: string | null
+          document_hash?: string | null
           expires_at?: string | null
           html_content?: string | null
           id?: string
@@ -1685,12 +1688,14 @@ export type Database = {
           template_id?: string | null
           tipo?: string
           updated_at?: string
+          validation_code?: string | null
         }
         Update: {
           cancelled_at?: string | null
           created_at?: string
           created_by_name?: string | null
           created_by_user_id?: string | null
+          document_hash?: string | null
           expires_at?: string | null
           html_content?: string | null
           id?: string
@@ -1707,6 +1712,7 @@ export type Database = {
           template_id?: string | null
           tipo?: string
           updated_at?: string
+          validation_code?: string | null
         }
         Relationships: [
           {
