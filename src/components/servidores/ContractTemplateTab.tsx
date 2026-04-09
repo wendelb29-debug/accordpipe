@@ -25,6 +25,13 @@ const SUPPORTED_VARS = [
   "whatsapp","data_nascimento","endereco","numero","bairro","cidade","estado","cep","nome_empresa",
   "nome_item","descricao_item","valor_proposta","valor_total","servicos_contratados",
   "nome_vendedor","email_vendedor","telefone_vendedor","data_nascimento_vendedor",
+  // Payment MRR
+  "forma_pagamento_mrr","quantidade_parcelas_mrr","data_primeira_parcela_mrr",
+  "dia_vencimento_mrr","meio_pagamento_mrr","valor_parcela_mrr",
+  "valor_total_mrr","valor_total_contrato_mrr","resumo_pagamento_mrr","parcelas_mrr",
+  // Payment P&S
+  "forma_pagamento_ps","quantidade_parcelas_ps","valor_total_ps","resumo_pagamento_ps",
+  // Signature
   "data_assinatura_cliente","hora_assinatura_cliente","geolocalizacao_cliente","selfie_cliente",
   "data_assinatura_vendedor","hora_assinatura_vendedor","geolocalizacao_vendedor","selfie_vendedor",
   "data_atual",
