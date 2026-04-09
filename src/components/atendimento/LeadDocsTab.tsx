@@ -488,6 +488,72 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
     }
   };
 
+  const handleCancelContractSignatures = async (contractId: string) => {
+    try {
+      await supabase.from("contracts").update({ signature_status: "cancelled" } as any).eq("id", contractId);
+      toast.success("Assinaturas canceladas!");
+      await fetchSignedContracts();
+    } catch {
+      toast.error("Erro ao cancelar assinaturas");
+    }
+  };
+
+  const handleCancelPdfContractSignatures = async (contractId: string) => {
+    try {
+      await supabase.from("pdf_contracts").update({ status: "cancelado" } as any).eq("id", contractId);
+      toast.success("Assinaturas canceladas!");
+      await fetchSignedContracts();
+    } catch {
+      toast.error("Erro ao cancelar assinaturas");
+    }
+  };
+
+  const handleDeleteContract = async (contractId: string) => {
+    try {
+      await supabase.from("contract_signatures").delete().eq("contract_id", contractId);
+      const { data: c } = await supabase.from("contracts").select("pdf_url, pdf_assinado_path").eq("id", contractId).maybeSingle();
+      if ((c as any)?.pdf_assinado_path) {
+        await supabase.storage.from("contract-pdfs").remove([(c as any).pdf_assinado_path]);
+      }
+      await supabase.from("contracts").delete().eq("id", contractId);
+      toast.success("Documento excluído!");
+      await fetchSignedContracts();
+    } catch {
+      toast.error("Erro ao excluir documento");
+    }
+  };
+
+  const handleDeletePdfContract = async (contractId: string) => {
+    try {
+      const { data: c } = await supabase.from("pdf_contracts").select("pdf_path, pdf_assinado_path").eq("id", contractId).maybeSingle();
+      const toRemove = [c?.pdf_path, c?.pdf_assinado_path].filter(Boolean) as string[];
+      if (toRemove.length) await supabase.storage.from("contract-pdfs").remove(toRemove);
+      await (supabase as any).from("pdf_contract_signers").delete().eq("contract_id", contractId);
+      await (supabase as any).from("pdf_contract_history").delete().eq("contract_id", contractId);
+      await supabase.from("pdf_contracts").delete().eq("id", contractId);
+      toast.success("Documento excluído!");
+      await fetchSignedContracts();
+    } catch {
+      toast.error("Erro ao excluir documento");
+    }
+  };
+
+  const handleViewSignature = (contract: SignedContract) => {
+    if (contract.validation_code) {
+      window.open(`${window.location.origin}/validar-documento/${contract.validation_code}`, "_blank");
+    } else {
+      toast.info("Código de validação não disponível");
+    }
+  };
+
+  const handleViewPdfSignature = (contract: SignedPdfContract) => {
+    if (contract.validation_code) {
+      window.open(`${window.location.origin}/validar-documento/${contract.validation_code}`, "_blank");
+    } else {
+      toast.info("Código de validação não disponível");
+    }
+  };
+
   return (
     <div className="space-y-6" onPaste={handlePaste}>
       {/* Documentos Gerados Section */}
