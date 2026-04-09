@@ -119,35 +119,77 @@ function buildVariableMap(
   tenant?: any,
   proposal?: any,
   vendor?: any,
+  registration?: any,
 ) {
   const now = new Date();
-  const fmtCurrency = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const fmtCurrency = (v: number) =>
+    v != null ? v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "";
 
   // Build services list from proposal items if available
   let servicosContratados = "";
-  if (proposal?.proposal_items) {
-    servicosContratados = (proposal.proposal_items as any[])
-      .map((item: any) => `${item.nome} - ${fmtCurrency(item.valor)}`)
-      .join("; ");
+  let nomeItem = "";
+  let descricaoItem = "";
+  let valorProposta = "";
+  let valorTotal = "";
+
+  if (proposal) {
+    nomeItem = proposal.titulo || "";
+    descricaoItem = proposal.descricao || "";
+    valorProposta = proposal.valor != null ? fmtCurrency(proposal.valor) : "";
+    valorTotal = valorProposta; // same source
+
+    if (proposal.proposal_items && Array.isArray(proposal.proposal_items) && proposal.proposal_items.length > 0) {
+      servicosContratados = proposal.proposal_items
+        .map((item: any) => {
+          const name = item.nome || item.name || "";
+          const val = item.valor != null ? fmtCurrency(item.valor) : "";
+          return val ? `${name} - ${val}` : name;
+        })
+        .filter(Boolean)
+        .join("; ");
+
+      // If only 1 item, use it as nome_item/descricao_item too
+      if (proposal.proposal_items.length === 1) {
+        const firstItem = proposal.proposal_items[0];
+        nomeItem = nomeItem || firstItem.nome || firstItem.name || "";
+        descricaoItem = descricaoItem || firstItem.descricao || "";
+      }
+
+      // Compute total from items
+      const itemsTotal = proposal.proposal_items.reduce(
+        (sum: number, it: any) => sum + (Number(it.valor) || 0), 0
+      );
+      if (itemsTotal > 0) {
+        valorTotal = fmtCurrency(itemsTotal);
+      }
+    }
   }
+
+  // Determine documento_contratante — prefer CPF from registration, then lead.documento
+  const cpfValue = registration?.cpf || lead.documento || "";
+  const cnpjValue = lead.documento || "";
+  const documentoContratante = cpfValue || cnpjValue;
+
+  // Data nascimento from registration if available
+  const dataNascimento = registration?.data_nascimento || "";
 
   return {
     // Lead / Client
-    "{{nome_completo}}": lead.contact_name || lead.company_name || "",
-    "{{cpf}}": lead.documento || "",
-    "{{cnpj}}": lead.documento || "",
+    "{{nome_completo}}": registration?.nome_completo || lead.contact_name || lead.company_name || "",
+    "{{cpf}}": cpfValue,
+    "{{cnpj}}": cnpjValue,
     "{{razao_social}}": lead.company_name || "",
-    "{{documento_contratante}}": lead.documento || "",
-    "{{email}}": lead.email || "",
+    "{{documento_contratante}}": documentoContratante,
+    "{{email}}": lead.email || registration?.email || "",
     "{{telefone}}": lead.phone || "",
     "{{whatsapp}}": lead.phone || "",
-    "{{data_nascimento}}": "",
-    "{{endereco}}": lead.endereco || "",
-    "{{numero}}": lead.numero || "",
-    "{{bairro}}": lead.bairro || "",
-    "{{cidade}}": lead.cidade || "",
-    "{{estado}}": lead.estado || "",
-    "{{cep}}": lead.cep || "",
+    "{{data_nascimento}}": dataNascimento,
+    "{{endereco}}": registration?.endereco || lead.endereco || "",
+    "{{numero}}": registration?.numero || lead.numero || "",
+    "{{bairro}}": registration?.bairro || lead.bairro || "",
+    "{{cidade}}": registration?.cidade || lead.cidade || "",
+    "{{estado}}": registration?.estado || lead.estado || "",
+    "{{cep}}": registration?.cep || lead.cep || "",
     "{{nome_empresa}}": lead.company_name || "",
     "{{data_atual}}": now.toLocaleDateString("pt-BR"),
     // Tenant
@@ -160,10 +202,10 @@ function buildVariableMap(
     "{{tenant_cidade}}": tenant?.cidade || "",
     "{{tenant_estado}}": tenant?.estado || "",
     // Proposal
-    "{{nome_item}}": proposal?.titulo || "",
-    "{{descricao_item}}": proposal?.descricao || "",
-    "{{valor_proposta}}": proposal ? fmtCurrency(proposal.valor) : "",
-    "{{valor_total}}": proposal ? fmtCurrency(proposal.valor) : "",
+    "{{nome_item}}": nomeItem,
+    "{{descricao_item}}": descricaoItem,
+    "{{valor_proposta}}": valorProposta,
+    "{{valor_total}}": valorTotal,
     "{{servicos_contratados}}": servicosContratados,
     // Vendor
     "{{nome_vendedor}}": vendor?.name || "",
