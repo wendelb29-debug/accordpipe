@@ -229,13 +229,19 @@ export function Sidebar() {
         collapsed ? "justify-center px-2" : "justify-start px-5"
       )}>
         <div className="flex items-center gap-2.5 cursor-default shrink-0" onClick={(e) => e.preventDefault()}>
-          <img src={accordLogo} alt="ACCORD" className={cn("transition-all duration-300", collapsed ? "h-7" : "h-8")} />
-          <span className={cn(
-            "text-[15px] font-bold tracking-tight text-sidebar-foreground/90 whitespace-nowrap transition-all duration-300",
-            collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 w-auto"
-          )}>
-            ACCORD
-          </span>
+          <img
+            src={tenantLogoUrl || accordLogo}
+            alt={tenantLogoUrl ? "Tenant" : "ACCORD"}
+            className={cn("transition-all duration-300 object-contain", collapsed ? "h-7" : "h-8", tenantLogoUrl && "max-w-[120px]")}
+          />
+          {!tenantLogoUrl && (
+            <span className={cn(
+              "text-[15px] font-bold tracking-tight text-sidebar-foreground/90 whitespace-nowrap transition-all duration-300",
+              collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 w-auto"
+            )}>
+              ACCORD
+            </span>
+          )}
         </div>
         {/* Pin/Toggle button - visible when expanded */}
         {!collapsed && (
