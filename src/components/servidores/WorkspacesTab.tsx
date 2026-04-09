@@ -61,6 +61,7 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
   const [editingColId, setEditingColId] = useState<string | null>(null);
   const [editColName, setEditColName] = useState("");
   const [editColSla, setEditColSla] = useState(7);
+  const [editColSlaUnit, setEditColSlaUnit] = useState<"dias" | "horas">("dias");
 
   const fetchData = useCallback(async () => {
     if (!companyId) return;
