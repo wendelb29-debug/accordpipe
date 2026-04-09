@@ -98,8 +98,9 @@ function drawHeader(ctx: RenderContext): void {
   // Tenant name + CNPJ on the right
   const rightX = A4_WIDTH - MARGIN;
   if (branding?.tenantName) {
-    const nameW = boldFont.widthOfTextAtSize(branding.tenantName, 9);
-    page.drawText(branding.tenantName, {
+    const nameText = sanitizePdfText(branding.tenantName);
+    const nameW = boldFont.widthOfTextAtSize(nameText, 9);
+    page.drawText(nameText, {
       x: rightX - nameW,
       y: headerY - 5,
       font: boldFont,
@@ -108,8 +109,9 @@ function drawHeader(ctx: RenderContext): void {
     });
   }
   if (branding?.tenantCnpj) {
-    const cnpjW = font.widthOfTextAtSize(branding.tenantCnpj, 7);
-    page.drawText(branding.tenantCnpj, {
+    const cnpjText = sanitizePdfText(branding.tenantCnpj);
+    const cnpjW = font.widthOfTextAtSize(cnpjText, 7);
+    page.drawText(cnpjText, {
       x: rightX - cnpjW,
       y: headerY - 17,
       font,
@@ -211,7 +213,7 @@ function drawWrappedText(
     return;
   }
 
-  const fullText = bulletPrefix + text;
+  const fullText = sanitizePdfText(bulletPrefix + text);
   const words = fullText.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let currentLine = "";
@@ -420,7 +422,7 @@ function drawTable(ctx: RenderContext, rows: string[][]): void {
     // Cell text
     const row = rows[ri];
     for (let ci = 0; ci < colCount; ci++) {
-      const cellText = (row[ci] || "").substring(0, 60);
+      const cellText = sanitizePdfText((row[ci] || "").substring(0, 60));
       const f = isHeader ? ctx.boldFont : ctx.font;
       const textColor = isHeader ? rgb(pc.r, pc.g, pc.b) : rgb(0.15, 0.15, 0.15);
       ctx.page.drawText(cellText, {
@@ -457,8 +459,9 @@ function drawSignatureBlock(ctx: RenderContext, label: string, lines: string[]):
   ctx.y -= 14;
 
   // Label (centered, bold)
-  const labelW = ctx.boldFont.widthOfTextAtSize(label, 10);
-  ctx.page.drawText(label, {
+  const safeLabel = sanitizePdfText(label);
+  const labelW = ctx.boldFont.widthOfTextAtSize(safeLabel, 10);
+  ctx.page.drawText(safeLabel, {
     x: centerX - labelW / 2,
     y: ctx.y,
     font: ctx.boldFont,
@@ -469,8 +472,9 @@ function drawSignatureBlock(ctx: RenderContext, label: string, lines: string[]):
 
   // Detail lines
   for (const line of lines) {
-    const lineW = ctx.font.widthOfTextAtSize(line, 8);
-    ctx.page.drawText(line, {
+    const safeLine = sanitizePdfText(line);
+    const lineW = ctx.font.widthOfTextAtSize(safeLine, 8);
+    ctx.page.drawText(safeLine, {
       x: centerX - lineW / 2,
       y: ctx.y,
       font: ctx.font,
@@ -562,7 +566,8 @@ function drawCertificatePage(ctx: RenderContext, certData: PdfCertificateData): 
       });
 
       let cardY = ctx.y - 14;
-      ctx.page.drawText(signer.name, {
+      const safeName = sanitizePdfText(signer.name);
+      ctx.page.drawText(safeName, {
         x: MARGIN + 10,
         y: cardY,
         font: ctx.boldFont,
@@ -583,11 +588,11 @@ function drawCertificatePage(ctx: RenderContext, certData: PdfCertificateData): 
 
       cardY -= 14;
       const details: string[] = [];
-      if (signer.document) details.push(`Doc: ${signer.document}`);
-      if (signer.signedAt) details.push(`Assinado: ${signer.signedAt}`);
-      if (signer.ip) details.push(`IP: ${signer.ip}`);
+      if (signer.document) details.push(`Doc: ${sanitizePdfText(signer.document)}`);
+      if (signer.signedAt) details.push(`Assinado: ${sanitizePdfText(signer.signedAt)}`);
+      if (signer.ip) details.push(`IP: ${sanitizePdfText(signer.ip)}`);
 
-      ctx.page.drawText(details.join("  •  "), {
+      ctx.page.drawText(sanitizePdfText(details.join("  -  ")), {
         x: MARGIN + 10,
         y: cardY,
         font: ctx.font,
@@ -597,7 +602,7 @@ function drawCertificatePage(ctx: RenderContext, certData: PdfCertificateData): 
 
       cardY -= 13;
       if (signer.location) {
-        ctx.page.drawText(`Local: ${signer.location}`, {
+        ctx.page.drawText(sanitizePdfText(`Local: ${signer.location}`), {
           x: MARGIN + 10,
           y: cardY,
           font: ctx.font,
