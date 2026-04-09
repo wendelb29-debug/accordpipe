@@ -270,6 +270,10 @@ Deno.serve(async (req) => {
       if (allRequiredSigned) {
         docUpdate.signed_at = signedAt;
 
+        // Generate validation_code + document_hash
+        const validationCode = `ACD-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+        docUpdate.validation_code = validationCode;
+
         // Log final event
         await supabase.from("document_events").insert({
           document_id: signer.document_id,
@@ -283,9 +287,6 @@ Deno.serve(async (req) => {
         });
 
         // 7. Generate final signed PDF URL
-        // The signed PDF is built from the updated HTML + original PDF.
-        // For now, we copy the original PDF as the signed version and mark it.
-        // In production, a full PDF render with audit trail would happen here.
         const { data: fullDoc } = await supabase
           .from("generated_documents")
           .select("pdf_url")
@@ -293,11 +294,17 @@ Deno.serve(async (req) => {
           .single();
 
         if (fullDoc?.pdf_url) {
-          // Fetch the original PDF bytes and re-upload as signed copy
           try {
             const pdfResp = await fetch(fullDoc.pdf_url);
             if (pdfResp.ok) {
               const pdfBytes = await pdfResp.arrayBuffer();
+
+              // Compute SHA-256 hash
+              const hashBuffer = await crypto.subtle.digest("SHA-256", pdfBytes);
+              const hashArray = Array.from(new Uint8Array(hashBuffer));
+              const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+              docUpdate.document_hash = hashHex;
+
               const signedPath = `signed/${signer.document_id}_${Date.now()}.pdf`;
               const { error: upErr } = await supabase.storage
                 .from("contract-pdfs")
@@ -312,6 +319,18 @@ Deno.serve(async (req) => {
             console.error("[sign-document] Failed to generate signed PDF copy:", pdfErr);
           }
         }
+
+        // Log validation event
+        await supabase.from("document_events").insert({
+          document_id: signer.document_id,
+          evento: "documento_validacao_gerada",
+          descricao: `Código de validação e hash gerados: ${validationCode}`,
+          metadata_json: {
+            validation_code: validationCode,
+            document_hash: docUpdate.document_hash || null,
+            generated_at: signedAt,
+          },
+        });
       }
 
       await supabase.from("generated_documents")

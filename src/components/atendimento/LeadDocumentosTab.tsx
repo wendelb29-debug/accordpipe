@@ -107,6 +107,8 @@ interface GeneratedDoc {
   proposal_id: string | null;
   sent_for_signature_at: string | null;
   signed_at: string | null;
+  validation_code: string | null;
+  document_hash: string | null;
   document_templates?: { nome: string } | null;
 }
 
@@ -701,6 +703,11 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                             <CheckCircle2 className="h-3 w-3" /> Assinado {fmtDate(doc.signed_at)}
                           </span>
                         )}
+                        {doc.validation_code && (
+                          <span className="text-[10px] font-mono text-muted-foreground">
+                            {doc.validation_code}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <DropdownMenu>
@@ -724,6 +731,29 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                           <>
                             <DropdownMenuItem onClick={() => window.open(doc.signed_pdf_url!, "_blank")}>
                               <Download className="h-3.5 w-3.5 mr-2" /> Baixar PDF assinado
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        {doc.status === "signed" && doc.validation_code && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => {
+                              navigator.clipboard.writeText(doc.validation_code!);
+                              toast.success("Código de validação copiado!");
+                            }}>
+                              <Copy className="h-3.5 w-3.5 mr-2" /> Copiar código de validação
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              const link = `${window.location.origin}/validar-documento/${doc.validation_code}`;
+                              navigator.clipboard.writeText(link);
+                              toast.success("Link de validação copiado!");
+                            }}>
+                              <Link2 className="h-3.5 w-3.5 mr-2" /> Copiar link de validação
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              window.open(`${window.location.origin}/validar-documento/${doc.validation_code}`, "_blank");
+                            }}>
+                              <ExternalLink className="h-3.5 w-3.5 mr-2" /> Abrir página de validação
                             </DropdownMenuItem>
                           </>
                         )}
