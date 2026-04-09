@@ -309,7 +309,15 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
                                 className="h-7 text-xs w-16"
                                 min={0}
                               />
-                              <span className="text-[10px] text-muted-foreground">dias</span>
+                              <Select value={editColSlaUnit} onValueChange={(v) => setEditColSlaUnit(v as "dias" | "horas")}>
+                                <SelectTrigger className="h-7 w-20 text-[10px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="dias">dias</SelectItem>
+                                  <SelectItem value="horas">horas</SelectItem>
+                                </SelectContent>
+                              </Select>
                               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleSaveColumn(col)}>
                                 <Check className="h-3 w-3 text-green-500" />
                               </Button>
