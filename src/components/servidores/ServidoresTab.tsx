@@ -487,7 +487,11 @@ export default function ServidoresTab() {
                   <TableCell className="font-mono text-sm">{company.cnpj}</TableCell>
                   <TableCell>{company.responsavel || "—"}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="gap-1">
+                    <Badge
+                      variant="outline"
+                      className="gap-1 cursor-pointer hover:bg-primary/10 transition-colors"
+                      onClick={() => handleOpenUsersDialog(company)}
+                    >
                       <Users className="h-3 w-3" />
                       {company.user_count || 0}
                     </Badge>
