@@ -323,7 +323,7 @@ export default function NovoServidor() {
           webhookPayload.zapi_webhook_notify_me = webhookNotifyMe;
         }
 
-        const { error } = await supabase.from("companies").insert({ id: newId, ...payload, ...webhookPayload });
+        const { error } = await supabase.from("companies").upsert({ id: newId, ...payload, ...webhookPayload }, { onConflict: "id" });
         if (error) throw error;
         toast({ title: "Tenant criado", description: "O novo tenant foi criado com sucesso." });
       }
