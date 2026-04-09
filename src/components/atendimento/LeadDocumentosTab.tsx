@@ -100,6 +100,7 @@ interface GeneratedDoc {
   tipo: string;
   status: string;
   pdf_url: string | null;
+  signed_pdf_url: string | null;
   created_by_name: string | null;
   created_at: string;
   template_id: string | null;
