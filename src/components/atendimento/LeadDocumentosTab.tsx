@@ -147,6 +147,16 @@ function activityToProposal(activity: any): any {
     created_by_user_id: activity.created_by_user_id,
     status: meta.status,
     sigla: meta.sigla,
+    // Payment data
+    value_ps: meta.value_ps || 0,
+    value_mrr: meta.value_mrr || 0,
+    payment_method: meta.payment_method || "",
+    payment_frequency: meta.payment_frequency || "",
+    first_payment_date: meta.first_payment_date || "",
+    due_day: meta.due_day || "",
+    number_of_installments: meta.number_of_installments || 0,
+    installments: meta.installments || [],
+    currency: meta.currency || "BRL",
   };
 }
 
