@@ -1237,6 +1237,149 @@ export type Database = {
           },
         ]
       }
+      document_events: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          document_id: string
+          evento: string
+          id: string
+          metadata_json: Json | null
+          signer_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          document_id: string
+          evento: string
+          id?: string
+          metadata_json?: Json | null
+          signer_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          document_id?: string
+          evento?: string
+          id?: string
+          metadata_json?: Json | null
+          signer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_events_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "generated_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_events_signer_id_fkey"
+            columns: ["signer_id"]
+            isOneToOne: false
+            referencedRelation: "document_signers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_signers: {
+        Row: {
+          auth_token: string
+          cpf: string | null
+          created_at: string
+          data_nascimento: string | null
+          document_id: string
+          email: string | null
+          id: string
+          ip_address: string | null
+          location_lat: number | null
+          location_lng: number | null
+          location_text: string | null
+          nome_completo: string
+          obrigatorio: boolean
+          ordem: number
+          papel: string
+          reject_reason: string | null
+          rejected_at: string | null
+          selfie_url: string | null
+          signed_at: string | null
+          status: string
+          telefone: string | null
+          updated_at: string
+          user_agent: string | null
+          validated_at: string | null
+          validation_code: string | null
+          validation_code_expires_at: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          auth_token?: string
+          cpf?: string | null
+          created_at?: string
+          data_nascimento?: string | null
+          document_id: string
+          email?: string | null
+          id?: string
+          ip_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          location_text?: string | null
+          nome_completo: string
+          obrigatorio?: boolean
+          ordem?: number
+          papel?: string
+          reject_reason?: string | null
+          rejected_at?: string | null
+          selfie_url?: string | null
+          signed_at?: string | null
+          status?: string
+          telefone?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          validated_at?: string | null
+          validation_code?: string | null
+          validation_code_expires_at?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          auth_token?: string
+          cpf?: string | null
+          created_at?: string
+          data_nascimento?: string | null
+          document_id?: string
+          email?: string | null
+          id?: string
+          ip_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          location_text?: string | null
+          nome_completo?: string
+          obrigatorio?: boolean
+          ordem?: number
+          papel?: string
+          reject_reason?: string | null
+          rejected_at?: string | null
+          selfie_url?: string | null
+          signed_at?: string | null
+          status?: string
+          telefone?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          validated_at?: string | null
+          validation_code?: string | null
+          validation_code_expires_at?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_signers_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "generated_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_templates: {
         Row: {
           arquivo_nome: string | null
@@ -1491,48 +1634,63 @@ export type Database = {
       }
       generated_documents: {
         Row: {
+          cancelled_at: string | null
           created_at: string
           created_by_name: string | null
           created_by_user_id: string | null
+          expires_at: string | null
           html_content: string | null
           id: string
           lead_id: string
           nome: string
           pdf_url: string | null
           proposal_id: string | null
+          sent_for_signature_at: string | null
           servidor_id: string
+          signed_at: string | null
+          signed_pdf_url: string | null
           status: string
           template_id: string | null
           tipo: string
           updated_at: string
         }
         Insert: {
+          cancelled_at?: string | null
           created_at?: string
           created_by_name?: string | null
           created_by_user_id?: string | null
+          expires_at?: string | null
           html_content?: string | null
           id?: string
           lead_id: string
           nome: string
           pdf_url?: string | null
           proposal_id?: string | null
+          sent_for_signature_at?: string | null
           servidor_id: string
+          signed_at?: string | null
+          signed_pdf_url?: string | null
           status?: string
           template_id?: string | null
           tipo?: string
           updated_at?: string
         }
         Update: {
+          cancelled_at?: string | null
           created_at?: string
           created_by_name?: string | null
           created_by_user_id?: string | null
+          expires_at?: string | null
           html_content?: string | null
           id?: string
           lead_id?: string
           nome?: string
           pdf_url?: string | null
           proposal_id?: string | null
+          sent_for_signature_at?: string | null
           servidor_id?: string
+          signed_at?: string | null
+          signed_pdf_url?: string | null
           status?: string
           template_id?: string | null
           tipo?: string
@@ -3213,6 +3371,50 @@ export type Database = {
       get_contract_company_id: {
         Args: { _contract_id: string }
         Returns: string
+      }
+      get_document_by_signer_token: {
+        Args: { p_token: string }
+        Returns: {
+          created_at: string
+          id: string
+          nome: string
+          pdf_url: string
+          status: string
+          tipo: string
+        }[]
+      }
+      get_document_signer_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          auth_token: string
+          cpf: string
+          data_nascimento: string
+          document_id: string
+          email: string
+          id: string
+          location_text: string
+          nome_completo: string
+          obrigatorio: boolean
+          ordem: number
+          papel: string
+          rejected_at: string
+          selfie_url: string
+          signed_at: string
+          status: string
+          telefone: string
+        }[]
+      }
+      get_document_signers_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          id: string
+          nome_completo: string
+          ordem: number
+          papel: string
+          rejected_at: string
+          signed_at: string
+          status: string
+        }[]
       }
       get_drive_file_servidor: { Args: { _file_id: string }; Returns: string }
       get_pdf_contract_servidor: {

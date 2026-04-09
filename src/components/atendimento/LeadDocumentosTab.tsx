@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Plus, Loader2, MoreVertical, Eye, Download, Trash2,
   FileText, Clock, CheckCircle2, AlertCircle, FileSignature,
+  Send, Copy, Link2, Users, XCircle, ExternalLink,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,6 +13,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -25,11 +29,29 @@ import { toast } from "sonner";
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
 
-const statusConfig: Record<string, { label: string; color: string }> = {
+const fmtDateTime = (d: string) => {
+  const dt = new Date(d);
+  return dt.toLocaleDateString("pt-BR") + " " + dt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+};
+
+const docStatusConfig: Record<string, { label: string; color: string }> = {
   gerado: { label: "Gerado", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
-  enviado: { label: "Enviado", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
-  assinado: { label: "Assinado", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
-  cancelado: { label: "Cancelado", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
+  pending_signature: { label: "Pendente de assinatura", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
+  partially_signed: { label: "Parcialmente assinado", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" },
+  signed: { label: "Assinado", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
+  rejected: { label: "Recusado", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
+  expired: { label: "Expirado", color: "bg-muted text-muted-foreground" },
+  cancelled: { label: "Cancelado", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
+};
+
+const signerStatusConfig: Record<string, { label: string; color: string }> = {
+  pending: { label: "Aguardando", color: "text-muted-foreground" },
+  validation_started: { label: "Validando", color: "text-amber-600" },
+  code_sent: { label: "Código enviado", color: "text-blue-600" },
+  validated: { label: "Validado", color: "text-blue-600" },
+  signed: { label: "Assinado", color: "text-green-600" },
+  rejected: { label: "Recusado", color: "text-red-600" },
+  expired: { label: "Expirado", color: "text-muted-foreground" },
 };
 
 const tipoLabels: Record<string, string> = {
@@ -39,11 +61,35 @@ const tipoLabels: Record<string, string> = {
   aditivo: "Aditivo",
 };
 
+const papelLabels: Record<string, string> = {
+  proprietario_proposta: "Proprietário da Proposta",
+  cliente: "Cliente",
+  testemunha: "Testemunha",
+  signatario: "Signatário",
+};
+
 interface Template {
   id: string;
   nome: string;
   tipo: string;
   arquivo_url: string | null;
+}
+
+interface DocumentSigner {
+  id: string;
+  document_id: string;
+  nome_completo: string;
+  email: string | null;
+  telefone: string | null;
+  cpf: string | null;
+  data_nascimento: string | null;
+  papel: string;
+  obrigatorio: boolean;
+  ordem: number;
+  status: string;
+  auth_token: string;
+  signed_at: string | null;
+  rejected_at: string | null;
 }
 
 interface GeneratedDoc {
@@ -56,6 +102,8 @@ interface GeneratedDoc {
   created_at: string;
   template_id: string | null;
   proposal_id: string | null;
+  sent_for_signature_at: string | null;
+  signed_at: string | null;
   document_templates?: { nome: string } | null;
 }
 
@@ -64,7 +112,6 @@ interface Props {
   addActivity?: (data: any) => Promise<any>;
 }
 
-/** Map of template variables to lead data */
 function buildVariableMap(lead: CrmLead) {
   const now = new Date();
   return {
@@ -104,6 +151,27 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
   // View
   const [viewDoc, setViewDoc] = useState<GeneratedDoc | null>(null);
 
+  // Signature drawer
+  const [signDrawerOpen, setSignDrawerOpen] = useState(false);
+  const [signDoc, setSignDoc] = useState<GeneratedDoc | null>(null);
+  const [signStep, setSignStep] = useState<"config" | "links">("config");
+  const [signers, setSigners] = useState<Array<{
+    nome_completo: string;
+    email: string;
+    telefone: string;
+    cpf: string;
+    data_nascimento: string;
+    papel: string;
+    obrigatorio: boolean;
+  }>>([]);
+  const [sendingSignature, setSendingSignature] = useState(false);
+  const [generatedSigners, setGeneratedSigners] = useState<DocumentSigner[]>([]);
+
+  // View signers dialog
+  const [viewSignersDoc, setViewSignersDoc] = useState<GeneratedDoc | null>(null);
+  const [viewSignersList, setViewSignersList] = useState<DocumentSigner[]>([]);
+  const [loadingSigners, setLoadingSigners] = useState(false);
+
   const servidorId = companyId || lead.servidor_id;
 
   const fetchDocuments = useCallback(async () => {
@@ -136,19 +204,13 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     if (!selectedTemplate) return toast.error("Selecione um modelo");
     const template = templates.find((t) => t.id === selectedTemplate);
     if (!template) return;
-
     setGenerating(true);
-
-    // Build filled HTML content from lead data
     const vars = buildVariableMap(lead);
     let htmlContent = `<h1>${template.nome}</h1><p>Documento gerado automaticamente.</p>`;
-    // If template has content, replace variables
     Object.entries(vars).forEach(([key, val]) => {
       htmlContent = htmlContent.replace(new RegExp(key.replace(/[{}]/g, "\\$&"), "g"), val);
     });
-
     const finalName = docName.trim() || `${template.nome} - ${lead.company_name}`;
-
     const { error } = await supabase.from("generated_documents").insert({
       servidor_id: servidorId,
       lead_id: lead.id,
@@ -161,7 +223,6 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
       created_by_user_id: profile?.user_id,
       created_by_name: profile?.name,
     });
-
     setGenerating(false);
     if (error) return toast.error("Erro ao gerar documento");
     toast.success("Documento gerado!");
@@ -179,6 +240,142 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     fetchDocuments();
   };
 
+  // Open signature drawer
+  const openSignDrawer = async (doc: GeneratedDoc) => {
+    setSignDoc(doc);
+    setSignStep("config");
+    setGeneratedSigners([]);
+
+    // Auto-fill signers
+    const autoSigners: typeof signers = [];
+
+    // Signer 1: proposal owner (current user / creator)
+    autoSigners.push({
+      nome_completo: profile?.name || "",
+      email: profile?.email || "",
+      telefone: "",
+      cpf: "",
+      data_nascimento: "",
+      papel: "proprietario_proposta",
+      obrigatorio: true,
+    });
+
+    // Signer 2: lead/client
+    autoSigners.push({
+      nome_completo: lead.contact_name || lead.company_name || "",
+      email: lead.email || "",
+      telefone: lead.phone || "",
+      cpf: lead.documento || "",
+      data_nascimento: "",
+      papel: "cliente",
+      obrigatorio: true,
+    });
+
+    setSigners(autoSigners);
+    setSignDrawerOpen(true);
+  };
+
+  const updateSigner = (index: number, field: string, value: string | boolean) => {
+    setSigners((prev) => prev.map((s, i) => (i === index ? { ...s, [field]: value } : s)));
+  };
+
+  const handleSendForSignature = async () => {
+    if (!signDoc) return;
+    if (signers.some((s) => !s.nome_completo.trim())) return toast.error("Todos os signatários precisam de nome");
+
+    setSendingSignature(true);
+
+    // Create signers in DB
+    const signersToInsert = signers.map((s, i) => ({
+      document_id: signDoc.id,
+      nome_completo: s.nome_completo,
+      email: s.email || null,
+      telefone: s.telefone || null,
+      cpf: s.cpf || null,
+      data_nascimento: s.data_nascimento || null,
+      papel: s.papel,
+      obrigatorio: s.obrigatorio,
+      ordem: i + 1,
+      status: "pending",
+    }));
+
+    const { data: insertedSigners, error: signersError } = await supabase
+      .from("document_signers")
+      .insert(signersToInsert)
+      .select();
+
+    if (signersError) {
+      setSendingSignature(false);
+      return toast.error("Erro ao configurar signatários");
+    }
+
+    // Update document status
+    await supabase
+      .from("generated_documents")
+      .update({
+        status: "pending_signature",
+        sent_for_signature_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      })
+      .eq("id", signDoc.id);
+
+    // Log event
+    await supabase.from("document_events").insert({
+      document_id: signDoc.id,
+      evento: "envelope_configurado",
+      descricao: `Envelope configurado com ${signers.length} signatário(s)`,
+    });
+
+    for (const signer of (insertedSigners || [])) {
+      await supabase.from("document_events").insert({
+        document_id: signDoc.id,
+        signer_id: signer.id,
+        evento: "link_gerado",
+        descricao: `Link de assinatura gerado para ${signer.nome_completo}`,
+      });
+    }
+
+    setGeneratedSigners((insertedSigners as DocumentSigner[]) || []);
+    setSendingSignature(false);
+    setSignStep("links");
+    fetchDocuments();
+    addActivity?.({ type: "signature", title: `Documento "${signDoc.nome}" enviado para assinatura` });
+    toast.success("Envelope configurado!");
+  };
+
+  const copySignerLink = (token: string) => {
+    const baseUrl = window.location.origin;
+    const link = `${baseUrl}/assinar-documento/${token}`;
+    navigator.clipboard.writeText(link);
+    toast.success("Link copiado!");
+  };
+
+  const fetchSigners = async (doc: GeneratedDoc) => {
+    setViewSignersDoc(doc);
+    setLoadingSigners(true);
+    const { data } = await supabase
+      .from("document_signers")
+      .select("*")
+      .eq("document_id", doc.id)
+      .order("ordem");
+    setViewSignersList((data as DocumentSigner[]) || []);
+    setLoadingSigners(false);
+  };
+
+  const handleCancelSignature = async (doc: GeneratedDoc) => {
+    await supabase
+      .from("generated_documents")
+      .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
+      .eq("id", doc.id);
+    await supabase.from("document_events").insert({
+      document_id: doc.id,
+      evento: "assinatura_cancelada",
+      descricao: "Processo de assinatura cancelado",
+    });
+    toast.success("Assinatura cancelada");
+    fetchDocuments();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -186,6 +383,11 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
       </div>
     );
   }
+
+  const getSignerCountLabel = (doc: GeneratedDoc) => {
+    // We don't have signer counts in the list query, so we just show status
+    return null;
+  };
 
   return (
     <div className="space-y-4">
@@ -212,7 +414,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
       ) : (
         <div className="space-y-2">
           {documents.map((doc) => {
-            const cfg = statusConfig[doc.status] || statusConfig.gerado;
+            const cfg = docStatusConfig[doc.status] || docStatusConfig.gerado;
             return (
               <Card key={doc.id} className="hover:shadow-sm transition-shadow">
                 <CardContent className="p-3 sm:p-4">
@@ -228,14 +430,19 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                           {tipoLabels[doc.tipo] || doc.tipo}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" /> {fmtDate(doc.created_at)}
                         </span>
                         {doc.created_by_name && <span>por {doc.created_by_name}</span>}
-                        {doc.document_templates && (
-                          <span className="text-muted-foreground/60">
-                            Modelo: {(doc.document_templates as any).nome}
+                        {doc.sent_for_signature_at && (
+                          <span className="flex items-center gap-1">
+                            <Send className="h-3 w-3" /> Enviado {fmtDate(doc.sent_for_signature_at)}
+                          </span>
+                        )}
+                        {doc.signed_at && (
+                          <span className="flex items-center gap-1 text-green-600">
+                            <CheckCircle2 className="h-3 w-3" /> Assinado {fmtDate(doc.signed_at)}
                           </span>
                         )}
                       </div>
@@ -246,7 +453,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                           <MoreVertical className="h-3.5 w-3.5" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-44">
+                      <DropdownMenuContent align="end" className="w-52">
                         {doc.pdf_url && (
                           <>
                             <DropdownMenuItem onClick={() => setViewDoc(doc)}>
@@ -256,6 +463,30 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                               <Download className="h-3.5 w-3.5 mr-2" /> Baixar PDF
                             </DropdownMenuItem>
                           </>
+                        )}
+                        {doc.status === "gerado" && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => openSignDrawer(doc)}>
+                              <Send className="h-3.5 w-3.5 mr-2" /> Enviar para assinatura
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        {["pending_signature", "partially_signed"].includes(doc.status) && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => fetchSigners(doc)}>
+                              <Users className="h-3.5 w-3.5 mr-2" /> Ver signatários
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleCancelSignature(doc)} className="text-destructive">
+                              <XCircle className="h-3.5 w-3.5 mr-2" /> Cancelar assinatura
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        {doc.status === "signed" && (
+                          <DropdownMenuItem onClick={() => fetchSigners(doc)}>
+                            <Users className="h-3.5 w-3.5 mr-2" /> Ver signatários
+                          </DropdownMenuItem>
                         )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(doc)}>
@@ -278,7 +509,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
             <DialogTitle className="flex items-center gap-2 text-base">
               <FileText className="h-4 w-4 text-primary" /> Gerar Documento
             </DialogTitle>
-            <DialogDescription>Selecione um modelo e gere o documento preenchido com os dados do lead</DialogDescription>
+            <DialogDescription>Selecione um modelo e gere o documento preenchido</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
@@ -293,9 +524,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                     </div>
                   ) : (
                     templates.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.nome} ({tipoLabels[t.tipo] || t.tipo})
-                      </SelectItem>
+                      <SelectItem key={t.id} value={t.id}>{t.nome} ({tipoLabels[t.tipo] || t.tipo})</SelectItem>
                     ))
                   )}
                 </SelectContent>
@@ -307,16 +536,16 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
             </div>
             {selectedTemplate && (
               <div className="rounded-lg border bg-muted/30 p-3">
-                <p className="text-xs font-medium text-muted-foreground mb-2">Variáveis preenchidas automaticamente:</p>
+                <p className="text-xs font-medium text-muted-foreground mb-2">Variáveis preenchidas:</p>
                 <div className="grid grid-cols-2 gap-1 text-[11px]">
-                  {Object.entries(buildVariableMap(lead)).map(([key, val]) => (
+                  {Object.entries(buildVariableMap(lead)).map(([key, val]) =>
                     val ? (
                       <div key={key} className="flex items-center gap-1 text-muted-foreground">
                         <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" />
-                        <span className="truncate">{key.replace(/\{\{|\}\}/g, "")}: {val}</span>
+                        <span className="truncate">{key.replace(/\{\{|\}\}/g, "")}</span>
                       </div>
                     ) : null
-                  )).filter(Boolean).slice(0, 10)}
+                  ).filter(Boolean).slice(0, 10)}
                 </div>
               </div>
             )}
@@ -345,6 +574,206 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                 title="Visualização do documento"
                 style={{ border: "none" }}
               />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Signature Drawer */}
+      <Sheet open={signDrawerOpen} onOpenChange={setSignDrawerOpen}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader className="mb-4">
+            <SheetTitle className="flex items-center gap-2">
+              <FileSignature className="h-5 w-5 text-primary" />
+              {signStep === "config" ? "Enviar para assinatura" : "Links de assinatura"}
+            </SheetTitle>
+            {signDoc && (
+              <SheetDescription className="text-left">
+                <span className="font-medium text-foreground">{signDoc.nome}</span>
+                <br />
+                <span className="text-xs">
+                  Tipo: {tipoLabels[signDoc.tipo] || signDoc.tipo} · Gerado em {fmtDateTime(signDoc.created_at)}
+                </span>
+              </SheetDescription>
+            )}
+          </SheetHeader>
+
+          {signStep === "config" && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                <h4 className="text-sm font-semibold">Signatários</h4>
+              </div>
+
+              {signers.map((signer, idx) => (
+                <Card key={idx} className="border">
+                  <CardContent className="p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Badge variant="secondary" className="text-[10px]">
+                        {papelLabels[signer.papel] || signer.papel}
+                      </Badge>
+                      {signer.obrigatorio && (
+                        <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+                          Obrigatório
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="col-span-2">
+                        <Label className="text-[10px] text-muted-foreground">Nome completo</Label>
+                        <Input
+                          value={signer.nome_completo}
+                          onChange={(e) => updateSigner(idx, "nome_completo", e.target.value)}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">E-mail</Label>
+                        <Input
+                          value={signer.email}
+                          onChange={(e) => updateSigner(idx, "email", e.target.value)}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">Telefone</Label>
+                        <Input
+                          value={signer.telefone}
+                          onChange={(e) => updateSigner(idx, "telefone", e.target.value)}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">CPF</Label>
+                        <Input
+                          value={signer.cpf}
+                          onChange={(e) => updateSigner(idx, "cpf", e.target.value)}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">Data de nascimento</Label>
+                        <Input
+                          type="date"
+                          value={signer.data_nascimento}
+                          onChange={(e) => updateSigner(idx, "data_nascimento", e.target.value)}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+
+              <Separator />
+
+              <Button
+                className="w-full gap-2"
+                onClick={handleSendForSignature}
+                disabled={sendingSignature}
+              >
+                {sendingSignature ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Configurando envelope de assinatura...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4" />
+                    Enviar para assinatura
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+
+          {signStep === "links" && (
+            <div className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Os links abaixo foram gerados para os signatários deste documento.
+              </p>
+
+              {generatedSigners.map((signer) => (
+                <Card key={signer.id} className="border">
+                  <CardContent className="p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Badge variant="secondary" className="text-[10px]">
+                        {papelLabels[signer.papel] || signer.papel}
+                      </Badge>
+                      <Badge variant="outline" className="text-[10px] text-amber-600">
+                        Aguardando assinatura
+                      </Badge>
+                    </div>
+                    <p className="text-sm font-medium">{signer.nome_completo}</p>
+                    {signer.email && <p className="text-xs text-muted-foreground">{signer.email}</p>}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full gap-2 text-xs"
+                      onClick={() => copySignerLink(signer.auth_token)}
+                    >
+                      <Copy className="h-3.5 w-3.5" /> Copiar link
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setSignDrawerOpen(false)}
+              >
+                Fechar
+              </Button>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* View Signers Dialog */}
+      <Dialog open={!!viewSignersDoc} onOpenChange={() => setViewSignersDoc(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Users className="h-4 w-4 text-primary" /> Signatários
+            </DialogTitle>
+            <DialogDescription>{viewSignersDoc?.nome}</DialogDescription>
+          </DialogHeader>
+          {loadingSigners ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {viewSignersList.map((s) => {
+                const sCfg = signerStatusConfig[s.status] || signerStatusConfig.pending;
+                return (
+                  <Card key={s.id} className="border">
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium">{s.nome_completo}</span>
+                        <span className={cn("text-[11px] font-medium", sCfg.color)}>{sCfg.label}</span>
+                      </div>
+                      <div className="text-[11px] text-muted-foreground space-y-0.5">
+                        <p>Papel: {papelLabels[s.papel] || s.papel}</p>
+                        {s.email && <p>E-mail: {s.email}</p>}
+                        {s.signed_at && <p>Assinado em: {fmtDateTime(s.signed_at)}</p>}
+                        {s.rejected_at && <p>Recusado em: {fmtDateTime(s.rejected_at)}</p>}
+                      </div>
+                      {["pending", "validation_started", "code_sent"].includes(s.status) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="mt-2 text-xs gap-1.5 w-full"
+                          onClick={() => copySignerLink(s.auth_token)}
+                        >
+                          <Copy className="h-3 w-3" /> Copiar link
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </DialogContent>

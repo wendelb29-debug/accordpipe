@@ -42,6 +42,7 @@ import ValidarDocumento from "./pages/ValidarDocumento";
 import Servidores from "./pages/Servidores";
 import NovoServidor from "./pages/NovoServidor";
 import AceitarConvite from "./pages/AceitarConvite";
+import AssinarDocumento from "./pages/AssinarDocumento";
 
 const queryClient = new QueryClient();
 
@@ -258,6 +259,7 @@ const App = () => (
             />
             <Route path="/assinar/:token" element={<AssinarContrato />} />
             <Route path="/assinar-pdf/:token" element={<AssinarPdf />} />
+            <Route path="/assinar-documento/:token" element={<AssinarDocumento />} />
             <Route path="/validar-documento/:codigo" element={<ValidarDocumento />} />
             <Route path="/validar-documento" element={<ValidarDocumento />} />
             <Route path="/captura/:servidorId" element={<CapturaLead />} />
