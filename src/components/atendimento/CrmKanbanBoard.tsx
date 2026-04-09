@@ -22,6 +22,7 @@ import { CrmLeadDetailView } from "./CrmLeadDetailView";
 import { FormLinkDialog } from "./FormLinkDialog";
 import { CrmSearchDialog } from "./CrmSearchDialog";
 import { useCrmLeads, CrmLead, STAGES } from "@/hooks/useCrmLeads";
+import { useKanbanColumns } from "@/hooks/useKanbanColumns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
