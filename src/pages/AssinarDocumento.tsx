@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import {
   FileText, Download, Eye, Camera, CheckCircle2, XCircle,
   Loader2, Shield, Clock, MapPin, User, Mail, Phone,
-  ArrowRight, RefreshCw,
+  ArrowRight,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useParams } from "react-router-dom";
@@ -12,7 +12,6 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -27,7 +26,6 @@ const fmtDateTime = (d: string) => {
 const signerStatusLabels: Record<string, string> = {
   pending: "Aguardando assinatura",
   validation_started: "Validação iniciada",
-  code_sent: "Código enviado",
   validated: "Pronto para assinar",
   signed: "Assinado",
   rejected: "Recusado",
@@ -40,7 +38,7 @@ const papelLabels: Record<string, string> = {
   signatario: "Signatário",
 };
 
-type Step = "loading" | "error" | "preview" | "validate" | "code" | "sign" | "camera" | "done" | "rejected" | "already_signed";
+type Step = "loading" | "error" | "preview" | "validate" | "sign" | "camera" | "done" | "rejected" | "already_signed";
 
 interface SignerData {
   id: string;
@@ -92,12 +90,6 @@ export default function AssinarDocumento() {
   const [birthInput, setBirthInput] = useState("");
   const [validateError, setValidateError] = useState("");
   const [validating, setValidating] = useState(false);
-
-  // Code step
-  const [codeInput, setCodeInput] = useState("");
-  const [codeError, setCodeError] = useState("");
-  const [sendingCode, setSendingCode] = useState(false);
-  const [verifyingCode, setVerifyingCode] = useState(false);
 
   // Camera step
   const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
@@ -172,43 +164,8 @@ export default function AssinarDocumento() {
       return;
     }
 
-    setSendingCode(true);
-    // Send code
-    const { data: codeData, error: codeError } = await supabase.functions.invoke("sign-document", {
-      body: { action: "send_code", token },
-    });
-    setSendingCode(false);
-    if (codeError || !codeData?.success) {
-      toast.error("Erro ao enviar código");
-      return;
-    }
-    setStep("code");
-  };
-
-  const handleVerifyCode = async () => {
-    if (!codeInput || codeInput.length < 6) return setCodeError("Informe o código de 6 dígitos");
-    setVerifyingCode(true);
-    setCodeError("");
-
-    const { data, error } = await supabase.functions.invoke("sign-document", {
-      body: { action: "verify_code", token, code: codeInput },
-    });
-
-    setVerifyingCode(false);
-    if (error || !data?.success) {
-      setCodeError(data?.error || "Código inválido ou expirado");
-      return;
-    }
+    // Go directly to sign step (no code verification needed)
     setStep("sign");
-  };
-
-  const handleResendCode = async () => {
-    setSendingCode(true);
-    await supabase.functions.invoke("sign-document", {
-      body: { action: "send_code", token },
-    });
-    setSendingCode(false);
-    toast.success("Código reenviado!");
   };
 
   const openCamera = async () => {
@@ -414,12 +371,12 @@ export default function AssinarDocumento() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-primary" /> Validação de identidade
+                  <Shield className="h-4 w-4 text-primary" /> Confirmar sua identidade
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Para continuar, confirme seus dados de identificação.
+                  Para assinar este documento, confirme seus dados abaixo.
                 </p>
                 <div className="space-y-1.5">
                   <Label className="text-xs">CPF</Label>
@@ -440,47 +397,9 @@ export default function AssinarDocumento() {
                 {validateError && (
                   <p className="text-xs text-destructive">{validateError}</p>
                 )}
-                <Button className="w-full" onClick={handleValidate} disabled={validating || sendingCode}>
-                  {(validating || sendingCode) && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                  {sendingCode ? "Enviando código de confirmação..." : "Continuar"}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {step === "code" && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-primary" /> Código de confirmação
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Um código de confirmação foi enviado para o seu e-mail{signer?.email ? ` (${signer.email})` : ""}.
-                </p>
-                <div className="flex justify-center">
-                  <InputOTP maxLength={6} value={codeInput} onChange={setCodeInput}>
-                    <InputOTPGroup>
-                      {Array.from({ length: 6 }).map((_, i) => (
-                        <InputOTPSlot key={i} index={i} />
-                      ))}
-                    </InputOTPGroup>
-                  </InputOTP>
-                </div>
-                {codeError && <p className="text-xs text-destructive text-center">{codeError}</p>}
-                <Button className="w-full" onClick={handleVerifyCode} disabled={verifyingCode}>
-                  {verifyingCode && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                  Confirmar assinatura
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full text-xs gap-1.5"
-                  onClick={handleResendCode}
-                  disabled={sendingCode}
-                >
-                  <RefreshCw className="h-3.5 w-3.5" /> Reenviar código por e-mail
+                <Button className="w-full" onClick={handleValidate} disabled={validating}>
+                  {validating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  Continuar para assinatura
                 </Button>
               </CardContent>
             </Card>
