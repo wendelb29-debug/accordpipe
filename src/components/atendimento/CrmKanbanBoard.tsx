@@ -494,7 +494,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
             <Link2 className="h-3.5 w-3.5" />
           </Button>
           <Button size="sm" onClick={openNew} className="h-8 gap-1.5 text-xs px-4 rounded-[10px] shadow-sm bg-primary hover:bg-primary/90">
-            <Plus className="h-3.5 w-3.5" /> Novo Lead
+            <Plus className="h-3.5 w-3.5" /> Novo Card
           </Button>
         </div>
       </div>
