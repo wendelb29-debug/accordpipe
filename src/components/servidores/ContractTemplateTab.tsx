@@ -290,14 +290,7 @@ export function ContractTemplateTab({ companyId }: Props) {
     );
   }
 
-  if (!companyId) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-3 h-40 text-center">
-        <AlertCircle className="h-8 w-8 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Salve o servidor primeiro para configurar o contrato padrão.</p>
-      </div>
-    );
-  }
+  // No longer blocking when companyId is null — it should always be provided now
 
   // Upload step
   if (!pdfUrl) {
