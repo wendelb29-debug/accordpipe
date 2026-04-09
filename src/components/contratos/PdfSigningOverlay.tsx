@@ -163,6 +163,7 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
       case "campo_proposta": return "";
       case "valor_ps": return "";
       case "valor_mrr": return "";
+      case "codigo_contrato": return contractMeta?.contractCode || "";
       default: return "";
     }
   }, [serverData, contractMeta]);
