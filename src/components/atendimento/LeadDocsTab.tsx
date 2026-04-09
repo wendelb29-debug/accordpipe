@@ -254,7 +254,6 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
           };
 
           // Generate PDF with annex
-          const { default: jsPDF } = await import("jspdf");
           const pdfBlob = generateContractPdf({
             content: template.contract_content,
             code: validationCode,
