@@ -241,6 +241,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
   const [previewProposal, setPreviewProposal] = useState<any>(null);
   const [previewVendor, setPreviewVendor] = useState<any>(null);
   const [previewRegistration, setPreviewRegistration] = useState<any>(null);
+  const [canGenerate, setCanGenerate] = useState(true);
 
   // View
   const [viewDoc, setViewDoc] = useState<GeneratedDoc | null>(null);
