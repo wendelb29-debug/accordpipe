@@ -425,14 +425,27 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
         </div>
       ) : (
         <div className="space-y-5">
-          {filteredGroups.map((group) => {
+          {filteredGroups.map((group, groupIdx) => {
             const groupWs = getGroupWorkspaces(group.id);
             const isExpanded = expandedGroups[group.id] ?? true;
             const typeConf = getTypeConfig(group.type);
             const TypeIcon = typeConf.icon;
+            const isDraggingGroup = dragGroupId === group.id;
+            const isDragOverGroup = dragOverGroupId === group.id && dragGroupId !== group.id;
 
             return (
-              <div key={group.id} className="rounded-2xl overflow-hidden transition-all duration-300">
+              <div
+                key={group.id}
+                draggable
+                onDragStart={(e) => { e.stopPropagation(); setDragGroupId(group.id); }}
+                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); if (dragOverGroupId !== group.id) setDragOverGroupId(group.id); }}
+                onDragEnd={handleGroupDragEnd}
+                className={cn(
+                  "rounded-2xl overflow-hidden transition-all duration-300",
+                  isDraggingGroup && "opacity-40 scale-[0.98]",
+                  isDragOverGroup && "ring-2 ring-primary/50 scale-[1.01]",
+                )}
+              >
                 {/* Folder tab header */}
                 <div
                   className={cn(
@@ -443,6 +456,14 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
                   )}
                   onClick={() => setExpandedGroups((p) => ({ ...p, [group.id]: !p[group.id] }))}
                 >
+                  {/* Drag handle */}
+                  <div
+                    className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <GripVertical className="h-4 w-4" />
+                  </div>
+
                   {/* Folder icon */}
                   <div className="relative">
                     <div
@@ -480,6 +501,12 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
                   </div>
 
                   <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" title="Mover para cima" disabled={groupIdx === 0} onClick={() => moveGroup(group.id, "up")}>
+                      <ArrowUp className="h-3 w-3" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" title="Mover para baixo" disabled={groupIdx === filteredGroups.length - 1} onClick={() => moveGroup(group.id, "down")}>
+                      <ArrowDown className="h-3 w-3" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openGroupDialog(group)}>
                       <Pencil className="h-3 w-3" />
                     </Button>
