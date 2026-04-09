@@ -1270,10 +1270,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
              {/* Docs - Documentos Gerados + Arquivos */}
             <TabsContent value="docs" className="flex-1 overflow-y-auto p-2 sm:p-4 mt-0">
-              <LeadDocumentosTab lead={lead} addActivity={addActivity} />
-              <div className="mt-6">
-                <LeadDocsTab lead={lead} />
-              </div>
+              <LeadDocsTab lead={lead} />
             </TabsContent>
 
             {/* WhatsApp */}
