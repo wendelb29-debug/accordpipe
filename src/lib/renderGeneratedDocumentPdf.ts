@@ -56,6 +56,28 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
   return { r: ((num >> 16) & 255) / 255, g: ((num >> 8) & 255) / 255, b: (num & 255) / 255 };
 }
 
+// ─── TEXT SANITIZATION (WinAnsi safe) ──────────────────────
+function sanitizePdfText(text: string): string {
+  return text
+    .replace(/📍/g, "Local: ")
+    .replace(/📧/g, "Email: ")
+    .replace(/📞/g, "Tel: ")
+    .replace(/✅/g, "[OK] ")
+    .replace(/❌/g, "[X] ")
+    .replace(/🔒/g, "")
+    .replace(/✔/g, "[OK]")
+    .replace(/[\u{1F300}-\u{1FAFF}]/gu, "")
+    .replace(/[\u{1F600}-\u{1F64F}]/gu, "")
+    .replace(/[\u{1F680}-\u{1F6FF}]/gu, "")
+    .replace(/[\u{1F900}-\u{1F9FF}]/gu, "")
+    .replace(/[\u{2600}-\u{26FF}]/gu, "")
+    .replace(/[\u{2700}-\u{27BF}]/gu, "")
+    .replace(/[\u{FE00}-\u{FE0F}]/gu, "")
+    .replace(/[\u{200D}]/gu, "")
+    .replace(/[\u{20E3}]/gu, "")
+    .replace(/[\u{E0020}-\u{E007F}]/gu, "");
+}
+
 // ─── HEADER ────────────────────────────────────────────────
 function drawHeader(ctx: RenderContext): void {
   const { page, primaryColor: pc, branding, logoEmbed, boldFont, font } = ctx;
