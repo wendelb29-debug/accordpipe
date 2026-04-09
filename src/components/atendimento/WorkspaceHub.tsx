@@ -73,6 +73,7 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
       .from("workspace_groups")
       .select("*")
       .eq("servidor_id", companyId)
+      .eq("active", true)
       .order("position");
     setGroups((data || []) as WorkspaceGroup[]);
   }, [companyId]);
