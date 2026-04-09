@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Building2, User, Mail, Phone, DollarSign, StickyNote, Save, Trash2, Tag } from "lucide-react";
+import { Building2, User, Mail, Phone, DollarSign, StickyNote, Save, Trash2, Tag, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CrmLead, STAGES } from "@/hooks/useCrmLeads";
+import { CrmLead, STAGES, DynamicStage } from "@/hooks/useCrmLeads";
 
 interface CrmLeadDialogProps {
   lead: CrmLead | null;
@@ -22,9 +22,27 @@ interface CrmLeadDialogProps {
   onSave: (data: Partial<CrmLead>) => void;
   onDelete?: (id: string) => void;
   isNew?: boolean;
+  dynamicStages?: DynamicStage[];
+  stagesLoading?: boolean;
 }
 
-export function CrmLeadDialog({ lead, open, onOpenChange, onSave, onDelete, isNew }: CrmLeadDialogProps) {
+function formatSla(stage: DynamicStage): string {
+  if (!stage.sla_days || stage.sla_days <= 0) return "";
+  if (stage.sla_days < 1) {
+    const hours = Math.round(stage.sla_days * 24);
+    return `${hours}h`;
+  }
+  const days = Math.round(stage.sla_days);
+  return `${days}d`;
+}
+
+export function CrmLeadDialog({ lead, open, onOpenChange, onSave, onDelete, isNew, dynamicStages, stagesLoading }: CrmLeadDialogProps) {
+  const stages: DynamicStage[] = dynamicStages && dynamicStages.length > 0
+    ? dynamicStages
+    : STAGES.map(s => ({ id: s.id, title: s.title, daysLimit: s.daysLimit, color: s.color }));
+
+  const hasStages = stages.length > 0;
+
   const [form, setForm] = useState({
     source: "Manual",
     company_name: "",
@@ -33,7 +51,7 @@ export function CrmLeadDialog({ lead, open, onOpenChange, onSave, onDelete, isNe
     phone: "",
     value_ps: 0,
     value_mrr: 0,
-    stage: "standby",
+    stage: "",
     notes: "",
   });
 
@@ -47,16 +65,27 @@ export function CrmLeadDialog({ lead, open, onOpenChange, onSave, onDelete, isNe
         phone: lead.phone || "",
         value_ps: lead.value_ps || 0,
         value_mrr: lead.value_mrr || 0,
-        stage: lead.stage || "standby",
+        stage: lead.stage || "",
         notes: lead.notes || "",
       });
     } else if (isNew) {
-      setForm({ source: "Manual", company_name: "", contact_name: "", email: "", phone: "", value_ps: 0, value_mrr: 0, stage: "standby", notes: "" });
+      setForm({
+        source: "Manual",
+        company_name: "",
+        contact_name: "",
+        email: "",
+        phone: "",
+        value_ps: 0,
+        value_mrr: 0,
+        stage: stages.length > 0 ? stages[0].id : "",
+        notes: "",
+      });
     }
-  }, [lead, isNew, open]);
+  }, [lead, isNew, open, stages.length]);
 
   const handleSave = () => {
     if (!form.company_name.trim()) return;
+    if (!form.stage) return;
     onSave({ ...form });
     onOpenChange(false);
   };
@@ -78,15 +107,41 @@ export function CrmLeadDialog({ lead, open, onOpenChange, onSave, onDelete, isNe
               <Input value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} placeholder="Ex: Facebook Ads" />
             </div>
             <div className="space-y-2">
-              <Label>Etapa</Label>
-              <Select value={form.stage} onValueChange={(v) => setForm({ ...form, stage: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {STAGES.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Etapa do Funil</Label>
+              {stagesLoading ? (
+                <div className="flex items-center gap-2 h-10 px-3 border rounded-md text-sm text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Carregando...
+                </div>
+              ) : !hasStages ? (
+                <div className="flex items-center gap-2 h-10 px-3 border rounded-md text-sm text-destructive bg-destructive/5">
+                  <AlertCircle className="h-3.5 w-3.5" /> Crie colunas no workspace
+                </div>
+              ) : (
+                <Select value={form.stage} onValueChange={(v) => setForm({ ...form, stage: v })}>
+                  <SelectTrigger><SelectValue placeholder="Selecione a etapa" /></SelectTrigger>
+                  <SelectContent>
+                    {stages.map((s) => {
+                      const sla = formatSla(s);
+                      return (
+                        <SelectItem key={s.id} value={s.id}>
+                          <span className="flex items-center gap-2">
+                            {s.rawColor && (
+                              <span
+                                className="inline-block h-2.5 w-2.5 rounded-full shrink-0"
+                                style={{ backgroundColor: s.rawColor }}
+                              />
+                            )}
+                            <span>{s.title}</span>
+                            {sla && (
+                              <span className="text-[10px] text-muted-foreground ml-1">({sla})</span>
+                            )}
+                          </span>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
 
@@ -143,7 +198,7 @@ export function CrmLeadDialog({ lead, open, onOpenChange, onSave, onDelete, isNe
           ) : <div />}
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={!form.company_name.trim()}>
+            <Button onClick={handleSave} disabled={!form.company_name.trim() || !form.stage}>
               <Save className="h-4 w-4 mr-2" /> Salvar
             </Button>
           </div>
