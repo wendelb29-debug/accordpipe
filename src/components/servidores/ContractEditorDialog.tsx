@@ -139,7 +139,12 @@ export function ContractEditorDialog({ open, onOpenChange, templateName, initial
       const pdfBytes = await renderGeneratedDocumentPdf(
         name || "Contrato de Teste",
         rendered,
-        branding?.logoUrl ? { logoUrl: branding.logoUrl, primaryColor: branding.primaryColor } : undefined,
+        {
+          logoUrl: branding?.logoUrl || undefined,
+          primaryColor: branding?.primaryColor || undefined,
+          tenantName: branding?.tenantName || undefined,
+          tenantCnpj: branding?.tenantCnpj || undefined,
+        },
       );
       const arrayBuf = (pdfBytes as Uint8Array).buffer.slice(
         (pdfBytes as Uint8Array).byteOffset,
