@@ -94,6 +94,10 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [expandedWs, setExpandedWs] = useState<Record<string, boolean>>({});
 
+  // Group drag reorder
+  const [dragGroupId, setDragGroupId] = useState<string | null>(null);
+  const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
+
   // Group dialog
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<WorkspaceGroup | null>(null);
