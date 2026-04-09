@@ -164,6 +164,24 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
     fetchDocs();
     fetchSignedContracts();
     fetchContractTemplates();
+
+    // Realtime subscription for contracts
+    const channel = supabase
+      .channel(`docs-contracts-${lead.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contracts', filter: `lead_id=eq.${lead.id}` }, () => {
+        fetchSignedContracts();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contract_signatures' }, () => {
+        fetchSignedContracts();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pdf_contracts', filter: `servidor_id=eq.${lead.servidor_id}` }, () => {
+        fetchSignedContracts();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [lead.id]);
 
   const handleUpload = async (docType: string, file: File) => {
