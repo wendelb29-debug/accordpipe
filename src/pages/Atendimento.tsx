@@ -35,15 +35,8 @@ function AtendimentoContent() {
 
   const backButton = (
     <div className="flex items-center gap-3 px-4 pt-3 pb-1">
-      <button
-        onClick={handleBack}
-        className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <ChevronLeft className="h-4 w-4" />
-      </button>
       <div>
         <h2 className="text-sm font-bold text-foreground">{activeWorkspace?.name || "Workspace"}</h2>
-        <p className="text-[10px] text-muted-foreground">Clique na seta para voltar aos workspaces</p>
       </div>
     </div>
   );
