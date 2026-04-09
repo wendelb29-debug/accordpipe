@@ -6,6 +6,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ContractTemplateTab } from "./ContractTemplateTab";
+import { WorkspacesTab } from "./WorkspacesTab";
 import { WebhookConfig } from "@/components/atendimento/tabs/WebhookConfig";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
