@@ -1042,6 +1042,9 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                 <TabsTrigger value="propostas" className="text-[11px] sm:text-xs gap-1">
                   <FileSpreadsheet className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Propostas
                 </TabsTrigger>
+                <TabsTrigger value="arquivos" className="text-[11px] sm:text-xs gap-1">
+                  <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Arquivos
+                </TabsTrigger>
                 <TabsTrigger value="docs" className="text-[11px] sm:text-xs gap-1">
                   <Paperclip className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Docs
                 </TabsTrigger>
