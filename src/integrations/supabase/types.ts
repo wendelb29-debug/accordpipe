@@ -2738,6 +2738,56 @@ export type Database = {
           },
         ]
       }
+      workspace_groups: {
+        Row: {
+          active: boolean
+          color: string
+          created_at: string
+          icon: string
+          id: string
+          name: string
+          position: number
+          servidor_id: string
+          slug: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          name: string
+          position?: number
+          servidor_id: string
+          slug?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          name?: string
+          position?: number
+          servidor_id?: string
+          slug?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_groups_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspace_members: {
         Row: {
           created_at: string
@@ -2772,11 +2822,13 @@ export type Database = {
           color: string
           created_at: string
           created_by_user_id: string | null
+          group_id: string | null
           icon: string
           id: string
           is_default: boolean
           name: string
           servidor_id: string
+          sort_order: number
           type: string
           updated_at: string
         }
@@ -2784,11 +2836,13 @@ export type Database = {
           color?: string
           created_at?: string
           created_by_user_id?: string | null
+          group_id?: string | null
           icon?: string
           id?: string
           is_default?: boolean
           name: string
           servidor_id: string
+          sort_order?: number
           type?: string
           updated_at?: string
         }
@@ -2796,15 +2850,24 @@ export type Database = {
           color?: string
           created_at?: string
           created_by_user_id?: string | null
+          group_id?: string | null
           icon?: string
           id?: string
           is_default?: boolean
           name?: string
           servidor_id?: string
+          sort_order?: number
           type?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "workspaces_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "workspaces_servidor_id_fkey"
             columns: ["servidor_id"]
