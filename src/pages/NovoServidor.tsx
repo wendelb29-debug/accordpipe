@@ -16,6 +16,7 @@ import { toast as sonnerToast } from "sonner";
 import { BrandIdentityFields } from "@/components/empresas/BrandIdentityFields";
 import { ContractTemplateTab } from "@/components/servidores/ContractTemplateTab";
 import { WebhookConfig } from "@/components/atendimento/tabs/WebhookConfig";
+import { WorkspacesTab } from "@/components/servidores/WorkspacesTab";
 import { useEffect } from "react";
 
 const cleanDigits = (v: string) => v.replace(/\D/g, "");
