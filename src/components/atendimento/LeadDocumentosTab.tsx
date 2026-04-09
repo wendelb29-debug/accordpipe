@@ -716,7 +716,14 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                               <Eye className="h-3.5 w-3.5 mr-2" /> Visualizar
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => window.open(doc.pdf_url!, "_blank")}>
-                              <Download className="h-3.5 w-3.5 mr-2" /> Baixar PDF
+                              <Download className="h-3.5 w-3.5 mr-2" /> Baixar PDF original
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        {doc.status === "signed" && doc.signed_pdf_url && (
+                          <>
+                            <DropdownMenuItem onClick={() => window.open(doc.signed_pdf_url!, "_blank")}>
+                              <Download className="h-3.5 w-3.5 mr-2" /> Baixar PDF assinado
                             </DropdownMenuItem>
                           </>
                         )}
