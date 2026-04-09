@@ -1,18 +1,52 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Building2, Check, ChevronRight, Shield } from "lucide-react";
+import { Building2, Check, ChevronRight, Shield, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { applyBrandColors } from "@/components/layout/ThemeSync";
 
 export default function Servidores() {
   const navigate = useNavigate();
   const { companies, activeCompanyId, setActiveCompanyId, profile } = useAuth();
+  const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const isMasterTenant = (companyId: string) => companyId === profile?.company_id;
 
-  const handleSelect = (companyId: string) => {
-    setActiveCompanyId(companyId);
-    navigate("/home");
+  const handleSelect = async (companyId: string) => {
+    if (loadingId) return;
+    setLoadingId(companyId);
+
+    try {
+      // Pre-fetch brand colors and apply them before navigating
+      const { data } = await supabase
+        .from("companies")
+        .select("brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color, brand_logo_url, servidor_id")
+        .eq("id", companyId)
+        .single();
+
+      // Apply brand colors immediately
+      if (data && data.servidor_id !== null) {
+        applyBrandColors(data);
+      } else {
+        applyBrandColors(null);
+      }
+
+      // Dispatch event so sidebar logo updates
+      window.dispatchEvent(new CustomEvent("tenant-switched", { detail: { companyId } }));
+
+      setActiveCompanyId(companyId);
+
+      // Small delay for visual feedback
+      await new Promise((r) => setTimeout(r, 400));
+      navigate("/home");
+    } catch {
+      setActiveCompanyId(companyId);
+      navigate("/home");
+    } finally {
+      setLoadingId(null);
+    }
   };
 
   return (
@@ -38,18 +72,25 @@ export default function Servidores() {
             {companies.map((company) => {
               const isActive = activeCompanyId === company.id;
               const isMaster = isMasterTenant(company.id);
+              const isLoading = loadingId === company.id;
               return (
                 <Card
                   key={company.id}
                   onClick={() => handleSelect(company.id)}
                   className={`flex items-center gap-4 p-4 cursor-pointer transition-all hover:shadow-md hover:border-primary/40 ${
                     isActive ? "border-primary bg-primary/5 shadow-sm" : "border-border"
-                  }`}
+                  } ${isLoading ? "opacity-80 pointer-events-none" : ""}`}
                 >
                   <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${
                     isActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                   }`}>
-                    {isMaster ? <Shield className="h-5 w-5" /> : <Building2 className="h-5 w-5" />}
+                    {isLoading ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : isMaster ? (
+                      <Shield className="h-5 w-5" />
+                    ) : (
+                      <Building2 className="h-5 w-5" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -64,7 +105,9 @@ export default function Servidores() {
                     </div>
                     <p className="text-xs text-muted-foreground truncate">{company.cnpj}</p>
                   </div>
-                  {isActive ? (
+                  {isLoading ? (
+                    <span className="text-xs text-muted-foreground">Carregando...</span>
+                  ) : isActive ? (
                     <Badge variant="outline" className="border-primary/30 text-primary text-[10px] shrink-0">
                       <Check className="h-3 w-3 mr-1" /> Ativo
                     </Badge>

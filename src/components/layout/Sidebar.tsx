@@ -1,5 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import accordLogo from "@/assets/accord-logo.png";
+import { supabase } from "@/integrations/supabase/client";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { usePermissions } from "@/hooks/usePermissions";
 import { ROUTE_PERMISSIONS } from "@/lib/permissions";
 import {
@@ -26,7 +28,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -83,6 +84,34 @@ export function Sidebar() {
   const [overdueCount, setOverdueCount] = useState(0);
   const [configOpen, setConfigOpen] = useState(false);
   const { role, signOut, profile } = useAuth();
+  const activeCompanyId = useActiveCompanyId();
+  const [tenantLogoUrl, setTenantLogoUrl] = useState<string | null>(null);
+
+  // Fetch tenant logo when active company changes
+  useEffect(() => {
+    if (!activeCompanyId) { setTenantLogoUrl(null); return; }
+    const fetchLogo = async () => {
+      const { data } = await supabase
+        .from("companies")
+        .select("brand_logo_url, servidor_id")
+        .eq("id", activeCompanyId)
+        .single();
+      // Master tenant uses Accord logo
+      if (data && data.servidor_id !== null && data.brand_logo_url) {
+        setTenantLogoUrl(data.brand_logo_url);
+      } else {
+        setTenantLogoUrl(null);
+      }
+    };
+    fetchLogo();
+    const handler = () => fetchLogo();
+    window.addEventListener("brand-colors-updated", handler);
+    window.addEventListener("tenant-switched", handler);
+    return () => {
+      window.removeEventListener("brand-colors-updated", handler);
+      window.removeEventListener("tenant-switched", handler);
+    };
+  }, [activeCompanyId]);
 
   const fetchOverdueActivities = useCallback(async () => {
     if (!profile?.user_id) return;
@@ -200,13 +229,19 @@ export function Sidebar() {
         collapsed ? "justify-center px-2" : "justify-start px-5"
       )}>
         <div className="flex items-center gap-2.5 cursor-default shrink-0" onClick={(e) => e.preventDefault()}>
-          <img src={accordLogo} alt="ACCORD" className={cn("transition-all duration-300", collapsed ? "h-7" : "h-8")} />
-          <span className={cn(
-            "text-[15px] font-bold tracking-tight text-sidebar-foreground/90 whitespace-nowrap transition-all duration-300",
-            collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 w-auto"
-          )}>
-            ACCORD
-          </span>
+          <img
+            src={tenantLogoUrl || accordLogo}
+            alt={tenantLogoUrl ? "Tenant" : "ACCORD"}
+            className={cn("transition-all duration-300 object-contain", collapsed ? "h-7" : "h-8", tenantLogoUrl && "max-w-[120px]")}
+          />
+          {!tenantLogoUrl && (
+            <span className={cn(
+              "text-[15px] font-bold tracking-tight text-sidebar-foreground/90 whitespace-nowrap transition-all duration-300",
+              collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 w-auto"
+            )}>
+              ACCORD
+            </span>
+          )}
         </div>
         {/* Pin/Toggle button - visible when expanded */}
         {!collapsed && (
