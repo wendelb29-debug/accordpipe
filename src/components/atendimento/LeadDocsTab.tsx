@@ -152,9 +152,18 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
     setSignedPdfContracts((pdfContracts as SignedPdfContract[]) || []);
   };
 
+  const fetchContractTemplates = async () => {
+    const { data } = await supabase
+      .from("company_contract_templates")
+      .select("id, name")
+      .eq("company_id", lead.servidor_id);
+    setContractTemplates((data as any[]) || []);
+  };
+
   useEffect(() => {
     fetchDocs();
     fetchSignedContracts();
+    fetchContractTemplates();
   }, [lead.id]);
 
   const handleUpload = async (docType: string, file: File) => {
