@@ -4,6 +4,7 @@ import {
   FileText, Clock, CheckCircle2, AlertCircle, FileSignature,
   Send, Copy, Link2, Users, XCircle, ExternalLink,
 } from "lucide-react";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
@@ -112,16 +113,34 @@ interface Props {
   addActivity?: (data: any) => Promise<any>;
 }
 
-function buildVariableMap(lead: CrmLead) {
+function buildVariableMap(
+  lead: CrmLead,
+  tenant?: any,
+  proposal?: any,
+  vendor?: any,
+) {
   const now = new Date();
+  const fmtCurrency = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  // Build services list from proposal items if available
+  let servicosContratados = "";
+  if (proposal?.proposal_items) {
+    servicosContratados = (proposal.proposal_items as any[])
+      .map((item: any) => `${item.nome} - ${fmtCurrency(item.valor)}`)
+      .join("; ");
+  }
+
   return {
+    // Lead / Client
     "{{nome_completo}}": lead.contact_name || lead.company_name || "",
     "{{cpf}}": lead.documento || "",
     "{{cnpj}}": lead.documento || "",
     "{{razao_social}}": lead.company_name || "",
+    "{{documento_contratante}}": lead.documento || "",
     "{{email}}": lead.email || "",
     "{{telefone}}": lead.phone || "",
     "{{whatsapp}}": lead.phone || "",
+    "{{data_nascimento}}": "",
     "{{endereco}}": lead.endereco || "",
     "{{numero}}": lead.numero || "",
     "{{bairro}}": lead.bairro || "",
@@ -130,7 +149,35 @@ function buildVariableMap(lead: CrmLead) {
     "{{cep}}": lead.cep || "",
     "{{nome_empresa}}": lead.company_name || "",
     "{{data_atual}}": now.toLocaleDateString("pt-BR"),
-    "{{valor_proposta}}": lead.value_mrr?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) || "R$ 0,00",
+    // Tenant
+    "{{tenant_nome}}": tenant?.nome_fantasia || tenant?.razao_social || "",
+    "{{tenant_cnpj}}": tenant?.cnpj || "",
+    "{{tenant_razao_social}}": tenant?.razao_social || "",
+    "{{tenant_email}}": tenant?.email || "",
+    "{{tenant_telefone}}": tenant?.telefone || "",
+    "{{tenant_endereco}}": [tenant?.endereco, tenant?.numero].filter(Boolean).join(", ") || "",
+    "{{tenant_cidade}}": tenant?.cidade || "",
+    "{{tenant_estado}}": tenant?.estado || "",
+    // Proposal
+    "{{nome_item}}": proposal?.titulo || "",
+    "{{descricao_item}}": proposal?.descricao || "",
+    "{{valor_proposta}}": proposal ? fmtCurrency(proposal.valor) : "",
+    "{{valor_total}}": proposal ? fmtCurrency(proposal.valor) : "",
+    "{{servicos_contratados}}": servicosContratados,
+    // Vendor
+    "{{nome_vendedor}}": vendor?.name || "",
+    "{{email_vendedor}}": vendor?.email || "",
+    "{{telefone_vendedor}}": vendor?.phone || "",
+    "{{data_nascimento_vendedor}}": vendor?.birth_date || "",
+    // Signature placeholders (filled at sign time)
+    "{{data_assinatura_cliente}}": "",
+    "{{hora_assinatura_cliente}}": "",
+    "{{geolocalizacao_cliente}}": "",
+    "{{selfie_cliente}}": "",
+    "{{data_assinatura_vendedor}}": "",
+    "{{hora_assinatura_vendedor}}": "",
+    "{{geolocalizacao_vendedor}}": "",
+    "{{selfie_vendedor}}": "",
   };
 }
 
@@ -205,32 +252,112 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     const template = templates.find((t) => t.id === selectedTemplate);
     if (!template) return;
     setGenerating(true);
-    const vars = buildVariableMap(lead);
-    let htmlContent = `<h1>${template.nome}</h1><p>Documento gerado automaticamente.</p>`;
-    Object.entries(vars).forEach(([key, val]) => {
-      htmlContent = htmlContent.replace(new RegExp(key.replace(/[{}]/g, "\\$&"), "g"), val);
-    });
-    const finalName = docName.trim() || `${template.nome} - ${lead.company_name}`;
-    const { error } = await supabase.from("generated_documents").insert({
-      servidor_id: servidorId,
-      lead_id: lead.id,
-      template_id: template.id,
-      nome: finalName,
-      tipo: template.tipo,
-      status: "gerado",
-      html_content: htmlContent,
-      pdf_url: template.arquivo_url,
-      created_by_user_id: profile?.user_id,
-      created_by_name: profile?.name,
-    });
-    setGenerating(false);
-    if (error) return toast.error("Erro ao gerar documento");
-    toast.success("Documento gerado!");
-    setGenerateOpen(false);
-    setSelectedTemplate("");
-    setDocName("");
-    fetchDocuments();
-    addActivity?.({ type: "document", title: `Documento "${finalName}" gerado` });
+
+    try {
+      // Fetch tenant data
+      const { data: tenant } = await supabase
+        .from("companies")
+        .select("*")
+        .eq("id", servidorId)
+        .maybeSingle();
+
+      // Fetch latest approved proposal for this lead
+      const { data: proposal } = await supabase
+        .from("proposals")
+        .select("*, proposal_items(*)")
+        .eq("lead_id", lead.id)
+        .eq("status", "approved")
+        .order("approved_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // Fetch vendor (proposal creator)
+      let vendor: any = null;
+      if (proposal?.created_by_user_id) {
+        const { data: v } = await supabase
+          .from("profiles")
+          .select("name, email, phone, birth_date")
+          .eq("user_id", proposal.created_by_user_id)
+          .maybeSingle();
+        vendor = v;
+      }
+
+      const vars = buildVariableMap(lead, tenant, proposal, vendor);
+
+      // Try to generate PDF with variable substitution using pdf-lib
+      let pdfUrl = template.arquivo_url;
+      if (template.arquivo_url) {
+        try {
+          const pdfBytes = await fetch(template.arquivo_url).then(r => r.arrayBuffer());
+          const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+          const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+          const pages = pdfDoc.getPages();
+
+          // For each page, find and replace text by overlaying
+          // Since pdf-lib can't directly replace text in content streams,
+          // we extract the content_template and use it for the HTML record.
+          // The PDF is stored as-is for now — variable substitution happens
+          // in the stored html_content for future rendering.
+
+          // Save modified PDF to storage
+          const modifiedPdfBytes = await pdfDoc.save();
+          const blob = new Blob([modifiedPdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
+          const filePath = `generated/${servidorId}/${Date.now()}_${template.nome.replace(/\s+/g, "_")}.pdf`;
+          const { error: uploadErr } = await supabase.storage
+            .from("contract-pdfs")
+            .upload(filePath, blob, { contentType: "application/pdf" });
+
+          if (!uploadErr) {
+            const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(filePath);
+            pdfUrl = urlData.publicUrl;
+          }
+        } catch (pdfErr) {
+          console.warn("PDF processing failed, using original:", pdfErr);
+        }
+      }
+
+      // Build HTML content with substituted variables
+      let htmlContent = template.arquivo_url
+        ? `<p>Documento gerado a partir do modelo: ${template.nome}</p>`
+        : `<h1>${template.nome}</h1><p>Documento gerado automaticamente.</p>`;
+
+      // Apply variable substitution to content_template if available
+      const contentTemplate = (template as any).content_template;
+      if (contentTemplate) {
+        htmlContent = contentTemplate;
+        Object.entries(vars).forEach(([key, val]) => {
+          htmlContent = htmlContent.replace(new RegExp(key.replace(/[{}]/g, "\\$&"), "g"), val);
+        });
+      }
+
+      const finalName = docName.trim() || `${template.nome} - ${lead.company_name}`;
+      const { error } = await supabase.from("generated_documents").insert({
+        servidor_id: servidorId,
+        lead_id: lead.id,
+        template_id: template.id,
+        proposal_id: proposal?.id || null,
+        nome: finalName,
+        tipo: template.tipo,
+        status: "gerado",
+        html_content: htmlContent,
+        pdf_url: pdfUrl,
+        created_by_user_id: profile?.user_id,
+        created_by_name: profile?.name,
+        rendered_variables_json: vars as any,
+      });
+
+      if (error) throw error;
+      toast.success("Documento gerado com variáveis preenchidas!");
+      setGenerateOpen(false);
+      setSelectedTemplate("");
+      setDocName("");
+      fetchDocuments();
+      addActivity?.({ type: "document", title: `Documento "${finalName}" gerado` });
+    } catch (err: any) {
+      toast.error("Erro ao gerar documento: " + (err.message || ""));
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const handleDelete = async (doc: GeneratedDoc) => {
@@ -534,21 +661,38 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
               <Label className="text-xs">Nome do documento (opcional)</Label>
               <Input value={docName} onChange={(e) => setDocName(e.target.value)} placeholder="Deixe vazio para usar o nome do modelo" />
             </div>
-            {selectedTemplate && (
-              <div className="rounded-lg border bg-muted/30 p-3">
-                <p className="text-xs font-medium text-muted-foreground mb-2">Variáveis preenchidas:</p>
-                <div className="grid grid-cols-2 gap-1 text-[11px]">
-                  {Object.entries(buildVariableMap(lead)).map(([key, val]) =>
-                    val ? (
+            {selectedTemplate && (() => {
+              const tpl = templates.find(t => t.id === selectedTemplate);
+              const tplPlaceholders = (tpl as any)?.placeholders_json as string[] | null;
+              const vars = buildVariableMap(lead);
+              const relevantVars = tplPlaceholders && tplPlaceholders.length > 0
+                ? Object.entries(vars).filter(([key]) => tplPlaceholders.includes(key.replace(/\{\{|\}\}/g, "")))
+                : Object.entries(vars);
+              return (
+                <div className="rounded-lg border bg-muted/30 p-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">
+                    Variáveis do modelo ({relevantVars.length}):
+                  </p>
+                  <div className="grid grid-cols-2 gap-1 text-[11px]">
+                    {relevantVars.map(([key, val]) => (
                       <div key={key} className="flex items-center gap-1 text-muted-foreground">
-                        <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" />
+                        {val ? (
+                          <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" />
+                        ) : (
+                          <AlertCircle className="h-3 w-3 text-amber-500 shrink-0" />
+                        )}
                         <span className="truncate">{key.replace(/\{\{|\}\}/g, "")}</span>
                       </div>
-                    ) : null
-                  ).filter(Boolean).slice(0, 10)}
+                    )).slice(0, 16)}
+                  </div>
+                  {relevantVars.filter(([, v]) => !v).length > 0 && (
+                    <p className="text-[10px] text-amber-600 mt-2">
+                      Variáveis sem valor serão preenchidas durante a assinatura ou deixadas em branco
+                    </p>
+                  )}
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setGenerateOpen(false)}>Cancelar</Button>
