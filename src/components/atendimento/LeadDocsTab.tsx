@@ -415,11 +415,29 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
           <h3 className="text-sm font-semibold flex items-center gap-2">
             <FileText className="h-4 w-4" /> Documentos Gerados ({signedContracts.length + signedPdfContracts.length})
           </h3>
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-            <Plus className="h-3.5 w-3.5" />
-            Gerar Documento
-            <ChevronDown className="h-3 w-3" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                <Plus className="h-3.5 w-3.5" />
+                Gerar Documento
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[280px]">
+              {contractTemplates.length > 0 ? (
+                contractTemplates.map((tpl) => (
+                  <DropdownMenuItem key={tpl.id} onClick={() => toast.info(`Gerando documento: ${tpl.name}`)}>
+                    <FileSignature className="h-4 w-4 mr-2 shrink-0" />
+                    <span className="truncate">{tpl.name}</span>
+                  </DropdownMenuItem>
+                ))
+              ) : (
+                <DropdownMenuItem disabled>
+                  <span className="text-muted-foreground text-xs">Nenhum modelo de contrato configurado</span>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {hasSignedContracts ? (
