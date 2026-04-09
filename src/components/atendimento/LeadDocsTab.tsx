@@ -740,7 +740,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
                           <FileText className="h-5 w-5 text-muted-foreground" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-medium">{contract.matriz_nome || contract.code} — {lead.company_name}</p>
+                          <p className="text-sm font-medium">{contract.code} — {contract.matriz_nome || lead.company_name}</p>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                             <span>{new Date(contract.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}</span>
                             {getContractStatusBadge(contract.signature_status)}
