@@ -602,6 +602,13 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
                   <p className="font-bold text-sm text-foreground">Sem Camada</p>
                   <span className="text-[10px] text-muted-foreground/60">Workspaces ainda não organizados em uma pasta</span>
                 </div>
+                <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                  {groups.length > 0 && (
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" title="Mover todos para uma camada" onClick={() => { setMoveUngroupedTarget(""); setMoveUngroupedOpen(true); }}>
+                      <ArrowRight className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
                 <div className={cn("text-muted-foreground transition-transform duration-200", (expandedGroups["__ungrouped"] ?? true) && "rotate-180")}>
                   <ChevronDown className="h-4 w-4" />
                 </div>
