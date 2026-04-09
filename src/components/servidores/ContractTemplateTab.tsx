@@ -249,7 +249,7 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
               }
               fileInputRef.current?.click();
             }}
-            disabled={uploading || !newName.trim()}
+            disabled={uploading}
             size="sm"
             className="gap-2"
           >
