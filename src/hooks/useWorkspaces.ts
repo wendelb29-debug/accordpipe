@@ -14,6 +14,9 @@ export interface Workspace {
   created_by_user_id: string | null;
   created_at: string;
   updated_at: string;
+  type?: string;
+  group_id?: string | null;
+  sort_order?: number;
 }
 
 export interface WorkspaceMember {
