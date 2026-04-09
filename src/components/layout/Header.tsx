@@ -38,9 +38,7 @@ const ROUTE_TITLES: Record<string, string> = {
   "/configuracoes/assinaturas": "Assinaturas",
 };
 
-const ROUTE_SUBTITLES: Record<string, string> = {
-  "/atendimento": "Selecione um kanban para gerenciar",
-};
+const ROUTE_SUBTITLES: Record<string, string> = {};
 
 const roleLabels: Record<string, string> = {
   admin: "Administrador",

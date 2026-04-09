@@ -34,10 +34,8 @@ function AtendimentoContent() {
   const handleBack = () => setSelectedWsId(null);
 
   const backButton = (
-    <div className="flex items-center gap-3 px-4 pt-3 pb-1">
-      <div>
-        <h2 className="text-sm font-bold text-foreground">{activeWorkspace?.name || "Workspace"}</h2>
-      </div>
+    <div className="flex items-center gap-2 px-3 pt-1 pb-0.5">
+      <h2 className="text-xs font-bold text-foreground">{activeWorkspace?.name || "Workspace"}</h2>
     </div>
   );
 
