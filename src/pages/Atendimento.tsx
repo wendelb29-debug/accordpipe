@@ -74,7 +74,7 @@ function AtendimentoContent() {
     <div className="h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
       {backButton}
       <Tabs defaultValue="comercial" className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="mx-3 mt-1 mb-0 w-fit h-8">
+        <TabsList className="mx-3 mt-0.5 mb-0 w-fit h-8">
           <TabsTrigger value="comercial" className="gap-1 text-[11px] h-7 px-3">
             <MessageSquare className="h-3 w-3" /> Pipeline Comercial
           </TabsTrigger>
