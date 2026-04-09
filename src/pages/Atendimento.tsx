@@ -34,10 +34,8 @@ function AtendimentoContent() {
   const handleBack = () => setSelectedWsId(null);
 
   const backButton = (
-    <div className="flex items-center gap-3 px-4 pt-3 pb-1">
-      <div>
-        <h2 className="text-sm font-bold text-foreground">{activeWorkspace?.name || "Workspace"}</h2>
-      </div>
+    <div className="flex items-center gap-2 px-3 pt-1 pb-0.5">
+      <h2 className="text-xs font-bold text-foreground">{activeWorkspace?.name || "Workspace"}</h2>
     </div>
   );
 
@@ -76,7 +74,7 @@ function AtendimentoContent() {
     <div className="h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
       {backButton}
       <Tabs defaultValue="comercial" className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="mx-3 mt-1 mb-0 w-fit h-8">
+        <TabsList className="mx-3 mt-0.5 mb-0 w-fit h-8">
           <TabsTrigger value="comercial" className="gap-1 text-[11px] h-7 px-3">
             <MessageSquare className="h-3 w-3" /> Pipeline Comercial
           </TabsTrigger>
