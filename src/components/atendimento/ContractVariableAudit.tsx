@@ -215,7 +215,7 @@ export function buildAuditReport(
     duplicated: variables.filter(v => v.status === "duplicate").length,
   };
 
-  return { variables, summary, missingEssential: missingEssentialFixed, suggestions };
+  return { variables, summary, missingEssential: missingEssentialCalc, suggestions };
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
