@@ -124,6 +124,8 @@ const SIGNATURE_VARS = new Set([
 
 const CRITICAL_VARS = ["nome_completo", "documento_contratante", "tenant_nome", "tenant_cnpj"];
 
+const ACCEPTED_STATUSES = new Set(["aceita", "accepted", "aprovada", "approved"]);
+
 /** Convert a crm_lead_activities proposal activity into the shape buildVariableMap expects */
 function activityToProposal(activity: any): any {
   if (!activity) return null;
@@ -372,7 +374,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
       // Find accepted proposal first, fallback to most recent
       const activities = activityRes.data || [];
-      const acceptedActivity = activities.find((a: any) => (a.metadata as any)?.status === "aceita")
+      const acceptedActivity = activities.find((a: any) => ACCEPTED_STATUSES.has(((a.metadata as any)?.status || "").toLowerCase()))
         || activities[0] || null;
 
       const proposal = activityToProposal(acceptedActivity);
@@ -666,7 +668,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
           setPreviewTenant(tenantRes.data);
           setPreviewRegistration(regRes.data);
           const activities = activityRes.data || [];
-          const acceptedActivity = activities.find((a: any) => (a.metadata as any)?.status === "aceita")
+          const acceptedActivity = activities.find((a: any) => ACCEPTED_STATUSES.has(((a.metadata as any)?.status || "").toLowerCase()))
             || activities[0] || null;
           const p = activityToProposal(acceptedActivity);
           setPreviewProposal(p);
