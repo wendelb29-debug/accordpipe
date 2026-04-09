@@ -425,6 +425,58 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
   const hasSignedContracts = signedContracts.length > 0 || signedPdfContracts.length > 0;
   const allDocs = docs;
 
+  const getContractStatusBadge = (status: string) => {
+    switch (status) {
+      case "signed":
+        return <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-green-500/50 text-green-600 dark:text-green-400"><CheckCircle2 className="h-3 w-3 mr-0.5" />Assinado</Badge>;
+      case "pending":
+        return <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-yellow-500/50 text-yellow-600 dark:text-yellow-400"><Clock className="h-3 w-3 mr-0.5" />Aguardando Assinatura</Badge>;
+      case "cancelled":
+        return <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-red-500/50 text-red-600 dark:text-red-400"><XCircle className="h-3 w-3 mr-0.5" />Cancelado</Badge>;
+      default:
+        return <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-muted-foreground/50 text-muted-foreground"><Clock className="h-3 w-3 mr-0.5" />{status}</Badge>;
+    }
+  };
+
+  const getPdfContractStatusBadge = (status: string) => {
+    switch (status) {
+      case "assinado":
+      case "concluido":
+        return <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-green-500/50 text-green-600 dark:text-green-400"><CheckCircle2 className="h-3 w-3 mr-0.5" />Assinado</Badge>;
+      case "pendente":
+      case "enviado":
+        return <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-yellow-500/50 text-yellow-600 dark:text-yellow-400"><Clock className="h-3 w-3 mr-0.5" />Aguardando Assinatura</Badge>;
+      case "cancelado":
+        return <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-red-500/50 text-red-600 dark:text-red-400"><XCircle className="h-3 w-3 mr-0.5" />Cancelado</Badge>;
+      default:
+        return <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-muted-foreground/50 text-muted-foreground">{status}</Badge>;
+    }
+  };
+
+  const handleCopyLink = (contract: SignedContract) => {
+    const url = contract.validation_code
+      ? `${window.location.origin}/validar-documento/${contract.validation_code}`
+      : contract.pdf_url || "";
+    if (url) {
+      navigator.clipboard.writeText(url);
+      toast.success("Link copiado!");
+    } else {
+      toast.error("Link não disponível");
+    }
+  };
+
+  const handleCopyPdfLink = (contract: SignedPdfContract) => {
+    const url = contract.validation_code
+      ? `${window.location.origin}/validar-documento/${contract.validation_code}`
+      : contract.pdf_assinado_url || contract.pdf_url;
+    if (url) {
+      navigator.clipboard.writeText(url);
+      toast.success("Link copiado!");
+    } else {
+      toast.error("Link não disponível");
+    }
+  };
+
   return (
     <div className="space-y-6" onPaste={handlePaste}>
       {/* Documentos Gerados Section */}
