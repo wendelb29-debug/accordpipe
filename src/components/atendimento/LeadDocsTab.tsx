@@ -514,12 +514,6 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
           <div className="space-y-2">
             {signedContracts.map((contract) => {
               const isGenerating = generatingPdf === contract.id;
-              const roleLabels: Record<string, string> = {
-                cliente: "Cliente",
-                vendedor: "Vendedor",
-                testemunha: "Testemunha",
-                diretor: "Diretor/CEO",
-              };
               return (
                 <Card key={contract.id} className="border-border/50">
                   <CardContent className="p-4">
@@ -530,15 +524,9 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-medium">{contract.code} — {lead.company_name}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            {contract.signed_at && (
-                              <span>{new Date(contract.signed_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}</span>
-                            )}
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-yellow-500/50 text-yellow-600 dark:text-yellow-400">
-                              {contract.signature_status === "signed"
-                                ? "Assinado"
-                                : `Enviado p/ Assinatura (${contract.signers.filter(s => s.signed_at).length}/${contract.signers.length})`}
-                            </Badge>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                            <span>{new Date(contract.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                            {getContractStatusBadge(contract.signature_status)}
                           </div>
                         </div>
                       </div>
@@ -548,6 +536,9 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
                         </Button>
                         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDownloadClientContract(contract)} disabled={isGenerating} title="Baixar">
                           <Download className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleCopyLink(contract)} title="Copiar Link">
+                          <Link2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </div>
@@ -568,11 +559,9 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-medium">{contract.name}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>{new Date(contract.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}</span>
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-green-500/50 text-green-600 dark:text-green-400">
-                              Concluído
-                            </Badge>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                            <span>{new Date(contract.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                            {getPdfContractStatusBadge(contract.status)}
                           </div>
                         </div>
                       </div>
@@ -582,6 +571,9 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
                         </Button>
                         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDownloadSignedPdf(pdfUrl, `${contract.name}.pdf`)} title="Baixar">
                           <Download className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleCopyPdfLink(contract)} title="Copiar Link">
+                          <Link2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </div>
