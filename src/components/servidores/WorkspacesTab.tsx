@@ -445,7 +445,7 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
                             </div>
 
                             {/* Color dot */}
-                            <div className="h-3.5 w-3.5 rounded-full shrink-0 ring-2 ring-offset-1 ring-offset-background" style={{ backgroundColor: col.color, ringColor: col.color + "40" }} />
+                            <div className="h-3.5 w-3.5 rounded-full shrink-0 ring-2 ring-offset-1 ring-offset-background" style={{ backgroundColor: col.color, boxShadow: `0 0 0 2px ${col.color}40` }} />
 
                             {isEditing ? (
                               <>
