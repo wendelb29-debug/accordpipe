@@ -174,7 +174,7 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
         })}
 
         {/* Ungrouped */}
-        {ungrouped.length > 0 && (
+        {filterGroup === "all" && ungrouped.length > 0 && (
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3">
               <FolderOpen className="h-4 w-4 text-muted-foreground" />
