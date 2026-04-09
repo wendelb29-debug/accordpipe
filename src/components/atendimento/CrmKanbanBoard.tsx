@@ -526,15 +526,16 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
         {stageStats.map((stage) => {
           const Icon = stageIcons[stage.id] || Clock;
           const stageLeads = filteredLeads.filter((l) => l.stage === stage.id);
-          const colors = stageColors[stage.id] || stageColors["standby"];
+          const colors = stageColors[stage.id] || { bg: "bg-muted/30", text: "text-foreground", icon: "bg-primary", border: "border-border" };
+          const dynCol = kanbanCols.find(c => c.id === stage.id);
+          const slaDays = dynCol?.sla_days || (stage.daysLimit ? parseInt(stage.daysLimit) || 0 : 0);
 
           return (
             <div
               key={stage.id}
               className={cn(
                 "flex-shrink-0 w-[220px] rounded-xl flex flex-col border transition-all duration-200",
-                colors.border,
-                colors.bg,
+                dynCol ? "border-border/50 bg-muted/20" : `${colors.border} ${colors.bg}`,
                 dragOverStage === stage.id && "ring-2 ring-primary/60 scale-[1.01]"
               )}
               onDragOver={(e) => { e.preventDefault(); setDragOverStage(stage.id); }}
@@ -545,11 +546,14 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
               <div className="px-2.5 py-2 rounded-t-xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <div className={cn("p-1 rounded-md", colors.icon)}>
+                    <div
+                      className={cn("p-1 rounded-md", dynCol ? "" : colors.icon)}
+                      style={dynCol ? { backgroundColor: dynCol.color } : undefined}
+                    >
                       <Icon className="h-3 w-3 text-white" />
                     </div>
                     <span className="font-semibold text-[11px] text-foreground">{stage.title}</span>
-                    <span className={cn("text-[10px] font-bold rounded-full px-2 py-0.5 bg-card border border-border/50", colors.text)}>
+                    <span className={cn("text-[10px] font-bold rounded-full px-2 py-0.5 bg-card border border-border/50", dynCol ? "text-foreground" : colors.text)}>
                       {stage.count}
                     </span>
                   </div>
