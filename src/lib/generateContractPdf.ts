@@ -1,9 +1,12 @@
 import jsPDF from "jspdf";
+import { addAnnexPage } from "./generateContractAnnex";
+import type { AnnexData } from "./generateContractAnnex";
 
 interface ContractPdfData {
   content: string;
   code: string;
   companyName: string;
+  annexData?: AnnexData;
 }
 
 export function generateContractPdf({ content, code, companyName }: ContractPdfData): Blob {
