@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { PDFDocument, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
+import { PDFDocument, rgb, StandardFonts, pushGraphicsState, popGraphicsState, setGraphicsState } from "https://esm.sh/pdf-lib@1.17.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,27 +24,26 @@ function fmtDateTimeBR(iso: string) {
   const d = new Date(iso);
   return `${fmtDateBR(d)} ${fmtTimeBR(d)}`;
 }
-
 function maskEmail(e: string | null) {
-  if (!e || !e.includes("@")) return e || "—";
+  if (!e || !e.includes("@")) return e || "--";
   const [user, domain] = e.split("@");
   return user.slice(0, 2) + "***@" + domain;
 }
 function maskDoc(d: string | null) {
-  if (!d) return "—";
+  if (!d) return "--";
   const clean = d.replace(/\D/g, "");
   if (clean.length <= 4) return "***";
   return "***." + clean.slice(-4);
 }
 function maskIp(ip: string | null) {
-  if (!ip) return "—";
+  if (!ip) return "--";
   const parts = ip.split(".");
   if (parts.length === 4) return parts[0] + ".xxx.xxx." + parts[3];
   return ip;
 }
 
 const PAPEL_LABELS: Record<string, string> = {
-  proprietario_proposta: "Representante da empresa",
+  proprietario_proposta: "Representante da Empresa",
   cliente: "Cliente",
   vendedor: "Vendedor",
   signatario: "Signatario",
@@ -52,193 +51,345 @@ const PAPEL_LABELS: Record<string, string> = {
 };
 
 const EVENT_LABELS: Record<string, string> = {
-  documento_gerado: "Documento gerado",
-  envelope_configurado: "Envelope configurado",
-  link_gerado: "Link de assinatura gerado",
-  link_acessado: "Link acessado",
-  validacao_iniciada: "Validacao de identidade",
-  codigo_enviado: "Codigo de confirmacao enviado",
-  codigo_confirmado: "Codigo confirmado",
-  assinatura_vendedor_concluida: "Assinatura do vendedor concluida",
-  assinatura_cliente_concluida: "Assinatura do cliente concluida",
-  documento_assinado_finalizado: "Documento finalizado",
-  documento_validacao_gerada: "Validacao gerada",
-  assinatura_recusada: "Assinatura recusada",
+  documento_gerado: "Documento Gerado",
+  envelope_configurado: "Envelope Configurado",
+  link_gerado: "Link de Assinatura Gerado",
+  link_acessado: "Link Acessado pelo Signatario",
+  validacao_iniciada: "Validacao de Identidade Iniciada",
+  codigo_enviado: "Codigo de Confirmacao Enviado",
+  codigo_confirmado: "Codigo Confirmado com Sucesso",
+  assinatura_vendedor_concluida: "Assinatura do Vendedor Concluida",
+  assinatura_cliente_concluida: "Assinatura do Cliente Concluida",
+  documento_assinado_finalizado: "Documento Finalizado com Todas as Assinaturas",
+  documento_validacao_gerada: "Certificado de Validacao Gerado",
+  assinatura_recusada: "Assinatura Recusada",
 };
 
-// Helper to draw wrapped text and return new Y position
-function drawWrapped(page: any, text: string, x: number, y: number, font: any, size: number, maxWidth: number, color = rgb(0.2, 0.2, 0.2)): number {
+// ─── Colors ───
+const C = {
+  darkBg:     rgb(0.043, 0.059, 0.098),   // #0B0F19
+  cardBg:     rgb(0.067, 0.094, 0.153),   // #111827
+  accent:     rgb(0.486, 0.227, 0.929),   // #7C3AED
+  accentBlue: rgb(0.145, 0.388, 0.922),   // #2563EB
+  green:      rgb(0.063, 0.725, 0.506),   // #10B981
+  white:      rgb(0.898, 0.906, 0.922),   // #E5E7EB
+  lightGray:  rgb(0.624, 0.639, 0.667),   // #9FA3AB
+  midGray:    rgb(0.373, 0.388, 0.427),   // #5F636D
+  dimLine:    rgb(0.16, 0.18, 0.22),
+  gold:       rgb(0.855, 0.647, 0.125),   // gold accent
+};
+
+const W = 595.28;
+const H = 841.89;
+const M = 50; // margin
+const CW = W - M * 2; // content width
+
+function drawRect(page: any, x: number, y: number, w: number, h: number, color: any, radius = 0) {
+  // pdf-lib doesn't have rounded rect natively, draw normal rect
+  page.drawRectangle({ x, y, width: w, height: h, color });
+}
+
+function drawLine(page: any, y: number, color = C.dimLine, thickness = 0.5) {
+  page.drawLine({ start: { x: M, y }, end: { x: W - M, y }, thickness, color });
+}
+
+function centerText(page: any, text: string, y: number, font: any, size: number, color = C.white) {
+  const tw = font.widthOfTextAtSize(text, size);
+  page.drawText(text, { x: (W - tw) / 2, y, size, font, color });
+}
+
+function drawWrapped(page: any, text: string, x: number, y: number, font: any, size: number, maxW: number, color = C.white, lineH = 0): number {
+  const gap = lineH || size + 4;
   const words = text.split(" ");
   let line = "";
-  let currentY = y;
+  let cy = y;
   for (const word of words) {
     const test = line ? line + " " + word : word;
-    const w = font.widthOfTextAtSize(test, size);
-    if (w > maxWidth && line) {
-      page.drawText(line, { x, y: currentY, size, font, color });
-      currentY -= size + 3;
+    if (font.widthOfTextAtSize(test, size) > maxW && line) {
+      page.drawText(line, { x, y: cy, size, font, color });
+      cy -= gap;
       line = word;
     } else {
       line = test;
     }
   }
   if (line) {
-    page.drawText(line, { x, y: currentY, size, font, color });
-    currentY -= size + 3;
+    page.drawText(line, { x, y: cy, size, font, color });
+    cy -= gap;
   }
-  return currentY;
+  return cy;
 }
 
-async function buildAuditPage(
-  pdfDoc: any,
-  doc: any,
-  signersList: any[],
-  events: any[],
-  validationCode: string,
-  documentHash: string,
-  publicUrl: string,
+// ─── Certificate Cover Page ───
+function buildCoverPage(
+  pdfDoc: any, font: any, fontBold: any,
+  doc: any, validationCode: string, docHash: string, publicUrl: string,
 ) {
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const page = pdfDoc.addPage([W, H]);
 
-  const W = 595.28; // A4
-  const H = 841.89;
-  const margin = 50;
-  const maxW = W - margin * 2;
-  const darkBlue = rgb(0.11, 0.16, 0.32);
-  const gray = rgb(0.3, 0.3, 0.3);
-  const lightGray = rgb(0.6, 0.6, 0.6);
-  const green = rgb(0.06, 0.5, 0.28);
+  // Full dark background
+  drawRect(page, 0, 0, W, H, C.darkBg);
 
-  let page = pdfDoc.addPage([W, H]);
-  let y = H - margin;
+  // Top decorative accent bar
+  drawRect(page, 0, H - 6, W, 6, C.accent);
 
-  function ensureSpace(needed: number) {
-    if (y - needed < margin) {
-      page = pdfDoc.addPage([W, H]);
-      y = H - margin;
-    }
-  }
+  let y = H - 80;
+
+  // Platform badge
+  centerText(page, "ACCORD", y, fontBold, 11, C.lightGray);
+  y -= 8;
+  const badgeW = font.widthOfTextAtSize("Plataforma de Assinatura Eletronica", 7);
+  page.drawText("Plataforma de Assinatura Eletronica", { x: (W - badgeW) / 2, y, size: 7, font, color: C.midGray });
+  y -= 50;
 
   // Title
-  page.drawText("CERTIFICADO DE AUDITORIA DA ASSINATURA", { x: margin, y, size: 14, font: fontBold, color: darkBlue });
-  y -= 6;
-  page.drawLine({ start: { x: margin, y }, end: { x: W - margin, y }, thickness: 1.5, color: darkBlue });
-  y -= 22;
+  centerText(page, "CERTIFICADO DE ASSINATURA", y, fontBold, 22, C.white);
+  y -= 28;
+  centerText(page, "ELETRONICA", y, fontBold, 22, C.white);
+  y -= 18;
 
-  // Document identification
-  page.drawText("IDENTIFICACAO DO DOCUMENTO", { x: margin, y, size: 10, font: fontBold, color: darkBlue });
-  y -= 16;
+  // Decorative line under title
+  const lineW = 80;
+  page.drawLine({ start: { x: (W - lineW) / 2, y }, end: { x: (W + lineW) / 2, y }, thickness: 2, color: C.accent });
+  y -= 30;
 
-  const docFields = [
-    ["Nome", doc.nome || "—"],
-    ["Tipo", doc.tipo || "contrato"],
-    ["Status", "Assinado"],
-    ["Data de geracao", doc.created_at ? fmtDateTimeBR(doc.created_at) : "—"],
-    ["Data de assinatura final", doc.signed_at ? fmtDateTimeBR(doc.signed_at) : "—"],
-    ["Codigo de validacao", validationCode],
-    ["Hash SHA-256", documentHash.slice(0, 32) + "..."],
+  // Subtitle
+  const subText = "Este documento certifica que o contrato foi assinado eletronicamente";
+  const subText2 = "com registro completo de auditoria, rastreabilidade e validacao.";
+  centerText(page, subText, y, font, 9, C.lightGray);
+  y -= 14;
+  centerText(page, subText2, y, font, 9, C.lightGray);
+  y -= 50;
+
+  // Document info card
+  const cardH = 130;
+  const cardX = M + 20;
+  const cardW = CW - 40;
+  drawRect(page, cardX, y - cardH, cardW, cardH, C.cardBg);
+  // Card border top accent
+  drawRect(page, cardX, y, cardW, 2, C.accent);
+
+  let cy = y - 22;
+  const labelX = cardX + 20;
+  const valueX = cardX + 160;
+
+  const infoRows = [
+    ["Documento", doc.nome || "--"],
+    ["Tipo", (doc.tipo || "contrato").charAt(0).toUpperCase() + (doc.tipo || "contrato").slice(1)],
+    ["Status", "ASSINADO"],
+    ["Data da Assinatura", doc.signed_at ? fmtDateTimeBR(doc.signed_at) : "--"],
   ];
 
-  for (const [label, value] of docFields) {
-    ensureSpace(14);
-    page.drawText(`${label}:`, { x: margin, y, size: 8, font: fontBold, color: gray });
-    page.drawText(value, { x: margin + 140, y, size: 8, font, color: gray });
-    y -= 13;
+  for (const [label, value] of infoRows) {
+    page.drawText(label, { x: labelX, y: cy, size: 9, font, color: C.lightGray });
+    const valColor = value === "ASSINADO" ? C.green : C.white;
+    page.drawText(value, { x: valueX, y: cy, size: 9, font: fontBold, color: valColor });
+    cy -= 24;
   }
 
-  y -= 8;
-  ensureSpace(16);
-  page.drawLine({ start: { x: margin, y: y + 4 }, end: { x: W - margin, y: y + 4 }, thickness: 0.5, color: lightGray });
-  y -= 8;
+  y -= cardH + 40;
 
   // Validation block
-  page.drawText("VALIDACAO", { x: margin, y, size: 10, font: fontBold, color: darkBlue });
-  y -= 16;
+  const valCardH = 150;
+  drawRect(page, cardX, y - valCardH, cardW, valCardH, C.cardBg);
+  drawRect(page, cardX, y, cardW, 2, C.accentBlue);
 
-  const valFields = [
-    ["Codigo", validationCode],
-    ["Hash", documentHash],
-    ["URL de validacao", publicUrl],
+  cy = y - 18;
+  page.drawText("VALIDACAO E INTEGRIDADE", { x: labelX, y: cy, size: 10, font: fontBold, color: C.accentBlue });
+  cy -= 24;
+
+  const valRows = [
+    ["Codigo de Validacao", validationCode],
+    ["Hash SHA-256", docHash.slice(0, 40) + "..."],
+    ["Verificacao Publica", publicUrl.length > 55 ? publicUrl.slice(0, 55) + "..." : publicUrl],
   ];
-  for (const [label, value] of valFields) {
-    ensureSpace(14);
-    page.drawText(`${label}:`, { x: margin, y, size: 8, font: fontBold, color: gray });
-    y = drawWrapped(page, value, margin + 100, y, font, 7, maxW - 100, gray);
-    y -= 4;
+
+  for (const [label, value] of valRows) {
+    page.drawText(label, { x: labelX, y: cy, size: 8, font, color: C.lightGray });
+    cy -= 13;
+    page.drawText(value, { x: labelX, y: cy, size: 7.5, font: fontBold, color: C.white });
+    cy -= 20;
   }
 
-  y -= 8;
-  ensureSpace(16);
-  page.drawLine({ start: { x: margin, y: y + 4 }, end: { x: W - margin, y: y + 4 }, thickness: 0.5, color: lightGray });
+  y -= valCardH + 50;
+
+  // Footer
+  drawLine(page, y, C.dimLine, 0.5);
+  y -= 16;
+  centerText(page, "Este certificado comprova a autenticidade e integridade", y, font, 7.5, C.midGray);
+  y -= 12;
+  centerText(page, "do documento assinado eletronicamente pela plataforma Accord.", y, font, 7.5, C.midGray);
+  y -= 14;
+  centerText(page, `Certificado gerado em ${fmtDateTimeBR(new Date().toISOString())}`, y, font, 7, C.midGray);
+}
+
+// ─── Audit Details Pages ───
+function buildAuditPages(
+  pdfDoc: any, font: any, fontBold: any,
+  doc: any, signersList: any[], events: any[],
+  validationCode: string, docHash: string, publicUrl: string,
+) {
+  let page = pdfDoc.addPage([W, H]);
+  drawRect(page, 0, 0, W, H, C.darkBg);
+  drawRect(page, 0, H - 4, W, 4, C.accent);
+  let y = H - 50;
+
+  function newPage() {
+    page = pdfDoc.addPage([W, H]);
+    drawRect(page, 0, 0, W, H, C.darkBg);
+    drawRect(page, 0, H - 4, W, 4, C.accent);
+    y = H - 50;
+  }
+
+  function ensure(needed: number) {
+    if (y - needed < 60) newPage();
+  }
+
+  function sectionTitle(text: string) {
+    ensure(30);
+    drawRect(page, M, y - 2, CW, 20, C.cardBg);
+    page.drawText(text, { x: M + 12, y: y + 2, size: 10, font: fontBold, color: C.accent });
+    y -= 28;
+  }
+
+  function labelValue(label: string, value: string, valColor = C.white) {
+    ensure(16);
+    page.drawText(label + ":", { x: M + 10, y, size: 8, font, color: C.lightGray });
+    page.drawText(value, { x: M + 150, y, size: 8, font: fontBold, color: valColor });
+    y -= 15;
+  }
+
+  // ── Section: Document Identification ──
+  sectionTitle("IDENTIFICACAO DO DOCUMENTO");
+
+  const docRows = [
+    ["Nome", doc.nome || "--"],
+    ["Tipo", (doc.tipo || "contrato").charAt(0).toUpperCase() + (doc.tipo || "contrato").slice(1)],
+    ["ID do Documento", (doc.id || "").slice(0, 18) + "..."],
+    ["Codigo de Validacao", validationCode],
+    ["Data de Geracao", doc.created_at ? fmtDateTimeBR(doc.created_at) : "--"],
+    ["Data de Assinatura Final", doc.signed_at ? fmtDateTimeBR(doc.signed_at) : "--"],
+  ];
+  for (const [l, v] of docRows) labelValue(l, v);
   y -= 8;
 
-  // Signers block
-  page.drawText("SIGNATARIOS", { x: margin, y, size: 10, font: fontBold, color: darkBlue });
-  y -= 18;
+  // ── Section: Security ──
+  sectionTitle("SEGURANCA E INTEGRIDADE");
+
+  labelValue("Hash SHA-256", docHash.slice(0, 32) + "...");
+  y -= 4;
+  ensure(30);
+  y = drawWrapped(
+    page,
+    "Este documento foi protegido por hash criptografico SHA-256, garantindo que seu conteudo nao foi alterado apos a assinatura. Qualquer modificacao invalida o hash e pode ser detectada automaticamente.",
+    M + 10, y, font, 7.5, CW - 20, C.lightGray
+  );
+  y -= 12;
+
+  // ── Section: Signatories ──
+  sectionTitle("SIGNATARIOS");
 
   for (let i = 0; i < signersList.length; i++) {
     const s = signersList[i];
-    ensureSpace(100);
+    const cardH = 120;
+    ensure(cardH + 10);
+
+    // Card background
+    drawRect(page, M + 5, y - cardH + 14, CW - 10, cardH, C.cardBg);
+    // Left accent stripe
+    drawRect(page, M + 5, y - cardH + 14, 3, cardH, s.status === "signed" ? C.green : C.accent);
+
+    let cy = y + 4;
+    const lx = M + 20;
 
     const papelLabel = PAPEL_LABELS[s.papel] || s.papel;
-    page.drawText(`Signatario ${i + 1} - ${papelLabel}`, { x: margin, y, size: 9, font: fontBold, color: darkBlue });
-    y -= 14;
+    page.drawText(`Signatario ${i + 1} - ${papelLabel}`, { x: lx, y: cy, size: 9, font: fontBold, color: C.white });
+    cy -= 18;
 
-    const signerFields = [
-      ["Nome", s.nome_completo || "—"],
+    const sFields: [string, string, any?][] = [
+      ["Nome Completo", s.nome_completo || "--"],
+      ["Status", s.status === "signed" ? "Assinado" : (s.status || "--"), s.status === "signed" ? C.green : C.white],
+      ["Data/Hora", s.signed_at ? fmtDateTimeBR(s.signed_at) : "--"],
+      ["IP", maskIp(s.ip_address)],
+      ["Localizacao", s.location_text || (s.location_lat ? `${s.location_lat}, ${s.location_lng}` : "--")],
       ["E-mail", maskEmail(s.email)],
       ["Documento", maskDoc(s.cpf)],
-      ["Status", s.status === "signed" ? "Assinado" : s.status],
-      ["Data/Hora", s.signed_at ? fmtDateTimeBR(s.signed_at) : "—"],
-      ["IP", maskIp(s.ip_address)],
-      ["Localizacao", s.location_text || (s.location_lat ? `${s.location_lat}, ${s.location_lng}` : "—")],
-      ["Selfie", s.selfie_url ? "Capturada" : "Nao capturada"],
+      ["Selfie", s.selfie_url ? "[OK] Capturada e armazenada" : "Nao capturada"],
     ];
 
-    for (const [label, value] of signerFields) {
-      ensureSpace(14);
-      page.drawText(`${label}:`, { x: margin + 10, y, size: 8, font: fontBold, color: gray });
-      page.drawText(String(value), { x: margin + 100, y, size: 8, font, color: gray });
-      y -= 12;
+    for (const [label, value, col] of sFields) {
+      page.drawText(label + ":", { x: lx, y: cy, size: 7.5, font, color: C.lightGray });
+      page.drawText(String(value), { x: lx + 110, y: cy, size: 7.5, font: fontBold, color: col || C.white });
+      cy -= 12;
     }
 
-    y -= 8;
+    y -= cardH + 14;
   }
 
-  ensureSpace(16);
-  page.drawLine({ start: { x: margin, y: y + 4 }, end: { x: W - margin, y: y + 4 }, thickness: 0.5, color: lightGray });
   y -= 8;
 
-  // Timeline
-  ensureSpace(20);
-  page.drawText("LINHA DO TEMPO", { x: margin, y, size: 10, font: fontBold, color: darkBlue });
-  y -= 16;
+  // ── Section: Timeline ──
+  sectionTitle("LINHA DO TEMPO");
 
-  for (const evt of events) {
-    ensureSpace(28);
+  for (let i = 0; i < events.length; i++) {
+    const evt = events[i];
+    ensure(36);
+
     const label = EVENT_LABELS[evt.evento] || evt.evento;
-    const time = evt.created_at ? fmtDateTimeBR(evt.created_at) : "—";
+    const time = evt.created_at ? fmtDateTimeBR(evt.created_at) : "--";
 
-    page.drawText(time, { x: margin, y, size: 7, font, color: lightGray });
-    page.drawText(label, { x: margin + 110, y, size: 8, font: fontBold, color: gray });
-    y -= 11;
-    if (evt.descricao) {
-      y = drawWrapped(page, evt.descricao, margin + 110, y, font, 7, maxW - 110, lightGray);
-      y -= 2;
+    // Timeline dot and line
+    const dotX = M + 14;
+    const dotR = 3;
+    page.drawCircle({ x: dotX, y: y + 2, size: dotR, color: C.accent });
+    if (i < events.length - 1) {
+      page.drawLine({
+        start: { x: dotX, y: y - 1 },
+        end: { x: dotX, y: y - 24 },
+        thickness: 1,
+        color: C.dimLine,
+      });
     }
-    y -= 4;
+
+    // Event text
+    page.drawText(label, { x: M + 28, y: y + 2, size: 8, font: fontBold, color: C.white });
+    page.drawText(time, { x: W - M - font.widthOfTextAtSize(time, 7), y: y + 2, size: 7, font, color: C.midGray });
+
+    if (evt.descricao) {
+      const descTrunc = evt.descricao.length > 90 ? evt.descricao.slice(0, 90) + "..." : evt.descricao;
+      page.drawText(descTrunc, { x: M + 28, y: y - 10, size: 6.5, font, color: C.lightGray });
+    }
+
+    y -= 28;
   }
 
-  // Footer
-  ensureSpace(30);
-  y -= 10;
-  page.drawLine({ start: { x: margin, y }, end: { x: W - margin, y }, thickness: 0.5, color: lightGray });
+  y -= 12;
+
+  // ── Section: Validation Footer ──
+  ensure(70);
+  drawLine(page, y, C.dimLine, 0.5);
+  y -= 20;
+
+  centerText(page, "VALIDACAO DO DOCUMENTO", y, fontBold, 10, C.accentBlue);
+  y -= 18;
+  centerText(page, `Codigo: ${validationCode}`, y, font, 8, C.white);
   y -= 14;
-  page.drawText("Este documento foi assinado eletronicamente e possui validade juridica.", { x: margin, y, size: 7, font, color: lightGray });
+  centerText(page, `Hash: ${docHash}`, y, font, 6.5, C.lightGray);
+  y -= 14;
+  centerText(page, `Valide em: ${publicUrl}`, y, font, 7, C.lightGray);
+  y -= 30;
+
+  // Corporate footer
+  drawLine(page, y, C.dimLine, 0.5);
+  y -= 14;
+  centerText(page, "Accord - Plataforma de Assinatura Eletronica", y, fontBold, 7.5, C.midGray);
   y -= 10;
-  page.drawText(`Valide em: ${publicUrl}`, { x: margin, y, size: 7, font, color: lightGray });
+  centerText(page, "Este certificado comprova a autenticidade e integridade do documento assinado eletronicamente.", y, font, 6.5, C.midGray);
+  y -= 10;
+  centerText(page, `Certificado gerado em ${fmtDateTimeBR(new Date().toISOString())}`, y, font, 6, C.midGray);
 }
+
+// ─── Main handler ───
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -255,166 +406,92 @@ Deno.serve(async (req) => {
 
     if (!token) {
       return new Response(JSON.stringify({ success: false, error: "Token obrigatorio" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Get signer by token
     const { data: signerRows } = await supabase
-      .from("document_signers")
-      .select("*")
-      .eq("auth_token", token)
-      .limit(1);
+      .from("document_signers").select("*").eq("auth_token", token).limit(1);
 
     if (!signerRows || signerRows.length === 0) {
       return new Response(JSON.stringify({ success: false, error: "Token invalido" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const signer = signerRows[0];
 
-    // ACTION: VIEW
+    // ── VIEW ──
     if (action === "view") {
       if (!signer.viewed_at) {
         await supabase.from("document_signers").update({ viewed_at: new Date().toISOString() }).eq("id", signer.id);
       }
       await supabase.from("document_events").insert({
-        document_id: signer.document_id,
-        signer_id: signer.id,
-        evento: "link_acessado",
-        descricao: `${signer.nome_completo} acessou o link de assinatura`,
+        document_id: signer.document_id, signer_id: signer.id,
+        evento: "link_acessado", descricao: `${signer.nome_completo} acessou o link de assinatura`,
       });
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // ACTION: VALIDATE
+    // ── VALIDATE ──
     if (action === "validate") {
       const { cpf, data_nascimento } = body;
       const storedCpf = (signer.cpf || "").replace(/\D/g, "");
       const inputCpf = (cpf || "").replace(/\D/g, "");
 
       if (!storedCpf || !signer.data_nascimento) {
-        await supabase.from("document_signers")
-          .update({ status: "validated", validated_at: new Date().toISOString() })
-          .eq("id", signer.id);
-        await supabase.from("document_events").insert({
-          document_id: signer.document_id,
-          signer_id: signer.id,
-          evento: "validacao_iniciada",
-          descricao: "Validacao ignorada (dados nao cadastrados)",
-        });
-        return new Response(JSON.stringify({ success: true, skipped: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        await supabase.from("document_signers").update({ status: "validated", validated_at: new Date().toISOString() }).eq("id", signer.id);
+        await supabase.from("document_events").insert({ document_id: signer.document_id, signer_id: signer.id, evento: "validacao_iniciada", descricao: "Validacao ignorada (dados nao cadastrados)" });
+        return new Response(JSON.stringify({ success: true, skipped: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
       if (storedCpf !== inputCpf || signer.data_nascimento !== data_nascimento) {
-        await supabase.from("document_events").insert({
-          document_id: signer.document_id,
-          signer_id: signer.id,
-          evento: "validacao_iniciada",
-          descricao: "Validacao falhou: dados nao conferem",
-        });
-        return new Response(JSON.stringify({ success: false, error: "CPF ou data de nascimento nao conferem" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        await supabase.from("document_events").insert({ document_id: signer.document_id, signer_id: signer.id, evento: "validacao_iniciada", descricao: "Validacao falhou: dados nao conferem" });
+        return new Response(JSON.stringify({ success: false, error: "CPF ou data de nascimento nao conferem" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
-      await supabase.from("document_signers")
-        .update({ status: "validation_started", validated_at: new Date().toISOString() })
-        .eq("id", signer.id);
-
-      await supabase.from("document_events").insert({
-        document_id: signer.document_id,
-        signer_id: signer.id,
-        evento: "validacao_iniciada",
-        descricao: "CPF e data de nascimento validados",
-      });
-
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      await supabase.from("document_signers").update({ status: "validation_started", validated_at: new Date().toISOString() }).eq("id", signer.id);
+      await supabase.from("document_events").insert({ document_id: signer.document_id, signer_id: signer.id, evento: "validacao_iniciada", descricao: "CPF e data de nascimento validados" });
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // ACTION: SEND_CODE
+    // ── SEND_CODE ──
     if (action === "send_code") {
       const code = String(Math.floor(100000 + Math.random() * 900000));
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-
-      await supabase.from("document_signers")
-        .update({ validation_code: code, validation_code_expires_at: expiresAt, status: "code_sent" })
-        .eq("id", signer.id);
-
-      await supabase.from("document_events").insert({
-        document_id: signer.document_id,
-        signer_id: signer.id,
-        evento: "codigo_enviado",
-        descricao: `Codigo de confirmacao enviado para ${signer.email || "e-mail nao cadastrado"}`,
-      });
-
+      await supabase.from("document_signers").update({ validation_code: code, validation_code_expires_at: expiresAt, status: "code_sent" }).eq("id", signer.id);
+      await supabase.from("document_events").insert({ document_id: signer.document_id, signer_id: signer.id, evento: "codigo_enviado", descricao: `Codigo enviado para ${signer.email || "--"}` });
       console.log(`[SIGN-DOCUMENT] Code for ${signer.nome_completo}: ${code}`);
-
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // ACTION: VERIFY_CODE
+    // ── VERIFY_CODE ──
     if (action === "verify_code") {
       const { code } = body;
       if (signer.validation_code !== code) {
-        return new Response(JSON.stringify({ success: false, error: "Codigo invalido" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(JSON.stringify({ success: false, error: "Codigo invalido" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (signer.validation_code_expires_at && new Date(signer.validation_code_expires_at) < new Date()) {
-        return new Response(JSON.stringify({ success: false, error: "Codigo expirado. Solicite um novo." }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(JSON.stringify({ success: false, error: "Codigo expirado." }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-
-      await supabase.from("document_signers")
-        .update({ status: "validated", validation_code: null, validation_code_expires_at: null })
-        .eq("id", signer.id);
-
-      await supabase.from("document_events").insert({
-        document_id: signer.document_id,
-        signer_id: signer.id,
-        evento: "codigo_confirmado",
-        descricao: "Codigo de confirmacao verificado com sucesso",
-      });
-
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      await supabase.from("document_signers").update({ status: "validated", validation_code: null, validation_code_expires_at: null }).eq("id", signer.id);
+      await supabase.from("document_events").insert({ document_id: signer.document_id, signer_id: signer.id, evento: "codigo_confirmado", descricao: "Codigo confirmado com sucesso" });
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // ACTION: SIGN
+    // ── SIGN ──
     if (action === "sign") {
       const { selfie_url, ip_address, user_agent, location_lat, location_lng, location_text } = body;
       const now = new Date();
       const signedAt = now.toISOString();
 
-      // 1. Update signer record
-      await supabase.from("document_signers")
-        .update({
-          status: "signed",
-          signed_at: signedAt,
-          selfie_url: selfie_url || null,
-          ip_address: ip_address || null,
-          user_agent: user_agent || null,
-          location_lat: location_lat || null,
-          location_lng: location_lng || null,
-          location_text: location_text || null,
-        })
-        .eq("id", signer.id);
+      await supabase.from("document_signers").update({
+        status: "signed", signed_at: signedAt,
+        selfie_url: selfie_url || null, ip_address: ip_address || null,
+        user_agent: user_agent || null, location_lat: location_lat || null,
+        location_lng: location_lng || null, location_text: location_text || null,
+      }).eq("id", signer.id);
 
-      // 2. Determine which placeholders to fill
       const varPrefix = PAPEL_VAR_MAP[signer.papel] || "cliente";
       const geoText = location_text || (location_lat && location_lng ? `${location_lat}, ${location_lng}` : "Nao disponivel");
 
@@ -425,130 +502,81 @@ Deno.serve(async (req) => {
         [`selfie_${varPrefix}`]: selfie_url || "Capturada",
       };
 
-      // 3. Get current document
       const { data: docData } = await supabase
-        .from("generated_documents")
-        .select("html_content, rendered_variables_json")
-        .eq("id", signer.document_id)
-        .single();
+        .from("generated_documents").select("html_content, rendered_variables_json")
+        .eq("id", signer.document_id).single();
 
       let updatedHtml = docData?.html_content || "";
       const snapshot = (docData?.rendered_variables_json as Record<string, any>) || {};
 
       for (const [varName, value] of Object.entries(signatureValues)) {
-        const placeholder = `{{${varName}}}`;
-        updatedHtml = updatedHtml.replaceAll(placeholder, value);
-        snapshot[varName] = {
-          value,
-          source: "signature",
-          status: "filled",
-          filled_at: signedAt,
-          signer_id: signer.id,
-          signer_name: signer.nome_completo,
-        };
+        updatedHtml = updatedHtml.replaceAll(`{{${varName}}}`, value);
+        snapshot[varName] = { value, source: "signature", status: "filled", filled_at: signedAt, signer_id: signer.id, signer_name: signer.nome_completo };
       }
 
-      // 4. Log signature event
       const eventName = varPrefix === "vendedor" ? "assinatura_vendedor_concluida" : "assinatura_cliente_concluida";
       await supabase.from("document_events").insert({
-        document_id: signer.document_id,
-        signer_id: signer.id,
-        evento: eventName,
+        document_id: signer.document_id, signer_id: signer.id, evento: eventName,
         descricao: `${signer.nome_completo} (${signer.papel}) assinou o documento`,
-        metadata_json: {
-          ip_address, user_agent, location_lat, location_lng, location_text,
-          selfie_url, signed_at: signedAt,
-        },
+        metadata_json: { ip_address, user_agent, location_lat, location_lng, location_text, selfie_url, signed_at: signedAt },
       });
 
-      // 5. Check if all required signers have signed
       const { data: allSigners } = await supabase
-        .from("document_signers")
-        .select("*")
-        .eq("document_id", signer.document_id);
+        .from("document_signers").select("*").eq("document_id", signer.document_id);
 
       const required = (allSigners || []).filter((s: any) => s.obrigatorio);
       const signedRequired = required.filter((s: any) => s.status === "signed" || s.id === signer.id);
       const allRequiredSigned = signedRequired.length >= required.length;
 
       let newDocStatus = "partially_signed";
-      if (allRequiredSigned) {
-        newDocStatus = "signed";
-      }
+      if (allRequiredSigned) newDocStatus = "signed";
 
       const docUpdate: Record<string, any> = {
-        status: newDocStatus,
-        html_content: updatedHtml,
-        rendered_variables_json: snapshot,
+        status: newDocStatus, html_content: updatedHtml, rendered_variables_json: snapshot,
       };
 
       if (allRequiredSigned) {
         docUpdate.signed_at = signedAt;
-
         const validationCode = `ACD-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
         docUpdate.validation_code = validationCode;
 
-        // Log final event
         await supabase.from("document_events").insert({
-          document_id: signer.document_id,
-          evento: "documento_assinado_finalizado",
-          descricao: "Todas as assinaturas obrigatorias foram concluidas. Documento finalizado.",
-          metadata_json: {
-            total_signers: (allSigners || []).length,
-            required_signers: required.length,
-            finalized_at: signedAt,
-          },
+          document_id: signer.document_id, evento: "documento_assinado_finalizado",
+          descricao: "Todas as assinaturas obrigatorias concluidas. Documento finalizado.",
+          metadata_json: { total_signers: (allSigners || []).length, required_signers: required.length, finalized_at: signedAt },
         });
 
-        // 7. Generate final signed PDF with audit page
         const { data: fullDoc } = await supabase
-          .from("generated_documents")
-          .select("*")
-          .eq("id", signer.document_id)
-          .single();
+          .from("generated_documents").select("*").eq("id", signer.document_id).single();
 
         if (fullDoc?.pdf_url) {
           try {
             const pdfResp = await fetch(fullDoc.pdf_url);
             if (pdfResp.ok) {
               const pdfBytes = await pdfResp.arrayBuffer();
-
-              // Load PDF and append audit page
               const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
 
-              // Fetch events for audit page
-              const { data: eventsData } = await supabase
-                .from("document_events")
-                .select("*")
-                .eq("document_id", signer.document_id)
-                .order("created_at", { ascending: true });
-
-              const siteUrl = Deno.env.get("SITE_URL") || supabaseUrl.replace("supabase.co", "lovable.app").replace("/rest/v1", "");
-              const publicUrl = `${siteUrl}/validar-documento/${validationCode}`;
-
-              // Compute hash before adding audit page (hash of original signed content)
+              // Hash of original content
               const hashBuffer = await crypto.subtle.digest("SHA-256", pdfBytes);
-              const hashArray = Array.from(new Uint8Array(hashBuffer));
-              const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+              const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
               docUpdate.document_hash = hashHex;
 
-              // Build audit page
-              await buildAuditPage(
-                pdfDoc,
-                { ...fullDoc, signed_at: signedAt },
-                allSigners || [],
-                eventsData || [],
-                validationCode,
-                hashHex,
-                publicUrl,
-              );
+              const { data: eventsData } = await supabase
+                .from("document_events").select("*").eq("document_id", signer.document_id)
+                .order("created_at", { ascending: true });
+
+              const publicUrl = `https://accordpipe.lovable.app/validar-documento/${validationCode}`;
+
+              const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+              const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+              // Build premium certificate pages
+              buildCoverPage(pdfDoc, fontRegular, fontBold, { ...fullDoc, signed_at: signedAt }, validationCode, hashHex, publicUrl);
+              buildAuditPages(pdfDoc, fontRegular, fontBold, { ...fullDoc, signed_at: signedAt }, allSigners || [], eventsData || [], validationCode, hashHex, publicUrl);
 
               const finalPdfBytes = await pdfDoc.save();
-
               const signedPath = `signed/${signer.document_id}_${Date.now()}.pdf`;
-              const { error: upErr } = await supabase.storage
-                .from("contract-pdfs")
-                .upload(signedPath, finalPdfBytes, { contentType: "application/pdf" });
+              const { error: upErr } = await supabase.storage.from("contract-pdfs").upload(signedPath, finalPdfBytes, { contentType: "application/pdf" });
 
               if (!upErr) {
                 const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(signedPath);
@@ -556,69 +584,40 @@ Deno.serve(async (req) => {
               }
             }
           } catch (pdfErr) {
-            console.error("[sign-document] Failed to generate signed PDF with audit page:", pdfErr);
+            console.error("[sign-document] PDF generation failed:", pdfErr);
           }
         }
 
-        // Log validation event
         await supabase.from("document_events").insert({
-          document_id: signer.document_id,
-          evento: "documento_validacao_gerada",
+          document_id: signer.document_id, evento: "documento_validacao_gerada",
           descricao: `Codigo de validacao e hash gerados: ${validationCode}`,
-          metadata_json: {
-            validation_code: validationCode,
-            document_hash: docUpdate.document_hash || null,
-            generated_at: signedAt,
-          },
+          metadata_json: { validation_code: validationCode, document_hash: docUpdate.document_hash || null, generated_at: signedAt },
         });
       }
 
-      await supabase.from("generated_documents")
-        .update(docUpdate)
-        .eq("id", signer.document_id);
+      await supabase.from("generated_documents").update(docUpdate).eq("id", signer.document_id);
 
       return new Response(JSON.stringify({ success: true, document_status: newDocStatus }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // ACTION: REJECT
+    // ── REJECT ──
     if (action === "reject") {
       const { reason } = body;
-
-      await supabase.from("document_signers")
-        .update({
-          status: "rejected",
-          rejected_at: new Date().toISOString(),
-          reject_reason: reason || null,
-        })
-        .eq("id", signer.id);
-
-      await supabase.from("document_events").insert({
-        document_id: signer.document_id,
-        signer_id: signer.id,
-        evento: "assinatura_recusada",
-        descricao: `${signer.nome_completo} recusou a assinatura${reason ? `: ${reason}` : ""}`,
-      });
-
-      await supabase.from("generated_documents")
-        .update({ status: "rejected" })
-        .eq("id", signer.document_id);
-
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      await supabase.from("document_signers").update({ status: "rejected", rejected_at: new Date().toISOString(), reject_reason: reason || null }).eq("id", signer.id);
+      await supabase.from("document_events").insert({ document_id: signer.document_id, signer_id: signer.id, evento: "assinatura_recusada", descricao: `${signer.nome_completo} recusou${reason ? `: ${reason}` : ""}` });
+      await supabase.from("generated_documents").update({ status: "rejected" }).eq("id", signer.document_id);
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     return new Response(JSON.stringify({ success: false, error: "Acao invalida" }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("[sign-document]", error);
     return new Response(JSON.stringify({ success: false, error: "Erro interno" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
