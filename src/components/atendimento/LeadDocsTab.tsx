@@ -105,22 +105,21 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
   };
 
   const fetchSignedContracts = async () => {
-    const { data: signedContractsData } = await supabase
+    // Fetch ALL contracts for this lead (not just signed)
+    const { data: allContractsData } = await supabase
       .from("contracts")
       .select("id, code, signature_status, signed_at, validation_code, document_hash, pdf_url, pdf_assinado_url, created_at, contract_content, company_id, signer_name, signer_document, signature_photo_url")
       .eq("lead_id", lead.id)
-      .eq("signature_status", "signed");
+      .order("created_at", { ascending: false });
 
-    // Fetch signers for each signed contract (deduplicated by role)
     const contractsWithSigners: SignedContract[] = [];
-    for (const contract of (signedContractsData || [])) {
+    for (const contract of (allContractsData || [])) {
       const { data: sigs } = await supabase
         .from("contract_signatures")
         .select("signer_name, signer_role, signer_document, signed_at, signer_ip, signature_photo_url")
         .eq("contract_id", contract.id)
         .order("created_at", { ascending: true });
 
-      // Deduplicate by signer_role - keep the signed one or latest
       const roleMap = new Map<string, ContractSigner>();
       for (const s of (sigs || []) as any[]) {
         const role = s.signer_role || "signatário";
@@ -144,11 +143,12 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
     }
     setSignedContracts(contractsWithSigners);
 
+    // Fetch ALL pdf_contracts for this server (linked by lead context)
     const { data: pdfContracts } = await supabase
       .from("pdf_contracts")
       .select("id, name, status, pdf_assinado_url, pdf_url, validation_code, document_hash, created_at")
       .eq("servidor_id", lead.servidor_id)
-      .eq("status", "concluido");
+      .order("created_at", { ascending: false });
     setSignedPdfContracts((pdfContracts as SignedPdfContract[]) || []);
   };
 
