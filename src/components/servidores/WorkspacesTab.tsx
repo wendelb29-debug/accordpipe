@@ -102,6 +102,13 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
   const [moveUngroupedOpen, setMoveUngroupedOpen] = useState(false);
   const [moveUngroupedTarget, setMoveUngroupedTarget] = useState("");
 
+  // Convert ungrouped to layer
+  const [convertUngroupedOpen, setConvertUngroupedOpen] = useState(false);
+  const [convertUngroupedName, setConvertUngroupedName] = useState("");
+
+  // Delete all ungrouped
+  const [deleteAllUngroupedOpen, setDeleteAllUngroupedOpen] = useState(false);
+
   // Group dialog
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<WorkspaceGroup | null>(null);
