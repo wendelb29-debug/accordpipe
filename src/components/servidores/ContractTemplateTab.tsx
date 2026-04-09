@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import {
   Upload, FileText, Trash2, Loader2, Plus, Eye, AlertCircle,
-  CheckCircle2, Tag, Star, StarOff,
+  CheckCircle2, Tag, Star, StarOff, Edit, FileCode,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { ContractEditorDialog } from "./ContractEditorDialog";
 
 // Known supported variables
 const SUPPORTED_VARS = [
@@ -48,20 +49,6 @@ interface Props {
   onEnsureCompany?: () => Promise<boolean>;
 }
 
-async function extractTextFromPdf(url: string): Promise<string> {
-  const pdfjsLib = await import("pdfjs-dist");
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-  const doc = await pdfjsLib.getDocument(url).promise;
-  let fullText = "";
-  for (let i = 1; i <= doc.numPages; i++) {
-    const page = await doc.getPage(i);
-    const content = await page.getTextContent();
-    const pageText = content.items.map((item: any) => item.str).join(" ");
-    fullText += pageText + "\n";
-  }
-  return fullText;
-}
-
 function detectPlaceholders(text: string): string[] {
   const regex = /\{\{([a-zA-Z0-9_]+)\}\}/g;
   const found = new Set<string>();
@@ -75,15 +62,12 @@ function detectPlaceholders(text: string): string[] {
 export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newName, setNewName] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [replacingId, setReplacingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
-  const [extractingVars, setExtractingVars] = useState(false);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const replaceInputRef = useRef<HTMLInputElement>(null);
+  // Editor dialog
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
+  const [editorMode, setEditorMode] = useState<"create" | "edit">("create");
 
   const fetchTemplates = async () => {
     if (!companyId) { setLoading(false); return; }
@@ -107,154 +91,61 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
     return false;
   };
 
-  const extractAndSaveVars = async (templateId: string, pdfUrl: string) => {
-    setExtractingVars(true);
-    try {
-      const text = await extractTextFromPdf(pdfUrl);
-      const placeholders = detectPlaceholders(text);
-      const unsupported = placeholders.filter(p => !SUPPORTED_VARS.includes(p));
-
-      await supabase
-        .from("document_templates")
-        .update({
-          content_template: text,
-          placeholders_json: placeholders as any,
-        } as any)
-        .eq("id", templateId);
-
-      if (unsupported.length > 0) {
-        toast.warning(`Variáveis não reconhecidas: ${unsupported.map(v => `{{${v}}}`).join(", ")}`);
-      }
-      if (placeholders.length > 0) {
-        toast.success(`${placeholders.length} variável(is) detectada(s) no modelo`);
-      } else {
-        toast.info("Nenhuma variável {{...}} encontrada no PDF");
-      }
-    } catch (err: any) {
-      console.error("Error extracting PDF text:", err);
-      toast.error("Não foi possível extrair variáveis do PDF");
+  const handleCreateNew = async () => {
+    const ok = await ensureCompanyExists();
+    if (!ok) {
+      toast.error("Não foi possível preparar o tenant");
+      return;
     }
-    setExtractingVars(false);
+    setEditingTemplate(null);
+    setEditorMode("create");
+    setEditorOpen(true);
   };
 
-  const handleNewUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !companyId) return;
-    if (file.type !== "application/pdf") {
-      toast.error("Apenas arquivos PDF são aceitos");
-      return;
-    }
-    if (!newName.trim()) {
-      toast.error("Defina o nome do template antes de fazer upload");
-      return;
-    }
-
-    setUploading(true);
-    setUploadProgress(0);
-    const progressInterval = setInterval(() => {
-      setUploadProgress(prev => Math.min(prev + Math.random() * 20, 90));
-    }, 300);
-
-    try {
-      const ok = await ensureCompanyExists();
-      if (!ok) throw new Error("Não foi possível preparar o tenant");
-
-      const sanitizedName = file.name
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-zA-Z0-9._-]/g, "_")
-        .replace(/_+/g, "_");
-      const filePath = `templates/${companyId}/${Date.now()}_${sanitizedName}`;
-      const { error: uploadErr } = await supabase.storage
-        .from("contract-pdfs")
-        .upload(filePath, file, { contentType: "application/pdf" });
-      if (uploadErr) throw uploadErr;
-
-      const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(filePath);
-
-      const { data: inserted, error: insertErr } = await supabase
-        .from("document_templates")
-        .insert({
-          servidor_id: companyId,
-          nome: newName.trim(),
-          tipo: "contrato",
-          arquivo_url: urlData.publicUrl,
-          arquivo_path: filePath,
-          arquivo_nome: file.name,
-          ativo: true,
-        })
-        .select()
-        .single();
-      if (insertErr) throw insertErr;
-
-      setUploadProgress(100);
-      toast.success(`Template "${newName.trim()}" criado com sucesso!`);
-      setNewName("");
-      await fetchTemplates();
-
-      // Extract variables in background
-      if (inserted) {
-        extractAndSaveVars(inserted.id, urlData.publicUrl);
-      }
-    } catch (err: any) {
-      toast.error("Erro ao enviar PDF: " + (err.message || ""));
-    } finally {
-      clearInterval(progressInterval);
-      setUploading(false);
-      setTimeout(() => setUploadProgress(0), 1000);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
+  const handleEdit = (tpl: Template) => {
+    setEditingTemplate(tpl);
+    setEditorMode("edit");
+    setEditorOpen(true);
   };
 
-  const handleReplacePdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !replacingId || !companyId) return;
-    if (file.type !== "application/pdf") {
-      toast.error("Apenas arquivos PDF são aceitos");
-      return;
-    }
+  const handleSaveTemplate = async (name: string, htmlContent: string) => {
+    if (!companyId) return;
 
-    const template = templates.find(t => t.id === replacingId);
-    if (!template) return;
+    const placeholders = detectPlaceholders(htmlContent);
+    const unsupported = placeholders.filter(p => !SUPPORTED_VARS.includes(p));
 
-    setUploading(true);
-    try {
-      if (template.arquivo_path) {
-        await supabase.storage.from("contract-pdfs").remove([template.arquivo_path]);
+    if (editorMode === "create") {
+      const { error } = await supabase.from("document_templates").insert({
+        servidor_id: companyId,
+        nome: name,
+        tipo: "contrato",
+        content_template: htmlContent,
+        placeholders_json: placeholders as any,
+        ativo: true,
+      });
+      if (error) {
+        toast.error("Erro ao criar modelo: " + error.message);
+        throw error;
       }
-
-      const sanitizedName = file.name
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-zA-Z0-9._-]/g, "_")
-        .replace(/_+/g, "_");
-      const filePath = `templates/${companyId}/${Date.now()}_${sanitizedName}`;
-      const { error: uploadErr } = await supabase.storage
-        .from("contract-pdfs")
-        .upload(filePath, file, { contentType: "application/pdf" });
-      if (uploadErr) throw uploadErr;
-
-      const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(filePath);
-
-      await supabase
-        .from("document_templates")
-        .update({
-          arquivo_url: urlData.publicUrl,
-          arquivo_path: filePath,
-          arquivo_nome: file.name,
-        })
-        .eq("id", replacingId);
-
-      toast.success("PDF substituído com sucesso!");
-      await fetchTemplates();
-
-      // Re-extract variables
-      extractAndSaveVars(replacingId, urlData.publicUrl);
-    } catch (err: any) {
-      toast.error("Erro ao substituir PDF: " + (err.message || ""));
-    } finally {
-      setUploading(false);
-      setReplacingId(null);
-      if (replaceInputRef.current) replaceInputRef.current.value = "";
+      toast.success(`Modelo "${name}" criado com sucesso!`);
+    } else if (editingTemplate) {
+      const { error } = await supabase.from("document_templates").update({
+        nome: name,
+        content_template: htmlContent,
+        placeholders_json: placeholders as any,
+      }).eq("id", editingTemplate.id);
+      if (error) {
+        toast.error("Erro ao atualizar modelo: " + error.message);
+        throw error;
+      }
+      toast.success(`Modelo "${name}" atualizado com sucesso!`);
     }
+
+    if (unsupported.length > 0) {
+      toast.warning(`Variáveis não reconhecidas: ${unsupported.map(v => `{{${v}}}`).join(", ")}`);
+    }
+
+    await fetchTemplates();
   };
 
   const handleDelete = async (id: string) => {
@@ -265,7 +156,7 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
         await supabase.storage.from("contract-pdfs").remove([template.arquivo_path]);
       }
       await supabase.from("document_templates").delete().eq("id", id);
-      toast.success("Template removido!");
+      toast.success("Modelo removido!");
       await fetchTemplates();
     } catch (err: any) {
       toast.error("Erro ao remover: " + (err.message || ""));
@@ -280,7 +171,6 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
 
   const toggleDefault = async (tpl: Template) => {
     if (!tpl.is_default && companyId) {
-      // Remove default from others
       await supabase.from("document_templates").update({ is_default: false } as any).eq("servidor_id", companyId);
     }
     await supabase.from("document_templates").update({ is_default: !tpl.is_default } as any).eq("id", tpl.id);
@@ -297,66 +187,21 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Add new template */}
+      {/* Create new template */}
       <Card className="border-dashed border-2 border-border">
         <CardContent className="p-4 space-y-3">
           <h4 className="text-sm font-semibold flex items-center gap-2">
-            <Plus className="h-4 w-4" /> Adicionar Novo Modelo de Contrato
+            <Plus className="h-4 w-4" /> Criar Modelo de Contrato
           </h4>
-
-          <div className="space-y-2">
-            <Label>Nome do Modelo</Label>
-            <Input
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
-              placeholder="Ex: Contrato de Adesão, Termo de Parceria..."
-            />
-          </div>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/pdf"
-            onChange={handleNewUpload}
-            className="hidden"
-          />
-
-          {uploading && !replacingId && (
-            <div className="w-full space-y-1">
-              <div className="h-2 rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-primary transition-all duration-300"
-                  style={{ width: `${uploadProgress}%` }}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">{Math.round(uploadProgress)}%</p>
-            </div>
-          )}
-
-          <Button
-            onClick={() => {
-              if (!newName.trim()) {
-                toast.error("Defina o nome do modelo primeiro");
-                return;
-              }
-              fileInputRef.current?.click();
-            }}
-            disabled={uploading}
-            size="sm"
-            className="gap-2"
-          >
-            {uploading && !replacingId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            {uploading && !replacingId ? "Enviando..." : "Selecionar PDF e Criar"}
+          <p className="text-xs text-muted-foreground">
+            Crie um modelo com editor rico estilo Word. Insira variáveis dinâmicas que serão substituídas automaticamente ao gerar o documento.
+          </p>
+          <Button onClick={handleCreateNew} size="sm" className="gap-2">
+            <FileCode className="h-4 w-4" />
+            Criar Novo Modelo
           </Button>
         </CardContent>
       </Card>
-
-      {extractingVars && (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          Analisando variáveis do PDF...
-        </div>
-      )}
 
       {/* Templates list */}
       <div className="space-y-2">
@@ -366,20 +211,27 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
           <div className="text-center py-8 text-muted-foreground">
             <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
             <p className="text-sm">Nenhum modelo de contrato cadastrado</p>
-            <p className="text-xs mt-1">Adicione um modelo acima para começar a gerar documentos</p>
+            <p className="text-xs mt-1">Crie um modelo acima para começar a gerar documentos</p>
           </div>
         ) : (
           <div className="space-y-3">
             {templates.map(tpl => {
               const placeholders = (tpl.placeholders_json as any as string[]) || [];
               const unsupported = placeholders.filter(p => !SUPPORTED_VARS.includes(p));
+              const isHtmlTemplate = !!tpl.content_template && !tpl.arquivo_url;
+              const isPdfTemplate = !!tpl.arquivo_url;
+
               return (
                 <Card key={tpl.id} className="border-border/50">
                   <CardContent className="p-4 space-y-3">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <FileText className="h-5 w-5 text-primary" />
+                          {isHtmlTemplate ? (
+                            <FileCode className="h-5 w-5 text-primary" />
+                          ) : (
+                            <FileText className="h-5 w-5 text-primary" />
+                          )}
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
@@ -390,9 +242,12 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
                             {!tpl.ativo && (
                               <Badge variant="outline" className="text-[10px] text-muted-foreground shrink-0">Inativo</Badge>
                             )}
+                            <Badge variant="outline" className="text-[10px] shrink-0">
+                              {isHtmlTemplate ? "Editor Rico" : "PDF"}
+                            </Badge>
                           </div>
                           <p className="text-xs text-muted-foreground truncate">
-                            {tpl.arquivo_nome || "—"} · {new Date(tpl.created_at).toLocaleDateString("pt-BR")}
+                            {tpl.arquivo_nome || "Modelo HTML"} · {new Date(tpl.created_at).toLocaleDateString("pt-BR")}
                           </p>
                         </div>
                       </div>
@@ -405,19 +260,23 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
                         >
                           {tpl.is_default ? <Star className="h-4 w-4 text-amber-500 fill-amber-500" /> : <StarOff className="h-4 w-4" />}
                         </Button>
-                        {tpl.arquivo_url && (
+
+                        {/* Edit button for HTML templates */}
+                        {isHtmlTemplate && (
+                          <Button variant="outline" size="sm" className="gap-1 text-xs h-8"
+                            onClick={() => handleEdit(tpl)}>
+                            <Edit className="h-3.5 w-3.5" /> Editar
+                          </Button>
+                        )}
+
+                        {/* View PDF for legacy templates */}
+                        {isPdfTemplate && tpl.arquivo_url && (
                           <Button variant="ghost" size="icon" className="h-8 w-8"
                             onClick={() => window.open(tpl.arquivo_url!, "_blank")} title="Visualizar PDF">
                             <Eye className="h-4 w-4" />
                           </Button>
                         )}
-                        <Button
-                          variant="outline" size="sm" className="gap-1 text-xs h-8"
-                          onClick={() => { setReplacingId(tpl.id); setTimeout(() => replaceInputRef.current?.click(), 50); }}
-                          disabled={uploading}
-                        >
-                          <Upload className="h-3.5 w-3.5" /> Trocar PDF
-                        </Button>
+
                         <div className="flex items-center gap-1">
                           <Switch checked={tpl.ativo} onCheckedChange={() => toggleActive(tpl)} className="scale-75" />
                         </div>
@@ -469,8 +328,6 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
         )}
       </div>
 
-      <input ref={replaceInputRef} type="file" accept="application/pdf" onChange={handleReplacePdf} className="hidden" />
-
       <AlertDialog open={!!confirmDelete} onOpenChange={open => !open && setConfirmDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -488,9 +345,18 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
         </AlertDialogContent>
       </AlertDialog>
 
+      <ContractEditorDialog
+        open={editorOpen}
+        onOpenChange={setEditorOpen}
+        templateName={editingTemplate?.nome || ""}
+        initialContent={editingTemplate?.content_template || ""}
+        onSave={handleSaveTemplate}
+        mode={editorMode}
+      />
+
       <p className="text-xs text-muted-foreground flex items-start gap-1.5">
         <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-        Os modelos cadastrados aqui aparecerão em "Gerar Documento" dentro dos cards de oportunidade. Use variáveis no formato {"{{variavel}}"} no seu PDF para preenchimento automático.
+        Os modelos cadastrados aqui aparecerão em "Gerar Documento" dentro dos cards de oportunidade. Use variáveis no formato {"{{variavel}}"} para preenchimento automático.
       </p>
     </div>
   );
