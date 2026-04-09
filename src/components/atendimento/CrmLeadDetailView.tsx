@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { downloadContractPdf } from "@/lib/generateContractPdf";
 import { LeadAtividadesTab } from "./LeadAtividadesTab";
 import { NoteEditor } from "./NoteEditor";
-import { LeadPropostasTabNew } from "./LeadPropostasTabNew";
+import { LeadPropostasTab } from "./LeadPropostasTab";
 import { LeadDocumentosTab } from "./LeadDocumentosTab";
 import { LeadDocsTab } from "./LeadDocsTab";
 import { LeadPosVendaTab } from "./LeadPosVendaTab";
@@ -1265,7 +1265,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
             {/* Propostas */}
             <TabsContent value="propostas" className="flex-1 overflow-y-auto overflow-x-auto p-2 sm:p-4 mt-0 w-full max-w-full">
-              <LeadPropostasTabNew lead={lead} addActivity={addActivity} />
+              <LeadPropostasTab lead={lead} addActivity={addActivity} />
             </TabsContent>
 
              {/* Docs - Documentos Gerados + Arquivos */}
