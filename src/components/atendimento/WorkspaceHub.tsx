@@ -73,6 +73,7 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
       .from("workspace_groups")
       .select("*")
       .eq("servidor_id", companyId)
+      .eq("active", true)
       .order("position");
     setGroups((data || []) as WorkspaceGroup[]);
   }, [companyId]);
@@ -99,8 +100,11 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
     }
   });
 
-  // Order groups by position
-  const orderedGroups = groups.filter((g) => groupedByGroup[g.id]?.length > 0 || filterGroup === "all");
+  // Order groups by position, filter by selected group
+  const orderedGroups = groups.filter((g) => {
+    if (filterGroup !== "all" && g.id !== filterGroup) return false;
+    return (groupedByGroup[g.id]?.length ?? 0) > 0;
+  });
 
   return (
     <div className="flex flex-col h-full">
@@ -170,7 +174,7 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
         })}
 
         {/* Ungrouped */}
-        {ungrouped.length > 0 && (
+        {filterGroup === "all" && ungrouped.length > 0 && (
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3">
               <FolderOpen className="h-4 w-4 text-muted-foreground" />
