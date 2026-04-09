@@ -1,0 +1,1 @@
+ALTER TABLE public.kanban_columns ALTER COLUMN sla_days TYPE numeric(7,2) USING sla_days::numeric(7,2);
