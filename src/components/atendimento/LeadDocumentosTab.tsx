@@ -891,10 +891,6 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Nome do documento (opcional)</Label>
-              <Input value={docName} onChange={(e) => setDocName(e.target.value)} placeholder="Deixe vazio para usar o nome do modelo" />
-            </div>
             {selectedTemplate && (() => {
               const tpl = templates.find(t => t.id === selectedTemplate);
               const contentTemplate = (tpl as any)?.content_template || "";
