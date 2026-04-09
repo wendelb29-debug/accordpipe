@@ -487,15 +487,19 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         }
 
         const pdfBytes = await pdfDoc.save();
-        const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
+        const blob = new Blob([pdfBytes], { type: "application/pdf" });
         const filePath = `generated/${servidorId}/${Date.now()}_${template.nome.replace(/\s+/g, "_")}.pdf`;
+        console.log("PDF generated, size:", pdfBytes.length, "uploading to:", filePath);
         const { error: uploadErr } = await supabase.storage
           .from("contract-pdfs")
-          .upload(filePath, blob, { contentType: "application/pdf" });
+          .upload(filePath, blob, { contentType: "application/pdf", upsert: true });
 
-        if (!uploadErr) {
+        if (uploadErr) {
+          console.error("PDF upload error:", uploadErr);
+        } else {
           const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(filePath);
           pdfUrl = urlData.publicUrl;
+          console.log("PDF uploaded, URL:", pdfUrl);
         }
       } catch (pdfErr) {
         console.warn("PDF generation failed:", pdfErr);
