@@ -553,16 +553,32 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     setSignStep("config");
     setGeneratedSigners([]);
 
+    // Validate owner profile data
+    const missingFields: string[] = [];
+    if (!profile?.name?.trim()) missingFields.push("Nome completo");
+    if (!profile?.email?.trim()) missingFields.push("E-mail");
+    if (!profile?.cpf?.trim()) missingFields.push("CPF");
+    if (!profile?.whatsapp?.trim()) missingFields.push("Telefone");
+    if (!profile?.birth_date) missingFields.push("Data de nascimento");
+
+    if (missingFields.length > 0) {
+      toast.error(
+        `Complete os dados obrigatórios do seu perfil para enviar para assinatura: ${missingFields.join(", ")}`,
+        { duration: 6000 }
+      );
+      return;
+    }
+
     // Auto-fill signers
     const autoSigners: typeof signers = [];
 
-    // Signer 1: proposal owner (current user / creator)
+    // Signer 1: proposal owner (current user) — fixed, read-only
     autoSigners.push({
-      nome_completo: profile?.name || "",
-      email: profile?.email || "",
-      telefone: "",
-      cpf: "",
-      data_nascimento: "",
+      nome_completo: profile.name,
+      email: profile.email,
+      telefone: profile.whatsapp || "",
+      cpf: profile.cpf || "",
+      data_nascimento: profile.birth_date || "",
       papel: "proprietario_proposta",
       obrigatorio: true,
     });
