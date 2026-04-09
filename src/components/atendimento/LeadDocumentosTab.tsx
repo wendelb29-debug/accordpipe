@@ -487,7 +487,8 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         }
 
         const pdfBytes = await pdfDoc.save();
-        const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
+        const arrayBuf = pdfBytes.buffer.slice(pdfBytes.byteOffset, pdfBytes.byteOffset + pdfBytes.byteLength) as ArrayBuffer;
+        const blob = new Blob([arrayBuf], { type: "application/pdf" });
         const filePath = `generated/${servidorId}/${Date.now()}_${template.nome.replace(/\s+/g, "_")}.pdf`;
         console.log("PDF generated, size:", pdfBytes.length, "uploading to:", filePath);
         const { error: uploadErr } = await supabase.storage
