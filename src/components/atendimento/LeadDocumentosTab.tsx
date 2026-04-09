@@ -527,7 +527,20 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
           <h3 className="text-sm font-semibold text-foreground">Documentos Gerados</h3>
           <p className="text-xs text-muted-foreground">{documents.length} documento(s)</p>
         </div>
-        <Button size="sm" className="gap-1.5 text-xs" onClick={() => setGenerateOpen(true)}>
+        <Button size="sm" className="gap-1.5 text-xs" onClick={async () => {
+          setGenerateOpen(true);
+          // Pre-fetch tenant, proposal, vendor for variable preview
+          const { data: t } = await supabase.from("companies").select("*").eq("id", servidorId).maybeSingle();
+          setPreviewTenant(t);
+          const { data: p } = await supabase.from("proposals").select("*, proposal_items(*)").eq("lead_id", lead.id).eq("status", "approved").order("approved_at", { ascending: false }).limit(1).maybeSingle();
+          setPreviewProposal(p);
+          if (p?.created_by_user_id) {
+            const { data: v } = await supabase.from("profiles").select("name, email, phone, birth_date").eq("user_id", p.created_by_user_id).maybeSingle();
+            setPreviewVendor(v);
+          } else {
+            setPreviewVendor(null);
+          }
+        }}>
           <Plus className="h-3.5 w-3.5" /> Gerar Documento
         </Button>
       </div>
