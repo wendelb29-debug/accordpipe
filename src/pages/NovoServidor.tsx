@@ -302,8 +302,8 @@ export default function NovoServidor() {
         if (error) throw error;
         toast({ title: "Tenant atualizado", description: "Os dados foram salvos." });
       } else {
-        // Include webhook URLs when creating a new tenant
-        const newId = crypto.randomUUID();
+        // Use the pre-generated ID
+        const newId = pendingNewId!;
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
         const generateHash = () => Array.from(crypto.getRandomValues(new Uint8Array(8))).map((b) => b.toString(16).padStart(2, "0")).join("");
         
