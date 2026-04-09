@@ -142,11 +142,17 @@ function buildVariableMap(
       servicosContratados = proposal.proposal_items
         .map((item: any) => {
           const name = item.nome || item.name || "";
+          const desc = item.descricao || "";
+          const qty = item.quantidade || 1;
           const val = item.valor != null ? fmtCurrency(item.valor) : "";
-          return val ? `${name} - ${val}` : name;
+          const parts = [`Serviço: ${name}`];
+          if (desc) parts.push(`Descrição: ${desc}`);
+          if (qty > 1) parts.push(`Quantidade: ${qty}`);
+          if (val) parts.push(`Valor Total: ${val}`);
+          return parts.join("\n");
         })
         .filter(Boolean)
-        .join("; ");
+        .join("\n\n");
 
       // If only 1 item, use it as nome_item/descricao_item too
       if (proposal.proposal_items.length === 1) {
@@ -241,6 +247,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
   const [previewProposal, setPreviewProposal] = useState<any>(null);
   const [previewVendor, setPreviewVendor] = useState<any>(null);
   const [previewRegistration, setPreviewRegistration] = useState<any>(null);
+  const [canGenerate, setCanGenerate] = useState(true);
 
   // View
   const [viewDoc, setViewDoc] = useState<GeneratedDoc | null>(null);
@@ -572,6 +579,8 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         </div>
         <Button size="sm" className="gap-1.5 text-xs" onClick={async () => {
           setGenerateOpen(true);
+          setCanGenerate(true);
+          setSelectedTemplate("");
           // Pre-fetch tenant, proposal, vendor, registration for variable preview
           const [tenantRes, proposalRes, regRes] = await Promise.all([
             supabase.from("companies").select("*").eq("id", servidorId).maybeSingle(),
@@ -751,15 +760,16 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                 <ContractVariableAudit
                   templateText={templateText}
                   resolvedValues={vars}
+                  onValidationChange={setCanGenerate}
                 />
               );
             })()}
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setGenerateOpen(false)}>Cancelar</Button>
-            <Button size="sm" onClick={handleGenerate} disabled={generating || !selectedTemplate}>
+            <Button size="sm" onClick={handleGenerate} disabled={generating || !selectedTemplate || !canGenerate}>
               {generating && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
-              Gerar Documento
+              {!canGenerate ? "Dados obrigatórios ausentes" : "Gerar Documento"}
             </Button>
           </DialogFooter>
         </DialogContent>
