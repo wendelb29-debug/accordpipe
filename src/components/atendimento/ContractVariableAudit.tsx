@@ -1,12 +1,10 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   CheckCircle2, AlertCircle, AlertTriangle, Clock, Info, Copy,
-  ChevronDown, ChevronRight, Shield,
+  ChevronDown, ChevronRight, Shield, Ban,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
 // ─── Official variable registry ───────────────────────────────────────────────
@@ -18,15 +16,14 @@ interface VarDefinition {
   source: VarSource;
   description: string;
   signatureOnly?: boolean;
-  essential?: boolean;
 }
 
 const OFFICIAL_VARIABLES: Record<string, VarDefinition> = {
   // Lead / Client
-  nome_completo: { source: "lead", description: "Nome completo do cliente", essential: true },
+  nome_completo: { source: "lead", description: "Nome completo do cliente" },
   cpf: { source: "lead", description: "CPF do cliente" },
   cnpj: { source: "lead", description: "CNPJ do cliente" },
-  documento_contratante: { source: "lead", description: "CPF ou CNPJ do contratante", essential: true },
+  documento_contratante: { source: "lead", description: "CPF ou CNPJ do contratante" },
   razao_social: { source: "lead", description: "Razão social" },
   email: { source: "lead", description: "E-mail do cliente" },
   telefone: { source: "lead", description: "Telefone do cliente" },
@@ -40,8 +37,8 @@ const OFFICIAL_VARIABLES: Record<string, VarDefinition> = {
   cep: { source: "lead", description: "CEP" },
   nome_empresa: { source: "lead", description: "Nome da empresa" },
   // Tenant
-  tenant_nome: { source: "tenant", description: "Nome do Tenant", essential: true },
-  tenant_cnpj: { source: "tenant", description: "CNPJ do Tenant", essential: true },
+  tenant_nome: { source: "tenant", description: "Nome do Tenant" },
+  tenant_cnpj: { source: "tenant", description: "CNPJ do Tenant" },
   tenant_razao_social: { source: "tenant", description: "Razão social do Tenant" },
   tenant_email: { source: "tenant", description: "E-mail do Tenant" },
   tenant_telefone: { source: "tenant", description: "Telefone do Tenant" },
@@ -52,26 +49,40 @@ const OFFICIAL_VARIABLES: Record<string, VarDefinition> = {
   nome_item: { source: "proposta", description: "Nome do item" },
   descricao_item: { source: "proposta", description: "Descrição do item" },
   valor_proposta: { source: "proposta", description: "Valor da proposta" },
-  valor_total: { source: "proposta", description: "Valor total", essential: true },
-  servicos_contratados: { source: "proposta", description: "Lista de serviços contratados", essential: true },
+  valor_total: { source: "proposta", description: "Valor total" },
+  servicos_contratados: { source: "proposta", description: "Lista de serviços contratados" },
   // Vendor
-  nome_vendedor: { source: "vendedor", description: "Nome do vendedor", essential: true },
-  email_vendedor: { source: "vendedor", description: "E-mail do vendedor", essential: true },
+  nome_vendedor: { source: "vendedor", description: "Nome do vendedor" },
+  email_vendedor: { source: "vendedor", description: "E-mail do vendedor" },
   telefone_vendedor: { source: "vendedor", description: "Telefone do vendedor" },
   data_nascimento_vendedor: { source: "vendedor", description: "Data nasc. do vendedor" },
   // Signature - Client
-  data_assinatura_cliente: { source: "assinatura_cliente", description: "Data da assinatura", signatureOnly: true, essential: true },
-  hora_assinatura_cliente: { source: "assinatura_cliente", description: "Hora da assinatura", signatureOnly: true, essential: true },
-  geolocalizacao_cliente: { source: "assinatura_cliente", description: "Geolocalização", signatureOnly: true, essential: true },
-  selfie_cliente: { source: "assinatura_cliente", description: "Selfie do cliente", signatureOnly: true, essential: true },
+  data_assinatura_cliente: { source: "assinatura_cliente", description: "Data da assinatura", signatureOnly: true },
+  hora_assinatura_cliente: { source: "assinatura_cliente", description: "Hora da assinatura", signatureOnly: true },
+  geolocalizacao_cliente: { source: "assinatura_cliente", description: "Geolocalização", signatureOnly: true },
+  selfie_cliente: { source: "assinatura_cliente", description: "Selfie do cliente", signatureOnly: true },
   // Signature - Vendor
-  data_assinatura_vendedor: { source: "assinatura_vendedor", description: "Data da assinatura", signatureOnly: true, essential: true },
-  hora_assinatura_vendedor: { source: "assinatura_vendedor", description: "Hora da assinatura", signatureOnly: true, essential: true },
-  geolocalizacao_vendedor: { source: "assinatura_vendedor", description: "Geolocalização", signatureOnly: true, essential: true },
-  selfie_vendedor: { source: "assinatura_vendedor", description: "Selfie do vendedor", signatureOnly: true, essential: true },
+  data_assinatura_vendedor: { source: "assinatura_vendedor", description: "Data da assinatura", signatureOnly: true },
+  hora_assinatura_vendedor: { source: "assinatura_vendedor", description: "Hora da assinatura", signatureOnly: true },
+  geolocalizacao_vendedor: { source: "assinatura_vendedor", description: "Geolocalização", signatureOnly: true },
+  selfie_vendedor: { source: "assinatura_vendedor", description: "Selfie do vendedor", signatureOnly: true },
   // System
   data_atual: { source: "sistema", description: "Data atual" },
 };
+
+// Critical variables that MUST have values to allow generation
+const CRITICAL_ALWAYS: string[] = [
+  "nome_completo",
+  "documento_contratante",
+  "tenant_nome",
+  "tenant_cnpj",
+];
+
+// Critical if they appear in the template (proposal-dependent)
+const CRITICAL_IF_PRESENT: string[] = [
+  "servicos_contratados",
+  "valor_total",
+];
 
 const sourceLabels: Record<VarSource, string> = {
   lead: "Lead / Cliente",
@@ -94,9 +105,9 @@ const sourceColors: Record<VarSource, string> = {
 };
 
 const statusConfig: Record<VarStatus, { label: string; icon: typeof CheckCircle2; color: string }> = {
-  supported: { label: "Suportada", icon: CheckCircle2, color: "text-green-600" },
+  supported: { label: "Preenchida", icon: CheckCircle2, color: "text-green-600" },
   missing_source: { label: "Sem valor", icon: AlertCircle, color: "text-amber-600" },
-  signature_only: { label: "Assinatura futura", icon: Clock, color: "text-blue-600" },
+  signature_only: { label: "Preenchida na assinatura", icon: Clock, color: "text-blue-600" },
   invalid: { label: "Inválida", icon: AlertTriangle, color: "text-red-600" },
   duplicate: { label: "Duplicada", icon: Copy, color: "text-orange-600" },
 };
@@ -108,11 +119,11 @@ interface AuditVariable {
   description: string;
   value: string;
   count: number;
-  essential: boolean;
+  critical: boolean;
   suggestion?: string;
 }
 
-interface AuditReport {
+export interface AuditReport {
   variables: AuditVariable[];
   summary: {
     total: number;
@@ -122,17 +133,18 @@ interface AuditReport {
     signatureOnly: number;
     duplicated: number;
   };
-  missingEssential: string[];
+  criticalMissing: string[];
   suggestions: string[];
+  canGenerate: boolean;
 }
 
 // ─── Extract variables from text ──────────────────────────────────────────────
 
 function extractVariables(text: string): Map<string, number> {
-  const matches = text.match(/\{\{(\w+)\}\}/g) || [];
+  const matches = text.match(/\{\{\s*(\w+)\s*\}\}/g) || [];
   const counts = new Map<string, number>();
   for (const m of matches) {
-    const name = m.replace(/\{\{|\}\}/g, "");
+    const name = m.replace(/\{\{|\}\}/g, "").trim();
     counts.set(name, (counts.get(name) || 0) + 1);
   }
   return counts;
@@ -146,6 +158,7 @@ export function buildAuditReport(
 ): AuditReport {
   const found = extractVariables(templateText);
   const variables: AuditVariable[] = [];
+  const foundNames = new Set(found.keys());
 
   found.forEach((count, name) => {
     const def = OFFICIAL_VARIABLES[name];
@@ -156,7 +169,7 @@ export function buildAuditReport(
       variables.push({
         name, status: "invalid", source: null,
         description: "Variável não reconhecida pelo sistema",
-        value: "", count, essential: false,
+        value: "", count, critical: false,
       });
       return;
     }
@@ -168,39 +181,50 @@ export function buildAuditReport(
       status = "missing_source";
     }
 
+    const isCritical =
+      CRITICAL_ALWAYS.includes(name) ||
+      (CRITICAL_IF_PRESENT.includes(name) && foundNames.has(name));
+
     variables.push({
       name, status, source: def.source,
       description: def.description,
       value, count,
-      essential: !!def.essential,
+      critical: isCritical,
     });
   });
 
-  // Check duplicates
+  // Check duplicates (only flag if >3 occurrences)
   for (const v of variables) {
     if (v.count > 3 && v.status !== "invalid") {
-      v.status = "duplicate";
       v.suggestion = `"${v.name}" aparece ${v.count} vezes — verifique se há repetição desnecessária`;
     }
   }
 
-  // Missing essential variables
-  const foundNames = new Set(found.keys());
-  // Fix: correct filter
-  const missingEssentialCalc = Object.entries(OFFICIAL_VARIABLES)
-    .filter(([name, d]) => d.essential && !foundNames.has(name))
-    .map(([name]) => name);
+  // Critical variables that are in the template but have no value
+  const criticalMissing = variables
+    .filter(v => v.critical && v.status === "missing_source")
+    .map(v => v.name);
+
+  // Also check critical-always vars that are NOT in the template at all
+  for (const name of CRITICAL_ALWAYS) {
+    if (!foundNames.has(name)) {
+      criticalMissing.push(name);
+    }
+  }
 
   // Auto-suggestions
   const suggestions: string[] = [];
   if (foundNames.has("cpf") && foundNames.has("cnpj") && !foundNames.has("documento_contratante")) {
-    suggestions.push('Considere usar {{documento_contratante}} em vez de {{cpf}} e {{cnpj}} separados');
+    suggestions.push("Considere usar {{documento_contratante}} em vez de {{cpf}} e {{cnpj}} separados");
+  }
+  if (foundNames.has("cpf") && foundNames.has("documento_contratante")) {
+    suggestions.push("{{cpf}} e {{documento_contratante}} podem ter dados sobrepostos — considere usar apenas {{documento_contratante}}");
   }
   if (foundNames.has("nome_item") && foundNames.has("servicos_contratados")) {
-    suggestions.push('{{nome_item}} e {{servicos_contratados}} podem ter dados sobrepostos — use apenas um');
+    suggestions.push("{{nome_item}} e {{servicos_contratados}} podem ter dados sobrepostos — use apenas um");
   }
   if (foundNames.has("valor_proposta") && foundNames.has("valor_total")) {
-    suggestions.push('{{valor_proposta}} e {{valor_total}} podem ter o mesmo valor — escolha um para evitar confusão');
+    suggestions.push("{{valor_proposta}} e {{valor_total}} podem ter o mesmo valor — escolha um para evitar confusão");
   }
   for (const v of variables) {
     if (v.suggestion) suggestions.push(v.suggestion);
@@ -212,10 +236,13 @@ export function buildAuditReport(
     missingSource: variables.filter(v => v.status === "missing_source").length,
     invalid: variables.filter(v => v.status === "invalid").length,
     signatureOnly: variables.filter(v => v.status === "signature_only").length,
-    duplicated: variables.filter(v => v.status === "duplicate").length,
+    duplicated: variables.filter(v => v.count > 3).length,
   };
 
-  return { variables, summary, missingEssential: missingEssentialCalc, suggestions };
+  const uniqueCriticalMissing = [...new Set(criticalMissing)];
+  const canGenerate = uniqueCriticalMissing.length === 0;
+
+  return { variables, summary, criticalMissing: uniqueCriticalMissing, suggestions, canGenerate };
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -224,9 +251,10 @@ interface Props {
   templateText: string;
   resolvedValues: Record<string, string>;
   compact?: boolean;
+  onValidationChange?: (canGenerate: boolean) => void;
 }
 
-export function ContractVariableAudit({ templateText, resolvedValues, compact = false }: Props) {
+export function ContractVariableAudit({ templateText, resolvedValues, compact = false, onValidationChange }: Props) {
   const [expanded, setExpanded] = useState(!compact);
 
   const report = useMemo(
@@ -234,9 +262,11 @@ export function ContractVariableAudit({ templateText, resolvedValues, compact = 
     [templateText, resolvedValues],
   );
 
-  const { summary, variables, missingEssential, suggestions } = report;
+  const { summary, variables, criticalMissing, suggestions, canGenerate } = report;
 
-  const hasIssues = summary.invalid > 0 || summary.missingSource > 0 || missingEssential.length > 0;
+  useEffect(() => {
+    onValidationChange?.(canGenerate);
+  }, [canGenerate, onValidationChange]);
 
   // Group variables by source
   const grouped = useMemo(() => {
@@ -257,21 +287,40 @@ export function ContractVariableAudit({ templateText, resolvedValues, compact = 
     );
   }
 
+  // Status message
+  const statusMessage = !canGenerate
+    ? { text: "Existem variáveis obrigatórias sem valor. Corrija os dados antes de gerar o documento.", type: "error" as const }
+    : summary.signatureOnly > 0
+    ? { text: "Modelo validado. Algumas variáveis serão preenchidas no processo de assinatura.", type: "info" as const }
+    : { text: "Modelo validado com sucesso. O documento está pronto para ser gerado.", type: "success" as const };
+
   return (
     <div className="rounded-lg border bg-muted/20 overflow-hidden">
-      {/* Summary header */}
+      {/* Status banner */}
+      <div className={cn(
+        "px-3 py-2 flex items-center gap-2 text-xs font-medium",
+        statusMessage.type === "error" && "bg-red-50 text-red-700 dark:bg-red-900/10 dark:text-red-400",
+        statusMessage.type === "info" && "bg-blue-50 text-blue-700 dark:bg-blue-900/10 dark:text-blue-400",
+        statusMessage.type === "success" && "bg-green-50 text-green-700 dark:bg-green-900/10 dark:text-green-400",
+      )}>
+        {statusMessage.type === "error" && <Ban className="h-3.5 w-3.5 shrink-0" />}
+        {statusMessage.type === "info" && <Clock className="h-3.5 w-3.5 shrink-0" />}
+        {statusMessage.type === "success" && <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />}
+        {statusMessage.text}
+      </div>
+
+      {/* Summary header (collapsible) */}
       <button
-        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted/40 transition-colors"
+        className="w-full flex items-center justify-between px-3 py-2 border-t hover:bg-muted/40 transition-colors"
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-center gap-2 text-xs font-medium">
           <Shield className="h-3.5 w-3.5 text-primary" />
-          Auditoria de Variáveis
+          Preview de preenchimento do contrato
         </div>
         <div className="flex items-center gap-2">
-          {/* Quick badges */}
           <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 border-green-200">
-            {summary.valid} válidas
+            {summary.valid} preenchidas
           </Badge>
           {summary.signatureOnly > 0 && (
             <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border-blue-200">
@@ -298,7 +347,7 @@ export function ContractVariableAudit({ templateText, resolvedValues, compact = 
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-px bg-border">
             {[
               { label: "Total", value: summary.total, color: "text-foreground" },
-              { label: "Válidas", value: summary.valid, color: "text-green-600" },
+              { label: "Preenchidas", value: summary.valid, color: "text-green-600" },
               { label: "Sem valor", value: summary.missingSource, color: "text-amber-600" },
               { label: "Inválidas", value: summary.invalid, color: "text-red-600" },
               { label: "Assinatura", value: summary.signatureOnly, color: "text-blue-600" },
@@ -311,17 +360,17 @@ export function ContractVariableAudit({ templateText, resolvedValues, compact = 
             ))}
           </div>
 
-          {/* Missing essential warning */}
-          {missingEssential.length > 0 && (
+          {/* Critical missing warning */}
+          {criticalMissing.length > 0 && (
             <div className="px-3 py-2 bg-red-50 dark:bg-red-900/10 border-t border-b border-red-100 dark:border-red-900/30">
               <div className="flex items-start gap-2">
-                <AlertTriangle className="h-3.5 w-3.5 text-red-600 mt-0.5 shrink-0" />
+                <Ban className="h-3.5 w-3.5 text-red-600 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-[11px] font-medium text-red-700 dark:text-red-400">
-                    Variáveis essenciais ausentes no contrato:
+                    Variáveis obrigatórias sem valor — geração bloqueada:
                   </p>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {missingEssential.map((name) => (
+                    {criticalMissing.map((name) => (
                       <code key={name} className="text-[10px] bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-1.5 py-0.5 rounded">
                         {`{{${name}}}`}
                       </code>
@@ -338,7 +387,7 @@ export function ContractVariableAudit({ templateText, resolvedValues, compact = 
               <div className="flex items-start gap-2">
                 <Info className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
                 <div className="space-y-0.5">
-                  <p className="text-[11px] font-medium text-amber-700 dark:text-amber-400">Sugestões:</p>
+                  <p className="text-[11px] font-medium text-amber-700 dark:text-amber-400">Sugestões de otimização:</p>
                   {suggestions.map((s, i) => (
                     <p key={i} className="text-[10px] text-amber-600 dark:text-amber-400">• {s}</p>
                   ))}
@@ -359,18 +408,37 @@ export function ContractVariableAudit({ templateText, resolvedValues, compact = 
                     const cfg = statusConfig[v.status];
                     const Icon = cfg.icon;
                     return (
-                      <div key={v.name} className="px-3 py-1.5 flex items-center gap-2 hover:bg-muted/20 text-[11px]">
+                      <div key={v.name} className={cn(
+                        "px-3 py-1.5 flex items-center gap-2 text-[11px]",
+                        v.critical && v.status === "missing_source" && "bg-red-50/50 dark:bg-red-900/5",
+                      )}>
                         <Icon className={cn("h-3 w-3 shrink-0", cfg.color)} />
                         <code className="font-mono text-foreground shrink-0">{`{{${v.name}}}`}</code>
-                        <span className="text-muted-foreground truncate flex-1">{v.description}</span>
-                        <Badge variant="outline" className={cn("text-[9px] shrink-0", v.source ? sourceColors[v.source] : "")}>
-                          {cfg.label}
-                        </Badge>
-                        {v.value && (
-                          <span className="text-[10px] text-green-600 dark:text-green-400 truncate max-w-[120px]" title={v.value}>
-                            = {v.value}
+                        {v.critical && (
+                          <Badge variant="outline" className="text-[8px] px-1 py-0 bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 shrink-0">
+                            obrigatória
+                          </Badge>
+                        )}
+                        <span className="text-muted-foreground truncate flex-1 min-w-0">
+                          {v.status === "signature_only"
+                            ? "Preenchida no fluxo de assinatura"
+                            : v.value
+                            ? ""
+                            : v.description}
+                        </span>
+                        {v.status === "supported" && v.value && (
+                          <span className="text-[10px] text-green-600 dark:text-green-400 truncate max-w-[180px] shrink-0" title={v.value}>
+                            → {v.value}
                           </span>
                         )}
+                        {v.status === "missing_source" && (
+                          <span className="text-[10px] text-amber-600 dark:text-amber-400 shrink-0">
+                            sem valor
+                          </span>
+                        )}
+                        <Badge variant="outline" className={cn("text-[9px] shrink-0 ml-auto", v.source ? sourceColors[v.source] : "")}>
+                          {v.source ? sourceLabels[v.source] : "—"}
+                        </Badge>
                         {v.count > 1 && (
                           <span className="text-[9px] text-muted-foreground shrink-0">×{v.count}</span>
                         )}
