@@ -648,7 +648,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
       {/* Generate Dialog */}
       <Dialog open={generateOpen} onOpenChange={setGenerateOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
               <FileText className="h-4 w-4 text-primary" /> Gerar Documento
@@ -680,34 +680,19 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
             </div>
             {selectedTemplate && (() => {
               const tpl = templates.find(t => t.id === selectedTemplate);
-              const tplPlaceholders = (tpl as any)?.placeholders_json as string[] | null;
+              const contentTemplate = (tpl as any)?.content_template || "";
+              const placeholderList = (tpl as any)?.placeholders_json as string[] | null;
+              // Build a synthetic template text from placeholders if no content_template
+              const templateText = contentTemplate
+                || (placeholderList && placeholderList.length > 0
+                  ? placeholderList.map(p => `{{${p}}}`).join(" ")
+                  : Object.keys(buildVariableMap(lead, previewTenant, previewProposal, previewVendor)).join(" "));
               const vars = buildVariableMap(lead, previewTenant, previewProposal, previewVendor);
-              const relevantVars = tplPlaceholders && tplPlaceholders.length > 0
-                ? Object.entries(vars).filter(([key]) => tplPlaceholders.includes(key.replace(/\{\{|\}\}/g, "")))
-                : Object.entries(vars);
               return (
-                <div className="rounded-lg border bg-muted/30 p-3">
-                  <p className="text-xs font-medium text-muted-foreground mb-2">
-                    Variáveis do modelo ({relevantVars.length}):
-                  </p>
-                  <div className="grid grid-cols-2 gap-1 text-[11px]">
-                    {relevantVars.map(([key, val]) => (
-                      <div key={key} className="flex items-center gap-1 text-muted-foreground">
-                        {val ? (
-                          <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" />
-                        ) : (
-                          <AlertCircle className="h-3 w-3 text-amber-500 shrink-0" />
-                        )}
-                        <span className="truncate">{key.replace(/\{\{|\}\}/g, "")}</span>
-                      </div>
-                    )).slice(0, 16)}
-                  </div>
-                  {relevantVars.filter(([, v]) => !v).length > 0 && (
-                    <p className="text-[10px] text-amber-600 mt-2">
-                      Variáveis sem valor serão preenchidas durante a assinatura ou deixadas em branco
-                    </p>
-                  )}
-                </div>
+                <ContractVariableAudit
+                  templateText={templateText}
+                  resolvedValues={vars}
+                />
               );
             })()}
           </div>
