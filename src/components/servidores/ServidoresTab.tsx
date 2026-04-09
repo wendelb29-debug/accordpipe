@@ -568,6 +568,10 @@ export default function ServidoresTab() {
                 <Webhook className="h-4 w-4" />
                 Vendas
               </TabsTrigger>
+              <TabsTrigger value="workspaces" className="justify-start gap-2 px-3 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg" disabled={!editingCompany}>
+                <Briefcase className="h-4 w-4" />
+                Workspaces
+              </TabsTrigger>
             </TabsList>
 
             <div className="flex-1 overflow-y-auto py-2">
