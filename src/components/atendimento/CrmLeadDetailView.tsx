@@ -12,7 +12,7 @@ import { downloadContractPdf } from "@/lib/generateContractPdf";
 import { LeadAtividadesTab } from "./LeadAtividadesTab";
 import { NoteEditor } from "./NoteEditor";
 import { LeadPropostasTab } from "./LeadPropostasTab";
-import { LeadDocumentosTab } from "./LeadDocumentosTab";
+
 import { LeadDocsTab } from "./LeadDocsTab";
 import { LeadPosVendaTab } from "./LeadPosVendaTab";
 
