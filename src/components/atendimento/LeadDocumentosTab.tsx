@@ -497,13 +497,14 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
         if (uploadErr) {
           console.error("PDF upload error:", uploadErr);
-        } else {
-          const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(filePath);
-          pdfUrl = urlData.publicUrl;
-          console.log("PDF uploaded, URL:", pdfUrl);
+          throw new Error("Falha ao salvar PDF no storage: " + uploadErr.message);
         }
-      } catch (pdfErr) {
-        console.warn("PDF generation failed:", pdfErr);
+        const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(filePath);
+        pdfUrl = urlData.publicUrl;
+        console.log("PDF uploaded, URL:", pdfUrl);
+      } catch (pdfErr: any) {
+        console.error("PDF generation/upload failed:", pdfErr);
+        throw new Error("Erro ao gerar/salvar PDF: " + (pdfErr.message || ""));
       }
 
       // Build structured snapshot
