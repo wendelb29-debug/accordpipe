@@ -81,6 +81,11 @@ export default function ServidoresTab() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
+  const [usersDialogOpen, setUsersDialogOpen] = useState(false);
+  const [usersDialogCompany, setUsersDialogCompany] = useState<Company | null>(null);
+  const [tenantUsers, setTenantUsers] = useState<{ user_id: string; name: string; email: string; is_active: boolean; role: string; status: string }[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [editingUser, setEditingUser] = useState<any | null>(null);
   const { toast } = useToast();
   const { isMaster, profile } = useAuth();
 
