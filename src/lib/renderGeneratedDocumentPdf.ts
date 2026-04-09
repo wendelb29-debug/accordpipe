@@ -144,7 +144,7 @@ function drawFooter(ctx: RenderContext): void {
   });
 
   // Left: tenant name
-  const leftText = branding?.footerText || branding?.tenantName || "";
+  const leftText = sanitizePdfText(branding?.footerText || branding?.tenantName || "");
   if (leftText) {
     page.drawText(leftText, {
       x: MARGIN,
