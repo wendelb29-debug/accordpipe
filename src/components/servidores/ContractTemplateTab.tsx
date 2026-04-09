@@ -4,27 +4,49 @@ import {
   Upload, FileText, Trash2, Save, Loader2, ChevronLeft, ChevronRight,
   ZoomIn, ZoomOut, Grid3X3, Undo2, DollarSign, FileSignature,
   Hash, AlertCircle, MapPin, Building2, ImageIcon, Mail, ClipboardList,
+  Eye, Tags, Copy, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PdfRenderer } from "@/components/contratos/PdfRenderer";
 
 const TEMPLATE_FIELD_TYPES = [
-  // DADOS DO SERVIDOR (CONTRATADA)
   { type: "servidor_logo", label: "Logo Servidor", icon: ImageIcon, defaultW: 120, defaultH: 60, group: "servidor" },
   { type: "empresa", label: "Empresa (Contratante)", icon: Building2, defaultW: 480, defaultH: 60, group: "servidor" },
   { type: "servidor_cnpj", label: "Bloco Dados Servidor", icon: Hash, defaultW: 480, defaultH: 60, group: "servidor" },
   { type: "servidor_endereco", label: "Endereço Servidor", icon: MapPin, defaultW: 300, defaultH: 36, group: "servidor" },
   { type: "servidor_email", label: "E-mail Servidor", icon: Mail, defaultW: 240, defaultH: 36, group: "servidor" },
-  // DETALHES DA PROPOSTA
   { type: "campo_proposta", label: "Campo Proposta", icon: ClipboardList, defaultW: 400, defaultH: 120, group: "proposta" },
   { type: "valor_mrr", label: "Valor MRR", icon: DollarSign, defaultW: 140, defaultH: 36, group: "proposta" },
   { type: "assinatura", label: "Assinatura", icon: FileSignature, defaultW: 200, defaultH: 60, group: "proposta" },
+];
+
+const DYNAMIC_TAGS = [
+  { tag: "{{nome_cliente}}", label: "Nome do Cliente", mock: "João da Silva" },
+  { tag: "{{cpf_cnpj}}", label: "CPF/CNPJ", mock: "123.456.789-00" },
+  { tag: "{{email}}", label: "E-mail Cliente", mock: "joao@email.com" },
+  { tag: "{{telefone}}", label: "Telefone", mock: "(11) 99999-9999" },
+  { tag: "{{endereco}}", label: "Endereço Completo", mock: "Rua das Flores, 123 - Centro, São Paulo/SP" },
+  { tag: "{{cep}}", label: "CEP", mock: "01234-567" },
+  { tag: "{{valor_mrr}}", label: "Valor MRR", mock: "R$ 199,90" },
+  { tag: "{{valor_ps}}", label: "Valor P&S", mock: "R$ 500,00" },
+  { tag: "{{plano}}", label: "Plano Contratado", mock: "Plano Premium" },
+  { tag: "{{data_atual}}", label: "Data Atual", mock: new Date().toLocaleDateString("pt-BR") },
+  { tag: "{{servidor_razao}}", label: "Razão Social Servidor", mock: "Accord Tecnologia Ltda" },
+  { tag: "{{servidor_cnpj}}", label: "CNPJ Servidor", mock: "12.345.678/0001-90" },
+  { tag: "{{servidor_endereco}}", label: "Endereço Servidor", mock: "Av. Paulista, 1000 - Bela Vista, São Paulo/SP" },
 ];
 
 const SNAP_SIZE = 10;
@@ -52,9 +74,12 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfPath, setPdfPath] = useState<string | null>(null);
   const [templateName, setTemplateName] = useState("Contrato Padrão");
+  const [contractContent, setContractContent] = useState("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [copiedTag, setCopiedTag] = useState<string | null>(null);
 
   // Builder state
   const [fields, setFields] = useState<TemplateField[]>([]);
@@ -65,8 +90,10 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [undoStack, setUndoStack] = useState<TemplateField[][]>([]);
+  const [editorMode, setEditorMode] = useState<"upload" | "editor">("upload");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Load existing template
   useEffect(() => {
@@ -85,6 +112,7 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
         setPdfUrl(t.pdf_url);
         setPdfPath(t.pdf_path);
         setTemplateName(t.name);
+        setContractContent(t.contract_content || "");
 
         const { data: fieldData } = await supabase
           .from("company_contract_template_fields")
@@ -114,13 +142,10 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
     load();
   }, [companyId]);
 
-  // Ensure company row exists before uploading (delegates to parent for new tenants)
   const ensureCompanyExists = async () => {
     if (!companyId) return false;
-    // Check if already exists
     const { data } = await supabase.from("companies").select("id").eq("id", companyId).maybeSingle();
     if (data) return true;
-    // Ask parent to create the company first
     if (onEnsureCompany) {
       return await onEnsureCompany();
     }
@@ -137,7 +162,6 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
 
     setUploading(true);
     try {
-      // Ensure company exists for FK constraint
       const ok = await ensureCompanyExists();
       if (!ok) throw new Error("Não foi possível preparar o tenant");
 
@@ -153,7 +177,6 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
 
       const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(filePath);
 
-      // Delete old template if exists
       if (templateId) {
         await supabase.from("company_contract_template_fields").delete().eq("template_id", templateId);
         await supabase.from("company_contract_templates").delete().eq("id", templateId);
@@ -169,6 +192,7 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
           name: templateName,
           pdf_url: urlData.publicUrl,
           pdf_path: filePath,
+          contract_content: contractContent || null,
         } as any)
         .select("id")
         .single();
@@ -232,28 +256,49 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
   }, []);
 
   const saveFields = async () => {
-    if (!templateId) return;
+    if (!companyId) return;
     setSaving(true);
     try {
-      // Update template name
-      await supabase.from("company_contract_templates").update({ name: templateName } as any).eq("id", templateId);
+      const ok = await ensureCompanyExists();
+      if (!ok) throw new Error("Não foi possível preparar o tenant");
 
-      // Replace fields
-      await supabase.from("company_contract_template_fields").delete().eq("template_id", templateId);
-      if (fields.length > 0) {
-        const records = fields.map(f => ({
-          template_id: templateId,
-          field_type: f.field_type,
-          label: f.label,
-          pos_x: f.pos_x,
-          pos_y: f.pos_y,
-          width: f.width,
-          height: f.height,
-          page: f.page,
-          required: f.required,
-        }));
-        const { error } = await supabase.from("company_contract_template_fields").insert(records as any);
-        if (error) throw error;
+      if (templateId) {
+        await supabase.from("company_contract_templates").update({
+          name: templateName,
+          contract_content: contractContent || null,
+        } as any).eq("id", templateId);
+
+        await supabase.from("company_contract_template_fields").delete().eq("template_id", templateId);
+        if (fields.length > 0) {
+          const records = fields.map(f => ({
+            template_id: templateId,
+            field_type: f.field_type,
+            label: f.label,
+            pos_x: f.pos_x,
+            pos_y: f.pos_y,
+            width: f.width,
+            height: f.height,
+            page: f.page,
+            required: f.required,
+          }));
+          const { error } = await supabase.from("company_contract_template_fields").insert(records as any);
+          if (error) throw error;
+        }
+      } else {
+        // Create template without PDF (text-only mode)
+        const { data: newTemplate, error: insertErr } = await supabase
+          .from("company_contract_templates")
+          .insert({
+            company_id: companyId,
+            name: templateName,
+            pdf_url: pdfUrl || "",
+            pdf_path: pdfPath || "",
+            contract_content: contractContent || null,
+          } as any)
+          .select("id")
+          .single();
+        if (insertErr) throw insertErr;
+        setTemplateId((newTemplate as any).id);
       }
       toast.success("Template de contrato salvo com sucesso!");
     } catch (err: any) {
@@ -261,6 +306,38 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
     } finally {
       setSaving(false);
     }
+  };
+
+  const insertTag = (tag: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setContractContent(prev => prev + tag);
+      return;
+    }
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const before = contractContent.substring(0, start);
+    const after = contractContent.substring(end);
+    setContractContent(before + tag + after);
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + tag.length, start + tag.length);
+    }, 0);
+  };
+
+  const handleCopyTag = (tag: string) => {
+    navigator.clipboard.writeText(tag);
+    setCopiedTag(tag);
+    toast.success("Tag copiada!");
+    setTimeout(() => setCopiedTag(null), 2000);
+  };
+
+  const getPreviewContent = () => {
+    let content = contractContent;
+    DYNAMIC_TAGS.forEach(t => {
+      content = content.replaceAll(t.tag, t.mock);
+    });
+    return content;
   };
 
   const pageFields = fields.filter(f => f.page === currentPage);
@@ -285,22 +362,40 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
     );
   }
 
-  // No longer blocking when companyId is null — it should always be provided now
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label>Nome do Template</Label>
+        <Input value={templateName} onChange={e => setTemplateName(e.target.value)} placeholder="Ex: Contrato de Adesão" />
+      </div>
 
-  // Upload step
-  if (!pdfUrl) {
-    return (
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label>Nome do Template</Label>
-          <Input value={templateName} onChange={e => setTemplateName(e.target.value)} placeholder="Ex: Contrato de Adesão" />
-        </div>
-        <div className="border-2 border-dashed border-border rounded-xl p-8 flex flex-col items-center gap-4 text-center">
-          <Upload className="h-10 w-10 text-muted-foreground" />
-          <div>
-            <p className="text-sm font-medium text-foreground">Faça upload do PDF do contrato modelo</p>
-            <p className="text-xs text-muted-foreground mt-1">Este PDF será usado como base para todos os contratos gerados após finalizar vendas</p>
+      <Tabs value={editorMode} onValueChange={v => setEditorMode(v as "upload" | "editor")} className="w-full">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <TabsList>
+            <TabsTrigger value="upload" className="gap-2">
+              <Upload className="h-4 w-4" />
+              PDF Base
+            </TabsTrigger>
+            <TabsTrigger value="editor" className="gap-2">
+              <FileText className="h-4 w-4" />
+              Editor de Texto
+            </TabsTrigger>
+          </TabsList>
+
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)} className="gap-2" disabled={!contractContent && !pdfUrl}>
+              <Eye className="h-4 w-4" />
+              Visualizar Contrato
+            </Button>
+            <Button size="sm" onClick={saveFields} disabled={saving} className="gap-2">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Salvar
+            </Button>
           </div>
+        </div>
+
+        {/* PDF Upload Tab */}
+        <TabsContent value="upload" className="mt-4">
           <input
             ref={fileInputRef}
             type="file"
@@ -308,182 +403,264 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
             onChange={handleUpload}
             className="hidden"
           />
-          <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="gap-2">
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            {uploading ? "Enviando..." : "Selecionar PDF"}
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
-  // Builder step
-  return (
-    <div className="space-y-4">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="application/pdf"
-        onChange={handleUpload}
-        className="hidden"
-      />
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex-1 min-w-[200px]">
-          <Input value={templateName} onChange={e => setTemplateName(e.target.value)} className="text-sm" />
-        </div>
-        <Badge variant="outline" className="shrink-0">{fields.length} campo(s)</Badge>
-        <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="gap-1 text-xs">
-          {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-          Trocar PDF
-        </Button>
-        <Button size="sm" onClick={saveFields} disabled={saving} className="gap-1 text-xs">
-          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-          Salvar
-        </Button>
-      </div>
-
-      {/* Field palette */}
-      <div className="space-y-2">
-        <div>
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Dados do Servidor (Contratada)</span>
-          <div className="flex flex-wrap gap-1.5">
-            {TEMPLATE_FIELD_TYPES.filter(ft => ft.group === "servidor").map(ft => (
-              <Button key={ft.type} variant="outline" size="sm" onClick={() => addField(ft.type)} className="gap-1.5 text-xs h-8" style={{ borderColor: FIELD_COLORS[ft.type] + "80" }}>
-                <ft.icon className="h-3.5 w-3.5" style={{ color: FIELD_COLORS[ft.type] }} />
-                {ft.label}
+          {!pdfUrl ? (
+            <div className="border-2 border-dashed border-border rounded-xl p-8 flex flex-col items-center gap-4 text-center">
+              <Upload className="h-10 w-10 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Faça upload do PDF do contrato modelo</p>
+                <p className="text-xs text-muted-foreground mt-1">Este PDF será usado como base para todos os contratos gerados após finalizar vendas</p>
+              </div>
+              <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="gap-2">
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                {uploading ? "Enviando..." : "Selecionar PDF"}
               </Button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Detalhes da Proposta</span>
-          <div className="flex flex-wrap gap-1.5">
-            {TEMPLATE_FIELD_TYPES.filter(ft => ft.group === "proposta").map(ft => (
-              <Button key={ft.type} variant="outline" size="sm" onClick={() => addField(ft.type)} className="gap-1.5 text-xs h-8" style={{ borderColor: FIELD_COLORS[ft.type] + "80" }}>
-                <ft.icon className="h-3.5 w-3.5" style={{ color: FIELD_COLORS[ft.type] }} />
-                {ft.label}
-              </Button>
-            ))}
-          </div>
-        </div>
-      </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <Badge variant="outline" className="shrink-0">{fields.length} campo(s)</Badge>
+                <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="gap-1 text-xs">
+                  {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                  Trocar PDF
+                </Button>
+              </div>
 
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage <= 1}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <span className="text-xs text-muted-foreground">{currentPage}/{totalPages}</span>
-        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-        <Separator orientation="vertical" className="h-5" />
-        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setScale(s => Math.max(0.5, s - 0.15))}>
-          <ZoomOut className="h-3.5 w-3.5" />
-        </Button>
-        <span className="text-xs text-muted-foreground w-10 text-center">{Math.round(scale * 100)}%</span>
-        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setScale(s => Math.min(2, s + 0.15))}>
-          <ZoomIn className="h-3.5 w-3.5" />
-        </Button>
-        <Separator orientation="vertical" className="h-5" />
-        <Button variant={snapEnabled ? "default" : "outline"} size="icon" className="h-8 w-8" onClick={() => setSnapEnabled(!snapEnabled)}>
-          <Grid3X3 className="h-3.5 w-3.5" />
-        </Button>
-        <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleUndo} disabled={undoStack.length === 0}>
-          <Undo2 className="h-3.5 w-3.5" />
-        </Button>
-      </div>
-
-      {/* PDF + overlay */}
-      <div className="border border-border rounded-lg overflow-auto bg-muted/30 max-h-[50vh]" onClick={() => setSelectedFieldId(null)}>
-        <div className="flex justify-center p-4">
-          <div className="relative" style={{ width: canvasSize.width || "auto", height: canvasSize.height || "auto" }}>
-            <PdfRenderer
-              pdfUrl={pdfUrl}
-              currentPage={currentPage}
-              onTotalPages={setTotalPages}
-              scale={scale}
-              onCanvasReady={handleCanvasReady}
-            />
-
-            {pageFields.map(field => {
-              const color = FIELD_COLORS[field.field_type] || "#3b82f6";
-              return (
-                <Rnd
-                  key={field.id}
-                  size={{ width: field.width, height: field.height }}
-                  position={{ x: field.pos_x, y: field.pos_y }}
-                  onDragStart={() => pushUndo()}
-                  onDragStop={(_, d) => {
-                    const x = snapEnabled ? snapToGrid(d.x) : d.x;
-                    const y = snapEnabled ? snapToGrid(d.y) : d.y;
-                    updateField(field.id, { pos_x: x, pos_y: y });
-                  }}
-                  onResizeStart={() => pushUndo()}
-                  onResizeStop={(_, __, ref, ___, pos) => {
-                    const w = parseFloat(ref.style.width);
-                    const h = parseFloat(ref.style.height);
-                    updateField(field.id, {
-                      width: snapEnabled ? snapToGrid(w) : w,
-                      height: snapEnabled ? snapToGrid(h) : h,
-                      pos_x: snapEnabled ? snapToGrid(pos.x) : pos.x,
-                      pos_y: snapEnabled ? snapToGrid(pos.y) : pos.y,
-                    });
-                  }}
-                  bounds="parent"
-                  minWidth={30}
-                  minHeight={20}
-                  onClick={(e: React.MouseEvent) => { e.stopPropagation(); setSelectedFieldId(field.id); }}
-                  style={{ zIndex: selectedFieldId === field.id ? 50 : 10 }}
-                >
-                  <div
-                    className={`w-full h-full rounded border-2 flex items-center justify-center gap-1 text-xs font-medium cursor-move transition-shadow ${
-                      selectedFieldId === field.id ? "shadow-lg ring-2 ring-primary" : "shadow-sm"
-                    }`}
-                    style={{
-                      borderColor: color,
-                      backgroundColor: color + "20",
-                      color: color,
-                    }}
-                  >
-                    {(() => {
-                      const Icon = TEMPLATE_FIELD_TYPES.find(f => f.type === field.field_type)?.icon || FileText;
-                      return <Icon className="h-3.5 w-3.5 shrink-0" />;
-                    })()}
-                    <span className="truncate">{field.label}</span>
-                    {selectedFieldId === field.id && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); deleteField(field.id); }}
-                        className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:scale-110 transition-transform"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    )}
+              {/* Field palette */}
+              <div className="space-y-2">
+                <div>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Dados do Servidor (Contratada)</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {TEMPLATE_FIELD_TYPES.filter(ft => ft.group === "servidor").map(ft => (
+                      <Button key={ft.type} variant="outline" size="sm" onClick={() => addField(ft.type)} className="gap-1.5 text-xs h-8" style={{ borderColor: FIELD_COLORS[ft.type] + "80" }}>
+                        <ft.icon className="h-3.5 w-3.5" style={{ color: FIELD_COLORS[ft.type] }} />
+                        {ft.label}
+                      </Button>
+                    ))}
                   </div>
-                </Rnd>
-              );
-            })}
+                </div>
+                <div>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Detalhes da Proposta</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {TEMPLATE_FIELD_TYPES.filter(ft => ft.group === "proposta").map(ft => (
+                      <Button key={ft.type} variant="outline" size="sm" onClick={() => addField(ft.type)} className="gap-1.5 text-xs h-8" style={{ borderColor: FIELD_COLORS[ft.type] + "80" }}>
+                        <ft.icon className="h-3.5 w-3.5" style={{ color: FIELD_COLORS[ft.type] }} />
+                        {ft.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Toolbar */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage <= 1}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-xs text-muted-foreground">{currentPage}/{totalPages}</span>
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Separator orientation="vertical" className="h-5" />
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setScale(s => Math.max(0.5, s - 0.15))}>
+                  <ZoomOut className="h-3.5 w-3.5" />
+                </Button>
+                <span className="text-xs text-muted-foreground w-10 text-center">{Math.round(scale * 100)}%</span>
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setScale(s => Math.min(2, s + 0.15))}>
+                  <ZoomIn className="h-3.5 w-3.5" />
+                </Button>
+                <Separator orientation="vertical" className="h-5" />
+                <Button variant={snapEnabled ? "default" : "outline"} size="icon" className="h-8 w-8" onClick={() => setSnapEnabled(!snapEnabled)}>
+                  <Grid3X3 className="h-3.5 w-3.5" />
+                </Button>
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleUndo} disabled={undoStack.length === 0}>
+                  <Undo2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+
+              {/* PDF + overlay */}
+              <div className="border border-border rounded-lg overflow-auto bg-muted/30 max-h-[50vh]" onClick={() => setSelectedFieldId(null)}>
+                <div className="flex justify-center p-4">
+                  <div className="relative" style={{ width: canvasSize.width || "auto", height: canvasSize.height || "auto" }}>
+                    <PdfRenderer
+                      pdfUrl={pdfUrl}
+                      currentPage={currentPage}
+                      onTotalPages={setTotalPages}
+                      scale={scale}
+                      onCanvasReady={handleCanvasReady}
+                    />
+
+                    {pageFields.map(field => {
+                      const color = FIELD_COLORS[field.field_type] || "#3b82f6";
+                      return (
+                        <Rnd
+                          key={field.id}
+                          size={{ width: field.width, height: field.height }}
+                          position={{ x: field.pos_x, y: field.pos_y }}
+                          onDragStart={() => pushUndo()}
+                          onDragStop={(_, d) => {
+                            const x = snapEnabled ? snapToGrid(d.x) : d.x;
+                            const y = snapEnabled ? snapToGrid(d.y) : d.y;
+                            updateField(field.id, { pos_x: x, pos_y: y });
+                          }}
+                          onResizeStart={() => pushUndo()}
+                          onResizeStop={(_, __, ref, ___, pos) => {
+                            const w = parseFloat(ref.style.width);
+                            const h = parseFloat(ref.style.height);
+                            updateField(field.id, {
+                              width: snapEnabled ? snapToGrid(w) : w,
+                              height: snapEnabled ? snapToGrid(h) : h,
+                              pos_x: snapEnabled ? snapToGrid(pos.x) : pos.x,
+                              pos_y: snapEnabled ? snapToGrid(pos.y) : pos.y,
+                            });
+                          }}
+                          bounds="parent"
+                          minWidth={30}
+                          minHeight={20}
+                          onClick={(e: React.MouseEvent) => { e.stopPropagation(); setSelectedFieldId(field.id); }}
+                          style={{ zIndex: selectedFieldId === field.id ? 50 : 10 }}
+                        >
+                          <div
+                            className={`w-full h-full rounded border-2 flex items-center justify-center gap-1 text-xs font-medium cursor-move transition-shadow ${
+                              selectedFieldId === field.id ? "shadow-lg ring-2 ring-primary" : "shadow-sm"
+                            }`}
+                            style={{
+                              borderColor: color,
+                              backgroundColor: color + "20",
+                              color: color,
+                            }}
+                          >
+                            {(() => {
+                              const Icon = TEMPLATE_FIELD_TYPES.find(f => f.type === field.field_type)?.icon || FileText;
+                              return <Icon className="h-3.5 w-3.5 shrink-0" />;
+                            })()}
+                            <span className="truncate">{field.label}</span>
+                            {selectedFieldId === field.id && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); deleteField(field.id); }}
+                                className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:scale-110 transition-transform"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                        </Rnd>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Selected field info */}
+              {selectedField && (
+                <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card text-xs">
+                  <Badge style={{ backgroundColor: FIELD_COLORS[selectedField.field_type] + "20", color: FIELD_COLORS[selectedField.field_type], borderColor: FIELD_COLORS[selectedField.field_type] }}>
+                    {selectedField.label}
+                  </Badge>
+                  <span className="text-muted-foreground">Pág {selectedField.page} • Pos ({Math.round(selectedField.pos_x)}, {Math.round(selectedField.pos_y)}) • {Math.round(selectedField.width)}×{Math.round(selectedField.height)}</span>
+                  <Button variant="ghost" size="sm" className="ml-auto h-7 text-xs gap-1 text-destructive hover:text-destructive" onClick={() => deleteField(selectedField.id)}>
+                    <Trash2 className="h-3 w-3" /> Remover
+                  </Button>
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground">
+                💡 Arraste e redimensione os campos para definir onde cada informação aparecerá no contrato final.
+              </p>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Text Editor Tab */}
+        <TabsContent value="editor" className="mt-4 space-y-4">
+          {/* Dynamic Tags Palette */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Tags className="h-4 w-4 text-primary" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tags Dinâmicas</span>
+            </div>
+            <p className="text-xs text-muted-foreground">Clique para inserir no cursor ou copie para usar manualmente</p>
+            <div className="flex flex-wrap gap-1.5">
+              {DYNAMIC_TAGS.map(t => (
+                <div key={t.tag} className="flex items-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => insertTag(t.tag)}
+                    className="gap-1 text-xs h-7 rounded-r-none border-r-0"
+                    title={`Inserir ${t.label}`}
+                  >
+                    {t.label}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCopyTag(t.tag)}
+                    className="h-7 w-7 p-0 rounded-l-none"
+                    title="Copiar tag"
+                  >
+                    {copiedTag === t.tag ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Selected field info */}
-      {selectedField && (
-        <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card text-xs">
-          <Badge style={{ backgroundColor: FIELD_COLORS[selectedField.field_type] + "20", color: FIELD_COLORS[selectedField.field_type], borderColor: FIELD_COLORS[selectedField.field_type] }}>
-            {selectedField.label}
-          </Badge>
-          <span className="text-muted-foreground">Pág {selectedField.page} • Pos ({Math.round(selectedField.pos_x)}, {Math.round(selectedField.pos_y)}) • {Math.round(selectedField.width)}×{Math.round(selectedField.height)}</span>
-          <Button variant="ghost" size="sm" className="ml-auto h-7 text-xs gap-1 text-destructive hover:text-destructive" onClick={() => deleteField(selectedField.id)}>
-            <Trash2 className="h-3 w-3" /> Remover
-          </Button>
-        </div>
-      )}
+          <Separator />
 
-      <p className="text-xs text-muted-foreground">
-        💡 Arraste e redimensione os campos para definir onde cada informação aparecerá no contrato final. 
-        Ao gerar proposta no CRM, os valores reais serão preenchidos automaticamente.
-      </p>
+          {/* Text Editor */}
+          <div className="space-y-2">
+            <Label>Conteúdo do Contrato</Label>
+            <textarea
+              ref={textareaRef}
+              value={contractContent}
+              onChange={e => setContractContent(e.target.value)}
+              placeholder={"CONTRATO DE PRESTAÇÃO DE SERVIÇOS\n\nPelo presente instrumento particular, de um lado {{servidor_razao}}, inscrita no CNPJ nº {{servidor_cnpj}}, com sede em {{servidor_endereco}}, doravante denominada CONTRATADA...\n\nE de outro lado, {{nome_cliente}}, inscrito no CPF/CNPJ nº {{cpf_cnpj}}, residente em {{endereco}}, CEP {{cep}}, telefone {{telefone}}, e-mail {{email}}, doravante denominado CONTRATANTE...\n\nCLÁUSULA PRIMEIRA - DO OBJETO\n\nO presente contrato tem por objeto a prestação de serviços do plano {{plano}}, pelo valor mensal de {{valor_mrr}}..."}
+              className="w-full min-h-[300px] rounded-lg border border-border bg-background p-4 text-sm font-mono text-foreground resize-y focus:outline-none focus:ring-2 focus:ring-primary/50"
+              spellCheck={false}
+            />
+            <p className="text-xs text-muted-foreground">
+              💡 Use as tags dinâmicas acima para inserir dados que serão preenchidos automaticamente. Ex: {"{{nome_cliente}}"} será substituído pelo nome real do cliente.
+            </p>
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Preview Dialog */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Pré-visualização do Contrato
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto">
+            {contractContent ? (
+              <div className="bg-white text-black rounded-lg p-8 shadow-inner border border-border min-h-[400px]">
+                <div className="whitespace-pre-wrap font-serif text-sm leading-relaxed">
+                  {getPreviewContent()}
+                </div>
+              </div>
+            ) : pdfUrl ? (
+              <div className="flex items-center justify-center p-8 text-muted-foreground">
+                <p className="text-sm">O preview de texto não está disponível. O contrato usa um PDF base com campos posicionados.</p>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center p-8 text-muted-foreground">
+                <p className="text-sm">Nenhum conteúdo de contrato configurado.</p>
+              </div>
+            )}
+          </div>
+          <div className="pt-4 border-t border-border">
+            <p className="text-xs text-muted-foreground mb-2">
+              <AlertCircle className="h-3 w-3 inline mr-1" />
+              Esta é uma pré-visualização com dados fictícios. Os valores reais serão preenchidos automaticamente ao gerar o contrato.
+            </p>
+            <Button variant="outline" onClick={() => setPreviewOpen(false)}>Fechar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
