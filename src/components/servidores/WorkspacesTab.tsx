@@ -61,6 +61,7 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
   const [editingColId, setEditingColId] = useState<string | null>(null);
   const [editColName, setEditColName] = useState("");
   const [editColSla, setEditColSla] = useState(7);
+  const [editColSlaUnit, setEditColSlaUnit] = useState<"dias" | "horas">("dias");
 
   const fetchData = useCallback(async () => {
     if (!companyId) return;
@@ -182,9 +183,10 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
   };
 
   const handleSaveColumn = async (col: KanbanColumn) => {
+    const slaDaysValue = editColSlaUnit === "horas" ? editColSla / 24 : editColSla;
     const { error } = await supabase
       .from("kanban_columns")
-      .update({ name: editColName, sla_days: editColSla } as any)
+      .update({ name: editColName, sla_days: slaDaysValue } as any)
       .eq("id", col.id);
     if (error) toast.error("Erro ao atualizar coluna");
     setEditingColId(null);
@@ -307,7 +309,15 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
                                 className="h-7 text-xs w-16"
                                 min={0}
                               />
-                              <span className="text-[10px] text-muted-foreground">dias</span>
+                              <Select value={editColSlaUnit} onValueChange={(v) => setEditColSlaUnit(v as "dias" | "horas")}>
+                                <SelectTrigger className="h-7 w-20 text-[10px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="dias">dias</SelectItem>
+                                  <SelectItem value="horas">horas</SelectItem>
+                                </SelectContent>
+                              </Select>
                               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleSaveColumn(col)}>
                                 <Check className="h-3 w-3 text-green-500" />
                               </Button>
@@ -318,7 +328,11 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
                           ) : (
                             <>
                               <span className="text-xs font-medium flex-1 truncate">{col.name}</span>
-                              <Badge variant="outline" className="text-[10px] shrink-0">{col.sla_days}d</Badge>
+                              <Badge variant="outline" className="text-[10px] shrink-0">
+                                {col.sla_days < 1 && col.sla_days > 0
+                                  ? `${Math.round(col.sla_days * 24)}h`
+                                  : `${col.sla_days}d`}
+                              </Badge>
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -326,7 +340,9 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
                                 onClick={() => {
                                   setEditingColId(col.id);
                                   setEditColName(col.name);
-                                  setEditColSla(col.sla_days);
+                                  const isHours = col.sla_days < 1 && col.sla_days > 0;
+                                  setEditColSlaUnit(isHours ? "horas" : "dias");
+                                  setEditColSla(isHours ? Math.round(col.sla_days * 24) : col.sla_days);
                                 }}
                               >
                                 <Pencil className="h-3 w-3" />
