@@ -195,9 +195,13 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
     if (groupWs.length > 0) {
       if (deleteGroupAction === "move") {
         if (!deleteGroupTarget) { toast.error("Selecione a camada de destino"); return; }
+        const updateRes = await supabase.from("workspaces")
+          .update({ group_id: deleteGroupTarget } as any)
+          .eq("servidor_id", companyId!);
+        // Filter to only the ones in this group
         const { error } = await supabase.from("workspaces")
           .update({ group_id: deleteGroupTarget } as any)
-          .eq("group_id" as any, deleteGroup.id);
+          .in("id", groupWs.map((w) => w.id));
         if (error) { toast.error("Erro ao mover workspaces"); return; }
       } else {
         // Delete all workspaces in group
