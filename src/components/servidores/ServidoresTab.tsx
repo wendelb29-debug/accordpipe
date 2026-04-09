@@ -275,6 +275,8 @@ export default function ServidoresTab() {
         const { error } = await supabase.from("companies").update(payload).eq("id", editingCompany.id);
         if (error) throw error;
         toast({ title: "Tenant atualizado", description: "Os dados do tenant foram atualizados." });
+        // Notify ThemeSync to refresh brand colors
+        window.dispatchEvent(new Event("brand-colors-updated"));
       } else {
         const { error } = await supabase.from("companies").insert(payload);
         if (error) throw error;
