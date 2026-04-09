@@ -802,6 +802,46 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* ─── Move Ungrouped Dialog ─── */}
+      <Dialog open={moveUngroupedOpen} onOpenChange={setMoveUngroupedOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ArrowRight className="h-4 w-4 text-primary" />
+              Mover workspaces para uma camada
+            </DialogTitle>
+            <DialogDescription>
+              Selecione a camada de destino para mover todos os workspaces sem camada.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Camada de destino</Label>
+              <Select value={moveUngroupedTarget} onValueChange={setMoveUngroupedTarget}>
+                <SelectTrigger className="h-10"><SelectValue placeholder="Selecione uma camada..." /></SelectTrigger>
+                <SelectContent>
+                  {groups.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMoveUngroupedOpen(false)}>Cancelar</Button>
+            <Button
+              disabled={!moveUngroupedTarget}
+              onClick={async () => {
+                const ids = ungroupedWorkspaces.map((w) => w.id);
+                const { error } = await supabase.from("workspaces").update({ group_id: moveUngroupedTarget } as any).in("id", ids);
+                if (error) toast.error("Erro ao mover workspaces");
+                else { toast.success("Workspaces movidos com sucesso!"); fetchData(); }
+                setMoveUngroupedOpen(false);
+              }}
+            >
+              Mover todos
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
