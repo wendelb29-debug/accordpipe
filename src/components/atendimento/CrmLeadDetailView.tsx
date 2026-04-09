@@ -1042,11 +1042,8 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                 <TabsTrigger value="propostas" className="text-[11px] sm:text-xs gap-1">
                   <FileSpreadsheet className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Propostas
                 </TabsTrigger>
-                <TabsTrigger value="arquivos" className="text-[11px] sm:text-xs gap-1">
-                  <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Arquivos
-                </TabsTrigger>
                 <TabsTrigger value="docs" className="text-[11px] sm:text-xs gap-1">
-                  <Paperclip className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Docs
+                  <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Docs
                 </TabsTrigger>
                 <TabsTrigger value="whatsapp" className="text-[11px] sm:text-xs gap-1">
                   <MessageSquare className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> WhatsApp
@@ -1271,17 +1268,12 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               <LeadPropostasTabNew lead={lead} addActivity={addActivity} />
             </TabsContent>
 
-            {/* Arquivos / Documentos Gerados */}
-            <TabsContent value="arquivos" className="flex-1 overflow-y-auto p-2 sm:p-4 mt-0">
+             {/* Docs - Documentos Gerados + Arquivos */}
+            <TabsContent value="docs" className="flex-1 overflow-y-auto p-2 sm:p-4 mt-0">
               <LeadDocumentosTab lead={lead} addActivity={addActivity} />
-            </TabsContent>
-
-
-
-
-             {/* Docs */}
-            <TabsContent value="docs" className="flex-1 overflow-y-auto p-4 mt-0">
-              <LeadDocsTab lead={lead} />
+              <div className="mt-6">
+                <LeadDocsTab lead={lead} />
+              </div>
             </TabsContent>
 
             {/* WhatsApp */}
