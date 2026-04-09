@@ -193,7 +193,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
         .insert({
           company_id: lead.servidor_id,
           lead_id: lead.id,
-          contract_type: "template",
+          contract_type: "new",
           signature_status: "pending",
           pdf_url: template.pdf_url,
           contract_content: template.contract_content || null,
