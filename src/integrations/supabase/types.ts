@@ -1386,9 +1386,12 @@ export type Database = {
           arquivo_path: string | null
           arquivo_url: string | null
           ativo: boolean
+          content_template: string | null
           created_at: string
           id: string
+          is_default: boolean | null
           nome: string
+          placeholders_json: Json | null
           servidor_id: string
           tipo: string
           updated_at: string
@@ -1398,9 +1401,12 @@ export type Database = {
           arquivo_path?: string | null
           arquivo_url?: string | null
           ativo?: boolean
+          content_template?: string | null
           created_at?: string
           id?: string
+          is_default?: boolean | null
           nome: string
+          placeholders_json?: Json | null
           servidor_id: string
           tipo?: string
           updated_at?: string
@@ -1410,9 +1416,12 @@ export type Database = {
           arquivo_path?: string | null
           arquivo_url?: string | null
           ativo?: boolean
+          content_template?: string | null
           created_at?: string
           id?: string
+          is_default?: boolean | null
           nome?: string
+          placeholders_json?: Json | null
           servidor_id?: string
           tipo?: string
           updated_at?: string
@@ -1645,6 +1654,7 @@ export type Database = {
           nome: string
           pdf_url: string | null
           proposal_id: string | null
+          rendered_variables_json: Json | null
           sent_for_signature_at: string | null
           servidor_id: string
           signed_at: string | null
@@ -1666,6 +1676,7 @@ export type Database = {
           nome: string
           pdf_url?: string | null
           proposal_id?: string | null
+          rendered_variables_json?: Json | null
           sent_for_signature_at?: string | null
           servidor_id: string
           signed_at?: string | null
@@ -1687,6 +1698,7 @@ export type Database = {
           nome?: string
           pdf_url?: string | null
           proposal_id?: string | null
+          rendered_variables_json?: Json | null
           sent_for_signature_at?: string | null
           servidor_id?: string
           signed_at?: string | null
