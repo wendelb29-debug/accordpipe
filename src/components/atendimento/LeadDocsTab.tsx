@@ -292,7 +292,13 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
 
       if (error) throw error;
 
-      toast.success(`Documento "${template.name}" gerado com sucesso!`);
+      // Replace {{Codigo_Contrato}} tag in contract_content with actual code
+      if (contract?.code && template.contract_content?.includes("{{Codigo_Contrato}}")) {
+        const updatedContent = template.contract_content.replace(/\{\{Codigo_Contrato\}\}/g, contract.code);
+        await supabase.from("contracts").update({ contract_content: updatedContent } as any).eq("id", contract.id);
+      }
+
+      toast.success(`Documento "${contract?.code} — ${template.name}" gerado com sucesso!`);
       await fetchSignedContracts();
     } catch (err: any) {
       console.error(err);
