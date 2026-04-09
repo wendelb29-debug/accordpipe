@@ -60,6 +60,10 @@ export default function NovoServidor() {
   const [cepLoading, setCepLoading] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(!!editId);
 
+  // Webhook state for new tenants
+  const [webhookUrls, setWebhookUrls] = useState<Record<string, string>>({});
+  const [webhookNotifyMe, setWebhookNotifyMe] = useState(false);
+
   const [formData, setFormData] = useState({
     razao_social: "", nome_fantasia: "", cnpj: "", email: "", telefone: "",
     responsavel: "", cidade: "", estado: "", endereco: "", bairro: "",
@@ -183,7 +187,28 @@ export default function NovoServidor() {
         if (error) throw error;
         toast({ title: "Tenant atualizado", description: "Os dados foram salvos." });
       } else {
-        const { error } = await supabase.from("companies").insert(payload);
+        // Include webhook URLs when creating a new tenant
+        const newId = crypto.randomUUID();
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const generateHash = () => Array.from(crypto.getRandomValues(new Uint8Array(8))).map((b) => b.toString(16).padStart(2, "0")).join("");
+        
+        const webhookPayload: Record<string, any> = {};
+        if (supabaseUrl) {
+          const events = [
+            { key: "zapi_webhook_on_send", type: "on-send" },
+            { key: "zapi_webhook_chat_presence", type: "chat-presence" },
+            { key: "zapi_webhook_on_disconnect", type: "on-disconnect" },
+            { key: "zapi_webhook_message_status", type: "message-status" },
+            { key: "zapi_webhook_on_receive", type: "on-receive" },
+            { key: "zapi_webhook_on_connect", type: "on-connect" },
+          ];
+          events.forEach((e) => {
+            webhookPayload[e.key] = webhookUrls[e.key] || `${supabaseUrl}/functions/v1/zapi-webhook/${newId}/${e.type}/${generateHash()}`;
+          });
+          webhookPayload.zapi_webhook_notify_me = webhookNotifyMe;
+        }
+
+        const { error } = await supabase.from("companies").insert({ id: newId, ...payload, ...webhookPayload });
         if (error) throw error;
         toast({ title: "Tenant criado", description: "O novo tenant foi criado com sucesso." });
       }
@@ -403,9 +428,12 @@ export default function NovoServidor() {
                 {editId ? (
                   <WebhookConfig companyIdOverride={editId} />
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    Salve o tenant primeiro para configurar webhooks de vendas.
-                  </p>
+                  <WebhookConfigPreview
+                    urls={webhookUrls}
+                    setUrls={setWebhookUrls}
+                    notifyMe={webhookNotifyMe}
+                    setNotifyMe={setWebhookNotifyMe}
+                  />
                 )}
               </CardContent>
             </Card>
