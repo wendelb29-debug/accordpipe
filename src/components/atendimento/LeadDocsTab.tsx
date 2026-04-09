@@ -97,8 +97,9 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
   const [signedContracts, setSignedContracts] = useState<SignedContract[]>([]);
   const [signedPdfContracts, setSignedPdfContracts] = useState<SignedPdfContract[]>([]);
   const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
-  const [contractTemplates, setContractTemplates] = useState<{ id: string; name: string }[]>([]);
+  const [contractTemplates, setContractTemplates] = useState<{ id: string; name: string; pdf_url: string; pdf_path: string; contract_content: string | null }[]>([]);
   const [confirmDelete, setConfirmDelete] = useState<{ type: "contract" | "pdf"; id: string } | null>(null);
+  const [generatingDoc, setGeneratingDoc] = useState(false);
 
   const fetchDocs = async () => {
     setLoading(true);
