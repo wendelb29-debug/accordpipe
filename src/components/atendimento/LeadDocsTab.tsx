@@ -25,6 +25,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { generateSignedContractPdf } from "@/lib/generateSignedContractPdf";
 import { generateContractPdf } from "@/lib/generateContractPdf";
+import { addAnnexPage } from "@/lib/generateContractAnnex";
+import type { AnnexData, AnnexLineItem } from "@/lib/generateContractAnnex";
 import type { CrmLead } from "@/hooks/useCrmLeads";
 
 interface LeadDocsTabProps {
@@ -187,6 +189,90 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
       const documentHash = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, "0")).join("");
       const validationCode = documentHash.substring(0, 12).toUpperCase();
 
+      // Fetch approved proposal for this lead to build annex
+      let finalPdfUrl = template.pdf_url;
+      const { data: proposalActivities } = await supabase
+        .from("crm_lead_activities")
+        .select("*")
+        .eq("lead_id", lead.id)
+        .eq("type", "proposal")
+        .order("created_at", { ascending: false });
+
+      const approvedProposal = (proposalActivities || []).find(
+        (p: any) => (p.metadata as any)?.status === "aceita"
+      );
+
+      // If there's an approved proposal with items, generate PDF with annex
+      if (approvedProposal && template.contract_content) {
+        const meta = (approvedProposal as any).metadata || {};
+        const lineItems: any[] = meta.line_items || [];
+        const installments: any[] = meta.installments || [];
+
+        if (lineItems.length > 0) {
+          const annexItems: AnnexLineItem[] = lineItems.map((item: any) => ({
+            name: item.name || "---",
+            unitValue: Number(item.unitValue) || 0,
+            quantity: Number(item.quantity) || 1,
+            discountType: item.discountType === "fixed" ? "fixed" : "percent",
+            discountValue: Number(item.discountValue) || 0,
+            total: Number(item.total) || 0,
+          }));
+
+          const freqMap: Record<string, string> = {
+            mensal: "mensal",
+            trimestral: "trimestral",
+            semestral: "semestral",
+            anual: "anual",
+            unica: "avista",
+          };
+
+          const payMethodMap: Record<string, string> = {
+            Boleto: "boleto",
+            boleto: "boleto",
+            PIX: "pix",
+            pix: "pix",
+            Cartao: "cartao",
+            cartao: "cartao",
+            Transferencia: "transferencia",
+            transferencia: "transferencia",
+          };
+
+          // Determine payment method from first installment
+          const firstInstallment = installments[0];
+          const payMethod = firstInstallment?.paymentMethod || meta.payment_method || "";
+
+          const annexData: AnnexData = {
+            clientName: lead.contact_name || lead.company_name || "---",
+            clientCnpj: lead.documento || "",
+            items: annexItems,
+            paymentMethod: payMethodMap[payMethod] || payMethod || "---",
+            paymentFrequency: freqMap[meta.payment_frequency] || meta.payment_frequency || "---",
+            numberOfInstallments: Number(meta.number_of_installments) || installments.length || 1,
+            sigla: meta.sigla || "",
+            firstPaymentDate: firstInstallment?.dueDate || meta.first_payment_date || "",
+            totalContract: installments.reduce((sum: number, inst: any) => sum + (Number(inst.value) || 0), 0) || 0,
+          };
+
+          // Generate PDF with annex
+          const pdfBlob = generateContractPdf({
+            content: template.contract_content,
+            code: validationCode,
+            companyName: lead.company_name,
+            annexData,
+          });
+
+          // Upload generated PDF to storage
+          const filePath = `generated/${lead.servidor_id}/${Date.now()}_${template.name.replace(/\s+/g, "_")}.pdf`;
+          const { error: uploadErr } = await supabase.storage
+            .from("contract-pdfs")
+            .upload(filePath, pdfBlob, { contentType: "application/pdf" });
+          if (uploadErr) throw uploadErr;
+
+          const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(filePath);
+          finalPdfUrl = urlData.publicUrl;
+        }
+      }
+
       // Create contract record linked to this lead
       const { data: contract, error } = await supabase
         .from("contracts")
@@ -195,7 +281,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
           lead_id: lead.id,
           contract_type: "new",
           signature_status: "pending",
-          pdf_url: template.pdf_url,
+          pdf_url: finalPdfUrl,
           contract_content: template.contract_content || null,
           document_hash: documentHash,
           validation_code: validationCode,

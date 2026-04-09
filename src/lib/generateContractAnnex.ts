@@ -17,6 +17,8 @@ export interface AnnexData {
   paymentFrequency: string;
   numberOfInstallments: number;
   sigla: string;
+  firstPaymentDate?: string;
+  totalContract?: number;
 }
 
 const fmtCur = (v: number) =>
@@ -206,6 +208,29 @@ export function addAnnexPage(pdf: jsPDF, data: AnnexData) {
   pdf.text("Parcelas: ", mL, y);
   pdf.setFont("helvetica", "normal");
   pdf.text(parcelas, mL + pdf.getTextWidth("Parcelas: "), y);
+  y += 7;
+
+  // First payment date
+  if (data.firstPaymentDate) {
+    ensureSpace(7);
+    pdf.setFont("helvetica", "bold");
+    pdf.text("Data da 1a Parcela: ", mL, y);
+    pdf.setFont("helvetica", "normal");
+    const dateStr = data.firstPaymentDate.includes("T")
+      ? new Date(data.firstPaymentDate).toLocaleDateString("pt-BR")
+      : data.firstPaymentDate;
+    pdf.text(dateStr, mL + pdf.getTextWidth("Data da 1a Parcela: "), y);
+    y += 7;
+  }
+
+  // Total contract
+  if (data.totalContract && data.totalContract > 0) {
+    ensureSpace(7);
+    pdf.setFont("helvetica", "bold");
+    pdf.text("Total do Contrato: ", mL, y);
+    pdf.setFont("helvetica", "normal");
+    pdf.text(fmtCur(data.totalContract), mL + pdf.getTextWidth("Total do Contrato: "), y);
+  }
 
   return pdf;
 }
