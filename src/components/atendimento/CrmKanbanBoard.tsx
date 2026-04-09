@@ -57,6 +57,14 @@ interface CrmKanbanBoardProps {
 const formatCurrency = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+const isLeadOverdueDynamic = (lead: CrmLead, slaDays: number): boolean => {
+  if (!slaDays || slaDays <= 0 || !lead.stage_entered_at) return false;
+  const enteredAt = new Date(lead.stage_entered_at);
+  const now = new Date();
+  const diffDays = (now.getTime() - enteredAt.getTime()) / (1000 * 60 * 60 * 24);
+  return diffDays > slaDays;
+};
+
 const isLeadOverdue = (lead: CrmLead, stageId: string): boolean => {
   const stage = STAGES.find((s) => s.id === stageId);
   if (!stage?.daysLimit || !lead.stage_entered_at) return false;
@@ -64,10 +72,7 @@ const isLeadOverdue = (lead: CrmLead, stageId: string): boolean => {
   if (!match) return false;
   const limitDays = parseInt(match[1], 10);
   if (limitDays <= 0) return false;
-  const enteredAt = new Date(lead.stage_entered_at);
-  const now = new Date();
-  const diffDays = (now.getTime() - enteredAt.getTime()) / (1000 * 60 * 60 * 24);
-  return diffDays > limitDays;
+  return isLeadOverdueDynamic(lead, limitDays);
 };
 
 const getProgressColor = (lead: CrmLead, stageId: string, hasActivity: boolean): string => {
