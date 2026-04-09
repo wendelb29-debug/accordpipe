@@ -3,7 +3,7 @@ import {
   Plus, Trash2, GripVertical, Pencil, Check, X, Briefcase, BarChart3, Settings2, Loader2,
   ChevronDown, ChevronUp, Copy, Power, Layers, Clock, Hash, Sparkles,
   HeadphonesIcon, DollarSign, Users, Cog, LayoutGrid, Save, Star, Flag, Palette,
-  AlertTriangle, ArrowRight, FolderOpen, Folder,
+  AlertTriangle, ArrowRight, FolderOpen, Folder, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,6 +93,10 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
   const [loading, setLoading] = useState(true);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [expandedWs, setExpandedWs] = useState<Record<string, boolean>>({});
+
+  // Group drag reorder
+  const [dragGroupId, setDragGroupId] = useState<string | null>(null);
+  const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
 
   // Group dialog
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
@@ -316,6 +320,50 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
     .filter((w) => !w.group_id)
     .filter((w) => !search || w.name.toLowerCase().includes(search.toLowerCase()));
 
+  // ─── Group reorder ───
+  const handleGroupDragEnd = () => {
+    if (dragGroupId && dragOverGroupId && dragGroupId !== dragOverGroupId) {
+      const sorted = [...filteredGroups];
+      const fromIdx = sorted.findIndex((g) => g.id === dragGroupId);
+      const toIdx = sorted.findIndex((g) => g.id === dragOverGroupId);
+      if (fromIdx !== -1 && toIdx !== -1) {
+        const [moved] = sorted.splice(fromIdx, 1);
+        sorted.splice(toIdx, 0, moved);
+        const updated = sorted.map((g, i) => ({ ...g, position: i }));
+        setGroups(updated);
+        persistGroupOrder(updated);
+      }
+    }
+    setDragGroupId(null);
+    setDragOverGroupId(null);
+  };
+
+  const moveGroup = (groupId: string, direction: "up" | "down") => {
+    const sorted = [...groups].sort((a, b) => a.position - b.position);
+    const idx = sorted.findIndex((g) => g.id === groupId);
+    if (idx === -1) return;
+    const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= sorted.length) return;
+    [sorted[idx], sorted[targetIdx]] = [sorted[targetIdx], sorted[idx]];
+    const updated = sorted.map((g, i) => ({ ...g, position: i }));
+    setGroups(updated);
+    persistGroupOrder(updated);
+  };
+
+  const persistGroupOrder = async (orderedGroups: WorkspaceGroup[]) => {
+    try {
+      await Promise.all(
+        orderedGroups.map((g, i) =>
+          supabase.from("workspace_groups").update({ position: i } as any).eq("id", g.id)
+        )
+      );
+      toast.success("Ordem das camadas atualizada com sucesso.");
+    } catch {
+      toast.error("Erro ao salvar ordem das camadas");
+      fetchData();
+    }
+  };
+
   if (!companyId) return <p className="text-sm text-muted-foreground text-center py-8">Salve o tenant primeiro para configurar workspaces.</p>;
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-16 gap-3">
@@ -377,14 +425,27 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
         </div>
       ) : (
         <div className="space-y-5">
-          {filteredGroups.map((group) => {
+          {filteredGroups.map((group, groupIdx) => {
             const groupWs = getGroupWorkspaces(group.id);
             const isExpanded = expandedGroups[group.id] ?? true;
             const typeConf = getTypeConfig(group.type);
             const TypeIcon = typeConf.icon;
+            const isDraggingGroup = dragGroupId === group.id;
+            const isDragOverGroup = dragOverGroupId === group.id && dragGroupId !== group.id;
 
             return (
-              <div key={group.id} className="rounded-2xl overflow-hidden transition-all duration-300">
+              <div
+                key={group.id}
+                draggable
+                onDragStart={(e) => { e.stopPropagation(); setDragGroupId(group.id); }}
+                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); if (dragOverGroupId !== group.id) setDragOverGroupId(group.id); }}
+                onDragEnd={handleGroupDragEnd}
+                className={cn(
+                  "rounded-2xl overflow-hidden transition-all duration-300",
+                  isDraggingGroup && "opacity-40 scale-[0.98]",
+                  isDragOverGroup && "ring-2 ring-primary/50 scale-[1.01]",
+                )}
+              >
                 {/* Folder tab header */}
                 <div
                   className={cn(
@@ -395,6 +456,14 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
                   )}
                   onClick={() => setExpandedGroups((p) => ({ ...p, [group.id]: !p[group.id] }))}
                 >
+                  {/* Drag handle */}
+                  <div
+                    className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <GripVertical className="h-4 w-4" />
+                  </div>
+
                   {/* Folder icon */}
                   <div className="relative">
                     <div
@@ -432,6 +501,12 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
                   </div>
 
                   <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" title="Mover para cima" disabled={groupIdx === 0} onClick={() => moveGroup(group.id, "up")}>
+                      <ArrowUp className="h-3 w-3" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" title="Mover para baixo" disabled={groupIdx === filteredGroups.length - 1} onClick={() => moveGroup(group.id, "down")}>
+                      <ArrowDown className="h-3 w-3" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openGroupDialog(group)}>
                       <Pencil className="h-3 w-3" />
                     </Button>
