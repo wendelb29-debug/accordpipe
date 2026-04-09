@@ -9,7 +9,7 @@ interface ContractPdfData {
   annexData?: AnnexData;
 }
 
-export function generateContractPdf({ content, code, companyName }: ContractPdfData): Blob {
+export function generateContractPdf({ content, code, companyName, annexData }: ContractPdfData): Blob {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
