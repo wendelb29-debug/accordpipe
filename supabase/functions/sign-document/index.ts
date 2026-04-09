@@ -5,6 +5,22 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Map signer papel → placeholder prefix
+const PAPEL_VAR_MAP: Record<string, string> = {
+  cliente: "cliente",
+  proprietario_proposta: "vendedor",
+  vendedor: "vendedor",
+  signatario: "cliente",
+  testemunha: "cliente",
+};
+
+function fmtDateBR(d: Date) {
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+function fmtTimeBR(d: Date) {
+  return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -64,7 +80,6 @@ Deno.serve(async (req) => {
       const inputCpf = (cpf || "").replace(/\D/g, "");
 
       if (!storedCpf || !signer.data_nascimento) {
-        // If no CPF/birth stored, skip validation
         await supabase.from("document_signers")
           .update({ status: "validated", validated_at: new Date().toISOString() })
           .eq("id", signer.id);
@@ -123,7 +138,6 @@ Deno.serve(async (req) => {
         descricao: `Código de confirmação enviado para ${signer.email || "e-mail não cadastrado"}`,
       });
 
-      // In production, send email here. For now, log the code.
       console.log(`[SIGN-DOCUMENT] Code for ${signer.nome_completo}: ${code}`);
 
       return new Response(JSON.stringify({ success: true }), {
@@ -164,11 +178,14 @@ Deno.serve(async (req) => {
     // ACTION: SIGN
     if (action === "sign") {
       const { selfie_url, ip_address, user_agent, location_lat, location_lng, location_text } = body;
+      const now = new Date();
+      const signedAt = now.toISOString();
 
+      // 1. Update signer record
       await supabase.from("document_signers")
         .update({
           status: "signed",
-          signed_at: new Date().toISOString(),
+          signed_at: signedAt,
           selfie_url: selfie_url || null,
           ip_address: ip_address || null,
           user_agent: user_agent || null,
@@ -178,36 +195,127 @@ Deno.serve(async (req) => {
         })
         .eq("id", signer.id);
 
+      // 2. Determine which placeholders to fill based on papel
+      const varPrefix = PAPEL_VAR_MAP[signer.papel] || "cliente";
+      const geoText = location_text || (location_lat && location_lng ? `${location_lat}, ${location_lng}` : "Não disponível");
+
+      const signatureValues: Record<string, string> = {
+        [`data_assinatura_${varPrefix}`]: fmtDateBR(now),
+        [`hora_assinatura_${varPrefix}`]: fmtTimeBR(now),
+        [`geolocalizacao_${varPrefix}`]: geoText,
+        [`selfie_${varPrefix}`]: selfie_url || "Capturada",
+      };
+
+      // 3. Get current document to update html_content and snapshot
+      const { data: docData } = await supabase
+        .from("generated_documents")
+        .select("html_content, rendered_variables_json")
+        .eq("id", signer.document_id)
+        .single();
+
+      let updatedHtml = docData?.html_content || "";
+      const snapshot = (docData?.rendered_variables_json as Record<string, any>) || {};
+
+      // Replace placeholders in HTML
+      for (const [varName, value] of Object.entries(signatureValues)) {
+        const placeholder = `{{${varName}}}`;
+        updatedHtml = updatedHtml.replaceAll(placeholder, value);
+
+        // Update snapshot
+        snapshot[varName] = {
+          value,
+          source: "signature",
+          status: "filled",
+          filled_at: signedAt,
+          signer_id: signer.id,
+          signer_name: signer.nome_completo,
+        };
+      }
+
+      // 4. Log signature event
+      const eventName = varPrefix === "vendedor" ? "assinatura_vendedor_concluida" : "assinatura_cliente_concluida";
       await supabase.from("document_events").insert({
         document_id: signer.document_id,
         signer_id: signer.id,
-        evento: "assinatura_concluida",
-        descricao: `${signer.nome_completo} assinou o documento`,
-        metadata_json: { ip_address, user_agent, location_lat, location_lng, selfie_url },
+        evento: eventName,
+        descricao: `${signer.nome_completo} (${signer.papel}) assinou o documento`,
+        metadata_json: {
+          ip_address, user_agent, location_lat, location_lng, location_text,
+          selfie_url, signed_at: signedAt,
+        },
       });
 
-      // Check if all required signers have signed
+      // 5. Check if all required signers have signed
       const { data: allSigners } = await supabase
         .from("document_signers")
-        .select("status, obrigatorio")
+        .select("id, status, obrigatorio, papel")
         .eq("document_id", signer.document_id);
 
       const required = (allSigners || []).filter((s: any) => s.obrigatorio);
-      const signedRequired = required.filter((s: any) => s.status === "signed");
-      const allSigned = (allSigners || []).filter((s: any) => s.status === "signed");
+      const signedRequired = required.filter((s: any) => s.status === "signed" || s.id === signer.id);
+      const allRequiredSigned = signedRequired.length >= required.length;
 
       let newDocStatus = "partially_signed";
-      if (signedRequired.length === required.length) {
+      if (allRequiredSigned) {
         newDocStatus = "signed";
       }
 
-      const updateData: any = { status: newDocStatus };
-      if (newDocStatus === "signed") {
-        updateData.signed_at = new Date().toISOString();
+      // 6. Build document update
+      const docUpdate: Record<string, any> = {
+        status: newDocStatus,
+        html_content: updatedHtml,
+        rendered_variables_json: snapshot,
+      };
+
+      if (allRequiredSigned) {
+        docUpdate.signed_at = signedAt;
+
+        // Log final event
+        await supabase.from("document_events").insert({
+          document_id: signer.document_id,
+          evento: "documento_assinado_finalizado",
+          descricao: "Todas as assinaturas obrigatórias foram concluídas. Documento finalizado.",
+          metadata_json: {
+            total_signers: (allSigners || []).length,
+            required_signers: required.length,
+            finalized_at: signedAt,
+          },
+        });
+
+        // 7. Generate final signed PDF URL
+        // The signed PDF is built from the updated HTML + original PDF.
+        // For now, we copy the original PDF as the signed version and mark it.
+        // In production, a full PDF render with audit trail would happen here.
+        const { data: fullDoc } = await supabase
+          .from("generated_documents")
+          .select("pdf_url")
+          .eq("id", signer.document_id)
+          .single();
+
+        if (fullDoc?.pdf_url) {
+          // Fetch the original PDF bytes and re-upload as signed copy
+          try {
+            const pdfResp = await fetch(fullDoc.pdf_url);
+            if (pdfResp.ok) {
+              const pdfBytes = await pdfResp.arrayBuffer();
+              const signedPath = `signed/${signer.document_id}_${Date.now()}.pdf`;
+              const { error: upErr } = await supabase.storage
+                .from("contract-pdfs")
+                .upload(signedPath, pdfBytes, { contentType: "application/pdf" });
+
+              if (!upErr) {
+                const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(signedPath);
+                docUpdate.signed_pdf_url = urlData.publicUrl;
+              }
+            }
+          } catch (pdfErr) {
+            console.error("[sign-document] Failed to generate signed PDF copy:", pdfErr);
+          }
+        }
       }
 
       await supabase.from("generated_documents")
-        .update(updateData)
+        .update(docUpdate)
         .eq("id", signer.document_id);
 
       return new Response(JSON.stringify({ success: true, document_status: newDocStatus }), {
@@ -234,7 +342,6 @@ Deno.serve(async (req) => {
         descricao: `${signer.nome_completo} recusou a assinatura${reason ? `: ${reason}` : ""}`,
       });
 
-      // Update document status to rejected
       await supabase.from("generated_documents")
         .update({ status: "rejected" })
         .eq("id", signer.document_id);
