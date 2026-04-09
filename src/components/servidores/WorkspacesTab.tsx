@@ -320,6 +320,50 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
     .filter((w) => !w.group_id)
     .filter((w) => !search || w.name.toLowerCase().includes(search.toLowerCase()));
 
+  // ─── Group reorder ───
+  const handleGroupDragEnd = () => {
+    if (dragGroupId && dragOverGroupId && dragGroupId !== dragOverGroupId) {
+      const sorted = [...filteredGroups];
+      const fromIdx = sorted.findIndex((g) => g.id === dragGroupId);
+      const toIdx = sorted.findIndex((g) => g.id === dragOverGroupId);
+      if (fromIdx !== -1 && toIdx !== -1) {
+        const [moved] = sorted.splice(fromIdx, 1);
+        sorted.splice(toIdx, 0, moved);
+        const updated = sorted.map((g, i) => ({ ...g, position: i }));
+        setGroups(updated);
+        persistGroupOrder(updated);
+      }
+    }
+    setDragGroupId(null);
+    setDragOverGroupId(null);
+  };
+
+  const moveGroup = (groupId: string, direction: "up" | "down") => {
+    const sorted = [...groups].sort((a, b) => a.position - b.position);
+    const idx = sorted.findIndex((g) => g.id === groupId);
+    if (idx === -1) return;
+    const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= sorted.length) return;
+    [sorted[idx], sorted[targetIdx]] = [sorted[targetIdx], sorted[idx]];
+    const updated = sorted.map((g, i) => ({ ...g, position: i }));
+    setGroups(updated);
+    persistGroupOrder(updated);
+  };
+
+  const persistGroupOrder = async (orderedGroups: WorkspaceGroup[]) => {
+    try {
+      await Promise.all(
+        orderedGroups.map((g, i) =>
+          supabase.from("workspace_groups").update({ position: i } as any).eq("id", g.id)
+        )
+      );
+      toast.success("Ordem das camadas atualizada com sucesso.");
+    } catch {
+      toast.error("Erro ao salvar ordem das camadas");
+      fetchData();
+    }
+  };
+
   if (!companyId) return <p className="text-sm text-muted-foreground text-center py-8">Salve o tenant primeiro para configurar workspaces.</p>;
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-16 gap-3">
