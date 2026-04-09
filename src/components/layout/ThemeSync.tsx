@@ -108,6 +108,11 @@ export function ThemeSync() {
     };
 
     fetchBrand();
+
+    // Listen for brand-updated events to re-apply colors after save
+    const handleBrandUpdate = () => fetchBrand();
+    window.addEventListener("brand-colors-updated", handleBrandUpdate);
+    return () => window.removeEventListener("brand-colors-updated", handleBrandUpdate);
   }, [activeCompanyId, user]);
 
   return null;
