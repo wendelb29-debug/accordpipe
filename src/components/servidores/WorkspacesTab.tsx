@@ -102,6 +102,13 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
   const [moveUngroupedOpen, setMoveUngroupedOpen] = useState(false);
   const [moveUngroupedTarget, setMoveUngroupedTarget] = useState("");
 
+  // Convert ungrouped to layer
+  const [convertUngroupedOpen, setConvertUngroupedOpen] = useState(false);
+  const [convertUngroupedName, setConvertUngroupedName] = useState("");
+
+  // Delete all ungrouped
+  const [deleteAllUngroupedOpen, setDeleteAllUngroupedOpen] = useState(false);
+
   // Group dialog
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<WorkspaceGroup | null>(null);
@@ -608,6 +615,12 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
                       <ArrowRight className="h-3 w-3" />
                     </Button>
                   )}
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" title="Criar camada a partir destes" onClick={() => { setConvertUngroupedOpen(true); setConvertUngroupedName(""); }}>
+                    <FolderOpen className="h-3 w-3" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" title="Excluir todos sem camada" onClick={() => setDeleteAllUngroupedOpen(true)}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
                 </div>
                 <div className={cn("text-muted-foreground transition-transform duration-200", (expandedGroups["__ungrouped"] ?? true) && "rotate-180")}>
                   <ChevronDown className="h-4 w-4" />
@@ -842,6 +855,77 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* ─── Convert Ungrouped to Layer ─── */}
+      <Dialog open={convertUngroupedOpen} onOpenChange={setConvertUngroupedOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FolderOpen className="h-4 w-4 text-primary" />
+              Criar camada a partir dos sem camada
+            </DialogTitle>
+            <DialogDescription>
+              Crie uma nova camada e mova automaticamente todos os workspaces sem camada para ela.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Nome da nova camada</Label>
+              <Input value={convertUngroupedName} onChange={(e) => setConvertUngroupedName(e.target.value)} placeholder="Ex: Geral, Outros..." autoFocus className="h-10" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConvertUngroupedOpen(false)}>Cancelar</Button>
+            <Button
+              disabled={!convertUngroupedName.trim()}
+              onClick={async () => {
+                if (!companyId) return;
+                const { data: newGroup, error: gErr } = await supabase.from("workspace_groups")
+                  .insert({ name: convertUngroupedName.trim(), servidor_id: companyId, type: "custom", color: "#7C3AED", position: groups.length, icon: "folder" } as any)
+                  .select().single();
+                if (gErr || !newGroup) { toast.error("Erro ao criar camada"); return; }
+                const ids = ungroupedWorkspaces.map((w) => w.id);
+                const { error } = await supabase.from("workspaces").update({ group_id: (newGroup as any).id } as any).in("id", ids);
+                if (error) toast.error("Erro ao mover workspaces");
+                else { toast.success("Camada criada e workspaces movidos!"); fetchData(); }
+                setConvertUngroupedOpen(false);
+              }}
+            >
+              Criar e mover
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Delete All Ungrouped ─── */}
+      <AlertDialog open={deleteAllUngroupedOpen} onOpenChange={setDeleteAllUngroupedOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+              Excluir todos os workspaces sem camada?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {ungroupedWorkspaces.length} workspace(s) e todas as suas colunas kanban serão excluídos permanentemente. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={async () => {
+                const ids = ungroupedWorkspaces.map((w) => w.id);
+                await supabase.from("kanban_columns").delete().in("workspace_id", ids);
+                const { error } = await supabase.from("workspaces").delete().in("id", ids);
+                if (error) toast.error("Erro ao excluir workspaces");
+                else { toast.success("Workspaces sem camada excluídos!"); fetchData(); }
+                setDeleteAllUngroupedOpen(false);
+              }}
+            >
+              Excluir todos
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
