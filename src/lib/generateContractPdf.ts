@@ -1,12 +1,15 @@
 import jsPDF from "jspdf";
+import { addAnnexPage } from "./generateContractAnnex";
+import type { AnnexData } from "./generateContractAnnex";
 
 interface ContractPdfData {
   content: string;
   code: string;
   companyName: string;
+  annexData?: AnnexData;
 }
 
-export function generateContractPdf({ content, code, companyName }: ContractPdfData): Blob {
+export function generateContractPdf({ content, code, companyName, annexData }: ContractPdfData): Blob {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -92,6 +95,11 @@ export function generateContractPdf({ content, code, companyName }: ContractPdfD
     }
   }
 
+  // Add ANEXO I if annex data is provided
+  if (annexData && annexData.items.length > 0) {
+    addAnnexPage(doc, annexData);
+  }
+
   // Footer on each page
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
@@ -99,7 +107,7 @@ export function generateContractPdf({ content, code, companyName }: ContractPdfD
     doc.setFont("helvetica", "italic");
     doc.setFontSize(8);
     doc.setTextColor(150);
-    doc.text(`${code} - Página ${i} de ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+    doc.text(`${code} - Pagina ${i} de ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: "center" });
     doc.setTextColor(0);
   }
 
