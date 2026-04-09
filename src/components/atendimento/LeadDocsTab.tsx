@@ -349,14 +349,6 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
     setGeneratingPdf(null);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
   // General file upload
   const generalFileRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -386,6 +378,14 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
     }
     if (files.length > 0) handleGeneralUpload(files);
   }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   const hasSignedContracts = signedContracts.length > 0 || signedPdfContracts.length > 0;
   const allDocs = docs;
