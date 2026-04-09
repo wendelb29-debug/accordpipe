@@ -44,6 +44,7 @@ interface TemplateField {
 
 interface Props {
   companyId: string | null;
+  onEnsureCompany?: () => Promise<boolean>;
 }
 
 export function ContractTemplateTab({ companyId }: Props) {
