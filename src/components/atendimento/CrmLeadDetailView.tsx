@@ -1268,17 +1268,12 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               <LeadPropostasTabNew lead={lead} addActivity={addActivity} />
             </TabsContent>
 
-            {/* Arquivos / Documentos Gerados */}
-            <TabsContent value="arquivos" className="flex-1 overflow-y-auto p-2 sm:p-4 mt-0">
+             {/* Docs - Documentos Gerados + Arquivos */}
+            <TabsContent value="docs" className="flex-1 overflow-y-auto p-2 sm:p-4 mt-0">
               <LeadDocumentosTab lead={lead} addActivity={addActivity} />
-            </TabsContent>
-
-
-
-
-             {/* Docs */}
-            <TabsContent value="docs" className="flex-1 overflow-y-auto p-4 mt-0">
-              <LeadDocsTab lead={lead} />
+              <div className="mt-6">
+                <LeadDocsTab lead={lead} />
+              </div>
             </TabsContent>
 
             {/* WhatsApp */}
