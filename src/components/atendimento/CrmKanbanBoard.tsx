@@ -733,10 +733,10 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                         </div>
                         <span className={cn(
                           "text-[9px] font-bold rounded-full px-1.5 py-0",
-                          overdue ? "text-red-600" : days > 3 ? "text-amber-600" : "text-muted-foreground/50",
-                          overdue ? "bg-red-50 dark:bg-red-950/30" : days > 3 ? "bg-amber-50 dark:bg-amber-950/30" : ""
+                          overdue ? "text-destructive" : days > 3 ? "text-amber-600" : "text-muted-foreground/50",
+                          overdue ? "bg-destructive/10" : days > 3 ? "bg-amber-50 dark:bg-amber-950/30" : ""
                         )}>
-                          {days}d
+                          {overdue && overdueByDays > 0 ? `+${overdueByDays}d atraso` : `${days}d`}
                         </span>
                       </div>
                     </div>
