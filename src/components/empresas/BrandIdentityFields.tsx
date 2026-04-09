@@ -129,7 +129,7 @@ export function BrandIdentityFields({ formData, onChange }: Props) {
           Paleta de Cores
         </Label>
         <p className="text-xs text-muted-foreground">
-          Essas cores serão aplicadas automaticamente em propostas e contratos
+          Essas cores serão aplicadas automaticamente na barra lateral, identidade visual do ambiente e nas propostas e contratos
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {colorFields.map((field) => (
