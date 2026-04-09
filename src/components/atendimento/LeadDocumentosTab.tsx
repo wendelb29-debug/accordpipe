@@ -579,6 +579,8 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         </div>
         <Button size="sm" className="gap-1.5 text-xs" onClick={async () => {
           setGenerateOpen(true);
+          setCanGenerate(true);
+          setSelectedTemplate("");
           // Pre-fetch tenant, proposal, vendor, registration for variable preview
           const [tenantRes, proposalRes, regRes] = await Promise.all([
             supabase.from("companies").select("*").eq("id", servidorId).maybeSingle(),
