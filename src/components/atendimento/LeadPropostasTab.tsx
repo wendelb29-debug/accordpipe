@@ -1095,6 +1095,19 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     const labels: Record<string, string> = { aceita: "Aprovada", declinada: "Declinada", cancelada: "Cancelada" };
     toast.success(`Proposta ${labels[newStatus] || newStatus}!`);
     await addActivity({ type: "proposal_status", title: `Proposta ${labels[newStatus]}: ${meta.sigla || proposal.title}`, servidor_id: lead.servidor_id });
+
+    // Sync MRR and P&S values to the lead when proposal is accepted
+    if (newStatus === "aceita" && onUpdateLead) {
+      const proposalMrr = Number(meta.value_mrr) || 0;
+      const proposalPs = Number(meta.value_ps) || 0;
+      const updates: Partial<CrmLead> = {};
+      if (proposalMrr > 0) updates.value_mrr = proposalMrr;
+      if (proposalPs > 0) updates.value_ps = proposalPs;
+      if (Object.keys(updates).length > 0) {
+        await onUpdateLead(lead.id, updates);
+      }
+    }
+
     await fetchProposals();
   };
 
