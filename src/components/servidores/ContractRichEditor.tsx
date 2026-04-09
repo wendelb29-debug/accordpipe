@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -13,11 +14,14 @@ import {
   Heading1, Heading2, Heading3, List, ListOrdered,
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Minus, Table as TableIcon, Undo, Redo, Type,
+  LayoutTemplate, ChevronDown,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
 const VARIABLE_GROUPS = [
@@ -93,6 +97,41 @@ const VARIABLE_GROUPS = [
   },
 ];
 
+const PREBUILT_BLOCKS = [
+  {
+    label: "Cabeçalho com Timbre",
+    html: `<p style="text-align: center"><strong>{{tenant_nome}}</strong></p><p style="text-align: center">CNPJ: {{tenant_cnpj}}</p><p style="text-align: center">{{tenant_endereco}} — {{tenant_cidade}}/{{tenant_estado}}</p><p style="text-align: center">{{tenant_email}} | {{tenant_telefone}}</p><hr>`,
+  },
+  {
+    label: "Qualificação das Partes",
+    html: `<h2>QUALIFICAÇÃO DAS PARTES</h2><p><strong>CONTRATANTE:</strong> {{nome_completo}}, inscrito(a) no CPF/CNPJ sob nº {{documento_contratante}}, residente e domiciliado(a) em {{endereco}}, {{numero}}, {{bairro}}, {{cidade}}/{{estado}}, CEP {{cep}}, e-mail {{email}}, telefone {{telefone}}.</p><p><strong>CONTRATADA:</strong> {{tenant_razao_social}}, inscrita no CNPJ sob nº {{tenant_cnpj}}, com sede em {{tenant_endereco}}, {{tenant_cidade}}/{{tenant_estado}}, neste ato representada por {{nome_vendedor}}.</p>`,
+  },
+  {
+    label: "Cláusula — Serviços Contratados",
+    html: `<h2>CLÁUSULA — DOS SERVIÇOS CONTRATADOS</h2><p>O presente contrato tem por objeto a prestação dos seguintes serviços:</p><p>{{servicos_contratados}}</p><p><strong>Valor total do contrato: {{valor_total}}</strong></p>`,
+  },
+  {
+    label: "Cláusula Padrão (em branco)",
+    html: `<h2>CLÁUSULA — [TÍTULO DA CLÁUSULA]</h2><p>[Conteúdo da cláusula]</p>`,
+  },
+  {
+    label: "Bloco de Assinatura — Cliente",
+    html: `<hr><h3>ASSINATURA DO CONTRATANTE</h3><p><strong>Nome:</strong> {{nome_completo}}</p><p><strong>Documento:</strong> {{documento_contratante}}</p><p><strong>Data de Nascimento:</strong> {{data_nascimento}}</p><p><strong>Data/Hora:</strong> {{data_assinatura_cliente}} às {{hora_assinatura_cliente}}</p><p><strong>Geolocalização:</strong> {{geolocalizacao_cliente}}</p><p><strong>Selfie:</strong> {{selfie_cliente}}</p><p>_________________________________________</p><p style="text-align: center">{{nome_completo}}</p>`,
+  },
+  {
+    label: "Bloco de Assinatura — Vendedor/Empresa",
+    html: `<hr><h3>ASSINATURA DA CONTRATADA</h3><p><strong>Empresa:</strong> {{tenant_nome}}</p><p><strong>CNPJ:</strong> {{tenant_cnpj}}</p><p><strong>Representante:</strong> {{nome_vendedor}}</p><p><strong>E-mail:</strong> {{email_vendedor}}</p><p><strong>Data/Hora:</strong> {{data_assinatura_vendedor}} às {{hora_assinatura_vendedor}}</p><p><strong>Geolocalização:</strong> {{geolocalizacao_vendedor}}</p><p><strong>Selfie:</strong> {{selfie_vendedor}}</p><p>_________________________________________</p><p style="text-align: center">{{nome_vendedor}}</p>`,
+  },
+  {
+    label: "Rodapé Corporativo",
+    html: `<hr><p style="text-align: center"><em>{{tenant_nome}} — CNPJ: {{tenant_cnpj}}</em></p><p style="text-align: center"><em>{{tenant_endereco}} — {{tenant_cidade}}/{{tenant_estado}}</em></p><p style="text-align: center"><em>Documento gerado em {{data_atual}}</em></p>`,
+  },
+  {
+    label: "Foro e Disposições Finais",
+    html: `<h2>CLÁUSULA — DO FORO</h2><p>As partes elegem o foro da comarca de {{tenant_cidade}}/{{tenant_estado}} como competente para dirimir quaisquer questões oriundas do presente contrato, com renúncia a qualquer outro, por mais privilegiado que seja.</p><p>E por estarem justas e contratadas, as partes assinam o presente instrumento em via digital.</p><p><strong>{{tenant_cidade}}, {{data_atual}}</strong></p>`,
+  },
+];
+
 interface Props {
   content: string;
   onChange: (html: string) => void;
@@ -100,6 +139,8 @@ interface Props {
 }
 
 export function ContractRichEditor({ content, onChange, className }: Props) {
+  const [sidebarTab, setSidebarTab] = useState<"vars" | "blocks">("vars");
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -113,11 +154,11 @@ export function ContractRichEditor({ content, onChange, className }: Props) {
       TableCell,
       TableHeader,
       HorizontalRule,
-      Placeholder.configure({ placeholder: "Comece a escrever seu contrato aqui..." }),
+      Placeholder.configure({ placeholder: "Comece a escrever seu contrato aqui ou insira um bloco pronto..." }),
     ],
     content,
-    onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+    onUpdate: ({ editor: e }) => {
+      onChange(e.getHTML());
     },
     editorProps: {
       attributes: {
@@ -135,6 +176,10 @@ export function ContractRichEditor({ content, onChange, className }: Props) {
 
   const insertVariable = (varKey: string) => {
     editor.chain().focus().insertContent(`{{${varKey}}}`).run();
+  };
+
+  const insertBlock = (html: string) => {
+    editor.chain().focus().insertContent(html).run();
   };
 
   const ToolBtn = ({
@@ -206,13 +251,13 @@ export function ContractRichEditor({ content, onChange, className }: Props) {
 
           <Separator orientation="vertical" className="mx-1 h-6" />
 
-          <ToolBtn onClick={() => editor.chain().focus().setTextAlign("left").run()} active={editor.isActive({ textAlign: "left" })} title="Alinhar esquerda">
+          <ToolBtn onClick={() => editor.chain().focus().setTextAlign("left").run()} active={editor.isActive({ textAlign: "left" })} title="Esquerda">
             <AlignLeft className="h-4 w-4" />
           </ToolBtn>
-          <ToolBtn onClick={() => editor.chain().focus().setTextAlign("center").run()} active={editor.isActive({ textAlign: "center" })} title="Centralizar">
+          <ToolBtn onClick={() => editor.chain().focus().setTextAlign("center").run()} active={editor.isActive({ textAlign: "center" })} title="Centro">
             <AlignCenter className="h-4 w-4" />
           </ToolBtn>
-          <ToolBtn onClick={() => editor.chain().focus().setTextAlign("right").run()} active={editor.isActive({ textAlign: "right" })} title="Alinhar direita">
+          <ToolBtn onClick={() => editor.chain().focus().setTextAlign("right").run()} active={editor.isActive({ textAlign: "right" })} title="Direita">
             <AlignRight className="h-4 w-4" />
           </ToolBtn>
           <ToolBtn onClick={() => editor.chain().focus().setTextAlign("justify").run()} active={editor.isActive({ textAlign: "justify" })} title="Justificar">
@@ -224,9 +269,34 @@ export function ContractRichEditor({ content, onChange, className }: Props) {
           <ToolBtn onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Linha divisória">
             <Minus className="h-4 w-4" />
           </ToolBtn>
-          <ToolBtn onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="Inserir tabela">
+          <ToolBtn onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="Tabela">
             <TableIcon className="h-4 w-4" />
           </ToolBtn>
+
+          <Separator orientation="vertical" className="mx-1 h-6" />
+
+          {/* Blocks dropdown in toolbar */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="h-8 px-2 flex items-center gap-1 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors text-xs"
+                title="Inserir bloco pronto"
+              >
+                <LayoutTemplate className="h-4 w-4" />
+                <span className="hidden sm:inline">Blocos</span>
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-64">
+              {PREBUILT_BLOCKS.map((block, i) => (
+                <DropdownMenuItem key={i} onClick={() => insertBlock(block.html)} className="text-xs cursor-pointer">
+                  <LayoutTemplate className="h-3.5 w-3.5 mr-2 shrink-0" />
+                  {block.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <Separator orientation="vertical" className="mx-1 h-6" />
 
@@ -244,38 +314,78 @@ export function ContractRichEditor({ content, onChange, className }: Props) {
         </ScrollArea>
       </div>
 
-      {/* Variables panel */}
-      <div className="w-56 border-l bg-muted/20 flex flex-col shrink-0">
-        <div className="px-3 py-2 border-b">
-          <p className="text-xs font-semibold text-muted-foreground">Variáveis</p>
-          <p className="text-[10px] text-muted-foreground">Clique para inserir</p>
+      {/* Sidebar panel */}
+      <div className="w-60 border-l bg-muted/20 flex flex-col shrink-0">
+        {/* Tabs */}
+        <div className="flex border-b">
+          <button
+            type="button"
+            onClick={() => setSidebarTab("vars")}
+            className={cn(
+              "flex-1 px-3 py-2 text-[11px] font-medium transition-colors",
+              sidebarTab === "vars" ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Variáveis
+          </button>
+          <button
+            type="button"
+            onClick={() => setSidebarTab("blocks")}
+            className={cn(
+              "flex-1 px-3 py-2 text-[11px] font-medium transition-colors",
+              sidebarTab === "blocks" ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Blocos Prontos
+          </button>
         </div>
-        <ScrollArea className="flex-1 max-h-[600px]">
-          <div className="p-2 space-y-3">
-            {VARIABLE_GROUPS.map((group) => (
-              <div key={group.label}>
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 px-1">
-                  {group.label}
-                </p>
-                <div className="space-y-0.5">
-                  {group.vars.map((v) => (
-                    <button
-                      key={v.key}
-                      type="button"
-                      onClick={() => insertVariable(v.key)}
-                      className="w-full text-left px-2 py-1 rounded text-[11px] hover:bg-accent hover:text-accent-foreground transition-colors truncate"
-                      title={`Inserir {{${v.key}}}`}
-                    >
-                      <Badge variant="outline" className="text-[9px] font-mono mr-1 px-1 py-0">
-                        {"{{}}"}
-                      </Badge>
-                      {v.label}
-                    </button>
-                  ))}
+
+        <ScrollArea className="flex-1 max-h-[560px]">
+          {sidebarTab === "vars" ? (
+            <div className="p-2 space-y-3">
+              <p className="text-[10px] text-muted-foreground px-1">Clique para inserir no cursor</p>
+              {VARIABLE_GROUPS.map((group) => (
+                <div key={group.label}>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 px-1">
+                    {group.label}
+                  </p>
+                  <div className="space-y-0.5">
+                    {group.vars.map((v) => (
+                      <button
+                        key={v.key}
+                        type="button"
+                        onClick={() => insertVariable(v.key)}
+                        className="w-full text-left px-2 py-1 rounded text-[11px] hover:bg-accent hover:text-accent-foreground transition-colors truncate"
+                        title={`{{${v.key}}}`}
+                      >
+                        <Badge variant="outline" className="text-[9px] font-mono mr-1 px-1 py-0">
+                          {"{{}}"}
+                        </Badge>
+                        {v.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-2 space-y-1">
+              <p className="text-[10px] text-muted-foreground px-1 mb-2">Clique para inserir um bloco</p>
+              {PREBUILT_BLOCKS.map((block, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => insertBlock(block.html)}
+                  className="w-full text-left px-2 py-2 rounded text-[11px] hover:bg-accent hover:text-accent-foreground transition-colors border border-transparent hover:border-border"
+                >
+                  <div className="flex items-center gap-2">
+                    <LayoutTemplate className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <span>{block.label}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </ScrollArea>
       </div>
     </div>

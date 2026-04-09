@@ -63,6 +63,13 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [companyBranding, setCompanyBranding] = useState<{
+    logoUrl?: string | null;
+    primaryColor?: string;
+    secondaryColor?: string;
+    tenantName?: string;
+    tenantCnpj?: string;
+  }>({});
 
   // Editor dialog
   const [editorOpen, setEditorOpen] = useState(false);
@@ -72,12 +79,20 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
   const fetchTemplates = async () => {
     if (!companyId) { setLoading(false); return; }
     setLoading(true);
-    const { data } = await supabase
-      .from("document_templates")
-      .select("*")
-      .eq("servidor_id", companyId)
-      .order("created_at", { ascending: false });
-    setTemplates((data as any) || []);
+    const [tplRes, companyRes] = await Promise.all([
+      supabase.from("document_templates").select("*").eq("servidor_id", companyId).order("created_at", { ascending: false }),
+      supabase.from("companies").select("brand_logo_url, brand_primary_color, brand_secondary_color, nome_fantasia, razao_social, cnpj").eq("id", companyId).maybeSingle(),
+    ]);
+    setTemplates((tplRes.data as any) || []);
+    if (companyRes.data) {
+      setCompanyBranding({
+        logoUrl: companyRes.data.brand_logo_url,
+        primaryColor: companyRes.data.brand_primary_color || "#1E2952",
+        secondaryColor: companyRes.data.brand_secondary_color || "#4F46E5",
+        tenantName: companyRes.data.nome_fantasia || companyRes.data.razao_social,
+        tenantCnpj: companyRes.data.cnpj,
+      });
+    }
     setLoading(false);
   };
 
@@ -352,6 +367,7 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
         initialContent={editingTemplate?.content_template || ""}
         onSave={handleSaveTemplate}
         mode={editorMode}
+        branding={companyBranding}
       />
 
       <p className="text-xs text-muted-foreground flex items-start gap-1.5">
