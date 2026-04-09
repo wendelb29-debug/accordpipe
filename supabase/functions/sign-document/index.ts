@@ -1,11 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { PDFDocument, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Map signer papel → placeholder prefix
 const PAPEL_VAR_MAP: Record<string, string> = {
   cliente: "cliente",
   proprietario_proposta: "vendedor",
@@ -19,6 +19,225 @@ function fmtDateBR(d: Date) {
 }
 function fmtTimeBR(d: Date) {
   return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
+}
+function fmtDateTimeBR(iso: string) {
+  const d = new Date(iso);
+  return `${fmtDateBR(d)} ${fmtTimeBR(d)}`;
+}
+
+function maskEmail(e: string | null) {
+  if (!e || !e.includes("@")) return e || "—";
+  const [user, domain] = e.split("@");
+  return user.slice(0, 2) + "***@" + domain;
+}
+function maskDoc(d: string | null) {
+  if (!d) return "—";
+  const clean = d.replace(/\D/g, "");
+  if (clean.length <= 4) return "***";
+  return "***." + clean.slice(-4);
+}
+function maskIp(ip: string | null) {
+  if (!ip) return "—";
+  const parts = ip.split(".");
+  if (parts.length === 4) return parts[0] + ".xxx.xxx." + parts[3];
+  return ip;
+}
+
+const PAPEL_LABELS: Record<string, string> = {
+  proprietario_proposta: "Representante da empresa",
+  cliente: "Cliente",
+  vendedor: "Vendedor",
+  signatario: "Signatario",
+  testemunha: "Testemunha",
+};
+
+const EVENT_LABELS: Record<string, string> = {
+  documento_gerado: "Documento gerado",
+  envelope_configurado: "Envelope configurado",
+  link_gerado: "Link de assinatura gerado",
+  link_acessado: "Link acessado",
+  validacao_iniciada: "Validacao de identidade",
+  codigo_enviado: "Codigo de confirmacao enviado",
+  codigo_confirmado: "Codigo confirmado",
+  assinatura_vendedor_concluida: "Assinatura do vendedor concluida",
+  assinatura_cliente_concluida: "Assinatura do cliente concluida",
+  documento_assinado_finalizado: "Documento finalizado",
+  documento_validacao_gerada: "Validacao gerada",
+  assinatura_recusada: "Assinatura recusada",
+};
+
+// Helper to draw wrapped text and return new Y position
+function drawWrapped(page: any, text: string, x: number, y: number, font: any, size: number, maxWidth: number, color = rgb(0.2, 0.2, 0.2)): number {
+  const words = text.split(" ");
+  let line = "";
+  let currentY = y;
+  for (const word of words) {
+    const test = line ? line + " " + word : word;
+    const w = font.widthOfTextAtSize(test, size);
+    if (w > maxWidth && line) {
+      page.drawText(line, { x, y: currentY, size, font, color });
+      currentY -= size + 3;
+      line = word;
+    } else {
+      line = test;
+    }
+  }
+  if (line) {
+    page.drawText(line, { x, y: currentY, size, font, color });
+    currentY -= size + 3;
+  }
+  return currentY;
+}
+
+async function buildAuditPage(
+  pdfDoc: any,
+  doc: any,
+  signersList: any[],
+  events: any[],
+  validationCode: string,
+  documentHash: string,
+  publicUrl: string,
+) {
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+  const W = 595.28; // A4
+  const H = 841.89;
+  const margin = 50;
+  const maxW = W - margin * 2;
+  const darkBlue = rgb(0.11, 0.16, 0.32);
+  const gray = rgb(0.3, 0.3, 0.3);
+  const lightGray = rgb(0.6, 0.6, 0.6);
+  const green = rgb(0.06, 0.5, 0.28);
+
+  let page = pdfDoc.addPage([W, H]);
+  let y = H - margin;
+
+  function ensureSpace(needed: number) {
+    if (y - needed < margin) {
+      page = pdfDoc.addPage([W, H]);
+      y = H - margin;
+    }
+  }
+
+  // Title
+  page.drawText("CERTIFICADO DE AUDITORIA DA ASSINATURA", { x: margin, y, size: 14, font: fontBold, color: darkBlue });
+  y -= 6;
+  page.drawLine({ start: { x: margin, y }, end: { x: W - margin, y }, thickness: 1.5, color: darkBlue });
+  y -= 22;
+
+  // Document identification
+  page.drawText("IDENTIFICACAO DO DOCUMENTO", { x: margin, y, size: 10, font: fontBold, color: darkBlue });
+  y -= 16;
+
+  const docFields = [
+    ["Nome", doc.nome || "—"],
+    ["Tipo", doc.tipo || "contrato"],
+    ["Status", "Assinado"],
+    ["Data de geracao", doc.created_at ? fmtDateTimeBR(doc.created_at) : "—"],
+    ["Data de assinatura final", doc.signed_at ? fmtDateTimeBR(doc.signed_at) : "—"],
+    ["Codigo de validacao", validationCode],
+    ["Hash SHA-256", documentHash.slice(0, 32) + "..."],
+  ];
+
+  for (const [label, value] of docFields) {
+    ensureSpace(14);
+    page.drawText(`${label}:`, { x: margin, y, size: 8, font: fontBold, color: gray });
+    page.drawText(value, { x: margin + 140, y, size: 8, font, color: gray });
+    y -= 13;
+  }
+
+  y -= 8;
+  ensureSpace(16);
+  page.drawLine({ start: { x: margin, y: y + 4 }, end: { x: W - margin, y: y + 4 }, thickness: 0.5, color: lightGray });
+  y -= 8;
+
+  // Validation block
+  page.drawText("VALIDACAO", { x: margin, y, size: 10, font: fontBold, color: darkBlue });
+  y -= 16;
+
+  const valFields = [
+    ["Codigo", validationCode],
+    ["Hash", documentHash],
+    ["URL de validacao", publicUrl],
+  ];
+  for (const [label, value] of valFields) {
+    ensureSpace(14);
+    page.drawText(`${label}:`, { x: margin, y, size: 8, font: fontBold, color: gray });
+    y = drawWrapped(page, value, margin + 100, y, font, 7, maxW - 100, gray);
+    y -= 4;
+  }
+
+  y -= 8;
+  ensureSpace(16);
+  page.drawLine({ start: { x: margin, y: y + 4 }, end: { x: W - margin, y: y + 4 }, thickness: 0.5, color: lightGray });
+  y -= 8;
+
+  // Signers block
+  page.drawText("SIGNATARIOS", { x: margin, y, size: 10, font: fontBold, color: darkBlue });
+  y -= 18;
+
+  for (let i = 0; i < signersList.length; i++) {
+    const s = signersList[i];
+    ensureSpace(100);
+
+    const papelLabel = PAPEL_LABELS[s.papel] || s.papel;
+    page.drawText(`Signatario ${i + 1} - ${papelLabel}`, { x: margin, y, size: 9, font: fontBold, color: darkBlue });
+    y -= 14;
+
+    const signerFields = [
+      ["Nome", s.nome_completo || "—"],
+      ["E-mail", maskEmail(s.email)],
+      ["Documento", maskDoc(s.cpf)],
+      ["Status", s.status === "signed" ? "Assinado" : s.status],
+      ["Data/Hora", s.signed_at ? fmtDateTimeBR(s.signed_at) : "—"],
+      ["IP", maskIp(s.ip_address)],
+      ["Localizacao", s.location_text || (s.location_lat ? `${s.location_lat}, ${s.location_lng}` : "—")],
+      ["Selfie", s.selfie_url ? "Capturada" : "Nao capturada"],
+    ];
+
+    for (const [label, value] of signerFields) {
+      ensureSpace(14);
+      page.drawText(`${label}:`, { x: margin + 10, y, size: 8, font: fontBold, color: gray });
+      page.drawText(String(value), { x: margin + 100, y, size: 8, font, color: gray });
+      y -= 12;
+    }
+
+    y -= 8;
+  }
+
+  ensureSpace(16);
+  page.drawLine({ start: { x: margin, y: y + 4 }, end: { x: W - margin, y: y + 4 }, thickness: 0.5, color: lightGray });
+  y -= 8;
+
+  // Timeline
+  ensureSpace(20);
+  page.drawText("LINHA DO TEMPO", { x: margin, y, size: 10, font: fontBold, color: darkBlue });
+  y -= 16;
+
+  for (const evt of events) {
+    ensureSpace(28);
+    const label = EVENT_LABELS[evt.evento] || evt.evento;
+    const time = evt.created_at ? fmtDateTimeBR(evt.created_at) : "—";
+
+    page.drawText(time, { x: margin, y, size: 7, font, color: lightGray });
+    page.drawText(label, { x: margin + 110, y, size: 8, font: fontBold, color: gray });
+    y -= 11;
+    if (evt.descricao) {
+      y = drawWrapped(page, evt.descricao, margin + 110, y, font, 7, maxW - 110, lightGray);
+      y -= 2;
+    }
+    y -= 4;
+  }
+
+  // Footer
+  ensureSpace(30);
+  y -= 10;
+  page.drawLine({ start: { x: margin, y }, end: { x: W - margin, y }, thickness: 0.5, color: lightGray });
+  y -= 14;
+  page.drawText("Este documento foi assinado eletronicamente e possui validade juridica.", { x: margin, y, size: 7, font, color: lightGray });
+  y -= 10;
+  page.drawText(`Valide em: ${publicUrl}`, { x: margin, y, size: 7, font, color: lightGray });
 }
 
 Deno.serve(async (req) => {
@@ -35,7 +254,7 @@ Deno.serve(async (req) => {
     const { action, token } = body;
 
     if (!token) {
-      return new Response(JSON.stringify({ success: false, error: "Token obrigatório" }), {
+      return new Response(JSON.stringify({ success: false, error: "Token obrigatorio" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -49,7 +268,7 @@ Deno.serve(async (req) => {
       .limit(1);
 
     if (!signerRows || signerRows.length === 0) {
-      return new Response(JSON.stringify({ success: false, error: "Token inválido" }), {
+      return new Response(JSON.stringify({ success: false, error: "Token invalido" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -73,7 +292,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ACTION: VALIDATE (CPF + birth date)
+    // ACTION: VALIDATE
     if (action === "validate") {
       const { cpf, data_nascimento } = body;
       const storedCpf = (signer.cpf || "").replace(/\D/g, "");
@@ -87,7 +306,7 @@ Deno.serve(async (req) => {
           document_id: signer.document_id,
           signer_id: signer.id,
           evento: "validacao_iniciada",
-          descricao: "Validação ignorada (dados não cadastrados)",
+          descricao: "Validacao ignorada (dados nao cadastrados)",
         });
         return new Response(JSON.stringify({ success: true, skipped: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -99,9 +318,9 @@ Deno.serve(async (req) => {
           document_id: signer.document_id,
           signer_id: signer.id,
           evento: "validacao_iniciada",
-          descricao: "Validação falhou: dados não conferem",
+          descricao: "Validacao falhou: dados nao conferem",
         });
-        return new Response(JSON.stringify({ success: false, error: "CPF ou data de nascimento não conferem" }), {
+        return new Response(JSON.stringify({ success: false, error: "CPF ou data de nascimento nao conferem" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -135,7 +354,7 @@ Deno.serve(async (req) => {
         document_id: signer.document_id,
         signer_id: signer.id,
         evento: "codigo_enviado",
-        descricao: `Código de confirmação enviado para ${signer.email || "e-mail não cadastrado"}`,
+        descricao: `Codigo de confirmacao enviado para ${signer.email || "e-mail nao cadastrado"}`,
       });
 
       console.log(`[SIGN-DOCUMENT] Code for ${signer.nome_completo}: ${code}`);
@@ -149,12 +368,12 @@ Deno.serve(async (req) => {
     if (action === "verify_code") {
       const { code } = body;
       if (signer.validation_code !== code) {
-        return new Response(JSON.stringify({ success: false, error: "Código inválido" }), {
+        return new Response(JSON.stringify({ success: false, error: "Codigo invalido" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (signer.validation_code_expires_at && new Date(signer.validation_code_expires_at) < new Date()) {
-        return new Response(JSON.stringify({ success: false, error: "Código expirado. Solicite um novo." }), {
+        return new Response(JSON.stringify({ success: false, error: "Codigo expirado. Solicite um novo." }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -167,7 +386,7 @@ Deno.serve(async (req) => {
         document_id: signer.document_id,
         signer_id: signer.id,
         evento: "codigo_confirmado",
-        descricao: "Código de confirmação verificado com sucesso",
+        descricao: "Codigo de confirmacao verificado com sucesso",
       });
 
       return new Response(JSON.stringify({ success: true }), {
@@ -195,9 +414,9 @@ Deno.serve(async (req) => {
         })
         .eq("id", signer.id);
 
-      // 2. Determine which placeholders to fill based on papel
+      // 2. Determine which placeholders to fill
       const varPrefix = PAPEL_VAR_MAP[signer.papel] || "cliente";
-      const geoText = location_text || (location_lat && location_lng ? `${location_lat}, ${location_lng}` : "Não disponível");
+      const geoText = location_text || (location_lat && location_lng ? `${location_lat}, ${location_lng}` : "Nao disponivel");
 
       const signatureValues: Record<string, string> = {
         [`data_assinatura_${varPrefix}`]: fmtDateBR(now),
@@ -206,7 +425,7 @@ Deno.serve(async (req) => {
         [`selfie_${varPrefix}`]: selfie_url || "Capturada",
       };
 
-      // 3. Get current document to update html_content and snapshot
+      // 3. Get current document
       const { data: docData } = await supabase
         .from("generated_documents")
         .select("html_content, rendered_variables_json")
@@ -216,12 +435,9 @@ Deno.serve(async (req) => {
       let updatedHtml = docData?.html_content || "";
       const snapshot = (docData?.rendered_variables_json as Record<string, any>) || {};
 
-      // Replace placeholders in HTML
       for (const [varName, value] of Object.entries(signatureValues)) {
         const placeholder = `{{${varName}}}`;
         updatedHtml = updatedHtml.replaceAll(placeholder, value);
-
-        // Update snapshot
         snapshot[varName] = {
           value,
           source: "signature",
@@ -248,7 +464,7 @@ Deno.serve(async (req) => {
       // 5. Check if all required signers have signed
       const { data: allSigners } = await supabase
         .from("document_signers")
-        .select("id, status, obrigatorio, papel")
+        .select("*")
         .eq("document_id", signer.document_id);
 
       const required = (allSigners || []).filter((s: any) => s.obrigatorio);
@@ -260,7 +476,6 @@ Deno.serve(async (req) => {
         newDocStatus = "signed";
       }
 
-      // 6. Build document update
       const docUpdate: Record<string, any> = {
         status: newDocStatus,
         html_content: updatedHtml,
@@ -270,7 +485,6 @@ Deno.serve(async (req) => {
       if (allRequiredSigned) {
         docUpdate.signed_at = signedAt;
 
-        // Generate validation_code + document_hash
         const validationCode = `ACD-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
         docUpdate.validation_code = validationCode;
 
@@ -278,7 +492,7 @@ Deno.serve(async (req) => {
         await supabase.from("document_events").insert({
           document_id: signer.document_id,
           evento: "documento_assinado_finalizado",
-          descricao: "Todas as assinaturas obrigatórias foram concluídas. Documento finalizado.",
+          descricao: "Todas as assinaturas obrigatorias foram concluidas. Documento finalizado.",
           metadata_json: {
             total_signers: (allSigners || []).length,
             required_signers: required.length,
@@ -286,10 +500,10 @@ Deno.serve(async (req) => {
           },
         });
 
-        // 7. Generate final signed PDF URL
+        // 7. Generate final signed PDF with audit page
         const { data: fullDoc } = await supabase
           .from("generated_documents")
-          .select("pdf_url")
+          .select("*")
           .eq("id", signer.document_id)
           .single();
 
@@ -299,16 +513,42 @@ Deno.serve(async (req) => {
             if (pdfResp.ok) {
               const pdfBytes = await pdfResp.arrayBuffer();
 
-              // Compute SHA-256 hash
+              // Load PDF and append audit page
+              const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+
+              // Fetch events for audit page
+              const { data: eventsData } = await supabase
+                .from("document_events")
+                .select("*")
+                .eq("document_id", signer.document_id)
+                .order("created_at", { ascending: true });
+
+              const siteUrl = Deno.env.get("SITE_URL") || supabaseUrl.replace("supabase.co", "lovable.app").replace("/rest/v1", "");
+              const publicUrl = `${siteUrl}/validar-documento/${validationCode}`;
+
+              // Compute hash before adding audit page (hash of original signed content)
               const hashBuffer = await crypto.subtle.digest("SHA-256", pdfBytes);
               const hashArray = Array.from(new Uint8Array(hashBuffer));
               const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
               docUpdate.document_hash = hashHex;
 
+              // Build audit page
+              await buildAuditPage(
+                pdfDoc,
+                { ...fullDoc, signed_at: signedAt },
+                allSigners || [],
+                eventsData || [],
+                validationCode,
+                hashHex,
+                publicUrl,
+              );
+
+              const finalPdfBytes = await pdfDoc.save();
+
               const signedPath = `signed/${signer.document_id}_${Date.now()}.pdf`;
               const { error: upErr } = await supabase.storage
                 .from("contract-pdfs")
-                .upload(signedPath, pdfBytes, { contentType: "application/pdf" });
+                .upload(signedPath, finalPdfBytes, { contentType: "application/pdf" });
 
               if (!upErr) {
                 const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(signedPath);
@@ -316,7 +556,7 @@ Deno.serve(async (req) => {
               }
             }
           } catch (pdfErr) {
-            console.error("[sign-document] Failed to generate signed PDF copy:", pdfErr);
+            console.error("[sign-document] Failed to generate signed PDF with audit page:", pdfErr);
           }
         }
 
@@ -324,7 +564,7 @@ Deno.serve(async (req) => {
         await supabase.from("document_events").insert({
           document_id: signer.document_id,
           evento: "documento_validacao_gerada",
-          descricao: `Código de validação e hash gerados: ${validationCode}`,
+          descricao: `Codigo de validacao e hash gerados: ${validationCode}`,
           metadata_json: {
             validation_code: validationCode,
             document_hash: docUpdate.document_hash || null,
@@ -370,7 +610,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ success: false, error: "Ação inválida" }), {
+    return new Response(JSON.stringify({ success: false, error: "Acao invalida" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
