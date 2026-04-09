@@ -147,6 +147,16 @@ function activityToProposal(activity: any): any {
     created_by_user_id: activity.created_by_user_id,
     status: meta.status,
     sigla: meta.sigla,
+    // Payment data
+    value_ps: meta.value_ps || 0,
+    value_mrr: meta.value_mrr || 0,
+    payment_method: meta.payment_method || "",
+    payment_frequency: meta.payment_frequency || "",
+    first_payment_date: meta.first_payment_date || "",
+    due_day: meta.due_day || "",
+    number_of_installments: meta.number_of_installments || 0,
+    installments: meta.installments || [],
+    currency: meta.currency || "BRL",
   };
 }
 
@@ -161,11 +171,33 @@ function buildVariableMap(
   const fmtCurrency = (v: number) =>
     v != null ? v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "";
 
+  const freqLabels: Record<string, string> = {
+    mensal: "Mensal", trimestral: "Trimestral", semestral: "Semestral", anual: "Anual", avista: "À Vista",
+  };
+  const payLabels: Record<string, string> = {
+    boleto: "Boleto", pix: "PIX", cartao: "Cartão", transferencia: "Transferência", dinheiro: "Dinheiro",
+  };
+
   let servicosContratados = "";
   let nomeItem = "";
   let descricaoItem = "";
   let valorProposta = "";
   let valorTotal = "";
+
+  let formaPagamentoMrr = "";
+  let quantidadeParcelasMrr = "";
+  let dataPrimeiraParcelaMrr = "";
+  let diaVencimentoMrr = "";
+  let meioPagamentoMrr = "";
+  let valorParcelaMrr = "";
+  let valorTotalMrr = "";
+  let valorTotalContratoMrr = "";
+  let resumoPagamentoMrr = "";
+  let parcelasMrr = "";
+  let formaPagamentoPs = "";
+  let quantidadeParcelasPs = "";
+  let valorTotalPs = "";
+  let resumoPagamentoPs = "";
 
   if (proposal) {
     nomeItem = proposal.titulo || "";
@@ -201,6 +233,53 @@ function buildVariableMap(
       if (itemsTotal > 0) {
         valorTotal = fmtCurrency(itemsTotal);
       }
+    }
+
+    // MRR payment
+    const freq = proposal.payment_frequency || "";
+    const freqLabel = freqLabels[freq] || freq || "";
+    const nParcelas = proposal.number_of_installments || 0;
+    const dueDay = proposal.due_day || "";
+    const firstDate = proposal.first_payment_date || "";
+    const payMethod = proposal.payment_method || "";
+    const payMethodLabel = payLabels[payMethod] || payMethod || "";
+    const mrrValue = proposal.value_mrr || 0;
+
+    formaPagamentoMrr = freqLabel;
+    quantidadeParcelasMrr = nParcelas > 0 ? String(nParcelas) : "";
+    dataPrimeiraParcelaMrr = firstDate;
+    diaVencimentoMrr = dueDay;
+    meioPagamentoMrr = payMethodLabel;
+    valorTotalMrr = mrrValue > 0 ? fmtCurrency(mrrValue) : "";
+    valorTotalContratoMrr = nParcelas > 0 && mrrValue > 0 ? fmtCurrency(mrrValue * nParcelas) : valorTotalMrr;
+    if (nParcelas > 0 && mrrValue > 0) valorParcelaMrr = fmtCurrency(mrrValue);
+
+    const resumoParts: string[] = [];
+    if (freqLabel) resumoParts.push(freqLabel);
+    if (nParcelas > 0) resumoParts.push(`${nParcelas} parcelas`);
+    if (dueDay) resumoParts.push(`vencimento todo dia ${dueDay}`);
+    if (firstDate) resumoParts.push(`1ª parcela em ${firstDate}`);
+    if (payMethodLabel) resumoParts.push(`pagamento via ${payMethodLabel}`);
+    resumoPagamentoMrr = resumoParts.join(" | ");
+
+    const installmentsList = proposal.installments || [];
+    if (installmentsList.length > 0) {
+      parcelasMrr = installmentsList.map((inst: any, idx: number) => {
+        const num = inst.number || idx + 1;
+        const val = inst.value != null ? fmtCurrency(inst.value) : fmtCurrency(mrrValue);
+        const dueDate = inst.due_date || "";
+        const method = payLabels[inst.payment_method] || inst.payment_method || payMethodLabel;
+        return `Parcela ${num} - ${val} - vencimento em ${dueDate} - ${method}`;
+      }).join("\n");
+    }
+
+    // P&S payment
+    const psValue = proposal.value_ps || 0;
+    if (psValue > 0) {
+      valorTotalPs = fmtCurrency(psValue);
+      formaPagamentoPs = "À Vista";
+      quantidadeParcelasPs = "1";
+      resumoPagamentoPs = `À Vista | ${payMethodLabel || "PIX"}`;
     }
   }
 
@@ -244,6 +323,23 @@ function buildVariableMap(
     "{{email_vendedor}}": vendor?.email || "",
     "{{telefone_vendedor}}": vendor?.whatsapp || "",
     "{{data_nascimento_vendedor}}": vendor?.birth_date || "",
+    // Payment MRR
+    "{{forma_pagamento_mrr}}": formaPagamentoMrr,
+    "{{quantidade_parcelas_mrr}}": quantidadeParcelasMrr,
+    "{{data_primeira_parcela_mrr}}": dataPrimeiraParcelaMrr,
+    "{{dia_vencimento_mrr}}": diaVencimentoMrr,
+    "{{meio_pagamento_mrr}}": meioPagamentoMrr,
+    "{{valor_parcela_mrr}}": valorParcelaMrr,
+    "{{valor_total_mrr}}": valorTotalMrr,
+    "{{valor_total_contrato_mrr}}": valorTotalContratoMrr,
+    "{{resumo_pagamento_mrr}}": resumoPagamentoMrr,
+    "{{parcelas_mrr}}": parcelasMrr,
+    // Payment P&S
+    "{{forma_pagamento_ps}}": formaPagamentoPs,
+    "{{quantidade_parcelas_ps}}": quantidadeParcelasPs,
+    "{{valor_total_ps}}": valorTotalPs,
+    "{{resumo_pagamento_ps}}": resumoPagamentoPs,
+    // Signature
     "{{data_assinatura_cliente}}": "",
     "{{hora_assinatura_cliente}}": "",
     "{{geolocalizacao_cliente}}": "",
@@ -266,6 +362,13 @@ function buildSnapshot(vars: Record<string, string>) {
     tenant_cidade: "tenant", tenant_estado: "tenant",
     nome_item: "proposta", descricao_item: "proposta", valor_proposta: "proposta",
     valor_total: "proposta", servicos_contratados: "proposta",
+    forma_pagamento_mrr: "proposta", quantidade_parcelas_mrr: "proposta",
+    data_primeira_parcela_mrr: "proposta", dia_vencimento_mrr: "proposta",
+    meio_pagamento_mrr: "proposta", valor_parcela_mrr: "proposta",
+    valor_total_mrr: "proposta", valor_total_contrato_mrr: "proposta",
+    resumo_pagamento_mrr: "proposta", parcelas_mrr: "proposta",
+    forma_pagamento_ps: "proposta", quantidade_parcelas_ps: "proposta",
+    valor_total_ps: "proposta", resumo_pagamento_ps: "proposta",
     nome_vendedor: "vendedor", email_vendedor: "vendedor",
     telefone_vendedor: "vendedor", data_nascimento_vendedor: "vendedor",
     data_assinatura_cliente: "assinatura", hora_assinatura_cliente: "assinatura",
