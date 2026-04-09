@@ -98,6 +98,10 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
   const [dragGroupId, setDragGroupId] = useState<string | null>(null);
   const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
 
+  // Move ungrouped dialog
+  const [moveUngroupedOpen, setMoveUngroupedOpen] = useState(false);
+  const [moveUngroupedTarget, setMoveUngroupedTarget] = useState("");
+
   // Group dialog
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<WorkspaceGroup | null>(null);
@@ -598,6 +602,13 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
                   <p className="font-bold text-sm text-foreground">Sem Camada</p>
                   <span className="text-[10px] text-muted-foreground/60">Workspaces ainda não organizados em uma pasta</span>
                 </div>
+                <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                  {groups.length > 0 && (
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" title="Mover todos para uma camada" onClick={() => { setMoveUngroupedTarget(""); setMoveUngroupedOpen(true); }}>
+                      <ArrowRight className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
                 <div className={cn("text-muted-foreground transition-transform duration-200", (expandedGroups["__ungrouped"] ?? true) && "rotate-180")}>
                   <ChevronDown className="h-4 w-4" />
                 </div>
@@ -791,6 +802,46 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* ─── Move Ungrouped Dialog ─── */}
+      <Dialog open={moveUngroupedOpen} onOpenChange={setMoveUngroupedOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ArrowRight className="h-4 w-4 text-primary" />
+              Mover workspaces para uma camada
+            </DialogTitle>
+            <DialogDescription>
+              Selecione a camada de destino para mover todos os workspaces sem camada.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Camada de destino</Label>
+              <Select value={moveUngroupedTarget} onValueChange={setMoveUngroupedTarget}>
+                <SelectTrigger className="h-10"><SelectValue placeholder="Selecione uma camada..." /></SelectTrigger>
+                <SelectContent>
+                  {groups.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMoveUngroupedOpen(false)}>Cancelar</Button>
+            <Button
+              disabled={!moveUngroupedTarget}
+              onClick={async () => {
+                const ids = ungroupedWorkspaces.map((w) => w.id);
+                const { error } = await supabase.from("workspaces").update({ group_id: moveUngroupedTarget } as any).in("id", ids);
+                if (error) toast.error("Erro ao mover workspaces");
+                else { toast.success("Workspaces movidos com sucesso!"); fetchData(); }
+                setMoveUngroupedOpen(false);
+              }}
+            >
+              Mover todos
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
