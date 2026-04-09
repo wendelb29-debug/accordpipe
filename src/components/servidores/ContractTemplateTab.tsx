@@ -163,6 +163,14 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
     }
 
     setUploading(true);
+    setUploadProgress(0);
+    setSelectedFileName(file.name);
+
+    // Simulate progress
+    const progressInterval = setInterval(() => {
+      setUploadProgress(prev => Math.min(prev + Math.random() * 20, 90));
+    }, 300);
+
     try {
       const ok = await ensureCompanyExists();
       if (!ok) throw new Error("Não foi possível preparar o tenant");
@@ -206,13 +214,33 @@ export function ContractTemplateTab({ companyId, onEnsureCompany }: Props) {
       setPdfPath(filePath);
       setFields([]);
       setCurrentPage(1);
+      setUploadProgress(100);
       toast.success("PDF do contrato enviado com sucesso!");
     } catch (err: any) {
       toast.error("Erro ao enviar PDF: " + (err.message || ""));
+      setSelectedFileName(null);
     } finally {
+      clearInterval(progressInterval);
       setUploading(false);
+      setTimeout(() => setUploadProgress(0), 1000);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  };
+
+  const handleRemovePdf = async () => {
+    if (pdfPath) {
+      await supabase.storage.from("contract-pdfs").remove([pdfPath]);
+    }
+    if (templateId) {
+      await supabase.from("company_contract_template_fields").delete().eq("template_id", templateId);
+      await supabase.from("company_contract_templates").delete().eq("id", templateId);
+    }
+    setPdfUrl(null);
+    setPdfPath(null);
+    setTemplateId(null);
+    setSelectedFileName(null);
+    setFields([]);
+    toast.success("PDF removido");
   };
 
   const pushUndo = () => {
