@@ -160,7 +160,7 @@ function WebhookConfigPreview({
   );
 }
 
-
+export default function NovoServidor() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get("id");
