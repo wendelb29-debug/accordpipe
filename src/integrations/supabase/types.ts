@@ -1237,6 +1237,53 @@ export type Database = {
           },
         ]
       }
+      document_templates: {
+        Row: {
+          arquivo_nome: string | null
+          arquivo_path: string | null
+          arquivo_url: string | null
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          servidor_id: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          arquivo_nome?: string | null
+          arquivo_path?: string | null
+          arquivo_url?: string | null
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          servidor_id: string
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          arquivo_nome?: string | null
+          arquivo_path?: string | null
+          arquivo_url?: string | null
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          servidor_id?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_templates_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           category: string
@@ -1438,6 +1485,86 @@ export type Database = {
             columns: ["servidor_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      generated_documents: {
+        Row: {
+          created_at: string
+          created_by_name: string | null
+          created_by_user_id: string | null
+          html_content: string | null
+          id: string
+          lead_id: string
+          nome: string
+          pdf_url: string | null
+          proposal_id: string | null
+          servidor_id: string
+          status: string
+          template_id: string | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_name?: string | null
+          created_by_user_id?: string | null
+          html_content?: string | null
+          id?: string
+          lead_id: string
+          nome: string
+          pdf_url?: string | null
+          proposal_id?: string | null
+          servidor_id: string
+          status?: string
+          template_id?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_name?: string | null
+          created_by_user_id?: string | null
+          html_content?: string | null
+          id?: string
+          lead_id?: string
+          nome?: string
+          pdf_url?: string | null
+          proposal_id?: string | null
+          servidor_id?: string
+          status?: string
+          template_id?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_documents_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_documents_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_documents_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_documents_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "document_templates"
             referencedColumns: ["id"]
           },
         ]
@@ -2084,6 +2211,126 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "proposal_catalog_items_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposal_items: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          servidor_id: string
+          tipo: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          servidor_id: string
+          tipo?: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          servidor_id?: string
+          tipo?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_items_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposals: {
+        Row: {
+          approved_at: string | null
+          approved_by_name: string | null
+          created_at: string
+          created_by_name: string | null
+          created_by_user_id: string | null
+          descricao: string | null
+          id: string
+          item_id: string | null
+          lead_id: string
+          pdf_url: string | null
+          servidor_id: string
+          status: string
+          titulo: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by_name?: string | null
+          created_at?: string
+          created_by_name?: string | null
+          created_by_user_id?: string | null
+          descricao?: string | null
+          id?: string
+          item_id?: string | null
+          lead_id: string
+          pdf_url?: string | null
+          servidor_id: string
+          status?: string
+          titulo: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by_name?: string | null
+          created_at?: string
+          created_by_name?: string | null
+          created_by_user_id?: string | null
+          descricao?: string | null
+          id?: string
+          item_id?: string | null
+          lead_id?: string
+          pdf_url?: string | null
+          servidor_id?: string
+          status?: string
+          titulo?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposals_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "proposal_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposals_servidor_id_fkey"
             columns: ["servidor_id"]
             isOneToOne: false
             referencedRelation: "companies"

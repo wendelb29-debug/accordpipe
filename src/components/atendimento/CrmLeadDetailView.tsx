@@ -11,8 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { downloadContractPdf } from "@/lib/generateContractPdf";
 import { LeadAtividadesTab } from "./LeadAtividadesTab";
 import { NoteEditor } from "./NoteEditor";
-import { LeadPropostasTab } from "./LeadPropostasTab";
-import { LeadContratosTab } from "./LeadContratosTab";
+import { LeadPropostasTabNew } from "./LeadPropostasTabNew";
+import { LeadDocumentosTab } from "./LeadDocumentosTab";
 import { LeadDocsTab } from "./LeadDocsTab";
 import { LeadPosVendaTab } from "./LeadPosVendaTab";
 
@@ -1042,6 +1042,9 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                 <TabsTrigger value="propostas" className="text-[11px] sm:text-xs gap-1">
                   <FileSpreadsheet className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Propostas
                 </TabsTrigger>
+                <TabsTrigger value="arquivos" className="text-[11px] sm:text-xs gap-1">
+                  <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Arquivos
+                </TabsTrigger>
                 <TabsTrigger value="docs" className="text-[11px] sm:text-xs gap-1">
                   <Paperclip className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Docs
                 </TabsTrigger>
@@ -1265,7 +1268,12 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
             {/* Propostas */}
             <TabsContent value="propostas" className="flex-1 overflow-y-auto overflow-x-auto p-2 sm:p-4 mt-0 w-full max-w-full">
-              <LeadPropostasTab lead={lead} addActivity={addActivity} onUpdateLead={onUpdate} />
+              <LeadPropostasTabNew lead={lead} addActivity={addActivity} />
+            </TabsContent>
+
+            {/* Arquivos / Documentos Gerados */}
+            <TabsContent value="arquivos" className="flex-1 overflow-y-auto p-2 sm:p-4 mt-0">
+              <LeadDocumentosTab lead={lead} addActivity={addActivity} />
             </TabsContent>
 
 
