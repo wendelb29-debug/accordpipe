@@ -141,7 +141,11 @@ export function ContractEditorDialog({ open, onOpenChange, templateName, initial
         rendered,
         branding?.logoUrl ? { logoUrl: branding.logoUrl, primaryColor: branding.primaryColor } : undefined,
       );
-      const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      const arrayBuf = (pdfBytes as Uint8Array).buffer.slice(
+        (pdfBytes as Uint8Array).byteOffset,
+        (pdfBytes as Uint8Array).byteOffset + (pdfBytes as Uint8Array).byteLength,
+      ) as ArrayBuffer;
+      const blob = new Blob([arrayBuf], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       window.open(url, "_blank");
       toast.success("PDF de teste gerado com sucesso!");
