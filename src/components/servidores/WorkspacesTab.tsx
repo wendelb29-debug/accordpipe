@@ -22,7 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { WorkspaceGroupSection } from "./workspace/WorkspaceGroupSection";
-import { WorkspaceColumnEditor } from "./workspace/WorkspaceColumnEditor";
+
 
 export interface WorkspaceGroup {
   id: string;
