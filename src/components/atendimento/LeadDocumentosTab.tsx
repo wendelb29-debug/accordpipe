@@ -336,7 +336,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     setLoading(true);
     const { data } = await supabase
       .from("generated_documents")
-      .select("*, document_templates(nome)")
+      .select("*, html_content, document_templates(nome)")
       .eq("lead_id", lead.id)
       .order("created_at", { ascending: false });
     setDocuments((data as any) || []);
