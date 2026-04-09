@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { PDFDocument, rgb, StandardFonts, pushGraphicsState, popGraphicsState, setGraphicsState } from "https://esm.sh/pdf-lib@1.17.1";
+import { PDFDocument, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -65,40 +65,105 @@ const EVENT_LABELS: Record<string, string> = {
   assinatura_recusada: "Assinatura Recusada",
 };
 
-// ─── Colors ───
-const C = {
-  darkBg:     rgb(0.043, 0.059, 0.098),   // #0B0F19
-  cardBg:     rgb(0.067, 0.094, 0.153),   // #111827
-  accent:     rgb(0.486, 0.227, 0.929),   // #7C3AED
-  accentBlue: rgb(0.145, 0.388, 0.922),   // #2563EB
-  green:      rgb(0.063, 0.725, 0.506),   // #10B981
-  white:      rgb(0.898, 0.906, 0.922),   // #E5E7EB
-  lightGray:  rgb(0.624, 0.639, 0.667),   // #9FA3AB
-  midGray:    rgb(0.373, 0.388, 0.427),   // #5F636D
-  dimLine:    rgb(0.16, 0.18, 0.22),
-  gold:       rgb(0.855, 0.647, 0.125),   // gold accent
-};
+// ─── Hex to pdf-lib rgb ───
+function hexToRgb(hex: string | null): { r: number; g: number; b: number } | null {
+  if (!hex || !hex.startsWith("#") || hex.length < 7) return null;
+  return {
+    r: parseInt(hex.slice(1, 3), 16) / 255,
+    g: parseInt(hex.slice(3, 5), 16) / 255,
+    b: parseInt(hex.slice(5, 7), 16) / 255,
+  };
+}
+
+function darkenRgb(c: { r: number; g: number; b: number }, amount: number) {
+  return { r: Math.max(0, c.r - amount), g: Math.max(0, c.g - amount), b: Math.max(0, c.b - amount) };
+}
+function lightenRgb(c: { r: number; g: number; b: number }, amount: number) {
+  return { r: Math.min(1, c.r + amount), g: Math.min(1, c.g + amount), b: Math.min(1, c.b + amount) };
+}
+
+// ─── Tenant brand palette ───
+interface BrandPalette {
+  primary: ReturnType<typeof rgb>;
+  secondary: ReturnType<typeof rgb>;
+  accent: ReturnType<typeof rgb>;
+  darkBg: ReturnType<typeof rgb>;
+  cardBg: ReturnType<typeof rgb>;
+  coverAccentBar: ReturnType<typeof rgb>;
+  green: ReturnType<typeof rgb>;
+  white: ReturnType<typeof rgb>;
+  lightGray: ReturnType<typeof rgb>;
+  midGray: ReturnType<typeof rgb>;
+  dimLine: ReturnType<typeof rgb>;
+  tenantName: string;
+  hasLogo: boolean;
+}
+
+function buildPalette(tenant: any): BrandPalette {
+  const pRgb = hexToRgb(tenant?.brand_primary_color);
+  const sRgb = hexToRgb(tenant?.brand_secondary_color);
+  const aRgb = hexToRgb(tenant?.brand_accent_color);
+
+  // Default Accord palette
+  const defaultPrimary = { r: 0.486, g: 0.227, b: 0.929 }; // #7C3AED
+  const defaultSecondary = { r: 0.145, g: 0.388, b: 0.922 }; // #2563EB
+
+  const primary = pRgb || defaultPrimary;
+  const secondary = sRgb || (pRgb ? lightenRgb(primary, 0.15) : defaultSecondary);
+  const accent = aRgb || secondary;
+
+  // Dark bg derived from primary (very dark version)
+  const darkBgC = pRgb ? darkenRgb(primary, 0.4) : { r: 0.043, g: 0.059, b: 0.098 };
+  // Clamp to very dark
+  const clampedDarkBg = {
+    r: Math.max(0, Math.min(0.12, darkBgC.r)),
+    g: Math.max(0, Math.min(0.12, darkBgC.g)),
+    b: Math.max(0, Math.min(0.15, darkBgC.b)),
+  };
+
+  const cardBgC = pRgb
+    ? { r: clampedDarkBg.r + 0.03, g: clampedDarkBg.g + 0.04, b: clampedDarkBg.b + 0.06 }
+    : { r: 0.067, g: 0.094, b: 0.153 };
+
+  const tenantName = tenant?.nome_fantasia || tenant?.razao_social || "Accord";
+  const hasLogo = !!(tenant?.brand_logo_url);
+
+  return {
+    primary: rgb(primary.r, primary.g, primary.b),
+    secondary: rgb(secondary.r, secondary.g, secondary.b),
+    accent: rgb(accent.r, accent.g, accent.b),
+    darkBg: rgb(clampedDarkBg.r, clampedDarkBg.g, clampedDarkBg.b),
+    cardBg: rgb(cardBgC.r, cardBgC.g, cardBgC.b),
+    coverAccentBar: rgb(primary.r, primary.g, primary.b),
+    green: rgb(0.063, 0.725, 0.506),
+    white: rgb(0.898, 0.906, 0.922),
+    lightGray: rgb(0.624, 0.639, 0.667),
+    midGray: rgb(0.373, 0.388, 0.427),
+    dimLine: rgb(0.16, 0.18, 0.22),
+    tenantName,
+    hasLogo,
+  };
+}
 
 const W = 595.28;
 const H = 841.89;
-const M = 50; // margin
-const CW = W - M * 2; // content width
+const M = 50;
+const CW = W - M * 2;
 
-function drawRect(page: any, x: number, y: number, w: number, h: number, color: any, radius = 0) {
-  // pdf-lib doesn't have rounded rect natively, draw normal rect
+function drawRect(page: any, x: number, y: number, w: number, h: number, color: any) {
   page.drawRectangle({ x, y, width: w, height: h, color });
 }
 
-function drawLine(page: any, y: number, color = C.dimLine, thickness = 0.5) {
+function drawLine(page: any, y: number, color: any, thickness = 0.5) {
   page.drawLine({ start: { x: M, y }, end: { x: W - M, y }, thickness, color });
 }
 
-function centerText(page: any, text: string, y: number, font: any, size: number, color = C.white) {
+function centerText(page: any, text: string, y: number, font: any, size: number, color: any) {
   const tw = font.widthOfTextAtSize(text, size);
   page.drawText(text, { x: (W - tw) / 2, y, size, font, color });
 }
 
-function drawWrapped(page: any, text: string, x: number, y: number, font: any, size: number, maxW: number, color = C.white, lineH = 0): number {
+function drawWrapped(page: any, text: string, x: number, y: number, font: any, size: number, maxW: number, color: any, lineH = 0): number {
   const gap = lineH || size + 4;
   const words = text.split(" ");
   let line = "";
@@ -120,60 +185,71 @@ function drawWrapped(page: any, text: string, x: number, y: number, font: any, s
   return cy;
 }
 
-// ─── Certificate Cover Page ───
-function buildCoverPage(
+// ─── Certificate Cover Page (White Label) ───
+async function buildCoverPage(
   pdfDoc: any, font: any, fontBold: any,
   doc: any, validationCode: string, docHash: string, publicUrl: string,
+  P: BrandPalette, logoImage: any | null,
 ) {
   const page = pdfDoc.addPage([W, H]);
 
   // Full dark background
-  drawRect(page, 0, 0, W, H, C.darkBg);
+  drawRect(page, 0, 0, W, H, P.darkBg);
 
-  // Top decorative accent bar
-  drawRect(page, 0, H - 6, W, 6, C.accent);
+  // Top decorative accent bar in tenant primary
+  drawRect(page, 0, H - 6, W, 6, P.coverAccentBar);
 
-  let y = H - 80;
+  let y = H - 60;
 
-  // Platform badge
-  centerText(page, "ACCORD", y, fontBold, 11, C.lightGray);
-  y -= 8;
-  const badgeW = font.widthOfTextAtSize("Plataforma de Assinatura Eletronica", 7);
-  page.drawText("Plataforma de Assinatura Eletronica", { x: (W - badgeW) / 2, y, size: 7, font, color: C.midGray });
-  y -= 50;
+  // ── Logo or tenant name ──
+  if (logoImage) {
+    const maxLogoH = 40;
+    const maxLogoW = 160;
+    const dims = logoImage.scale(1);
+    const scale = Math.min(maxLogoW / dims.width, maxLogoH / dims.height, 1);
+    const drawW = dims.width * scale;
+    const drawH = dims.height * scale;
+    page.drawImage(logoImage, { x: (W - drawW) / 2, y: y - drawH, width: drawW, height: drawH });
+    y -= drawH + 12;
+  } else {
+    centerText(page, P.tenantName.toUpperCase(), y, fontBold, 13, P.primary);
+    y -= 10;
+    const badgeW = font.widthOfTextAtSize("Plataforma de Assinatura Eletronica", 7);
+    page.drawText("Plataforma de Assinatura Eletronica", { x: (W - badgeW) / 2, y, size: 7, font, color: P.midGray });
+    y -= 20;
+  }
+
+  y -= 30;
 
   // Title
-  centerText(page, "CERTIFICADO DE ASSINATURA", y, fontBold, 22, C.white);
+  centerText(page, "CERTIFICADO DE ASSINATURA", y, fontBold, 22, P.white);
   y -= 28;
-  centerText(page, "ELETRONICA", y, fontBold, 22, C.white);
+  centerText(page, "ELETRONICA", y, fontBold, 22, P.white);
   y -= 18;
 
-  // Decorative line under title
+  // Decorative line under title in tenant primary
   const lineW = 80;
-  page.drawLine({ start: { x: (W - lineW) / 2, y }, end: { x: (W + lineW) / 2, y }, thickness: 2, color: C.accent });
+  page.drawLine({ start: { x: (W - lineW) / 2, y }, end: { x: (W + lineW) / 2, y }, thickness: 2, color: P.primary });
   y -= 30;
 
   // Subtitle
-  const subText = "Este documento certifica que o contrato foi assinado eletronicamente";
-  const subText2 = "com registro completo de auditoria, rastreabilidade e validacao.";
-  centerText(page, subText, y, font, 9, C.lightGray);
+  centerText(page, "Este documento certifica que o contrato foi assinado eletronicamente", y, font, 9, P.lightGray);
   y -= 14;
-  centerText(page, subText2, y, font, 9, C.lightGray);
+  centerText(page, "com registro completo de auditoria, rastreabilidade e validacao.", y, font, 9, P.lightGray);
   y -= 50;
 
   // Document info card
   const cardH = 130;
   const cardX = M + 20;
   const cardW = CW - 40;
-  drawRect(page, cardX, y - cardH, cardW, cardH, C.cardBg);
-  // Card border top accent
-  drawRect(page, cardX, y, cardW, 2, C.accent);
+  drawRect(page, cardX, y - cardH, cardW, cardH, P.cardBg);
+  drawRect(page, cardX, y, cardW, 2, P.primary);
 
   let cy = y - 22;
   const labelX = cardX + 20;
   const valueX = cardX + 160;
 
-  const infoRows = [
+  const infoRows: [string, string][] = [
     ["Documento", doc.nome || "--"],
     ["Tipo", (doc.tipo || "contrato").charAt(0).toUpperCase() + (doc.tipo || "contrato").slice(1)],
     ["Status", "ASSINADO"],
@@ -181,8 +257,8 @@ function buildCoverPage(
   ];
 
   for (const [label, value] of infoRows) {
-    page.drawText(label, { x: labelX, y: cy, size: 9, font, color: C.lightGray });
-    const valColor = value === "ASSINADO" ? C.green : C.white;
+    page.drawText(label, { x: labelX, y: cy, size: 9, font, color: P.lightGray });
+    const valColor = value === "ASSINADO" ? P.green : P.white;
     page.drawText(value, { x: valueX, y: cy, size: 9, font: fontBold, color: valColor });
     cy -= 24;
   }
@@ -191,53 +267,55 @@ function buildCoverPage(
 
   // Validation block
   const valCardH = 150;
-  drawRect(page, cardX, y - valCardH, cardW, valCardH, C.cardBg);
-  drawRect(page, cardX, y, cardW, 2, C.accentBlue);
+  drawRect(page, cardX, y - valCardH, cardW, valCardH, P.cardBg);
+  drawRect(page, cardX, y, cardW, 2, P.secondary);
 
   cy = y - 18;
-  page.drawText("VALIDACAO E INTEGRIDADE", { x: labelX, y: cy, size: 10, font: fontBold, color: C.accentBlue });
+  page.drawText("VALIDACAO E INTEGRIDADE", { x: labelX, y: cy, size: 10, font: fontBold, color: P.secondary });
   cy -= 24;
 
-  const valRows = [
+  const valRows: [string, string][] = [
     ["Codigo de Validacao", validationCode],
     ["Hash SHA-256", docHash.slice(0, 40) + "..."],
     ["Verificacao Publica", publicUrl.length > 55 ? publicUrl.slice(0, 55) + "..." : publicUrl],
   ];
 
   for (const [label, value] of valRows) {
-    page.drawText(label, { x: labelX, y: cy, size: 8, font, color: C.lightGray });
+    page.drawText(label, { x: labelX, y: cy, size: 8, font, color: P.lightGray });
     cy -= 13;
-    page.drawText(value, { x: labelX, y: cy, size: 7.5, font: fontBold, color: C.white });
+    page.drawText(value, { x: labelX, y: cy, size: 7.5, font: fontBold, color: P.white });
     cy -= 20;
   }
 
   y -= valCardH + 50;
 
   // Footer
-  drawLine(page, y, C.dimLine, 0.5);
+  drawLine(page, y, P.dimLine, 0.5);
   y -= 16;
-  centerText(page, "Este certificado comprova a autenticidade e integridade", y, font, 7.5, C.midGray);
+  centerText(page, "Este certificado comprova a autenticidade e integridade", y, font, 7.5, P.midGray);
   y -= 12;
-  centerText(page, "do documento assinado eletronicamente pela plataforma Accord.", y, font, 7.5, C.midGray);
+  centerText(page, "do documento assinado eletronicamente.", y, font, 7.5, P.midGray);
   y -= 14;
-  centerText(page, `Certificado gerado em ${fmtDateTimeBR(new Date().toISOString())}`, y, font, 7, C.midGray);
+  const footerTenant = P.tenantName !== "Accord" ? `Emitido via ${P.tenantName} em tecnologia Accord` : `Certificado gerado em ${fmtDateTimeBR(new Date().toISOString())}`;
+  centerText(page, footerTenant, y, font, 7, P.midGray);
 }
 
-// ─── Audit Details Pages ───
+// ─── Audit Details Pages (White Label) ───
 function buildAuditPages(
   pdfDoc: any, font: any, fontBold: any,
   doc: any, signersList: any[], events: any[],
   validationCode: string, docHash: string, publicUrl: string,
+  P: BrandPalette,
 ) {
   let page = pdfDoc.addPage([W, H]);
-  drawRect(page, 0, 0, W, H, C.darkBg);
-  drawRect(page, 0, H - 4, W, 4, C.accent);
+  drawRect(page, 0, 0, W, H, P.darkBg);
+  drawRect(page, 0, H - 4, W, 4, P.coverAccentBar);
   let y = H - 50;
 
   function newPage() {
     page = pdfDoc.addPage([W, H]);
-    drawRect(page, 0, 0, W, H, C.darkBg);
-    drawRect(page, 0, H - 4, W, 4, C.accent);
+    drawRect(page, 0, 0, W, H, P.darkBg);
+    drawRect(page, 0, H - 4, W, 4, P.coverAccentBar);
     y = H - 50;
   }
 
@@ -247,24 +325,24 @@ function buildAuditPages(
 
   function sectionTitle(text: string) {
     ensure(30);
-    drawRect(page, M, y - 2, CW, 20, C.cardBg);
-    page.drawText(text, { x: M + 12, y: y + 2, size: 10, font: fontBold, color: C.accent });
+    drawRect(page, M, y - 2, CW, 20, P.cardBg);
+    page.drawText(text, { x: M + 12, y: y + 2, size: 10, font: fontBold, color: P.primary });
     y -= 28;
   }
 
-  function labelValue(label: string, value: string, valColor = C.white) {
+  function labelValue(label: string, value: string, valColor?: any) {
     ensure(16);
-    page.drawText(label + ":", { x: M + 10, y, size: 8, font, color: C.lightGray });
-    page.drawText(value, { x: M + 150, y, size: 8, font: fontBold, color: valColor });
+    page.drawText(label + ":", { x: M + 10, y, size: 8, font, color: P.lightGray });
+    page.drawText(value, { x: M + 150, y, size: 8, font: fontBold, color: valColor || P.white });
     y -= 15;
   }
 
-  // ── Section: Document Identification ──
+  // ── Document Identification ──
   sectionTitle("IDENTIFICACAO DO DOCUMENTO");
-
-  const docRows = [
+  const docRows: [string, string][] = [
     ["Nome", doc.nome || "--"],
     ["Tipo", (doc.tipo || "contrato").charAt(0).toUpperCase() + (doc.tipo || "contrato").slice(1)],
+    ["Empresa", P.tenantName],
     ["ID do Documento", (doc.id || "").slice(0, 18) + "..."],
     ["Codigo de Validacao", validationCode],
     ["Data de Geracao", doc.created_at ? fmtDateTimeBR(doc.created_at) : "--"],
@@ -273,20 +351,19 @@ function buildAuditPages(
   for (const [l, v] of docRows) labelValue(l, v);
   y -= 8;
 
-  // ── Section: Security ──
+  // ── Security ──
   sectionTitle("SEGURANCA E INTEGRIDADE");
-
   labelValue("Hash SHA-256", docHash.slice(0, 32) + "...");
   y -= 4;
   ensure(30);
   y = drawWrapped(
     page,
     "Este documento foi protegido por hash criptografico SHA-256, garantindo que seu conteudo nao foi alterado apos a assinatura. Qualquer modificacao invalida o hash e pode ser detectada automaticamente.",
-    M + 10, y, font, 7.5, CW - 20, C.lightGray
+    M + 10, y, font, 7.5, CW - 20, P.lightGray
   );
   y -= 12;
 
-  // ── Section: Signatories ──
+  // ── Signatories ──
   sectionTitle("SIGNATARIOS");
 
   for (let i = 0; i < signersList.length; i++) {
@@ -294,21 +371,21 @@ function buildAuditPages(
     const cardH = 120;
     ensure(cardH + 10);
 
-    // Card background
-    drawRect(page, M + 5, y - cardH + 14, CW - 10, cardH, C.cardBg);
-    // Left accent stripe
-    drawRect(page, M + 5, y - cardH + 14, 3, cardH, s.status === "signed" ? C.green : C.accent);
+    drawRect(page, M + 5, y - cardH + 14, CW - 10, cardH, P.cardBg);
+    // Left accent stripe uses tenant primary for signed, secondary otherwise
+    const stripeColor = s.status === "signed" ? P.green : P.primary;
+    drawRect(page, M + 5, y - cardH + 14, 3, cardH, stripeColor);
 
     let cy = y + 4;
     const lx = M + 20;
 
     const papelLabel = PAPEL_LABELS[s.papel] || s.papel;
-    page.drawText(`Signatario ${i + 1} - ${papelLabel}`, { x: lx, y: cy, size: 9, font: fontBold, color: C.white });
+    page.drawText(`Signatario ${i + 1} - ${papelLabel}`, { x: lx, y: cy, size: 9, font: fontBold, color: P.white });
     cy -= 18;
 
     const sFields: [string, string, any?][] = [
       ["Nome Completo", s.nome_completo || "--"],
-      ["Status", s.status === "signed" ? "Assinado" : (s.status || "--"), s.status === "signed" ? C.green : C.white],
+      ["Status", s.status === "signed" ? "Assinado" : (s.status || "--"), s.status === "signed" ? P.green : P.white],
       ["Data/Hora", s.signed_at ? fmtDateTimeBR(s.signed_at) : "--"],
       ["IP", maskIp(s.ip_address)],
       ["Localizacao", s.location_text || (s.location_lat ? `${s.location_lat}, ${s.location_lng}` : "--")],
@@ -318,8 +395,8 @@ function buildAuditPages(
     ];
 
     for (const [label, value, col] of sFields) {
-      page.drawText(label + ":", { x: lx, y: cy, size: 7.5, font, color: C.lightGray });
-      page.drawText(String(value), { x: lx + 110, y: cy, size: 7.5, font: fontBold, color: col || C.white });
+      page.drawText(label + ":", { x: lx, y: cy, size: 7.5, font, color: P.lightGray });
+      page.drawText(String(value), { x: lx + 110, y: cy, size: 7.5, font: fontBold, color: col || P.white });
       cy -= 12;
     }
 
@@ -328,7 +405,7 @@ function buildAuditPages(
 
   y -= 8;
 
-  // ── Section: Timeline ──
+  // ── Timeline ──
   sectionTitle("LINHA DO TEMPO");
 
   for (let i = 0; i < events.length; i++) {
@@ -338,26 +415,23 @@ function buildAuditPages(
     const label = EVENT_LABELS[evt.evento] || evt.evento;
     const time = evt.created_at ? fmtDateTimeBR(evt.created_at) : "--";
 
-    // Timeline dot and line
     const dotX = M + 14;
-    const dotR = 3;
-    page.drawCircle({ x: dotX, y: y + 2, size: dotR, color: C.accent });
+    page.drawCircle({ x: dotX, y: y + 2, size: 3, color: P.primary });
     if (i < events.length - 1) {
       page.drawLine({
         start: { x: dotX, y: y - 1 },
         end: { x: dotX, y: y - 24 },
         thickness: 1,
-        color: C.dimLine,
+        color: P.dimLine,
       });
     }
 
-    // Event text
-    page.drawText(label, { x: M + 28, y: y + 2, size: 8, font: fontBold, color: C.white });
-    page.drawText(time, { x: W - M - font.widthOfTextAtSize(time, 7), y: y + 2, size: 7, font, color: C.midGray });
+    page.drawText(label, { x: M + 28, y: y + 2, size: 8, font: fontBold, color: P.white });
+    page.drawText(time, { x: W - M - font.widthOfTextAtSize(time, 7), y: y + 2, size: 7, font, color: P.midGray });
 
     if (evt.descricao) {
       const descTrunc = evt.descricao.length > 90 ? evt.descricao.slice(0, 90) + "..." : evt.descricao;
-      page.drawText(descTrunc, { x: M + 28, y: y - 10, size: 6.5, font, color: C.lightGray });
+      page.drawText(descTrunc, { x: M + 28, y: y - 10, size: 6.5, font, color: P.lightGray });
     }
 
     y -= 28;
@@ -365,28 +439,29 @@ function buildAuditPages(
 
   y -= 12;
 
-  // ── Section: Validation Footer ──
+  // ── Validation Footer ──
   ensure(70);
-  drawLine(page, y, C.dimLine, 0.5);
+  drawLine(page, y, P.dimLine, 0.5);
   y -= 20;
 
-  centerText(page, "VALIDACAO DO DOCUMENTO", y, fontBold, 10, C.accentBlue);
+  centerText(page, "VALIDACAO DO DOCUMENTO", y, fontBold, 10, P.secondary);
   y -= 18;
-  centerText(page, `Codigo: ${validationCode}`, y, font, 8, C.white);
+  centerText(page, `Codigo: ${validationCode}`, y, font, 8, P.white);
   y -= 14;
-  centerText(page, `Hash: ${docHash}`, y, font, 6.5, C.lightGray);
+  centerText(page, `Hash: ${docHash}`, y, font, 6.5, P.lightGray);
   y -= 14;
-  centerText(page, `Valide em: ${publicUrl}`, y, font, 7, C.lightGray);
+  centerText(page, `Valide em: ${publicUrl}`, y, font, 7, P.lightGray);
   y -= 30;
 
   // Corporate footer
-  drawLine(page, y, C.dimLine, 0.5);
+  drawLine(page, y, P.dimLine, 0.5);
   y -= 14;
-  centerText(page, "Accord - Plataforma de Assinatura Eletronica", y, fontBold, 7.5, C.midGray);
+  const footerBrand = P.tenantName !== "Accord" ? `${P.tenantName} - Tecnologia Accord` : "Accord - Plataforma de Assinatura Eletronica";
+  centerText(page, footerBrand, y, fontBold, 7.5, P.midGray);
   y -= 10;
-  centerText(page, "Este certificado comprova a autenticidade e integridade do documento assinado eletronicamente.", y, font, 6.5, C.midGray);
+  centerText(page, "Este certificado comprova a autenticidade e integridade do documento assinado eletronicamente.", y, font, 6.5, P.midGray);
   y -= 10;
-  centerText(page, `Certificado gerado em ${fmtDateTimeBR(new Date().toISOString())}`, y, font, 6, C.midGray);
+  centerText(page, `Certificado gerado em ${fmtDateTimeBR(new Date().toISOString())}`, y, font, 6, P.midGray);
 }
 
 // ─── Main handler ───
@@ -551,12 +626,24 @@ Deno.serve(async (req) => {
 
         if (fullDoc?.pdf_url) {
           try {
+            // ── Fetch tenant brand data ──
+            let tenantData: any = null;
+            if (fullDoc.servidor_id) {
+              const { data: tenantRow } = await supabase
+                .from("companies")
+                .select("nome_fantasia, razao_social, brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color, brand_logo_url")
+                .eq("id", fullDoc.servidor_id)
+                .single();
+              tenantData = tenantRow;
+            }
+
+            const palette = buildPalette(tenantData);
+
             const pdfResp = await fetch(fullDoc.pdf_url);
             if (pdfResp.ok) {
               const pdfBytes = await pdfResp.arrayBuffer();
               const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
 
-              // Hash of original content
               const hashBuffer = await crypto.subtle.digest("SHA-256", pdfBytes);
               const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
               docUpdate.document_hash = hashHex;
@@ -568,11 +655,30 @@ Deno.serve(async (req) => {
               const publicUrl = `https://accordpipe.lovable.app/validar-documento/${validationCode}`;
 
               const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
-              const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+              const fontBoldEmb = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-              // Build premium certificate pages
-              buildCoverPage(pdfDoc, fontRegular, fontBold, { ...fullDoc, signed_at: signedAt }, validationCode, hashHex, publicUrl);
-              buildAuditPages(pdfDoc, fontRegular, fontBold, { ...fullDoc, signed_at: signedAt }, allSigners || [], eventsData || [], validationCode, hashHex, publicUrl);
+              // ── Try to embed tenant logo ──
+              let logoImage: any = null;
+              if (tenantData?.brand_logo_url) {
+                try {
+                  const logoResp = await fetch(tenantData.brand_logo_url);
+                  if (logoResp.ok) {
+                    const logoBytes = await logoResp.arrayBuffer();
+                    const contentType = logoResp.headers.get("content-type") || "";
+                    if (contentType.includes("png")) {
+                      logoImage = await pdfDoc.embedPng(logoBytes);
+                    } else {
+                      logoImage = await pdfDoc.embedJpg(logoBytes);
+                    }
+                  }
+                } catch (logoErr) {
+                  console.error("[sign-document] Logo embed failed:", logoErr);
+                }
+              }
+
+              // Build white-label certificate pages
+              await buildCoverPage(pdfDoc, fontRegular, fontBoldEmb, { ...fullDoc, signed_at: signedAt }, validationCode, hashHex, publicUrl, palette, logoImage);
+              buildAuditPages(pdfDoc, fontRegular, fontBoldEmb, { ...fullDoc, signed_at: signedAt }, allSigners || [], eventsData || [], validationCode, hashHex, publicUrl, palette);
 
               const finalPdfBytes = await pdfDoc.save();
               const signedPath = `signed/${signer.document_id}_${Date.now()}.pdf`;
