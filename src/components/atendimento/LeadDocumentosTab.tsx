@@ -734,12 +734,19 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
               const tpl = templates.find(t => t.id === selectedTemplate);
               const contentTemplate = (tpl as any)?.content_template || "";
               const placeholderList = (tpl as any)?.placeholders_json as string[] | null;
-              // Build a synthetic template text from placeholders if no content_template
+              // Build template text: prefer content_template, then placeholders_json, then fallback
               const templateText = contentTemplate
                 || (placeholderList && placeholderList.length > 0
                   ? placeholderList.map(p => `{{${p}}}`).join(" ")
-                  : Object.keys(buildVariableMap(lead, previewTenant, previewProposal, previewVendor)).join(" "));
-              const vars = buildVariableMap(lead, previewTenant, previewProposal, previewVendor);
+                  : "");
+              const vars = buildVariableMap(lead, previewTenant, previewProposal, previewVendor, previewRegistration);
+              if (!templateText) {
+                return (
+                  <div className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground">
+                    O modelo selecionado não possui variáveis configuradas. O documento será gerado com o PDF original.
+                  </div>
+                );
+              }
               return (
                 <ContractVariableAudit
                   templateText={templateText}
