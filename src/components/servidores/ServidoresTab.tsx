@@ -435,8 +435,8 @@ export default function ServidoresTab() {
                       {company.status === "active" ? "Ativo" : "Bloqueado"}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    {isMaster && company.id !== profile?.company_id && (
+                  <TableCell className="flex items-center gap-2">
+                    {isMaster && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -448,10 +448,12 @@ export default function ServidoresTab() {
                             <Pencil className="h-4 w-4" />
                             Editar
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="gap-2" onClick={() => handleToggleStatus(company)}>
-                            <Power className="h-4 w-4" />
-                            {company.status === "active" ? "Bloquear" : "Ativar"}
-                          </DropdownMenuItem>
+                          {company.id !== profile?.company_id && (
+                            <DropdownMenuItem className="gap-2" onClick={() => handleToggleStatus(company)}>
+                              <Power className="h-4 w-4" />
+                              {company.status === "active" ? "Bloquear" : "Ativar"}
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     )}
