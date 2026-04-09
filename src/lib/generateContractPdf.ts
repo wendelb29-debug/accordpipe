@@ -96,8 +96,8 @@ export function generateContractPdf({ content, code, companyName, annexData }: C
   }
 
   // Add ANEXO I if annex data is provided
-  if (data.annexData && data.annexData.items.length > 0) {
-    addAnnexPage(doc, data.annexData);
+  if (annexData && annexData.items.length > 0) {
+    addAnnexPage(doc, annexData);
   }
 
   // Footer on each page
