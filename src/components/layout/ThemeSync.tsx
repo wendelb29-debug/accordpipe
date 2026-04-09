@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 /**
  * Converts a HEX color (#RRGGBB) to HSL string "H S% L%" for CSS variables.
  */
-function hexToHsl(hex: string): string | null {
+export function hexToHsl(hex: string): string | null {
   if (!hex || !hex.startsWith("#") || hex.length < 7) return null;
   const r = parseInt(hex.slice(1, 3), 16) / 255;
   const g = parseInt(hex.slice(3, 5), 16) / 255;
@@ -29,10 +29,7 @@ function hexToHsl(hex: string): string | null {
   return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 }
 
-/**
- * Derives a darker shade for sidebar from primary color.
- */
-function darkenHsl(hsl: string, amount: number): string {
+export function darkenHsl(hsl: string, amount: number): string {
   const parts = hsl.match(/(\d+)\s+(\d+)%\s+(\d+)%/);
   if (!parts) return hsl;
   const h = parseInt(parts[1]);
@@ -41,7 +38,7 @@ function darkenHsl(hsl: string, amount: number): string {
   return `${h} ${s}% ${l}%`;
 }
 
-function lightenHsl(hsl: string, amount: number): string {
+export function lightenHsl(hsl: string, amount: number): string {
   const parts = hsl.match(/(\d+)\s+(\d+)%\s+(\d+)%/);
   if (!parts) return hsl;
   const h = parseInt(parts[1]);
@@ -60,6 +57,8 @@ const DEFAULTS = {
   sidebarAccent: "224 50% 20%",
   sidebarBorder: "224 45% 18%",
   ring: "224 76% 53%",
+  accent: "220 14% 93%",
+  accentForeground: "224 71% 7%",
 };
 
 export function ThemeSync() {
@@ -109,7 +108,6 @@ export function ThemeSync() {
 
     fetchBrand();
 
-    // Listen for brand-updated events to re-apply colors after save
     const handleBrandUpdate = () => fetchBrand();
     window.addEventListener("brand-colors-updated", handleBrandUpdate);
     return () => window.removeEventListener("brand-colors-updated", handleBrandUpdate);
@@ -118,7 +116,7 @@ export function ThemeSync() {
   return null;
 }
 
-function applyBrandColors(brand: {
+export function applyBrandColors(brand: {
   brand_primary_color: string | null;
   brand_secondary_color: string | null;
   brand_accent_color: string | null;
@@ -140,6 +138,9 @@ function applyBrandColors(brand: {
     root.style.setProperty("--sidebar-ring", DEFAULTS.sidebarPrimary);
     root.style.setProperty("--gradient-accord-btn", "linear-gradient(135deg, #2563EB, #7A3FF2)");
     root.style.setProperty("--gradient-primary", "linear-gradient(135deg, #0F1C3F 0%, #3B3F9C 35%, #7A3FF2 70%, #D94FD5 100%)");
+    // Reset accent/foreground overrides
+    root.style.removeProperty("--accent");
+    root.style.removeProperty("--accent-foreground");
     return;
   }
 
@@ -171,10 +172,13 @@ function applyBrandColors(brand: {
     root.style.setProperty("--gradient-primary", `linear-gradient(135deg, ${darkPrimaryCss} 0%, ${primaryCss} 45%, ${glowCss} 100%)`);
   }
 
+  // Apply accent color to global accent token
   if (accentHsl) {
     root.style.setProperty("--primary-glow", accentHsl);
     root.style.setProperty("--sidebar-primary", accentHsl);
     root.style.setProperty("--sidebar-ring", accentHsl);
+    root.style.setProperty("--accent", lightenHsl(accentHsl, 30));
+    root.style.setProperty("--accent-foreground", darkenHsl(accentHsl, 30));
   } else if (secondaryHsl) {
     root.style.setProperty("--primary-glow", secondaryHsl);
     root.style.setProperty("--sidebar-primary", secondaryHsl);
