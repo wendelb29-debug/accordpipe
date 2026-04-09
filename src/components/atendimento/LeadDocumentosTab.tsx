@@ -837,18 +837,28 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
       <Dialog open={!!viewDoc} onOpenChange={() => setViewDoc(null)}>
         <DialogContent className="sm:max-w-3xl max-h-[85vh]">
           <DialogHeader>
-            <DialogTitle className="text-base">{viewDoc?.nome}</DialogTitle>
+            <DialogTitle className="text-base">
+              {viewDoc?.nome}
+              {viewDoc?.status === "signed" && viewDoc?.signed_pdf_url && (
+                <Badge variant="outline" className="ml-2 text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                  PDF Assinado
+                </Badge>
+              )}
+            </DialogTitle>
           </DialogHeader>
-          {viewDoc?.pdf_url && (
-            <div className="rounded-lg border overflow-hidden bg-muted/20" style={{ height: "600px" }}>
-              <iframe
-                src={`${viewDoc.pdf_url}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`}
-                className="w-full h-full"
-                title="Visualização do documento"
-                style={{ border: "none" }}
-              />
-            </div>
-          )}
+          {(() => {
+            const pdfToShow = (viewDoc?.status === "signed" && viewDoc?.signed_pdf_url) ? viewDoc.signed_pdf_url : viewDoc?.pdf_url;
+            return pdfToShow ? (
+              <div className="rounded-lg border overflow-hidden bg-muted/20" style={{ height: "600px" }}>
+                <iframe
+                  src={`${pdfToShow}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`}
+                  className="w-full h-full"
+                  title="Visualização do documento"
+                  style={{ border: "none" }}
+                />
+              </div>
+            ) : null;
+          })()}
         </DialogContent>
       </Dialog>
 
