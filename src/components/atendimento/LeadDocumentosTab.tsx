@@ -1081,7 +1081,8 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                     )}
                   </CardContent>
                 </Card>
-              ))}
+              );
+              })}
 
               <Separator />
 
