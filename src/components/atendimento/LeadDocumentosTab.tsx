@@ -477,7 +477,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         htmlContent = `<h1>${template.nome}</h1><p>Documento gerado automaticamente.</p>`;
       }
 
-      const finalName = docName.trim() || `${template.nome} - ${lead.company_name}`;
+      const finalName = template.nome;
       const snapshot = buildSnapshot(vars);
 
       const { data: insertedDoc, error } = await supabase.from("generated_documents").insert({
