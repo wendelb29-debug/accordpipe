@@ -124,6 +124,28 @@ const SIGNATURE_VARS = new Set([
 
 const CRITICAL_VARS = ["nome_completo", "documento_contratante", "tenant_nome", "tenant_cnpj"];
 
+/** Convert a crm_lead_activities proposal activity into the shape buildVariableMap expects */
+function activityToProposal(activity: any): any {
+  if (!activity) return null;
+  const meta = activity.metadata || {};
+  const lineItems = (meta.line_items || []).map((item: any) => ({
+    nome: item.name || "",
+    name: item.name || "",
+    descricao: item.description || item.descricao || "",
+    quantidade: item.quantity || 1,
+    valor: item.total ?? item.unitValue ?? 0,
+  }));
+  return {
+    titulo: (activity.title || "").replace(/^Proposta:\s*/i, ""),
+    descricao: meta.introduction || meta.description || "",
+    valor: meta.value_mrr || meta.value_ps || 0,
+    proposal_items: lineItems,
+    created_by_user_id: activity.created_by_user_id,
+    status: meta.status,
+    sigla: meta.sigla,
+  };
+}
+
 function buildVariableMap(
   lead: CrmLead,
   tenant?: any,
@@ -339,27 +361,28 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     setGenerating(true);
 
     try {
-      // Fetch tenant, proposal, registration in parallel
-      const [tenantRes, proposalRes, regRes] = await Promise.all([
+      // Fetch tenant, proposal (from crm_lead_activities), registration in parallel
+      const [tenantRes, activityRes, regRes] = await Promise.all([
         supabase.from("companies").select("*").eq("id", servidorId).maybeSingle(),
-        supabase.from("proposals").select("*, proposal_items(*)").eq("lead_id", lead.id).eq("status", "approved").order("approved_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("crm_lead_activities").select("*").eq("lead_id", lead.id).eq("type", "proposal").order("created_at", { ascending: false }),
         supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
       ]);
       const tenant = tenantRes.data;
       const registration = regRes.data;
-      let proposal = proposalRes.data;
 
-      if (!proposal) {
-        const { data: fallback } = await supabase.from("proposals").select("*, proposal_items(*)").eq("lead_id", lead.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
-        proposal = fallback;
-      }
+      // Find accepted proposal first, fallback to most recent
+      const activities = activityRes.data || [];
+      const acceptedActivity = activities.find((a: any) => (a.metadata as any)?.status === "aceita")
+        || activities[0] || null;
+
+      const proposal = activityToProposal(acceptedActivity);
 
       let vendor: any = null;
-      if (proposal?.created_by_user_id) {
+      if (acceptedActivity?.created_by_user_id) {
         const { data: v } = await supabase
           .from("profiles")
           .select("name, email, phone, birth_date")
-          .eq("user_id", proposal.created_by_user_id)
+          .eq("user_id", acceptedActivity.created_by_user_id)
           .maybeSingle();
         vendor = v;
       }
@@ -634,23 +657,21 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
           setGenerateOpen(true);
           setCanGenerate(true);
           setSelectedTemplate("");
-          // Pre-fetch tenant, proposal, vendor, registration for variable preview
-          const [tenantRes, proposalRes, regRes] = await Promise.all([
+          // Pre-fetch tenant, proposal (from activities), vendor, registration for variable preview
+          const [tenantRes, activityRes, regRes] = await Promise.all([
             supabase.from("companies").select("*").eq("id", servidorId).maybeSingle(),
-            supabase.from("proposals").select("*, proposal_items(*)").eq("lead_id", lead.id).eq("status", "approved").order("approved_at", { ascending: false }).limit(1).maybeSingle(),
+            supabase.from("crm_lead_activities").select("*").eq("lead_id", lead.id).eq("type", "proposal").order("created_at", { ascending: false }),
             supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
           ]);
           setPreviewTenant(tenantRes.data);
           setPreviewRegistration(regRes.data);
-          let p = proposalRes.data;
-          // Fallback: if no approved proposal, get the most recent one
-          if (!p) {
-            const { data: fallback } = await supabase.from("proposals").select("*, proposal_items(*)").eq("lead_id", lead.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
-            p = fallback;
-          }
+          const activities = activityRes.data || [];
+          const acceptedActivity = activities.find((a: any) => (a.metadata as any)?.status === "aceita")
+            || activities[0] || null;
+          const p = activityToProposal(acceptedActivity);
           setPreviewProposal(p);
-          if (p?.created_by_user_id) {
-            const { data: v } = await supabase.from("profiles").select("name, email, phone, birth_date").eq("user_id", p.created_by_user_id).maybeSingle();
+          if (acceptedActivity?.created_by_user_id) {
+            const { data: v } = await supabase.from("profiles").select("name, email, phone, birth_date").eq("user_id", acceptedActivity.created_by_user_id).maybeSingle();
             setPreviewVendor(v);
           } else {
             setPreviewVendor(null);
