@@ -1,16 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Plus, Trash2, GripVertical, Pencil, Check, X, Briefcase, BarChart3, Settings2, Loader2,
   ChevronDown, ChevronUp, Copy, Power, Layers, Clock, Hash, Sparkles,
-  HeadphonesIcon, DollarSign, Users, Cog, LayoutGrid,
+  HeadphonesIcon, DollarSign, Users, Cog, LayoutGrid, Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
@@ -87,6 +85,14 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
   const [editColSlaUnit, setEditColSlaUnit] = useState<"dias" | "horas">("dias");
   const [newlyAddedColId, setNewlyAddedColId] = useState<string | null>(null);
 
+  // Drag and drop state
+  const [dragWsId, setDragWsId] = useState<string | null>(null);
+  const [dragColId, setDragColId] = useState<string | null>(null);
+  const [dragOverColId, setDragOverColId] = useState<string | null>(null);
+  const [pendingOrderChanges, setPendingOrderChanges] = useState<Record<string, boolean>>({});
+  const [savingOrder, setSavingOrder] = useState<string | null>(null);
+  const [deleteCol, setDeleteCol] = useState<KanbanColumn | null>(null);
+
   const fetchData = useCallback(async () => {
     if (!companyId) return;
     setLoading(true);
@@ -114,13 +120,14 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
         grouped[c.workspace_id].push(c as KanbanColumn);
       });
       setColumns(grouped);
+    } else {
+      setColumns({});
     }
     setLoading(false);
   }, [companyId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Clear newly added highlight after 2s
   useEffect(() => {
     if (newlyAddedColId) {
       const t = setTimeout(() => setNewlyAddedColId(null), 2000);
@@ -187,7 +194,6 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
             cols.map((c) => ({ ...c, workspace_id: (data as any).id })) as any
           );
         }
-        // Auto-expand new workspace
         if (data) setExpandedWs((p) => ({ ...p, [(data as any).id]: true }));
       }
     }
@@ -212,7 +218,6 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
       .select()
       .single();
     if (error) { toast.error("Erro ao duplicar"); return; }
-    // Duplicate columns
     const wsCols = columns[ws.id] || [];
     if (wsCols.length > 0 && data) {
       await supabase.from("kanban_columns").insert(
@@ -226,7 +231,6 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
 
   const handleSetDefault = async (ws: Workspace) => {
     if (!companyId) return;
-    // Remove default from all
     await supabase.from("workspaces").update({ is_default: false } as any).eq("servidor_id", companyId);
     await supabase.from("workspaces").update({ is_default: true } as any).eq("id", ws.id);
     toast.success(`"${ws.name}" definido como padrão`);
@@ -245,7 +249,14 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
     } as any).select().single();
     if (error) toast.error("Erro ao criar coluna");
     else {
-      if (data) setNewlyAddedColId((data as any).id);
+      if (data) {
+        setNewlyAddedColId((data as any).id);
+        // Auto-enter edit mode for new column
+        setEditingColId((data as any).id);
+        setEditColName("Nova Etapa");
+        setEditColSla(7);
+        setEditColSlaUnit("dias");
+      }
       fetchData();
     }
   };
@@ -264,20 +275,69 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
     fetchData();
   };
 
-  const handleDeleteColumn = async (colId: string) => {
-    const { error } = await supabase.from("kanban_columns").delete().eq("id", colId);
-    if (error) toast.error("Erro ao excluir coluna"); else fetchData();
+  const handleConfirmDeleteColumn = async () => {
+    if (!deleteCol) return;
+    // Check for linked leads
+    const { count } = await supabase
+      .from("crm_leads")
+      .select("id", { count: "exact", head: true })
+      .eq("stage", deleteCol.id);
+    if (count && count > 0) {
+      toast.error(`Não é possível excluir esta coluna porque existem ${count} cards vinculados a ela.`);
+      setDeleteCol(null);
+      return;
+    }
+    const { error } = await supabase.from("kanban_columns").delete().eq("id", deleteCol.id);
+    if (error) toast.error("Erro ao excluir coluna");
+    else { toast.success("Coluna removida com sucesso."); fetchData(); }
+    setDeleteCol(null);
   };
 
-  const handleMoveColumn = async (workspaceId: string, colId: string, direction: "up" | "down") => {
-    const cols = [...(columns[workspaceId] || [])].sort((a, b) => a.position - b.position);
-    const idx = cols.findIndex((c) => c.id === colId);
-    if ((direction === "up" && idx <= 0) || (direction === "down" && idx >= cols.length - 1)) return;
-    const swapIdx = direction === "up" ? idx - 1 : idx + 1;
-    await Promise.all([
-      supabase.from("kanban_columns").update({ position: cols[swapIdx].position } as any).eq("id", cols[idx].id),
-      supabase.from("kanban_columns").update({ position: cols[idx].position } as any).eq("id", cols[swapIdx].id),
-    ]);
+  // Drag and drop handlers
+  const handleDragStart = (wsId: string, colId: string) => {
+    setDragWsId(wsId);
+    setDragColId(colId);
+  };
+
+  const handleDragOver = (e: React.DragEvent, colId: string) => {
+    e.preventDefault();
+    if (dragOverColId !== colId) setDragOverColId(colId);
+  };
+
+  const handleDragEnd = () => {
+    if (dragWsId && dragColId && dragOverColId && dragColId !== dragOverColId) {
+      const wsCols = [...(columns[dragWsId] || [])].sort((a, b) => a.position - b.position);
+      const fromIdx = wsCols.findIndex((c) => c.id === dragColId);
+      const toIdx = wsCols.findIndex((c) => c.id === dragOverColId);
+      if (fromIdx !== -1 && toIdx !== -1) {
+        const [moved] = wsCols.splice(fromIdx, 1);
+        wsCols.splice(toIdx, 0, moved);
+        // Update positions locally
+        const reordered = wsCols.map((c, i) => ({ ...c, position: i }));
+        setColumns((prev) => ({ ...prev, [dragWsId!]: reordered }));
+        setPendingOrderChanges((prev) => ({ ...prev, [dragWsId!]: true }));
+      }
+    }
+    setDragColId(null);
+    setDragOverColId(null);
+    setDragWsId(null);
+  };
+
+  const handleSaveOrder = async (workspaceId: string) => {
+    const wsCols = (columns[workspaceId] || []).sort((a, b) => a.position - b.position);
+    if (wsCols.length === 0) return;
+    setSavingOrder(workspaceId);
+    const updates = wsCols.map((col, idx) =>
+      supabase.from("kanban_columns").update({ position: idx } as any).eq("id", col.id)
+    );
+    const results = await Promise.all(updates);
+    const hasError = results.some((r) => r.error);
+    if (hasError) toast.error("Erro ao salvar ordem das colunas");
+    else {
+      toast.success("Ordem das colunas atualizada com sucesso.");
+      setPendingOrderChanges((prev) => ({ ...prev, [workspaceId]: false }));
+    }
+    setSavingOrder(null);
     fetchData();
   };
 
@@ -331,6 +391,8 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
             const TypeIcon = typeConf.icon;
             const wsCols = (columns[ws.id] || []).sort((a, b) => a.position - b.position);
             const isExpanded = expandedWs[ws.id] ?? false;
+            const hasPendingOrder = pendingOrderChanges[ws.id] ?? false;
+            const isSavingOrder = savingOrder === ws.id;
 
             return (
               <div
@@ -405,119 +467,153 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
                           Colunas do Kanban
                         </span>
                       </div>
-                      <Badge variant="secondary" className="text-[10px]">
-                        {wsCols.length} {wsCols.length === 1 ? "etapa" : "etapas"}
-                      </Badge>
-                    </div>
-
-                    <div className="space-y-2">
-                      {wsCols.map((col, idx) => {
-                        const isEditing = editingColId === col.id;
-                        const isNew = newlyAddedColId === col.id;
-
-                        return (
-                          <div
-                            key={col.id}
-                            className={cn(
-                              "flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 transition-all duration-300",
-                              isEditing
-                                ? "bg-primary/5 border border-primary/20 shadow-sm"
-                                : "bg-card/60 border border-border/30 hover:border-border/60",
-                              isNew && !isEditing && "ring-2 ring-primary/30 bg-primary/5"
-                            )}
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-[10px]">
+                          {wsCols.length} {wsCols.length === 1 ? "etapa" : "etapas"}
+                        </Badge>
+                        {hasPendingOrder && (
+                          <Button
+                            size="sm"
+                            className="h-7 text-[11px] gap-1.5 bg-gradient-to-r from-primary to-blue-600"
+                            onClick={() => handleSaveOrder(ws.id)}
+                            disabled={isSavingOrder}
                           >
-                            {/* Drag / reorder */}
-                            <div className="flex flex-col gap-px">
-                              <button
-                                className="text-muted-foreground/50 hover:text-foreground disabled:opacity-20 transition-colors"
-                                disabled={idx === 0}
-                                onClick={() => handleMoveColumn(ws.id, col.id, "up")}
-                              >
-                                <ChevronUp className="h-3 w-3" />
-                              </button>
-                              <button
-                                className="text-muted-foreground/50 hover:text-foreground disabled:opacity-20 transition-colors"
-                                disabled={idx === wsCols.length - 1}
-                                onClick={() => handleMoveColumn(ws.id, col.id, "down")}
-                              >
-                                <ChevronDown className="h-3 w-3" />
-                              </button>
-                            </div>
-
-                            {/* Color dot */}
-                            <div className="h-3.5 w-3.5 rounded-full shrink-0 ring-2 ring-offset-1 ring-offset-background" style={{ backgroundColor: col.color, boxShadow: `0 0 0 2px ${col.color}40` }} />
-
-                            {isEditing ? (
-                              <>
-                                <Input
-                                  value={editColName}
-                                  onChange={(e) => setEditColName(e.target.value)}
-                                  className="h-8 text-xs flex-1 bg-background/80"
-                                  placeholder="Nome da etapa"
-                                  autoFocus
-                                  onKeyDown={(e) => e.key === "Enter" && handleSaveColumn(col)}
-                                />
-                                <div className="flex items-center gap-1.5">
-                                  <div className="flex items-center gap-1 bg-background/80 rounded-lg border border-border/50 px-2 py-1">
-                                    <Clock className="h-3 w-3 text-muted-foreground" />
-                                    <Input
-                                      type="number"
-                                      value={editColSla}
-                                      onChange={(e) => setEditColSla(Number(e.target.value))}
-                                      className="h-6 text-xs w-12 border-0 p-0 bg-transparent text-center"
-                                      min={0}
-                                    />
-                                    <Select value={editColSlaUnit} onValueChange={(v) => setEditColSlaUnit(v as "dias" | "horas")}>
-                                      <SelectTrigger className="h-6 w-[60px] text-[10px] border-0 bg-transparent p-0 pl-1">
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="dias">dias</SelectItem>
-                                        <SelectItem value="horas">horas</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-green-500/10" onClick={() => handleSaveColumn(col)}>
-                                    <Check className="h-3.5 w-3.5 text-green-500" />
-                                  </Button>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-destructive/10" onClick={() => setEditingColId(null)}>
-                                    <X className="h-3.5 w-3.5 text-muted-foreground" />
-                                  </Button>
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <span className="text-xs font-medium flex-1 truncate text-foreground">{col.name}</span>
-                                <Badge variant="outline" className="text-[10px] shrink-0 font-mono border-border/40 text-muted-foreground">
-                                  <Clock className="h-2.5 w-2.5 mr-1" />
-                                  {col.sla_days < 1 && col.sla_days > 0
-                                    ? `${Math.round(col.sla_days * 24)}h`
-                                    : `${col.sla_days}d`}
-                                </Badge>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:bg-muted"
-                                  style={{ opacity: 1 }}
-                                  onClick={() => {
-                                    setEditingColId(col.id);
-                                    setEditColName(col.name);
-                                    const isHours = col.sla_days < 1 && col.sla_days > 0;
-                                    setEditColSlaUnit(isHours ? "horas" : "dias");
-                                    setEditColSla(isHours ? Math.round(col.sla_days * 24) : col.sla_days);
-                                  }}
-                                >
-                                  <Pencil className="h-3 w-3 text-muted-foreground" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-destructive/10" onClick={() => handleDeleteColumn(col.id)}>
-                                  <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        );
-                      })}
+                            {isSavingOrder ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                            Salvar Ordem
+                          </Button>
+                        )}
+                      </div>
                     </div>
+
+                    {wsCols.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-8 border border-dashed border-border/40 rounded-xl bg-muted/10">
+                        <Settings2 className="h-6 w-6 text-muted-foreground/40 mb-2" />
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5">Nenhuma coluna cadastrada ainda.</p>
+                        <p className="text-[11px] text-muted-foreground/70">Clique em "Adicionar Coluna" para começar a montar este funil.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {wsCols.map((col, idx) => {
+                          const isEditing = editingColId === col.id;
+                          const isNew = newlyAddedColId === col.id;
+                          const isDragging = dragColId === col.id;
+                          const isDragOver = dragOverColId === col.id && dragColId !== col.id;
+
+                          return (
+                            <div
+                              key={col.id}
+                              draggable={!isEditing}
+                              onDragStart={() => handleDragStart(ws.id, col.id)}
+                              onDragOver={(e) => handleDragOver(e, col.id)}
+                              onDragEnd={handleDragEnd}
+                              className={cn(
+                                "flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 transition-all duration-200 group",
+                                isEditing
+                                  ? "bg-primary/5 border border-primary/20 shadow-sm"
+                                  : "bg-card/60 border border-border/30 hover:border-border/60",
+                                isNew && !isEditing && "ring-2 ring-primary/30 bg-primary/5",
+                                isDragging && "opacity-40 scale-95",
+                                isDragOver && "border-primary/50 bg-primary/10 shadow-md",
+                              )}
+                            >
+                              {/* Drag handle */}
+                              <div
+                                className={cn(
+                                  "cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors",
+                                  isEditing && "pointer-events-none opacity-30"
+                                )}
+                                title="Arrastar para reordenar"
+                              >
+                                <GripVertical className="h-4 w-4" />
+                              </div>
+
+                              {/* Position indicator */}
+                              <span className="text-[10px] font-mono text-muted-foreground/50 w-4 text-center shrink-0">
+                                {idx + 1}
+                              </span>
+
+                              {/* Color dot */}
+                              <div
+                                className="h-3.5 w-3.5 rounded-full shrink-0 ring-2 ring-offset-1 ring-offset-background"
+                                style={{ backgroundColor: col.color, boxShadow: `0 0 0 2px ${col.color}40` }}
+                              />
+
+                              {isEditing ? (
+                                <>
+                                  <Input
+                                    value={editColName}
+                                    onChange={(e) => setEditColName(e.target.value)}
+                                    className="h-8 text-xs flex-1 bg-background/80"
+                                    placeholder="Nome da etapa"
+                                    autoFocus
+                                    onKeyDown={(e) => e.key === "Enter" && handleSaveColumn(col)}
+                                  />
+                                  <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center gap-1 bg-background/80 rounded-lg border border-border/50 px-2 py-1">
+                                      <Clock className="h-3 w-3 text-muted-foreground" />
+                                      <Input
+                                        type="number"
+                                        value={editColSla}
+                                        onChange={(e) => setEditColSla(Number(e.target.value))}
+                                        className="h-6 text-xs w-12 border-0 p-0 bg-transparent text-center"
+                                        min={0}
+                                      />
+                                      <Select value={editColSlaUnit} onValueChange={(v) => setEditColSlaUnit(v as "dias" | "horas")}>
+                                        <SelectTrigger className="h-6 w-[60px] text-[10px] border-0 bg-transparent p-0 pl-1">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="dias">dias</SelectItem>
+                                          <SelectItem value="horas">horas</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-green-500/10" onClick={() => handleSaveColumn(col)}>
+                                      <Check className="h-3.5 w-3.5 text-green-500" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-destructive/10" onClick={() => setEditingColId(null)}>
+                                      <X className="h-3.5 w-3.5 text-muted-foreground" />
+                                    </Button>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="text-xs font-medium flex-1 truncate text-foreground">{col.name}</span>
+                                  <Badge variant="outline" className="text-[10px] shrink-0 font-mono border-border/40 text-muted-foreground">
+                                    <Clock className="h-2.5 w-2.5 mr-1" />
+                                    {col.sla_days < 1 && col.sla_days > 0
+                                      ? `${Math.round(col.sla_days * 24)}h`
+                                      : `${col.sla_days}d`}
+                                  </Badge>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity"
+                                    onClick={() => {
+                                      setEditingColId(col.id);
+                                      setEditColName(col.name);
+                                      const isHours = col.sla_days < 1 && col.sla_days > 0;
+                                      setEditColSlaUnit(isHours ? "horas" : "dias");
+                                      setEditColSla(isHours ? Math.round(col.sla_days * 24) : col.sla_days);
+                                    }}
+                                  >
+                                    <Pencil className="h-3 w-3 text-muted-foreground" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:bg-destructive/10 transition-opacity"
+                                    onClick={() => setDeleteCol(col)}
+                                  >
+                                    <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
 
                     {/* Add column button */}
                     <button
@@ -615,7 +711,7 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
         </DialogContent>
       </Dialog>
 
-      {/* Delete confirmation */}
+      {/* Delete workspace confirmation */}
       <AlertDialog open={!!deleteWs} onOpenChange={(o) => !o && setDeleteWs(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -627,6 +723,24 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteWorkspace} className="bg-destructive hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete column confirmation */}
+      <AlertDialog open={!!deleteCol} onOpenChange={(o) => !o && setDeleteCol(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir coluna "{deleteCol?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se houver cards vinculados a esta coluna, a exclusão será bloqueada. Caso contrário, a coluna será removida permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDeleteColumn} className="bg-destructive hover:bg-destructive/90">
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
