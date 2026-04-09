@@ -58,6 +58,7 @@ interface SignedContract {
   signer_name: string | null;
   signer_document: string | null;
   signature_photo_url: string | null;
+  matriz_nome: string | null;
   signers: ContractSigner[];
 }
 
@@ -97,8 +98,9 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
   const [signedContracts, setSignedContracts] = useState<SignedContract[]>([]);
   const [signedPdfContracts, setSignedPdfContracts] = useState<SignedPdfContract[]>([]);
   const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
-  const [contractTemplates, setContractTemplates] = useState<{ id: string; name: string }[]>([]);
+  const [contractTemplates, setContractTemplates] = useState<{ id: string; name: string; pdf_url: string; pdf_path: string; contract_content: string | null }[]>([]);
   const [confirmDelete, setConfirmDelete] = useState<{ type: "contract" | "pdf"; id: string } | null>(null);
+  const [generatingDoc, setGeneratingDoc] = useState(false);
 
   const fetchDocs = async () => {
     setLoading(true);
@@ -119,7 +121,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
     // Fetch ALL contracts for this lead (not just signed)
     const { data: allContractsData } = await supabase
       .from("contracts")
-      .select("id, code, signature_status, signed_at, validation_code, document_hash, pdf_url, pdf_assinado_url, created_at, contract_content, company_id, signer_name, signer_document, signature_photo_url")
+      .select("id, code, signature_status, signed_at, validation_code, document_hash, pdf_url, pdf_assinado_url, created_at, contract_content, company_id, signer_name, signer_document, signature_photo_url, matriz_nome")
       .eq("lead_id", lead.id)
       .order("created_at", { ascending: false });
 
@@ -166,9 +168,52 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
   const fetchContractTemplates = async () => {
     const { data } = await supabase
       .from("company_contract_templates")
-      .select("id, name")
+      .select("id, name, pdf_url, pdf_path, contract_content")
       .eq("company_id", lead.servidor_id);
     setContractTemplates((data as any[]) || []);
+  };
+
+  const handleGenerateFromTemplate = async (template: { id: string; name: string; pdf_url: string; pdf_path: string; contract_content: string | null }) => {
+    if (generatingDoc) return;
+    setGeneratingDoc(true);
+    try {
+      const dateStr = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-");
+      const docName = `${template.name} — ${dateStr}`;
+
+      // Generate hash and validation code
+      const hashData = `${lead.id}-${template.id}-${Date.now()}`;
+      const encoded = new TextEncoder().encode(hashData);
+      const digest = await crypto.subtle.digest("SHA-256", encoded);
+      const documentHash = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, "0")).join("");
+      const validationCode = documentHash.substring(0, 12).toUpperCase();
+
+      // Create contract record linked to this lead
+      const { data: contract, error } = await supabase
+        .from("contracts")
+        .insert({
+          company_id: lead.servidor_id,
+          lead_id: lead.id,
+          contract_type: "template",
+          signature_status: "pending",
+          pdf_url: template.pdf_url,
+          contract_content: template.contract_content || null,
+          document_hash: documentHash,
+          validation_code: validationCode,
+          signer_name: lead.contact_name || lead.company_name,
+          matriz_nome: docName,
+        } as any)
+        .select("id, code")
+        .single();
+
+      if (error) throw error;
+
+      toast.success(`Documento "${template.name}" gerado com sucesso!`);
+      await fetchSignedContracts();
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Erro ao gerar documento: " + (err.message || ""));
+    }
+    setGeneratingDoc(false);
   };
 
   useEffect(() => {
@@ -562,30 +607,37 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
           <h3 className="text-sm font-semibold flex items-center gap-2">
             <FileText className="h-4 w-4" /> Documentos Gerados ({signedContracts.length + signedPdfContracts.length})
           </h3>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-                <Plus className="h-3.5 w-3.5" />
-                Gerar Documento
-                <ChevronDown className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[280px]">
-              {contractTemplates.length > 0 ? (
-                contractTemplates.map((tpl) => (
-                  <DropdownMenuItem key={tpl.id} onClick={() => toast.info(`Gerando documento: ${tpl.name}`)}>
+          {contractTemplates.length > 0 ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs" disabled={generatingDoc}>
+                  {generatingDoc ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+                  Gerar Documento
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[280px]">
+                {contractTemplates.map((tpl) => (
+                  <DropdownMenuItem key={tpl.id} onClick={() => handleGenerateFromTemplate(tpl)} disabled={generatingDoc}>
                     <FileSignature className="h-4 w-4 mr-2 shrink-0" />
                     <span className="truncate">{tpl.name}</span>
                   </DropdownMenuItem>
-                ))
-              ) : (
-                <DropdownMenuItem disabled>
-                  <span className="text-muted-foreground text-xs">Nenhum modelo de contrato configurado</span>
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs" disabled title="Nenhum contrato padrão configurado. Entre em contato com o administrador do servidor.">
+              <Plus className="h-3.5 w-3.5" />
+              Gerar Documento
+            </Button>
+          )}
         </div>
+
+        {contractTemplates.length === 0 && (
+          <p className="text-xs text-muted-foreground mb-3">
+            ⚠️ Nenhum contrato padrão configurado. Entre em contato com o administrador do servidor.
+          </p>
+        )}
 
         {hasSignedContracts ? (
           <div className="space-y-2">
@@ -603,7 +655,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
                           <FileText className="h-5 w-5 text-muted-foreground" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-medium">{contract.code} — {lead.company_name}</p>
+                          <p className="text-sm font-medium">{contract.matriz_nome || contract.code} — {lead.company_name}</p>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                             <span>{new Date(contract.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}</span>
                             {getContractStatusBadge(contract.signature_status)}
