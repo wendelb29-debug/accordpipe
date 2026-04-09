@@ -183,9 +183,10 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
   };
 
   const handleSaveColumn = async (col: KanbanColumn) => {
+    const slaDaysValue = editColSlaUnit === "horas" ? editColSla / 24 : editColSla;
     const { error } = await supabase
       .from("kanban_columns")
-      .update({ name: editColName, sla_days: editColSla } as any)
+      .update({ name: editColName, sla_days: slaDaysValue } as any)
       .eq("id", col.id);
     if (error) toast.error("Erro ao atualizar coluna");
     setEditingColId(null);
