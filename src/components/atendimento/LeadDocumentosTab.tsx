@@ -240,6 +240,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
   const [previewTenant, setPreviewTenant] = useState<any>(null);
   const [previewProposal, setPreviewProposal] = useState<any>(null);
   const [previewVendor, setPreviewVendor] = useState<any>(null);
+  const [previewRegistration, setPreviewRegistration] = useState<any>(null);
 
   // View
   const [viewDoc, setViewDoc] = useState<GeneratedDoc | null>(null);
@@ -572,10 +573,20 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         </div>
         <Button size="sm" className="gap-1.5 text-xs" onClick={async () => {
           setGenerateOpen(true);
-          // Pre-fetch tenant, proposal, vendor for variable preview
-          const { data: t } = await supabase.from("companies").select("*").eq("id", servidorId).maybeSingle();
-          setPreviewTenant(t);
-          const { data: p } = await supabase.from("proposals").select("*, proposal_items(*)").eq("lead_id", lead.id).eq("status", "approved").order("approved_at", { ascending: false }).limit(1).maybeSingle();
+          // Pre-fetch tenant, proposal, vendor, registration for variable preview
+          const [tenantRes, proposalRes, regRes] = await Promise.all([
+            supabase.from("companies").select("*").eq("id", servidorId).maybeSingle(),
+            supabase.from("proposals").select("*, proposal_items(*)").eq("lead_id", lead.id).eq("status", "approved").order("approved_at", { ascending: false }).limit(1).maybeSingle(),
+            supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
+          ]);
+          setPreviewTenant(tenantRes.data);
+          setPreviewRegistration(regRes.data);
+          let p = proposalRes.data;
+          // Fallback: if no approved proposal, get the most recent one
+          if (!p) {
+            const { data: fallback } = await supabase.from("proposals").select("*, proposal_items(*)").eq("lead_id", lead.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+            p = fallback;
+          }
           setPreviewProposal(p);
           if (p?.created_by_user_id) {
             const { data: v } = await supabase.from("profiles").select("name, email, phone, birth_date").eq("user_id", p.created_by_user_id).maybeSingle();
