@@ -95,6 +95,11 @@ export function generateContractPdf({ content, code, companyName }: ContractPdfD
     }
   }
 
+  // Add ANEXO I if annex data is provided
+  if (data.annexData && data.annexData.items.length > 0) {
+    addAnnexPage(doc, data.annexData);
+  }
+
   // Footer on each page
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
@@ -102,7 +107,7 @@ export function generateContractPdf({ content, code, companyName }: ContractPdfD
     doc.setFont("helvetica", "italic");
     doc.setFontSize(8);
     doc.setTextColor(150);
-    doc.text(`${code} - Página ${i} de ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+    doc.text(`${code} - Pagina ${i} de ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: "center" });
     doc.setTextColor(0);
   }
 
