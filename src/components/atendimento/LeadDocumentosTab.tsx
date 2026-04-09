@@ -301,22 +301,21 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     setGenerating(true);
 
     try {
-      // Fetch tenant data
-      const { data: tenant } = await supabase
-        .from("companies")
-        .select("*")
-        .eq("id", servidorId)
-        .maybeSingle();
+      // Fetch tenant, proposal, registration in parallel
+      const [tenantRes, proposalRes, regRes] = await Promise.all([
+        supabase.from("companies").select("*").eq("id", servidorId).maybeSingle(),
+        supabase.from("proposals").select("*, proposal_items(*)").eq("lead_id", lead.id).eq("status", "approved").order("approved_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
+      ]);
+      const tenant = tenantRes.data;
+      const registration = regRes.data;
+      let proposal = proposalRes.data;
 
-      // Fetch latest approved proposal for this lead
-      const { data: proposal } = await supabase
-        .from("proposals")
-        .select("*, proposal_items(*)")
-        .eq("lead_id", lead.id)
-        .eq("status", "approved")
-        .order("approved_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      // Fallback: if no approved proposal, get most recent
+      if (!proposal) {
+        const { data: fallback } = await supabase.from("proposals").select("*, proposal_items(*)").eq("lead_id", lead.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+        proposal = fallback;
+      }
 
       // Fetch vendor (proposal creator)
       let vendor: any = null;
@@ -329,7 +328,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         vendor = v;
       }
 
-      const vars = buildVariableMap(lead, tenant, proposal, vendor);
+      const vars = buildVariableMap(lead, tenant, proposal, vendor, registration);
 
       // Try to generate PDF with variable substitution using pdf-lib
       let pdfUrl = template.arquivo_url;
