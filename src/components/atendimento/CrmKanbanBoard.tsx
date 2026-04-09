@@ -22,6 +22,7 @@ import { CrmLeadDetailView } from "./CrmLeadDetailView";
 import { FormLinkDialog } from "./FormLinkDialog";
 import { CrmSearchDialog } from "./CrmSearchDialog";
 import { useCrmLeads, CrmLead, STAGES } from "@/hooks/useCrmLeads";
+import { useKanbanColumns } from "@/hooks/useKanbanColumns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -56,6 +57,14 @@ interface CrmKanbanBoardProps {
 const formatCurrency = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+const isLeadOverdueDynamic = (lead: CrmLead, slaDays: number): boolean => {
+  if (!slaDays || slaDays <= 0 || !lead.stage_entered_at) return false;
+  const enteredAt = new Date(lead.stage_entered_at);
+  const now = new Date();
+  const diffDays = (now.getTime() - enteredAt.getTime()) / (1000 * 60 * 60 * 24);
+  return diffDays > slaDays;
+};
+
 const isLeadOverdue = (lead: CrmLead, stageId: string): boolean => {
   const stage = STAGES.find((s) => s.id === stageId);
   if (!stage?.daysLimit || !lead.stage_entered_at) return false;
@@ -63,10 +72,7 @@ const isLeadOverdue = (lead: CrmLead, stageId: string): boolean => {
   if (!match) return false;
   const limitDays = parseInt(match[1], 10);
   if (limitDays <= 0) return false;
-  const enteredAt = new Date(lead.stage_entered_at);
-  const now = new Date();
-  const diffDays = (now.getTime() - enteredAt.getTime()) / (1000 * 60 * 60 * 24);
-  return diffDays > limitDays;
+  return isLeadOverdueDynamic(lead, limitDays);
 };
 
 const getProgressColor = (lead: CrmLead, stageId: string, hasActivity: boolean): string => {
@@ -79,7 +85,15 @@ const getProgressColor = (lead: CrmLead, stageId: string, hasActivity: boolean):
 };
 
 export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps) {
-  const { leads, loading, createLead, updateLead, deleteLead, moveToStage, markAsWonAndTransfer, totalLeads, totalPS, totalMRR, stageStats } = useCrmLeads("commercial", workspaceId);
+  // Fetch dynamic kanban columns for this workspace
+  const { dynamicStages, columns: kanbanCols, loading: colsLoading } = useKanbanColumns(workspaceId);
+  const hasDynamicColumns = kanbanCols.length > 0;
+
+  const { leads, loading, createLead, updateLead, deleteLead, moveToStage, markAsWonAndTransfer, totalLeads, totalPS, totalMRR, stageStats } = useCrmLeads(
+    "commercial",
+    workspaceId,
+    hasDynamicColumns ? dynamicStages : undefined
+  );
   const { profile } = useAuth();
   const companyId = useActiveCompanyId();
   const navigate = useNavigate();
@@ -375,7 +389,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
     else if (selectedLead) await updateLead(selectedLead.id, data);
   };
 
-  if (loading) {
+  if (loading || colsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -512,15 +526,16 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
         {stageStats.map((stage) => {
           const Icon = stageIcons[stage.id] || Clock;
           const stageLeads = filteredLeads.filter((l) => l.stage === stage.id);
-          const colors = stageColors[stage.id] || stageColors["standby"];
+          const colors = stageColors[stage.id] || { bg: "bg-muted/30", text: "text-foreground", icon: "bg-primary", border: "border-border" };
+          const dynCol = kanbanCols.find(c => c.id === stage.id);
+          const slaDays = dynCol?.sla_days || (stage.daysLimit ? parseInt(stage.daysLimit) || 0 : 0);
 
           return (
             <div
               key={stage.id}
               className={cn(
                 "flex-shrink-0 w-[220px] rounded-xl flex flex-col border transition-all duration-200",
-                colors.border,
-                colors.bg,
+                dynCol ? "border-border/50 bg-muted/20" : `${colors.border} ${colors.bg}`,
                 dragOverStage === stage.id && "ring-2 ring-primary/60 scale-[1.01]"
               )}
               onDragOver={(e) => { e.preventDefault(); setDragOverStage(stage.id); }}
@@ -531,11 +546,14 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
               <div className="px-2.5 py-2 rounded-t-xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <div className={cn("p-1 rounded-md", colors.icon)}>
+                    <div
+                      className={cn("p-1 rounded-md", dynCol ? "" : colors.icon)}
+                      style={dynCol ? { backgroundColor: dynCol.color } : undefined}
+                    >
                       <Icon className="h-3 w-3 text-white" />
                     </div>
                     <span className="font-semibold text-[11px] text-foreground">{stage.title}</span>
-                    <span className={cn("text-[10px] font-bold rounded-full px-2 py-0.5 bg-card border border-border/50", colors.text)}>
+                    <span className={cn("text-[10px] font-bold rounded-full px-2 py-0.5 bg-card border border-border/50", dynCol ? "text-foreground" : colors.text)}>
                       {stage.count}
                     </span>
                   </div>
@@ -559,8 +577,11 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                   </div>
                 )}
                 {stageLeads.map((lead) => {
-                  const overdue = isLeadOverdue(lead, stage.id);
+                  const overdue = dynCol
+                    ? isLeadOverdueDynamic(lead, slaDays)
+                    : isLeadOverdue(lead, stage.id);
                   const days = Math.floor((Date.now() - new Date(lead.stage_entered_at).getTime()) / (1000 * 60 * 60 * 24));
+                  const overdueByDays = slaDays > 0 ? Math.max(0, days - slaDays) : 0;
                   const hasActivity = leadsWithActivity.has(lead.id);
                   const noActivity = !hasActivity;
                   const progressColor = getProgressColor(lead, stage.id, hasActivity);
@@ -712,10 +733,10 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                         </div>
                         <span className={cn(
                           "text-[9px] font-bold rounded-full px-1.5 py-0",
-                          overdue ? "text-red-600" : days > 3 ? "text-amber-600" : "text-muted-foreground/50",
-                          overdue ? "bg-red-50 dark:bg-red-950/30" : days > 3 ? "bg-amber-50 dark:bg-amber-950/30" : ""
+                          overdue ? "text-destructive" : days > 3 ? "text-amber-600" : "text-muted-foreground/50",
+                          overdue ? "bg-destructive/10" : days > 3 ? "bg-amber-50 dark:bg-amber-950/30" : ""
                         )}>
-                          {days}d
+                          {overdue && overdueByDays > 0 ? `+${overdueByDays}d atraso` : `${days}d`}
                         </span>
                       </div>
                     </div>

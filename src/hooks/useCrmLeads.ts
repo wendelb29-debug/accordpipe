@@ -50,7 +50,7 @@ export interface CrmLeadActivity {
   created_at: string;
 }
 
-// Commercial pipeline stages
+// Commercial pipeline stages (fallback when no dynamic columns)
 export const STAGES = [
   { id: "standby", title: "StandBy", daysLimit: "90d", color: "bg-gray-500" },
   { id: "novos", title: "Novos Leads", daysLimit: "1d", color: "bg-emerald-500" },
@@ -58,7 +58,6 @@ export const STAGES = [
   { id: "call-negocio", title: "Call/Negócio", daysLimit: "3d", color: "bg-orange-500" },
   { id: "follow-up-1", title: "Follow-up 1", daysLimit: "15d", color: "bg-purple-500" },
   { id: "follow-up-2", title: "Follow-up 2", daysLimit: "15d", color: "bg-indigo-500" },
-  
   { id: "contrato-fechado", title: "Contrato Fechado", daysLimit: "", color: "bg-green-500" },
 ] as const;
 
@@ -72,15 +71,33 @@ export const ADMIN_STAGES = [
 
 export const ALL_STAGES = [...STAGES, ...ADMIN_STAGES];
 
-export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial", workspaceId?: string | null) {
+export interface DynamicStage {
+  id: string;
+  title: string;
+  daysLimit: string;
+  color: string;
+  rawColor?: string;
+  sla_days?: number;
+}
+
+export function useCrmLeads(
+  pipelineType: "commercial" | "admin" = "commercial",
+  workspaceId?: string | null,
+  dynamicStages?: DynamicStage[]
+) {
   const [leads, setLeads] = useState<CrmLead[]>([]);
   const [loading, setLoading] = useState(true);
   const { profile, role } = useAuth();
   const companyId = useActiveCompanyId();
 
-  const activeStages = pipelineType === "admin" ? ADMIN_STAGES : STAGES;
+  // Use dynamic stages if provided, otherwise fallback to hardcoded
+  const activeStages: readonly { id: string; title: string; daysLimit: string; color: string }[] =
+    dynamicStages && dynamicStages.length > 0
+      ? dynamicStages
+      : pipelineType === "admin"
+        ? ADMIN_STAGES
+        : STAGES;
 
-  // Check if user has elevated access (can see all leads)
   const canSeeAll = role === "admin" || role === "ceo" || profile?.is_master;
 
   const fetchLeads = useCallback(async () => {
@@ -93,12 +110,10 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial",
       .neq("lead_status", "lost")
       .order("created_at", { ascending: false });
 
-    // User isolation: non-admin/non-master users only see their own leads
     if (!canSeeAll && profile?.user_id) {
       query = query.eq("created_by_user_id", profile.user_id);
     }
 
-    // Workspace filter
     if (workspaceId) {
       query = query.eq("workspace_id", workspaceId);
     }
@@ -112,7 +127,7 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial",
       setLeads((data as CrmLead[]) || []);
     }
     setLoading(false);
-  }, [pipelineType, canSeeAll, profile?.user_id, workspaceId]);
+  }, [pipelineType, canSeeAll, profile?.user_id, workspaceId, activeStages.map(s => s.id).join(",")]);
 
   useEffect(() => {
     fetchLeads();
@@ -137,6 +152,12 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial",
     }
     const insertData: any = { ...lead, servidor_id: servidorId };
     if (workspaceId) insertData.workspace_id = workspaceId;
+
+    // Set default stage to first dynamic column if available
+    if (!insertData.stage && activeStages.length > 0) {
+      insertData.stage = activeStages[0].id;
+    }
+
     const { data, error } = await supabase
       .from("crm_leads")
       .insert(insertData)
@@ -178,7 +199,7 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial",
 
   const moveToStage = async (id: string, stage: string) => {
     const lead = leads.find((l) => l.id === id);
-    const allStages = [...STAGES, ...ADMIN_STAGES];
+    const allStages = [...activeStages, ...ADMIN_STAGES];
     const oldStage = allStages.find((s) => s.id === lead?.stage);
     const newStage = allStages.find((s) => s.id === stage);
     const oldStageName = oldStage ? `${oldStage.title}${oldStage.daysLimit ? ` (${oldStage.daysLimit})` : ""}` : lead?.stage || "";
@@ -186,6 +207,19 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial",
     const success = await updateLead(id, { stage, stage_entered_at: new Date().toISOString() } as any);
     if (success && lead) {
       const servidorId = lead.servidor_id;
+
+      // Record card_history for SLA tracking
+      if (workspaceId) {
+        await supabase.from("card_history").insert({
+          lead_id: id,
+          workspace_id: workspaceId,
+          from_column_id: lead.stage, // stores column ID (UUID for dynamic, string for legacy)
+          to_column_id: stage,
+          moved_by_user_id: profile?.user_id || null,
+          moved_by_name: profile?.name || null,
+        } as any);
+      }
+
       if (servidorId) {
         await supabase.from("crm_lead_activities").insert({
           lead_id: id,
@@ -206,10 +240,8 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial",
     const lead = leads.find((l) => l.id === id);
     if (!lead) return false;
 
-    // Save previous stage for potential return
     const previousStage = lead.stage;
 
-    // Update lead: status won, move to admin pipeline stage
     const success = await updateLead(id, {
       lead_status: "won",
       stage: "cadastro-pendente",
@@ -217,7 +249,6 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial",
     } as any);
 
     if (success) {
-      // Log activity with previous stage stored in metadata
       await supabase.from("crm_lead_activities").insert({
         lead_id: id,
         servidor_id: lead.servidor_id,
@@ -229,7 +260,6 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial",
         metadata: { previous_stage: previousStage },
       } as any);
 
-      // Create registration record with lead data
       const regResult = await supabase.from("crm_client_registrations" as any).insert({
         lead_id: id,
         servidor_id: lead.servidor_id,
@@ -249,7 +279,6 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial",
       }).select("id").single();
       const regId = (regResult.data as any)?.id;
 
-      // Auto-create contract linked to registration
       if (regId) {
         const contractResult = await supabase.from("client_contracts").insert({
           registration_id: regId,
@@ -264,11 +293,10 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial",
         } as any).select("id").single();
         const contractId = (contractResult.data as any)?.id;
 
-        // Auto-generate first financial transaction (monthly charge)
         if (lead.value_mrr > 0) {
           const dueDate = new Date();
           dueDate.setMonth(dueDate.getMonth() + 1);
-          dueDate.setDate(10); // Default billing day
+          dueDate.setDate(10);
 
           await supabase.from("financial_transactions").insert({
             servidor_id: lead.servidor_id,
@@ -284,7 +312,6 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial",
           } as any);
         }
 
-        // Log contract creation in history
         if (contractId) {
           await supabase.from("client_contract_history").insert({
             contract_id: contractId,
@@ -295,7 +322,6 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial",
         }
       }
 
-      // Notify administrativo users
       const { data: adminProfiles } = await supabase
         .from("profiles")
         .select("user_id")
@@ -321,7 +347,6 @@ export function useCrmLeads(pipelineType: "commercial" | "admin" = "commercial",
         }
       }
 
-      // Remove from local state (it moved to admin pipeline)
       if (pipelineType === "commercial") {
         setLeads((prev) => prev.filter((l) => l.id !== id));
       }
