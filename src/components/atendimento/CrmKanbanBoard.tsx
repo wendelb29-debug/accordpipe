@@ -85,7 +85,15 @@ const getProgressColor = (lead: CrmLead, stageId: string, hasActivity: boolean):
 };
 
 export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps) {
-  const { leads, loading, createLead, updateLead, deleteLead, moveToStage, markAsWonAndTransfer, totalLeads, totalPS, totalMRR, stageStats } = useCrmLeads("commercial", workspaceId);
+  // Fetch dynamic kanban columns for this workspace
+  const { dynamicStages, columns: kanbanCols, loading: colsLoading } = useKanbanColumns(workspaceId);
+  const hasDynamicColumns = kanbanCols.length > 0;
+
+  const { leads, loading, createLead, updateLead, deleteLead, moveToStage, markAsWonAndTransfer, totalLeads, totalPS, totalMRR, stageStats } = useCrmLeads(
+    "commercial",
+    workspaceId,
+    hasDynamicColumns ? dynamicStages : undefined
+  );
   const { profile } = useAuth();
   const companyId = useActiveCompanyId();
   const navigate = useNavigate();
