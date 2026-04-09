@@ -1026,6 +1026,8 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                           value={signer.nome_completo}
                           onChange={(e) => updateSigner(idx, "nome_completo", e.target.value)}
                           className="h-8 text-xs"
+                          readOnly={isOwner}
+                          disabled={isOwner}
                         />
                       </div>
                       <div>
@@ -1034,6 +1036,8 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                           value={signer.email}
                           onChange={(e) => updateSigner(idx, "email", e.target.value)}
                           className="h-8 text-xs"
+                          readOnly={isOwner}
+                          disabled={isOwner}
                         />
                       </div>
                       <div>
@@ -1042,6 +1046,8 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                           value={signer.telefone}
                           onChange={(e) => updateSigner(idx, "telefone", e.target.value)}
                           className="h-8 text-xs"
+                          readOnly={isOwner}
+                          disabled={isOwner}
                         />
                       </div>
                       <div>
@@ -1050,6 +1056,8 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                           value={signer.cpf}
                           onChange={(e) => updateSigner(idx, "cpf", e.target.value)}
                           className="h-8 text-xs"
+                          readOnly={isOwner}
+                          disabled={isOwner}
                         />
                       </div>
                       <div>
@@ -1059,9 +1067,16 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                           value={signer.data_nascimento}
                           onChange={(e) => updateSigner(idx, "data_nascimento", e.target.value)}
                           className="h-8 text-xs"
+                          readOnly={isOwner}
+                          disabled={isOwner}
                         />
                       </div>
                     </div>
+                    {isOwner && (
+                      <p className="text-[10px] text-muted-foreground italic mt-1">
+                        Dados preenchidos automaticamente com base no usuário responsável pela proposta.
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
               ))}
