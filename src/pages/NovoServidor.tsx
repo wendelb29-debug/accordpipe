@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Building2, Palette, FileSignature, Search, Loader2, Save, Webhook,
-  Send, LogOut, MessageSquare, Radio, Activity, Wifi, Copy, Check, RefreshCw,
+  Send, LogOut, MessageSquare, Radio, Activity, Wifi, Copy, Check, RefreshCw, LayoutGrid,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import { toast as sonnerToast } from "sonner";
 import { BrandIdentityFields } from "@/components/empresas/BrandIdentityFields";
 import { ContractTemplateTab } from "@/components/servidores/ContractTemplateTab";
 import { WebhookConfig } from "@/components/atendimento/tabs/WebhookConfig";
+import { WorkspacesTab } from "@/components/servidores/WorkspacesTab";
 import { useEffect } from "react";
 
 const cleanDigits = (v: string) => v.replace(/\D/g, "");
@@ -406,6 +407,7 @@ export default function NovoServidor() {
           {[
             { value: "cadastro", icon: Building2, label: "Dados Cadastrais" },
             { value: "identidade", icon: Palette, label: "Identidade Visual" },
+            { value: "workspaces", icon: LayoutGrid, label: "Workspaces" },
             { value: "contrato", icon: FileSignature, label: "Contrato" },
             { value: "vendas", icon: Webhook, label: "Webhooks Z-API" },
           ].map((item) => (
@@ -551,6 +553,14 @@ export default function NovoServidor() {
                     brandBgColor: d.brandBgColor, brandTextColor: d.brandTextColor,
                   })}
                 />
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === "workspaces" && (
+            <Card>
+              <CardContent className="pt-6">
+                <WorkspacesTab companyId={editId || pendingNewId} />
               </CardContent>
             </Card>
           )}
