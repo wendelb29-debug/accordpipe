@@ -167,9 +167,52 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
   const fetchContractTemplates = async () => {
     const { data } = await supabase
       .from("company_contract_templates")
-      .select("id, name")
+      .select("id, name, pdf_url, pdf_path, contract_content")
       .eq("company_id", lead.servidor_id);
     setContractTemplates((data as any[]) || []);
+  };
+
+  const handleGenerateFromTemplate = async (template: { id: string; name: string; pdf_url: string; pdf_path: string; contract_content: string | null }) => {
+    if (generatingDoc) return;
+    setGeneratingDoc(true);
+    try {
+      const dateStr = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-");
+      const docName = `${template.name} — ${dateStr}`;
+
+      // Generate hash and validation code
+      const hashData = `${lead.id}-${template.id}-${Date.now()}`;
+      const encoded = new TextEncoder().encode(hashData);
+      const digest = await crypto.subtle.digest("SHA-256", encoded);
+      const documentHash = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, "0")).join("");
+      const validationCode = documentHash.substring(0, 12).toUpperCase();
+
+      // Create contract record linked to this lead
+      const { data: contract, error } = await supabase
+        .from("contracts")
+        .insert({
+          company_id: lead.servidor_id,
+          lead_id: lead.id,
+          contract_type: "template",
+          signature_status: "pending",
+          pdf_url: template.pdf_url,
+          contract_content: template.contract_content || null,
+          document_hash: documentHash,
+          validation_code: validationCode,
+          signer_name: lead.contact_name || lead.company_name,
+          matriz_nome: docName,
+        } as any)
+        .select("id, code")
+        .single();
+
+      if (error) throw error;
+
+      toast.success(`Documento "${template.name}" gerado com sucesso!`);
+      await fetchSignedContracts();
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Erro ao gerar documento: " + (err.message || ""));
+    }
+    setGeneratingDoc(false);
   };
 
   useEffect(() => {
