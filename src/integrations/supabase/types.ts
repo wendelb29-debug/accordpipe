@@ -2071,6 +2071,29 @@ export type Database = {
         }
         Relationships: []
       }
+      tenant_contract_sequences: {
+        Row: {
+          last_number: number
+          servidor_id: string
+        }
+        Insert: {
+          last_number?: number
+          servidor_id: string
+        }
+        Update: {
+          last_number?: number
+          servidor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_contract_sequences_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_custom_permissions: {
         Row: {
           created_at: string
@@ -2878,6 +2901,10 @@ export type Database = {
           razao_social: string
           status: string
         }[]
+      }
+      next_tenant_contract_code: {
+        Args: { _servidor_id: string }
+        Returns: string
       }
       pdf_contract_has_signer_token: {
         Args: { _contract_id: string }

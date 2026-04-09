@@ -1541,6 +1541,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
       case "cliente_endereco": return registrationData?.endereco || lead.endereco || "—";
       case "cliente_numero": return registrationData?.numero || lead.numero || "—";
       case "cliente_complemento": return registrationData?.complemento || lead.complemento || "—";
+      case "codigo_contrato": return "{{Codigo_Contrato}}"; // Replaced at generation time
 
       default: return "";
     }

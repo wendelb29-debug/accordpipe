@@ -179,8 +179,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
     if (generatingDoc) return;
     setGeneratingDoc(true);
     try {
-      const dateStr = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-");
-      const docName = `${template.name} — ${dateStr}`;
+      const docName = template.name;
 
       // Generate hash and validation code
       const hashData = `${lead.id}-${template.id}-${Date.now()}`;
@@ -293,7 +292,13 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
 
       if (error) throw error;
 
-      toast.success(`Documento "${template.name}" gerado com sucesso!`);
+      // Replace {{Codigo_Contrato}} tag in contract_content with actual code
+      if (contract?.code && template.contract_content?.includes("{{Codigo_Contrato}}")) {
+        const updatedContent = template.contract_content.replace(/\{\{Codigo_Contrato\}\}/g, contract.code);
+        await supabase.from("contracts").update({ contract_content: updatedContent } as any).eq("id", contract.id);
+      }
+
+      toast.success(`Documento "${contract?.code} — ${template.name}" gerado com sucesso!`);
       await fetchSignedContracts();
     } catch (err: any) {
       console.error(err);
@@ -741,7 +746,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
                           <FileText className="h-5 w-5 text-muted-foreground" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-medium">{contract.matriz_nome || contract.code} — {lead.company_name}</p>
+                          <p className="text-sm font-medium">{contract.code} — {contract.matriz_nome || lead.company_name}</p>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                             <span>{new Date(contract.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}</span>
                             {getContractStatusBadge(contract.signature_status)}
