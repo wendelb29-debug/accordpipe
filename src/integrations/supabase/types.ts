@@ -61,6 +61,68 @@ export type Database = {
           },
         ]
       }
+      card_history: {
+        Row: {
+          from_column_id: string | null
+          id: string
+          lead_id: string
+          moved_at: string
+          moved_by_name: string | null
+          moved_by_user_id: string | null
+          to_column_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          from_column_id?: string | null
+          id?: string
+          lead_id: string
+          moved_at?: string
+          moved_by_name?: string | null
+          moved_by_user_id?: string | null
+          to_column_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          from_column_id?: string | null
+          id?: string
+          lead_id?: string
+          moved_at?: string
+          moved_by_name?: string | null
+          moved_by_user_id?: string | null
+          to_column_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_history_from_column_id_fkey"
+            columns: ["from_column_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_columns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_history_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_history_to_column_id_fkey"
+            columns: ["to_column_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_columns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_history_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_contract_history: {
         Row: {
           action: string
