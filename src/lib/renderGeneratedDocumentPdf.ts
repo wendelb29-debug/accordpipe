@@ -575,7 +575,7 @@ function drawCertificatePage(ctx: RenderContext, certData: PdfCertificateData): 
 
       cardY -= 13;
       if (signer.location) {
-        ctx.page.drawText(`📍 ${signer.location}`, {
+        ctx.page.drawText(`Local: ${signer.location}`, {
           x: MARGIN + 10,
           y: cardY,
           font: ctx.font,
