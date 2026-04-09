@@ -4,6 +4,7 @@ import {
   FileText, Clock, CheckCircle2, AlertCircle, FileSignature,
   Send, Copy, Link2, Users, XCircle, ExternalLink,
 } from "lucide-react";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
