@@ -563,6 +563,7 @@ export type Database = {
       company_contract_templates: {
         Row: {
           company_id: string
+          contract_content: string | null
           created_at: string
           id: string
           name: string
@@ -572,6 +573,7 @@ export type Database = {
         }
         Insert: {
           company_id: string
+          contract_content?: string | null
           created_at?: string
           id?: string
           name?: string
@@ -581,6 +583,7 @@ export type Database = {
         }
         Update: {
           company_id?: string
+          contract_content?: string | null
           created_at?: string
           id?: string
           name?: string
