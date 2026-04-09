@@ -481,8 +481,8 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
                                     <span className="text-xs font-semibold text-foreground truncate flex-1">{col.name}</span>
                                   )}
                                   <div className="flex items-center gap-0.5 ml-auto">
-                                    {(col.is_default ?? false) && <Star className="h-3 w-3 text-yellow-500" title="Etapa padrão" />}
-                                    {(col.is_final ?? false) && <Flag className="h-3 w-3 text-red-500" title="Etapa final" />}
+                                    {(col.is_default ?? false) && <span title="Etapa padrão"><Star className="h-3 w-3 text-yellow-500" /></span>}
+                                    {(col.is_final ?? false) && <span title="Etapa final"><Flag className="h-3 w-3 text-red-500" /></span>}
                                   </div>
                                 </div>
 
