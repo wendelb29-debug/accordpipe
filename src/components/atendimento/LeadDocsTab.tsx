@@ -87,6 +87,8 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
   const [signedPdfContracts, setSignedPdfContracts] = useState<SignedPdfContract[]>([]);
   const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
 
+  const [contractTemplates, setContractTemplates] = useState<{ id: string; name: string }[]>([]);
+
   const fetchDocs = async () => {
     setLoading(true);
     const { data, error } = await (supabase as any)
