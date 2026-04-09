@@ -772,13 +772,13 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-52">
-                        {doc.pdf_url && (
+                        {((doc.status === "signed" && doc.signed_pdf_url) || doc.pdf_url || doc.html_content) && (
                           <>
-                            <DropdownMenuItem onClick={() => setViewDoc(doc)}>
+                            <DropdownMenuItem onClick={() => handleOpenDocument(doc)}>
                               <Eye className="h-3.5 w-3.5 mr-2" /> Visualizar
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => window.open(doc.pdf_url!, "_blank")}>
-                              <Download className="h-3.5 w-3.5 mr-2" /> Baixar PDF original
+                            <DropdownMenuItem onClick={() => handleDownloadDocument(doc)}>
+                              <Download className="h-3.5 w-3.5 mr-2" /> {doc.status === "signed" && doc.signed_pdf_url ? "Baixar PDF assinado" : "Baixar PDF original"}
                             </DropdownMenuItem>
                           </>
                         )}
