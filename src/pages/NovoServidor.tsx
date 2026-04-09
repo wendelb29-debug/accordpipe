@@ -407,6 +407,7 @@ export default function NovoServidor() {
           {[
             { value: "cadastro", icon: Building2, label: "Dados Cadastrais" },
             { value: "identidade", icon: Palette, label: "Identidade Visual" },
+            { value: "workspaces", icon: LayoutGrid, label: "Workspaces" },
             { value: "contrato", icon: FileSignature, label: "Contrato" },
             { value: "vendas", icon: Webhook, label: "Webhooks Z-API" },
           ].map((item) => (
