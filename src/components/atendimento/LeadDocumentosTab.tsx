@@ -240,7 +240,7 @@ function buildVariableMap(
     "{{servicos_contratados}}": servicosContratados,
     "{{nome_vendedor}}": vendor?.name || "",
     "{{email_vendedor}}": vendor?.email || "",
-    "{{telefone_vendedor}}": vendor?.phone || "",
+    "{{telefone_vendedor}}": vendor?.whatsapp || "",
     "{{data_nascimento_vendedor}}": vendor?.birth_date || "",
     "{{data_assinatura_cliente}}": "",
     "{{hora_assinatura_cliente}}": "",
@@ -383,7 +383,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
       if (acceptedActivity?.created_by_user_id) {
         const { data: v } = await supabase
           .from("profiles")
-          .select("name, email, phone, birth_date")
+          .select("name, email, whatsapp, birth_date")
           .eq("user_id", acceptedActivity.created_by_user_id)
           .maybeSingle();
         vendor = v;
@@ -737,7 +737,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
           const p = activityToProposal(acceptedActivity);
           setPreviewProposal(p);
           if (acceptedActivity?.created_by_user_id) {
-            const { data: v } = await supabase.from("profiles").select("name, email, phone, birth_date").eq("user_id", acceptedActivity.created_by_user_id).maybeSingle();
+            const { data: v } = await supabase.from("profiles").select("name, email, whatsapp, birth_date").eq("user_id", acceptedActivity.created_by_user_id).maybeSingle();
             setPreviewVendor(v);
           } else {
             setPreviewVendor(null);
