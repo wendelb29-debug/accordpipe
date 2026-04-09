@@ -2,9 +2,11 @@ import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Building2, Palette, FileSignature, Search, Loader2, Save, Webhook,
+  Send, LogOut, MessageSquare, Radio, Activity, Wifi, Copy, Check, RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -47,6 +49,117 @@ const defaultBrand = {
   brandAccentColor: "#10B981", brandBgColor: "#F3F4F6", brandTextColor: "#1F2937",
 };
 
+const previewWebhookFields = [
+  { key: "zapi_webhook_on_send", eventType: "on-send", label: "Ao enviar", icon: <Send className="h-4 w-4 text-primary" /> },
+  { key: "zapi_webhook_chat_presence", eventType: "chat-presence", label: "Presença do chat", icon: <Radio className="h-4 w-4 text-primary" /> },
+  { key: "zapi_webhook_on_disconnect", eventType: "on-disconnect", label: "Ao desconectar", icon: <LogOut className="h-4 w-4 text-primary" /> },
+  { key: "zapi_webhook_message_status", eventType: "message-status", label: "Receber status da mensagem", icon: <Activity className="h-4 w-4 text-primary" /> },
+  { key: "zapi_webhook_on_receive", eventType: "on-receive", label: "Ao receber", icon: <MessageSquare className="h-4 w-4 text-primary" /> },
+  { key: "zapi_webhook_on_connect", eventType: "on-connect", label: "Ao conectar", icon: <Wifi className="h-4 w-4 text-primary" /> },
+];
+
+const genHash = () => Array.from(crypto.getRandomValues(new Uint8Array(8))).map((b) => b.toString(16).padStart(2, "0")).join("");
+
+function WebhookConfigPreview({
+  urls, setUrls, notifyMe, setNotifyMe,
+}: {
+  urls: Record<string, string>;
+  setUrls: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  notifyMe: boolean;
+  setNotifyMe: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const tempId = "TENANT_ID";
+
+  useEffect(() => {
+    if (Object.keys(urls).length === 0 && supabaseUrl) {
+      const initial: Record<string, string> = {};
+      previewWebhookFields.forEach((f) => {
+        initial[f.key] = `${supabaseUrl}/functions/v1/zapi-webhook/${tempId}/${f.eventType}/${genHash()}`;
+      });
+      setUrls(initial);
+    }
+  }, []);
+
+  const refreshUrl = (key: string) => {
+    const field = previewWebhookFields.find((f) => f.key === key);
+    if (!field || !supabaseUrl) return;
+    setUrls((prev) => ({
+      ...prev,
+      [key]: `${supabaseUrl}/functions/v1/zapi-webhook/${tempId}/${field.eventType}/${genHash()}`,
+    }));
+    sonnerToast.success("URL atualizada!");
+  };
+
+  const refreshAll = () => {
+    if (!supabaseUrl) return;
+    const newUrls: Record<string, string> = {};
+    previewWebhookFields.forEach((f) => {
+      newUrls[f.key] = `${supabaseUrl}/functions/v1/zapi-webhook/${tempId}/${f.eventType}/${genHash()}`;
+    });
+    setUrls(newUrls);
+    sonnerToast.success("Todas as URLs foram atualizadas!");
+  };
+
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const handleCopy = (key: string, value: string) => {
+    navigator.clipboard.writeText(value);
+    setCopiedKey(key);
+    sonnerToast.success("URL copiada!");
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-xs font-semibold uppercase tracking-widest text-primary mb-1">
+            Webhooks Z-API — Pré-configuração
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            As URLs serão geradas com o ID real ao criar o tenant.
+          </p>
+        </div>
+        <Button variant="outline" size="sm" className="gap-2 shrink-0" onClick={refreshAll}>
+          <RefreshCw className="h-3.5 w-3.5" />
+          Atualizar Todas
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {previewWebhookFields.map((field) => (
+          <div key={field.key} className="space-y-2">
+            <Label className="text-sm font-semibold text-foreground">{field.label}</Label>
+            <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+              <div className="shrink-0">{field.icon}</div>
+              <code className="text-xs text-foreground truncate flex-1 ml-2">
+                {urls[field.key] || field.label}
+              </code>
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleCopy(field.key, urls[field.key] || "")} title="Copiar URL">
+                {copiedKey === field.key ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => refreshUrl(field.key)} title="Gerar nova URL">
+                <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-3 pt-2">
+        <Switch checked={notifyMe} onCheckedChange={setNotifyMe} />
+        <Label className="text-sm text-foreground cursor-pointer" onClick={() => setNotifyMe(!notifyMe)}>
+          Notificar as enviadas por mim também
+        </Label>
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        As configurações de webhook serão salvas automaticamente ao criar o tenant.
+      </p>
+    </div>
+  );
+}
+
 export default function NovoServidor() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -59,6 +172,10 @@ export default function NovoServidor() {
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(!!editId);
+
+  // Webhook state for new tenants
+  const [webhookUrls, setWebhookUrls] = useState<Record<string, string>>({});
+  const [webhookNotifyMe, setWebhookNotifyMe] = useState(false);
 
   const [formData, setFormData] = useState({
     razao_social: "", nome_fantasia: "", cnpj: "", email: "", telefone: "",
@@ -183,7 +300,28 @@ export default function NovoServidor() {
         if (error) throw error;
         toast({ title: "Tenant atualizado", description: "Os dados foram salvos." });
       } else {
-        const { error } = await supabase.from("companies").insert(payload);
+        // Include webhook URLs when creating a new tenant
+        const newId = crypto.randomUUID();
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const generateHash = () => Array.from(crypto.getRandomValues(new Uint8Array(8))).map((b) => b.toString(16).padStart(2, "0")).join("");
+        
+        const webhookPayload: Record<string, any> = {};
+        if (supabaseUrl) {
+          const events = [
+            { key: "zapi_webhook_on_send", type: "on-send" },
+            { key: "zapi_webhook_chat_presence", type: "chat-presence" },
+            { key: "zapi_webhook_on_disconnect", type: "on-disconnect" },
+            { key: "zapi_webhook_message_status", type: "message-status" },
+            { key: "zapi_webhook_on_receive", type: "on-receive" },
+            { key: "zapi_webhook_on_connect", type: "on-connect" },
+          ];
+          events.forEach((e) => {
+            webhookPayload[e.key] = webhookUrls[e.key] || `${supabaseUrl}/functions/v1/zapi-webhook/${newId}/${e.type}/${generateHash()}`;
+          });
+          webhookPayload.zapi_webhook_notify_me = webhookNotifyMe;
+        }
+
+        const { error } = await supabase.from("companies").insert({ id: newId, ...payload, ...webhookPayload });
         if (error) throw error;
         toast({ title: "Tenant criado", description: "O novo tenant foi criado com sucesso." });
       }
@@ -403,9 +541,12 @@ export default function NovoServidor() {
                 {editId ? (
                   <WebhookConfig companyIdOverride={editId} />
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    Salve o tenant primeiro para configurar webhooks de vendas.
-                  </p>
+                  <WebhookConfigPreview
+                    urls={webhookUrls}
+                    setUrls={setWebhookUrls}
+                    notifyMe={webhookNotifyMe}
+                    setNotifyMe={setWebhookNotifyMe}
+                  />
                 )}
               </CardContent>
             </Card>
