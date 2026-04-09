@@ -4,6 +4,7 @@ import {
   Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield, Webhook,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ContractTemplateTab } from "./ContractTemplateTab";
 import { WebhookConfig } from "@/components/atendimento/tabs/WebhookConfig";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
