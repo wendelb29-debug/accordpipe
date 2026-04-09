@@ -1265,7 +1265,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
             {/* Propostas */}
             <TabsContent value="propostas" className="flex-1 overflow-y-auto overflow-x-auto p-2 sm:p-4 mt-0 w-full max-w-full">
-              <LeadPropostasTab lead={lead} addActivity={addActivity} />
+              <LeadPropostasTab lead={lead} addActivity={addActivity} onUpdateLead={onUpdate} />
             </TabsContent>
 
              {/* Docs - Documentos Gerados + Arquivos */}
