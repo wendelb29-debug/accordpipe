@@ -124,6 +124,28 @@ const SIGNATURE_VARS = new Set([
 
 const CRITICAL_VARS = ["nome_completo", "documento_contratante", "tenant_nome", "tenant_cnpj"];
 
+/** Convert a crm_lead_activities proposal activity into the shape buildVariableMap expects */
+function activityToProposal(activity: any): any {
+  if (!activity) return null;
+  const meta = activity.metadata || {};
+  const lineItems = (meta.line_items || []).map((item: any) => ({
+    nome: item.name || "",
+    name: item.name || "",
+    descricao: item.description || item.descricao || "",
+    quantidade: item.quantity || 1,
+    valor: item.total ?? item.unitValue ?? 0,
+  }));
+  return {
+    titulo: (activity.title || "").replace(/^Proposta:\s*/i, ""),
+    descricao: meta.introduction || meta.description || "",
+    valor: meta.value_mrr || meta.value_ps || 0,
+    proposal_items: lineItems,
+    created_by_user_id: activity.created_by_user_id,
+    status: meta.status,
+    sigla: meta.sigla,
+  };
+}
+
 function buildVariableMap(
   lead: CrmLead,
   tenant?: any,
