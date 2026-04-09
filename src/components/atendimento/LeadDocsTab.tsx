@@ -121,7 +121,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
     // Fetch ALL contracts for this lead (not just signed)
     const { data: allContractsData } = await supabase
       .from("contracts")
-      .select("id, code, signature_status, signed_at, validation_code, document_hash, pdf_url, pdf_assinado_url, created_at, contract_content, company_id, signer_name, signer_document, signature_photo_url")
+      .select("id, code, signature_status, signed_at, validation_code, document_hash, pdf_url, pdf_assinado_url, created_at, contract_content, company_id, signer_name, signer_document, signature_photo_url, matriz_nome")
       .eq("lead_id", lead.id)
       .order("created_at", { ascending: false });
 
