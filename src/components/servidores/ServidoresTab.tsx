@@ -730,6 +730,13 @@ export default function ServidoresTab() {
               <TabsContent value="contrato" className="mt-0">
                 <ContractTemplateTab companyId={editingCompany?.id || null} />
               </TabsContent>
+              <TabsContent value="workspaces" className="mt-0">
+                {editingCompany ? (
+                  <WorkspacesTab companyId={editingCompany.id} />
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">Salve o tenant primeiro para configurar workspaces.</p>
+                )}
+              </TabsContent>
             </div>
           </Tabs>
 
