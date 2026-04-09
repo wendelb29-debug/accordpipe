@@ -606,21 +606,29 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     if (!signDoc) return;
     if (signers.some((s) => !s.nome_completo.trim())) return toast.error("Todos os signatários precisam de nome");
 
+    // Server-side enforcement: always use fresh profile data for owner signer
+    if (!profile?.name || !profile?.email || !profile?.cpf) {
+      return toast.error("Complete os dados obrigatórios do seu perfil antes de enviar para assinatura.");
+    }
+
     setSendingSignature(true);
 
-    // Create signers in DB
-    const signersToInsert = signers.map((s, i) => ({
-      document_id: signDoc.id,
-      nome_completo: s.nome_completo,
-      email: s.email || null,
-      telefone: s.telefone || null,
-      cpf: s.cpf || null,
-      data_nascimento: s.data_nascimento || null,
-      papel: s.papel,
-      obrigatorio: s.obrigatorio,
-      ordem: i + 1,
-      status: "pending",
-    }));
+    // Create signers in DB — enforce owner data from profile
+    const signersToInsert = signers.map((s, i) => {
+      const isOwner = s.papel === "proprietario_proposta";
+      return {
+        document_id: signDoc.id,
+        nome_completo: isOwner ? profile.name : s.nome_completo,
+        email: isOwner ? profile.email : (s.email || null),
+        telefone: isOwner ? (profile.whatsapp || null) : (s.telefone || null),
+        cpf: isOwner ? (profile.cpf || null) : (s.cpf || null),
+        data_nascimento: isOwner ? (profile.birth_date || null) : (s.data_nascimento || null),
+        papel: s.papel,
+        obrigatorio: s.obrigatorio,
+        ordem: i + 1,
+        status: "pending",
+      };
+    });
 
     const { data: insertedSigners, error: signersError } = await supabase
       .from("document_signers")
