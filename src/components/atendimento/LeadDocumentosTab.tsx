@@ -359,7 +359,6 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
       setGenerating(false);
     }
   };
-  };
 
   const handleDelete = async (doc: GeneratedDoc) => {
     const { error } = await supabase.from("generated_documents").delete().eq("id", doc.id);
