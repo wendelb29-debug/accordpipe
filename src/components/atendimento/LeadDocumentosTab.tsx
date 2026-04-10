@@ -906,7 +906,9 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                         <FileSignature className="h-3.5 w-3.5 text-primary shrink-0" />
                         <span className="text-sm font-medium text-foreground truncate">{doc.nome}</span>
                         <Badge variant="outline" className={cn("text-[10px] font-medium", cfg.color)}>
-                          {cfg.label}
+                          {signerCounts[doc.id]
+                            ? `${signerCounts[doc.id].signed}/${signerCounts[doc.id].total} assinaturas`
+                            : cfg.label}
                         </Badge>
                         <Badge variant="secondary" className="text-[10px]">
                           {tipoLabels[doc.tipo] || doc.tipo}
