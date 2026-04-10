@@ -2353,6 +2353,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
           items={lineItems}
           onChange={setLineItems}
           canManageCatalog={isCeo}
+          canAddItem={canAddItem}
           paymentFrequency={paymentFrequency}
           onPaymentFrequencyChange={setPaymentFrequency}
           firstPaymentDate={form.first_payment_date}
