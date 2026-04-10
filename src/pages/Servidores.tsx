@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { applyBrandColors } from "@/components/layout/ThemeSync";
+import accordPatternLight from "@/assets/accord-pattern-light.png";
+import accordPatternDark from "@/assets/accord-pattern-dark.png";
 
 export default function Servidores() {
   const navigate = useNavigate();
@@ -27,14 +29,12 @@ export default function Servidores() {
     setLoadingId(companyId);
 
     try {
-      // Pre-fetch brand colors and apply them before navigating
       const { data } = await supabase
         .from("companies")
         .select("brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color, brand_logo_url")
         .eq("id", companyId)
         .single();
 
-      // Master's own company uses default Accord colors; other tenants use their brand
       if (isMasterTenant(companyId)) {
         applyBrandColors(null);
       } else if (data) {
@@ -43,18 +43,10 @@ export default function Servidores() {
         applyBrandColors(null);
       }
 
-      // Dispatch event so sidebar logo updates
       window.dispatchEvent(new CustomEvent("tenant-switched", { detail: { companyId } }));
-
       setActiveCompanyId(companyId);
-
-      // Clear workspace selection so it reloads for new tenant
       localStorage.removeItem("accord-last-workspace");
-
-      // Invalidate ALL React Query caches to force refetch with new tenant
       await queryClient.invalidateQueries();
-
-      // Small delay for visual feedback
       await new Promise((r) => setTimeout(r, 400));
       navigate("/home");
     } catch {
@@ -66,10 +58,41 @@ export default function Servidores() {
   };
 
   return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-lg">
+    <div className="relative min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden">
+      {/* Institutional pattern background — light mode */}
+      <div
+        className="absolute inset-0 dark:hidden"
+        style={{
+          backgroundImage: `url(${accordPatternLight})`,
+          backgroundSize: '600px',
+          backgroundRepeat: 'repeat',
+          opacity: 0.35,
+        }}
+      />
+      {/* Radial fade overlay — light */}
+      <div className="absolute inset-0 dark:hidden bg-[radial-gradient(ellipse_at_center,transparent_30%,hsl(var(--background))_80%)]" />
+
+      {/* Institutional pattern background — dark mode */}
+      <div
+        className="absolute inset-0 hidden dark:block"
+        style={{
+          backgroundImage: `url(${accordPatternDark})`,
+          backgroundSize: '500px',
+          backgroundRepeat: 'repeat',
+          opacity: 0.15,
+        }}
+      />
+      {/* Radial fade overlay — dark */}
+      <div className="absolute inset-0 hidden dark:block bg-[radial-gradient(ellipse_at_center,transparent_20%,hsl(var(--background))_75%)]" />
+
+      {/* Subtle glow accents */}
+      <div className="absolute top-1/4 left-1/3 w-[400px] h-[400px] rounded-full bg-primary/[0.04] blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] rounded-full bg-primary/[0.03] blur-[80px] pointer-events-none" />
+
+      {/* Content */}
+      <div className="relative z-10 w-full max-w-lg animate-fade-in">
         <div className="flex items-center gap-3 mb-8">
-          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shadow-sm">
             <Building2 className="h-6 w-6 text-primary" />
           </div>
           <div>
@@ -79,7 +102,7 @@ export default function Servidores() {
         </div>
 
         {companies.length === 0 ? (
-          <Card className="p-8 text-center">
+          <Card className="p-8 text-center backdrop-blur-sm bg-card/80">
             <Building2 className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
             <p className="text-muted-foreground">Nenhum servidor encontrado.</p>
           </Card>
@@ -93,12 +116,12 @@ export default function Servidores() {
                 <Card
                   key={company.id}
                   onClick={() => handleSelect(company.id)}
-                  className={`flex items-center gap-4 p-4 cursor-pointer transition-all hover:shadow-md hover:border-primary/40 ${
-                    isActive ? "border-primary bg-primary/5 shadow-sm" : "border-border"
+                  className={`flex items-center gap-4 p-4 cursor-pointer transition-all duration-200 backdrop-blur-sm hover:shadow-lg hover:border-primary/40 hover:-translate-y-0.5 ${
+                    isActive ? "border-primary bg-primary/5 shadow-md ring-1 ring-primary/20" : "border-border bg-card/80"
                   } ${isLoading ? "opacity-80 pointer-events-none" : ""}`}
                 >
-                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${
-                    isActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                    isActive ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground"
                   }`}>
                     {isLoading ? (
                       <Loader2 className="h-5 w-5 animate-spin" />
