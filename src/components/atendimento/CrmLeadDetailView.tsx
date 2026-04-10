@@ -1435,11 +1435,11 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               Cancelar
             </Button>
             <Button
-              disabled={saving || !returnNote.trim()}
+              disabled={saving || !returnReason}
               className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
               onClick={async () => {
-                if (!returnNote.trim()) {
-                  toast.error("Informe o motivo da devolução");
+                if (!returnReason) {
+                  toast.error("Selecione o motivo da devolução");
                   return;
                 }
                 setSaving(true);
