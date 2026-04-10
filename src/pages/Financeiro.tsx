@@ -51,12 +51,6 @@ export default function Financeiro() {
   const [linkOpen, setLinkOpen] = useState(false);
   const [recorrenciaOpen, setRecorrenciaOpen] = useState(false);
   const [cobrancaOpen, setCobrancaOpen] = useState(false);
-    due_date: "",
-    status: "pendente",
-    payment_method: "boleto",
-    reference: "",
-    notes: "",
-  });
 
   const fetchData = async () => {
     setLoading(true);
