@@ -166,6 +166,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const [showWonConfirm, setShowWonConfirm] = useState(false);
   const [showReturnDialog, setShowReturnDialog] = useState(false);
   const [returnNote, setReturnNote] = useState("");
+  const [returnReason, setReturnReason] = useState("");
   const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [transferUserId, setTransferUserId] = useState("");
   const [transferUsers, setTransferUsers] = useState<{ user_id: string; name: string }[]>([]);
@@ -460,6 +461,10 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         return;
       }
 
+      // Save origin info before moving
+      const originWorkspaceId = lead.workspace_id;
+      const originStage = lead.stage;
+
       // Move lead to Cadastro workspace first column
       await onUpdate(lead.id, {
         lead_status: "won",
@@ -471,7 +476,17 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
       const desc = observation.trim()
         ? `Lead marcado como ganho e transferido para o workspace **Cadastro**.\nObservação: ${observation.trim()}`
         : "Lead marcado como ganho e transferido para o workspace **Cadastro**.";
-      await addActivity({ type: "won", title: "Oportunidade ganha! Transferida para Cadastro.", description: desc });
+      await addActivity({
+        type: "won",
+        title: "Oportunidade ganha! Transferida para Cadastro.",
+        description: desc,
+        metadata: {
+          origin_workspace_id: originWorkspaceId,
+          origin_stage: originStage,
+          origin_created_by_user_id: lead.created_by_user_id,
+          origin_created_by_name: lead.created_by_name,
+        },
+      });
       
       // Create registration with pendente status
       await supabase.from("crm_client_registrations" as any).insert({
@@ -844,6 +859,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => {
                       setReturnNote("");
+                      setReturnReason("");
                       setShowReturnDialog(true);
                     }} disabled={saving} className="gap-1 border-orange-300 text-orange-700 hover:bg-orange-50 h-7 sm:h-8 text-[11px] sm:text-xs px-2 sm:px-3">
                       <ArrowLeft className="h-3 w-3" /> Devolver
@@ -1382,18 +1398,34 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
           <DialogHeader>
             <DialogTitle className="text-center text-xl">Devolver ao Operador</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-2">
             <p className="text-sm text-muted-foreground text-center">
-              O card será devolvido ao operador <strong>{lead.created_by_name || "original"}</strong> na etapa <strong>Contrato Fechado</strong>.
+              O card será devolvido ao operador <strong>{lead.created_by_name || "original"}</strong> no workspace e etapa de origem.
             </p>
             <div className="space-y-2">
-              <Label htmlFor="return-note" className="text-sm font-medium">Motivo da devolução *</Label>
+              <Label htmlFor="return-reason" className="text-sm font-medium">Motivo da devolução *</Label>
+              <Select value={returnReason} onValueChange={setReturnReason}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o motivo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dados_incompletos">Dados incompletos</SelectItem>
+                  <SelectItem value="documento_pendente">Documento pendente</SelectItem>
+                  <SelectItem value="contrato_nao_assinado">Contrato não assinado</SelectItem>
+                  <SelectItem value="cadastro_inconsistente">Cadastro inconsistente</SelectItem>
+                  <SelectItem value="correcao_comercial">Necessidade de correção comercial</SelectItem>
+                  <SelectItem value="outro">Outro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="return-note" className="text-sm font-medium">Observação</Label>
               <Textarea
                 id="return-note"
-                placeholder="Descreva o motivo da devolução do card..."
+                placeholder="Observação adicional (opcional)..."
                 value={returnNote}
                 onChange={(e) => setReturnNote(e.target.value)}
-                rows={4}
+                rows={3}
                 className="resize-none"
               />
             </div>
@@ -1403,16 +1435,16 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               Cancelar
             </Button>
             <Button
-              disabled={saving || !returnNote.trim()}
+              disabled={saving || !returnReason}
               className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
               onClick={async () => {
-                if (!returnNote.trim()) {
-                  toast.error("Informe o motivo da devolução");
+                if (!returnReason) {
+                  toast.error("Selecione o motivo da devolução");
                   return;
                 }
                 setSaving(true);
                 try {
-                  // Find previous stage from won activity metadata
+                  // Find origin workspace/stage from won activity metadata
                   const { data: wonActivities } = await supabase
                     .from("crm_lead_activities")
                     .select("metadata")
@@ -1420,9 +1452,12 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                     .eq("type", "won")
                     .order("created_at", { ascending: false })
                     .limit(1);
-                  const previousStage = (wonActivities?.[0]?.metadata as any)?.previous_stage || "contrato-fechado";
 
-                  // Add "Pendente de Correção" and "Devolvido" tags
+                  const wonMeta = wonActivities?.[0]?.metadata as any;
+                  const originWorkspaceId = wonMeta?.origin_workspace_id || lead.workspace_id;
+                  const originStage = wonMeta?.origin_stage || wonMeta?.previous_stage || "contrato-fechado";
+
+                  // Add "Devolvido" tag
                   const currentTags = lead.tags || [];
                   let newTags = [...currentTags];
                   if (!newTags.includes("Devolvido")) newTags.push("Devolvido");
@@ -1430,15 +1465,27 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
                   const success = await onUpdate(lead.id, {
                     lead_status: "open",
-                    stage: previousStage,
+                    stage: originStage,
+                    workspace_id: originWorkspaceId,
                     stage_entered_at: new Date().toISOString(),
                     tags: newTags,
                   } as any);
                   if (success) {
+                    const reasonLabels: Record<string, string> = {
+                      dados_incompletos: "Dados incompletos",
+                      documento_pendente: "Documento pendente",
+                      contrato_nao_assinado: "Contrato não assinado",
+                      cadastro_inconsistente: "Cadastro inconsistente",
+                      correcao_comercial: "Necessidade de correção comercial",
+                      outro: "Outro",
+                    };
+                    const reasonText = reasonLabels[returnReason] || returnReason;
+                    const obsText = returnNote.trim() ? `\n**Observação:** ${returnNote.trim()}` : "";
+
                     await addActivity({
                       type: "stage_change",
                       title: "Card devolvido ao operador",
-                      description: `Lead devolvido ao pipeline comercial (etapa **${previousStage}**) pelo setor administrativo.\n\n**Motivo:** ${returnNote.trim()}\n**Operador original:** ${lead.created_by_name || "Não identificado"}`,
+                      description: `Lead devolvido ao pipeline comercial pelo setor administrativo.\n\n**Motivo:** ${reasonText}${obsText}\n**Operador original:** ${lead.created_by_name || "Não identificado"}`,
                     });
 
                     // Notify the original operator
@@ -1446,7 +1493,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                       await supabase.rpc("create_notification", {
                         _user_id: lead.created_by_user_id,
                         _title: "Card devolvido",
-                        _message: `O card "${lead.company_name}" foi devolvido para você. Motivo: ${returnNote.trim()}`,
+                        _message: `O card "${lead.company_name}" foi devolvido para você. Motivo: ${reasonText}`,
                         _type: "card_devolvido",
                         _link: "/atendimento",
                       });
