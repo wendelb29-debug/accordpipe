@@ -225,6 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLeitura: role === "leitura",
     isCeo,
     isMaster,
+    isMasterTenantAdmin,
     activeCompanyId,
     setActiveCompanyId,
     companies,
