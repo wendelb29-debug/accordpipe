@@ -48,6 +48,8 @@ export default function Financeiro() {
   const [saving, setSaving] = useState(false);
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("overview");
+  const [integrations, setIntegrations] = useState<any[]>([]);
+  const [webhookConfigured, setWebhookConfigured] = useState(false);
 
   const [form, setForm] = useState({
     registration_id: "",
@@ -63,16 +65,24 @@ export default function Financeiro() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [{ data: txData }, { data: regData }] = await Promise.all([
+    const [{ data: txData }, { data: regData }, { data: intData }, { data: companyData }] = await Promise.all([
       supabase.from("financial_transactions" as any).select("*, crm_client_registrations(nome_completo, lead_id)").order("created_at", { ascending: false }),
       supabase.from("crm_client_registrations").select("id, nome_completo, lead_id, servidor_id"),
+      activeCompanyId
+        ? supabase.from("fintech_integrations").select("id, provider, display_name, is_active, environment").eq("servidor_id", activeCompanyId).eq("is_active", true)
+        : Promise.resolve({ data: [] }),
+      activeCompanyId
+        ? supabase.from("companies").select("webhook_token").eq("id", activeCompanyId).single()
+        : Promise.resolve({ data: null }),
     ]);
     setTransactions(txData || []);
     setRegistrations(regData || []);
+    setIntegrations(intData || []);
+    setWebhookConfigured(!!companyData?.webhook_token);
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [activeCompanyId]);
 
   const handleSave = async () => {
     if (!form.amount || !form.due_date) { toast.error("Preencha valor e vencimento"); return; }
@@ -445,25 +455,42 @@ export default function Financeiro() {
             <Zap className="h-4 w-4 text-primary" />
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              { name: "PIX", status: "ativo", icon: QrCode },
-              { name: "Boleto", status: "ativo", icon: CreditCard },
-              { name: "Kiwify", status: "conectado", icon: Zap },
-              { name: "Webhook", status: "configurado", icon: Link2 },
-            ].map((gw) => (
-              <div key={gw.name} className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-card hover:bg-accent/50 transition-colors">
+            {integrations.map((int) => {
+              const statusLabel = int.environment === "production" ? "Produção" : "Sandbox";
+              return (
+                <div key={int.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-card hover:bg-accent/50 transition-colors">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Zap className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-foreground">{int.display_name || int.provider}</p>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      <span className="text-[10px] text-emerald-500 capitalize">{statusLabel}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            {webhookConfigured && (
+              <div className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-card hover:bg-accent/50 transition-colors">
                 <div className="p-2 rounded-lg bg-primary/10">
-                  <gw.icon className="h-4 w-4 text-primary" />
+                  <Link2 className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-foreground">{gw.name}</p>
+                  <p className="text-xs font-medium text-foreground">Webhook</p>
                   <div className="flex items-center gap-1 mt-0.5">
                     <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    <span className="text-[10px] text-emerald-500 capitalize">{gw.status}</span>
+                    <span className="text-[10px] text-emerald-500">Configurado</span>
                   </div>
                 </div>
               </div>
-            ))}
+            )}
+            {integrations.length === 0 && !webhookConfigured && (
+              <div className="col-span-full text-center py-4">
+                <p className="text-xs text-muted-foreground">Nenhuma integração configurada. Configure em Webhooks Fintech no tenant.</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
