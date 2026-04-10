@@ -509,7 +509,10 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
   }, [servidorId]);
 
   const ensureDocumentPdfUrl = useCallback(async (doc: GeneratedDoc) => {
-    // For signed documents, always re-render from updated html_content to include selfies and signature data
+    // For signed documents, prefer the signed PDF from the edge function (has the professional dark certificate)
+    if (doc.status === "signed" && doc.signed_pdf_url) return doc.signed_pdf_url;
+
+    // For non-signed documents, re-render from html_content
     if (doc.html_content) {
       const { data: tenant } = await supabase.from("companies").select("brand_logo_url, brand_primary_color, nome_fantasia, razao_social, cnpj").eq("id", servidorId).maybeSingle();
 
@@ -520,45 +523,18 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         tenantCnpj: tenant?.cnpj || undefined,
       };
 
-      // Build certificate data for signed documents
-      let certData: any = undefined;
-      if (doc.status === "signed" && doc.signed_at) {
-        const { data: signersList } = await supabase
-          .from("document_signers")
-          .select("nome_completo, cpf, papel, signed_at, ip_address, location_text, location_lat, location_lng, selfie_url, email")
-          .eq("document_id", doc.id)
-          .order("ordem");
-
-        certData = {
-          signers: (signersList || []).map((s: any) => ({
-            name: s.nome_completo,
-            document: s.cpf,
-            role: s.papel === "proprietario_proposta" ? "Representante da Empresa" : s.papel === "cliente" ? "Cliente" : s.papel,
-            signedAt: s.signed_at ? new Date(s.signed_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : undefined,
-            ip: s.ip_address,
-            location: s.location_text || (s.location_lat ? `${s.location_lat}, ${s.location_lng}` : undefined),
-            photoUrl: s.selfie_url,
-          })),
-          validationCode: doc.validation_code || undefined,
-          documentHash: doc.document_hash || undefined,
-          validationUrl: doc.validation_code ? `${window.location.origin}/validar-documento/${doc.validation_code}` : undefined,
-        };
-      }
-
-      const pdfBytes = await renderGeneratedDocumentPdf(doc.nome, doc.html_content, brandingOpts, certData);
+      const pdfBytes = await renderGeneratedDocumentPdf(doc.nome, doc.html_content, brandingOpts);
       const pdfUrl = await uploadGeneratedPdf(doc.id, doc.nome, pdfBytes);
 
-      const updateField = doc.status === "signed" ? "signed_pdf_url" : "pdf_url";
       await supabase
         .from("generated_documents")
-        .update({ [updateField]: pdfUrl } as any)
+        .update({ pdf_url: pdfUrl } as any)
         .eq("id", doc.id);
 
-      setDocuments((prev) => prev.map((item) => item.id === doc.id ? { ...item, [updateField]: pdfUrl } : item));
+      setDocuments((prev) => prev.map((item) => item.id === doc.id ? { ...item, pdf_url: pdfUrl } : item));
       return pdfUrl;
     }
 
-    if (doc.status === "signed" && doc.signed_pdf_url) return doc.signed_pdf_url;
     if (doc.pdf_url) return doc.pdf_url;
     throw new Error("Documento sem conteúdo renderizado para gerar PDF");
   }, [uploadGeneratedPdf, servidorId]);
