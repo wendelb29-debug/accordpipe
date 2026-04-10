@@ -40,6 +40,7 @@ import { useCrmActivities } from "@/hooks/useCrmActivities";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { WonConfirmDialog, WonCelebrationDialog } from "./WonCelebrationDialog";
+import { getOrCreateCadastroWorkspace } from "@/lib/cadastroWorkspace";
 
 const formatCurrency = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -451,12 +452,28 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     if (saving) return;
     setSaving(true);
     try {
-      await onUpdate(lead.id, { lead_status: "won", stage: "cadastro-pendente", stage_entered_at: new Date().toISOString() } as any);
+      // Find or create the Cadastro workspace for this tenant
+      const cadastro = await getOrCreateCadastroWorkspace(lead.servidor_id, profile?.user_id);
+      if (!cadastro) {
+        toast.error("Erro ao localizar/criar workspace de Cadastro");
+        setSaving(false);
+        return;
+      }
+
+      // Move lead to Cadastro workspace first column
+      await onUpdate(lead.id, {
+        lead_status: "won",
+        stage: cadastro.firstColumnId,
+        stage_entered_at: new Date().toISOString(),
+        workspace_id: cadastro.workspaceId,
+      } as any);
+
       const desc = observation.trim()
-        ? `Lead marcado como ganho e transferido para o pipeline Administrativo.\nObservação: ${observation.trim()}`
-        : "Lead marcado como ganho e transferido para o pipeline Administrativo.";
+        ? `Lead marcado como ganho e transferido para o workspace **Cadastro**.\nObservação: ${observation.trim()}`
+        : "Lead marcado como ganho e transferido para o workspace **Cadastro**.";
       await addActivity({ type: "won", title: "Oportunidade ganha! Transferida para Cadastro.", description: desc });
       
+      // Create registration with pendente status
       await supabase.from("crm_client_registrations" as any).insert({
         lead_id: lead.id,
         servidor_id: lead.servidor_id,
@@ -474,6 +491,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         created_by_name: profile?.name || null,
       } as any);
 
+      // Notify admin users
       const { data: adminProfiles } = await supabase
         .from("profiles")
         .select("user_id")
@@ -490,7 +508,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             await supabase.rpc("create_notification", {
               _user_id: ap.user_id,
               _title: "Novo cadastro pendente",
-              _message: `A oportunidade "${lead.company_name}" foi marcada como ganha e aguarda cadastro.`,
+              _message: `A oportunidade "${lead.company_name}" foi marcada como ganha e aguarda conferência no workspace Cadastro.`,
               _type: "cadastro_pendente",
             });
           }

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { toast } from "sonner";
+import { getOrCreateCadastroWorkspace } from "@/lib/cadastroWorkspace";
 
 export interface CrmLead {
   id: string;
@@ -213,7 +214,7 @@ export function useCrmLeads(
         await supabase.from("card_history").insert({
           lead_id: id,
           workspace_id: workspaceId,
-          from_column_id: lead.stage, // stores column ID (UUID for dynamic, string for legacy)
+          from_column_id: lead.stage,
           to_column_id: stage,
           moved_by_user_id: profile?.user_id || null,
           moved_by_name: profile?.name || null,
@@ -231,21 +232,94 @@ export function useCrmLeads(
           created_by_name: profile?.name || null,
         } as any);
       }
+
+      // Check if moved to a final column in a Cadastro workspace → activate client
+      if (workspaceId) {
+        const { data: wsData } = await supabase
+          .from("workspaces")
+          .select("type")
+          .eq("id", workspaceId)
+          .maybeSingle();
+
+        if (wsData?.type === "cadastro") {
+          const { data: colData } = await supabase
+            .from("kanban_columns")
+            .select("is_final")
+            .eq("id", stage)
+            .maybeSingle();
+
+          if (colData?.is_final) {
+            await activateClientFromLead(lead);
+          }
+        }
+      }
     }
     return success;
   };
 
-  // Mark as WON and transfer to admin pipeline
+  // Activate client in Base de Clientes when Cadastro is concluded
+  const activateClientFromLead = async (lead: CrmLead) => {
+    // Check for duplicate by CPF/email
+    const documento = (lead as any).documento;
+    if (documento) {
+      const { data: existing } = await supabase
+        .from("crm_client_registrations")
+        .select("id, client_status")
+        .eq("cpf", documento)
+        .eq("client_status", "ativo")
+        .neq("lead_id", lead.id)
+        .limit(1);
+      if (existing && existing.length > 0) {
+        toast.warning("⚠️ Já existe um cliente ativo com esse CPF/CNPJ. Verifique antes de prosseguir.");
+      }
+    }
+
+    // Update registration to active
+    const { error: regErr } = await supabase
+      .from("crm_client_registrations")
+      .update({ client_status: "ativo", status: "aprovado", data_adesao: new Date().toISOString().split("T")[0] } as any)
+      .eq("lead_id", lead.id);
+
+    if (regErr) {
+      console.error("Error activating client:", regErr);
+      toast.error("Erro ao ativar cliente na Base de Clientes");
+      return;
+    }
+
+    // Log activity
+    await supabase.from("crm_lead_activities").insert({
+      lead_id: lead.id,
+      servidor_id: lead.servidor_id,
+      type: "won",
+      title: "Cadastro concluído — Cliente ativado na Base de Clientes",
+      description: `O cadastro foi conferido e aprovado. Cliente **${lead.contact_name || lead.company_name}** agora está ativo na Base de Clientes.`,
+      created_by_user_id: profile?.user_id || null,
+      created_by_name: profile?.name || null,
+    } as any);
+
+    toast.success("✅ Cliente ativado na Base de Clientes com sucesso!");
+  };
+
+
+  // Mark as WON and transfer to Cadastro workspace
   const markAsWonAndTransfer = async (id: string) => {
     const lead = leads.find((l) => l.id === id);
     if (!lead) return false;
+
+    // Find or create Cadastro workspace
+    const cadastro = await getOrCreateCadastroWorkspace(lead.servidor_id, profile?.user_id);
+    if (!cadastro) {
+      toast.error("Erro ao localizar/criar workspace de Cadastro");
+      return false;
+    }
 
     const previousStage = lead.stage;
 
     const success = await updateLead(id, {
       lead_status: "won",
-      stage: "cadastro-pendente",
+      stage: cadastro.firstColumnId,
       stage_entered_at: new Date().toISOString(),
+      workspace_id: cadastro.workspaceId,
     } as any);
 
     if (success) {
@@ -253,13 +327,14 @@ export function useCrmLeads(
         lead_id: id,
         servidor_id: lead.servidor_id,
         type: "won",
-        title: "Oportunidade ganha! Transferida para Validação.",
-        description: `Lead marcado como ganho e transferido para **Validação de Clientes** (Cadastro Pendente). Etapa anterior: **${previousStage}**.`,
+        title: "Oportunidade ganha! Transferida para Cadastro.",
+        description: `Lead marcado como ganho e transferido para o workspace **Cadastro**. Etapa anterior: **${previousStage}**.`,
         created_by_user_id: profile?.user_id || null,
         created_by_name: profile?.name || null,
         metadata: { previous_stage: previousStage },
       } as any);
 
+      // Create registration
       const regResult = await supabase.from("crm_client_registrations" as any).insert({
         lead_id: id,
         servidor_id: lead.servidor_id,
@@ -322,6 +397,7 @@ export function useCrmLeads(
         }
       }
 
+      // Notify admin users
       const { data: adminProfiles } = await supabase
         .from("profiles")
         .select("user_id")
@@ -340,18 +416,17 @@ export function useCrmLeads(
             await supabase.rpc("create_notification", {
               _user_id: ap.user_id,
               _title: "Novo cadastro pendente",
-              _message: `A oportunidade "${lead.company_name}" foi marcada como ganha e aguarda cadastro. Contrato e cobrança foram gerados automaticamente.`,
+              _message: `A oportunidade "${lead.company_name}" foi marcada como ganha e aguarda conferência no workspace Cadastro. Contrato e cobrança foram gerados automaticamente.`,
               _type: "cadastro_pendente",
             });
           }
         }
       }
 
-      if (pipelineType === "commercial") {
-        setLeads((prev) => prev.filter((l) => l.id !== id));
-      }
+      // Remove from current pipeline view
+      setLeads((prev) => prev.filter((l) => l.id !== id));
 
-      toast.success("🎉 Oportunidade ganha! Contrato, cadastro e cobrança gerados automaticamente.");
+      toast.success("🎉 Oportunidade ganha! Card transferido para Cadastro. Contrato e cobrança gerados automaticamente.");
     }
     return success;
   };
