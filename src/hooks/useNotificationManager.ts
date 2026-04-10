@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 
 const PREF_KEY = (userId: string) => `accord-notif-enabled-${userId}`;
 const BANNER_DISMISSED_KEY = (userId: string) => `accord-notif-banner-dismissed-${userId}`;
