@@ -429,6 +429,7 @@ export default function NovoServidor() {
             { value: "workspaces", icon: LayoutGrid, label: "Workspaces" },
             { value: "contrato", icon: FileSignature, label: "Contrato" },
             { value: "vendas", icon: Webhook, label: "Webhooks Z-API" },
+            { value: "fintech", icon: CreditCard, label: "Webhooks Fintech" },
           ].map((item) => (
             <button
               key={item.value}
