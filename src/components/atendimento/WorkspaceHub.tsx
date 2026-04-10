@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import accordPatternDark from "@/assets/accord-pattern-dark.png";
 import { useWorkspaceContext } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
