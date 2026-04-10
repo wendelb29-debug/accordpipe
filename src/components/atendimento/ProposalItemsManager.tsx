@@ -328,37 +328,41 @@ export function ProposalItemsManager({
           )}
 
           {/* Add item row */}
-          <div className="flex items-end gap-3 pt-2">
-            <div className="flex-1 space-y-1">
-              <Label className="text-xs">Item</Label>
-              <Select value={selectedCatalogId} onValueChange={setSelectedCatalogId}>
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {loadingCatalog ? (
-                    <div className="flex justify-center py-2"><Loader2 className="h-4 w-4 animate-spin" /></div>
-                  ) : catalog.length === 0 ? (
-                    <div className="text-xs text-muted-foreground p-2">Nenhum item cadastrado</div>
-                  ) : catalog.map(c => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name} — {fmtCur(c.value)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {(canAddItem || canManageCatalog) && (
+            <div className="flex items-end gap-3 pt-2">
+              {canAddItem && (
+                <div className="flex-1 space-y-1">
+                  <Label className="text-xs">Item</Label>
+                  <Select value={selectedCatalogId} onValueChange={setSelectedCatalogId}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {loadingCatalog ? (
+                        <div className="flex justify-center py-2"><Loader2 className="h-4 w-4 animate-spin" /></div>
+                      ) : catalog.length === 0 ? (
+                        <div className="text-xs text-muted-foreground p-2">Nenhum item cadastrado</div>
+                      ) : catalog.map(c => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name} — {fmtCur(c.value)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {canAddItem && (
+                <Button size="sm" className="h-8 text-xs gap-1.5" onClick={handleAddItem} disabled={!selectedCatalogId}>
+                  <Plus className="h-3.5 w-3.5" /> Adicionar item
+                </Button>
+              )}
+              {canManageCatalog && (
+                <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" onClick={() => setShowCreateItem(true)}>
+                  <PackagePlus className="h-3.5 w-3.5" /> Criar item
+                </Button>
+              )}
             </div>
-            {canAddItem && (
-              <Button size="sm" className="h-8 text-xs gap-1.5" onClick={handleAddItem} disabled={!selectedCatalogId}>
-                <Plus className="h-3.5 w-3.5" /> Adicionar item
-              </Button>
-            )}
-            {canManageCatalog && (
-              <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" onClick={() => setShowCreateItem(true)}>
-                <PackagePlus className="h-3.5 w-3.5" /> Criar item
-              </Button>
-            )}
-          </div>
+          )}
         </CardContent>
       </Card>
 
