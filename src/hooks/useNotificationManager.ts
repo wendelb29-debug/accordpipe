@@ -55,7 +55,8 @@ function startTabFlash(message: string): () => void {
 }
 
 export function useNotificationManager() {
-  const { user, profile, isMaster, activeCompanyId } = useAuth();
+  const { user, profile, isMaster } = useAuth();
+  const activeCompanyId = useActiveCompanyId();
   const [permissionState, setPermissionState] = useState<NotificationPermission>(
     "Notification" in window ? Notification.permission : "denied"
   );
