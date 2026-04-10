@@ -4,6 +4,7 @@ import {
   ChevronDown, ChevronUp, Copy, Power, Layers, Clock, Hash, Sparkles,
   HeadphonesIcon, DollarSign, Users, Cog, LayoutGrid, Save, Star, Flag, Palette,
   AlertTriangle, ArrowRight, FolderOpen, Folder, ArrowUp, ArrowDown,
+  Megaphone, UserCheck, Calculator, CreditCard, Receipt, Search, Monitor, Rocket, Phone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
