@@ -1471,10 +1471,21 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                     tags: newTags,
                   } as any);
                   if (success) {
+                    const reasonLabels: Record<string, string> = {
+                      dados_incompletos: "Dados incompletos",
+                      documento_pendente: "Documento pendente",
+                      contrato_nao_assinado: "Contrato não assinado",
+                      cadastro_inconsistente: "Cadastro inconsistente",
+                      correcao_comercial: "Necessidade de correção comercial",
+                      outro: "Outro",
+                    };
+                    const reasonText = reasonLabels[returnReason] || returnReason;
+                    const obsText = returnNote.trim() ? `\n**Observação:** ${returnNote.trim()}` : "";
+
                     await addActivity({
                       type: "stage_change",
                       title: "Card devolvido ao operador",
-                      description: `Lead devolvido ao pipeline comercial (etapa **${originStage}**) pelo setor administrativo.\n\n**Motivo:** ${returnNote.trim()}\n**Operador original:** ${lead.created_by_name || "Não identificado"}`,
+                      description: `Lead devolvido ao pipeline comercial pelo setor administrativo.\n\n**Motivo:** ${reasonText}${obsText}\n**Operador original:** ${lead.created_by_name || "Não identificado"}`,
                     });
 
                     // Notify the original operator
@@ -1482,7 +1493,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                       await supabase.rpc("create_notification", {
                         _user_id: lead.created_by_user_id,
                         _title: "Card devolvido",
-                        _message: `O card "${lead.company_name}" foi devolvido para você. Motivo: ${returnNote.trim()}`,
+                        _message: `O card "${lead.company_name}" foi devolvido para você. Motivo: ${reasonText}`,
                         _type: "card_devolvido",
                         _link: "/atendimento",
                       });
