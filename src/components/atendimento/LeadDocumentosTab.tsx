@@ -433,7 +433,26 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
   const [viewSignersList, setViewSignersList] = useState<DocumentSigner[]>([]);
   const [loadingSigners, setLoadingSigners] = useState(false);
 
+  // Signer counts per document { docId: { total, signed } }
+  const [signerCounts, setSignerCounts] = useState<Record<string, { total: number; signed: number }>>({});
+
   const servidorId = companyId || lead.servidor_id;
+
+  const fetchSignerCounts = useCallback(async (docIds: string[]) => {
+    if (docIds.length === 0) return;
+    const { data } = await supabase
+      .from("document_signers")
+      .select("document_id, status")
+      .in("document_id", docIds);
+    if (!data) return;
+    const counts: Record<string, { total: number; signed: number }> = {};
+    data.forEach((s: any) => {
+      if (!counts[s.document_id]) counts[s.document_id] = { total: 0, signed: 0 };
+      counts[s.document_id].total++;
+      if (s.status === "signed") counts[s.document_id].signed++;
+    });
+    setSignerCounts(counts);
+  }, []);
 
   const fetchDocuments = useCallback(async () => {
     setLoading(true);
@@ -442,9 +461,15 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
       .select("*, html_content, document_templates(nome)")
       .eq("lead_id", lead.id)
       .order("created_at", { ascending: false });
-    setDocuments((data as any) || []);
+    const docs = (data as any) || [];
+    setDocuments(docs);
     setLoading(false);
-  }, [lead.id]);
+    // Fetch signer counts for docs that have been sent for signature
+    const sentDocIds = docs
+      .filter((d: any) => ["pending_signature", "partially_signed", "signed"].includes(d.status))
+      .map((d: any) => d.id);
+    fetchSignerCounts(sentDocIds);
+  }, [lead.id, fetchSignerCounts]);
 
   const fetchTemplates = useCallback(async () => {
     const { data } = await supabase
