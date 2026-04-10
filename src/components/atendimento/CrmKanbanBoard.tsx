@@ -638,7 +638,17 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1">
                             <p className="font-semibold text-[11px] text-foreground truncate">{lead.contact_name || lead.source}</p>
-                            {noActivity && (
+                            {hasOverdue && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="h-2 w-2 rounded-full bg-destructive animate-pulse shrink-0" />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-[10px]">
+                                  {overdueActCount} atividade{overdueActCount > 1 ? "s" : ""} atrasada{overdueActCount > 1 ? "s" : ""}
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            {!hasOverdue && noActivity && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <AlertTriangle className="h-3 w-3 shrink-0 text-amber-500" />
@@ -646,12 +656,12 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                                 <TooltipContent side="top" className="text-[10px]">Sem atividade</TooltipContent>
                               </Tooltip>
                             )}
-                            {overdue && hasActivity && (
+                            {!hasOverdue && !noActivity && overdue && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+                                  <Clock className="h-3 w-3 shrink-0 text-destructive" />
                                 </TooltipTrigger>
-                                <TooltipContent side="top" className="text-[10px]">Atrasado</TooltipContent>
+                                <TooltipContent side="top" className="text-[10px]">Tempo excedido na etapa</TooltipContent>
                               </Tooltip>
                             )}
                           </div>
