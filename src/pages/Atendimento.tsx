@@ -33,7 +33,7 @@ function AtendimentoContent() {
   // Show hub if no workspace selected yet
   if (!selectedWsId) {
     return (
-      <div className="h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
+      <div className="-m-3 md:-m-6 lg:-m-8 h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
         <WorkspaceHub
           onSelectWorkspace={(id) => {
             selectWorkspace(id);
