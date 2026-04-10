@@ -207,50 +207,32 @@ export default function Usuarios() {
         ? (formData.company_id || activeCompanyId)
         : profile?.company_id;
 
-      // Get company name
-      const company = allCompanies.find(c => c.id === companyId);
-      const companyName = company?.nome_fantasia || company?.razao_social || "";
-
-      // Create invitation record
-      const { data: invitation, error: invError } = await supabase
-        .from("user_invitations")
-        .insert({
-          inviter_user_id: profile?.user_id,
-          inviter_name: profile?.name || "Administrador",
-          invitee_name: formData.name,
-          invitee_email: formData.email,
-          invitee_cpf: formData.cpf.replace(/\D/g, ""),
-          invitee_birth_date: formData.birth_date,
-          invitee_whatsapp: formData.whatsapp.replace(/\D/g, ""),
-          company_id: companyId || null,
-          company_name: companyName,
+      const { data, error } = await supabase.functions.invoke("create-user", {
+        body: {
+          name: formData.name,
+          email: formData.email,
+          cpf: formData.cpf,
+          birth_date: formData.birth_date,
+          whatsapp: formData.whatsapp,
+          company_id: companyId,
           role: formData.role,
-        } as any)
-        .select()
-        .single();
-
-      if (invError) throw invError;
-
-      // Send the invite via edge function
-      const { error: sendError } = await supabase.functions.invoke("send-invite", {
-        body: { invitation_id: invitation.id },
+        },
       });
 
-      if (sendError) {
-        console.error("Send invite error:", sendError);
-      }
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast({
-        title: "Convite enviado!",
-        description: `Convite enviado para ${formData.email} via e-mail e WhatsApp.`,
+        title: "Usuário criado com sucesso",
+        description: `${formData.name} foi criado e vinculado ao tenant.`,
       });
 
       setDialogOpen(false);
       fetchUsers();
     } catch (error: any) {
       toast({
-        title: "Erro",
-        description: error.message || "Não foi possível enviar o convite.",
+        title: "Erro ao criar usuário",
+        description: error.message || "Não foi possível criar o usuário.",
         variant: "destructive",
       });
     } finally {
@@ -736,10 +718,10 @@ export default function Usuarios() {
                     disabled={isSubmitting}
                     className="gap-2"
                   >
-                    {isSubmitting ? "Enviando..." : editingUser ? "Salvar" : (
+                    {isSubmitting ? "Criando..." : editingUser ? "Salvar" : (
                       <>
-                        <Send className="h-4 w-4" />
-                        Enviar Convite
+                        <Plus className="h-4 w-4" />
+                        Criar
                       </>
                     )}
                   </Button>
