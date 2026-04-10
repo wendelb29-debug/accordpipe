@@ -9,19 +9,19 @@
   "theme_color": "#0B0F19",
   "orientation": "any",
   "categories": ["business", "productivity"],
-  "icons": [
+"icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/accord-icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/accord-icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/accord-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
