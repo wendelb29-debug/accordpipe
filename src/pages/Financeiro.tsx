@@ -48,6 +48,8 @@ export default function Financeiro() {
   const [saving, setSaving] = useState(false);
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("overview");
+  const [integrations, setIntegrations] = useState<any[]>([]);
+  const [webhookConfigured, setWebhookConfigured] = useState(false);
 
   const [form, setForm] = useState({
     registration_id: "",
