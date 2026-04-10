@@ -39,6 +39,7 @@ interface Props {
   items: ProposalLineItem[];
   onChange: (items: ProposalLineItem[]) => void;
   canManageCatalog: boolean;
+  canAddItem?: boolean;
   paymentFrequency: string;
   onPaymentFrequencyChange: (v: string) => void;
   firstPaymentDate: string;
@@ -80,7 +81,7 @@ function getDefaultInstallmentCount(freq: string): number {
 }
 
 export function ProposalItemsManager({
-  servidorId, items, onChange, canManageCatalog,
+  servidorId, items, onChange, canManageCatalog, canAddItem = true,
   paymentFrequency, onPaymentFrequencyChange,
   firstPaymentDate, onFirstPaymentDateChange,
   dueDay, onDueDayChange,
@@ -347,9 +348,11 @@ export function ProposalItemsManager({
                 </SelectContent>
               </Select>
             </div>
-            <Button size="sm" className="h-8 text-xs gap-1.5" onClick={handleAddItem} disabled={!selectedCatalogId}>
-              <Plus className="h-3.5 w-3.5" /> Adicionar item
-            </Button>
+            {canAddItem && (
+              <Button size="sm" className="h-8 text-xs gap-1.5" onClick={handleAddItem} disabled={!selectedCatalogId}>
+                <Plus className="h-3.5 w-3.5" /> Adicionar item
+              </Button>
+            )}
             {canManageCatalog && (
               <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" onClick={() => setShowCreateItem(true)}>
                 <PackagePlus className="h-3.5 w-3.5" /> Criar item
