@@ -442,13 +442,6 @@ export default function Cadastrados() {
   if (selectedReg) {
     return (
       <div className="space-y-6">
-        {/* Back button + Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedReg(null)} className="gap-1.5 text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Voltar
-          </Button>
-        </div>
-
         {/* Client header */}
         <div className="bg-card border rounded-xl px-6 py-5">
           <div className="flex items-start justify-between">
