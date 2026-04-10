@@ -133,7 +133,34 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
   });
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="relative flex flex-col h-full overflow-hidden">
+      {/* Institutional pattern background — light mode */}
+      <div
+        className="absolute inset-0 dark:hidden pointer-events-none"
+        style={{
+          backgroundImage: `url(${accordPatternDark})`,
+          backgroundSize: '500px',
+          backgroundRepeat: 'repeat',
+          opacity: 0.08,
+        }}
+      />
+      <div className="absolute inset-0 dark:hidden bg-[radial-gradient(ellipse_at_center,transparent_20%,hsl(var(--background))_75%)] pointer-events-none" />
+
+      {/* Institutional pattern background — dark mode */}
+      <div
+        className="absolute inset-0 hidden dark:block pointer-events-none"
+        style={{
+          backgroundImage: `url(${accordPatternDark})`,
+          backgroundSize: '500px',
+          backgroundRepeat: 'repeat',
+          opacity: 0.15,
+        }}
+      />
+      <div className="absolute inset-0 hidden dark:block bg-[radial-gradient(ellipse_at_center,transparent_20%,hsl(var(--background))_75%)] pointer-events-none" />
+
+      {/* Subtle glow accents */}
+      <div className="absolute top-1/4 left-1/3 w-[400px] h-[400px] rounded-full bg-primary/[0.04] blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] rounded-full bg-primary/[0.03] blur-[80px] pointer-events-none" />
       {/* Header */}
       <div className="flex items-center gap-3 px-4 sm:px-6 py-4 border-b border-border/50">
         <div>
