@@ -10,6 +10,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -27,19 +28,23 @@ interface Notification {
 export function NotificationBell() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const activeCompanyId = useActiveCompanyId();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"unread" | "read">("unread");
 
   const fetchNotifications = useCallback(async () => {
-    if (!user) return;
-    const { data } = await supabase
+    if (!user || !activeCompanyId) return;
+    let query = supabase
       .from("notifications")
       .select("*")
       .eq("user_id", user.id)
+      .eq("servidor_id", activeCompanyId)
       .order("created_at", { ascending: false })
       .limit(30);
+
+    const { data } = await query;
 
     const now = new Date();
     const visible = ((data as Notification[]) || []).filter((n) => {
@@ -51,13 +56,13 @@ export function NotificationBell() {
 
     setNotifications(visible);
     setUnreadCount(visible.filter((n) => !n.is_read).length);
-  }, [user]);
+  }, [user, activeCompanyId]);
 
   useEffect(() => {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000);
     const channel = supabase
-      .channel('notifications')
+      .channel(`notifications-${activeCompanyId || 'none'}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -70,7 +75,7 @@ export function NotificationBell() {
       clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [user, fetchNotifications]);
+  }, [user, activeCompanyId, fetchNotifications]);
 
   const toggleRead = async (id: string, currentlyRead: boolean) => {
     await supabase.from("notifications").update({ is_read: !currentlyRead }).eq("id", id);

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 
 const PREF_KEY = (userId: string) => `accord-notif-enabled-${userId}`;
 const BANNER_DISMISSED_KEY = (userId: string) => `accord-notif-banner-dismissed-${userId}`;
@@ -54,7 +55,8 @@ function startTabFlash(message: string): () => void {
 }
 
 export function useNotificationManager() {
-  const { user, profile, isMaster, activeCompanyId } = useAuth();
+  const { user, profile, isMaster } = useAuth();
+  const activeCompanyId = useActiveCompanyId();
   const [permissionState, setPermissionState] = useState<NotificationPermission>(
     "Notification" in window ? Notification.permission : "denied"
   );
@@ -164,10 +166,10 @@ export function useNotificationManager() {
 
   // Listen for new notifications via realtime
   useEffect(() => {
-    if (!user || !enabled) return;
+    if (!user || !enabled || !activeCompanyId) return;
 
     const channel = supabase
-      .channel("notif-push")
+      .channel(`notif-push-${activeCompanyId}`)
       .on(
         "postgres_changes",
         {
@@ -178,10 +180,11 @@ export function useNotificationManager() {
         },
         (payload) => {
           const row = payload.new as any;
+          // Only fire for the active tenant
+          if (row.servidor_id !== activeCompanyId) return;
           if (row.id === lastNotifId.current) return;
           lastNotifId.current = row.id;
 
-          // Check if it's a scheduled reminder not yet due
           if (row.type === "reminder" && row.metadata?.reminder_at) {
             if (new Date(row.metadata.reminder_at) > new Date()) return;
           }
@@ -194,7 +197,7 @@ export function useNotificationManager() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, enabled, fireNotification]);
+  }, [user, enabled, activeCompanyId, fireNotification]);
 
   return {
     enabled,

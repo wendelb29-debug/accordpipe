@@ -210,6 +210,7 @@ Deno.serve(async (req) => {
           message: `${sender_name || phone}: ${(message || "").slice(0, 100)}`,
           type: "whatsapp",
           link: "/atendimento",
+          servidor_id: company_id,
         });
       }
 
