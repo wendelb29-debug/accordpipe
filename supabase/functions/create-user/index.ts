@@ -53,10 +53,15 @@ serve(async (req) => {
 
     const isAllowed = callerProfile?.is_master ||
       callerRole?.role === "ceo" ||
+      callerRole?.role === "master" ||
       callerRole?.role === "admin";
 
+    // Also check has_permission in DB
     if (!isAllowed) {
-      return respond(false, { error: "Sem permissão para criar usuários" });
+      const { data: hasPerm } = await supabase.rpc("has_permission", { _user_id: caller.id, _permission: "create_user" });
+      if (!hasPerm) {
+        return respond(false, { error: "Sem permissão para criar usuários" });
+      }
     }
 
     const { name, email, cpf, birth_date, whatsapp, company_id, role } = await req.json();
@@ -145,6 +150,16 @@ serve(async (req) => {
     if (roleError) {
       console.error("Role update error:", roleError);
     }
+
+    // Audit log
+    await supabase.rpc("log_audit", {
+      _user_id: caller.id,
+      _user_name: callerProfile?.is_master ? "Master" : (caller.email || ""),
+      _action: "create_user",
+      _target_type: "user",
+      _target_id: userId,
+      _details: JSON.stringify({ name, email, role, company_id }),
+    });
 
     return respond(true, {
       user_id: userId,

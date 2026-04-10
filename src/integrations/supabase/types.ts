@@ -61,6 +61,45 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: string | null
+          servidor_id: string | null
+          target_id: string | null
+          target_type: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          servidor_id?: string | null
+          target_id?: string | null
+          target_type: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          servidor_id?: string | null
+          target_id?: string | null
+          target_type?: string
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: []
+      }
       card_history: {
         Row: {
           from_column_id: string | null
@@ -3546,6 +3585,18 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_master: { Args: { _user_id: string }; Returns: boolean }
+      log_audit: {
+        Args: {
+          _action: string
+          _details?: Json
+          _servidor_id?: string
+          _target_id?: string
+          _target_type: string
+          _user_id: string
+          _user_name: string
+        }
+        Returns: undefined
+      }
       lookup_servidor_by_cnpj: {
         Args: { _cnpj: string }
         Returns: {
