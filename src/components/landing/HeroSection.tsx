@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Rocket, Play, CheckCircle2, BarChart3, FileSignature, Users, Bot, Shield } from "lucide-react";
+import { Rocket, Play, CheckCircle2, BarChart3, FileSignature, MessageSquare, Bot, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TrialSignupDialog } from "./TrialSignupDialog";
 
@@ -41,7 +41,6 @@ function NetworkBackground() {
       const h = canvas.offsetHeight;
       ctx.clearRect(0, 0, w, h);
 
-      // draw grid
       ctx.strokeStyle = "rgba(37,99,235,0.04)";
       ctx.lineWidth = 0.5;
       const gs = 60;
@@ -52,7 +51,6 @@ function NetworkBackground() {
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
       }
 
-      // particles + connections
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
         p.x += p.vx; p.y += p.vy;
@@ -94,12 +92,9 @@ function NetworkBackground() {
 function ProductMockup() {
   return (
     <div className="relative w-full max-w-[540px] mx-auto lg:mx-0">
-      {/* Glow behind */}
       <div className="absolute -inset-8 bg-[radial-gradient(ellipse,rgba(37,99,235,0.12),transparent_70%)] blur-2xl pointer-events-none" />
 
-      {/* Main card */}
       <div className="relative rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(17,24,39,0.8)] backdrop-blur-xl p-6 shadow-2xl">
-        {/* Top bar */}
         <div className="flex items-center gap-2 mb-5">
           <div className="w-3 h-3 rounded-full bg-[#EF4444]" />
           <div className="w-3 h-3 rounded-full bg-[#F59E0B]" />
@@ -107,7 +102,6 @@ function ProductMockup() {
           <span className="ml-3 text-[11px] text-[#6B7280] font-medium tracking-wide">accord.app — Dashboard</span>
         </div>
 
-        {/* Stats row */}
         <div className="grid grid-cols-3 gap-3 mb-5">
           {[
             { label: "Leads ativos", value: "1.284", color: "#3B82F6" },
@@ -121,7 +115,6 @@ function ProductMockup() {
           ))}
         </div>
 
-        {/* Pipeline preview */}
         <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-4">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-semibold text-[#D1D5DB]">Pipeline de Vendas</span>
@@ -129,10 +122,10 @@ function ProductMockup() {
           </div>
           <div className="flex gap-2">
             {[
-              { stage: "Qualificação", count: 24, w: "w-full", bg: "bg-[#3B82F6]" },
-              { stage: "Proposta", count: 18, w: "w-[75%]", bg: "bg-[#8B5CF6]" },
-              { stage: "Negociação", count: 12, w: "w-[50%]", bg: "bg-[#A855F7]" },
-              { stage: "Fechamento", count: 8, w: "w-[33%]", bg: "bg-[#22C55E]" },
+              { stage: "Qualificação", count: 24, bg: "bg-[#3B82F6]" },
+              { stage: "Proposta", count: 18, bg: "bg-[#8B5CF6]" },
+              { stage: "Negociação", count: 12, bg: "bg-[#A855F7]" },
+              { stage: "Fechamento", count: 8, bg: "bg-[#22C55E]" },
             ].map((s) => (
               <div key={s.stage} className="flex-1">
                 <div className={`h-16 rounded-lg ${s.bg} opacity-20 relative overflow-hidden`}>
@@ -145,7 +138,6 @@ function ProductMockup() {
           </div>
         </div>
 
-        {/* Activity */}
         <div className="mt-4 space-y-2">
           {[
             { text: "Contrato assinado — Empresa ABC", time: "2 min", dot: "#22C55E" },
@@ -169,48 +161,46 @@ export function HeroSection() {
   const [trialOpen, setTrialOpen] = useState(false);
 
   const benefits = [
-    { icon: BarChart3, text: "CRM completo com funil Kanban" },
-    { icon: FileSignature, text: "Contratos e assinatura digital" },
-    { icon: Bot, text: "Automação e IA integradas" },
-    { icon: Shield, text: "Gestão multi-tenant segura" },
+    { icon: BarChart3, text: "Controle total do funil de vendas" },
+    { icon: FileSignature, text: "Propostas e contratos em segundos" },
+    { icon: MessageSquare, text: "Atendimento integrado via WhatsApp" },
+    { icon: Bot, text: "Automação com inteligência artificial" },
+    { icon: Users, text: "Gestão completa de clientes e recorrência" },
   ];
 
   return (
     <section className="relative overflow-hidden min-h-[92vh] flex items-center">
-      {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#070B14] via-[#0B1120] to-[#0F172A]" />
       <NetworkBackground />
 
-      {/* Top fade */}
       <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#070B14] to-transparent pointer-events-none z-10" />
 
       <div className="relative z-20 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 sm:py-20 md:py-24 w-full">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Left — Content */}
           <div className="text-center lg:text-left">
-            {/* Badge */}
             <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(59,130,246,0.25)] bg-[rgba(59,130,246,0.06)] px-4 py-2 text-xs font-medium text-[#60A5FA] mb-6 animate-fade-in">
               <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6] animate-pulse" />
               Plataforma SaaS Enterprise
             </div>
 
-            {/* Headline */}
             <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-6xl font-black tracking-[-0.03em] leading-[1.08] text-white animate-slide-up">
-              Gerencie vendas,{" "}
-              <br className="hidden sm:block" />
-              contratos e clientes{" "}
-              <br className="hidden sm:block" />
+              A plataforma que transforma sua operação comercial em uma{" "}
               <span className="bg-gradient-to-r from-[#3B82F6] via-[#6366F1] to-[#8B5CF6] bg-clip-text text-transparent">
-                em um só lugar
+                máquina previsível de crescimento
               </span>
             </h1>
 
-            <p className="mt-5 text-base sm:text-lg text-[#94A3B8] max-w-lg mx-auto lg:mx-0 leading-relaxed animate-slide-up" style={{ animationDelay: "0.1s" }}>
-              CRM, propostas, contratos com assinatura digital, WhatsApp, IA e gestão financeira — tudo integrado na plataforma que sua empresa precisa para escalar.
+            <p className="mt-5 text-base sm:text-lg text-[#94A3B8] max-w-xl mx-auto lg:mx-0 leading-relaxed animate-slide-up" style={{ animationDelay: "0.1s" }}>
+              CRM, propostas, contratos, atendimento e automação com IA — tudo integrado em um único sistema para você vender mais, operar melhor e escalar com controle total.
+            </p>
+
+            <p className="mt-3 text-sm text-[#64748B] max-w-lg mx-auto lg:mx-0 leading-relaxed animate-slide-up" style={{ animationDelay: "0.15s" }}>
+              Pare de perder vendas por desorganização. Centralize tudo, ganhe velocidade e aumente sua conversão com processos inteligentes.
             </p>
 
             {/* Benefits */}
-            <div className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto lg:mx-0 animate-slide-up" style={{ animationDelay: "0.2s" }}>
+            <div className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-w-lg mx-auto lg:mx-0 animate-slide-up" style={{ animationDelay: "0.2s" }}>
               {benefits.map((b) => (
                 <div key={b.text} className="flex items-center gap-2.5 rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] px-3.5 py-2.5">
                   <b.icon className="h-4 w-4 text-[#3B82F6] shrink-0" />
@@ -227,7 +217,7 @@ export function HeroSection() {
                 onClick={() => setTrialOpen(true)}
               >
                 <Rocket className="h-4.5 w-4.5" />
-                Começar gratuitamente
+                Começar agora
               </Button>
               <a href="mailto:contato@accordhub.com.br?subject=Solicitar demonstração" className="w-full sm:w-auto">
                 <Button size="lg" variant="outline" className="gap-2.5 px-8 text-sm font-medium h-13 rounded-xl border-[rgba(255,255,255,0.1)] text-[#E2E8F0] hover:bg-[rgba(255,255,255,0.05)] hover:border-[rgba(255,255,255,0.2)] transition-all duration-200 w-full bg-transparent">
@@ -252,7 +242,6 @@ export function HeroSection() {
         </div>
       </div>
 
-      {/* Bottom gradient */}
       <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-[#0B1120] to-transparent pointer-events-none z-10" />
 
       <TrialSignupDialog open={trialOpen} onOpenChange={setTrialOpen} />

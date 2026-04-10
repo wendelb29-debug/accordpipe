@@ -1,36 +1,33 @@
-import { Link2Off, RefreshCcw, FileSpreadsheet, CheckCircle2 } from "lucide-react";
-
-const items = [
-  { icon: Link2Off, title: "Sem retrabalho", description: "Cada etapa alimenta a próxima automaticamente. Nada é digitado duas vezes." },
-  { icon: RefreshCcw, title: "Sem perder clientes", description: "Follow-ups, lembretes e atividades garantem que nenhum lead seja esquecido." },
-  { icon: FileSpreadsheet, title: "Sem planilhas", description: "Tudo que antes era feito em Excel agora está organizado e integrado no sistema." },
-];
+import { ArrowRight } from "lucide-react";
 
 export function DifferentialSection() {
   return (
-    <section className="relative py-20 sm:py-28" style={{ background: '#0B0F19' }}>
-      <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="text-center mb-14">
-          <p className="text-sm font-semibold text-[#A855F7] tracking-wider uppercase mb-3">Diferencial</p>
-          <h2 className="text-3xl font-bold tracking-tight text-[#E5E7EB] sm:text-4xl">
-            Tudo conectado. Nada perdido.
-          </h2>
-          <p className="mt-4 text-lg text-[#9CA3AF] max-w-2xl mx-auto">
-            Uma plataforma onde cada dado se conecta e cada processo flui sem interrupção.
-          </p>
-        </div>
+    <section className="relative py-24 sm:py-32" style={{ background: "#080D19" }}>
+      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[rgba(59,130,246,0.12)] to-transparent" />
 
-        <div className="grid gap-6 md:grid-cols-3">
-          {items.map((item) => (
-            <div
-              key={item.title}
-              className="relative rounded-2xl border border-[rgba(255,255,255,0.05)] bg-[#111827] p-8 transition-all duration-200 hover:border-[rgba(124,58,237,0.2)]"
-            >
-              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-[rgba(124,58,237,0.08)] text-[#A855F7]">
-                <item.icon className="h-6 w-6" />
+      <div className="relative mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 text-center">
+        <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white leading-tight mb-6">
+          Você não precisa de mais ferramentas.{" "}
+          <br className="hidden sm:block" />
+          <span className="text-[#64748B]">Você precisa de um sistema que funcione.</span>
+        </h2>
+
+        <p className="text-base sm:text-lg text-[#94A3B8] leading-relaxed max-w-2xl mx-auto mb-10">
+          Enquanto outras empresas usam 5, 6 ou até 10 sistemas diferentes, o Accord centraliza tudo em uma única plataforma.
+        </p>
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10">
+          {[
+            { label: "Menos retrabalho", color: "#3B82F6" },
+            { label: "Menos erro", color: "#6366F1" },
+            { label: "Mais resultado", color: "#22C55E" },
+          ].map((item, i) => (
+            <div key={item.label} className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full" style={{ background: item.color }} />
+                <span className="text-sm font-semibold text-[#E2E8F0]">{item.label}</span>
               </div>
-              <h3 className="text-base font-semibold text-[#E5E7EB] mb-2">{item.title}</h3>
-              <p className="text-sm leading-relaxed text-[#6B7280]">{item.description}</p>
+              {i < 2 && <ArrowRight className="hidden sm:block h-4 w-4 text-[rgba(255,255,255,0.12)]" />}
             </div>
           ))}
         </div>
