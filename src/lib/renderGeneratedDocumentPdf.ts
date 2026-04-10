@@ -473,6 +473,52 @@ function drawTable(ctx: RenderContext, rows: string[][]): void {
   ctx.y -= 6;
 }
 
+// ─── IMAGE BLOCK RENDERING ────────────────────────────────
+async function drawImageBlock(ctx: RenderContext, imageUrl: string, imgW: number, imgH: number): Promise<void> {
+  try {
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      drawWrappedText(ctx, "Imagem nao disponivel", 8, false, 0, "", "center", { r: 0.5, g: 0.5, b: 0.5 });
+      return;
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    const contentType = response.headers.get("content-type") || "";
+    let image;
+    try {
+      if (contentType.includes("png")) {
+        image = await ctx.pdfDoc.embedPng(bytes);
+      } else {
+        image = await ctx.pdfDoc.embedJpg(bytes);
+      }
+    } catch {
+      // Try the other format
+      try { image = await ctx.pdfDoc.embedPng(bytes); } catch { image = await ctx.pdfDoc.embedJpg(bytes); }
+    }
+
+    // Scale to fit, max 150px wide, proportional
+    const maxW = Math.min(imgW, 150);
+    const maxH = Math.min(imgH, 150);
+    const scale = Math.min(maxW / image.width, maxH / image.height, 1);
+    const drawW = image.width * scale;
+    const drawH = image.height * scale;
+
+    ensureSpace(ctx, drawH + 10);
+
+    // Center the image
+    const x = MARGIN + (ctx.maxWidth - drawW) / 2;
+    ctx.page.drawImage(image, {
+      x,
+      y: ctx.y - drawH,
+      width: drawW,
+      height: drawH,
+    });
+    ctx.y -= drawH + 8;
+  } catch {
+    drawWrappedText(ctx, "Imagem nao disponivel", 8, false, 0, "", "center", { r: 0.5, g: 0.5, b: 0.5 });
+  }
+}
+
 // ─── SIGNATURE BLOCK ──────────────────────────────────────
 function drawSignatureBlock(ctx: RenderContext, label: string, lines: string[]): void {
   const blockHeight = 80 + lines.length * 12;
