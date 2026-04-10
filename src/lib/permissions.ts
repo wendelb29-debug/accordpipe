@@ -335,6 +335,7 @@ export const ROUTE_PERMISSIONS: Record<string, string> = {
   "/configuracoes/assinaturas": "view_users",
   "/empresas": "edit_clients",
   "/accord-stack": "create_user",
+  "/configuracoes/auditoria": "view_audit_logs",
 };
 
 // Legacy permission key mapping (old -> new) for backward compatibility
