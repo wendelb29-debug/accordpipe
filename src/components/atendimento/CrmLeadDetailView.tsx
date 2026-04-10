@@ -1422,10 +1422,10 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               <Label htmlFor="return-note" className="text-sm font-medium">Observação</Label>
               <Textarea
                 id="return-note"
-                placeholder="Descreva o motivo da devolução do card..."
+                placeholder="Observação adicional (opcional)..."
                 value={returnNote}
                 onChange={(e) => setReturnNote(e.target.value)}
-                rows={4}
+                rows={3}
                 className="resize-none"
               />
             </div>
