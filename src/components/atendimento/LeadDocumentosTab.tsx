@@ -1041,6 +1041,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
               }
               return (
                 <ContractVariableAudit
+                  compact
                   templateText={templateText}
                   resolvedValues={vars}
                   onValidationChange={setCanGenerate}
