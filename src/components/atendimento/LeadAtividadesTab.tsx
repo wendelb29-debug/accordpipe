@@ -160,6 +160,7 @@ export function LeadAtividadesTab({
             _title: `Lembrete: ${form.title}`,
             _message: `Atividade "${form.title}" agendada para ${new Date(scheduledAt).toLocaleString("pt-BR")} com ${lead.company_name}.`,
             _type: "reminder",
+            _servidor_id: lead.servidor_id,
             _metadata: {
               lead_id: lead.id,
               scheduled_at: scheduledAt,

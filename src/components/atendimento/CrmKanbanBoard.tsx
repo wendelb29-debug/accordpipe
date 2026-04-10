@@ -75,9 +75,10 @@ const isLeadOverdue = (lead: CrmLead, stageId: string): boolean => {
   return isLeadOverdueDynamic(lead, limitDays);
 };
 
-const getProgressColor = (lead: CrmLead, stageId: string, hasActivity: boolean): string => {
+const getProgressColor = (lead: CrmLead, stageId: string, hasActivity: boolean, hasOverdueActivity: boolean): string => {
+  if (hasOverdueActivity) return "bg-red-500";
   if (!hasActivity) return "bg-amber-400";
-  if (isLeadOverdue(lead, stageId)) return "bg-red-500";
+  if (isLeadOverdue(lead, stageId)) return "bg-red-400";
   const days = Math.floor((Date.now() - new Date(lead.stage_entered_at).getTime()) / (1000 * 60 * 60 * 24));
   if (days <= 2) return "bg-emerald-500";
   if (days <= 5) return "bg-amber-400";
@@ -113,6 +114,8 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<{ id: string; name: string; color: string }[]>([]);
   const [leadsWithActivity, setLeadsWithActivity] = useState<Set<string>>(new Set());
+  const [leadsWithOverdueActivity, setLeadsWithOverdueActivity] = useState<Set<string>>(new Set());
+  const [overdueActivityCount, setOverdueActivityCount] = useState<Record<string, number>>({});
   const [nextActivities, setNextActivities] = useState<Record<string, string>>({});
   const [lastCompletedActivities, setLastCompletedActivities] = useState<Record<string, string>>({});
   const [signatureStatsByLead, setSignatureStatsByLead] = useState<Record<string, { signed: number; total: number; approved: boolean }>>({});
@@ -179,14 +182,23 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
         .order("created_at", { ascending: false });
       if (data) {
         const withActivity = new Set<string>();
+        const withOverdue = new Set<string>();
+        const overdueCount: Record<string, number> = {};
         const nextAct: Record<string, string> = {};
         const lastCompleted: Record<string, string> = {};
         const scheduledTypes = ["internal", "email", "call", "meeting", "whatsapp"];
+        const now = new Date();
         for (const activity of data) {
           const meta = activity.metadata as any;
           const status = meta?.activity_status || "planejada";
           const isScheduled = scheduledTypes.includes(activity.type);
           if (isScheduled && status === "planejada") {
+            const scheduledAt = meta?.scheduled_at ? new Date(meta.scheduled_at) : null;
+            if (scheduledAt && scheduledAt < now) {
+              // Overdue activity
+              withOverdue.add(activity.lead_id);
+              overdueCount[activity.lead_id] = (overdueCount[activity.lead_id] || 0) + 1;
+            }
             if (!withActivity.has(activity.lead_id)) {
               nextAct[activity.lead_id] = activity.title;
             }
@@ -198,6 +210,8 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
           }
         }
         setLeadsWithActivity(withActivity);
+        setLeadsWithOverdueActivity(withOverdue);
+        setOverdueActivityCount(overdueCount);
         setNextActivities(nextAct);
         setLastCompletedActivities(lastCompleted);
       }
@@ -583,9 +597,20 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                   const days = Math.floor((Date.now() - new Date(lead.stage_entered_at).getTime()) / (1000 * 60 * 60 * 24));
                   const overdueByDays = slaDays > 0 ? Math.max(0, days - slaDays) : 0;
                   const hasActivity = leadsWithActivity.has(lead.id);
+                  const hasOverdue = leadsWithOverdueActivity.has(lead.id);
+                  const overdueActCount = overdueActivityCount[lead.id] || 0;
                   const noActivity = !hasActivity;
-                  const progressColor = getProgressColor(lead, stage.id, hasActivity);
+                  const progressColor = getProgressColor(lead, stage.id, hasActivity, hasOverdue);
                   const signatureStats = signatureStatsByLead[lead.id];
+
+                  // Priority: 1) overdue activity, 2) SLA exceeded, 3) no activity, 4) normal
+                  const cardStyle = hasOverdue
+                    ? "bg-red-50/70 dark:bg-red-950/30 border-red-300/70 dark:border-red-800/50"
+                    : overdue && hasActivity
+                    ? "bg-red-50/60 dark:bg-red-950/20 border-red-200/60 dark:border-red-800/40"
+                    : noActivity
+                    ? "bg-amber-50/60 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/40"
+                    : "bg-card border-border/30";
 
                   return (
                     <div
@@ -597,9 +622,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                         "kanban-card rounded-xl border p-2.5 cursor-grab active:cursor-grabbing transition-all duration-200 group",
                         "hover:-translate-y-[2px] hover:shadow-md",
                         draggedLead?.id === lead.id && "opacity-40 scale-95",
-                        noActivity && "bg-amber-50/60 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/40",
-                        overdue && hasActivity && "bg-red-50/60 dark:bg-red-950/20 border-red-200/60 dark:border-red-800/40",
-                        !noActivity && !(overdue && hasActivity) && "bg-card border-border/30"
+                        cardStyle
                       )}
                       style={{ boxShadow: draggedLead?.id === lead.id ? undefined : '0 2px 8px rgba(0,0,0,0.04)' }}
                     >
@@ -615,7 +638,17 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1">
                             <p className="font-semibold text-[11px] text-foreground truncate">{lead.contact_name || lead.source}</p>
-                            {noActivity && (
+                            {hasOverdue && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="h-2 w-2 rounded-full bg-destructive animate-pulse shrink-0" />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-[10px]">
+                                  {overdueActCount} atividade{overdueActCount > 1 ? "s" : ""} atrasada{overdueActCount > 1 ? "s" : ""}
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            {!hasOverdue && noActivity && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <AlertTriangle className="h-3 w-3 shrink-0 text-amber-500" />
@@ -623,12 +656,12 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                                 <TooltipContent side="top" className="text-[10px]">Sem atividade</TooltipContent>
                               </Tooltip>
                             )}
-                            {overdue && hasActivity && (
+                            {!hasOverdue && !noActivity && overdue && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+                                  <Clock className="h-3 w-3 shrink-0 text-destructive" />
                                 </TooltipTrigger>
-                                <TooltipContent side="top" className="text-[10px]">Atrasado</TooltipContent>
+                                <TooltipContent side="top" className="text-[10px]">Tempo excedido na etapa</TooltipContent>
                               </Tooltip>
                             )}
                           </div>
@@ -697,16 +730,28 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                       </div>
 
                       {/* Activity indicator */}
-                      {hasActivity && nextActivities[lead.id] && (
+                      {hasOverdue && (
+                        <div className="flex items-center gap-1 mt-1 text-[9px] text-destructive font-medium">
+                          <AlertTriangle className="h-2.5 w-2.5" />
+                          <span>{overdueActCount} atividade{overdueActCount > 1 ? "s" : ""} atrasada{overdueActCount > 1 ? "s" : ""}</span>
+                        </div>
+                      )}
+                      {!hasOverdue && hasActivity && nextActivities[lead.id] && (
                         <div className="flex items-center gap-1 mt-1 text-[9px] text-muted-foreground">
                           <CalendarClock className="h-2.5 w-2.5" />
                           <span className="truncate">{nextActivities[lead.id]}</span>
                         </div>
                       )}
-                      {noActivity && lastCompletedActivities[lead.id] && (
+                      {noActivity && !hasOverdue && lastCompletedActivities[lead.id] && (
                         <div className="flex items-center gap-1 mt-1 text-[9px] text-muted-foreground">
                           <CheckCircle className="h-2.5 w-2.5 text-emerald-500" />
                           <span className="truncate">{lastCompletedActivities[lead.id]}</span>
+                        </div>
+                      )}
+                      {noActivity && !hasOverdue && !lastCompletedActivities[lead.id] && (
+                        <div className="flex items-center gap-1 mt-1 text-[9px] text-amber-600 dark:text-amber-400 font-medium">
+                          <AlertTriangle className="h-2.5 w-2.5" />
+                          <span>Sem atividade</span>
                         </div>
                       )}
 
