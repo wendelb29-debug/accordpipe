@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import accordPatternDark from "@/assets/accord-pattern-dark.png";
 import { useWorkspaceContext } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
@@ -132,9 +133,36 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
   });
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="relative flex flex-col h-full overflow-hidden">
+      {/* Institutional pattern background — light mode */}
+      <div
+        className="absolute inset-0 dark:hidden pointer-events-none"
+        style={{
+          backgroundImage: `url(${accordPatternDark})`,
+          backgroundSize: '500px',
+          backgroundRepeat: 'repeat',
+          opacity: 0.08,
+        }}
+      />
+      <div className="absolute inset-0 dark:hidden bg-[radial-gradient(ellipse_at_center,transparent_20%,hsl(var(--background))_75%)] pointer-events-none" />
+
+      {/* Institutional pattern background — dark mode */}
+      <div
+        className="absolute inset-0 hidden dark:block pointer-events-none"
+        style={{
+          backgroundImage: `url(${accordPatternDark})`,
+          backgroundSize: '500px',
+          backgroundRepeat: 'repeat',
+          opacity: 0.15,
+        }}
+      />
+      <div className="absolute inset-0 hidden dark:block bg-[radial-gradient(ellipse_at_center,transparent_20%,hsl(var(--background))_75%)] pointer-events-none" />
+
+      {/* Subtle glow accents */}
+      <div className="absolute top-1/4 left-1/3 w-[400px] h-[400px] rounded-full bg-primary/[0.04] blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] rounded-full bg-primary/[0.03] blur-[80px] pointer-events-none" />
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 sm:px-6 py-4 border-b border-border/50">
+      <div className="relative z-10 flex items-center gap-3 px-4 sm:px-6 py-4 border-b border-border/50">
         <div>
           <h1 className="text-lg font-bold text-foreground">Workspaces</h1>
           <p className="text-xs text-muted-foreground">Selecione um kanban para gerenciar</p>
@@ -142,7 +170,7 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
       </div>
 
       {/* Search & Filter */}
-      <div className="flex items-center gap-3 px-4 sm:px-6 py-3">
+      <div className="relative z-10 flex items-center gap-3 px-4 sm:px-6 py-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
           <Input
@@ -166,7 +194,7 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
       </div>
 
       {/* Workspace Cards grouped by workspace_groups */}
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-6">
+      <div className="relative z-10 flex-1 overflow-y-auto px-4 sm:px-6 pb-6">
         {orderedGroups.map((group) => {
           const wsList = groupedByGroup[group.id] || [];
           if (wsList.length === 0) return null;
