@@ -470,6 +470,7 @@ export type Database = {
           trial_extensions: number
           trial_start: string | null
           updated_at: string
+          webhook_token: string
           zapi_client_token: string | null
           zapi_instance_id: string | null
           zapi_phone: string | null
@@ -518,6 +519,7 @@ export type Database = {
           trial_extensions?: number
           trial_start?: string | null
           updated_at?: string
+          webhook_token?: string
           zapi_client_token?: string | null
           zapi_instance_id?: string | null
           zapi_phone?: string | null
@@ -566,6 +568,7 @@ export type Database = {
           trial_extensions?: number
           trial_start?: string | null
           updated_at?: string
+          webhook_token?: string
           zapi_client_token?: string | null
           zapi_instance_id?: string | null
           zapi_phone?: string | null
@@ -3716,6 +3719,10 @@ export type Database = {
       pdf_contract_has_signer_token: {
         Args: { _contract_id: string }
         Returns: boolean
+      }
+      resolve_tenant_by_webhook_token: {
+        Args: { p_token: string }
+        Returns: string
       }
     }
     Enums: {
