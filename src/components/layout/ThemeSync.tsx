@@ -84,9 +84,17 @@ export function ThemeSync() {
     }
   }, [user, profile, loading]);
 
-  // Tenant brand colors sync — master tenant always uses ACCORD defaults
+  // Tenant brand colors sync — master's own company uses ACCORD defaults
   useEffect(() => {
     if (!activeCompanyId || !user) {
+      applyBrandColors(null);
+      return;
+    }
+
+    // The master's own company (profile.company_id) always uses default Accord colors
+    const isMasterOwnCompany = isMaster && profile?.company_id === activeCompanyId;
+
+    if (isMasterOwnCompany) {
       applyBrandColors(null);
       return;
     }
@@ -94,12 +102,11 @@ export function ThemeSync() {
     const fetchBrand = async () => {
       const { data } = await supabase
         .from("companies")
-        .select("brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color, servidor_id")
+        .select("brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color")
         .eq("id", activeCompanyId)
         .single();
 
-      // Master tenant (servidor_id IS NULL) always uses original Accord colors
-      if (!data || data.servidor_id === null) {
+      if (!data) {
         applyBrandColors(null);
       } else {
         applyBrandColors(data);
@@ -111,7 +118,7 @@ export function ThemeSync() {
     const handleBrandUpdate = () => fetchBrand();
     window.addEventListener("brand-colors-updated", handleBrandUpdate);
     return () => window.removeEventListener("brand-colors-updated", handleBrandUpdate);
-  }, [activeCompanyId, user]);
+  }, [activeCompanyId, user, isMaster, profile?.company_id]);
 
   return null;
 }

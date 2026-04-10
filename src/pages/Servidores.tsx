@@ -14,7 +14,8 @@ export default function Servidores() {
   const { companies, activeCompanyId, setActiveCompanyId, profile } = useAuth();
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  const isMasterTenant = (companyId: string) => companyId === profile?.company_id;
+  const isMasterUser = !!(profile as any)?.is_master;
+  const isMasterTenant = (companyId: string) => isMasterUser && companyId === profile?.company_id;
 
   const handleSelect = async (companyId: string) => {
     if (loadingId) return;
@@ -24,12 +25,14 @@ export default function Servidores() {
       // Pre-fetch brand colors and apply them before navigating
       const { data } = await supabase
         .from("companies")
-        .select("brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color, brand_logo_url, servidor_id")
+        .select("brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color, brand_logo_url")
         .eq("id", companyId)
         .single();
 
-      // Apply brand colors immediately
-      if (data && data.servidor_id !== null) {
+      // Master's own company uses default Accord colors; other tenants use their brand
+      if (isMasterTenant(companyId)) {
+        applyBrandColors(null);
+      } else if (data) {
         applyBrandColors(data);
       } else {
         applyBrandColors(null);
