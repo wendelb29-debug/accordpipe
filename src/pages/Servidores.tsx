@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { Building2, Check, ChevronRight, Shield, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import { applyBrandColors } from "@/components/layout/ThemeSync";
 
 export default function Servidores() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { companies, activeCompanyId, setActiveCompanyId, profile } = useAuth();
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
@@ -37,6 +39,12 @@ export default function Servidores() {
       window.dispatchEvent(new CustomEvent("tenant-switched", { detail: { companyId } }));
 
       setActiveCompanyId(companyId);
+
+      // Clear workspace selection so it reloads for new tenant
+      localStorage.removeItem("accord-last-workspace");
+
+      // Invalidate ALL React Query caches to force refetch with new tenant
+      await queryClient.invalidateQueries();
 
       // Small delay for visual feedback
       await new Promise((r) => setTimeout(r, 400));
