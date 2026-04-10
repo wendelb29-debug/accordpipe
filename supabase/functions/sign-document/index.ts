@@ -544,15 +544,15 @@ Deno.serve(async (req) => {
       }).eq("id", signer.id);
 
       const varPrefix = PAPEL_VAR_MAP[signer.papel] || "cliente";
-      const geoText = location_text || (location_lat && location_lng ? `${location_lat}, ${location_lng}` : "Nao disponivel");
+      const geoText = location_text || (location_lat && location_lng ? `${location_lat}, ${location_lng}` : "Nao informada");
 
       const signatureValues: Record<string, string> = {
         [`data_assinatura_${varPrefix}`]: fmtDateBR(now),
         [`hora_assinatura_${varPrefix}`]: fmtTimeBR(now),
         [`geolocalizacao_${varPrefix}`]: geoText,
         [`selfie_${varPrefix}`]: selfie_url
-          ? `<img src="${selfie_url}" data-selfie="true" width="150" height="150" />`
-          : "Nao capturada",
+          ? `<img src="${selfie_url}" data-selfie="true" width="120" height="120" />`
+          : "Imagem nao disponivel",
       };
 
       const { data: docData } = await supabase
