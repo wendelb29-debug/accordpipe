@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { useWorkspaceContext } from "@/contexts/WorkspaceContext";
 import { toast } from "sonner";
 import { Plus, Trash2, Loader2, Settings2, Route } from "lucide-react";
@@ -15,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 export function WhatsAppRoutingConfig() {
   const { profile } = useAuth();
   const { workspaces } = useWorkspaceContext();
-  const companyId = profile?.company_id;
+  const companyId = useActiveCompanyId();
 
   const [defaultWsId, setDefaultWsId] = useState<string | null>(null);
   const [rules, setRules] = useState<any[]>([]);

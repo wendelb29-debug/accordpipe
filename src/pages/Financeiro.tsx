@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { toast } from "sonner";
 import {
   DollarSign, Plus, Loader2, Search, AlertTriangle, CheckCircle2,
@@ -35,6 +36,7 @@ const statusLabels: Record<string, string> = {
 
 export default function Financeiro() {
   const { profile } = useAuth();
+  const activeCompanyId = useActiveCompanyId();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -70,7 +72,7 @@ export default function Financeiro() {
   const handleSave = async () => {
     if (!form.amount || !form.due_date) { toast.error("Preencha valor e vencimento"); return; }
     setSaving(true);
-    const servidorId = profile?.company_id;
+    const servidorId = activeCompanyId;
     if (!servidorId) { toast.error("Empresa não encontrada"); setSaving(false); return; }
 
     const { error } = await supabase.from("financial_transactions" as any).insert({
