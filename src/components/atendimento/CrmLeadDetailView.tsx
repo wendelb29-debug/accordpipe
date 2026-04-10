@@ -1396,12 +1396,28 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
           <DialogHeader>
             <DialogTitle className="text-center text-xl">Devolver ao Operador</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-2">
             <p className="text-sm text-muted-foreground text-center">
-              O card será devolvido ao operador <strong>{lead.created_by_name || "original"}</strong> na etapa <strong>Contrato Fechado</strong>.
+              O card será devolvido ao operador <strong>{lead.created_by_name || "original"}</strong> no workspace e etapa de origem.
             </p>
             <div className="space-y-2">
-              <Label htmlFor="return-note" className="text-sm font-medium">Motivo da devolução *</Label>
+              <Label htmlFor="return-reason" className="text-sm font-medium">Motivo da devolução *</Label>
+              <Select value={returnReason} onValueChange={setReturnReason}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o motivo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dados_incompletos">Dados incompletos</SelectItem>
+                  <SelectItem value="documento_pendente">Documento pendente</SelectItem>
+                  <SelectItem value="contrato_nao_assinado">Contrato não assinado</SelectItem>
+                  <SelectItem value="cadastro_inconsistente">Cadastro inconsistente</SelectItem>
+                  <SelectItem value="correcao_comercial">Necessidade de correção comercial</SelectItem>
+                  <SelectItem value="outro">Outro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="return-note" className="text-sm font-medium">Observação</Label>
               <Textarea
                 id="return-note"
                 placeholder="Descreva o motivo da devolução do card..."
