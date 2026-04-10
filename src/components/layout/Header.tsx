@@ -90,9 +90,10 @@ export function Header() {
       <div className="flex items-center gap-2 min-w-0 shrink-0">
         <button
           onClick={() => navigate(-1)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
+          title="Voltar"
+          className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/60 hover:bg-primary/10 hover:text-primary text-muted-foreground transition-all duration-200 shrink-0 active:scale-95"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-5 w-5" />
         </button>
         {pageTitle && (
           <div className="min-w-0">
