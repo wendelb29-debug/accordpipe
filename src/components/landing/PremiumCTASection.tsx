@@ -27,7 +27,7 @@ export function PremiumCTASection() {
             onClick={() => setTrialOpen(true)}
           >
             <Rocket className="h-4.5 w-4.5" />
-            Criar minha conta agora
+            Teste 7 dias grátis
           </Button>
         </div>
 
