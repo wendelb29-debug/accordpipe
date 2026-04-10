@@ -1695,6 +1695,109 @@ export type Database = {
           },
         ]
       }
+      fintech_integrations: {
+        Row: {
+          api_key_encrypted: string | null
+          api_key_masked: string | null
+          created_at: string
+          display_name: string
+          environment: string
+          id: string
+          is_active: boolean
+          last_event_at: string | null
+          provider: string
+          servidor_id: string
+          updated_at: string
+          webhook_secret_encrypted: string | null
+          webhook_secret_masked: string | null
+          webhook_url: string | null
+        }
+        Insert: {
+          api_key_encrypted?: string | null
+          api_key_masked?: string | null
+          created_at?: string
+          display_name: string
+          environment?: string
+          id?: string
+          is_active?: boolean
+          last_event_at?: string | null
+          provider: string
+          servidor_id: string
+          updated_at?: string
+          webhook_secret_encrypted?: string | null
+          webhook_secret_masked?: string | null
+          webhook_url?: string | null
+        }
+        Update: {
+          api_key_encrypted?: string | null
+          api_key_masked?: string | null
+          created_at?: string
+          display_name?: string
+          environment?: string
+          id?: string
+          is_active?: boolean
+          last_event_at?: string | null
+          provider?: string
+          servidor_id?: string
+          updated_at?: string
+          webhook_secret_encrypted?: string | null
+          webhook_secret_masked?: string | null
+          webhook_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fintech_integrations_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fintech_webhook_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_type: string
+          id: string
+          payload: Json | null
+          processed_at: string | null
+          provider: string
+          servidor_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          payload?: Json | null
+          processed_at?: string | null
+          provider: string
+          servidor_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json | null
+          processed_at?: string | null
+          provider?: string
+          servidor_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fintech_webhook_logs_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       generated_documents: {
         Row: {
           cancelled_at: string | null
