@@ -253,6 +253,11 @@ export default function NovoServidor() {
     load();
   }, [editId]);
 
+  // Block access for non-master-tenant users (after all hooks)
+  if (!isMasterTenantAdmin) {
+    return <Navigate to="/home" replace />;
+  }
+
   const handleCnpjSearch = async () => {
     const digits = cleanDigits(formData.cnpj);
     if (digits.length !== 14) { sonnerToast.error("Digite um CNPJ válido"); return; }
