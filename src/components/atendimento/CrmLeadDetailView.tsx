@@ -929,17 +929,27 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
       {/* Content: Stack on mobile, side-by-side on desktop */}
       <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
         {/* Left Sidebar - Details (full width on mobile, fixed on desktop) */}
-        <div className="w-full md:w-72 shrink-0 border-b md:border-b-0 md:border-r overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 max-h-[40vh] md:max-h-none">
+        <div className={`w-full md:w-72 shrink-0 border-b md:border-b-0 md:border-r overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 ${detailsCollapsed ? 'max-h-fit' : 'max-h-[40vh]'} md:max-h-none`}>
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold flex items-center gap-1.5">
-              <FileText className="h-4 w-4" /> Detalhes
-            </h3>
+            <button
+              onClick={() => setDetailsCollapsed(!detailsCollapsed)}
+              className="flex items-center gap-1.5 md:pointer-events-none"
+            >
+              <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                <FileText className="h-4 w-4" /> Detalhes
+              </h3>
+              {detailsCollapsed ? (
+                <ChevronDown className="h-4 w-4 text-muted-foreground md:hidden" />
+              ) : (
+                <ChevronUp className="h-4 w-4 text-muted-foreground md:hidden" />
+              )}
+            </button>
             <Button size="sm" variant="ghost" onClick={() => editing ? handleSave() : setEditing(true)} disabled={saving} className="h-7 text-xs">
               {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : editing ? "Salvar" : "Editar"}
             </Button>
           </div>
 
-          <div className="space-y-3 text-xs">
+          <div className={`space-y-3 text-xs ${detailsCollapsed ? 'hidden md:block' : ''}`}>
             <DetailField icon={Clock} label="Última atualização" value={new Date(lead.updated_at).toLocaleString("pt-BR")} />
             <DetailField icon={Tag} label="ID da oportunidade" value={lead.id.slice(0, 8)} />
 
