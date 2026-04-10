@@ -202,7 +202,7 @@ export default function Financeiro() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">Financeiro</h1>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Fintech</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Gestão financeira completa do seu negócio</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
