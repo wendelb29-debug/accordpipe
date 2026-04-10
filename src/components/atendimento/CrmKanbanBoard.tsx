@@ -730,16 +730,28 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                       </div>
 
                       {/* Activity indicator */}
-                      {hasActivity && nextActivities[lead.id] && (
+                      {hasOverdue && (
+                        <div className="flex items-center gap-1 mt-1 text-[9px] text-destructive font-medium">
+                          <AlertTriangle className="h-2.5 w-2.5" />
+                          <span>{overdueActCount} atividade{overdueActCount > 1 ? "s" : ""} atrasada{overdueActCount > 1 ? "s" : ""}</span>
+                        </div>
+                      )}
+                      {!hasOverdue && hasActivity && nextActivities[lead.id] && (
                         <div className="flex items-center gap-1 mt-1 text-[9px] text-muted-foreground">
                           <CalendarClock className="h-2.5 w-2.5" />
                           <span className="truncate">{nextActivities[lead.id]}</span>
                         </div>
                       )}
-                      {noActivity && lastCompletedActivities[lead.id] && (
+                      {noActivity && !hasOverdue && lastCompletedActivities[lead.id] && (
                         <div className="flex items-center gap-1 mt-1 text-[9px] text-muted-foreground">
                           <CheckCircle className="h-2.5 w-2.5 text-emerald-500" />
                           <span className="truncate">{lastCompletedActivities[lead.id]}</span>
+                        </div>
+                      )}
+                      {noActivity && !hasOverdue && !lastCompletedActivities[lead.id] && (
+                        <div className="flex items-center gap-1 mt-1 text-[9px] text-amber-600 dark:text-amber-400 font-medium">
+                          <AlertTriangle className="h-2.5 w-2.5" />
+                          <span>Sem atividade</span>
                         </div>
                       )}
 
