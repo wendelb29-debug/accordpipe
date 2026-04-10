@@ -410,6 +410,11 @@ export type Database = {
           complemento: string | null
           created_at: string
           created_by: string | null
+          doc_accent_color: string | null
+          doc_bg_color: string | null
+          doc_primary_color: string | null
+          doc_secondary_color: string | null
+          doc_text_color: string | null
           email: string | null
           endereco: string | null
           estado: string | null
@@ -453,6 +458,11 @@ export type Database = {
           complemento?: string | null
           created_at?: string
           created_by?: string | null
+          doc_accent_color?: string | null
+          doc_bg_color?: string | null
+          doc_primary_color?: string | null
+          doc_secondary_color?: string | null
+          doc_text_color?: string | null
           email?: string | null
           endereco?: string | null
           estado?: string | null
@@ -496,6 +506,11 @@ export type Database = {
           complemento?: string | null
           created_at?: string
           created_by?: string | null
+          doc_accent_color?: string | null
+          doc_bg_color?: string | null
+          doc_primary_color?: string | null
+          doc_secondary_color?: string | null
+          doc_text_color?: string | null
           email?: string | null
           endereco?: string | null
           estado?: string | null
