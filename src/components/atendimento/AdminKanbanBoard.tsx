@@ -40,6 +40,16 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [detailLead, setDetailLead] = useState<CrmLead | null>(null);
   const [showOldConcluidos, setShowOldConcluidos] = useState(false);
+  const { pushBackHandler } = useBackNavigation();
+
+  useEffect(() => {
+    if (!detailLead) return;
+    const unregister = pushBackHandler(() => {
+      setDetailLead(null);
+      return true;
+    });
+    return unregister;
+  }, [detailLead, pushBackHandler]);
 
   const pipelineRef = useRef<HTMLDivElement>(null);
   const isDraggingScroll = useRef(false);
