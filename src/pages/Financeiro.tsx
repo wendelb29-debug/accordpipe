@@ -65,16 +65,24 @@ export default function Financeiro() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [{ data: txData }, { data: regData }] = await Promise.all([
+    const [{ data: txData }, { data: regData }, { data: intData }, { data: companyData }] = await Promise.all([
       supabase.from("financial_transactions" as any).select("*, crm_client_registrations(nome_completo, lead_id)").order("created_at", { ascending: false }),
       supabase.from("crm_client_registrations").select("id, nome_completo, lead_id, servidor_id"),
+      activeCompanyId
+        ? supabase.from("fintech_integrations").select("id, provider, display_name, is_active, environment").eq("servidor_id", activeCompanyId).eq("is_active", true)
+        : Promise.resolve({ data: [] }),
+      activeCompanyId
+        ? supabase.from("companies").select("webhook_token").eq("id", activeCompanyId).single()
+        : Promise.resolve({ data: null }),
     ]);
     setTransactions(txData || []);
     setRegistrations(regData || []);
+    setIntegrations(intData || []);
+    setWebhookConfigured(!!companyData?.webhook_token);
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [activeCompanyId]);
 
   const handleSave = async () => {
     if (!form.amount || !form.due_date) { toast.error("Preencha valor e vencimento"); return; }
