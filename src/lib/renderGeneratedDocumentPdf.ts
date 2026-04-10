@@ -341,10 +341,11 @@ function processHtmlBlocks(html: string): HtmlBlock[] {
       const srcMatch = seg.content.match(/src="([^"]+)"/i);
       const widthMatch = seg.content.match(/width="(\d+)"/i);
       const heightMatch = seg.content.match(/height="(\d+)"/i);
+      const isSelfieTag = /data-selfie/i.test(seg.content);
       if (srcMatch?.[1]) {
         blocks.push({
           type: "image",
-          text: "",
+          text: isSelfieTag ? "selfie" : "",
           imageUrl: srcMatch[1],
           imageWidth: widthMatch ? parseInt(widthMatch[1]) : 150,
           imageHeight: heightMatch ? parseInt(heightMatch[1]) : 150,
