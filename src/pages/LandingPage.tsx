@@ -4,9 +4,10 @@ import { Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import accordLogo from "@/assets/accord-logo-full.png";
 import { HeroSection } from "@/components/landing/HeroSection";
-import { FlowSection } from "@/components/landing/FlowSection";
+import { PositioningSection } from "@/components/landing/PositioningSection";
 import { ModulesSection } from "@/components/landing/ModulesSection";
 import { AuthoritySection } from "@/components/landing/AuthoritySection";
+import { DifferentialSection } from "@/components/landing/DifferentialSection";
 import { SocialProofSection } from "@/components/landing/SocialProofSection";
 import { SecuritySection } from "@/components/landing/SecuritySection";
 import { FAQSection } from "@/components/landing/FAQSection";
@@ -45,7 +46,7 @@ export default function LandingPage() {
               onClick={() => setTrialOpen(true)}
             >
               <Rocket className="h-3.5 w-3.5 shrink-0" />
-              <span className="hidden sm:inline">Teste Gratuito</span>
+              <span className="hidden sm:inline">Começar agora</span>
               <span className="sm:hidden">Testar</span>
             </Button>
             <Link to="/auth">
@@ -58,9 +59,10 @@ export default function LandingPage() {
       </header>
 
       <HeroSection />
-      <FlowSection />
+      <PositioningSection />
       <ModulesSection />
       <AuthoritySection />
+      <DifferentialSection />
       <SocialProofSection />
       <SecuritySection />
       <FAQSection />
