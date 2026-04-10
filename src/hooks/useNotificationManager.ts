@@ -166,10 +166,10 @@ export function useNotificationManager() {
 
   // Listen for new notifications via realtime
   useEffect(() => {
-    if (!user || !enabled) return;
+    if (!user || !enabled || !activeCompanyId) return;
 
     const channel = supabase
-      .channel("notif-push")
+      .channel(`notif-push-${activeCompanyId}`)
       .on(
         "postgres_changes",
         {
@@ -180,10 +180,11 @@ export function useNotificationManager() {
         },
         (payload) => {
           const row = payload.new as any;
+          // Only fire for the active tenant
+          if (row.servidor_id !== activeCompanyId) return;
           if (row.id === lastNotifId.current) return;
           lastNotifId.current = row.id;
 
-          // Check if it's a scheduled reminder not yet due
           if (row.type === "reminder" && row.metadata?.reminder_at) {
             if (new Date(row.metadata.reminder_at) > new Date()) return;
           }
@@ -196,7 +197,7 @@ export function useNotificationManager() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, enabled, fireNotification]);
+  }, [user, enabled, activeCompanyId, fireNotification]);
 
   return {
     enabled,
