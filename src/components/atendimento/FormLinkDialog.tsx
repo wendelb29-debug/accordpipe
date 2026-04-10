@@ -31,6 +31,7 @@ const PRESET_COLORS = [
 
 export function FormLinkDialog({ open, onOpenChange }: FormLinkDialogProps) {
   const { profile } = useAuth();
+  const activeCompany = useActiveCompanyId();
 
   const [tags, setTags] = useState<CrmTag[]>([]);
   const [loading, setLoading] = useState(false);
@@ -51,7 +52,7 @@ export function FormLinkDialog({ open, onOpenChange }: FormLinkDialogProps) {
   const fetchCompanyAndTags = async () => {
     setLoading(true);
     // Get first company to use as the form link target
-    let cId = profile?.company_id;
+    let cId = activeCompany || profile?.company_id;
     if (!cId) {
       const { data } = await supabase
         .from("companies")
