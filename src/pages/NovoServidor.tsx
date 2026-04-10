@@ -618,6 +618,14 @@ export default function NovoServidor() {
               </CardContent>
             </Card>
           )}
+
+          {activeTab === "fintech" && (
+            <Card>
+              <CardContent className="pt-6">
+                <FintechWebhooksTab companyId={editId || pendingNewId} />
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
