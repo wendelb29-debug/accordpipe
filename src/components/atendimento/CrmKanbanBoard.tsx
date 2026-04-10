@@ -604,13 +604,14 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                   const signatureStats = signatureStatsByLead[lead.id];
 
                   // Priority: 1) overdue activity, 2) SLA exceeded, 3) no activity, 4) normal
+                  const isNaturalState = !hasOverdue && !noActivity && !overdue;
                   const cardStyle = hasOverdue
                     ? "bg-red-50/70 dark:bg-red-950/30 border-red-300/70 dark:border-red-800/50"
                     : overdue && hasActivity
                     ? "bg-red-50/60 dark:bg-red-950/20 border-red-200/60 dark:border-red-800/40"
                     : noActivity
                     ? "bg-amber-50/60 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/40"
-                    : "bg-card border-border/30";
+                    : "bg-card/95 dark:bg-[rgba(255,255,255,0.03)] border-border/40 dark:border-[rgba(255,255,255,0.07)]";
 
                   return (
                     <div
@@ -619,170 +620,213 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                       onDragStart={() => setDraggedLead(lead)}
                       onClick={() => openDetail(lead)}
                       className={cn(
-                        "kanban-card rounded-xl border p-2.5 cursor-grab active:cursor-grabbing transition-all duration-200 group",
-                        "hover:-translate-y-[2px] hover:shadow-md",
+                        "kanban-card rounded-xl border cursor-grab active:cursor-grabbing transition-all duration-200 group relative overflow-hidden",
+                        "active:scale-[0.98]",
                         draggedLead?.id === lead.id && "opacity-40 scale-95",
-                        cardStyle
+                        cardStyle,
+                        isNaturalState
+                          ? "hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20 dark:hover:border-primary/30 hover:brightness-105 dark:hover:brightness-110"
+                          : "hover:-translate-y-[2px] hover:shadow-md"
                       )}
-                      style={{ boxShadow: draggedLead?.id === lead.id ? undefined : '0 2px 8px rgba(0,0,0,0.04)' }}
+                      style={{
+                        boxShadow: draggedLead?.id === lead.id ? undefined
+                          : isNaturalState ? '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.02)' : '0 2px 8px rgba(0,0,0,0.04)',
+                      }}
                     >
-                      {/* Progress bar */}
-                      <div className="w-full h-0.5 rounded-full bg-muted mb-2 overflow-hidden">
-                        <div className={cn("h-full rounded-full transition-all duration-500", progressColor)}
-                          style={{ width: noActivity ? '30%' : overdue ? '100%' : `${Math.min(100, Math.max(20, 100 - days * 10))}%` }}
-                        />
-                      </div>
+                      {/* Top accent bar - uses tenant primary color */}
+                      <div
+                        className={cn(
+                          "absolute top-0 left-0 right-0 h-[2.5px] rounded-t-xl",
+                          hasOverdue ? "bg-destructive" : overdue ? "bg-destructive/70" : noActivity ? "bg-amber-400" : ""
+                        )}
+                        style={isNaturalState ? {
+                          background: `linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.6))`,
+                        } : undefined}
+                      />
 
-                      {/* Source + Company + Status icons */}
-                      <div className="flex items-start justify-between mb-1.5">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1">
-                            <p className="font-semibold text-[11px] text-foreground truncate">{lead.contact_name || lead.source}</p>
-                            {hasOverdue && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="h-2 w-2 rounded-full bg-destructive animate-pulse shrink-0" />
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="text-[10px]">
-                                  {overdueActCount} atividade{overdueActCount > 1 ? "s" : ""} atrasada{overdueActCount > 1 ? "s" : ""}
-                                </TooltipContent>
-                              </Tooltip>
-                            )}
-                            {!hasOverdue && noActivity && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <AlertTriangle className="h-3 w-3 shrink-0 text-amber-500" />
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="text-[10px]">Sem atividade</TooltipContent>
-                              </Tooltip>
-                            )}
-                            {!hasOverdue && !noActivity && overdue && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Clock className="h-3 w-3 shrink-0 text-destructive" />
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="text-[10px]">Tempo excedido na etapa</TooltipContent>
-                              </Tooltip>
-                            )}
+                      <div className="p-2.5 pt-3">
+                        {/* Lead name + status icons */}
+                        <div className="flex items-start justify-between mb-1">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1">
+                              <p className={cn(
+                                "text-[11px] truncate",
+                                isNaturalState ? "font-bold text-foreground tracking-tight" : "font-semibold text-foreground"
+                              )}>
+                                {lead.contact_name || lead.source}
+                              </p>
+                              {hasOverdue && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="h-2 w-2 rounded-full bg-destructive animate-pulse shrink-0" />
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-[10px]">
+                                    {overdueActCount} atividade{overdueActCount > 1 ? "s" : ""} atrasada{overdueActCount > 1 ? "s" : ""}
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                              {!hasOverdue && noActivity && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <AlertTriangle className="h-3 w-3 shrink-0 text-amber-500" />
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-[10px]">Sem atividade</TooltipContent>
+                                </Tooltip>
+                              )}
+                              {!hasOverdue && !noActivity && overdue && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Clock className="h-3 w-3 shrink-0 text-destructive" />
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-[10px]">Tempo excedido na etapa</TooltipContent>
+                                </Tooltip>
+                              )}
+                            </div>
+                            {/* Company name */}
+                            <p className="text-[10px] text-muted-foreground truncate mt-0.5">{lead.company_name}</p>
                           </div>
-                          <p className="text-[10px] text-muted-foreground truncate">{lead.company_name}</p>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
+                                <MoreVertical className="h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="rounded-xl">
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEdit(lead); }}>
+                                <Edit className="h-3.5 w-3.5 mr-2" /> Editar
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
-                              <MoreVertical className="h-3 w-3" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="rounded-xl">
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEdit(lead); }}>
-                              <Edit className="h-3.5 w-3.5 mr-2" /> Editar
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
 
-                      {/* Value - Single line */}
-                      <div className="flex items-center gap-1.5 text-[10px]">
-                        <span className="text-muted-foreground">P&S <span className="font-bold text-foreground">{formatCurrency(lead.value_ps)}</span></span>
-                        <span className="text-muted-foreground/30">·</span>
-                        <span className="text-muted-foreground">MRR <span className="font-bold text-primary">{formatCurrency(lead.value_mrr)}</span></span>
-                      </div>
-
-                      {signatureStats && (
-                        <div className="mt-1.5 flex flex-wrap gap-1">
-                          <Badge
-                            variant="secondary"
-                            className={cn(
-                              "text-[9px] gap-0.5 px-1.5 py-0",
-                              signatureStats.approved
-                                ? "bg-status-paid text-status-paid-foreground"
-                                : "bg-status-open text-status-open-foreground"
-                            )}
-                          >
-                            {signatureStats.approved ? <CheckCircle className="h-2.5 w-2.5" /> : <FileSignature className="h-2.5 w-2.5" />}
-                            {signatureStats.approved
-                              ? "Aprovado"
-                              : `${signatureStats.signed}/${signatureStats.total}`}
-                          </Badge>
-                        </div>
-                      )}
-
-                      {/* Won / Devolvido badges */}
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {lead.lead_status === "won" && (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold rounded-full px-1.5 py-0"
-                            style={{ backgroundColor: '#D1FAE5', color: '#059669' }}>
-                            ✅ Ganho
-                          </span>
-                        )}
-                        {lead.tags?.includes("Pendente de Correção") && (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold rounded-full px-1.5 py-0"
-                            style={{ backgroundColor: '#FED7AA', color: '#C2410C' }}>
-                            ⚠️ Correção
-                          </span>
-                        )}
-                        {lead.tags?.includes("Devolvido") && !lead.tags?.includes("Pendente de Correção") && (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold rounded-full px-1.5 py-0"
-                            style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>
-                            🔄 Devolvido
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Activity indicator */}
-                      {hasOverdue && (
-                        <div className="flex items-center gap-1 mt-1 text-[9px] text-destructive font-medium">
-                          <AlertTriangle className="h-2.5 w-2.5" />
-                          <span>{overdueActCount} atividade{overdueActCount > 1 ? "s" : ""} atrasada{overdueActCount > 1 ? "s" : ""}</span>
-                        </div>
-                      )}
-                      {!hasOverdue && hasActivity && nextActivities[lead.id] && (
-                        <div className="flex items-center gap-1 mt-1 text-[9px] text-muted-foreground">
-                          <CalendarClock className="h-2.5 w-2.5" />
-                          <span className="truncate">{nextActivities[lead.id]}</span>
-                        </div>
-                      )}
-                      {noActivity && !hasOverdue && lastCompletedActivities[lead.id] && (
-                        <div className="flex items-center gap-1 mt-1 text-[9px] text-muted-foreground">
-                          <CheckCircle className="h-2.5 w-2.5 text-emerald-500" />
-                          <span className="truncate">{lastCompletedActivities[lead.id]}</span>
-                        </div>
-                      )}
-                      {noActivity && !hasOverdue && !lastCompletedActivities[lead.id] && (
-                        <div className="flex items-center gap-1 mt-1 text-[9px] text-amber-600 dark:text-amber-400 font-medium">
-                          <AlertTriangle className="h-2.5 w-2.5" />
-                          <span>Sem atividade</span>
-                        </div>
-                      )}
-
-                      {/* Footer */}
-                      <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-border/15">
-                        <div className="flex items-center gap-1">
-                          {lead.created_by_name && (() => {
-                            const memberAvatar = teamMembers.find(m => m.user_id === lead.created_by_user_id)?.avatar_url;
-                            return (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Avatar className="h-5 w-5 ring-1 ring-primary/15">
-                                    {memberAvatar && <AvatarImage src={memberAvatar} alt={lead.created_by_name} />}
-                                    <AvatarFallback className="text-[7px] bg-primary/10 text-primary font-bold">
-                                      {lead.created_by_name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                </TooltipTrigger>
-                                <TooltipContent side="bottom" className="text-[10px] font-medium">{lead.created_by_name}</TooltipContent>
-                              </Tooltip>
-                            );
-                          })()}
-                          <span className="text-[9px] text-muted-foreground/50">{new Date(lead.created_at).toLocaleDateString("pt-BR")}</span>
-                        </div>
-                        <span className={cn(
-                          "text-[9px] font-bold rounded-full px-1.5 py-0",
-                          overdue ? "text-destructive" : days > 3 ? "text-amber-600" : "text-muted-foreground/50",
-                          overdue ? "bg-destructive/10" : days > 3 ? "bg-amber-50 dark:bg-amber-950/30" : ""
+                        {/* Values */}
+                        <div className={cn(
+                          "flex items-center gap-1.5 text-[10px] py-1 px-1.5 rounded-md mt-1",
+                          isNaturalState ? "bg-muted/50 dark:bg-muted/20" : ""
                         )}>
-                          {overdue && overdueByDays > 0 ? `+${overdueByDays}d atraso` : `${days}d`}
-                        </span>
+                          <span className="text-muted-foreground">P&S <span className="font-bold text-foreground">{formatCurrency(lead.value_ps)}</span></span>
+                          <span className="text-muted-foreground/30">·</span>
+                          <span className="text-muted-foreground">MRR <span className="font-bold text-primary">{formatCurrency(lead.value_mrr)}</span></span>
+                        </div>
+
+                        {/* Contact info */}
+                        {(lead.phone || lead.email) && isNaturalState && (
+                          <div className="flex items-center gap-1 mt-1.5 text-[9px] text-muted-foreground/70">
+                            {lead.phone ? (
+                              <>
+                                <Phone className="h-2.5 w-2.5" />
+                                <span className="truncate">{lead.phone}</span>
+                              </>
+                            ) : lead.email ? (
+                              <>
+                                <MessageSquare className="h-2.5 w-2.5" />
+                                <span className="truncate">{lead.email}</span>
+                              </>
+                            ) : null}
+                          </div>
+                        )}
+
+                        {signatureStats && (
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            <Badge
+                              variant="secondary"
+                              className={cn(
+                                "text-[9px] gap-0.5 px-1.5 py-0",
+                                signatureStats.approved
+                                  ? "bg-status-paid text-status-paid-foreground"
+                                  : "bg-status-open text-status-open-foreground"
+                              )}
+                            >
+                              {signatureStats.approved ? <CheckCircle className="h-2.5 w-2.5" /> : <FileSignature className="h-2.5 w-2.5" />}
+                              {signatureStats.approved
+                                ? "Aprovado"
+                                : `${signatureStats.signed}/${signatureStats.total}`}
+                            </Badge>
+                          </div>
+                        )}
+
+                        {/* Won / Devolvido badges */}
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {lead.lead_status === "won" && (
+                            <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold rounded-full px-1.5 py-0"
+                              style={{ backgroundColor: '#D1FAE5', color: '#059669' }}>
+                              ✅ Ganho
+                            </span>
+                          )}
+                          {lead.tags?.includes("Pendente de Correção") && (
+                            <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold rounded-full px-1.5 py-0"
+                              style={{ backgroundColor: '#FED7AA', color: '#C2410C' }}>
+                              ⚠️ Correção
+                            </span>
+                          )}
+                          {lead.tags?.includes("Devolvido") && !lead.tags?.includes("Pendente de Correção") && (
+                            <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold rounded-full px-1.5 py-0"
+                              style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>
+                              🔄 Devolvido
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Activity indicator */}
+                        {hasOverdue && (
+                          <div className="flex items-center gap-1 mt-1.5 text-[9px] text-destructive font-medium">
+                            <AlertTriangle className="h-2.5 w-2.5" />
+                            <span>{overdueActCount} atividade{overdueActCount > 1 ? "s" : ""} atrasada{overdueActCount > 1 ? "s" : ""}</span>
+                          </div>
+                        )}
+                        {!hasOverdue && hasActivity && nextActivities[lead.id] && (
+                          <div className="flex items-center gap-1 mt-1.5 text-[9px] text-muted-foreground">
+                            <CalendarClock className="h-2.5 w-2.5 text-primary/60" />
+                            <span className="truncate">{nextActivities[lead.id]}</span>
+                          </div>
+                        )}
+                        {noActivity && !hasOverdue && lastCompletedActivities[lead.id] && (
+                          <div className="flex items-center gap-1 mt-1.5 text-[9px] text-muted-foreground">
+                            <CheckCircle className="h-2.5 w-2.5 text-emerald-500" />
+                            <span className="truncate">{lastCompletedActivities[lead.id]}</span>
+                          </div>
+                        )}
+                        {noActivity && !hasOverdue && !lastCompletedActivities[lead.id] && (
+                          <div className="flex items-center gap-1 mt-1.5 text-[9px] text-amber-600 dark:text-amber-400 font-medium">
+                            <AlertTriangle className="h-2.5 w-2.5" />
+                            <span>Sem atividade</span>
+                          </div>
+                        )}
+
+                        {/* Footer */}
+                        <div className={cn(
+                          "flex items-center justify-between mt-2 pt-2",
+                          isNaturalState ? "border-t border-border/10" : "border-t border-border/15"
+                        )}>
+                          <div className="flex items-center gap-1">
+                            {lead.created_by_name && (() => {
+                              const memberAvatar = teamMembers.find(m => m.user_id === lead.created_by_user_id)?.avatar_url;
+                              return (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Avatar className={cn("h-5 w-5", isNaturalState ? "ring-1 ring-primary/20" : "ring-1 ring-primary/15")}>
+                                      {memberAvatar && <AvatarImage src={memberAvatar} alt={lead.created_by_name} />}
+                                      <AvatarFallback className="text-[7px] bg-primary/10 text-primary font-bold">
+                                        {lead.created_by_name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="bottom" className="text-[10px] font-medium">{lead.created_by_name}</TooltipContent>
+                                </Tooltip>
+                              );
+                            })()}
+                            <span className="text-[9px] text-muted-foreground/50">{new Date(lead.created_at).toLocaleDateString("pt-BR")}</span>
+                          </div>
+                          <span className={cn(
+                            "text-[9px] font-bold rounded-full px-1.5 py-0",
+                            overdue ? "text-destructive bg-destructive/10"
+                              : days > 3 ? "text-amber-600 bg-amber-50 dark:bg-amber-950/30"
+                              : isNaturalState ? "text-muted-foreground/60"
+                              : "text-muted-foreground/50"
+                          )}>
+                            {overdue && overdueByDays > 0 ? `+${overdueByDays}d atraso` : `${days}d`}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   );
