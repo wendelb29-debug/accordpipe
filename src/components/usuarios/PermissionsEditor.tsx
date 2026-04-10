@@ -11,7 +11,14 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { PERMISSION_MODULES, ALL_PERMISSION_KEYS } from "@/lib/permissions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { PERMISSION_MODULES, ALL_PERMISSION_KEYS, DATA_SCOPE_LABELS, type DataScope } from "@/lib/permissions";
 import { useUserPermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
 
@@ -19,6 +26,11 @@ interface PermissionsEditorProps {
   userId: string;
   isCeoOrMaster?: boolean;
   onClose?: () => void;
+}
+
+interface LocalPerm {
+  granted: boolean;
+  data_scope: DataScope;
 }
 
 export function PermissionsEditor({ userId, isCeoOrMaster, onClose }: PermissionsEditorProps) {
@@ -30,32 +42,26 @@ export function PermissionsEditor({ userId, isCeoOrMaster, onClose }: Permission
     loading,
     userRole,
     getEffectivePermission,
+    getEffectiveScope,
     saveCustomPermissions,
     clearCustomPermissions,
   } = useUserPermissions(userId);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [customMode, setCustomMode] = useState(false);
-  const [localPerms, setLocalPerms] = useState<Record<string, boolean>>({});
+  const [localPerms, setLocalPerms] = useState<Record<string, LocalPerm>>({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setCustomMode(hasCustom);
-    if (hasCustom) {
-      // Build full permission map from effective values
-      const perms: Record<string, boolean> = {};
-      ALL_PERMISSION_KEYS.forEach(key => {
-        perms[key] = getEffectivePermission(key);
-      });
-      setLocalPerms(perms);
-    } else {
-      // Use role defaults
-      const perms: Record<string, boolean> = {};
-      ALL_PERMISSION_KEYS.forEach(key => {
-        perms[key] = roleDefaults.includes(key);
-      });
-      setLocalPerms(perms);
-    }
+    const perms: Record<string, LocalPerm> = {};
+    ALL_PERMISSION_KEYS.forEach(key => {
+      perms[key] = {
+        granted: getEffectivePermission(key),
+        data_scope: getEffectiveScope(key),
+      };
+    });
+    setLocalPerms(perms);
   }, [hasCustom, roleDefaults, customPerms]);
 
   if (isCeoOrMaster) {
@@ -81,7 +87,17 @@ export function PermissionsEditor({ userId, isCeoOrMaster, onClose }: Permission
   }
 
   const handleToggle = (key: string) => {
-    setLocalPerms(prev => ({ ...prev, [key]: !prev[key] }));
+    setLocalPerms(prev => ({
+      ...prev,
+      [key]: { ...prev[key], granted: !prev[key]?.granted },
+    }));
+  };
+
+  const handleScopeChange = (key: string, scope: DataScope) => {
+    setLocalPerms(prev => ({
+      ...prev,
+      [key]: { ...prev[key], data_scope: scope },
+    }));
   };
 
   const handleSave = async () => {
@@ -103,9 +119,13 @@ export function PermissionsEditor({ userId, isCeoOrMaster, onClose }: Permission
   };
 
   const handleResetToDefaults = () => {
-    const perms: Record<string, boolean> = {};
+    const perms: Record<string, LocalPerm> = {};
     ALL_PERMISSION_KEYS.forEach(key => {
-      perms[key] = roleDefaults.includes(key);
+      const defaultEntry = roleDefaults[key];
+      perms[key] = {
+        granted: !!defaultEntry,
+        data_scope: defaultEntry?.data_scope || "own",
+      };
     });
     setLocalPerms(perms);
     setCustomMode(false);
@@ -120,7 +140,7 @@ export function PermissionsEditor({ userId, isCeoOrMaster, onClose }: Permission
     ),
   })).filter(m => m.permissions.length > 0);
 
-  const grantedCount = ALL_PERMISSION_KEYS.filter(k => localPerms[k]).length;
+  const grantedCount = ALL_PERMISSION_KEYS.filter(k => localPerms[k]?.granted).length;
 
   return (
     <div className="space-y-4">
@@ -172,7 +192,7 @@ export function PermissionsEditor({ userId, isCeoOrMaster, onClose }: Permission
           <Accordion type="multiple" className="space-y-2" defaultValue={PERMISSION_MODULES.map(m => m.key)}>
             {filteredModules.map(module => {
               const ModIcon = module.icon;
-              const moduleGranted = module.permissions.filter(p => localPerms[p.key]).length;
+              const moduleGranted = module.permissions.filter(p => localPerms[p.key]?.granted).length;
               return (
                 <AccordionItem key={module.key} value={module.key} className="border border-border rounded-lg px-4">
                   <AccordionTrigger className="hover:no-underline py-3">
@@ -187,22 +207,39 @@ export function PermissionsEditor({ userId, isCeoOrMaster, onClose }: Permission
                   <AccordionContent className="pb-3">
                     <div className="space-y-3">
                       {module.permissions.map(perm => (
-                        <div key={perm.key} className="flex items-center justify-between py-1">
-                          <div className="flex items-center gap-2">
-                            {localPerms[perm.key] ? (
-                              <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                        <div key={perm.key} className="flex items-center justify-between py-1 gap-3">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            {localPerms[perm.key]?.granted ? (
+                              <ShieldCheck className="h-4 w-4 text-emerald-500 shrink-0" />
                             ) : (
-                              <ShieldX className="h-4 w-4 text-muted-foreground" />
+                              <ShieldX className="h-4 w-4 text-muted-foreground shrink-0" />
                             )}
-                            <div>
+                            <div className="min-w-0">
                               <p className="text-sm font-medium text-foreground">{perm.label}</p>
-                              <p className="text-xs text-muted-foreground">{perm.description}</p>
+                              <p className="text-xs text-muted-foreground truncate">{perm.description}</p>
                             </div>
                           </div>
-                          <Switch
-                            checked={localPerms[perm.key] || false}
-                            onCheckedChange={() => handleToggle(perm.key)}
-                          />
+                          <div className="flex items-center gap-2 shrink-0">
+                            {perm.scopable && localPerms[perm.key]?.granted && (
+                              <Select
+                                value={localPerms[perm.key]?.data_scope || "own"}
+                                onValueChange={(val) => handleScopeChange(perm.key, val as DataScope)}
+                              >
+                                <SelectTrigger className="h-7 w-24 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {(Object.entries(DATA_SCOPE_LABELS) as [DataScope, string][]).map(([scope, label]) => (
+                                    <SelectItem key={scope} value={scope} className="text-xs">{label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                            <Switch
+                              checked={localPerms[perm.key]?.granted || false}
+                              onCheckedChange={() => handleToggle(perm.key)}
+                            />
+                          </div>
                         </div>
                       ))}
                     </div>
