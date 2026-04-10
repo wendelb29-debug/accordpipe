@@ -7,7 +7,7 @@ import { HeroSection } from "@/components/landing/HeroSection";
 import { PositioningSection } from "@/components/landing/PositioningSection";
 import { ProductScreenshots } from "@/components/landing/ProductScreenshots";
 import { ModulesSection } from "@/components/landing/ModulesSection";
-import { ToolsComparison } from "@/components/landing/ToolsComparison";
+
 import { AuthoritySection } from "@/components/landing/AuthoritySection";
 import { DifferentialSection } from "@/components/landing/DifferentialSection";
 import { SocialProofSection } from "@/components/landing/SocialProofSection";
@@ -64,7 +64,7 @@ export default function LandingPage() {
       <PositioningSection />
       <ProductScreenshots />
       <ModulesSection />
-      <ToolsComparison />
+      
       <AuthoritySection />
       <DifferentialSection />
       <SocialProofSection />
