@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Navigate } from "react-router-dom";
 import {
   Building2, Palette, FileSignature, Search, Loader2, Save, Webhook,
   Send, LogOut, MessageSquare, Radio, Activity, Wifi, Copy, Check, RefreshCw, LayoutGrid,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,7 @@ import { BrandIdentityFields } from "@/components/empresas/BrandIdentityFields";
 import { ContractTemplateTab } from "@/components/servidores/ContractTemplateTab";
 import { WebhookConfig } from "@/components/atendimento/tabs/WebhookConfig";
 import { WorkspacesTab } from "@/components/servidores/WorkspacesTab";
+import { FintechWebhooksTab } from "@/components/servidores/FintechWebhooksTab";
 import { useEffect } from "react";
 
 const cleanDigits = (v: string) => v.replace(/\D/g, "");
