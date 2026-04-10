@@ -66,6 +66,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isCeo = role === "ceo";
   const isMaster = profile?.is_master === true || isCeo;
+  // True only for CEO/Master users who belong to the master tenant (is_master flag on profile)
+  const isMasterTenantAdmin = profile?.is_master === true && (isCeo || role === "admin" || role === "ceo");
 
   const setActiveCompanyId = (id: string | null) => {
     setActiveCompanyIdState(id);
