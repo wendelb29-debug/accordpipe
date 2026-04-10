@@ -543,6 +543,11 @@ export default function NovoServidor() {
                     brandSecondaryColor: formData.brandSecondaryColor,
                     brandAccentColor: formData.brandAccentColor,
                     brandBgColor: formData.brandBgColor, brandTextColor: formData.brandTextColor,
+                    docPrimaryColor: formData.docPrimaryColor || formData.brandPrimaryColor,
+                    docSecondaryColor: formData.docSecondaryColor || formData.brandSecondaryColor,
+                    docAccentColor: formData.docAccentColor || formData.brandAccentColor,
+                    docBgColor: formData.docBgColor || formData.brandBgColor,
+                    docTextColor: formData.docTextColor || formData.brandTextColor,
                   }}
                   onChange={(d) => setFormData({
                     ...formData,
@@ -551,6 +556,10 @@ export default function NovoServidor() {
                     brandSecondaryColor: d.brandSecondaryColor,
                     brandAccentColor: d.brandAccentColor,
                     brandBgColor: d.brandBgColor, brandTextColor: d.brandTextColor,
+                    docPrimaryColor: d.docPrimaryColor,
+                    docSecondaryColor: d.docSecondaryColor,
+                    docAccentColor: d.docAccentColor,
+                    docBgColor: d.docBgColor, docTextColor: d.docTextColor,
                   })}
                 />
               </CardContent>
