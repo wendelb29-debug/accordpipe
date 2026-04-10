@@ -21,39 +21,34 @@ const testimonials = [
   },
 ];
 
-const stats = [
-  { value: "500+", label: "Empresas gerenciadas" },
-  { value: "10k+", label: "Contratos assinados" },
-  { value: "99.9%", label: "Uptime garantido" },
-  { value: "3x", label: "Mais produtividade" },
-];
-
 export function SocialProofSection() {
   return (
-    <section className="relative py-20 sm:py-28" style={{ background: '#0B0F19' }}>
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
+    <section className="relative py-28 sm:py-36" style={{ background: '#0B0F19' }}>
+      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[rgba(245,158,11,0.12)] to-transparent" />
 
-        {/* Testimonials */}
-        <div className="mx-auto max-w-2xl text-center mb-12">
-          <h2 className="text-3xl font-bold tracking-tight text-[#E5E7EB] sm:text-4xl">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="mx-auto max-w-2xl text-center mb-14">
+          <p className="text-sm font-semibold text-[#F59E0B] tracking-wider uppercase mb-3">Depoimentos</p>
+          <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
             Quem usa, recomenda
           </h2>
+          <p className="mt-3 text-[#64748B]">Empresas reais que transformaram sua operação com o Accord.</p>
         </div>
         <div className="grid gap-6 md:grid-cols-3">
           {testimonials.map((t) => (
             <div
               key={t.name}
-              className="rounded-2xl border border-[rgba(255,255,255,0.05)] bg-[#111827] p-6 transition-all duration-200 hover:border-[rgba(255,255,255,0.1)]"
+              className="group rounded-2xl border border-[rgba(255,255,255,0.05)] bg-[rgba(255,255,255,0.02)] p-7 transition-all duration-300 hover:border-[rgba(245,158,11,0.15)] hover:-translate-y-1 hover:bg-[rgba(255,255,255,0.04)]"
             >
-              <div className="flex gap-1 mb-4">
+              <div className="flex gap-1 mb-5">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]" />
                 ))}
               </div>
-              <p className="text-sm leading-relaxed text-[#D1D5DB] italic">"{t.quote}"</p>
-              <div className="mt-4 border-t border-[rgba(255,255,255,0.05)] pt-4">
+              <p className="text-sm leading-relaxed text-[#D1D5DB] italic mb-6">"{t.quote}"</p>
+              <div className="border-t border-[rgba(255,255,255,0.05)] pt-4">
                 <p className="text-sm font-semibold text-[#E5E7EB]">{t.name}</p>
-                <p className="text-xs text-[#6B7280]">{t.role} — {t.company}</p>
+                <p className="text-xs text-[#6B7280] mt-0.5">{t.role} — {t.company}</p>
               </div>
             </div>
           ))}
