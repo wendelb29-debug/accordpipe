@@ -137,7 +137,7 @@ function TemplatePdfFullViewer({ pdfUrl, onClose }: { pdfUrl: string; onClose: (
 
 export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onUpdateLead }: { lead: CrmLead; addActivity: (data: any) => Promise<any>; signatureMode?: boolean; onUpdateLead?: (id: string, updates: Partial<CrmLead>) => Promise<boolean> }) {
 
-  const { profile } = useAuth();
+  const { profile, isCeo } = useAuth();
   const [proposals, setProposals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -2351,7 +2351,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
           servidorId={lead.servidor_id}
           items={lineItems}
           onChange={setLineItems}
-          canManageCatalog={!!(profile?.is_master || (profile as any)?.is_admin)}
+          canManageCatalog={isCeo}
           paymentFrequency={paymentFrequency}
           onPaymentFrequencyChange={setPaymentFrequency}
           firstPaymentDate={form.first_payment_date}
