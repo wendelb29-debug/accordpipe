@@ -10,11 +10,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { toast } from "sonner";
 import { GerarPixModal, LinkPagamentoModal, RecorrenciaModal, NovaCobrancaModal } from "@/components/fintech/EduzzModals";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
-import { toast } from "sonner";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip,
   ResponsiveContainer, CartesianGrid,
@@ -46,18 +41,16 @@ export default function Financeiro() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("overview");
   const [integrations, setIntegrations] = useState<any[]>([]);
   const [webhookConfigured, setWebhookConfigured] = useState(false);
 
-  const [form, setForm] = useState({
-    registration_id: "",
-    type: "cobranca",
-    description: "",
-    amount: 0,
+  // Modal states
+  const [pixOpen, setPixOpen] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [recorrenciaOpen, setRecorrenciaOpen] = useState(false);
+  const [cobrancaOpen, setCobrancaOpen] = useState(false);
     due_date: "",
     status: "pendente",
     payment_method: "boleto",
