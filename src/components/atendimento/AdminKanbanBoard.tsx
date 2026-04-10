@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useBackNavigation } from "@/contexts/BackNavigationContext";
 import {
   Clock, MoreVertical, Trash2, Mail, PhoneCall, Loader2,
   Users, ClipboardList, FileCheck, FileWarning, Sparkles, CalendarSearch
