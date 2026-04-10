@@ -59,18 +59,18 @@ export default function Servidores() {
 
   return (
     <div className="relative min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden">
-      {/* Institutional pattern background — light mode */}
+      {/* Institutional pattern background — light mode (uses dark pattern for stronger visual) */}
       <div
         className="absolute inset-0 dark:hidden"
         style={{
-          backgroundImage: `url(${accordPatternLight})`,
-          backgroundSize: '600px',
+          backgroundImage: `url(${accordPatternDark})`,
+          backgroundSize: '500px',
           backgroundRepeat: 'repeat',
-          opacity: 0.35,
+          opacity: 0.08,
         }}
       />
       {/* Radial fade overlay — light */}
-      <div className="absolute inset-0 dark:hidden bg-[radial-gradient(ellipse_at_center,transparent_30%,hsl(var(--background))_80%)]" />
+      <div className="absolute inset-0 dark:hidden bg-[radial-gradient(ellipse_at_center,transparent_20%,hsl(var(--background))_75%)]" />
 
       {/* Institutional pattern background — dark mode */}
       <div
