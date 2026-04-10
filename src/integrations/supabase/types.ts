@@ -1702,13 +1702,20 @@ export type Database = {
         Row: {
           api_key_encrypted: string | null
           api_key_masked: string | null
+          base_url: string | null
+          client_id: string | null
+          client_secret_encrypted: string | null
+          client_secret_masked: string | null
           created_at: string
           display_name: string
           environment: string
           id: string
           is_active: boolean
           last_event_at: string | null
+          origin_key_encrypted: string | null
+          origin_key_masked: string | null
           provider: string
+          public_key: string | null
           servidor_id: string
           updated_at: string
           webhook_secret_encrypted: string | null
@@ -1718,13 +1725,20 @@ export type Database = {
         Insert: {
           api_key_encrypted?: string | null
           api_key_masked?: string | null
+          base_url?: string | null
+          client_id?: string | null
+          client_secret_encrypted?: string | null
+          client_secret_masked?: string | null
           created_at?: string
           display_name: string
           environment?: string
           id?: string
           is_active?: boolean
           last_event_at?: string | null
+          origin_key_encrypted?: string | null
+          origin_key_masked?: string | null
           provider: string
+          public_key?: string | null
           servidor_id: string
           updated_at?: string
           webhook_secret_encrypted?: string | null
@@ -1734,13 +1748,20 @@ export type Database = {
         Update: {
           api_key_encrypted?: string | null
           api_key_masked?: string | null
+          base_url?: string | null
+          client_id?: string | null
+          client_secret_encrypted?: string | null
+          client_secret_masked?: string | null
           created_at?: string
           display_name?: string
           environment?: string
           id?: string
           is_active?: boolean
           last_event_at?: string | null
+          origin_key_encrypted?: string | null
+          origin_key_masked?: string | null
           provider?: string
+          public_key?: string | null
           servidor_id?: string
           updated_at?: string
           webhook_secret_encrypted?: string | null
@@ -1760,36 +1781,51 @@ export type Database = {
       fintech_webhook_logs: {
         Row: {
           created_at: string
+          direction: string
+          endpoint: string | null
           error_message: string | null
           event_type: string
           id: string
           payload: Json | null
           processed_at: string | null
           provider: string
+          request_payload: Json | null
+          response_payload: Json | null
           servidor_id: string
           status: string
+          status_code: number | null
         }
         Insert: {
           created_at?: string
+          direction?: string
+          endpoint?: string | null
           error_message?: string | null
           event_type: string
           id?: string
           payload?: Json | null
           processed_at?: string | null
           provider: string
+          request_payload?: Json | null
+          response_payload?: Json | null
           servidor_id: string
           status?: string
+          status_code?: number | null
         }
         Update: {
           created_at?: string
+          direction?: string
+          endpoint?: string | null
           error_message?: string | null
           event_type?: string
           id?: string
           payload?: Json | null
           processed_at?: string | null
           provider?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
           servidor_id?: string
           status?: string
+          status_code?: number | null
         }
         Relationships: [
           {
@@ -1901,6 +1937,60 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "document_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_actions: {
+        Row: {
+          action_type: string
+          created_at: string
+          endpoint_override: string | null
+          field_mapping: Json | null
+          id: string
+          integration_id: string
+          is_active: boolean
+          servidor_id: string
+          trigger_event: string
+          updated_at: string
+        }
+        Insert: {
+          action_type?: string
+          created_at?: string
+          endpoint_override?: string | null
+          field_mapping?: Json | null
+          id?: string
+          integration_id: string
+          is_active?: boolean
+          servidor_id: string
+          trigger_event: string
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          endpoint_override?: string | null
+          field_mapping?: Json | null
+          id?: string
+          integration_id?: string
+          is_active?: boolean
+          servidor_id?: string
+          trigger_event?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_actions_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "fintech_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_actions_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
