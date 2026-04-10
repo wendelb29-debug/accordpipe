@@ -692,7 +692,7 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
             </div>
             <div className="space-y-2">
               <Label className="text-xs font-medium">Tipo</Label>
-              <Select value={groupType} onValueChange={setGroupType}>
+              <Select value={groupType} onValueChange={handleGroupTypeChange}>
                 <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {WORKSPACE_TYPES.map((t) => {
