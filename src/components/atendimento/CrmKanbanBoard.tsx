@@ -181,14 +181,23 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
         .order("created_at", { ascending: false });
       if (data) {
         const withActivity = new Set<string>();
+        const withOverdue = new Set<string>();
+        const overdueCount: Record<string, number> = {};
         const nextAct: Record<string, string> = {};
         const lastCompleted: Record<string, string> = {};
         const scheduledTypes = ["internal", "email", "call", "meeting", "whatsapp"];
+        const now = new Date();
         for (const activity of data) {
           const meta = activity.metadata as any;
           const status = meta?.activity_status || "planejada";
           const isScheduled = scheduledTypes.includes(activity.type);
           if (isScheduled && status === "planejada") {
+            const scheduledAt = meta?.scheduled_at ? new Date(meta.scheduled_at) : null;
+            if (scheduledAt && scheduledAt < now) {
+              // Overdue activity
+              withOverdue.add(activity.lead_id);
+              overdueCount[activity.lead_id] = (overdueCount[activity.lead_id] || 0) + 1;
+            }
             if (!withActivity.has(activity.lead_id)) {
               nextAct[activity.lead_id] = activity.title;
             }
@@ -200,6 +209,8 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
           }
         }
         setLeadsWithActivity(withActivity);
+        setLeadsWithOverdueActivity(withOverdue);
+        setOverdueActivityCount(overdueCount);
         setNextActivities(nextAct);
         setLastCompletedActivities(lastCompleted);
       }
