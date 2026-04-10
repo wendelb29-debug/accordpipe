@@ -112,6 +112,11 @@ export default function ServidoresTab() {
     brandAccentColor: "#10B981",
     brandBgColor: "#F3F4F6",
     brandTextColor: "#1F2937",
+    docPrimaryColor: "#1E2952",
+    docSecondaryColor: "#4F46E5",
+    docAccentColor: "#10B981",
+    docBgColor: "#F3F4F6",
+    docTextColor: "#1F2937",
   });
   const [activeTab, setActiveTab] = useState("cadastro");
 
@@ -209,7 +214,7 @@ export default function ServidoresTab() {
     }
   };
 
-  const defaultBrand = { brandLogoUrl: "", brandLogoPath: "", brandPrimaryColor: "#1E2952", brandSecondaryColor: "#4F46E5", brandAccentColor: "#10B981", brandBgColor: "#F3F4F6", brandTextColor: "#1F2937" };
+  const defaultBrand = { brandLogoUrl: "", brandLogoPath: "", brandPrimaryColor: "#1E2952", brandSecondaryColor: "#4F46E5", brandAccentColor: "#10B981", brandBgColor: "#F3F4F6", brandTextColor: "#1F2937", docPrimaryColor: "#1E2952", docSecondaryColor: "#4F46E5", docAccentColor: "#10B981", docBgColor: "#F3F4F6", docTextColor: "#1F2937" };
 
   const handleOpenDialog = (company?: Company) => {
     if (company) {
@@ -235,6 +240,11 @@ export default function ServidoresTab() {
         brandAccentColor: (company as any).brand_accent_color || "#10B981",
         brandBgColor: (company as any).brand_bg_color || "#F3F4F6",
         brandTextColor: (company as any).brand_text_color || "#1F2937",
+        docPrimaryColor: (company as any).doc_primary_color || (company as any).brand_primary_color || "#1E2952",
+        docSecondaryColor: (company as any).doc_secondary_color || (company as any).brand_secondary_color || "#4F46E5",
+        docAccentColor: (company as any).doc_accent_color || (company as any).brand_accent_color || "#10B981",
+        docBgColor: (company as any).doc_bg_color || (company as any).brand_bg_color || "#F3F4F6",
+        docTextColor: (company as any).doc_text_color || (company as any).brand_text_color || "#1F2937",
       });
     } else {
       setEditingCompany(null);
@@ -331,6 +341,11 @@ export default function ServidoresTab() {
         brand_accent_color: formData.brandAccentColor,
         brand_bg_color: formData.brandBgColor,
         brand_text_color: formData.brandTextColor,
+        doc_primary_color: formData.docPrimaryColor,
+        doc_secondary_color: formData.docSecondaryColor,
+        doc_accent_color: formData.docAccentColor,
+        doc_bg_color: formData.docBgColor,
+        doc_text_color: formData.docTextColor,
       };
 
       if (editingCompany) {
@@ -705,6 +720,11 @@ export default function ServidoresTab() {
                     brandAccentColor: formData.brandAccentColor,
                     brandBgColor: formData.brandBgColor,
                     brandTextColor: formData.brandTextColor,
+                    docPrimaryColor: formData.docPrimaryColor || formData.brandPrimaryColor,
+                    docSecondaryColor: formData.docSecondaryColor || formData.brandSecondaryColor,
+                    docAccentColor: formData.docAccentColor || formData.brandAccentColor,
+                    docBgColor: formData.docBgColor || formData.brandBgColor,
+                    docTextColor: formData.docTextColor || formData.brandTextColor,
                   }}
                   onChange={(d) => setFormData({
                     ...formData,
@@ -715,6 +735,11 @@ export default function ServidoresTab() {
                     brandAccentColor: d.brandAccentColor,
                     brandBgColor: d.brandBgColor,
                     brandTextColor: d.brandTextColor,
+                    docPrimaryColor: d.docPrimaryColor,
+                    docSecondaryColor: d.docSecondaryColor,
+                    docAccentColor: d.docAccentColor,
+                    docBgColor: d.docBgColor,
+                    docTextColor: d.docTextColor,
                   })}
                 />
               </TabsContent>

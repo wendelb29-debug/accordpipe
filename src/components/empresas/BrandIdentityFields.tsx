@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Upload, Palette, Loader2, ImageIcon, Home, BarChart3, Users, Settings, FileText, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,17 +13,27 @@ interface Props {
   onChange: (data: CompanyFormData) => void;
 }
 
-const colorFields = [
-  { key: "brandPrimaryColor" as const, label: "Cor Primária", desc: "Títulos, ícones ativos e sidebar" },
-  { key: "brandSecondaryColor" as const, label: "Cor Secundária", desc: "Destaque do menu e linhas" },
-  { key: "brandAccentColor" as const, label: "Cor de Destaque", desc: "Botões, CTA e gradientes" },
-  { key: "brandBgColor" as const, label: "Cor de Fundo", desc: "Background de propostas" },
-  { key: "brandTextColor" as const, label: "Cor do Texto", desc: "Texto principal" },
+type BrandContext = "sistema" | "proposta";
+
+const uiColorFields: Array<{ key: keyof CompanyFormData; label: string; desc: string }> = [
+  { key: "brandPrimaryColor", label: "Cor Primária", desc: "Títulos, ícones ativos e sidebar" },
+  { key: "brandSecondaryColor", label: "Cor Secundária", desc: "Destaque do menu e linhas" },
+  { key: "brandAccentColor", label: "Cor de Destaque", desc: "Botões, CTA e gradientes" },
+  { key: "brandBgColor", label: "Cor de Fundo", desc: "Background do sistema" },
+  { key: "brandTextColor", label: "Cor do Texto", desc: "Texto principal" },
+];
+
+const docColorFields: Array<{ key: keyof CompanyFormData; label: string; desc: string }> = [
+  { key: "docPrimaryColor", label: "Cor Primária", desc: "Cabeçalho e títulos do documento" },
+  { key: "docSecondaryColor", label: "Cor Secundária", desc: "Linhas divisórias e destaques" },
+  { key: "docAccentColor", label: "Cor de Destaque", desc: "Badges, valores e CTA" },
+  { key: "docBgColor", label: "Cor de Fundo", desc: "Background da proposta/contrato" },
+  { key: "docTextColor", label: "Cor do Texto", desc: "Corpo do texto do documento" },
 ];
 
 export function BrandIdentityFields({ formData, onChange }: Props) {
   const [uploading, setUploading] = useState(false);
-  const [previewTab, setPreviewTab] = useState<"proposta" | "sistema">("sistema");
+  const [activeContext, setActiveContext] = useState<BrandContext>("sistema");
 
   const handleLogoUpload = async (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -62,7 +72,9 @@ export function BrandIdentityFields({ formData, onChange }: Props) {
     onChange({ ...formData, [key]: value });
   };
 
-  // Derived colors for preview
+  const colorFields = activeContext === "sistema" ? uiColorFields : docColorFields;
+
+  // Derived colors for system preview
   const primaryHsl = hexToHsl(formData.brandPrimaryColor) || "224 76% 53%";
   const accentHsl = hexToHsl(formData.brandAccentColor);
   const secondaryHsl = hexToHsl(formData.brandSecondaryColor);
@@ -93,7 +105,7 @@ export function BrandIdentityFields({ formData, onChange }: Props) {
           Logo da Empresa
         </Label>
         <p className="text-xs text-muted-foreground">
-          Será exibido no canto superior esquerdo das propostas e contratos
+          Esta logo será utilizada nos documentos gerados do tenant, como propostas e contratos
         </p>
         <div className="flex items-center gap-4">
           {formData.brandLogoUrl ? (
@@ -146,21 +158,48 @@ export function BrandIdentityFields({ formData, onChange }: Props) {
         </div>
       </div>
 
-      {/* Color Fields */}
+      {/* Context Toggle */}
       <div className="space-y-3">
-        <Label className="text-sm font-semibold flex items-center gap-2">
-          <Palette className="h-4 w-4" />
-          Paleta de Cores
-        </Label>
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-semibold flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            Paleta de Cores
+          </Label>
+          <div className="flex gap-1 bg-muted rounded-lg p-0.5">
+            <button
+              onClick={() => setActiveContext("sistema")}
+              className={`px-3 py-1.5 text-xs rounded-md font-medium transition-colors ${
+                activeContext === "sistema"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Sistema (UI)
+            </button>
+            <button
+              onClick={() => setActiveContext("proposta")}
+              className={`px-3 py-1.5 text-xs rounded-md font-medium transition-colors ${
+                activeContext === "proposta"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Proposta / Contrato
+            </button>
+          </div>
+        </div>
         <p className="text-xs text-muted-foreground">
-          Essas cores serão aplicadas na barra lateral, botões, identidade visual completa do ambiente, propostas e contratos
+          {activeContext === "sistema"
+            ? "Essas cores serão aplicadas ao sistema deste tenant (sidebar, botões, ícones, cards)"
+            : "Essas cores serão aplicadas às propostas e contratos gerados deste tenant"}
         </p>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {colorFields.map((field) => (
             <div key={field.key} className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card">
               <input
                 type="color"
-                value={formData[field.key]}
+                value={formData[field.key] as string}
                 onChange={(e) => handleColorChange(field.key, e.target.value)}
                 className="h-8 w-8 rounded cursor-pointer border-0 bg-transparent p-0"
               />
@@ -169,7 +208,7 @@ export function BrandIdentityFields({ formData, onChange }: Props) {
                 <p className="text-[10px] text-muted-foreground">{field.desc}</p>
               </div>
               <Input
-                value={formData[field.key]}
+                value={formData[field.key] as string}
                 onChange={(e) => handleColorChange(field.key, e.target.value)}
                 className="w-24 h-7 text-xs font-mono"
                 maxLength={7}
@@ -179,38 +218,14 @@ export function BrandIdentityFields({ formData, onChange }: Props) {
         </div>
       </div>
 
-      {/* Preview with tabs */}
+      {/* Preview */}
       <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <Label className="text-xs font-semibold flex items-center gap-1.5">
-            <Eye className="h-3.5 w-3.5" />
-            Preview em Tempo Real
-          </Label>
-          <div className="flex gap-1 ml-auto">
-            <button
-              onClick={() => setPreviewTab("sistema")}
-              className={`px-2.5 py-1 text-[10px] rounded-md font-medium transition-colors ${
-                previewTab === "sistema"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-              }`}
-            >
-              Sistema (UI)
-            </button>
-            <button
-              onClick={() => setPreviewTab("proposta")}
-              className={`px-2.5 py-1 text-[10px] rounded-md font-medium transition-colors ${
-                previewTab === "proposta"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-              }`}
-            >
-              Proposta
-            </button>
-          </div>
-        </div>
+        <Label className="text-xs font-semibold flex items-center gap-1.5">
+          <Eye className="h-3.5 w-3.5" />
+          Preview em Tempo Real — {activeContext === "sistema" ? "Sistema (UI)" : "Proposta / Contrato"}
+        </Label>
 
-        {previewTab === "sistema" ? (
+        {activeContext === "sistema" ? (
           <div className="rounded-lg border border-border overflow-hidden flex h-[200px]">
             {/* Sidebar Preview */}
             <div
@@ -294,7 +309,7 @@ export function BrandIdentityFields({ formData, onChange }: Props) {
         ) : (
           <div
             className="rounded-lg p-4 border border-border"
-            style={{ backgroundColor: formData.brandBgColor }}
+            style={{ backgroundColor: formData.docBgColor }}
           >
             <div className="flex items-center gap-3 mb-3">
               {formData.brandLogoUrl && (
@@ -302,24 +317,36 @@ export function BrandIdentityFields({ formData, onChange }: Props) {
               )}
               <span
                 className="text-sm font-bold"
-                style={{ color: formData.brandPrimaryColor }}
+                style={{ color: formData.docPrimaryColor }}
               >
                 PROPOSTA COMERCIAL
               </span>
             </div>
             <div
               className="h-1 rounded mb-3"
-              style={{ backgroundColor: formData.brandSecondaryColor }}
+              style={{ backgroundColor: formData.docSecondaryColor }}
             />
-            <p className="text-xs mb-2" style={{ color: formData.brandTextColor }}>
-              Exemplo de texto do corpo da proposta com as cores configuradas.
+            <p className="text-xs mb-2" style={{ color: formData.docTextColor }}>
+              Exemplo de texto do corpo da proposta com as cores configuradas para documentos.
             </p>
-            <div
-              className="inline-block px-3 py-1 rounded text-xs font-semibold text-white"
-              style={{ backgroundColor: formData.brandAccentColor }}
-            >
-              R$ 1.500,00
+            <div className="flex items-center gap-2 mb-3">
+              <div
+                className="inline-block px-3 py-1 rounded text-xs font-semibold text-white"
+                style={{ backgroundColor: formData.docAccentColor }}
+              >
+                R$ 1.500,00
+              </div>
+              <span className="text-[10px]" style={{ color: formData.docTextColor }}>
+                /mês
+              </span>
             </div>
+            <div
+              className="h-px mb-2"
+              style={{ backgroundColor: formData.docSecondaryColor }}
+            />
+            <p className="text-[10px]" style={{ color: formData.docTextColor, opacity: 0.6 }}>
+              Rodapé do documento · Gerado em {new Date().toLocaleDateString("pt-BR")}
+            </p>
           </div>
         )}
       </div>
