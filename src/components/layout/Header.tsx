@@ -107,19 +107,21 @@ export function Header() {
 
       {/* Right: Clock + Theme + Search + Notifications + User */}
       <div className="flex items-center gap-1 shrink-0">
-        <div className="hidden sm:flex items-center gap-2 mr-2">
+        {/* Theme toggle - always visible */}
+        <button
+          onClick={handleThemeToggle}
+          className="h-8 w-8 flex items-center justify-center rounded-full bg-muted/50 hover:bg-muted transition-all text-muted-foreground hover:text-foreground"
+        >
+          {currentTheme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+        </button>
+
+        <div className="hidden sm:flex items-center gap-2 mr-1">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Clock className="h-3.5 w-3.5" />
             <span className="tabular-nums">
               {currentTime.toLocaleDateString("pt-BR")} {currentTime.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
             </span>
           </div>
-          <button
-            onClick={handleThemeToggle}
-            className="h-7 w-7 flex items-center justify-center rounded-full bg-muted/50 hover:bg-muted transition-all text-muted-foreground hover:text-foreground"
-          >
-            {currentTheme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-          </button>
         </div>
 
         <div className="relative hidden md:block w-48 lg:w-64">

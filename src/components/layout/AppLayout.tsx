@@ -37,7 +37,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <BackNavigationProvider>
-      <div className="min-h-screen bg-background safe-area-top">
+      <div className="min-h-screen bg-background safe-area-top overflow-x-hidden">
         {/* Desktop sidebar */}
         {!isMobile && <Sidebar />}
 

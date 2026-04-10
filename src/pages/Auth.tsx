@@ -181,7 +181,7 @@ export default function Auth() {
       </div>
 
       {/* RIGHT — Login form */}
-      <div className="flex flex-col justify-center items-center w-full lg:w-[45%] bg-white px-6 sm:px-10 relative">
+      <div className="flex flex-col justify-center items-center w-full lg:w-[45%] bg-white px-5 sm:px-10 py-8 lg:py-0 relative min-h-screen lg:min-h-0">
         {/* Mobile back */}
         <Link
           to="/"
@@ -309,7 +309,7 @@ export default function Auth() {
           </form>
 
           {/* Trust badges */}
-          <div className="flex items-center justify-center gap-6 pt-4">
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 pt-4">
             <div className="flex items-center gap-1.5 text-gray-300">
               <Shield className="h-3.5 w-3.5" />
               <span className="text-[11px]">Ambiente seguro</span>

@@ -324,6 +324,29 @@ html, body {
 /* Touch-friendly tap targets */
 @media (max-width: 640px) {
   button, a, [role="button"] {
-    min-height: 32px;
+    min-height: 36px;
+  }
+  
+  /* Full-width dialogs on mobile */
+  [role="dialog"] > div {
+    max-width: calc(100vw - 1rem) !important;
+    max-height: calc(100vh - 2rem) !important;
+  }
+  
+  /* Better table scrolling on mobile */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Standalone PWA enhancements */
+@media (display-mode: standalone) {
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
