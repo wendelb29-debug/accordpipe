@@ -1941,6 +1941,7 @@ export type Database = {
           link: string | null
           message: string
           metadata: Json | null
+          servidor_id: string
           title: string
           type: string
           user_id: string
@@ -1952,6 +1953,7 @@ export type Database = {
           link?: string | null
           message: string
           metadata?: Json | null
+          servidor_id: string
           title: string
           type?: string
           user_id: string
@@ -1963,11 +1965,20 @@ export type Database = {
           link?: string | null
           message?: string
           metadata?: Json | null
+          servidor_id?: string
           title?: string
           type?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notifications_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payments: {
         Row: {
@@ -3358,17 +3369,30 @@ export type Database = {
           result_status: string
         }[]
       }
-      create_notification: {
-        Args: {
-          _link?: string
-          _message: string
-          _metadata?: Json
-          _title: string
-          _type?: string
-          _user_id: string
-        }
-        Returns: string
-      }
+      create_notification:
+        | {
+            Args: {
+              _link?: string
+              _message: string
+              _metadata?: Json
+              _title: string
+              _type?: string
+              _user_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              _link?: string
+              _message: string
+              _metadata?: Json
+              _servidor_id?: string
+              _title: string
+              _type?: string
+              _user_id: string
+            }
+            Returns: string
+          }
       get_client_contract_signers_by_token: {
         Args: { p_token: string }
         Returns: {
