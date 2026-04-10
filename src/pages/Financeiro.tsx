@@ -73,40 +73,6 @@ export default function Financeiro() {
 
   useEffect(() => { fetchData(); }, [activeCompanyId]);
 
-  const handleSave = async () => {
-    if (!form.amount || !form.due_date) { toast.error("Preencha valor e vencimento"); return; }
-    setSaving(true);
-    const servidorId = activeCompanyId;
-    if (!servidorId) { toast.error("Empresa não encontrada"); setSaving(false); return; }
-
-    const { error } = await supabase.from("financial_transactions" as any).insert({
-      servidor_id: servidorId,
-      registration_id: form.registration_id || null,
-      type: form.type,
-      description: form.description,
-      amount: form.amount,
-      due_date: form.due_date,
-      status: form.status,
-      payment_method: form.payment_method,
-      reference: form.reference,
-      notes: form.notes,
-      created_by_user_id: profile?.user_id,
-      created_by_name: profile?.name,
-    });
-
-    if (error) { toast.error("Erro ao criar transação"); console.error(error); }
-    else {
-      toast.success("Transação criada!");
-      setDialogOpen(false);
-      setForm({ registration_id: "", type: "cobranca", description: "", amount: 0, due_date: "", status: "pendente", payment_method: "boleto", reference: "", notes: "" });
-      if (form.registration_id && form.status === "pago") {
-        await supabase.from("crm_client_registrations").update({ client_status: "ativo" } as any).eq("id", form.registration_id);
-      }
-      await fetchData();
-    }
-    setSaving(false);
-  };
-
   const updateStatus = async (id: string, status: string, regId?: string) => {
     await supabase.from("financial_transactions" as any).update({
       status,
@@ -205,16 +171,16 @@ export default function Financeiro() {
           <p className="text-sm text-muted-foreground mt-0.5">Gestão financeira completa do seu negócio</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8">
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => setPixOpen(true)}>
             <QrCode className="h-3.5 w-3.5" /> Gerar PIX
           </Button>
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8">
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => setLinkOpen(true)}>
             <Link2 className="h-3.5 w-3.5" /> Link de Pagamento
           </Button>
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8">
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => setRecorrenciaOpen(true)}>
             <RefreshCw className="h-3.5 w-3.5" /> Recorrência
           </Button>
-          <Button size="sm" onClick={() => setDialogOpen(true)} className="gap-1.5 text-xs h-8">
+          <Button size="sm" onClick={() => setCobrancaOpen(true)} className="gap-1.5 text-xs h-8">
             <Plus className="h-3.5 w-3.5" /> Nova Cobrança
           </Button>
         </div>
