@@ -79,6 +79,8 @@ Deno.serve(async (req) => {
       event_type: eventType,
       payload,
       status: "received",
+      direction: "inbound",
+      request_payload: payload,
     });
 
     // Process payment events
