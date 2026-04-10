@@ -40,6 +40,7 @@ interface AuthContextType {
   isLeitura: boolean;
   isCeo: boolean;
   isMaster: boolean;
+  isMasterTenantAdmin: boolean;
   activeCompanyId: string | null;
   setActiveCompanyId: (id: string | null) => void;
   companies: CompanyOption[];
