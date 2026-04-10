@@ -209,7 +209,7 @@ export default function ServidoresTab() {
     }
   };
 
-  const defaultBrand = { brandLogoUrl: "", brandLogoPath: "", brandPrimaryColor: "#1E2952", brandSecondaryColor: "#4F46E5", brandAccentColor: "#10B981", brandBgColor: "#F3F4F6", brandTextColor: "#1F2937" };
+  const defaultBrand = { brandLogoUrl: "", brandLogoPath: "", brandPrimaryColor: "#1E2952", brandSecondaryColor: "#4F46E5", brandAccentColor: "#10B981", brandBgColor: "#F3F4F6", brandTextColor: "#1F2937", docPrimaryColor: "#1E2952", docSecondaryColor: "#4F46E5", docAccentColor: "#10B981", docBgColor: "#F3F4F6", docTextColor: "#1F2937" };
 
   const handleOpenDialog = (company?: Company) => {
     if (company) {
@@ -235,6 +235,11 @@ export default function ServidoresTab() {
         brandAccentColor: (company as any).brand_accent_color || "#10B981",
         brandBgColor: (company as any).brand_bg_color || "#F3F4F6",
         brandTextColor: (company as any).brand_text_color || "#1F2937",
+        docPrimaryColor: (company as any).doc_primary_color || (company as any).brand_primary_color || "#1E2952",
+        docSecondaryColor: (company as any).doc_secondary_color || (company as any).brand_secondary_color || "#4F46E5",
+        docAccentColor: (company as any).doc_accent_color || (company as any).brand_accent_color || "#10B981",
+        docBgColor: (company as any).doc_bg_color || (company as any).brand_bg_color || "#F3F4F6",
+        docTextColor: (company as any).doc_text_color || (company as any).brand_text_color || "#1F2937",
       });
     } else {
       setEditingCompany(null);

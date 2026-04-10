@@ -48,6 +48,8 @@ const defaultBrand = {
   brandLogoUrl: "", brandLogoPath: "",
   brandPrimaryColor: "#1E2952", brandSecondaryColor: "#4F46E5",
   brandAccentColor: "#10B981", brandBgColor: "#F3F4F6", brandTextColor: "#1F2937",
+  docPrimaryColor: "#1E2952", docSecondaryColor: "#4F46E5",
+  docAccentColor: "#10B981", docBgColor: "#F3F4F6", docTextColor: "#1F2937",
 };
 
 const previewWebhookFields = [
@@ -239,6 +241,11 @@ export default function NovoServidor() {
           brandAccentColor: data.brand_accent_color || "#10B981",
           brandBgColor: data.brand_bg_color || "#F3F4F6",
           brandTextColor: data.brand_text_color || "#1F2937",
+          docPrimaryColor: (data as any).doc_primary_color || data.brand_primary_color || "#1E2952",
+          docSecondaryColor: (data as any).doc_secondary_color || data.brand_secondary_color || "#4F46E5",
+          docAccentColor: (data as any).doc_accent_color || data.brand_accent_color || "#10B981",
+          docBgColor: (data as any).doc_bg_color || data.brand_bg_color || "#F3F4F6",
+          docTextColor: (data as any).doc_text_color || data.brand_text_color || "#1F2937",
         });
       }
       setLoadingEdit(false);
