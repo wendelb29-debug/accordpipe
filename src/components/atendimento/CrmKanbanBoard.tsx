@@ -75,9 +75,10 @@ const isLeadOverdue = (lead: CrmLead, stageId: string): boolean => {
   return isLeadOverdueDynamic(lead, limitDays);
 };
 
-const getProgressColor = (lead: CrmLead, stageId: string, hasActivity: boolean): string => {
+const getProgressColor = (lead: CrmLead, stageId: string, hasActivity: boolean, hasOverdueActivity: boolean): string => {
+  if (hasOverdueActivity) return "bg-red-500";
   if (!hasActivity) return "bg-amber-400";
-  if (isLeadOverdue(lead, stageId)) return "bg-red-500";
+  if (isLeadOverdue(lead, stageId)) return "bg-red-400";
   const days = Math.floor((Date.now() - new Date(lead.stage_entered_at).getTime()) / (1000 * 60 * 60 * 24));
   if (days <= 2) return "bg-emerald-500";
   if (days <= 5) return "bg-amber-400";
