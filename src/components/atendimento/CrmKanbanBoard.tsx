@@ -113,6 +113,8 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<{ id: string; name: string; color: string }[]>([]);
   const [leadsWithActivity, setLeadsWithActivity] = useState<Set<string>>(new Set());
+  const [leadsWithOverdueActivity, setLeadsWithOverdueActivity] = useState<Set<string>>(new Set());
+  const [overdueActivityCount, setOverdueActivityCount] = useState<Record<string, number>>({});
   const [nextActivities, setNextActivities] = useState<Record<string, string>>({});
   const [lastCompletedActivities, setLastCompletedActivities] = useState<Record<string, string>>({});
   const [signatureStatsByLead, setSignatureStatsByLead] = useState<Record<string, { signed: number; total: number; approved: boolean }>>({});
