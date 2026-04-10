@@ -88,6 +88,15 @@ serve(async (req) => {
       return respond(false, { error: "Já existe um usuário com este CPF" });
     }
 
+    // Also check if email exists in auth.users (might exist without a profile)
+    const { data: authUsers } = await supabase.auth.admin.listUsers();
+    const authExists = authUsers?.users?.find(
+      (u: any) => u.email?.toLowerCase() === email.toLowerCase()
+    );
+    if (authExists) {
+      return respond(false, { error: "Já existe um usuário com este e-mail" });
+    }
+
     // Generate a temporary password
     const tempPassword = crypto.randomUUID().slice(0, 12) + "A1!";
 
@@ -104,7 +113,10 @@ serve(async (req) => {
 
     if (createError) {
       console.error("Create user error:", createError);
-      return respond(false, { error: createError.message });
+      const msg = createError.message?.includes("already")
+        ? "Já existe um usuário com este e-mail"
+        : createError.message;
+      return respond(false, { error: msg });
     }
 
     const userId = newUser.user.id;
