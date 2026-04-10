@@ -1456,7 +1456,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                     await addActivity({
                       type: "stage_change",
                       title: "Card devolvido ao operador",
-                      description: `Lead devolvido ao pipeline comercial (etapa **${previousStage}**) pelo setor administrativo.\n\n**Motivo:** ${returnNote.trim()}\n**Operador original:** ${lead.created_by_name || "Não identificado"}`,
+                      description: `Lead devolvido ao pipeline comercial (etapa **${originStage}**) pelo setor administrativo.\n\n**Motivo:** ${returnNote.trim()}\n**Operador original:** ${lead.created_by_name || "Não identificado"}`,
                     });
 
                     // Notify the original operator
