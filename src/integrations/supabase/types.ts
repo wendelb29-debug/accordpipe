@@ -2855,6 +2855,50 @@ export type Database = {
           },
         ]
       }
+      tenant_financial_config: {
+        Row: {
+          created_at: string
+          id: string
+          pix_beneficiary: string | null
+          pix_default_description: string | null
+          pix_document: string | null
+          pix_key: string | null
+          pix_key_type: string | null
+          servidor_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pix_beneficiary?: string | null
+          pix_default_description?: string | null
+          pix_document?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
+          servidor_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pix_beneficiary?: string | null
+          pix_default_description?: string | null
+          pix_document?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
+          servidor_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_financial_config_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_custom_permissions: {
         Row: {
           created_at: string
