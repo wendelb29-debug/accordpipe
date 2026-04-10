@@ -14,7 +14,8 @@ export default function Servidores() {
   const { companies, activeCompanyId, setActiveCompanyId, profile } = useAuth();
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  const isMasterTenant = (companyId: string) => companyId === profile?.company_id;
+  const isMasterUser = !!(profile as any)?.is_master;
+  const isMasterTenant = (companyId: string) => isMasterUser && companyId === profile?.company_id;
 
   const handleSelect = async (companyId: string) => {
     if (loadingId) return;
