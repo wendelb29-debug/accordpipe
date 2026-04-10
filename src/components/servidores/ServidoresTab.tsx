@@ -341,6 +341,11 @@ export default function ServidoresTab() {
         brand_accent_color: formData.brandAccentColor,
         brand_bg_color: formData.brandBgColor,
         brand_text_color: formData.brandTextColor,
+        doc_primary_color: formData.docPrimaryColor,
+        doc_secondary_color: formData.docSecondaryColor,
+        doc_accent_color: formData.docAccentColor,
+        doc_bg_color: formData.docBgColor,
+        doc_text_color: formData.docTextColor,
       };
 
       if (editingCompany) {
