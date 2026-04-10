@@ -597,9 +597,20 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                   const days = Math.floor((Date.now() - new Date(lead.stage_entered_at).getTime()) / (1000 * 60 * 60 * 24));
                   const overdueByDays = slaDays > 0 ? Math.max(0, days - slaDays) : 0;
                   const hasActivity = leadsWithActivity.has(lead.id);
+                  const hasOverdue = leadsWithOverdueActivity.has(lead.id);
+                  const overdueActCount = overdueActivityCount[lead.id] || 0;
                   const noActivity = !hasActivity;
-                  const progressColor = getProgressColor(lead, stage.id, hasActivity);
+                  const progressColor = getProgressColor(lead, stage.id, hasActivity, hasOverdue);
                   const signatureStats = signatureStatsByLead[lead.id];
+
+                  // Priority: 1) overdue activity, 2) SLA exceeded, 3) no activity, 4) normal
+                  const cardStyle = hasOverdue
+                    ? "bg-red-50/70 dark:bg-red-950/30 border-red-300/70 dark:border-red-800/50"
+                    : overdue && hasActivity
+                    ? "bg-red-50/60 dark:bg-red-950/20 border-red-200/60 dark:border-red-800/40"
+                    : noActivity
+                    ? "bg-amber-50/60 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/40"
+                    : "bg-card border-border/30";
 
                   return (
                     <div
@@ -611,9 +622,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                         "kanban-card rounded-xl border p-2.5 cursor-grab active:cursor-grabbing transition-all duration-200 group",
                         "hover:-translate-y-[2px] hover:shadow-md",
                         draggedLead?.id === lead.id && "opacity-40 scale-95",
-                        noActivity && "bg-amber-50/60 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/40",
-                        overdue && hasActivity && "bg-red-50/60 dark:bg-red-950/20 border-red-200/60 dark:border-red-800/40",
-                        !noActivity && !(overdue && hasActivity) && "bg-card border-border/30"
+                        cardStyle
                       )}
                       style={{ boxShadow: draggedLead?.id === lead.id ? undefined : '0 2px 8px rgba(0,0,0,0.04)' }}
                     >
