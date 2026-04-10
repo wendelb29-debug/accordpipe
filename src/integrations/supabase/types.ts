@@ -2543,19 +2543,25 @@ export type Database = {
       role_default_permissions: {
         Row: {
           created_at: string
+          data_scope: string
           id: string
+          module: string | null
           permission_key: string
           role: Database["public"]["Enums"]["app_role"]
         }
         Insert: {
           created_at?: string
+          data_scope?: string
           id?: string
+          module?: string | null
           permission_key: string
           role: Database["public"]["Enums"]["app_role"]
         }
         Update: {
           created_at?: string
+          data_scope?: string
           id?: string
+          module?: string | null
           permission_key?: string
           role?: Database["public"]["Enums"]["app_role"]
         }
@@ -2617,6 +2623,7 @@ export type Database = {
       user_custom_permissions: {
         Row: {
           created_at: string
+          data_scope: string
           granted: boolean
           id: string
           permission_key: string
@@ -2624,6 +2631,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          data_scope?: string
           granted?: boolean
           id?: string
           permission_key: string
@@ -2631,6 +2639,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          data_scope?: string
           granted?: boolean
           id?: string
           permission_key?: string
@@ -3429,6 +3438,10 @@ export type Database = {
         Args: { _contract_id: string }
         Returns: string
       }
+      get_data_scope: {
+        Args: { _permission: string; _user_id: string }
+        Returns: string
+      }
       get_document_by_signer_token: {
         Args: { p_token: string }
         Returns: {
@@ -3560,6 +3573,7 @@ export type Database = {
         | "administrativo"
         | "financeiro"
         | "comercial"
+        | "master"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3695,6 +3709,7 @@ export const Constants = {
         "administrativo",
         "financeiro",
         "comercial",
+        "master",
       ],
     },
   },
