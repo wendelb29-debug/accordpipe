@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Navigate } from "react-router-dom";
 import {
   Building2, Palette, FileSignature, Search, Loader2, Save, Webhook,
   Send, LogOut, MessageSquare, Radio, Activity, Wifi, Copy, Check, RefreshCw, LayoutGrid,
@@ -170,7 +170,12 @@ export default function NovoServidor() {
   const { toast } = useToast();
   // Pre-generate ID for new tenants so child components can use it
   const [pendingNewId] = useState(() => editId ? null : crypto.randomUUID());
-  const { isMaster } = useAuth();
+  const { isMaster, isMasterTenantAdmin } = useAuth();
+
+  // Block access for non-master-tenant users
+  if (!isMasterTenantAdmin) {
+    return <Navigate to="/home" replace />;
+  }
 
   const [activeTab, setActiveTab] = useState("cadastro");
   const [isSubmitting, setIsSubmitting] = useState(false);
