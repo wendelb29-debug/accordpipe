@@ -9,7 +9,6 @@ import { ModulesSection } from "@/components/landing/ModulesSection";
 import { AuthoritySection } from "@/components/landing/AuthoritySection";
 import { DifferentialSection } from "@/components/landing/DifferentialSection";
 import { SocialProofSection } from "@/components/landing/SocialProofSection";
-import { SecuritySection } from "@/components/landing/SecuritySection";
 import { FAQSection } from "@/components/landing/FAQSection";
 import { PremiumCTASection } from "@/components/landing/PremiumCTASection";
 import { FooterSection } from "@/components/landing/FooterSection";
@@ -64,7 +63,6 @@ export default function LandingPage() {
       <AuthoritySection />
       <DifferentialSection />
       <SocialProofSection />
-      <SecuritySection />
       <FAQSection />
       <PremiumCTASection />
       <FooterSection />

@@ -185,24 +185,22 @@ export function HeroSection() {
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-6xl font-black tracking-[-0.03em] leading-[1.08] text-white animate-slide-up">
-              A plataforma que transforma sua operação comercial em uma{" "}
+              Sua empresa perde vendas{" "}
+              <br className="hidden sm:block" />
+              por falta de{" "}
               <span className="bg-gradient-to-r from-[#3B82F6] via-[#6366F1] to-[#8B5CF6] bg-clip-text text-transparent">
-                máquina previsível de crescimento
+                processo e controle?
               </span>
             </h1>
 
             <p className="mt-5 text-base sm:text-lg text-[#94A3B8] max-w-xl mx-auto lg:mx-0 leading-relaxed animate-slide-up" style={{ animationDelay: "0.1s" }}>
-              CRM, propostas, contratos, atendimento e automação com IA — tudo integrado em um único sistema para você vender mais, operar melhor e escalar com controle total.
-            </p>
-
-            <p className="mt-3 text-sm text-[#64748B] max-w-lg mx-auto lg:mx-0 leading-relaxed animate-slide-up" style={{ animationDelay: "0.15s" }}>
-              Pare de perder vendas por desorganização. Centralize tudo, ganhe velocidade e aumente sua conversão com processos inteligentes.
+              Centralize CRM, propostas, contratos, atendimento e automação com IA em um único sistema — e transforme sua operação em uma máquina previsível de crescimento.
             </p>
 
             {/* Benefits */}
             <div className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-w-lg mx-auto lg:mx-0 animate-slide-up" style={{ animationDelay: "0.2s" }}>
               {benefits.map((b) => (
-                <div key={b.text} className="flex items-center gap-2.5 rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] px-3.5 py-2.5">
+                <div key={b.text} className="flex items-center gap-2.5 rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] px-3.5 py-2.5 transition-all duration-200 hover:border-[rgba(59,130,246,0.15)] hover:bg-[rgba(59,130,246,0.04)]">
                   <b.icon className="h-4 w-4 text-[#3B82F6] shrink-0" />
                   <span className="text-[13px] text-[#CBD5E1] font-medium">{b.text}</span>
                 </div>
@@ -238,6 +236,25 @@ export function HeroSection() {
           {/* Right — Product mockup */}
           <div className="hidden lg:block animate-fade-in" style={{ animationDelay: "0.3s" }}>
             <ProductMockup />
+          </div>
+        </div>
+      </div>
+
+      {/* Social proof bar */}
+      <div className="absolute bottom-0 inset-x-0 z-20">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(17,24,39,0.6)] backdrop-blur-xl px-6 py-5">
+            {[
+              { value: "12k+", label: "Propostas geradas" },
+              { value: "8k+", label: "Contratos assinados" },
+              { value: "50k+", label: "Leads gerenciados" },
+              { value: "99.9%", label: "Uptime garantido" },
+            ].map((s) => (
+              <div key={s.label} className="text-center">
+                <p className="text-xl sm:text-2xl font-black text-white">{s.value}</p>
+                <p className="text-[11px] text-[#64748B] mt-0.5">{s.label}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
