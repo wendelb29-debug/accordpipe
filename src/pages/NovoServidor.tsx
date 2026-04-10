@@ -172,11 +172,6 @@ export default function NovoServidor() {
   const [pendingNewId] = useState(() => editId ? null : crypto.randomUUID());
   const { isMaster, isMasterTenantAdmin } = useAuth();
 
-  // Block access for non-master-tenant users
-  if (!isMasterTenantAdmin) {
-    return <Navigate to="/home" replace />;
-  }
-
   const [activeTab, setActiveTab] = useState("cadastro");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cnpjLoading, setCnpjLoading] = useState(false);
