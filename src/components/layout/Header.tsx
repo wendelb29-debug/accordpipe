@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBackNavigation } from "@/contexts/BackNavigationContext";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -52,6 +53,7 @@ const roleLabels: Record<string, string> = {
 
 export function Header() {
   const { profile, role, signOut, loading, companies, activeCompanyId, setActiveCompanyId, activeCompany, isMaster, isCeo, isMasterTenantAdmin } = useAuth();
+  const { handleBack } = useBackNavigation();
   const [currentTheme, setCurrentTheme] = useState(() => document.documentElement.classList.contains("dark") ? "dark" : "light");
   const [currentTime, setCurrentTime] = useState(new Date());
   const navigate = useNavigate();
@@ -89,7 +91,7 @@ export function Header() {
       {/* Back arrow + Page title */}
       <div className="flex items-center gap-2 min-w-0 shrink-0">
         <button
-          onClick={() => navigate(-1)}
+          onClick={handleBack}
           title="Voltar"
           className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/60 hover:bg-primary/10 hover:text-primary text-muted-foreground transition-all duration-200 shrink-0 active:scale-95"
         >
