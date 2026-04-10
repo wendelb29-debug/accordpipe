@@ -252,4 +252,8 @@ export const LEGACY_PERMISSION_MAP: Record<string, string> = {
   criar_usuario: "create_user",
   editar_usuario: "edit_user",
   excluir_usuario: "delete_user",
+  visualizar_relatorio_clientes: "view_reports",
+  exportar_relatorio_clientes: "export_reports",
+  visualizar_relatorio_crm: "view_reports",
+  exportar_relatorio_crm: "export_reports",
 };
