@@ -272,12 +272,15 @@ function getAlignment(tag: string): "left" | "center" | "right" | "justify" {
 }
 
 interface HtmlBlock {
-  type: "heading1" | "heading2" | "heading3" | "paragraph" | "listItem" | "orderedItem" | "hr" | "spacing" | "table";
+  type: "heading1" | "heading2" | "heading3" | "paragraph" | "listItem" | "orderedItem" | "hr" | "spacing" | "table" | "image";
   text: string;
   bold?: boolean;
   align?: "left" | "center" | "right" | "justify";
   index?: number;
   rows?: string[][];
+  imageUrl?: string;
+  imageWidth?: number;
+  imageHeight?: number;
 }
 
 function processHtmlBlocks(html: string): HtmlBlock[] {
