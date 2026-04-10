@@ -198,6 +198,18 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
     setGroupDialogOpen(true);
   };
 
+  const handleGroupTypeChange = (type: string) => {
+    setGroupType(type);
+    const conf = WORKSPACE_TYPES.find((t) => t.value === type);
+    if (conf) {
+      setGroupColor(conf.color);
+      const isNameFromType = !groupName.trim() || WORKSPACE_TYPES.some((t) => t.label === groupName.trim());
+      if (isNameFromType) {
+        setGroupName(conf.label);
+      }
+    }
+  };
+
   const handleSaveGroup = async () => {
     if (!groupName.trim() || !companyId) return;
     setSavingGroup(true);
