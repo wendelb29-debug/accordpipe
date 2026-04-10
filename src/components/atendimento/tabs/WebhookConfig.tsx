@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -50,7 +51,8 @@ function buildUrl(baseUrl: string, companyId: string, eventType: string, hash: s
 
 export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: string | null } = {}) {
   const { profile } = useAuth();
-  const companyId = companyIdOverride ?? profile?.company_id;
+  const activeCompany = useActiveCompanyId();
+  const companyId = companyIdOverride ?? activeCompany;
 
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [notifyMe, setNotifyMe] = useState(false);

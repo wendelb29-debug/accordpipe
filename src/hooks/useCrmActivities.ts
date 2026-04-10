@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { toast } from "sonner";
 import { CrmLeadActivity } from "./useCrmLeads";
 
@@ -8,6 +9,7 @@ export function useCrmActivities(leadId: string | null) {
   const [activities, setActivities] = useState<CrmLeadActivity[]>([]);
   const [loading, setLoading] = useState(false);
   const { profile } = useAuth();
+  const activeCompanyId = useActiveCompanyId();
 
   const fetchActivities = useCallback(async () => {
     if (!leadId) return;
@@ -31,7 +33,7 @@ export function useCrmActivities(leadId: string | null) {
 
   const addActivity = async (data: { type: string; title: string; description?: string; metadata?: any; servidor_id?: string }) => {
     if (!leadId) return null;
-    let servidorId = data.servidor_id || profile?.company_id;
+    let servidorId = data.servidor_id || activeCompanyId || profile?.company_id;
     if (!servidorId) {
       // Get servidor_id from the lead itself
       const { data: leadData } = await supabase.from("crm_leads").select("servidor_id").eq("id", leadId).maybeSingle();

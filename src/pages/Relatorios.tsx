@@ -19,6 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
@@ -136,7 +137,7 @@ export default function Relatorios() {
   const [aiAnalysis, setAiAnalysis] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
 
-  const servidorId = isMaster ? profile?.company_id : profile?.company_id;
+  const servidorId = useActiveCompanyId();
 
   const applyQuick = (key: string) => {
     const [f, t] = getQuickRange(key);
