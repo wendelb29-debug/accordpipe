@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { DataScope } from "@/lib/permissions";
-import { LEGACY_PERMISSION_MAP } from "@/lib/permissions";
+import { LEGACY_PERMISSION_MAP, FIXED_PERMISSION_RULES } from "@/lib/permissions";
 
 interface PermissionEntry {
   granted: boolean;
@@ -62,9 +62,14 @@ export function usePermissions() {
   const hasPermission = useCallback((permissionKey: string): boolean => {
     if (isCeoOrMaster) return true;
     const key = resolveKey(permissionKey);
+    
+    // Enforce structural locks
+    const allowedRoles = FIXED_PERMISSION_RULES[key];
+    if (allowedRoles && !allowedRoles.includes(role || "")) return false;
+    
     if (key in customPerms) return customPerms[key].granted;
     return key in roleDefaults;
-  }, [isCeoOrMaster, customPerms, roleDefaults]);
+  }, [isCeoOrMaster, customPerms, roleDefaults, role]);
 
   const getDataScope = useCallback((permissionKey: string): DataScope => {
     if (isCeoOrMaster) return "all";
@@ -131,6 +136,10 @@ export function useUserPermissions(userId: string | null) {
   };
 
   const getEffectivePermission = (key: string): boolean => {
+    // Enforce structural locks
+    const allowedRoles = FIXED_PERMISSION_RULES[key];
+    if (allowedRoles && !allowedRoles.includes(userRole || "")) return false;
+    
     if (key in customPerms) return customPerms[key].granted;
     return key in roleDefaults;
   };
@@ -143,9 +152,18 @@ export function useUserPermissions(userId: string | null) {
 
   const saveCustomPermissions = async (permissions: Record<string, { granted: boolean; data_scope: DataScope }>) => {
     if (!userId) return;
+    
+    // Filter out structurally locked permissions before saving
+    const filteredPerms: Record<string, { granted: boolean; data_scope: DataScope }> = {};
+    for (const [key, val] of Object.entries(permissions)) {
+      const allowedRoles = FIXED_PERMISSION_RULES[key];
+      if (allowedRoles && !allowedRoles.includes(userRole || "")) continue;
+      filteredPerms[key] = val;
+    }
+    
     await supabase.from("user_custom_permissions").delete().eq("user_id", userId);
 
-    const rows = Object.entries(permissions).map(([permission_key, val]) => ({
+    const rows = Object.entries(filteredPerms).map(([permission_key, val]) => ({
       user_id: userId,
       permission_key,
       granted: val.granted,
