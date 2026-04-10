@@ -474,11 +474,11 @@ function drawTable(ctx: RenderContext, rows: string[][]): void {
 }
 
 // ─── IMAGE BLOCK RENDERING ────────────────────────────────
-async function drawImageBlock(ctx: RenderContext, imageUrl: string, imgW: number, imgH: number): Promise<void> {
+async function drawImageBlock(ctx: RenderContext, imageUrl: string, imgW: number, imgH: number, isSelfie: boolean = false): Promise<void> {
   try {
     const response = await fetch(imageUrl);
     if (!response.ok) {
-      drawWrappedText(ctx, "Imagem nao disponivel", 8, false, 0, "", "center", { r: 0.5, g: 0.5, b: 0.5 });
+      drawImageFallback(ctx, isSelfie);
       return;
     }
     const arrayBuffer = await response.arrayBuffer();
@@ -492,29 +492,92 @@ async function drawImageBlock(ctx: RenderContext, imageUrl: string, imgW: number
         image = await ctx.pdfDoc.embedJpg(bytes);
       }
     } catch {
-      // Try the other format
       try { image = await ctx.pdfDoc.embedPng(bytes); } catch { image = await ctx.pdfDoc.embedJpg(bytes); }
     }
 
-    // Scale to fit, max 150px wide, proportional
-    const maxW = Math.min(imgW, 150);
-    const maxH = Math.min(imgH, 150);
-    const scale = Math.min(maxW / image.width, maxH / image.height, 1);
+    // Uniform sizing: max 120px wide, proportional height
+    const MAX_IMG_W = isSelfie ? 120 : Math.min(imgW, 150);
+    const MAX_IMG_H = isSelfie ? 120 : Math.min(imgH, 150);
+    const scale = Math.min(MAX_IMG_W / image.width, MAX_IMG_H / image.height, 1);
     const drawW = image.width * scale;
     const drawH = image.height * scale;
 
-    ensureSpace(ctx, drawH + 10);
+    // Reserve space for: border padding (4+4) + image + bottom gap
+    const totalBlockH = drawH + 16;
+    ensureSpace(ctx, totalBlockH);
 
-    // Center the image
-    const x = MARGIN + (ctx.maxWidth - drawW) / 2;
-    ctx.page.drawImage(image, {
-      x,
-      y: ctx.y - drawH,
-      width: drawW,
-      height: drawH,
-    });
-    ctx.y -= drawH + 8;
+    const pc = ctx.primaryColor;
+    const centerX = MARGIN + ctx.maxWidth / 2;
+
+    if (isSelfie) {
+      // Draw a subtle rounded-look border frame
+      const frameW = drawW + 8;
+      const frameH = drawH + 8;
+      const frameX = centerX - frameW / 2;
+      const frameY = ctx.y - frameH;
+      ctx.page.drawRectangle({
+        x: frameX,
+        y: frameY,
+        width: frameW,
+        height: frameH,
+        borderColor: rgb(pc.r, pc.g, pc.b),
+        borderWidth: 0.6,
+        color: rgb(0.98, 0.98, 0.98),
+      });
+      // Image inside the frame
+      ctx.page.drawImage(image, {
+        x: centerX - drawW / 2,
+        y: frameY + 4,
+        width: drawW,
+        height: drawH,
+      });
+      ctx.y -= frameH + 6;
+    } else {
+      // Standard image, centered
+      const x = centerX - drawW / 2;
+      ctx.page.drawImage(image, {
+        x,
+        y: ctx.y - drawH,
+        width: drawW,
+        height: drawH,
+      });
+      ctx.y -= drawH + 8;
+    }
   } catch {
+    drawImageFallback(ctx, isSelfie);
+  }
+}
+
+function drawImageFallback(ctx: RenderContext, isSelfie: boolean): void {
+  const pc = ctx.primaryColor;
+  const fallbackH = 40;
+  ensureSpace(ctx, fallbackH);
+
+  if (isSelfie) {
+    // Draw a placeholder box
+    const boxW = 120;
+    const boxH = 30;
+    const centerX = MARGIN + ctx.maxWidth / 2;
+    ctx.page.drawRectangle({
+      x: centerX - boxW / 2,
+      y: ctx.y - boxH,
+      width: boxW,
+      height: boxH,
+      borderColor: rgb(0.75, 0.75, 0.75),
+      borderWidth: 0.4,
+      color: rgb(0.96, 0.96, 0.96),
+    });
+    const fallbackText = "Imagem nao disponivel";
+    const tw = ctx.font.widthOfTextAtSize(fallbackText, 7);
+    ctx.page.drawText(fallbackText, {
+      x: centerX - tw / 2,
+      y: ctx.y - boxH / 2 - 3,
+      font: ctx.font,
+      size: 7,
+      color: rgb(0.55, 0.55, 0.55),
+    });
+    ctx.y -= boxH + 6;
+  } else {
     drawWrappedText(ctx, "Imagem nao disponivel", 8, false, 0, "", "center", { r: 0.5, g: 0.5, b: 0.5 });
   }
 }
@@ -861,7 +924,8 @@ export async function renderGeneratedDocumentPdf(
         break;
       case "image":
         if (block.imageUrl) {
-          await drawImageBlock(ctx, block.imageUrl, block.imageWidth || 150, block.imageHeight || 150);
+          const isSelfie = block.imageUrl.includes("selfie") || (block.text || "").includes("selfie");
+          await drawImageBlock(ctx, block.imageUrl, block.imageWidth || 150, block.imageHeight || 150, isSelfie);
         }
         break;
       case "hr":
