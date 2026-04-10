@@ -33,7 +33,7 @@ function AtendimentoContent() {
   // Show hub if no workspace selected yet
   if (!selectedWsId) {
     return (
-      <div className="h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
+      <div className="-m-3 md:-m-6 lg:-m-8 h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
         <WorkspaceHub
           onSelectWorkspace={(id) => {
             selectWorkspace(id);
@@ -55,7 +55,7 @@ function AtendimentoContent() {
   // If user only has access to admin pipeline
   if (canSeeAdmin && !canSeeCommercial) {
     return (
-      <div className="h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
+      <div className="-m-3 md:-m-6 lg:-m-8 h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
         {backButton}
         <AdminKanbanBoard searchTerm={crmSearch} />
       </div>
@@ -65,7 +65,7 @@ function AtendimentoContent() {
   // If user only has access to commercial
   if (canSeeCommercial && !canSeeAdmin) {
     return (
-      <div className="h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
+      <div className="-m-3 md:-m-6 lg:-m-8 h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
         {backButton}
         <CrmKanbanBoard searchTerm={crmSearch} workspaceId={selectedWsId} />
       </div>
@@ -75,7 +75,7 @@ function AtendimentoContent() {
   // Only commercial (fallback)
   if (!canSeeAdmin) {
     return (
-      <div className="h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
+      <div className="-m-3 md:-m-6 lg:-m-8 h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
         {backButton}
         <CrmKanbanBoard searchTerm={crmSearch} workspaceId={selectedWsId} />
       </div>
@@ -84,7 +84,7 @@ function AtendimentoContent() {
 
   // Both pipelines accessible
   return (
-    <div className="h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
+    <div className="-m-3 md:-m-6 lg:-m-8 h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
       {backButton}
       <Tabs defaultValue="comercial" className="flex-1 flex flex-col overflow-hidden">
         <TabsList className="mx-3 mt-0.5 mb-0 w-fit h-8">
