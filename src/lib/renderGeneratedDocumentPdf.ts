@@ -287,18 +287,36 @@ function processHtmlBlocks(html: string): HtmlBlock[] {
   const blocks: HtmlBlock[] = [];
   let cleaned = html.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
-  // Extract tables first
-  const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
-  let tableMatch;
+  // Extract tables and images first
+  const specialRegex = /<(table|img)\b[^>]*(?:>[\s\S]*?<\/table>|[^>]*\/?>)/gi;
+  let specialMatch;
   let lastIndex = 0;
-  const segments: Array<{ type: "html" | "table"; content: string }> = [];
+  const segments: Array<{ type: "html" | "table" | "image"; content: string }> = [];
 
-  while ((tableMatch = tableRegex.exec(cleaned)) !== null) {
-    if (tableMatch.index > lastIndex) {
-      segments.push({ type: "html", content: cleaned.slice(lastIndex, tableMatch.index) });
+  // Use a more precise approach: find tables and img tags
+  const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
+  const imgRegex = /<img\b[^>]*>/gi;
+
+  // Build a list of all special elements with positions
+  const specials: Array<{ type: "table" | "image"; start: number; end: number; content: string }> = [];
+
+  let tMatch;
+  while ((tMatch = tableRegex.exec(cleaned)) !== null) {
+    specials.push({ type: "table", start: tMatch.index, end: tMatch.index + tMatch[0].length, content: tMatch[0] });
+  }
+  let iMatch;
+  while ((iMatch = imgRegex.exec(cleaned)) !== null) {
+    specials.push({ type: "image", start: iMatch.index, end: iMatch.index + iMatch[0].length, content: iMatch[0] });
+  }
+
+  specials.sort((a, b) => a.start - b.start);
+
+  for (const sp of specials) {
+    if (sp.start > lastIndex) {
+      segments.push({ type: "html", content: cleaned.slice(lastIndex, sp.start) });
     }
-    segments.push({ type: "table", content: tableMatch[0] });
-    lastIndex = tableMatch.index + tableMatch[0].length;
+    segments.push({ type: sp.type, content: sp.content });
+    lastIndex = sp.end;
   }
   if (lastIndex < cleaned.length) {
     segments.push({ type: "html", content: cleaned.slice(lastIndex) });
@@ -319,6 +337,19 @@ function processHtmlBlocks(html: string): HtmlBlock[] {
         if (cells.length) rows.push(cells);
       }
       if (rows.length) blocks.push({ type: "table", text: "", rows });
+    } else if (seg.type === "image") {
+      const srcMatch = seg.content.match(/src="([^"]+)"/i);
+      const widthMatch = seg.content.match(/width="(\d+)"/i);
+      const heightMatch = seg.content.match(/height="(\d+)"/i);
+      if (srcMatch?.[1]) {
+        blocks.push({
+          type: "image",
+          text: "",
+          imageUrl: srcMatch[1],
+          imageWidth: widthMatch ? parseInt(widthMatch[1]) : 150,
+          imageHeight: heightMatch ? parseInt(heightMatch[1]) : 150,
+        });
+      }
     } else {
       parseHtmlToBlocks(seg.content, blocks);
     }
