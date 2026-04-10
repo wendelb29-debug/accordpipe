@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { Building2, Check, ChevronRight, Shield, Loader2 } from "lucide-react";
@@ -11,8 +11,13 @@ import { applyBrandColors } from "@/components/layout/ThemeSync";
 export default function Servidores() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { companies, activeCompanyId, setActiveCompanyId, profile } = useAuth();
+  const { companies, activeCompanyId, setActiveCompanyId, profile, isMasterTenantAdmin } = useAuth();
   const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  // Block access for non-master-tenant users
+  if (!isMasterTenantAdmin) {
+    return <Navigate to="/home" replace />;
+  }
 
   const isMasterUser = !!(profile as any)?.is_master;
   const isMasterTenant = (companyId: string) => isMasterUser && companyId === profile?.company_id;

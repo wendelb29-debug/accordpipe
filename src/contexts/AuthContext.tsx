@@ -40,6 +40,7 @@ interface AuthContextType {
   isLeitura: boolean;
   isCeo: boolean;
   isMaster: boolean;
+  isMasterTenantAdmin: boolean;
   activeCompanyId: string | null;
   setActiveCompanyId: (id: string | null) => void;
   companies: CompanyOption[];
@@ -65,6 +66,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isCeo = role === "ceo";
   const isMaster = profile?.is_master === true || isCeo;
+  // True only for users with is_master flag (master tenant) who are CEO or Master
+  const isMasterTenantAdmin = profile?.is_master === true;
 
   const setActiveCompanyId = (id: string | null) => {
     setActiveCompanyIdState(id);
@@ -222,6 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLeitura: role === "leitura",
     isCeo,
     isMaster,
+    isMasterTenantAdmin,
     activeCompanyId,
     setActiveCompanyId,
     companies,
