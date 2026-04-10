@@ -51,7 +51,7 @@ const roleLabels: Record<string, string> = {
 };
 
 export function Header() {
-  const { profile, role, signOut, loading, companies, activeCompanyId, setActiveCompanyId, activeCompany, isMaster, isCeo } = useAuth();
+  const { profile, role, signOut, loading, companies, activeCompanyId, setActiveCompanyId, activeCompany, isMaster, isCeo, isMasterTenantAdmin } = useAuth();
   const [currentTheme, setCurrentTheme] = useState(() => document.documentElement.classList.contains("dark") ? "dark" : "light");
   const [currentTime, setCurrentTime] = useState(new Date());
   const navigate = useNavigate();
@@ -173,7 +173,7 @@ export function Header() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
 
-            {(isMaster || isCeo) && profile?.is_master && (
+            {isMasterTenantAdmin && (
               <>
                 <DropdownMenuItem className="rounded-lg cursor-pointer gap-2" onClick={() => navigate("/servidores")}>
                   <Building2 className="h-4 w-4" />
