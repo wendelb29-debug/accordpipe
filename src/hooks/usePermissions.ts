@@ -20,7 +20,7 @@ export function usePermissions() {
   const [loading, setLoading] = useState(true);
   const { loading: authLoading } = useAuth();
 
-  const isCeoOrMaster = role === "ceo" || (role as string) === "master" || profile?.is_master === true;
+  const isCeoOrMaster = role === "ceo" || role === "master" || profile?.is_master === true;
 
   useEffect(() => {
     if (authLoading) { setLoading(true); return; }
