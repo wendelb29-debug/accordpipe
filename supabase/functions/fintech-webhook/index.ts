@@ -83,36 +83,64 @@ Deno.serve(async (req) => {
       request_payload: payload,
     });
 
-    // Process payment events
+    // Process payment events (includes Eduzz-specific events)
     const isPaid =
       eventType === "payment.approved" ||
       eventType === "payment_approved" ||
       eventType === "checkout.session.completed" ||
       eventType === "order_paid" ||
+      eventType === "invoice_paid" ||
+      // Eduzz specific
+      eventType === "eduzz.invoice_paid" ||
+      eventType === "eduzz.sale_paid" ||
+      eventType === "contract_sale" ||
+      payload.trans_status === "1" || // Eduzz paid status
+      payload.sale_status === "1" ||
       payload.status === "approved" ||
       payload.status === "paid";
+
+    const isPending =
+      eventType === "payment.pending" ||
+      eventType === "eduzz.sale_waiting" ||
+      eventType === "eduzz.invoice_waiting" ||
+      payload.trans_status === "4" || // Eduzz waiting payment
+      payload.sale_status === "4" ||
+      payload.status === "pending" ||
+      payload.status === "waiting_payment";
 
     const isFailed =
       eventType === "payment.refused" ||
       eventType === "payment_refused" ||
       eventType === "payment.failed" ||
+      eventType === "eduzz.sale_refunded" ||
+      eventType === "eduzz.invoice_refunded" ||
+      payload.trans_status === "6" || // Eduzz refunded
+      payload.sale_status === "6" ||
       payload.status === "refused" ||
-      payload.status === "failed";
+      payload.status === "failed" ||
+      payload.status === "refunded";
 
     const isCancelled =
       eventType === "subscription.cancelled" ||
       eventType === "subscription_cancelled" ||
-      eventType === "customer.subscription.deleted";
+      eventType === "customer.subscription.deleted" ||
+      eventType === "eduzz.subscription_cancelled" ||
+      payload.trans_status === "7" || // Eduzz cancelled
+      payload.sale_status === "7";
 
-    if (isPaid || isFailed || isCancelled) {
+    if (isPaid || isPending || isFailed || isCancelled) {
+      // Eduzz-specific reference fields
       const reference =
         payload.order_id ||
+        payload.trans_cod ||
+        payload.sale_id ||
+        payload.invoice_code ||
         payload.transaction_id ||
         payload.data?.object?.id ||
         payload.reference;
 
       if (reference) {
-        const newStatus = isPaid ? "pago" : isFailed ? "vencido" : "cancelado";
+        const newStatus = isPaid ? "pago" : isPending ? "pendente" : isFailed ? "vencido" : "cancelado";
 
         const { data: tx } = await supabase
           .from("financial_transactions")
@@ -120,13 +148,13 @@ Deno.serve(async (req) => {
             status: newStatus,
             ...(isPaid ? { paid_at: new Date().toISOString() } : {}),
           })
-          .eq("reference", reference)
+          .eq("reference", String(reference))
           .eq("servidor_id", servidorId)
           .select("id, registration_id")
           .maybeSingle();
 
         if (tx?.registration_id) {
-          const clientStatus = isPaid ? "ativo" : isFailed ? "inadimplente" : "cancelado";
+          const clientStatus = isPaid ? "ativo" : isPending ? "pendente" : isFailed ? "inadimplente" : "cancelado";
           await supabase
             .from("crm_client_registrations")
             .update({ client_status: clientStatus })

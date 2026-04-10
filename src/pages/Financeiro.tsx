@@ -4,15 +4,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { toast } from "sonner";
+import { GerarPixModal, LinkPagamentoModal, RecorrenciaModal, NovaCobrancaModal } from "@/components/fintech/EduzzModals";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip,
   ResponsiveContainer, CartesianGrid,
@@ -44,24 +41,16 @@ export default function Financeiro() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("overview");
   const [integrations, setIntegrations] = useState<any[]>([]);
   const [webhookConfigured, setWebhookConfigured] = useState(false);
 
-  const [form, setForm] = useState({
-    registration_id: "",
-    type: "cobranca",
-    description: "",
-    amount: 0,
-    due_date: "",
-    status: "pendente",
-    payment_method: "boleto",
-    reference: "",
-    notes: "",
-  });
+  // Modal states
+  const [pixOpen, setPixOpen] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [recorrenciaOpen, setRecorrenciaOpen] = useState(false);
+  const [cobrancaOpen, setCobrancaOpen] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -83,40 +72,6 @@ export default function Financeiro() {
   };
 
   useEffect(() => { fetchData(); }, [activeCompanyId]);
-
-  const handleSave = async () => {
-    if (!form.amount || !form.due_date) { toast.error("Preencha valor e vencimento"); return; }
-    setSaving(true);
-    const servidorId = activeCompanyId;
-    if (!servidorId) { toast.error("Empresa não encontrada"); setSaving(false); return; }
-
-    const { error } = await supabase.from("financial_transactions" as any).insert({
-      servidor_id: servidorId,
-      registration_id: form.registration_id || null,
-      type: form.type,
-      description: form.description,
-      amount: form.amount,
-      due_date: form.due_date,
-      status: form.status,
-      payment_method: form.payment_method,
-      reference: form.reference,
-      notes: form.notes,
-      created_by_user_id: profile?.user_id,
-      created_by_name: profile?.name,
-    });
-
-    if (error) { toast.error("Erro ao criar transação"); console.error(error); }
-    else {
-      toast.success("Transação criada!");
-      setDialogOpen(false);
-      setForm({ registration_id: "", type: "cobranca", description: "", amount: 0, due_date: "", status: "pendente", payment_method: "boleto", reference: "", notes: "" });
-      if (form.registration_id && form.status === "pago") {
-        await supabase.from("crm_client_registrations").update({ client_status: "ativo" } as any).eq("id", form.registration_id);
-      }
-      await fetchData();
-    }
-    setSaving(false);
-  };
 
   const updateStatus = async (id: string, status: string, regId?: string) => {
     await supabase.from("financial_transactions" as any).update({
@@ -216,16 +171,16 @@ export default function Financeiro() {
           <p className="text-sm text-muted-foreground mt-0.5">Gestão financeira completa do seu negócio</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8">
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => setPixOpen(true)}>
             <QrCode className="h-3.5 w-3.5" /> Gerar PIX
           </Button>
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8">
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => setLinkOpen(true)}>
             <Link2 className="h-3.5 w-3.5" /> Link de Pagamento
           </Button>
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8">
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => setRecorrenciaOpen(true)}>
             <RefreshCw className="h-3.5 w-3.5" /> Recorrência
           </Button>
-          <Button size="sm" onClick={() => setDialogOpen(true)} className="gap-1.5 text-xs h-8">
+          <Button size="sm" onClick={() => setCobrancaOpen(true)} className="gap-1.5 text-xs h-8">
             <Plus className="h-3.5 w-3.5" /> Nova Cobrança
           </Button>
         </div>
@@ -495,77 +450,43 @@ export default function Financeiro() {
         </CardContent>
       </Card>
 
-      {/* New Transaction Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader><DialogTitle className="text-base">Nova Transação</DialogTitle></DialogHeader>
-          <div className="grid gap-3 py-2">
-            <div className="space-y-1">
-              <Label className="text-xs">Cliente</Label>
-              <Select value={form.registration_id} onValueChange={v => setForm({ ...form, registration_id: v })}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
-                <SelectContent>
-                  {registrations.map(r => <SelectItem key={r.id} value={r.id} className="text-xs">{r.nome_completo || "Sem nome"}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Tipo</Label>
-                <Select value={form.type} onValueChange={v => setForm({ ...form, type: v })}>
-                  <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cobranca" className="text-xs">Cobrança</SelectItem>
-                    <SelectItem value="mensalidade" className="text-xs">Mensalidade</SelectItem>
-                    <SelectItem value="adesao" className="text-xs">Adesão</SelectItem>
-                    <SelectItem value="outro" className="text-xs">Outro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Forma de pagamento</Label>
-                <Select value={form.payment_method} onValueChange={v => setForm({ ...form, payment_method: v })}>
-                  <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="boleto" className="text-xs">Boleto</SelectItem>
-                    <SelectItem value="pix" className="text-xs">PIX</SelectItem>
-                    <SelectItem value="cartao" className="text-xs">Cartão</SelectItem>
-                    <SelectItem value="transferencia" className="text-xs">Transferência</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Valor</Label>
-                <Input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: Number(e.target.value) })} className="h-9 text-xs" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Vencimento</Label>
-                <Input type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} className="h-9 text-xs" />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Descrição</Label>
-              <Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="h-9 text-xs" placeholder="Ex: Mensalidade março/2026" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Referência</Label>
-              <Input value={form.reference} onChange={e => setForm({ ...form, reference: e.target.value })} className="h-9 text-xs" placeholder="Nº boleto, código PIX..." />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Observações</Label>
-              <Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} className="text-xs" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-            <Button size="sm" onClick={handleSave} disabled={saving}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <DollarSign className="h-4 w-4 mr-1" />} Salvar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Eduzz Modals */}
+      <GerarPixModal
+        open={pixOpen}
+        onOpenChange={setPixOpen}
+        servidorId={activeCompanyId}
+        registrations={registrations}
+        onTransactionCreated={fetchData}
+        profileUserId={profile?.user_id}
+        profileName={profile?.name}
+      />
+      <LinkPagamentoModal
+        open={linkOpen}
+        onOpenChange={setLinkOpen}
+        servidorId={activeCompanyId}
+        registrations={registrations}
+        onTransactionCreated={fetchData}
+        profileUserId={profile?.user_id}
+        profileName={profile?.name}
+      />
+      <RecorrenciaModal
+        open={recorrenciaOpen}
+        onOpenChange={setRecorrenciaOpen}
+        servidorId={activeCompanyId}
+        registrations={registrations}
+        onTransactionCreated={fetchData}
+        profileUserId={profile?.user_id}
+        profileName={profile?.name}
+      />
+      <NovaCobrancaModal
+        open={cobrancaOpen}
+        onOpenChange={setCobrancaOpen}
+        servidorId={activeCompanyId}
+        registrations={registrations}
+        onTransactionCreated={fetchData}
+        profileUserId={profile?.user_id}
+        profileName={profile?.name}
+      />
     </div>
   );
 }
