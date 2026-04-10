@@ -550,7 +550,9 @@ Deno.serve(async (req) => {
         [`data_assinatura_${varPrefix}`]: fmtDateBR(now),
         [`hora_assinatura_${varPrefix}`]: fmtTimeBR(now),
         [`geolocalizacao_${varPrefix}`]: geoText,
-        [`selfie_${varPrefix}`]: selfie_url || "Capturada",
+        [`selfie_${varPrefix}`]: selfie_url
+          ? `<img src="${selfie_url}" data-selfie="true" width="150" height="150" />`
+          : "Nao capturada",
       };
 
       const { data: docData } = await supabase
