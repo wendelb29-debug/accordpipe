@@ -14,7 +14,8 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     const provider = url.searchParams.get("provider") || "unknown";
-    const tenantId = url.searchParams.get("tenant");
+    const token = url.searchParams.get("token");
+    const tenantIdParam = url.searchParams.get("tenant");
 
     const body = await req.text();
     let payload: any = {};
@@ -33,15 +34,26 @@ Deno.serve(async (req) => {
     const eventType =
       payload.event || payload.type || payload.event_type || payload.action || "unknown";
 
-    // Determine tenant from payload or query param
-    let servidorId = tenantId;
+    // Resolve tenant: prefer token-based lookup for security
+    let servidorId: string | null = null;
 
+    if (token) {
+      const { data: resolved } = await supabase.rpc("resolve_tenant_by_webhook_token", { p_token: token });
+      servidorId = resolved || null;
+    }
+
+    // Fallback to legacy query param
+    if (!servidorId && tenantIdParam) {
+      servidorId = tenantIdParam;
+    }
+
+    // Fallback to payload metadata
     if (!servidorId && payload.metadata?.tenant_id) {
       servidorId = payload.metadata.tenant_id;
     }
 
+    // Last resort: find by provider integration
     if (!servidorId) {
-      // Try to find tenant by provider integration
       const { data: integration } = await supabase
         .from("fintech_integrations")
         .select("servidor_id")
@@ -91,7 +103,6 @@ Deno.serve(async (req) => {
       eventType === "customer.subscription.deleted";
 
     if (isPaid || isFailed || isCancelled) {
-      // Try to find and update related financial transaction
       const reference =
         payload.order_id ||
         payload.transaction_id ||
@@ -112,7 +123,6 @@ Deno.serve(async (req) => {
           .select("id, registration_id")
           .maybeSingle();
 
-        // Update client status if linked
         if (tx?.registration_id) {
           const clientStatus = isPaid ? "ativo" : isFailed ? "inadimplente" : "cancelado";
           await supabase

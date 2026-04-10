@@ -3,17 +3,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   Zap, Settings, Loader2, Plus, Copy, Check, Eye, EyeOff,
   CreditCard, RefreshCw, AlertTriangle, CheckCircle2, XCircle,
-  Clock, Trash2, TestTube, ScrollText,
+  Clock, Trash2, ScrollText, RotateCw,
 } from "lucide-react";
 
 interface Integration {
@@ -53,6 +53,9 @@ export function FintechWebhooksTab({ companyId }: { companyId: string | null }) 
   const [saving, setSaving] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [webhookToken, setWebhookToken] = useState<string | null>(null);
+  const [regenerateDialogOpen, setRegenerateDialogOpen] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
 
   const [form, setForm] = useState({
     provider: "",
@@ -63,20 +66,65 @@ export function FintechWebhooksTab({ companyId }: { companyId: string | null }) 
   });
 
   const webhookBaseUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fintech-webhook`;
+  const tenantWebhookUrl = webhookToken ? `${webhookBaseUrl}?token=${webhookToken}` : webhookBaseUrl;
 
   const fetchData = async () => {
     if (!companyId) return;
     setLoading(true);
-    const [{ data: intData }, { data: logData }] = await Promise.all([
+    const [{ data: intData }, { data: logData }, { data: companyData }] = await Promise.all([
       supabase.from("fintech_integrations" as any).select("*").eq("servidor_id", companyId).order("created_at"),
       supabase.from("fintech_webhook_logs" as any).select("*").eq("servidor_id", companyId).order("created_at", { ascending: false }).limit(50),
+      supabase.from("companies").select("webhook_token").eq("id", companyId).single(),
     ]);
     setIntegrations((intData as any) || []);
     setLogs((logData as any) || []);
+    setWebhookToken(companyData?.webhook_token || null);
     setLoading(false);
   };
 
   useEffect(() => { fetchData(); }, [companyId]);
+
+  const handleRegenerateToken = async () => {
+    if (!companyId) return;
+    setRegenerating(true);
+
+    // Generate a new token client-side using crypto
+    const randomBytes = new Uint8Array(32);
+    crypto.getRandomValues(randomBytes);
+    const newToken = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+
+    const { error } = await supabase
+      .from("companies")
+      .update({ webhook_token: newToken } as any)
+      .eq("id", companyId);
+
+    if (error) {
+      toast.error("Erro ao regenerar URL do webhook");
+      console.error(error);
+    } else {
+      setWebhookToken(newToken);
+      toast.success("URL do webhook atualizada com sucesso!");
+
+      // Log the regeneration via audit
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from("audit_logs").insert({
+            user_id: user.id,
+            user_name: user.email || "Sistema",
+            action: "fintech_webhook_url_regenerated",
+            target_type: "company",
+            target_id: companyId,
+            servidor_id: companyId,
+            details: { note: "Webhook URL regenerada pelo usuário" },
+          });
+        }
+      } catch {}
+    }
+
+    setRegenerating(false);
+    setRegenerateDialogOpen(false);
+  };
 
   const handleSave = async () => {
     if (!companyId || !form.provider || !form.display_name) {
@@ -97,7 +145,7 @@ export function FintechWebhooksTab({ companyId }: { companyId: string | null }) 
       api_key_encrypted: form.api_key || null,
       webhook_secret_masked: secretMasked,
       webhook_secret_encrypted: form.webhook_secret || null,
-      webhook_url: `${webhookBaseUrl}?provider=${form.provider}&tenant=${companyId}`,
+      webhook_url: tenantWebhookUrl,
       is_active: true,
     }, { onConflict: "servidor_id,provider" });
 
@@ -174,16 +222,32 @@ export function FintechWebhooksTab({ companyId }: { companyId: string | null }) 
           <Label className="text-xs text-muted-foreground">Webhook URL (recebimento de eventos)</Label>
           <div className="flex items-center gap-2 mt-1.5">
             <Input
-              value={webhookBaseUrl}
+              value={tenantWebhookUrl}
               readOnly
               className="h-8 text-xs font-mono bg-muted/30"
             />
-            <Button variant="outline" size="sm" className="h-8 shrink-0" onClick={() => copyWebhookUrl(webhookBaseUrl)}>
+            <Button variant="outline" size="sm" className="h-8 shrink-0" onClick={() => copyWebhookUrl(tenantWebhookUrl)}>
               {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
             </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 shrink-0 gap-1.5 text-xs"
+                  onClick={() => setRegenerateDialogOpen(true)}
+                >
+                  <RotateCw className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Atualizar URL</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Gera uma nova URL exclusiva para este tenant</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
           <p className="text-[10px] text-muted-foreground mt-1">
-            Configure esta URL no painel do gateway para receber notificações de pagamento automaticamente.
+            Configure esta URL no painel do gateway para receber notificações de pagamento automaticamente. Cada tenant possui sua URL exclusiva.
           </p>
         </CardContent>
       </Card>
@@ -308,6 +372,30 @@ export function FintechWebhooksTab({ companyId }: { companyId: string | null }) 
         </CardContent>
       </Card>
 
+      {/* Regenerate URL Confirmation Dialog */}
+      <Dialog open={regenerateDialogOpen} onOpenChange={setRegenerateDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              Atualizar URL do Webhook
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground pt-2">
+              Ao atualizar a URL, a anterior deixará de funcionar. Você precisará atualizar essa nova URL no gateway/banco conectado. Deseja continuar?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" size="sm" onClick={() => setRegenerateDialogOpen(false)} disabled={regenerating}>
+              Cancelar
+            </Button>
+            <Button size="sm" variant="destructive" onClick={handleRegenerateToken} disabled={regenerating}>
+              {regenerating ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RotateCw className="h-4 w-4 mr-1" />}
+              Atualizar URL
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* New Integration Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">
@@ -410,24 +498,26 @@ export function FintechWebhooksTab({ companyId }: { companyId: string | null }) 
                 {logs.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center text-xs text-muted-foreground py-8">
-                      Nenhum evento registrado
+                      Nenhum evento recebido ainda.
                     </TableCell>
                   </TableRow>
-                ) : logs.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {new Date(log.created_at).toLocaleString("pt-BR")}
-                    </TableCell>
-                    <TableCell className="text-xs font-medium">{log.provider}</TableCell>
-                    <TableCell className="text-xs">{log.event_type}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        {statusIcon(log.status)}
-                        <span className="text-[10px]">{log.status}</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                ) : (
+                  logs.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="text-[10px] font-mono">
+                        {new Date(log.created_at).toLocaleString("pt-BR")}
+                      </TableCell>
+                      <TableCell className="text-[10px]">{log.provider}</TableCell>
+                      <TableCell className="text-[10px] font-mono">{log.event_type}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          {statusIcon(log.status)}
+                          <span className="text-[10px]">{log.status}</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
