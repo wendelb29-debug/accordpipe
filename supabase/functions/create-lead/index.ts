@@ -129,6 +129,7 @@ Deno.serve(async (req) => {
             _message: `${contact_name.trim()} (${company_name.trim()}) preencheu o formulário de captação.`,
             _type: "lead_new",
             _link: "/atendimento",
+            _servidor_id: servidor_id,
           });
         }
       }
