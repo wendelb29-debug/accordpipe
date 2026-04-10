@@ -194,7 +194,7 @@ export function AccordAIChat() {
       <button
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 group",
+          "fixed bottom-5 right-4 sm:bottom-6 sm:right-6 z-50 h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 group",
           "text-primary-foreground"
         )}
         style={{ background: 'linear-gradient(135deg, #3B3F9C, #7A3FF2)' }}
@@ -210,7 +210,7 @@ export function AccordAIChat() {
 
       {/* Chat window */}
       {open && (
-        <div className="fixed bottom-24 right-6 z-50 w-[400px] max-h-[560px] rounded-2xl shadow-2xl border border-border bg-background flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="fixed inset-3 sm:inset-auto sm:bottom-24 sm:right-6 z-50 sm:w-[400px] sm:max-h-[560px] rounded-2xl shadow-2xl border border-border bg-background flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 text-primary-foreground" style={{ background: 'linear-gradient(135deg, #3B3F9C, #7A3FF2)' }}>
             <div className="h-9 w-9 rounded-full bg-white/20 flex items-center justify-center">
