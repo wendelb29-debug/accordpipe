@@ -450,77 +450,43 @@ export default function Financeiro() {
         </CardContent>
       </Card>
 
-      {/* New Transaction Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader><DialogTitle className="text-base">Nova Transação</DialogTitle></DialogHeader>
-          <div className="grid gap-3 py-2">
-            <div className="space-y-1">
-              <Label className="text-xs">Cliente</Label>
-              <Select value={form.registration_id} onValueChange={v => setForm({ ...form, registration_id: v })}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
-                <SelectContent>
-                  {registrations.map(r => <SelectItem key={r.id} value={r.id} className="text-xs">{r.nome_completo || "Sem nome"}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Tipo</Label>
-                <Select value={form.type} onValueChange={v => setForm({ ...form, type: v })}>
-                  <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cobranca" className="text-xs">Cobrança</SelectItem>
-                    <SelectItem value="mensalidade" className="text-xs">Mensalidade</SelectItem>
-                    <SelectItem value="adesao" className="text-xs">Adesão</SelectItem>
-                    <SelectItem value="outro" className="text-xs">Outro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Forma de pagamento</Label>
-                <Select value={form.payment_method} onValueChange={v => setForm({ ...form, payment_method: v })}>
-                  <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="boleto" className="text-xs">Boleto</SelectItem>
-                    <SelectItem value="pix" className="text-xs">PIX</SelectItem>
-                    <SelectItem value="cartao" className="text-xs">Cartão</SelectItem>
-                    <SelectItem value="transferencia" className="text-xs">Transferência</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Valor</Label>
-                <Input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: Number(e.target.value) })} className="h-9 text-xs" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Vencimento</Label>
-                <Input type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} className="h-9 text-xs" />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Descrição</Label>
-              <Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="h-9 text-xs" placeholder="Ex: Mensalidade março/2026" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Referência</Label>
-              <Input value={form.reference} onChange={e => setForm({ ...form, reference: e.target.value })} className="h-9 text-xs" placeholder="Nº boleto, código PIX..." />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Observações</Label>
-              <Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} className="text-xs" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-            <Button size="sm" onClick={handleSave} disabled={saving}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <DollarSign className="h-4 w-4 mr-1" />} Salvar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Eduzz Modals */}
+      <GerarPixModal
+        open={pixOpen}
+        onOpenChange={setPixOpen}
+        servidorId={activeCompanyId}
+        registrations={registrations}
+        onTransactionCreated={fetchData}
+        profileUserId={profile?.user_id}
+        profileName={profile?.name}
+      />
+      <LinkPagamentoModal
+        open={linkOpen}
+        onOpenChange={setLinkOpen}
+        servidorId={activeCompanyId}
+        registrations={registrations}
+        onTransactionCreated={fetchData}
+        profileUserId={profile?.user_id}
+        profileName={profile?.name}
+      />
+      <RecorrenciaModal
+        open={recorrenciaOpen}
+        onOpenChange={setRecorrenciaOpen}
+        servidorId={activeCompanyId}
+        registrations={registrations}
+        onTransactionCreated={fetchData}
+        profileUserId={profile?.user_id}
+        profileName={profile?.name}
+      />
+      <NovaCobrancaModal
+        open={cobrancaOpen}
+        onOpenChange={setCobrancaOpen}
+        servidorId={activeCompanyId}
+        registrations={registrations}
+        onTransactionCreated={fetchData}
+        profileUserId={profile?.user_id}
+        profileName={profile?.name}
+      />
     </div>
   );
 }
