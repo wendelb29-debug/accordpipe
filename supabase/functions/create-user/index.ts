@@ -151,6 +151,16 @@ serve(async (req) => {
       console.error("Role update error:", roleError);
     }
 
+    // Audit log
+    await supabase.rpc("log_audit", {
+      _user_id: caller.id,
+      _user_name: callerProfile?.is_master ? "Master" : (caller.email || ""),
+      _action: "create_user",
+      _target_type: "user",
+      _target_id: userId,
+      _details: JSON.stringify({ name, email, role, company_id }),
+    });
+
     return respond(true, {
       user_id: userId,
       temp_password: tempPassword,
