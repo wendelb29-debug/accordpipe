@@ -460,6 +460,10 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         return;
       }
 
+      // Save origin info before moving
+      const originWorkspaceId = lead.workspace_id;
+      const originStage = lead.stage;
+
       // Move lead to Cadastro workspace first column
       await onUpdate(lead.id, {
         lead_status: "won",
@@ -471,7 +475,17 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
       const desc = observation.trim()
         ? `Lead marcado como ganho e transferido para o workspace **Cadastro**.\nObservação: ${observation.trim()}`
         : "Lead marcado como ganho e transferido para o workspace **Cadastro**.";
-      await addActivity({ type: "won", title: "Oportunidade ganha! Transferida para Cadastro.", description: desc });
+      await addActivity({
+        type: "won",
+        title: "Oportunidade ganha! Transferida para Cadastro.",
+        description: desc,
+        metadata: {
+          origin_workspace_id: originWorkspaceId,
+          origin_stage: originStage,
+          origin_created_by_user_id: lead.created_by_user_id,
+          origin_created_by_name: lead.created_by_name,
+        },
+      });
       
       // Create registration with pendente status
       await supabase.from("crm_client_registrations" as any).insert({
@@ -1412,7 +1426,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                 }
                 setSaving(true);
                 try {
-                  // Find previous stage from won activity metadata
+                  // Find origin workspace/stage from won activity metadata
                   const { data: wonActivities } = await supabase
                     .from("crm_lead_activities")
                     .select("metadata")
@@ -1420,9 +1434,12 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                     .eq("type", "won")
                     .order("created_at", { ascending: false })
                     .limit(1);
-                  const previousStage = (wonActivities?.[0]?.metadata as any)?.previous_stage || "contrato-fechado";
 
-                  // Add "Pendente de Correção" and "Devolvido" tags
+                  const wonMeta = wonActivities?.[0]?.metadata as any;
+                  const originWorkspaceId = wonMeta?.origin_workspace_id || lead.workspace_id;
+                  const originStage = wonMeta?.origin_stage || wonMeta?.previous_stage || "contrato-fechado";
+
+                  // Add "Devolvido" tag
                   const currentTags = lead.tags || [];
                   let newTags = [...currentTags];
                   if (!newTags.includes("Devolvido")) newTags.push("Devolvido");
@@ -1430,7 +1447,8 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
                   const success = await onUpdate(lead.id, {
                     lead_status: "open",
-                    stage: previousStage,
+                    stage: originStage,
+                    workspace_id: originWorkspaceId,
                     stage_entered_at: new Date().toISOString(),
                     tags: newTags,
                   } as any);
