@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader2, CheckCircle2, Users, Briefcase, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader2, CheckCircle2, ArrowLeft, Shield, LockKeyhole, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -11,7 +11,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import accordLogo from "@/assets/accord-logo.png";
-import dashboardMockup from "@/assets/dashboard-mockup-login.jpg";
 
 const loginSchema = z.object({
   email: z.string().trim().email({ message: "E-mail inválido" }).max(255),
@@ -53,7 +52,6 @@ export default function Auth() {
         localStorage.removeItem("accord-remember-me");
         localStorage.removeItem("accord-saved-email");
       }
-
       const { error } = await signIn(data.email, data.password);
       if (error) {
         if (error.message.includes("Invalid login credentials")) {
@@ -85,12 +83,10 @@ export default function Auth() {
         .select("id")
         .eq("email", email)
         .limit(1);
-
       if (!profiles || profiles.length === 0) {
         setError("Nenhuma conta encontrada com este e-mail.");
         return;
       }
-
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
@@ -108,202 +104,224 @@ export default function Auth() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center" style={{ background: 'linear-gradient(135deg, #0F1C3F 0%, #3B3F9C 35%, #7A3FF2 70%, #D94FD5 100%)' }}>
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-foreground"></div>
+      <div className="flex min-h-screen items-center justify-center bg-[#050510]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   return (
-    <div
-      className="relative flex min-h-screen items-center justify-center p-4 sm:p-6 overflow-hidden"
-      style={{ background: 'linear-gradient(135deg, #0F1C3F 0%, #3B3F9C 35%, #7A3FF2 70%, #D94FD5 100%)' }}
-    >
-      {/* Back button */}
-      <Link
-        to="/"
-        className="absolute top-5 left-5 z-20 flex items-center gap-1.5 text-sm text-white/60 hover:text-white transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        <span>Voltar</span>
-      </Link>
+    <div className="flex min-h-screen animate-fade-in">
+      {/* LEFT — Branding */}
+      <div className="hidden lg:flex lg:w-[55%] relative flex-col justify-between overflow-hidden bg-[#050510]">
+        {/* Back */}
+        <Link
+          to="/"
+          className="absolute top-6 left-6 z-20 flex items-center gap-1.5 text-sm text-white/40 hover:text-white/80 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Voltar</span>
+        </Link>
 
-      {/* Decorative elements */}
-      <div className="absolute top-[10%] left-[5%] w-32 h-32 rounded-full opacity-20 blur-[60px]" style={{ background: '#7A3FF2' }} />
-      <div className="absolute bottom-[10%] right-[10%] w-40 h-40 rounded-full opacity-15 blur-[80px]" style={{ background: '#D94FD5' }} />
-      <div className="absolute top-[5%] right-[20%] w-20 h-20 rounded-full opacity-30" style={{ background: 'radial-gradient(circle, #3B3F9C 0%, transparent 70%)' }} />
-
-      {/* Subtle grid */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px]" />
-
-      {/* Sparkle dots */}
-      <div className="absolute top-[15%] right-[30%] w-1.5 h-1.5 rounded-full bg-white/30 animate-pulse" />
-      <div className="absolute top-[70%] left-[15%] w-1 h-1 rounded-full bg-white/20 animate-pulse" style={{ animationDelay: '1s' }} />
-      <div className="absolute bottom-[20%] right-[15%] w-1.5 h-1.5 rounded-full bg-white/25 animate-pulse" style={{ animationDelay: '2s' }} />
-
-      {/* Curved line decorations */}
-      <svg className="absolute bottom-0 left-0 w-full h-[40%] opacity-[0.04]" viewBox="0 0 1200 400" fill="none">
-        <path d="M0 300 Q300 200 600 280 T1200 200" stroke="white" strokeWidth="1.5" />
-        <path d="M0 350 Q400 250 700 320 T1200 250" stroke="white" strokeWidth="1" />
-      </svg>
-
-      {/* Main card container */}
-      <div className="relative z-10 w-full max-w-[960px] rounded-3xl overflow-hidden shadow-2xl animate-fade-in flex flex-col lg:flex-row" style={{ boxShadow: '0 25px 60px -12px rgba(0,0,0,0.4)' }}>
-        {/* LEFT SIDE — Branding */}
-        <div className="hidden lg:flex lg:w-[55%] relative flex-col justify-between p-10 overflow-hidden" style={{ background: 'linear-gradient(160deg, rgba(15,28,63,0.95) 0%, rgba(59,63,156,0.9) 50%, rgba(122,63,242,0.85) 100%)' }}>
-          <div className="absolute top-0 right-0 w-[300px] h-[300px] rounded-full opacity-20 blur-[100px]" style={{ background: '#7A3FF2' }} />
-          <div className="flex items-center gap-2.5 relative z-10">
-            <img src={accordLogo} alt="ACCORD" className="h-8 w-auto" />
-            <span className="text-lg font-bold tracking-tight text-primary-foreground">ACCORD</span>
-          </div>
-          <div className="relative z-10 space-y-4">
-            <h1 className="text-3xl xl:text-4xl font-extrabold text-primary-foreground leading-[1.15] tracking-tight">
-              Gerencie sua operação
-              <br />
-              em um só lugar
-            </h1>
-            <p className="text-sm text-white/50 leading-relaxed max-w-sm">
-              Simplifique sua gestão de leads, vendas e atendimento em uma única plataforma.
-            </p>
-          </div>
-          <div className="relative z-10 mt-4">
-            <div className="rounded-xl overflow-hidden shadow-xl border border-white/10">
-              <img src={dashboardMockup} alt="Dashboard" className="w-full h-auto opacity-90" loading="lazy" width={960} height={640} />
-            </div>
-          </div>
-          <div className="relative z-10 flex items-center gap-6 mt-6">
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-lg bg-white/10 flex items-center justify-center">
-                <Users className="h-3.5 w-3.5 text-white/70" />
-              </div>
-              <span className="text-xs text-white/60">
-                <span className="font-semibold text-white/90">+500</span> clientes ativos
-              </span>
-            </div>
-            <div className="w-px h-4 bg-white/15" />
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-lg bg-white/10 flex items-center justify-center">
-                <Briefcase className="h-3.5 w-3.5 text-white/70" />
-              </div>
-              <span className="text-xs text-white/60">
-                <span className="font-semibold text-white/90">+10,000</span> leads gerenciados
-              </span>
-            </div>
-          </div>
+        {/* Tech grid background */}
+        <div className="absolute inset-0">
+          {/* Grid lines */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(99,102,241,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.04)_1px,transparent_1px)] bg-[size:60px_60px]" />
+          {/* Radial glow */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-blue-600/[0.07] blur-[120px]" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-indigo-600/[0.05] blur-[100px]" />
+          {/* Floating dots */}
+          <div className="absolute top-[20%] left-[30%] w-1 h-1 rounded-full bg-blue-400/30 animate-pulse" />
+          <div className="absolute top-[60%] left-[70%] w-1.5 h-1.5 rounded-full bg-indigo-400/20 animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute top-[40%] left-[15%] w-1 h-1 rounded-full bg-blue-300/25 animate-pulse" style={{ animationDelay: '2s' }} />
+          <div className="absolute top-[75%] left-[45%] w-1 h-1 rounded-full bg-indigo-300/20 animate-pulse" style={{ animationDelay: '0.5s' }} />
+          {/* Connection lines */}
+          <svg className="absolute inset-0 w-full h-full opacity-[0.03]" viewBox="0 0 800 900">
+            <line x1="200" y1="100" x2="500" y2="300" stroke="white" strokeWidth="1" />
+            <line x1="500" y1="300" x2="300" y2="600" stroke="white" strokeWidth="1" />
+            <line x1="300" y1="600" x2="600" y2="800" stroke="white" strokeWidth="1" />
+            <line x1="100" y1="400" x2="400" y2="500" stroke="white" strokeWidth="1" />
+            <line x1="400" y1="500" x2="700" y2="400" stroke="white" strokeWidth="1" />
+            <circle cx="200" cy="100" r="3" fill="rgba(96,165,250,0.3)" />
+            <circle cx="500" cy="300" r="3" fill="rgba(96,165,250,0.3)" />
+            <circle cx="300" cy="600" r="3" fill="rgba(96,165,250,0.3)" />
+            <circle cx="600" cy="800" r="3" fill="rgba(96,165,250,0.3)" />
+            <circle cx="100" cy="400" r="3" fill="rgba(129,140,248,0.3)" />
+            <circle cx="400" cy="500" r="3" fill="rgba(129,140,248,0.3)" />
+            <circle cx="700" cy="400" r="3" fill="rgba(129,140,248,0.3)" />
+          </svg>
         </div>
 
-        {/* RIGHT SIDE — Login form */}
-        <div className="flex flex-col justify-center bg-card p-8 sm:p-10 lg:p-12 lg:w-[45%]">
-          <div className="mb-8 lg:hidden text-center">
-            <div className="flex items-center justify-center gap-2 mb-2">
+        {/* Content */}
+        <div className="relative z-10 flex flex-col justify-center items-start h-full px-16 xl:px-20">
+          <div className="flex items-center gap-2.5 mb-12">
+            <img src={accordLogo} alt="ACCORD" className="h-9 w-auto" />
+            <span className="text-lg font-bold tracking-tight text-white/90">ACCORD</span>
+          </div>
+          <h1 className="text-4xl xl:text-[2.75rem] font-extrabold text-white leading-[1.15] tracking-tight max-w-md">
+            Sua operação organizada.
+            <br />
+            <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+              Suas vendas previsíveis.
+            </span>
+          </h1>
+          <p className="mt-5 text-sm text-white/30 max-w-sm leading-relaxed">
+            CRM, contratos, automação e atendimento — tudo em uma única plataforma.
+          </p>
+        </div>
+
+        {/* Bottom bar */}
+        <div className="relative z-10 px-16 xl:px-20 pb-8">
+          <div className="flex items-center gap-6 text-[11px] text-white/25">
+            <span>© 2026 ACCORD</span>
+            <span className="w-px h-3 bg-white/10" />
+            <span>Todos os direitos reservados</span>
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT — Login form */}
+      <div className="flex flex-col justify-center items-center w-full lg:w-[45%] bg-white px-6 sm:px-10 relative">
+        {/* Mobile back */}
+        <Link
+          to="/"
+          className="absolute top-5 left-5 lg:hidden flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Voltar</span>
+        </Link>
+
+        <div className="w-full max-w-[380px] space-y-8">
+          {/* Header */}
+          <div className="text-center space-y-2">
+            <div className="flex items-center justify-center gap-2 mb-6 lg:hidden">
               <img src={accordLogo} alt="ACCORD" className="h-7 w-auto" />
-              <span className="text-base font-bold tracking-tight text-foreground">ACCORD</span>
+              <span className="text-base font-bold tracking-tight text-gray-900">ACCORD</span>
             </div>
+            <h2 className="text-2xl font-bold tracking-tight text-gray-900">
+              Acessar plataforma
+            </h2>
+            <p className="text-sm text-gray-400">
+              Entre com suas credenciais para continuar
+            </p>
           </div>
 
-          <div className="space-y-6 w-full max-w-sm mx-auto">
-            <div className="text-center lg:text-left">
-              <h2 className="text-2xl font-extrabold tracking-tight text-foreground">
-                Bem-vindo de volta!
-              </h2>
+          {/* Alerts */}
+          {error && (
+            <Alert variant="destructive" className="animate-fade-in rounded-xl border-red-200 bg-red-50">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-sm text-red-700">{error}</AlertDescription>
+            </Alert>
+          )}
+          {success && (
+            <Alert className="animate-fade-in border-green-200 bg-green-50 rounded-xl">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-sm text-green-700">{success}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Form */}
+          <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-5">
+            <div className="space-y-1.5">
+              <label htmlFor="login-email" className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                E-mail
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-300" />
+                <Input
+                  id="login-email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  className="pl-12 h-12 rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all text-sm text-gray-900 placeholder:text-gray-300"
+                  autoComplete="username"
+                  {...loginForm.register("email")}
+                />
+              </div>
+              {loginForm.formState.errors.email && (
+                <p className="text-xs text-red-500 ml-1">{loginForm.formState.errors.email.message}</p>
+              )}
             </div>
 
-            {error && (
-              <Alert variant="destructive" className="animate-fade-in rounded-xl border-destructive/30 bg-destructive/5">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="text-sm">{error}</AlertDescription>
-              </Alert>
-            )}
-            {success && (
-              <Alert className="animate-fade-in border-accent/30 bg-accent/5 rounded-xl">
-                <CheckCircle2 className="h-4 w-4 text-accent" />
-                <AlertDescription className="text-sm text-accent">{success}</AlertDescription>
-              </Alert>
-            )}
-
-            <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
-              <div className="space-y-1">
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
-                  <Input
-                    id="login-email"
-                    type="email"
-                    placeholder="E-mail"
-                    className="pl-12 h-13 rounded-xl border-border bg-muted/30 focus:bg-background transition-colors text-sm"
-                    autoComplete="username"
-                    {...loginForm.register("email")}
-                  />
-                </div>
-                {loginForm.formState.errors.email && (
-                  <p className="text-xs text-destructive ml-1">{loginForm.formState.errors.email.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
-                  <Input
-                    id="login-password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Senha"
-                    className="pl-12 pr-11 h-13 rounded-xl border-border bg-muted/30 focus:bg-background transition-colors text-sm"
-                    autoComplete="current-password"
-                    {...loginForm.register("password")}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/40 hover:text-foreground transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-                {loginForm.formState.errors.password && (
-                  <p className="text-xs text-destructive ml-1">{loginForm.formState.errors.password.message}</p>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="remember-me"
-                    checked={rememberMe}
-                    onCheckedChange={(checked) => setRememberMe(checked === true)}
-                  />
-                  <label htmlFor="remember-me" className="text-xs text-muted-foreground cursor-pointer select-none">
-                    Lembrar-me
-                  </label>
-                </div>
+            <div className="space-y-1.5">
+              <label htmlFor="login-password" className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Senha
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-300" />
+                <Input
+                  id="login-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  className="pl-12 pr-11 h-12 rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all text-sm text-gray-900 placeholder:text-gray-300"
+                  autoComplete="current-password"
+                  {...loginForm.register("password")}
+                />
                 <button
                   type="button"
-                  className="text-xs font-medium text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
-                  onClick={handleForgotPassword}
-                  disabled={resetLoading}
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors"
                 >
-                  {resetLoading ? "Enviando..." : "Esqueci minha senha"}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              {loginForm.formState.errors.password && (
+                <p className="text-xs text-red-500 ml-1">{loginForm.formState.errors.password.message}</p>
+              )}
+            </div>
 
-              <Button
-                type="submit"
-                className="w-full h-13 rounded-xl text-sm font-semibold text-primary-foreground shadow-lg transition-all"
-                style={{ background: 'linear-gradient(135deg, #2563EB, #1D4ED8)', boxShadow: '0 8px 24px -4px rgba(37, 99, 235, 0.35)' }}
-                disabled={isSubmitting}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="remember-me"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked === true)}
+                  className="border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                />
+                <label htmlFor="remember-me" className="text-xs text-gray-400 cursor-pointer select-none">
+                  Lembrar-me
+                </label>
+              </div>
+              <button
+                type="button"
+                className="text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors disabled:opacity-50"
+                onClick={handleForgotPassword}
+                disabled={resetLoading}
               >
-                {isSubmitting ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Entrando...
-                  </span>
-                ) : (
-                  "Entrar"
-                )}
-              </Button>
-            </form>
+                {resetLoading ? "Enviando..." : "Esqueci minha senha"}
+              </button>
+            </div>
 
-            <p className="text-center text-[11px] text-muted-foreground/50 pt-4">
-              © 2026 ACCORD — Todos os direitos reservados.
-            </p>
+            <Button
+              type="submit"
+              className="w-full h-12 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all duration-200"
+              variant="ghost"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Entrando...
+                </span>
+              ) : (
+                "Entrar na plataforma"
+              )}
+            </Button>
+          </form>
+
+          {/* Trust badges */}
+          <div className="flex items-center justify-center gap-6 pt-4">
+            <div className="flex items-center gap-1.5 text-gray-300">
+              <Shield className="h-3.5 w-3.5" />
+              <span className="text-[11px]">Ambiente seguro</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-gray-300">
+              <LockKeyhole className="h-3.5 w-3.5" />
+              <span className="text-[11px]">Criptografia ativa</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-gray-300">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              <span className="text-[11px]">Dados protegidos</span>
+            </div>
           </div>
         </div>
       </div>
