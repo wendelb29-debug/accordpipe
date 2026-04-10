@@ -859,6 +859,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => {
                       setReturnNote("");
+                      setReturnReason("");
                       setShowReturnDialog(true);
                     }} disabled={saving} className="gap-1 border-orange-300 text-orange-700 hover:bg-orange-50 h-7 sm:h-8 text-[11px] sm:text-xs px-2 sm:px-3">
                       <ArrowLeft className="h-3 w-3" /> Devolver
