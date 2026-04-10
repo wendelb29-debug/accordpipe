@@ -222,7 +222,7 @@ export default function Usuarios() {
       });
 
       if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      if (!data?.ok) throw new Error(data?.error || "Erro desconhecido");
 
       toast({
         title: "Usuário criado com sucesso",

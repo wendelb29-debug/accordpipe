@@ -6,6 +6,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function respond(ok: boolean, payload: Record<string, unknown>) {
+  return new Response(JSON.stringify({ ok, ...payload }), {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -20,10 +27,7 @@ serve(async (req) => {
     // Verify the caller is authenticated and has admin/master permissions
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respond(false, { error: "Não autorizado" });
     }
 
     const callerClient = createClient(supabaseUrl, anonKey, {
@@ -31,10 +35,7 @@ serve(async (req) => {
     });
     const { data: { user: caller } } = await callerClient.auth.getUser();
     if (!caller) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respond(false, { error: "Não autorizado" });
     }
 
     // Check caller is admin/master/ceo
@@ -55,19 +56,13 @@ serve(async (req) => {
       callerRole?.role === "admin";
 
     if (!isAllowed) {
-      return new Response(JSON.stringify({ error: "Sem permissão para criar usuários" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respond(false, { error: "Sem permissão para criar usuários" });
     }
 
     const { name, email, cpf, birth_date, whatsapp, company_id, role } = await req.json();
 
     if (!name || !email || !cpf || !birth_date || !whatsapp || !company_id || !role) {
-      return new Response(JSON.stringify({ error: "Todos os campos são obrigatórios" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respond(false, { error: "Todos os campos são obrigatórios" });
     }
 
     // Check for duplicate email in profiles
@@ -78,10 +73,7 @@ serve(async (req) => {
       .maybeSingle();
 
     if (existingProfile) {
-      return new Response(JSON.stringify({ error: "Já existe um usuário com este e-mail" }), {
-        status: 409,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respond(false, { error: "Já existe um usuário com este e-mail" });
     }
 
     // Check for duplicate CPF
@@ -93,10 +85,7 @@ serve(async (req) => {
       .maybeSingle();
 
     if (existingCpf) {
-      return new Response(JSON.stringify({ error: "Já existe um usuário com este CPF" }), {
-        status: 409,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respond(false, { error: "Já existe um usuário com este CPF" });
     }
 
     // Generate a temporary password
@@ -115,10 +104,7 @@ serve(async (req) => {
 
     if (createError) {
       console.error("Create user error:", createError);
-      return new Response(JSON.stringify({ error: createError.message }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respond(false, { error: createError.message });
     }
 
     const userId = newUser.user.id;
@@ -148,18 +134,12 @@ serve(async (req) => {
       console.error("Role update error:", roleError);
     }
 
-    return new Response(JSON.stringify({ 
-      success: true, 
+    return respond(true, {
       user_id: userId,
       temp_password: tempPassword,
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
     console.error("Create user error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respond(false, { error: err.message });
   }
 });
