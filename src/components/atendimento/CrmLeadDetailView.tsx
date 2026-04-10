@@ -787,9 +787,6 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
       <div className="border-b bg-card px-3 sm:px-4 py-2 sm:py-3">
         <div className="flex items-center justify-between mb-2 sm:mb-3 gap-2">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-            <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8 shrink-0">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
             <div className="min-w-0">
               <h2 className="text-sm font-bold text-foreground truncate">{lead.source} - {lead.contact_name || lead.company_name}</h2>
               <p className="text-xs text-muted-foreground truncate">
