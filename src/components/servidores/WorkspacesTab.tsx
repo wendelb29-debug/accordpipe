@@ -4,6 +4,7 @@ import {
   ChevronDown, ChevronUp, Copy, Power, Layers, Clock, Hash, Sparkles,
   HeadphonesIcon, DollarSign, Users, Cog, LayoutGrid, Save, Star, Flag, Palette,
   AlertTriangle, ArrowRight, FolderOpen, Folder, ArrowUp, ArrowDown,
+  Megaphone, UserCheck, Calculator, CreditCard, Receipt, Search, Monitor, Rocket, Phone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,9 +75,21 @@ export const COLUMN_COLORS = [
 export const WORKSPACE_TYPES = [
   { value: "vendas", label: "Vendas", icon: BarChart3, color: "#7C3AED" },
   { value: "crm", label: "CRM", icon: Users, color: "#2563EB" },
-  { value: "suporte", label: "Suporte", icon: HeadphonesIcon, color: "#059669" },
+  { value: "onboarding", label: "Onboarding", icon: Rocket, color: "#10B981" },
+  { value: "pre_venda_sdr", label: "Pré-venda (SDR)", icon: Phone, color: "#6366F1" },
+  { value: "comercial", label: "Comercial", icon: Briefcase, color: "#7C3AED" },
+  { value: "pos_venda", label: "Pós-venda", icon: UserCheck, color: "#14B8A6" },
+  { value: "marketing", label: "Marketing", icon: Megaphone, color: "#F43F5E" },
+  { value: "administrativo", label: "Administrativo", icon: Settings2, color: "#64748B" },
   { value: "financeiro", label: "Financeiro", icon: DollarSign, color: "#D97706" },
+  { value: "departamento_pessoal", label: "Departamento Pessoal", icon: Users, color: "#8B5CF6" },
   { value: "rh", label: "RH", icon: Users, color: "#DB2777" },
+  { value: "contas_pagar", label: "Contas a Pagar", icon: CreditCard, color: "#EF4444" },
+  { value: "contas_receber", label: "Contas a Receber", icon: Receipt, color: "#22C55E" },
+  { value: "cobranca", label: "Cobrança", icon: Calculator, color: "#F97316" },
+  { value: "analista", label: "Analista", icon: Search, color: "#0EA5E9" },
+  { value: "ti", label: "TI", icon: Monitor, color: "#6366F1" },
+  { value: "suporte", label: "Suporte", icon: HeadphonesIcon, color: "#059669" },
   { value: "operacional", label: "Operacional", icon: Cog, color: "#0891B2" },
   { value: "task", label: "Task", icon: LayoutGrid, color: "#65A30D" },
   { value: "custom", label: "Personalizado", icon: Sparkles, color: "#F59E0B" },
@@ -183,6 +196,18 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
     setGroupType(grp?.type || "vendas");
     setGroupColor(grp?.color || "#7C3AED");
     setGroupDialogOpen(true);
+  };
+
+  const handleGroupTypeChange = (type: string) => {
+    setGroupType(type);
+    const conf = WORKSPACE_TYPES.find((t) => t.value === type);
+    if (conf) {
+      setGroupColor(conf.color);
+      const isNameFromType = !groupName.trim() || WORKSPACE_TYPES.some((t) => t.label === groupName.trim());
+      if (isNameFromType) {
+        setGroupName(conf.label);
+      }
+    }
   };
 
   const handleSaveGroup = async () => {
@@ -667,7 +692,7 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
             </div>
             <div className="space-y-2">
               <Label className="text-xs font-medium">Tipo</Label>
-              <Select value={groupType} onValueChange={setGroupType}>
+              <Select value={groupType} onValueChange={handleGroupTypeChange}>
                 <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {WORKSPACE_TYPES.map((t) => {
