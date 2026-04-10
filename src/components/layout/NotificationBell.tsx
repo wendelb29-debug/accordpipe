@@ -35,13 +35,16 @@ export function NotificationBell() {
   const [tab, setTab] = useState<"unread" | "read">("unread");
 
   const fetchNotifications = useCallback(async () => {
-    if (!user) return;
-    const { data } = await supabase
+    if (!user || !activeCompanyId) return;
+    let query = supabase
       .from("notifications")
       .select("*")
       .eq("user_id", user.id)
+      .eq("servidor_id", activeCompanyId)
       .order("created_at", { ascending: false })
       .limit(30);
+
+    const { data } = await query;
 
     const now = new Date();
     const visible = ((data as Notification[]) || []).filter((n) => {
@@ -53,13 +56,13 @@ export function NotificationBell() {
 
     setNotifications(visible);
     setUnreadCount(visible.filter((n) => !n.is_read).length);
-  }, [user]);
+  }, [user, activeCompanyId]);
 
   useEffect(() => {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000);
     const channel = supabase
-      .channel('notifications')
+      .channel(`notifications-${activeCompanyId || 'none'}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -72,7 +75,7 @@ export function NotificationBell() {
       clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [user, fetchNotifications]);
+  }, [user, activeCompanyId, fetchNotifications]);
 
   const toggleRead = async (id: string, currentlyRead: boolean) => {
     await supabase.from("notifications").update({ is_read: !currentlyRead }).eq("id", id);
