@@ -34,11 +34,18 @@ export interface CompanyFormData {
   estado: string;
   brandLogoUrl: string;
   brandLogoPath: string;
+  // UI colors (system)
   brandPrimaryColor: string;
   brandSecondaryColor: string;
   brandAccentColor: string;
   brandBgColor: string;
   brandTextColor: string;
+  // Document colors (proposals/contracts)
+  docPrimaryColor: string;
+  docSecondaryColor: string;
+  docAccentColor: string;
+  docBgColor: string;
+  docTextColor: string;
 }
 
 export const initialFormData: CompanyFormData = {
@@ -62,4 +69,9 @@ export const initialFormData: CompanyFormData = {
   brandAccentColor: "#10B981",
   brandBgColor: "#F3F4F6",
   brandTextColor: "#1F2937",
+  docPrimaryColor: "#1E2952",
+  docSecondaryColor: "#4F46E5",
+  docAccentColor: "#10B981",
+  docBgColor: "#F3F4F6",
+  docTextColor: "#1F2937",
 };
