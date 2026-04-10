@@ -1,12 +1,14 @@
 {
-  "name": "Accord",
+  "name": "Accord — Gestão de Vendas",
   "short_name": "Accord",
   "description": "Plataforma completa para gestão de vendas, contratos digitais, CRM, WhatsApp e IA integrada.",
-  "start_url": "/",
+  "start_url": "/home",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0f1420",
-  "theme_color": "#2d5a9e",
+  "background_color": "#0B0F19",
+  "theme_color": "#0B0F19",
   "orientation": "any",
+  "categories": ["business", "productivity"],
   "icons": [
     {
       "src": "/icon-192.png",
