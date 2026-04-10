@@ -44,7 +44,7 @@ function AtendimentoContent() {
     );
   }
 
-  const handleBack = () => setSelectedWsId(null);
+  
 
   const backButton = (
     <div className="flex items-center gap-2 px-3 pt-1 pb-0.5">
