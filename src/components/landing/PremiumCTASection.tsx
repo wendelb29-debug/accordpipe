@@ -35,12 +35,12 @@ export function PremiumCTASection() {
             onClick={() => setTrialOpen(true)}
           >
             <Rocket className="h-4.5 w-4.5" />
-            Teste 7 dias grátis
+            Começar agora e parar de perder vendas
           </Button>
         </div>
 
         <p className="mt-5 text-sm text-[#94A3B8]">
-          Sem cartão de crédito · Configuração em 2 minutos · Suporte incluso
+          Sem cartão · Comece em menos de 2 minutos · Suporte desde o dia 1
         </p>
       </div>
 

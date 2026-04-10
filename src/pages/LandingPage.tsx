@@ -5,11 +5,14 @@ import { Button } from "@/components/ui/button";
 import accordLogo from "@/assets/accord-logo-full.png";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { PositioningSection } from "@/components/landing/PositioningSection";
+import { ProductScreenshots } from "@/components/landing/ProductScreenshots";
 import { ModulesSection } from "@/components/landing/ModulesSection";
+import { ToolsComparison } from "@/components/landing/ToolsComparison";
 import { AuthoritySection } from "@/components/landing/AuthoritySection";
 import { DifferentialSection } from "@/components/landing/DifferentialSection";
 import { SocialProofSection } from "@/components/landing/SocialProofSection";
 import { FAQSection } from "@/components/landing/FAQSection";
+import { ObjectionBreaker } from "@/components/landing/ObjectionBreaker";
 import { PremiumCTASection } from "@/components/landing/PremiumCTASection";
 import { FooterSection } from "@/components/landing/FooterSection";
 import { TrialSignupDialog } from "@/components/landing/TrialSignupDialog";
@@ -59,11 +62,14 @@ export default function LandingPage() {
 
       <HeroSection />
       <PositioningSection />
+      <ProductScreenshots />
       <ModulesSection />
+      <ToolsComparison />
       <AuthoritySection />
       <DifferentialSection />
       <SocialProofSection />
       <FAQSection />
+      <ObjectionBreaker />
       <PremiumCTASection />
       <FooterSection />
       <TrialSignupDialog open={trialOpen} onOpenChange={setTrialOpen} />
