@@ -170,7 +170,7 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
       </div>
 
       {/* Search & Filter */}
-      <div className="flex items-center gap-3 px-4 sm:px-6 py-3">
+      <div className="relative z-10 flex items-center gap-3 px-4 sm:px-6 py-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
           <Input
@@ -194,7 +194,7 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
       </div>
 
       {/* Workspace Cards grouped by workspace_groups */}
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-6">
+      <div className="relative z-10 flex-1 overflow-y-auto px-4 sm:px-6 pb-6">
         {orderedGroups.map((group) => {
           const wsList = groupedByGroup[group.id] || [];
           if (wsList.length === 0) return null;
