@@ -217,7 +217,7 @@ export function HeroSection() {
                 onClick={() => setTrialOpen(true)}
               >
                 <Rocket className="h-4.5 w-4.5" />
-                Começar agora
+                Teste 7 dias grátis
               </Button>
               <a href="mailto:contato@accordhub.com.br?subject=Solicitar demonstração" className="w-full sm:w-auto">
                 <Button size="lg" variant="outline" className="gap-2.5 px-8 text-sm font-medium h-13 rounded-xl border-[rgba(255,255,255,0.1)] text-[#E2E8F0] hover:bg-[rgba(255,255,255,0.05)] hover:border-[rgba(255,255,255,0.2)] transition-all duration-200 w-full bg-transparent">
