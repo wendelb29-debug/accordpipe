@@ -128,15 +128,19 @@ Deno.serve(async (req) => {
       payload.trans_status === "7" || // Eduzz cancelled
       payload.sale_status === "7";
 
-    if (isPaid || isFailed || isCancelled) {
+    if (isPaid || isPending || isFailed || isCancelled) {
+      // Eduzz-specific reference fields
       const reference =
         payload.order_id ||
+        payload.trans_cod ||
+        payload.sale_id ||
+        payload.invoice_code ||
         payload.transaction_id ||
         payload.data?.object?.id ||
         payload.reference;
 
       if (reference) {
-        const newStatus = isPaid ? "pago" : isFailed ? "vencido" : "cancelado";
+        const newStatus = isPaid ? "pago" : isPending ? "pendente" : isFailed ? "vencido" : "cancelado";
 
         const { data: tx } = await supabase
           .from("financial_transactions")
@@ -144,13 +148,13 @@ Deno.serve(async (req) => {
             status: newStatus,
             ...(isPaid ? { paid_at: new Date().toISOString() } : {}),
           })
-          .eq("reference", reference)
+          .eq("reference", String(reference))
           .eq("servidor_id", servidorId)
           .select("id, registration_id")
           .maybeSingle();
 
         if (tx?.registration_id) {
-          const clientStatus = isPaid ? "ativo" : isFailed ? "inadimplente" : "cancelado";
+          const clientStatus = isPaid ? "ativo" : isPending ? "pendente" : isFailed ? "inadimplente" : "cancelado";
           await supabase
             .from("crm_client_registrations")
             .update({ client_status: clientStatus })
