@@ -859,6 +859,11 @@ export async function renderGeneratedDocumentPdf(
       case "table":
         if (block.rows) drawTable(ctx, block.rows);
         break;
+      case "image":
+        if (block.imageUrl) {
+          await drawImageBlock(ctx, block.imageUrl, block.imageWidth || 150, block.imageHeight || 150);
+        }
+        break;
       case "hr":
         ensureSpace(ctx, 12);
         ctx.y -= 4;
