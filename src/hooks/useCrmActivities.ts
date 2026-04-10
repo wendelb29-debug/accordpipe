@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { toast } from "sonner";
 import { CrmLeadActivity } from "./useCrmLeads";
 
@@ -8,6 +9,7 @@ export function useCrmActivities(leadId: string | null) {
   const [activities, setActivities] = useState<CrmLeadActivity[]>([]);
   const [loading, setLoading] = useState(false);
   const { profile } = useAuth();
+  const activeCompanyId = useActiveCompanyId();
 
   const fetchActivities = useCallback(async () => {
     if (!leadId) return;
