@@ -33,7 +33,7 @@ export function useCrmActivities(leadId: string | null) {
 
   const addActivity = async (data: { type: string; title: string; description?: string; metadata?: any; servidor_id?: string }) => {
     if (!leadId) return null;
-    let servidorId = data.servidor_id || profile?.company_id;
+    let servidorId = data.servidor_id || activeCompanyId || profile?.company_id;
     if (!servidorId) {
       // Get servidor_id from the lead itself
       const { data: leadData } = await supabase.from("crm_leads").select("servidor_id").eq("id", leadId).maybeSingle();
