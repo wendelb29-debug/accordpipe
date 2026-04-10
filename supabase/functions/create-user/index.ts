@@ -24,7 +24,7 @@ serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Verify the caller is authenticated and has admin/master permissions
+    // Verify caller is authenticated
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return respond(false, { error: "Não autorizado" });
@@ -38,10 +38,10 @@ serve(async (req) => {
       return respond(false, { error: "Não autorizado" });
     }
 
-    // Check caller is admin/master/ceo
+    // Check caller permissions
     const { data: callerProfile } = await supabase
       .from("profiles")
-      .select("is_master")
+      .select("is_master, name")
       .eq("user_id", caller.id)
       .single();
 
@@ -56,10 +56,17 @@ serve(async (req) => {
       callerRole?.role === "master" ||
       callerRole?.role === "admin";
 
-    // Also check has_permission in DB
     if (!isAllowed) {
       const { data: hasPerm } = await supabase.rpc("has_permission", { _user_id: caller.id, _permission: "create_user" });
       if (!hasPerm) {
+        await supabase.rpc("log_audit", {
+          _user_id: caller.id,
+          _user_name: callerProfile?.name || caller.email || "",
+          _action: "user_creation_failed",
+          _target_type: "user",
+          _target_id: null,
+          _details: JSON.stringify({ reason: "sem_permissao" }),
+        });
         return respond(false, { error: "Sem permissão para criar usuários" });
       }
     }
@@ -70,92 +77,167 @@ serve(async (req) => {
       return respond(false, { error: "Todos os campos são obrigatórios" });
     }
 
-    // Check for duplicate email in profiles
-    const { data: existingProfile } = await supabase
+    const cleanCpf = cpf.replace(/\D/g, "");
+
+    // 1. Check profiles table for same email + same tenant
+    const { data: existingProfileSameTenant } = await supabase
       .from("profiles")
       .select("id")
       .eq("email", email)
+      .eq("company_id", company_id)
       .maybeSingle();
 
-    if (existingProfile) {
-      return respond(false, { error: "Já existe um usuário com este e-mail" });
+    if (existingProfileSameTenant) {
+      return respond(false, { error: "Já existe um usuário com este e-mail neste tenant" });
     }
 
-    // Check for duplicate CPF
-    const cleanCpf = cpf.replace(/\D/g, "");
+    // 2. Check for duplicate CPF in same tenant
     const { data: existingCpf } = await supabase
       .from("profiles")
       .select("id")
       .eq("cpf", cleanCpf)
+      .eq("company_id", company_id)
       .maybeSingle();
 
     if (existingCpf) {
-      return respond(false, { error: "Já existe um usuário com este CPF" });
+      return respond(false, { error: "Já existe um usuário com este CPF neste tenant" });
     }
-    // Skip broad listUsers check — createUser will return a clear error if email exists in auth
 
-    // Generate a temporary password
+    // 3. Try to create user in auth
     const tempPassword = crypto.randomUUID().slice(0, 12) + "A1!";
+    let userId: string;
+    let isLinkedExisting = false;
 
-    // Create the user via admin API
     const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
       email,
       password: tempPassword,
       email_confirm: true,
-      user_metadata: {
-        name,
-        company_id,
-      },
+      user_metadata: { name, company_id },
     });
 
     if (createError) {
-      console.error("Create user error:", createError);
-      const msg = createError.message?.includes("already")
-        ? "Já existe um usuário com este e-mail"
-        : createError.message;
-      return respond(false, { error: msg });
+      // 4. If email already exists in auth, reuse the existing user_id
+      const isEmailConflict =
+        createError.message?.toLowerCase().includes("already") ||
+        createError.message?.toLowerCase().includes("duplicate") ||
+        createError.message?.toLowerCase().includes("exists") ||
+        (createError as any).status === 422;
+
+      if (!isEmailConflict) {
+        console.error("Create user error:", createError);
+        return respond(false, { error: createError.message });
+      }
+
+      // Fetch existing auth user by email
+      const { data: listData, error: listError } = await supabase.auth.admin.listUsers({
+        page: 1,
+        perPage: 1,
+      });
+
+      // listUsers doesn't support email filter directly, so we search
+      let foundUser: any = null;
+      
+      // Try getUserByEmail if available, otherwise search through pages
+      // Use a direct approach: list users and find by email
+      let page = 1;
+      const perPage = 50;
+      while (!foundUser) {
+        const { data: pageData, error: pageError } = await supabase.auth.admin.listUsers({
+          page,
+          perPage,
+        });
+        if (pageError || !pageData?.users?.length) break;
+        foundUser = pageData.users.find((u: any) => u.email === email);
+        if (pageData.users.length < perPage) break;
+        page++;
+        if (page > 20) break; // safety limit
+      }
+
+      if (!foundUser) {
+        console.error("Could not find existing auth user for email:", email);
+        return respond(false, { error: "E-mail já existe mas não foi possível vincular. Contate o suporte." });
+      }
+
+      userId = foundUser.id;
+      isLinkedExisting = true;
+    } else {
+      userId = newUser.user.id;
     }
 
-    const userId = newUser.user.id;
+    if (isLinkedExisting) {
+      // For linked users, the trigger won't fire, so we need to insert the profile
+      const { error: insertProfileError } = await supabase
+        .from("profiles")
+        .insert({
+          user_id: userId,
+          name,
+          email,
+          cpf: cleanCpf,
+          birth_date,
+          whatsapp: whatsapp.replace(/\D/g, ""),
+          company_id,
+          is_active: true,
+          status: "ativo",
+          is_master: false,
+        });
 
-    // Update profile with additional fields (trigger already created the profile)
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .update({
-        cpf: cleanCpf,
-        birth_date,
-        whatsapp: whatsapp.replace(/\D/g, ""),
-        company_id,
-      })
-      .eq("user_id", userId);
+      if (insertProfileError) {
+        // Profile might already exist from the trigger for the original tenant
+        // In that case, the user already has a profile — we just update company_id won't work for multi-tenant
+        // For now, if insert fails, it means a profile row with this user_id already exists
+        console.error("Profile insert error (linked user):", insertProfileError);
+        return respond(false, { error: "Não foi possível criar o perfil para este usuário. Pode já estar vinculado a outro tenant." });
+      }
 
-    if (profileError) {
-      console.error("Profile update error:", profileError);
-    }
+      // Insert role for this user
+      const { error: roleInsertError } = await supabase
+        .from("user_roles")
+        .upsert({ user_id: userId, role }, { onConflict: "user_id" });
 
-    // Update the role (trigger created default role, we update it)
-    const { error: roleError } = await supabase
-      .from("user_roles")
-      .update({ role })
-      .eq("user_id", userId);
+      if (roleInsertError) {
+        console.error("Role upsert error:", roleInsertError);
+      }
+    } else {
+      // New user — trigger created profile and role, update them
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          cpf: cleanCpf,
+          birth_date,
+          whatsapp: whatsapp.replace(/\D/g, ""),
+          company_id,
+        })
+        .eq("user_id", userId);
 
-    if (roleError) {
-      console.error("Role update error:", roleError);
+      if (profileError) {
+        console.error("Profile update error:", profileError);
+      }
+
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .update({ role })
+        .eq("user_id", userId);
+
+      if (roleError) {
+        console.error("Role update error:", roleError);
+      }
     }
 
     // Audit log
+    const callerName = callerProfile?.is_master ? "Master" : (callerProfile?.name || caller.email || "");
     await supabase.rpc("log_audit", {
       _user_id: caller.id,
-      _user_name: callerProfile?.is_master ? "Master" : (caller.email || ""),
-      _action: "create_user",
+      _user_name: callerName,
+      _action: isLinkedExisting ? "user_linked_existing_auth" : "user_created",
       _target_type: "user",
       _target_id: userId,
-      _details: JSON.stringify({ name, email, role, company_id }),
+      _details: JSON.stringify({ name, email, role, company_id, linked: isLinkedExisting }),
     });
 
     return respond(true, {
       user_id: userId,
-      temp_password: tempPassword,
+      temp_password: isLinkedExisting ? undefined : tempPassword,
+      linked_existing: isLinkedExisting,
     });
   } catch (err: any) {
     console.error("Create user error:", err);
