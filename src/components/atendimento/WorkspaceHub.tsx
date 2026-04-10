@@ -135,12 +135,6 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 sm:px-6 py-4 border-b border-border/50">
-        <button
-          onClick={() => navigate("/home")}
-          className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
         <div>
           <h1 className="text-lg font-bold text-foreground">Workspaces</h1>
           <p className="text-xs text-muted-foreground">Selecione um kanban para gerenciar</p>
