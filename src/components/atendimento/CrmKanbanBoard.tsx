@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useBackNavigation } from "@/contexts/BackNavigationContext";
 import {
   Clock, Users, MessageSquare, Phone, RefreshCw, FileSignature,
   MoreVertical, Trash2, Edit, Loader2,
@@ -104,6 +105,17 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isNew, setIsNew] = useState(false);
   const [detailLead, setDetailLead] = useState<CrmLead | null>(null);
+  const { pushBackHandler } = useBackNavigation();
+
+  // Register back handler when lead detail is open
+  useEffect(() => {
+    if (!detailLead) return;
+    const unregister = pushBackHandler(() => {
+      setDetailLead(null);
+      return true;
+    });
+    return unregister;
+  }, [detailLead, pushBackHandler]);
   const [linkCopied, setLinkCopied] = useState(false);
   const [formLinkOpen, setFormLinkOpen] = useState(false);
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
