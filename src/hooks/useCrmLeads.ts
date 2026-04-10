@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { toast } from "sonner";
+import { getOrCreateCadastroWorkspace } from "@/lib/cadastroWorkspace";
 
 export interface CrmLead {
   id: string;
@@ -235,17 +236,25 @@ export function useCrmLeads(
     return success;
   };
 
-  // Mark as WON and transfer to admin pipeline
+  // Mark as WON and transfer to Cadastro workspace
   const markAsWonAndTransfer = async (id: string) => {
     const lead = leads.find((l) => l.id === id);
     if (!lead) return false;
+
+    // Find or create Cadastro workspace
+    const cadastro = await getOrCreateCadastroWorkspace(lead.servidor_id, profile?.user_id);
+    if (!cadastro) {
+      toast.error("Erro ao localizar/criar workspace de Cadastro");
+      return false;
+    }
 
     const previousStage = lead.stage;
 
     const success = await updateLead(id, {
       lead_status: "won",
-      stage: "cadastro-pendente",
+      stage: cadastro.firstColumnId,
       stage_entered_at: new Date().toISOString(),
+      workspace_id: cadastro.workspaceId,
     } as any);
 
     if (success) {
@@ -253,13 +262,14 @@ export function useCrmLeads(
         lead_id: id,
         servidor_id: lead.servidor_id,
         type: "won",
-        title: "Oportunidade ganha! Transferida para Validação.",
-        description: `Lead marcado como ganho e transferido para **Validação de Clientes** (Cadastro Pendente). Etapa anterior: **${previousStage}**.`,
+        title: "Oportunidade ganha! Transferida para Cadastro.",
+        description: `Lead marcado como ganho e transferido para o workspace **Cadastro**. Etapa anterior: **${previousStage}**.`,
         created_by_user_id: profile?.user_id || null,
         created_by_name: profile?.name || null,
         metadata: { previous_stage: previousStage },
       } as any);
 
+      // Create registration
       const regResult = await supabase.from("crm_client_registrations" as any).insert({
         lead_id: id,
         servidor_id: lead.servidor_id,
@@ -322,6 +332,7 @@ export function useCrmLeads(
         }
       }
 
+      // Notify admin users
       const { data: adminProfiles } = await supabase
         .from("profiles")
         .select("user_id")
@@ -340,18 +351,17 @@ export function useCrmLeads(
             await supabase.rpc("create_notification", {
               _user_id: ap.user_id,
               _title: "Novo cadastro pendente",
-              _message: `A oportunidade "${lead.company_name}" foi marcada como ganha e aguarda cadastro. Contrato e cobrança foram gerados automaticamente.`,
+              _message: `A oportunidade "${lead.company_name}" foi marcada como ganha e aguarda conferência no workspace Cadastro. Contrato e cobrança foram gerados automaticamente.`,
               _type: "cadastro_pendente",
             });
           }
         }
       }
 
-      if (pipelineType === "commercial") {
-        setLeads((prev) => prev.filter((l) => l.id !== id));
-      }
+      // Remove from current pipeline view
+      setLeads((prev) => prev.filter((l) => l.id !== id));
 
-      toast.success("🎉 Oportunidade ganha! Contrato, cadastro e cobrança gerados automaticamente.");
+      toast.success("🎉 Oportunidade ganha! Card transferido para Cadastro. Contrato e cobrança gerados automaticamente.");
     }
     return success;
   };
