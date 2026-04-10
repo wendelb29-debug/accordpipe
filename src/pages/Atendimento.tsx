@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CrmKanbanBoard } from "@/components/atendimento/CrmKanbanBoard";
 import { AdminKanbanBoard } from "@/components/atendimento/AdminKanbanBoard";
@@ -6,7 +6,8 @@ import { ImportarPlanilha } from "@/components/atendimento/ImportarPlanilha";
 import { WorkspaceHub } from "@/components/atendimento/WorkspaceHub";
 import { WorkspaceProvider, useWorkspaceContext } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { MessageSquare, ClipboardList, FileSpreadsheet, ChevronLeft } from "lucide-react";
+import { useBackNavigation } from "@/contexts/BackNavigationContext";
+import { MessageSquare, ClipboardList, FileSpreadsheet } from "lucide-react";
 
 function AtendimentoContent() {
   const [crmSearch] = useState("");
@@ -14,8 +15,20 @@ function AtendimentoContent() {
   const { activeWorkspaceId, workspaces, loading: wsLoading, selectWorkspace, activeWorkspace } = useWorkspaceContext();
   const [selectedWsId, setSelectedWsId] = useState<string | null>(null);
 
+  const { pushBackHandler } = useBackNavigation();
+
   const canSeeCommercial = isMaster || role === "admin" || role === "operador" || role === "ceo" || role === "comercial";
   const canSeeAdmin = isMaster || role === "admin" || role === "administrativo" || role === "ceo";
+
+  // Register back handler: when workspace is selected, go back to hub
+  useEffect(() => {
+    if (!selectedWsId) return;
+    const unregister = pushBackHandler(() => {
+      setSelectedWsId(null);
+      return true;
+    });
+    return unregister;
+  }, [selectedWsId, pushBackHandler]);
 
   // Show hub if no workspace selected yet
   if (!selectedWsId) {
@@ -31,7 +44,7 @@ function AtendimentoContent() {
     );
   }
 
-  const handleBack = () => setSelectedWsId(null);
+  
 
   const backButton = (
     <div className="flex items-center gap-2 px-3 pt-1 pb-0.5">
