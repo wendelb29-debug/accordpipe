@@ -27,6 +27,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast as sonnerToast } from "sonner";
 import { BrandIdentityFields } from "@/components/empresas/BrandIdentityFields";
 import { CompanyFormData } from "@/components/empresas/types";
+import { PermissionsEditor } from "@/components/usuarios/PermissionsEditor";
+import { BrandIdentityFields } from "@/components/empresas/BrandIdentityFields";
+import { CompanyFormData } from "@/components/empresas/types";
 
 interface Company {
   id: string;
