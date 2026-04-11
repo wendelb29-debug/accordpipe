@@ -923,122 +923,135 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
             return (
               <Card key={doc.id} className="hover:shadow-sm transition-shadow">
                 <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <FileSignature className="h-3.5 w-3.5 text-primary shrink-0" />
-                        <span className="text-sm font-medium text-foreground truncate">{doc.nome}</span>
-                        <Badge variant="outline" className={cn("text-[10px] font-medium", cfg.color)}>
-                          {signerCounts[doc.id]
-                            ? `${signerCounts[doc.id].signed}/${signerCounts[doc.id].total} assinaturas`
-                            : cfg.label}
-                        </Badge>
-                        <Badge variant="secondary" className="text-[10px]">
-                          {tipoLabels[doc.tipo] || doc.tipo}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" /> {fmtDate(doc.created_at)}
-                        </span>
-                        {doc.created_by_name && <span>por {doc.created_by_name}</span>}
-                        {doc.sent_for_signature_at && (
-                          <span className="flex items-center gap-1">
-                            <Send className="h-3 w-3" /> Enviado {fmtDate(doc.sent_for_signature_at)}
-                          </span>
-                        )}
-                        {doc.signed_at && (
-                          <span className="flex items-center gap-1 text-green-600">
-                            <CheckCircle2 className="h-3 w-3" /> Assinado {fmtDate(doc.signed_at)}
-                          </span>
-                        )}
-                        {doc.validation_code && (
-                          <span className="text-[10px] font-mono text-muted-foreground">
-                            {doc.validation_code}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
-                          <MoreVertical className="h-3.5 w-3.5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-52">
-                        {((doc.status === "signed" && doc.signed_pdf_url) || doc.pdf_url || doc.html_content) && (
-                          <>
-                            <DropdownMenuItem onClick={() => handleOpenDocument(doc)}>
-                              <Eye className="h-3.5 w-3.5 mr-2" /> Visualizar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDownloadDocument(doc)}>
-                              <Download className="h-3.5 w-3.5 mr-2" /> {doc.status === "signed" && doc.signed_pdf_url ? "Baixar PDF assinado" : "Baixar PDF original"}
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                        {doc.status === "signed" && doc.signed_pdf_url && (
-                          <>
-                            <DropdownMenuItem onClick={() => window.open(doc.signed_pdf_url!, "_blank")}>
-                              <Download className="h-3.5 w-3.5 mr-2" /> Baixar PDF assinado
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                        {doc.status === "signed" && doc.validation_code && (
-                          <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => {
-                              navigator.clipboard.writeText(doc.validation_code!);
-                              toast.success("Código de validação copiado!");
-                            }}>
-                              <Copy className="h-3.5 w-3.5 mr-2" /> Copiar código de validação
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => {
-                              const link = `${window.location.origin}/validar-documento/${doc.validation_code}`;
-                              navigator.clipboard.writeText(link);
-                              toast.success("Link de validação copiado!");
-                            }}>
-                              <Link2 className="h-3.5 w-3.5 mr-2" /> Copiar link de validação
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => {
-                              window.open(`${window.location.origin}/validar-documento/${doc.validation_code}`, "_blank");
-                            }}>
-                              <ExternalLink className="h-3.5 w-3.5 mr-2" /> Abrir página de validação
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                        {doc.status === "gerado" && (
-                          <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => openSignDrawer(doc)}>
-                              <Send className="h-3.5 w-3.5 mr-2" /> Enviar para assinatura
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                        {["pending_signature", "partially_signed"].includes(doc.status) && (
-                          <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => fetchSigners(doc)}>
-                              <Users className="h-3.5 w-3.5 mr-2" /> Ver signatários
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleCancelSignature(doc)} className="text-destructive">
-                              <XCircle className="h-3.5 w-3.5 mr-2" /> Cancelar assinatura
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                        {doc.status === "signed" && (
-                          <DropdownMenuItem onClick={() => fetchSigners(doc)}>
-                            <Users className="h-3.5 w-3.5 mr-2" /> Ver signatários
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(doc)}>
-                          <Trash2 className="h-3.5 w-3.5 mr-2" /> Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </CardContent>
-              </Card>
+                    <div className="flex items-start justify-between gap-3">
+                     <div className="flex-1 min-w-0 space-y-1">
+                       <div className="flex items-center gap-2 flex-wrap">
+                         <FileSignature className="h-3.5 w-3.5 text-primary shrink-0" />
+                         <span className="text-sm font-medium text-foreground truncate">{doc.nome}</span>
+                         <Badge variant="outline" className={cn("text-[10px] font-medium", cfg.color)}>
+                           {signerCounts[doc.id]
+                             ? `${signerCounts[doc.id].signed}/${signerCounts[doc.id].total} assinaturas`
+                             : cfg.label}
+                         </Badge>
+                         <Badge variant="secondary" className="text-[10px]">
+                           {tipoLabels[doc.tipo] || doc.tipo}
+                         </Badge>
+                       </div>
+                       <div className="flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+                         <span className="flex items-center gap-1">
+                           <Clock className="h-3 w-3" /> {fmtDate(doc.created_at)}
+                         </span>
+                         {doc.created_by_name && <span>por {doc.created_by_name}</span>}
+                         {doc.sent_for_signature_at && (
+                           <span className="flex items-center gap-1">
+                             <Send className="h-3 w-3" /> Enviado {fmtDate(doc.sent_for_signature_at)}
+                           </span>
+                         )}
+                         {doc.signed_at && (
+                           <span className="flex items-center gap-1 text-green-600">
+                             <CheckCircle2 className="h-3 w-3" /> Assinado {fmtDate(doc.signed_at)}
+                           </span>
+                         )}
+                         {doc.validation_code && (
+                           <span className="text-[10px] font-mono text-muted-foreground">
+                             {doc.validation_code}
+                           </span>
+                         )}
+                       </div>
+                       {/* Ver Assinatura button - visible directly on card */}
+                       {["pending_signature", "partially_signed", "signed"].includes(doc.status) && (
+                         <div className="pt-1">
+                           <Button
+                             variant="outline"
+                             size="sm"
+                             className="gap-1.5 text-xs h-7 border-primary/30 text-primary hover:bg-primary/5"
+                             onClick={() => fetchSigners(doc)}
+                           >
+                             <FileSignature className="h-3 w-3" /> Ver Assinatura
+                           </Button>
+                         </div>
+                       )}
+                     </div>
+                     <DropdownMenu>
+                       <DropdownMenuTrigger asChild>
+                         <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+                           <MoreVertical className="h-3.5 w-3.5" />
+                         </Button>
+                       </DropdownMenuTrigger>
+                       <DropdownMenuContent align="end" className="w-52">
+                         {((doc.status === "signed" && doc.signed_pdf_url) || doc.pdf_url || doc.html_content) && (
+                           <>
+                             <DropdownMenuItem onClick={() => handleOpenDocument(doc)}>
+                               <Eye className="h-3.5 w-3.5 mr-2" /> Visualizar
+                             </DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => handleDownloadDocument(doc)}>
+                               <Download className="h-3.5 w-3.5 mr-2" /> {doc.status === "signed" && doc.signed_pdf_url ? "Baixar PDF assinado" : "Baixar PDF original"}
+                             </DropdownMenuItem>
+                           </>
+                         )}
+                         {doc.status === "signed" && doc.signed_pdf_url && (
+                           <>
+                             <DropdownMenuItem onClick={() => window.open(doc.signed_pdf_url!, "_blank")}>
+                               <Download className="h-3.5 w-3.5 mr-2" /> Baixar PDF assinado
+                             </DropdownMenuItem>
+                           </>
+                         )}
+                         {doc.status === "signed" && doc.validation_code && (
+                           <>
+                             <DropdownMenuSeparator />
+                             <DropdownMenuItem onClick={() => {
+                               navigator.clipboard.writeText(doc.validation_code!);
+                               toast.success("Código de validação copiado!");
+                             }}>
+                               <Copy className="h-3.5 w-3.5 mr-2" /> Copiar código de validação
+                             </DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => {
+                               const link = `${window.location.origin}/validar-documento/${doc.validation_code}`;
+                               navigator.clipboard.writeText(link);
+                               toast.success("Link de validação copiado!");
+                             }}>
+                               <Link2 className="h-3.5 w-3.5 mr-2" /> Copiar link de validação
+                             </DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => {
+                               window.open(`${window.location.origin}/validar-documento/${doc.validation_code}`, "_blank");
+                             }}>
+                               <ExternalLink className="h-3.5 w-3.5 mr-2" /> Abrir página de validação
+                             </DropdownMenuItem>
+                           </>
+                         )}
+                         {doc.status === "gerado" && (
+                           <>
+                             <DropdownMenuSeparator />
+                             <DropdownMenuItem onClick={() => openSignDrawer(doc)}>
+                               <Send className="h-3.5 w-3.5 mr-2" /> Enviar para assinatura
+                             </DropdownMenuItem>
+                           </>
+                         )}
+                         {["pending_signature", "partially_signed"].includes(doc.status) && (
+                           <>
+                             <DropdownMenuSeparator />
+                             <DropdownMenuItem onClick={() => fetchSigners(doc)}>
+                               <Users className="h-3.5 w-3.5 mr-2" /> Ver signatários
+                             </DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => handleCancelSignature(doc)} className="text-destructive">
+                               <XCircle className="h-3.5 w-3.5 mr-2" /> Cancelar assinatura
+                             </DropdownMenuItem>
+                           </>
+                         )}
+                         {doc.status === "signed" && (
+                           <DropdownMenuItem onClick={() => fetchSigners(doc)}>
+                             <Users className="h-3.5 w-3.5 mr-2" /> Ver signatários
+                           </DropdownMenuItem>
+                         )}
+                         <DropdownMenuSeparator />
+                         <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(doc)}>
+                           <Trash2 className="h-3.5 w-3.5 mr-2" /> Excluir
+                         </DropdownMenuItem>
+                       </DropdownMenuContent>
+                     </DropdownMenu>
+                   </div>
+                 </CardContent>
+               </Card>
             );
           })}
         </div>
@@ -1533,26 +1546,28 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         </SheetContent>
       </Sheet>
 
-      {/* View Signers Dialog */}
-      <Dialog open={!!viewSignersDoc} onOpenChange={() => setViewSignersDoc(null)}>
-        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base">
-              <Users className="h-4 w-4 text-primary" /> Links de Assinatura
-            </DialogTitle>
-            <DialogDescription>
-              <span className="text-xs text-primary font-medium">{viewSignersDoc?.validation_code || ""}</span>
-              <span className="text-xs"> — {viewSignersDoc?.nome}</span>
-            </DialogDescription>
-          </DialogHeader>
+      {/* View Signers Drawer */}
+      <Sheet open={!!viewSignersDoc} onOpenChange={() => setViewSignersDoc(null)}>
+        <SheetContent className="w-full sm:max-w-lg flex flex-col h-full p-0">
+          <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+            <SheetTitle className="flex items-center gap-2 text-base">
+              <FileSignature className="h-5 w-5 text-primary" /> Assinaturas do Documento
+            </SheetTitle>
+            {viewSignersDoc && (
+              <SheetDescription className="text-left">
+                <span className="text-xs text-primary font-medium">{viewSignersDoc.validation_code || ""}</span>
+                <span className="text-xs text-muted-foreground"> — {viewSignersDoc.nome}</span>
+              </SheetDescription>
+            )}
+          </SheetHeader>
 
           {loadingSigners ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <ScrollArea className="flex-1">
-              <div className="space-y-3 pr-2">
+            <ScrollArea className="flex-1 px-6">
+              <div className="space-y-3 py-4">
                 {/* Progress */}
                 {(() => {
                   const signed = viewSignersList.filter(s => s.status === "signed").length;
@@ -1565,6 +1580,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                           <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
                           Assinaturas ({signed}/{total})
                         </span>
+                        <span className="text-[10px] text-muted-foreground">{Math.round(pct)}%</span>
                       </div>
                       <Progress value={pct} className="h-2" />
                     </div>
@@ -1635,8 +1651,14 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
               </div>
             </ScrollArea>
           )}
-        </DialogContent>
-      </Dialog>
+
+          <div className="px-6 py-4 border-t shrink-0">
+            <Button variant="outline" className="w-full" onClick={() => setViewSignersDoc(null)}>
+              Fechar
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
