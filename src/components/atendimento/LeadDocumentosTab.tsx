@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Plus, Loader2, MoreVertical, Eye, Download, Trash2,
   FileText, Clock, CheckCircle2, AlertCircle, FileSignature,
-  Send, Copy, Link2, Users, XCircle, ExternalLink,
+  Send, Copy, Link2, Users, XCircle, ExternalLink, UserPlus, Mail, MessageCircle,
 } from "lucide-react";
 import { ContractVariableAudit } from "./ContractVariableAudit";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
@@ -19,6 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -73,7 +75,20 @@ const papelLabels: Record<string, string> = {
   cliente: "Cliente",
   testemunha: "Testemunha",
   signatario: "Signatário",
+  socio: "Sócio",
+  financeiro: "Financeiro",
+  representante_legal: "Representante Legal",
+  avalista: "Avalista",
 };
+
+const EXTRA_SIGNER_ROLES = [
+  { value: "signatario", label: "Signatário" },
+  { value: "testemunha", label: "Testemunha" },
+  { value: "socio", label: "Sócio" },
+  { value: "financeiro", label: "Financeiro" },
+  { value: "representante_legal", label: "Representante Legal" },
+  { value: "avalista", label: "Avalista" },
+];
 
 interface Template {
   id: string;
@@ -1198,218 +1213,427 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
       {/* Signature Drawer */}
       <Sheet open={signDrawerOpen} onOpenChange={setSignDrawerOpen}>
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-          <SheetHeader className="mb-4">
-            <SheetTitle className="flex items-center gap-2">
+        <SheetContent className="w-full sm:max-w-lg flex flex-col h-full p-0">
+          <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+            <SheetTitle className="flex items-center gap-2 text-base">
               <FileSignature className="h-5 w-5 text-primary" />
-              {signStep === "config" ? "Enviar para assinatura" : "Links de assinatura"}
+              {signStep === "config" ? "Enviar para Assinatura" : "Links de Assinatura"}
             </SheetTitle>
             {signDoc && (
               <SheetDescription className="text-left">
-                <span className="font-medium text-foreground">{signDoc.nome}</span>
-                <br />
-                <span className="text-xs">
-                  Tipo: {tipoLabels[signDoc.tipo] || signDoc.tipo} · Gerado em {fmtDateTime(signDoc.created_at)}
-                </span>
+                <span className="text-xs text-primary font-medium">{signDoc.validation_code || signDoc.id.slice(0,8).toUpperCase()}</span>
+                <span className="text-xs text-muted-foreground"> — {signDoc.nome}</span>
               </SheetDescription>
             )}
           </SheetHeader>
 
-          {signStep === "config" && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-primary" />
-                <h4 className="text-sm font-semibold">Signatários</h4>
+          <ScrollArea className="flex-1 px-6">
+            {signStep === "config" && (
+              <div className="space-y-4 py-4">
+                <h4 className="text-sm font-semibold text-foreground">Signatários</h4>
+
+                {signers.map((signer, idx) => {
+                  const isOwner = signer.papel === "proprietario_proposta";
+                  const isRequired = signer.obrigatorio;
+                  return (
+                    <Card key={idx} className="border relative overflow-hidden">
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Badge className="text-[10px] font-medium bg-primary/10 text-primary border-primary/20">
+                              {papelLabels[signer.papel] || signer.papel}
+                            </Badge>
+                            {isRequired && (
+                              <Badge variant="outline" className="text-[10px] text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700">
+                                Obrigatório
+                              </Badge>
+                            )}
+                          </div>
+                          {!isRequired && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                              onClick={() => setSigners(prev => prev.filter((_, i) => i !== idx))}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <div>
+                            <Label className="text-[10px] text-muted-foreground">Nome completo</Label>
+                            <Input
+                              value={signer.nome_completo}
+                              onChange={(e) => updateSigner(idx, "nome_completo", e.target.value)}
+                              className="h-8 text-xs"
+                              readOnly={isOwner}
+                              disabled={isOwner}
+                              placeholder="Nome do signatário"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-[10px] text-muted-foreground">E-mail</Label>
+                              <Input
+                                value={signer.email}
+                                onChange={(e) => updateSigner(idx, "email", e.target.value)}
+                                className="h-8 text-xs"
+                                readOnly={isOwner}
+                                disabled={isOwner}
+                                placeholder="email@exemplo.com"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-[10px] text-muted-foreground">Telefone</Label>
+                              <Input
+                                value={signer.telefone}
+                                onChange={(e) => updateSigner(idx, "telefone", e.target.value)}
+                                className="h-8 text-xs"
+                                readOnly={isOwner}
+                                disabled={isOwner}
+                                placeholder="(00) 00000-0000"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-[10px] text-muted-foreground">CPF</Label>
+                              <Input
+                                value={signer.cpf}
+                                onChange={(e) => updateSigner(idx, "cpf", e.target.value)}
+                                className="h-8 text-xs"
+                                readOnly={isOwner}
+                                disabled={isOwner}
+                                placeholder="000.000.000-00"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-[10px] text-muted-foreground">Data de nascimento</Label>
+                              <Input
+                                type="date"
+                                value={signer.data_nascimento}
+                                onChange={(e) => updateSigner(idx, "data_nascimento", e.target.value)}
+                                className="h-8 text-xs"
+                                readOnly={isOwner}
+                                disabled={isOwner}
+                              />
+                            </div>
+                          </div>
+                          {!isRequired && !isOwner && (
+                            <div>
+                              <Label className="text-[10px] text-muted-foreground">Papel do signatário</Label>
+                              <Select value={signer.papel} onValueChange={(v) => updateSigner(idx, "papel", v)}>
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {EXTRA_SIGNER_ROLES.map((r) => (
+                                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+                        </div>
+
+                        {isOwner && (
+                          <p className="text-[10px] text-muted-foreground italic">
+                            Dados preenchidos automaticamente com base no usuário responsável pela proposta.
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 border-dashed text-xs"
+                  onClick={() => {
+                    setSigners(prev => [...prev, {
+                      nome_completo: "",
+                      email: "",
+                      telefone: "",
+                      cpf: "",
+                      data_nascimento: "",
+                      papel: "signatario",
+                      obrigatorio: false,
+                    }]);
+                  }}
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                  Adicionar Signatário
+                </Button>
               </div>
+            )}
 
-              {signers.map((signer, idx) => {
-                const isOwner = signer.papel === "proprietario_proposta";
-                return (
-                <Card key={idx} className="border">
-                  <CardContent className="p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Badge variant="secondary" className="text-[10px]">
-                        {papelLabels[signer.papel] || signer.papel}
-                      </Badge>
-                      {signer.obrigatorio && (
-                        <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
-                          Obrigatório
-                        </Badge>
-                      )}
+            {signStep === "links" && (
+              <div className="space-y-4 py-4">
+                {/* Progress bar */}
+                {(() => {
+                  const signed = generatedSigners.filter(s => s.status === "signed").length;
+                  const total = generatedSigners.length;
+                  const pct = total > 0 ? (signed / total) * 100 : 0;
+                  return (
+                    <div className="rounded-lg border bg-primary/5 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                          Assinaturas ({signed}/{total})
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">{Math.round(pct)}%</span>
+                      </div>
+                      <Progress value={pct} className="h-2" />
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="col-span-2">
-                        <Label className="text-[10px] text-muted-foreground">Nome completo</Label>
-                        <Input
-                          value={signer.nome_completo}
-                          onChange={(e) => updateSigner(idx, "nome_completo", e.target.value)}
-                          className="h-8 text-xs"
-                          readOnly={isOwner}
-                          disabled={isOwner}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-[10px] text-muted-foreground">E-mail</Label>
-                        <Input
-                          value={signer.email}
-                          onChange={(e) => updateSigner(idx, "email", e.target.value)}
-                          className="h-8 text-xs"
-                          readOnly={isOwner}
-                          disabled={isOwner}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-[10px] text-muted-foreground">Telefone</Label>
-                        <Input
-                          value={signer.telefone}
-                          onChange={(e) => updateSigner(idx, "telefone", e.target.value)}
-                          className="h-8 text-xs"
-                          readOnly={isOwner}
-                          disabled={isOwner}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-[10px] text-muted-foreground">CPF</Label>
-                        <Input
-                          value={signer.cpf}
-                          onChange={(e) => updateSigner(idx, "cpf", e.target.value)}
-                          className="h-8 text-xs"
-                          readOnly={isOwner}
-                          disabled={isOwner}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-[10px] text-muted-foreground">Data de nascimento</Label>
-                        <Input
-                          type="date"
-                          value={signer.data_nascimento}
-                          onChange={(e) => updateSigner(idx, "data_nascimento", e.target.value)}
-                          className="h-8 text-xs"
-                          readOnly={isOwner}
-                          disabled={isOwner}
-                        />
-                      </div>
-                    </div>
-                    {isOwner && (
-                      <p className="text-[10px] text-muted-foreground italic mt-1">
-                        Dados preenchidos automaticamente com base no usuário responsável pela proposta.
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-              })}
+                  );
+                })()}
 
-              <Separator />
+                <h4 className="text-sm font-semibold text-foreground">Signatários</h4>
 
+                {generatedSigners.map((signer) => {
+                  const statusMap: Record<string, { label: string; cls: string }> = {
+                    pending: { label: "Aguardando", cls: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800" },
+                    signed: { label: "Assinado", cls: "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800" },
+                    rejected: { label: "Recusado", cls: "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800" },
+                  };
+                  const st = statusMap[signer.status] || statusMap.pending;
+                  const link = `${window.location.origin}/assinar-documento/${signer.auth_token}`;
+
+                  return (
+                    <Card key={signer.id} className="border overflow-hidden">
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Badge className="text-[10px] font-medium bg-primary/10 text-primary border-primary/20">
+                            {papelLabels[signer.papel] || signer.papel}
+                          </Badge>
+                          <Badge variant="outline" className={cn("text-[10px] font-medium", st.cls)}>
+                            {st.label}
+                          </Badge>
+                        </div>
+
+                        <div className="space-y-0.5">
+                          <p className="text-sm font-medium text-foreground">{signer.nome_completo}</p>
+                          {signer.email && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Mail className="h-3 w-3" /> {signer.email}
+                            </p>
+                          )}
+                          {signer.telefone && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <MessageCircle className="h-3 w-3" /> {signer.telefone}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Signing link */}
+                        <div className="space-y-1.5">
+                          <Label className="text-[10px] text-muted-foreground">Link de Assinatura</Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={link}
+                              readOnly
+                              className="h-8 text-[11px] font-mono bg-muted/50"
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="shrink-0 gap-1.5 text-xs h-8"
+                              onClick={() => {
+                                navigator.clipboard.writeText(link);
+                                toast.success("Link copiado!");
+                                if (signDoc) {
+                                  supabase.from("document_events").insert({
+                                    document_id: signDoc.id,
+                                    signer_id: signer.id,
+                                    evento: "link_copiado",
+                                    descricao: `Link de assinatura copiado para ${signer.nome_completo}`,
+                                  });
+                                }
+                              }}
+                            >
+                              <Copy className="h-3 w-3" /> Copiar
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Send options */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <label className="flex items-center gap-1.5 cursor-pointer">
+                              <Checkbox defaultChecked={!!signer.email} disabled={!signer.email} className="h-3.5 w-3.5" />
+                              <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                <Mail className="h-3 w-3" /> E-mail
+                              </span>
+                            </label>
+                            <label className="flex items-center gap-1.5 cursor-pointer">
+                              <Checkbox defaultChecked={!!signer.telefone} disabled={!signer.telefone} className="h-3.5 w-3.5" />
+                              <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                <MessageCircle className="h-3 w-3" /> WhatsApp
+                              </span>
+                            </label>
+                          </div>
+                          <Button
+                            size="sm"
+                            className="gap-1.5 text-xs h-7"
+                            onClick={() => {
+                              toast.success(`Link enviado para ${signer.nome_completo}!`);
+                              if (signDoc) {
+                                supabase.from("document_events").insert({
+                                  document_id: signDoc.id,
+                                  signer_id: signer.id,
+                                  evento: "link_enviado",
+                                  descricao: `Link de assinatura enviado para ${signer.nome_completo}`,
+                                });
+                              }
+                            }}
+                          >
+                            <Send className="h-3 w-3" /> Enviar
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </ScrollArea>
+
+          {/* Fixed footer */}
+          <div className="px-6 py-4 border-t shrink-0 flex gap-3">
+            <Button variant="outline" className="flex-1" onClick={() => setSignDrawerOpen(false)}>
+              Cancelar
+            </Button>
+            {signStep === "config" && (
               <Button
-                className="w-full gap-2"
+                className="flex-1 gap-2"
                 onClick={handleSendForSignature}
                 disabled={sendingSignature}
               >
                 {sendingSignature ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Configurando envelope de assinatura...
+                    Gerando envelope...
                   </>
                 ) : (
                   <>
                     <Send className="h-4 w-4" />
-                    Enviar para assinatura
+                    Enviar para Assinatura
                   </>
                 )}
               </Button>
-            </div>
-          )}
-
-          {signStep === "links" && (
-            <div className="space-y-4">
-              <p className="text-xs text-muted-foreground">
-                Os links abaixo foram gerados para os signatários deste documento.
-              </p>
-
-              {generatedSigners.map((signer) => (
-                <Card key={signer.id} className="border">
-                  <CardContent className="p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Badge variant="secondary" className="text-[10px]">
-                        {papelLabels[signer.papel] || signer.papel}
-                      </Badge>
-                      <Badge variant="outline" className="text-[10px] text-amber-600">
-                        Aguardando assinatura
-                      </Badge>
-                    </div>
-                    <p className="text-sm font-medium">{signer.nome_completo}</p>
-                    {signer.email && <p className="text-xs text-muted-foreground">{signer.email}</p>}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full gap-2 text-xs"
-                      onClick={() => copySignerLink(signer.auth_token)}
-                    >
-                      <Copy className="h-3.5 w-3.5" /> Copiar link
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => setSignDrawerOpen(false)}
-              >
+            )}
+            {signStep === "links" && (
+              <Button className="flex-1" onClick={() => setSignDrawerOpen(false)}>
                 Fechar
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </SheetContent>
       </Sheet>
 
       {/* View Signers Dialog */}
       <Dialog open={!!viewSignersDoc} onOpenChange={() => setViewSignersDoc(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
-              <Users className="h-4 w-4 text-primary" /> Signatários
+              <Users className="h-4 w-4 text-primary" /> Links de Assinatura
             </DialogTitle>
-            <DialogDescription>{viewSignersDoc?.nome}</DialogDescription>
+            <DialogDescription>
+              <span className="text-xs text-primary font-medium">{viewSignersDoc?.validation_code || ""}</span>
+              <span className="text-xs"> — {viewSignersDoc?.nome}</span>
+            </DialogDescription>
           </DialogHeader>
+
           {loadingSigners ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="space-y-3">
-              {viewSignersList.map((s) => {
-                const sCfg = signerStatusConfig[s.status] || signerStatusConfig.pending;
-                return (
-                  <Card key={s.id} className="border">
-                    <CardContent className="p-3">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium">{s.nome_completo}</span>
-                        <span className={cn("text-[11px] font-medium", sCfg.color)}>{sCfg.label}</span>
+            <ScrollArea className="flex-1">
+              <div className="space-y-3 pr-2">
+                {/* Progress */}
+                {(() => {
+                  const signed = viewSignersList.filter(s => s.status === "signed").length;
+                  const total = viewSignersList.length;
+                  const pct = total > 0 ? (signed / total) * 100 : 0;
+                  return (
+                    <div className="rounded-lg border bg-primary/5 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                          Assinaturas ({signed}/{total})
+                        </span>
                       </div>
-                      <div className="text-[11px] text-muted-foreground space-y-0.5">
-                        <p>Papel: {papelLabels[s.papel] || s.papel}</p>
-                        {s.email && <p>E-mail: {s.email}</p>}
-                        {s.signed_at && <p>Assinado em: {fmtDateTime(s.signed_at)}</p>}
-                        {s.rejected_at && <p>Recusado em: {fmtDateTime(s.rejected_at)}</p>}
-                      </div>
-                      {["pending", "validation_started", "code_sent"].includes(s.status) && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="mt-2 text-xs gap-1.5 w-full"
-                          onClick={() => copySignerLink(s.auth_token)}
-                        >
-                          <Copy className="h-3 w-3" /> Copiar link
-                        </Button>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+                      <Progress value={pct} className="h-2" />
+                    </div>
+                  );
+                })()}
+
+                {viewSignersList.map((s) => {
+                  const sCfg = signerStatusConfig[s.status] || signerStatusConfig.pending;
+                  const link = `${window.location.origin}/assinar-documento/${s.auth_token}`;
+                  return (
+                    <Card key={s.id} className="border">
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Badge className="text-[10px] font-medium bg-primary/10 text-primary border-primary/20">
+                            {papelLabels[s.papel] || s.papel}
+                          </Badge>
+                          <span className={cn("text-[11px] font-medium", sCfg.color)}>{sCfg.label}</span>
+                        </div>
+                        <div className="space-y-0.5">
+                          <p className="text-sm font-medium">{s.nome_completo}</p>
+                          {s.email && <p className="text-xs text-muted-foreground flex items-center gap-1"><Mail className="h-3 w-3" /> {s.email}</p>}
+                          {(s as any).telefone && <p className="text-xs text-muted-foreground flex items-center gap-1"><MessageCircle className="h-3 w-3" /> {(s as any).telefone}</p>}
+                          {s.signed_at && <p className="text-xs text-green-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Assinado em {fmtDateTime(s.signed_at)}</p>}
+                          {s.rejected_at && <p className="text-xs text-red-600 flex items-center gap-1"><XCircle className="h-3 w-3" /> Recusado em {fmtDateTime(s.rejected_at)}</p>}
+                        </div>
+                        {["pending", "validation_started", "code_sent"].includes(s.status) && (
+                          <>
+                            <div className="space-y-1.5">
+                              <Label className="text-[10px] text-muted-foreground">Link de Assinatura</Label>
+                              <div className="flex items-center gap-2">
+                                <Input value={link} readOnly className="h-8 text-[11px] font-mono bg-muted/50" />
+                                <Button variant="outline" size="sm" className="shrink-0 gap-1.5 text-xs h-8" onClick={() => copySignerLink(s.auth_token)}>
+                                  <Copy className="h-3 w-3" /> Copiar
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <label className="flex items-center gap-1.5 cursor-pointer">
+                                  <Checkbox defaultChecked={!!s.email} disabled={!s.email} className="h-3.5 w-3.5" />
+                                  <span className="text-[11px] text-muted-foreground flex items-center gap-1"><Mail className="h-3 w-3" /> E-mail</span>
+                                </label>
+                                <label className="flex items-center gap-1.5 cursor-pointer">
+                                  <Checkbox defaultChecked={!!(s as any).telefone} disabled={!(s as any).telefone} className="h-3.5 w-3.5" />
+                                  <span className="text-[11px] text-muted-foreground flex items-center gap-1"><MessageCircle className="h-3 w-3" /> WhatsApp</span>
+                                </label>
+                              </div>
+                              <Button size="sm" className="gap-1.5 text-xs h-7" onClick={() => {
+                                toast.success(`Link enviado para ${s.nome_completo}!`);
+                                if (viewSignersDoc) {
+                                  supabase.from("document_events").insert({
+                                    document_id: viewSignersDoc.id,
+                                    signer_id: s.id,
+                                    evento: "link_enviado",
+                                    descricao: `Link enviado para ${s.nome_completo}`,
+                                  });
+                                }
+                              }}>
+                                <Send className="h-3 w-3" /> Enviar
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </ScrollArea>
           )}
         </DialogContent>
       </Dialog>
