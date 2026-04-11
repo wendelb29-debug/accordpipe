@@ -78,32 +78,47 @@ serve(async (req) => {
     }
 
     const cleanCpf = cpf.replace(/\D/g, "");
+    const cleanWhatsapp = whatsapp.replace(/\D/g, "");
 
-    // 1. Check profiles table for same email + same tenant
+    // ──────────────────────────────────────────────
+    // STEP 1: Check if user_tenants link already exists for this email + tenant
+    // ──────────────────────────────────────────────
     const { data: existingProfileSameTenant } = await supabase
       .from("profiles")
-      .select("id")
+      .select("user_id")
       .eq("email", email)
       .eq("company_id", company_id)
       .maybeSingle();
 
     if (existingProfileSameTenant) {
-      return respond(false, { error: "Já existe um usuário com este e-mail neste tenant" });
+      // Also check user_tenants
+      const { data: existingLink } = await supabase
+        .from("user_tenants")
+        .select("id")
+        .eq("user_id", existingProfileSameTenant.user_id)
+        .eq("tenant_id", company_id)
+        .maybeSingle();
+
+      if (existingLink) {
+        return respond(false, { error: "Este usuário já está vinculado a este tenant." });
+      }
     }
 
-    // 2. Check for duplicate CPF in same tenant
+    // Check for duplicate CPF in same tenant
     const { data: existingCpf } = await supabase
       .from("profiles")
-      .select("id")
+      .select("id, company_id")
       .eq("cpf", cleanCpf)
       .eq("company_id", company_id)
       .maybeSingle();
 
     if (existingCpf) {
-      return respond(false, { error: "Já existe um usuário com este CPF neste tenant" });
+      return respond(false, { error: "Já existe um usuário com este CPF neste tenant." });
     }
 
-    // 3. Try to create user in auth
+    // ──────────────────────────────────────────────
+    // STEP 2: Try to create auth user
+    // ──────────────────────────────────────────────
     const tempPassword = crypto.randomUUID().slice(0, 12) + "A1!";
     let userId: string;
     let isLinkedExisting = false;
@@ -116,7 +131,7 @@ serve(async (req) => {
     });
 
     if (createError) {
-      // 4. If email already exists in auth, reuse the existing user_id
+      // Check if it's an email conflict
       const isEmailConflict =
         createError.message?.toLowerCase().includes("already") ||
         createError.message?.toLowerCase().includes("duplicate") ||
@@ -128,29 +143,19 @@ serve(async (req) => {
         return respond(false, { error: createError.message });
       }
 
-      // Fetch existing auth user by email
-      const { data: listData, error: listError } = await supabase.auth.admin.listUsers({
-        page: 1,
-        perPage: 1,
-      });
-
-      // listUsers doesn't support email filter directly, so we search
+      // ──────────────────────────────────────────────
+      // STEP 3: User already exists in auth — find them
+      // ──────────────────────────────────────────────
       let foundUser: any = null;
-      
-      // Try getUserByEmail if available, otherwise search through pages
-      // Use a direct approach: list users and find by email
       let page = 1;
       const perPage = 50;
       while (!foundUser) {
-        const { data: pageData, error: pageError } = await supabase.auth.admin.listUsers({
-          page,
-          perPage,
-        });
+        const { data: pageData, error: pageError } = await supabase.auth.admin.listUsers({ page, perPage });
         if (pageError || !pageData?.users?.length) break;
         foundUser = pageData.users.find((u: any) => u.email === email);
         if (pageData.users.length < perPage) break;
         page++;
-        if (page > 20) break; // safety limit
+        if (page > 20) break;
       }
 
       if (!foundUser) {
@@ -164,32 +169,75 @@ serve(async (req) => {
       userId = newUser.user.id;
     }
 
-    if (isLinkedExisting) {
-      // For linked users, the trigger won't fire, so we need to insert the profile
-      const { error: insertProfileError } = await supabase
-        .from("profiles")
-        .insert({
-          user_id: userId,
-          name,
-          email,
-          cpf: cleanCpf,
-          birth_date,
-          whatsapp: whatsapp.replace(/\D/g, ""),
-          company_id,
-          is_active: true,
-          status: "ativo",
-          is_master: false,
-        });
+    // ──────────────────────────────────────────────
+    // STEP 4: Ensure user_tenants link doesn't already exist
+    // ──────────────────────────────────────────────
+    const { data: existingTenantLink } = await supabase
+      .from("user_tenants")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("tenant_id", company_id)
+      .maybeSingle();
 
-      if (insertProfileError) {
-        // Profile might already exist from the trigger for the original tenant
-        // In that case, the user already has a profile — we just update company_id won't work for multi-tenant
-        // For now, if insert fails, it means a profile row with this user_id already exists
-        console.error("Profile insert error (linked user):", insertProfileError);
-        return respond(false, { error: "Não foi possível criar o perfil para este usuário. Pode já estar vinculado a outro tenant." });
+    if (existingTenantLink) {
+      return respond(false, { error: "Este usuário já está vinculado a este tenant." });
+    }
+
+    // ──────────────────────────────────────────────
+    // STEP 5: Handle profile
+    // ──────────────────────────────────────────────
+    if (isLinkedExisting) {
+      // Check if profile already exists
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("id, company_id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (existingProfile) {
+        // Profile exists — update company_id to the new tenant (switch active tenant)
+        console.log(`User ${userId} already has profile. Updating company_id to ${company_id}`);
+        const { error: updateErr } = await supabase
+          .from("profiles")
+          .update({
+            company_id,
+            name,
+            cpf: cleanCpf,
+            birth_date,
+            whatsapp: cleanWhatsapp,
+            is_active: true,
+            status: "ativo",
+          })
+          .eq("user_id", userId);
+
+        if (updateErr) {
+          console.error("Profile update error (linked user):", updateErr);
+          return respond(false, { error: "Não foi possível atualizar o perfil do usuário existente." });
+        }
+      } else {
+        // No profile yet — create one
+        const { error: insertProfileError } = await supabase
+          .from("profiles")
+          .insert({
+            user_id: userId,
+            name,
+            email,
+            cpf: cleanCpf,
+            birth_date,
+            whatsapp: cleanWhatsapp,
+            company_id,
+            is_active: true,
+            status: "ativo",
+            is_master: false,
+          });
+
+        if (insertProfileError) {
+          console.error("Profile insert error (linked user):", insertProfileError);
+          return respond(false, { error: "Não foi possível criar o perfil. Contate o suporte." });
+        }
       }
 
-      // Insert role for this user
+      // Upsert role
       const { error: roleInsertError } = await supabase
         .from("user_roles")
         .upsert({ user_id: userId, role }, { onConflict: "user_id" });
@@ -204,7 +252,7 @@ serve(async (req) => {
         .update({
           cpf: cleanCpf,
           birth_date,
-          whatsapp: whatsapp.replace(/\D/g, ""),
+          whatsapp: cleanWhatsapp,
           company_id,
         })
         .eq("user_id", userId);
@@ -223,7 +271,26 @@ serve(async (req) => {
       }
     }
 
-    // Audit log
+    // ──────────────────────────────────────────────
+    // STEP 6: Create user_tenants link
+    // ──────────────────────────────────────────────
+    const { error: tenantLinkError } = await supabase
+      .from("user_tenants")
+      .insert({
+        user_id: userId,
+        tenant_id: company_id,
+        role,
+        status: "ativo",
+      });
+
+    if (tenantLinkError) {
+      console.error("user_tenants insert error:", tenantLinkError);
+      // Non-fatal — profile was already created/updated
+    }
+
+    // ──────────────────────────────────────────────
+    // STEP 7: Audit log
+    // ──────────────────────────────────────────────
     const callerName = callerProfile?.is_master ? "Master" : (callerProfile?.name || caller.email || "");
     await supabase.rpc("log_audit", {
       _user_id: caller.id,
@@ -234,10 +301,15 @@ serve(async (req) => {
       _details: JSON.stringify({ name, email, role, company_id, linked: isLinkedExisting }),
     });
 
+    const successMessage = isLinkedExisting
+      ? "Usuário existente vinculado a este tenant com sucesso!"
+      : "Usuário criado com sucesso!";
+
     return respond(true, {
       user_id: userId,
       temp_password: isLinkedExisting ? undefined : tempPassword,
       linked_existing: isLinkedExisting,
+      message: successMessage,
     });
   } catch (err: any) {
     console.error("Create user error:", err);
