@@ -2619,28 +2619,52 @@ export type Database = {
       }
       proposal_catalog_items: {
         Row: {
+          category: string | null
           created_at: string
           created_by: string | null
+          default_quantity: number
+          description: string | null
           id: string
+          internal_code: string | null
+          internal_notes: string | null
+          is_active: boolean
+          item_type: string
           name: string
+          recurrence_type: string
           servidor_id: string
           updated_at: string
           value: number
         }
         Insert: {
+          category?: string | null
           created_at?: string
           created_by?: string | null
+          default_quantity?: number
+          description?: string | null
           id?: string
+          internal_code?: string | null
+          internal_notes?: string | null
+          is_active?: boolean
+          item_type?: string
           name: string
+          recurrence_type?: string
           servidor_id: string
           updated_at?: string
           value?: number
         }
         Update: {
+          category?: string | null
           created_at?: string
           created_by?: string | null
+          default_quantity?: number
+          description?: string | null
           id?: string
+          internal_code?: string | null
+          internal_notes?: string | null
+          is_active?: boolean
+          item_type?: string
           name?: string
+          recurrence_type?: string
           servidor_id?: string
           updated_at?: string
           value?: number
