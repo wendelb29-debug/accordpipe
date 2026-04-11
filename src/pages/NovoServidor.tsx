@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams, Navigate } from "react-router-dom";
 import {
   Building2, Palette, FileSignature, Search, Loader2, Save, Webhook,
   Send, LogOut, MessageSquare, Radio, Activity, Wifi, Copy, Check, RefreshCw, LayoutGrid,
-  CreditCard,
+  CreditCard, Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ import { ContractTemplateTab } from "@/components/servidores/ContractTemplateTab
 import { WebhookConfig } from "@/components/atendimento/tabs/WebhookConfig";
 import { WorkspacesTab } from "@/components/servidores/WorkspacesTab";
 import { FintechWebhooksTab } from "@/components/servidores/FintechWebhooksTab";
+import TenantUsersTab from "@/components/servidores/TenantUsersTab";
 import { useEffect } from "react";
 
 const cleanDigits = (v: string) => v.replace(/\D/g, "");
@@ -430,6 +431,7 @@ export default function NovoServidor() {
             { value: "contrato", icon: FileSignature, label: "Contrato" },
             { value: "vendas", icon: Webhook, label: "Webhooks Z-API" },
             { value: "fintech", icon: CreditCard, label: "Webhooks Fintech" },
+            { value: "usuarios", icon: Users, label: "Usuários" },
           ].map((item) => (
             <button
               key={item.value}
@@ -623,6 +625,14 @@ export default function NovoServidor() {
             <Card>
               <CardContent className="pt-6">
                 <FintechWebhooksTab companyId={editId || pendingNewId} />
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === "usuarios" && (
+            <Card>
+              <CardContent className="pt-6">
+                <TenantUsersTab companyId={editId || pendingNewId} companyName={formData.nome_fantasia || formData.razao_social} />
               </CardContent>
             </Card>
           )}
