@@ -1,0 +1,1 @@
+ALTER TABLE public.kanban_columns ADD COLUMN IF NOT EXISTS allow_mark_as_won boolean NOT NULL DEFAULT false;

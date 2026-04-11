@@ -801,9 +801,15 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap justify-end">
             {lead.lead_status === "open" && (
               <>
-                <Button size="sm" onClick={handleWon} disabled={saving} className="gap-1 sm:gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white h-7 sm:h-8 text-[11px] sm:text-xs px-2 sm:px-3 border-0" style={{ backgroundImage: 'none', backgroundColor: '#10B981' }}>
-                  <CheckCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Ganho
-                </Button>
+                {(() => {
+                  const currentStage = dynamicStages?.find(s => s.id === lead.stage);
+                  const wonAllowed = currentStage ? (currentStage.allow_mark_as_won ?? false) : true;
+                  return wonAllowed ? (
+                    <Button size="sm" onClick={handleWon} disabled={saving} className="gap-1 sm:gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white h-7 sm:h-8 text-[11px] sm:text-xs px-2 sm:px-3 border-0" style={{ backgroundImage: 'none', backgroundColor: '#10B981' }}>
+                      <CheckCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Ganho
+                    </Button>
+                  ) : null;
+                })()}
                 <Button size="sm" variant="destructive" onClick={handleLost} disabled={saving} className="gap-1 sm:gap-1.5 h-7 sm:h-8 text-[11px] sm:text-xs px-2 sm:px-3">
                   <XCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Perdido
                 </Button>

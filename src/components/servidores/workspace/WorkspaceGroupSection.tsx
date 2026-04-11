@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   Plus, Trash2, GripVertical, Pencil, Check, X, Loader2,
   ChevronDown, ChevronUp, Copy, Power, Clock, Hash, Save, Star, Flag, Palette,
-  AlertTriangle, ArrowRight, Settings2,
+  AlertTriangle, ArrowRight, Settings2, Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,7 @@ export function WorkspaceGroupSection({ ws, columns, setColumns, expandedWs, set
   const [editColIsDefault, setEditColIsDefault] = useState(false);
   const [editColIsFinal, setEditColIsFinal] = useState(false);
   const [editColActive, setEditColActive] = useState(true);
+  const [editColAllowWon, setEditColAllowWon] = useState(false);
   const [newlyAddedColId, setNewlyAddedColId] = useState<string | null>(null);
 
   // Drag
@@ -71,6 +72,7 @@ export function WorkspaceGroupSection({ ws, columns, setColumns, expandedWs, set
     setEditColIsDefault(col.is_default ?? false);
     setEditColIsFinal(col.is_final ?? false);
     setEditColActive(col.active ?? true);
+    setEditColAllowWon(col.allow_mark_as_won ?? false);
   };
 
   const handleAddColumn = async () => {
@@ -88,7 +90,7 @@ export function WorkspaceGroupSection({ ws, columns, setColumns, expandedWs, set
     const slaDays = editColSlaUnit === "horas" ? editColSla / 24 : editColSla;
     if (editColIsDefault) await supabase.from("kanban_columns").update({ is_default: false } as any).eq("workspace_id", ws.id);
     const { error } = await supabase.from("kanban_columns")
-      .update({ name: editColName, sla_days: slaDays, color: editColColor, is_default: editColIsDefault, is_final: editColIsFinal, active: editColActive } as any)
+      .update({ name: editColName, sla_days: slaDays, color: editColColor, is_default: editColIsDefault, is_final: editColIsFinal, active: editColActive, allow_mark_as_won: editColAllowWon } as any)
       .eq("id", col.id);
     if (error) toast.error("Erro ao atualizar"); else toast.success("Coluna atualizada");
     setEditingColId(null); onRefresh();
@@ -214,6 +216,7 @@ export function WorkspaceGroupSection({ ws, columns, setColumns, expandedWs, set
                           <div className="flex items-center gap-0.5 ml-auto">
                             {(col.is_default ?? false) && <span title="Etapa padrão"><Star className="h-2.5 w-2.5 text-yellow-500" /></span>}
                             {(col.is_final ?? false) && <span title="Etapa final"><Flag className="h-2.5 w-2.5 text-red-500" /></span>}
+                            {(col.allow_mark_as_won ?? false) && <span title="Permite ganho"><Trophy className="h-2.5 w-2.5 text-emerald-500" /></span>}
                           </div>
                         </div>
 
@@ -248,6 +251,7 @@ export function WorkspaceGroupSection({ ws, columns, setColumns, expandedWs, set
                               <div className="flex items-center justify-between"><Label className="text-[9px] text-muted-foreground">Padrão</Label><Switch checked={editColIsDefault} onCheckedChange={setEditColIsDefault} className="scale-[0.65]" /></div>
                               <div className="flex items-center justify-between"><Label className="text-[9px] text-muted-foreground">Final</Label><Switch checked={editColIsFinal} onCheckedChange={setEditColIsFinal} className="scale-[0.65]" /></div>
                               <div className="flex items-center justify-between"><Label className="text-[9px] text-muted-foreground">Ativa</Label><Switch checked={editColActive} onCheckedChange={setEditColActive} className="scale-[0.65]" /></div>
+                              <div className="flex items-center justify-between"><Label className="text-[9px] text-muted-foreground flex items-center gap-1"><Trophy className="h-2.5 w-2.5 text-emerald-500" /> Permitir ganho</Label><Switch checked={editColAllowWon} onCheckedChange={setEditColAllowWon} className="scale-[0.65]" /></div>
                             </div>
                             <div className="flex gap-1 pt-0.5">
                               <Button size="sm" className="flex-1 h-6 text-[10px] gap-1 bg-gradient-to-r from-primary to-blue-600" onClick={() => handleSaveColumn(col)}><Check className="h-2.5 w-2.5" /> Salvar</Button>

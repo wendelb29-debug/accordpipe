@@ -60,6 +60,7 @@ export interface KanbanColumn {
   is_default: boolean;
   is_final: boolean;
   active: boolean;
+  allow_mark_as_won: boolean;
 }
 
 export const WORKSPACE_COLORS = [

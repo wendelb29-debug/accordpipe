@@ -1998,6 +1998,7 @@ export type Database = {
       kanban_columns: {
         Row: {
           active: boolean
+          allow_mark_as_won: boolean
           color: string
           created_at: string
           icon: string
@@ -2012,6 +2013,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          allow_mark_as_won?: boolean
           color?: string
           created_at?: string
           icon?: string
@@ -2026,6 +2028,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          allow_mark_as_won?: boolean
           color?: string
           created_at?: string
           icon?: string

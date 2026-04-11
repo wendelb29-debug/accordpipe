@@ -48,6 +48,7 @@ export function useKanbanColumns(workspaceId: string | null | undefined) {
     color: `bg-[${col.color}]`,
     rawColor: col.color,
     sla_days: col.sla_days,
+    allow_mark_as_won: (col as any).allow_mark_as_won ?? false,
   }));
 
   return { columns, dynamicStages, loading, refresh: fetchColumns };
