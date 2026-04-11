@@ -91,18 +91,12 @@ function AtendimentoContent() {
           <TabsTrigger value="comercial" className="gap-1 text-[11px] h-7 px-3">
             <MessageSquare className="h-3 w-3" /> Pipeline Comercial
           </TabsTrigger>
-          <TabsTrigger value="cadastro" className="gap-1 text-[11px] h-7 px-3">
-            <ClipboardList className="h-3 w-3" /> Validação de Clientes
-          </TabsTrigger>
           <TabsTrigger value="importar" className="gap-1 text-[11px] h-7 px-3">
             <FileSpreadsheet className="h-3 w-3" /> Importar Planilha
           </TabsTrigger>
         </TabsList>
         <TabsContent value="comercial" className="flex-1 overflow-hidden mt-0">
           <CrmKanbanBoard searchTerm={crmSearch} workspaceId={selectedWsId} />
-        </TabsContent>
-        <TabsContent value="cadastro" className="flex-1 overflow-hidden mt-0">
-          <AdminKanbanBoard searchTerm={crmSearch} />
         </TabsContent>
         <TabsContent value="importar" className="flex-1 overflow-hidden mt-0">
           <ImportarPlanilha />
