@@ -1546,26 +1546,28 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         </SheetContent>
       </Sheet>
 
-      {/* View Signers Dialog */}
-      <Dialog open={!!viewSignersDoc} onOpenChange={() => setViewSignersDoc(null)}>
-        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base">
-              <Users className="h-4 w-4 text-primary" /> Links de Assinatura
-            </DialogTitle>
-            <DialogDescription>
-              <span className="text-xs text-primary font-medium">{viewSignersDoc?.validation_code || ""}</span>
-              <span className="text-xs"> — {viewSignersDoc?.nome}</span>
-            </DialogDescription>
-          </DialogHeader>
+      {/* View Signers Drawer */}
+      <Sheet open={!!viewSignersDoc} onOpenChange={() => setViewSignersDoc(null)}>
+        <SheetContent className="w-full sm:max-w-lg flex flex-col h-full p-0">
+          <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+            <SheetTitle className="flex items-center gap-2 text-base">
+              <FileSignature className="h-5 w-5 text-primary" /> Assinaturas do Documento
+            </SheetTitle>
+            {viewSignersDoc && (
+              <SheetDescription className="text-left">
+                <span className="text-xs text-primary font-medium">{viewSignersDoc.validation_code || ""}</span>
+                <span className="text-xs text-muted-foreground"> — {viewSignersDoc.nome}</span>
+              </SheetDescription>
+            )}
+          </SheetHeader>
 
           {loadingSigners ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <ScrollArea className="flex-1">
-              <div className="space-y-3 pr-2">
+            <ScrollArea className="flex-1 px-6">
+              <div className="space-y-3 py-4">
                 {/* Progress */}
                 {(() => {
                   const signed = viewSignersList.filter(s => s.status === "signed").length;
@@ -1578,6 +1580,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                           <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
                           Assinaturas ({signed}/{total})
                         </span>
+                        <span className="text-[10px] text-muted-foreground">{Math.round(pct)}%</span>
                       </div>
                       <Progress value={pct} className="h-2" />
                     </div>
@@ -1648,8 +1651,14 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
               </div>
             </ScrollArea>
           )}
-        </DialogContent>
-      </Dialog>
+
+          <div className="px-6 py-4 border-t shrink-0">
+            <Button variant="outline" className="w-full" onClick={() => setViewSignersDoc(null)}>
+              Fechar
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
