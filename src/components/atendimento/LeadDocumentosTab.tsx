@@ -1535,49 +1535,105 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
       {/* View Signers Dialog */}
       <Dialog open={!!viewSignersDoc} onOpenChange={() => setViewSignersDoc(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
-              <Users className="h-4 w-4 text-primary" /> Signatários
+              <Users className="h-4 w-4 text-primary" /> Links de Assinatura
             </DialogTitle>
-            <DialogDescription>{viewSignersDoc?.nome}</DialogDescription>
+            <DialogDescription>
+              <span className="text-xs text-primary font-medium">{viewSignersDoc?.validation_code || ""}</span>
+              <span className="text-xs"> — {viewSignersDoc?.nome}</span>
+            </DialogDescription>
           </DialogHeader>
+
           {loadingSigners ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="space-y-3">
-              {viewSignersList.map((s) => {
-                const sCfg = signerStatusConfig[s.status] || signerStatusConfig.pending;
-                return (
-                  <Card key={s.id} className="border">
-                    <CardContent className="p-3">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium">{s.nome_completo}</span>
-                        <span className={cn("text-[11px] font-medium", sCfg.color)}>{sCfg.label}</span>
+            <ScrollArea className="flex-1">
+              <div className="space-y-3 pr-2">
+                {/* Progress */}
+                {(() => {
+                  const signed = viewSignersList.filter(s => s.status === "signed").length;
+                  const total = viewSignersList.length;
+                  const pct = total > 0 ? (signed / total) * 100 : 0;
+                  return (
+                    <div className="rounded-lg border bg-primary/5 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                          Assinaturas ({signed}/{total})
+                        </span>
                       </div>
-                      <div className="text-[11px] text-muted-foreground space-y-0.5">
-                        <p>Papel: {papelLabels[s.papel] || s.papel}</p>
-                        {s.email && <p>E-mail: {s.email}</p>}
-                        {s.signed_at && <p>Assinado em: {fmtDateTime(s.signed_at)}</p>}
-                        {s.rejected_at && <p>Recusado em: {fmtDateTime(s.rejected_at)}</p>}
-                      </div>
-                      {["pending", "validation_started", "code_sent"].includes(s.status) && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="mt-2 text-xs gap-1.5 w-full"
-                          onClick={() => copySignerLink(s.auth_token)}
-                        >
-                          <Copy className="h-3 w-3" /> Copiar link
-                        </Button>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+                      <Progress value={pct} className="h-2" />
+                    </div>
+                  );
+                })()}
+
+                {viewSignersList.map((s) => {
+                  const sCfg = signerStatusConfig[s.status] || signerStatusConfig.pending;
+                  const link = `${window.location.origin}/assinar-documento/${s.auth_token}`;
+                  return (
+                    <Card key={s.id} className="border">
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Badge className="text-[10px] font-medium bg-primary/10 text-primary border-primary/20">
+                            {papelLabels[s.papel] || s.papel}
+                          </Badge>
+                          <span className={cn("text-[11px] font-medium", sCfg.color)}>{sCfg.label}</span>
+                        </div>
+                        <div className="space-y-0.5">
+                          <p className="text-sm font-medium">{s.nome_completo}</p>
+                          {s.email && <p className="text-xs text-muted-foreground flex items-center gap-1"><Mail className="h-3 w-3" /> {s.email}</p>}
+                          {(s as any).telefone && <p className="text-xs text-muted-foreground flex items-center gap-1"><MessageCircle className="h-3 w-3" /> {(s as any).telefone}</p>}
+                          {s.signed_at && <p className="text-xs text-green-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Assinado em {fmtDateTime(s.signed_at)}</p>}
+                          {s.rejected_at && <p className="text-xs text-red-600 flex items-center gap-1"><XCircle className="h-3 w-3" /> Recusado em {fmtDateTime(s.rejected_at)}</p>}
+                        </div>
+                        {["pending", "validation_started", "code_sent"].includes(s.status) && (
+                          <>
+                            <div className="space-y-1.5">
+                              <Label className="text-[10px] text-muted-foreground">Link de Assinatura</Label>
+                              <div className="flex items-center gap-2">
+                                <Input value={link} readOnly className="h-8 text-[11px] font-mono bg-muted/50" />
+                                <Button variant="outline" size="sm" className="shrink-0 gap-1.5 text-xs h-8" onClick={() => copySignerLink(s.auth_token)}>
+                                  <Copy className="h-3 w-3" /> Copiar
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <label className="flex items-center gap-1.5 cursor-pointer">
+                                  <Checkbox defaultChecked={!!s.email} disabled={!s.email} className="h-3.5 w-3.5" />
+                                  <span className="text-[11px] text-muted-foreground flex items-center gap-1"><Mail className="h-3 w-3" /> E-mail</span>
+                                </label>
+                                <label className="flex items-center gap-1.5 cursor-pointer">
+                                  <Checkbox defaultChecked={!!(s as any).telefone} disabled={!(s as any).telefone} className="h-3.5 w-3.5" />
+                                  <span className="text-[11px] text-muted-foreground flex items-center gap-1"><MessageCircle className="h-3 w-3" /> WhatsApp</span>
+                                </label>
+                              </div>
+                              <Button size="sm" className="gap-1.5 text-xs h-7" onClick={() => {
+                                toast.success(`Link enviado para ${s.nome_completo}!`);
+                                if (viewSignersDoc) {
+                                  supabase.from("document_events").insert({
+                                    document_id: viewSignersDoc.id,
+                                    signer_id: s.id,
+                                    evento: "link_enviado",
+                                    descricao: `Link enviado para ${s.nome_completo}`,
+                                  });
+                                }
+                              }}>
+                                <Send className="h-3 w-3" /> Enviar
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </ScrollArea>
           )}
         </DialogContent>
       </Dialog>
