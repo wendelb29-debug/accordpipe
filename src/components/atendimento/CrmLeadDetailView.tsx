@@ -5,7 +5,7 @@ import {
   MessageSquare, PhoneCall, FileText, Activity, Trash2, Send, Loader2,
   FileSignature, Eye, Download, Copy, Image as ImageIcon, Search,
   FileSpreadsheet, Edit, MoreVertical, ThumbsUp, ThumbsDown, Paperclip,
-  Link2, CopyPlus, ClipboardList, UserRoundPen, Headphones, ChevronDown, ChevronUp
+  Link2, CopyPlus, ClipboardList, UserRoundPen, Headphones, ChevronDown, ChevronUp, PanelLeftClose, PanelLeftOpen
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadContractPdf } from "@/lib/generateContractPdf";
@@ -154,6 +154,16 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const { activities, loading: activitiesLoading, addActivity, refetch: refetchActivities } = useCrmActivities(lead.id);
   const [editing, setEditing] = useState(false);
   const [detailsCollapsed, setDetailsCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try { return localStorage.getItem('accord-sidebar-collapsed') === 'true'; } catch { return false; }
+  });
+  const toggleSidebar = () => {
+    setSidebarCollapsed(prev => {
+      const next = !prev;
+      try { localStorage.setItem('accord-sidebar-collapsed', String(next)); } catch {}
+      return next;
+    });
+  };
   const [form, setForm] = useState<any>({ ...lead });
   const [newActivity, setNewActivity] = useState({ type: "note", title: "", description: "" });
   const [showActivityForm, setShowActivityForm] = useState(false);
