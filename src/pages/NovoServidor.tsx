@@ -431,6 +431,7 @@ export default function NovoServidor() {
             { value: "contrato", icon: FileSignature, label: "Contrato" },
             { value: "vendas", icon: Webhook, label: "Webhooks Z-API" },
             { value: "fintech", icon: CreditCard, label: "Webhooks Fintech" },
+            { value: "usuarios", icon: Users, label: "Usuários" },
           ].map((item) => (
             <button
               key={item.value}
@@ -624,6 +625,14 @@ export default function NovoServidor() {
             <Card>
               <CardContent className="pt-6">
                 <FintechWebhooksTab companyId={editId || pendingNewId} />
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === "usuarios" && (
+            <Card>
+              <CardContent className="pt-6">
+                <TenantUsersTab companyId={editId || pendingNewId} companyName={formData.nome_fantasia || formData.razao_social} />
               </CardContent>
             </Card>
           )}
