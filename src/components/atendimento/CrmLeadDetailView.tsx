@@ -936,7 +936,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               className="flex items-center gap-1.5 md:pointer-events-none"
             >
               <h3 className="text-sm font-semibold flex items-center gap-1.5">
-                <FileText className="h-4 w-4" /> Detalhes
+                <FileText className="h-4 w-4" /> Dados do Cliente
               </h3>
               {detailsCollapsed ? (
                 <ChevronDown className="h-4 w-4 text-muted-foreground md:hidden" />
