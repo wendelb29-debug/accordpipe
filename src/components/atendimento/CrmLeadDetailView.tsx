@@ -1089,6 +1089,8 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               </>
             )}
           </div>
+            </div>
+          )}
         </div>
 
         {/* Main Content - Tabs */}
