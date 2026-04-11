@@ -32,6 +32,10 @@ interface CatalogItem {
   id: string;
   name: string;
   value: number;
+  description: string | null;
+  item_type: string;
+  recurrence_type: string;
+  is_active: boolean;
 }
 
 interface Props {
