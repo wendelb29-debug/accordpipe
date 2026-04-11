@@ -172,7 +172,7 @@ export function ContractRichEditor({ content, onChange, className }: Props) {
     },
   });
 
-  if (!editor) return null;
+  const editorReady = !!editor;
 
   const insertVariable = (varKey: string) => {
     editor.chain().focus().insertContent(`{{${varKey}}}`).run();
