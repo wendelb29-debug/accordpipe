@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Plus, Loader2, MoreVertical, Eye, Download, Trash2,
   FileText, Clock, CheckCircle2, AlertCircle, FileSignature,
-  Send, Copy, Link2, Users, XCircle, ExternalLink,
+  Send, Copy, Link2, Users, XCircle, ExternalLink, UserPlus, Mail, MessageCircle,
 } from "lucide-react";
 import { ContractVariableAudit } from "./ContractVariableAudit";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
