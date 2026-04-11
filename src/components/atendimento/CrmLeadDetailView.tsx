@@ -910,26 +910,70 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
       {/* Content: Stack on mobile, side-by-side on desktop */}
       <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-        {/* Left Sidebar - Details (full width on mobile, fixed on desktop) */}
-        <div className={`w-full md:w-72 shrink-0 border-b md:border-b-0 md:border-r overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 ${detailsCollapsed ? 'max-h-fit' : 'max-h-[40vh]'} md:max-h-none`}>
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => setDetailsCollapsed(!detailsCollapsed)}
-              className="flex items-center gap-1.5 md:pointer-events-none"
-            >
-              <h3 className="text-sm font-semibold flex items-center gap-1.5">
-                <FileText className="h-4 w-4" /> Dados do Cliente
-              </h3>
-              {detailsCollapsed ? (
-                <ChevronDown className="h-4 w-4 text-muted-foreground md:hidden" />
-              ) : (
-                <ChevronUp className="h-4 w-4 text-muted-foreground md:hidden" />
-              )}
-            </button>
-            <Button size="sm" variant="ghost" onClick={() => editing ? handleSave() : setEditing(true)} disabled={saving} className="h-7 text-xs">
-              {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : editing ? "Salvar" : "Editar"}
-            </Button>
-          </div>
+        {/* Left Sidebar - Details (full width on mobile, collapsible on desktop) */}
+        <div
+          className={cn(
+            "shrink-0 border-b md:border-b-0 md:border-r overflow-y-auto transition-all duration-250 ease-in-out",
+            sidebarCollapsed
+              ? "hidden md:block md:w-10 p-0"
+              : "w-full md:w-72 p-3 sm:p-4",
+            !sidebarCollapsed && (detailsCollapsed ? 'max-h-fit' : 'max-h-[40vh]'),
+            "md:max-h-none"
+          )}
+        >
+          {/* Collapsed state - desktop only */}
+          {sidebarCollapsed && (
+            <div className="hidden md:flex flex-col items-center py-2 gap-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button onClick={toggleSidebar} className="p-1.5 rounded-md hover:bg-muted transition-colors">
+                    <PanelLeftOpen className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="text-xs">Expandir dados do cliente</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="p-1.5">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="text-xs">Dados do Cliente</TooltipContent>
+              </Tooltip>
+            </div>
+          )}
+
+          {/* Expanded state */}
+          {!sidebarCollapsed && (
+            <div className="space-y-3 sm:space-y-4">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setDetailsCollapsed(!detailsCollapsed)}
+                  className="flex items-center gap-1.5 md:pointer-events-none"
+                >
+                  <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                    <FileText className="h-4 w-4" /> Dados do Cliente
+                  </h3>
+                  {detailsCollapsed ? (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground md:hidden" />
+                  ) : (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground md:hidden" />
+                  )}
+                </button>
+                <div className="flex items-center gap-1">
+                  <Button size="sm" variant="ghost" onClick={() => editing ? handleSave() : setEditing(true)} disabled={saving} className="h-7 text-xs">
+                    {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : editing ? "Salvar" : "Editar"}
+                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={toggleSidebar} className="hidden md:inline-flex p-1.5 rounded-md hover:bg-muted transition-colors">
+                        <PanelLeftClose className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="text-xs">Recolher painel</TooltipContent>
+                  </Tooltip>
+                </div>
+              </div>
 
           <div className={`space-y-3 text-xs ${detailsCollapsed ? 'hidden md:block' : ''}`}>
             <DetailField icon={Clock} label="Última atualização" value={new Date(lead.updated_at).toLocaleString("pt-BR")} />
