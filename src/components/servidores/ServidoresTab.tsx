@@ -139,14 +139,15 @@ export default function ServidoresTab() {
 
       if (error) throw error;
 
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("company_id");
+      // Count users per tenant from user_tenants
+      const { data: tenantLinks } = await supabase
+        .from("user_tenants")
+        .select("tenant_id");
 
       const countMap: Record<string, number> = {};
-      (profiles || []).forEach((p) => {
-        if (p.company_id) {
-          countMap[p.company_id] = (countMap[p.company_id] || 0) + 1;
+      (tenantLinks || []).forEach((l: any) => {
+        if (l.tenant_id) {
+          countMap[l.tenant_id] = (countMap[l.tenant_id] || 0) + 1;
         }
       });
 
