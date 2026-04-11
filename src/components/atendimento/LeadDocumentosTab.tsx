@@ -590,11 +590,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
       const vars = buildVariableMap(lead, tenant, proposal, vendor, registration);
       const missingCritical = CRITICAL_VARS.filter((v) => !vars[`{{${v}}}`]);
-      if (missingCritical.length > 0) {
-        toast.error(`Não foi possível gerar: variáveis obrigatórias sem valor (${missingCritical.join(", ")})`);
-        setGenerating(false);
-        return;
-      }
+      const hasMissingFields = missingCritical.length > 0;
 
       const contentTemplate = (template as any).content_template;
       let htmlContent: string;
@@ -625,7 +621,8 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         created_by_user_id: profile?.user_id,
         created_by_name: profile?.name,
         rendered_variables_json: snapshot as any,
-      }).select("id").maybeSingle();
+        generated_with_missing_fields: hasMissingFields,
+      } as any).select("id").maybeSingle();
 
       if (error || !insertedDoc?.id) throw error || new Error("Documento não foi criado");
 
@@ -648,7 +645,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
       await supabase.from("document_events").insert({
         document_id: insertedDoc.id,
         evento: "documento_gerado",
-        descricao: `Documento "${finalName}" gerado a partir do modelo "${template.nome}" por ${profile?.name || "Sistema"}${hasPendingSig ? " (variáveis de assinatura pendentes)" : ""}`,
+        descricao: `Documento "${finalName}" gerado a partir do modelo "${template.nome}" por ${profile?.name || "Sistema"}${hasPendingSig ? " (variáveis de assinatura pendentes)" : ""}${hasMissingFields ? " ⚠ GERADO COM CAMPOS OBRIGATÓRIOS AUSENTES" : ""}`,
         metadata_json: {
           template_id: template.id,
           template_nome: template.nome,
@@ -656,6 +653,8 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
           generated_by: profile?.name,
           generated_at: new Date().toISOString(),
           pending_signature_vars: hasPendingSig,
+          generated_with_missing_fields: hasMissingFields,
+          missing_fields: hasMissingFields ? missingCritical : [],
         },
       });
 
