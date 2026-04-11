@@ -265,13 +265,40 @@ export default function Usuarios() {
 
       if (profileError) throw profileError;
 
-      // Update role
+      // Update role in user_roles
       const { error: roleError } = await supabase
         .from("user_roles")
         .update({ role: formData.role })
         .eq("user_id", editingUser.user_id);
 
       if (roleError) throw roleError;
+
+      // Also sync user_tenants if company_id is set
+      const tenantId = formData.company_id || editingUser.company_id;
+      if (tenantId) {
+        const { data: existingLink } = await supabase
+          .from("user_tenants")
+          .select("id")
+          .eq("user_id", editingUser.user_id)
+          .eq("tenant_id", tenantId)
+          .maybeSingle();
+
+        if (existingLink) {
+          await supabase
+            .from("user_tenants")
+            .update({ role: formData.role } as any)
+            .eq("id", existingLink.id);
+        } else {
+          await supabase
+            .from("user_tenants")
+            .insert({
+              user_id: editingUser.user_id,
+              tenant_id: tenantId,
+              role: formData.role,
+              status: "ativo",
+            } as any);
+        }
+      }
 
       toast({
         title: "Usuário atualizado",

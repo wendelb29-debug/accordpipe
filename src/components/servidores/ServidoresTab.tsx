@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield, Webhook, Briefcase,
+  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield, Webhook, Briefcase, ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -27,6 +27,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast as sonnerToast } from "sonner";
 import { BrandIdentityFields } from "@/components/empresas/BrandIdentityFields";
 import { CompanyFormData } from "@/components/empresas/types";
+import { PermissionsEditor } from "@/components/usuarios/PermissionsEditor";
 
 interface Company {
   id: string;
@@ -85,9 +86,13 @@ export default function ServidoresTab() {
   const [cepLoading, setCepLoading] = useState(false);
   const [usersDialogOpen, setUsersDialogOpen] = useState(false);
   const [usersDialogCompany, setUsersDialogCompany] = useState<Company | null>(null);
-  const [tenantUsers, setTenantUsers] = useState<{ user_id: string; name: string; email: string; is_active: boolean; role: string; status: string }[]>([]);
+  const [tenantUsers, setTenantUsers] = useState<{ user_id: string; name: string; email: string; is_active: boolean; role: string; status: string; data_scope: string; tenant_link_id: string }[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [editingUser, setEditingUser] = useState<any | null>(null);
+  const [permDialogOpen, setPermDialogOpen] = useState(false);
+  const [permUserId, setPermUserId] = useState<string | null>(null);
+  const [permUserName, setPermUserName] = useState("");
+  const [permUserIsCeo, setPermUserIsCeo] = useState(false);
   const { toast } = useToast();
   const { isMaster, profile } = useAuth();
 
@@ -134,14 +139,15 @@ export default function ServidoresTab() {
 
       if (error) throw error;
 
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("company_id");
+      // Count users per tenant from user_tenants
+      const { data: tenantLinks } = await supabase
+        .from("user_tenants")
+        .select("tenant_id");
 
       const countMap: Record<string, number> = {};
-      (profiles || []).forEach((p) => {
-        if (p.company_id) {
-          countMap[p.company_id] = (countMap[p.company_id] || 0) + 1;
+      (tenantLinks || []).forEach((l: any) => {
+        if (l.tenant_id) {
+          countMap[l.tenant_id] = (countMap[l.tenant_id] || 0) + 1;
         }
       });
 
@@ -165,36 +171,71 @@ export default function ServidoresTab() {
     setLoadingUsers(true);
     setEditingUser(null);
     try {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, name, email, is_active, status")
-        .eq("company_id", company.id);
+      // Query user_tenants joined with profiles for this tenant
+      const { data: tenantLinks } = await supabase
+        .from("user_tenants")
+        .select("id, user_id, role, status, data_scope")
+        .eq("tenant_id", company.id);
 
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("user_id, role");
+      if (!tenantLinks || tenantLinks.length === 0) {
+        // Fallback: check profiles with company_id (for users not yet in user_tenants)
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, name, email, is_active, status")
+          .eq("company_id", company.id);
 
-      const roleMap: Record<string, string> = {};
-      (roles || []).forEach((r: any) => { roleMap[r.user_id] = r.role; });
+        setTenantUsers(
+          (profiles || []).map((p: any) => ({
+            user_id: p.user_id,
+            name: p.name || "---",
+            email: p.email || "",
+            is_active: p.is_active,
+            role: "leitura",
+            status: p.status || "ativo",
+            data_scope: "own",
+            tenant_link_id: "",
+          }))
+        );
+      } else {
+        // Get profile data for each user
+        const userIds = tenantLinks.map(l => l.user_id);
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, name, email, is_active, status")
+          .in("user_id", userIds);
 
-      setTenantUsers(
-        (profiles || []).map((p: any) => ({
-          user_id: p.user_id,
-          name: p.name || "---",
-          email: p.email || "",
-          is_active: p.is_active,
-          role: roleMap[p.user_id] || "leitura",
-          status: p.status || "ativo",
-        }))
-      );
+        const profileMap: Record<string, any> = {};
+        (profiles || []).forEach((p: any) => { profileMap[p.user_id] = p; });
+
+        setTenantUsers(
+          tenantLinks.map((link: any) => {
+            const prof = profileMap[link.user_id] || {};
+            return {
+              user_id: link.user_id,
+              name: prof.name || "---",
+              email: prof.email || "",
+              is_active: link.status === "ativo",
+              role: link.role || "leitura",
+              status: link.status || "ativo",
+              data_scope: link.data_scope || "own",
+              tenant_link_id: link.id,
+            };
+          })
+        );
+      }
     } catch {
       setTenantUsers([]);
     }
     setLoadingUsers(false);
   };
 
-  const handleUpdateUserRole = async (userId: string, newRole: string) => {
+  const handleUpdateUserRole = async (userId: string, newRole: string, tenantLinkId: string) => {
     try {
+      // Update user_tenants
+      if (tenantLinkId) {
+        await supabase.from("user_tenants").update({ role: newRole } as any).eq("id", tenantLinkId);
+      }
+      // Also update user_roles for backward compatibility
       await supabase.from("user_roles").update({ role: newRole } as any).eq("user_id", userId);
       sonnerToast.success("Papel atualizado!");
       if (usersDialogCompany) handleOpenUsersDialog(usersDialogCompany);
@@ -203,9 +244,25 @@ export default function ServidoresTab() {
     }
   };
 
-  const handleToggleUserStatus = async (userId: string, currentActive: boolean) => {
+  const handleUpdateDataScope = async (tenantLinkId: string, newScope: string) => {
     try {
-      await supabase.from("profiles").update({ is_active: !currentActive, status: currentActive ? "bloqueado" : "ativo" } as any).eq("user_id", userId);
+      await supabase.from("user_tenants").update({ data_scope: newScope } as any).eq("id", tenantLinkId);
+      sonnerToast.success("Escopo de dados atualizado!");
+      if (usersDialogCompany) handleOpenUsersDialog(usersDialogCompany);
+    } catch {
+      sonnerToast.error("Erro ao atualizar escopo");
+    }
+  };
+
+  const handleToggleUserStatus = async (userId: string, currentActive: boolean, tenantLinkId: string) => {
+    try {
+      const newStatus = currentActive ? "bloqueado" : "ativo";
+      // Update user_tenants status
+      if (tenantLinkId) {
+        await supabase.from("user_tenants").update({ status: newStatus } as any).eq("id", tenantLinkId);
+      }
+      // Also update profiles for backward compatibility
+      await supabase.from("profiles").update({ is_active: !currentActive, status: newStatus } as any).eq("user_id", userId);
       sonnerToast.success(currentActive ? "Usuário bloqueado" : "Usuário ativado");
       if (usersDialogCompany) handleOpenUsersDialog(usersDialogCompany);
       fetchCompanies();
@@ -776,7 +833,7 @@ export default function ServidoresTab() {
 
       {/* Users Dialog */}
       <Dialog open={usersDialogOpen} onOpenChange={setUsersDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
@@ -800,8 +857,9 @@ export default function ServidoresTab() {
                   <TableRow>
                     <TableHead>Usuário</TableHead>
                     <TableHead>Papel</TableHead>
+                    <TableHead>Escopo</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="w-12" />
+                    <TableHead className="w-20" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -816,21 +874,40 @@ export default function ServidoresTab() {
                       <TableCell>
                         <Select
                           value={u.role}
-                          onValueChange={(val) => handleUpdateUserRole(u.user_id, val)}
+                          onValueChange={(val) => handleUpdateUserRole(u.user_id, val, u.tenant_link_id)}
                         >
-                          <SelectTrigger className="h-8 w-36 text-xs">
+                          <SelectTrigger className="h-8 w-32 text-xs">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="admin">Administrador</SelectItem>
-                            <SelectItem value="operador">Operador</SelectItem>
-                            <SelectItem value="leitura">Leitura</SelectItem>
                             <SelectItem value="ceo">CEO</SelectItem>
+                            <SelectItem value="admin">Administrador</SelectItem>
+                            <SelectItem value="comercial">Comercial</SelectItem>
+                            <SelectItem value="operador">Operador</SelectItem>
                             <SelectItem value="administrativo">Administrativo</SelectItem>
                             <SelectItem value="financeiro">Financeiro</SelectItem>
-                            <SelectItem value="comercial">Comercial</SelectItem>
+                            <SelectItem value="leitura">Leitura</SelectItem>
                           </SelectContent>
                         </Select>
+                      </TableCell>
+                      <TableCell>
+                        {u.tenant_link_id ? (
+                          <Select
+                            value={u.data_scope}
+                            onValueChange={(val) => handleUpdateDataScope(u.tenant_link_id, val)}
+                          >
+                            <SelectTrigger className="h-8 w-28 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="own">Próprios</SelectItem>
+                              <SelectItem value="team">Equipe</SelectItem>
+                              <SelectItem value="all">Todos</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant={u.is_active ? "default" : "secondary"} className="text-[10px]">
@@ -838,15 +915,31 @@ export default function ServidoresTab() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => handleToggleUserStatus(u.user_id, u.is_active)}
-                          title={u.is_active ? "Bloquear usuário" : "Ativar usuário"}
-                        >
-                          <Power className="h-3.5 w-3.5" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            title="Permissões"
+                            onClick={() => {
+                              setPermUserId(u.user_id);
+                              setPermUserName(u.name);
+                              setPermUserIsCeo(u.role === "ceo");
+                              setPermDialogOpen(true);
+                            }}
+                          >
+                            <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => handleToggleUserStatus(u.user_id, u.is_active, u.tenant_link_id)}
+                            title={u.is_active ? "Bloquear usuário" : "Ativar usuário"}
+                          >
+                            <Power className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -854,6 +947,28 @@ export default function ServidoresTab() {
               </Table>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Permissions Dialog */}
+      <Dialog open={permDialogOpen} onOpenChange={setPermDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              Permissões — {permUserName}
+            </DialogTitle>
+            <DialogDescription>
+              Gerencie as permissões de acesso deste usuário por módulo.
+            </DialogDescription>
+          </DialogHeader>
+          {permUserId && (
+            <PermissionsEditor
+              userId={permUserId}
+              isCeoOrMaster={permUserIsCeo}
+              onClose={() => setPermDialogOpen(false)}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
