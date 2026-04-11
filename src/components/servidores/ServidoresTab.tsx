@@ -169,36 +169,71 @@ export default function ServidoresTab() {
     setLoadingUsers(true);
     setEditingUser(null);
     try {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, name, email, is_active, status")
-        .eq("company_id", company.id);
+      // Query user_tenants joined with profiles for this tenant
+      const { data: tenantLinks } = await supabase
+        .from("user_tenants")
+        .select("id, user_id, role, status, data_scope")
+        .eq("tenant_id", company.id);
 
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("user_id, role");
+      if (!tenantLinks || tenantLinks.length === 0) {
+        // Fallback: check profiles with company_id (for users not yet in user_tenants)
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, name, email, is_active, status")
+          .eq("company_id", company.id);
 
-      const roleMap: Record<string, string> = {};
-      (roles || []).forEach((r: any) => { roleMap[r.user_id] = r.role; });
+        setTenantUsers(
+          (profiles || []).map((p: any) => ({
+            user_id: p.user_id,
+            name: p.name || "---",
+            email: p.email || "",
+            is_active: p.is_active,
+            role: "leitura",
+            status: p.status || "ativo",
+            data_scope: "own",
+            tenant_link_id: "",
+          }))
+        );
+      } else {
+        // Get profile data for each user
+        const userIds = tenantLinks.map(l => l.user_id);
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, name, email, is_active, status")
+          .in("user_id", userIds);
 
-      setTenantUsers(
-        (profiles || []).map((p: any) => ({
-          user_id: p.user_id,
-          name: p.name || "---",
-          email: p.email || "",
-          is_active: p.is_active,
-          role: roleMap[p.user_id] || "leitura",
-          status: p.status || "ativo",
-        }))
-      );
+        const profileMap: Record<string, any> = {};
+        (profiles || []).forEach((p: any) => { profileMap[p.user_id] = p; });
+
+        setTenantUsers(
+          tenantLinks.map((link: any) => {
+            const prof = profileMap[link.user_id] || {};
+            return {
+              user_id: link.user_id,
+              name: prof.name || "---",
+              email: prof.email || "",
+              is_active: link.status === "ativo",
+              role: link.role || "leitura",
+              status: link.status || "ativo",
+              data_scope: link.data_scope || "own",
+              tenant_link_id: link.id,
+            };
+          })
+        );
+      }
     } catch {
       setTenantUsers([]);
     }
     setLoadingUsers(false);
   };
 
-  const handleUpdateUserRole = async (userId: string, newRole: string) => {
+  const handleUpdateUserRole = async (userId: string, newRole: string, tenantLinkId: string) => {
     try {
+      // Update user_tenants
+      if (tenantLinkId) {
+        await supabase.from("user_tenants").update({ role: newRole } as any).eq("id", tenantLinkId);
+      }
+      // Also update user_roles for backward compatibility
       await supabase.from("user_roles").update({ role: newRole } as any).eq("user_id", userId);
       sonnerToast.success("Papel atualizado!");
       if (usersDialogCompany) handleOpenUsersDialog(usersDialogCompany);
@@ -207,9 +242,25 @@ export default function ServidoresTab() {
     }
   };
 
-  const handleToggleUserStatus = async (userId: string, currentActive: boolean) => {
+  const handleUpdateDataScope = async (tenantLinkId: string, newScope: string) => {
     try {
-      await supabase.from("profiles").update({ is_active: !currentActive, status: currentActive ? "bloqueado" : "ativo" } as any).eq("user_id", userId);
+      await supabase.from("user_tenants").update({ data_scope: newScope } as any).eq("id", tenantLinkId);
+      sonnerToast.success("Escopo de dados atualizado!");
+      if (usersDialogCompany) handleOpenUsersDialog(usersDialogCompany);
+    } catch {
+      sonnerToast.error("Erro ao atualizar escopo");
+    }
+  };
+
+  const handleToggleUserStatus = async (userId: string, currentActive: boolean, tenantLinkId: string) => {
+    try {
+      const newStatus = currentActive ? "bloqueado" : "ativo";
+      // Update user_tenants status
+      if (tenantLinkId) {
+        await supabase.from("user_tenants").update({ status: newStatus } as any).eq("id", tenantLinkId);
+      }
+      // Also update profiles for backward compatibility
+      await supabase.from("profiles").update({ is_active: !currentActive, status: newStatus } as any).eq("user_id", userId);
       sonnerToast.success(currentActive ? "Usuário bloqueado" : "Usuário ativado");
       if (usersDialogCompany) handleOpenUsersDialog(usersDialogCompany);
       fetchCompanies();
