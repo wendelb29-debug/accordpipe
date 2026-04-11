@@ -156,9 +156,13 @@ export const PERMISSION_MODULES: PermissionModule[] = [
     icon: Package,
     group: "Catálogo",
     permissions: [
-      { key: "create_catalog_item", label: "Criar Item do Catálogo", description: "Criar novos itens no catálogo", restrictedTo: ["ceo"] },
-      { key: "edit_catalog_item", label: "Editar Item do Catálogo", description: "Editar itens existentes" },
-      { key: "delete_catalog_item", label: "Excluir Item do Catálogo", description: "Excluir itens do catálogo" },
+      { key: "catalog_view", label: "Visualizar Catálogo", description: "Ver itens do catálogo" },
+      { key: "create_catalog_item", label: "Criar Item", description: "Criar novos itens no catálogo", restrictedTo: ["ceo"] },
+      { key: "edit_catalog_item", label: "Editar Item", description: "Editar itens existentes" },
+      { key: "delete_catalog_item", label: "Excluir Item", description: "Excluir itens do catálogo" },
+      { key: "catalog_activate", label: "Ativar/Inativar Item", description: "Ativar ou inativar itens do catálogo" },
+      { key: "catalog_use_in_proposals", label: "Usar em Propostas", description: "Selecionar itens do catálogo em propostas" },
+      { key: "catalog_override_price", label: "Sobrescrever Preço", description: "Alterar preço manualmente na proposta" },
     ],
   },
 
