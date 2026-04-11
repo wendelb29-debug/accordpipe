@@ -73,7 +73,20 @@ const papelLabels: Record<string, string> = {
   cliente: "Cliente",
   testemunha: "Testemunha",
   signatario: "Signatário",
+  socio: "Sócio",
+  financeiro: "Financeiro",
+  representante_legal: "Representante Legal",
+  avalista: "Avalista",
 };
+
+const EXTRA_SIGNER_ROLES = [
+  { value: "signatario", label: "Signatário" },
+  { value: "testemunha", label: "Testemunha" },
+  { value: "socio", label: "Sócio" },
+  { value: "financeiro", label: "Financeiro" },
+  { value: "representante_legal", label: "Representante Legal" },
+  { value: "avalista", label: "Avalista" },
+];
 
 interface Template {
   id: string;
