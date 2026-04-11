@@ -3056,7 +3056,10 @@ export type Database = {
       }
       user_tenants: {
         Row: {
+          allowed_workspace_ids: string[] | null
           created_at: string
+          custom_permissions: Json | null
+          data_scope: string
           id: string
           role: string
           status: string
@@ -3065,7 +3068,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          allowed_workspace_ids?: string[] | null
           created_at?: string
+          custom_permissions?: Json | null
+          data_scope?: string
           id?: string
           role?: string
           status?: string
@@ -3074,7 +3080,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          allowed_workspace_ids?: string[] | null
           created_at?: string
+          custom_permissions?: Json | null
+          data_scope?: string
           id?: string
           role?: string
           status?: string
