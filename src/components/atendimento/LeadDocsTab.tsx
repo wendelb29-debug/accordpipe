@@ -1,6 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Paperclip, Upload, Trash2, Eye, Download, Loader2, FileText, CreditCard, MapPin, Building2, FileSignature, CheckCircle2, Shield, User, Plus, ChevronDown, FolderOpen, ImageIcon, Link2, Clock, XCircle, MoreHorizontal, PenTool } from "lucide-react";
+import { Paperclip, Upload, Trash2, Eye, Download, Loader2, FileText, CreditCard, MapPin, Building2, FileSignature, CheckCircle2, Shield, User, Plus, ChevronDown, FolderOpen, ImageIcon, Link2, Clock, XCircle, MoreHorizontal, PenTool, Send, Copy, Mail, MessageCircle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
