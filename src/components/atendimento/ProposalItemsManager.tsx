@@ -118,8 +118,9 @@ export function ProposalItemsManager({
     setLoadingCatalog(true);
     const { data } = await supabase
       .from("proposal_catalog_items")
-      .select("id, name, value")
+      .select("id, name, value, description, item_type, recurrence_type, is_active")
       .eq("servidor_id", servidorId)
+      .eq("is_active", true)
       .order("name");
     setCatalog((data as CatalogItem[]) || []);
     setLoadingCatalog(false);
