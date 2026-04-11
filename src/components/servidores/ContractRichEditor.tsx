@@ -172,14 +172,14 @@ export function ContractRichEditor({ content, onChange, className }: Props) {
     },
   });
 
-  if (!editor) return null;
+  const editorReady = !!editor;
 
   const insertVariable = (varKey: string) => {
-    editor.chain().focus().insertContent(`{{${varKey}}}`).run();
+    editor?.chain().focus().insertContent(`{{${varKey}}}`).run();
   };
 
   const insertBlock = (html: string) => {
-    editor.chain().focus().insertContent(html).run();
+    editor?.chain().focus().insertContent(html).run();
   };
 
   const ToolBtn = ({
@@ -187,19 +187,23 @@ export function ContractRichEditor({ content, onChange, className }: Props) {
     onClick,
     children,
     title,
+    disabled,
   }: {
     active?: boolean;
     onClick: () => void;
     children: React.ReactNode;
     title?: string;
+    disabled?: boolean;
   }) => (
     <button
       type="button"
       onClick={onClick}
       title={title}
+      disabled={disabled}
       className={cn(
         "h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors",
-        active && "bg-accent text-accent-foreground"
+        active && "bg-accent text-accent-foreground",
+        disabled && "opacity-40 pointer-events-none"
       )}
     >
       {children}
@@ -210,66 +214,66 @@ export function ContractRichEditor({ content, onChange, className }: Props) {
     <div className={cn("flex border rounded-lg overflow-hidden bg-background", className)}>
       {/* Editor area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Toolbar */}
-        <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b bg-muted/30">
-          <ToolBtn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")} title="Negrito">
+        {/* Toolbar - always rendered, sticky */}
+        <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b bg-muted/30 sticky top-0 z-10 min-h-[42px]">
+          <ToolBtn onClick={() => editor?.chain().focus().toggleBold().run()} active={editor?.isActive("bold")} title="Negrito" disabled={!editorReady}>
             <Bold className="h-4 w-4" />
           </ToolBtn>
           <ToolBtn onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive("italic")} title="Itálico">
             <Italic className="h-4 w-4" />
           </ToolBtn>
-          <ToolBtn onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive("underline")} title="Sublinhado">
+          <ToolBtn onClick={() => editor?.chain().focus().toggleUnderline().run()} active={editor?.isActive("underline")} title="Sublinhado" disabled={!editorReady}>
             <UnderlineIcon className="h-4 w-4" />
           </ToolBtn>
-          <ToolBtn onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive("strike")} title="Tachado">
+          <ToolBtn onClick={() => editor?.chain().focus().toggleStrike().run()} active={editor?.isActive("strike")} title="Tachado" disabled={!editorReady}>
             <Strikethrough className="h-4 w-4" />
           </ToolBtn>
 
           <Separator orientation="vertical" className="mx-1 h-6" />
 
-          <ToolBtn onClick={() => editor.chain().focus().setParagraph().run()} active={editor.isActive("paragraph")} title="Parágrafo">
+          <ToolBtn onClick={() => editor?.chain().focus().setParagraph().run()} active={editor?.isActive("paragraph")} title="Parágrafo" disabled={!editorReady}>
             <Type className="h-4 w-4" />
           </ToolBtn>
-          <ToolBtn onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive("heading", { level: 1 })} title="Título 1">
+          <ToolBtn onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} active={editor?.isActive("heading", { level: 1 })} title="Título 1" disabled={!editorReady}>
             <Heading1 className="h-4 w-4" />
           </ToolBtn>
-          <ToolBtn onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive("heading", { level: 2 })} title="Título 2">
+          <ToolBtn onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} active={editor?.isActive("heading", { level: 2 })} title="Título 2" disabled={!editorReady}>
             <Heading2 className="h-4 w-4" />
           </ToolBtn>
-          <ToolBtn onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive("heading", { level: 3 })} title="Título 3">
+          <ToolBtn onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()} active={editor?.isActive("heading", { level: 3 })} title="Título 3" disabled={!editorReady}>
             <Heading3 className="h-4 w-4" />
           </ToolBtn>
 
           <Separator orientation="vertical" className="mx-1 h-6" />
 
-          <ToolBtn onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive("bulletList")} title="Lista">
+          <ToolBtn onClick={() => editor?.chain().focus().toggleBulletList().run()} active={editor?.isActive("bulletList")} title="Lista" disabled={!editorReady}>
             <List className="h-4 w-4" />
           </ToolBtn>
-          <ToolBtn onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive("orderedList")} title="Lista numerada">
+          <ToolBtn onClick={() => editor?.chain().focus().toggleOrderedList().run()} active={editor?.isActive("orderedList")} title="Lista numerada" disabled={!editorReady}>
             <ListOrdered className="h-4 w-4" />
           </ToolBtn>
 
           <Separator orientation="vertical" className="mx-1 h-6" />
 
-          <ToolBtn onClick={() => editor.chain().focus().setTextAlign("left").run()} active={editor.isActive({ textAlign: "left" })} title="Esquerda">
+          <ToolBtn onClick={() => editor?.chain().focus().setTextAlign("left").run()} active={editor?.isActive({ textAlign: "left" })} title="Esquerda" disabled={!editorReady}>
             <AlignLeft className="h-4 w-4" />
           </ToolBtn>
-          <ToolBtn onClick={() => editor.chain().focus().setTextAlign("center").run()} active={editor.isActive({ textAlign: "center" })} title="Centro">
+          <ToolBtn onClick={() => editor?.chain().focus().setTextAlign("center").run()} active={editor?.isActive({ textAlign: "center" })} title="Centro" disabled={!editorReady}>
             <AlignCenter className="h-4 w-4" />
           </ToolBtn>
-          <ToolBtn onClick={() => editor.chain().focus().setTextAlign("right").run()} active={editor.isActive({ textAlign: "right" })} title="Direita">
+          <ToolBtn onClick={() => editor?.chain().focus().setTextAlign("right").run()} active={editor?.isActive({ textAlign: "right" })} title="Direita" disabled={!editorReady}>
             <AlignRight className="h-4 w-4" />
           </ToolBtn>
-          <ToolBtn onClick={() => editor.chain().focus().setTextAlign("justify").run()} active={editor.isActive({ textAlign: "justify" })} title="Justificar">
+          <ToolBtn onClick={() => editor?.chain().focus().setTextAlign("justify").run()} active={editor?.isActive({ textAlign: "justify" })} title="Justificar" disabled={!editorReady}>
             <AlignJustify className="h-4 w-4" />
           </ToolBtn>
 
           <Separator orientation="vertical" className="mx-1 h-6" />
 
-          <ToolBtn onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Linha divisória">
+          <ToolBtn onClick={() => editor?.chain().focus().setHorizontalRule().run()} title="Linha divisória" disabled={!editorReady}>
             <Minus className="h-4 w-4" />
           </ToolBtn>
-          <ToolBtn onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="Tabela">
+          <ToolBtn onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="Tabela" disabled={!editorReady}>
             <TableIcon className="h-4 w-4" />
           </ToolBtn>
 
@@ -280,7 +284,11 @@ export function ContractRichEditor({ content, onChange, className }: Props) {
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="h-8 px-2 flex items-center gap-1 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors text-xs"
+                disabled={!editorReady}
+                className={cn(
+                  "h-8 px-2 flex items-center gap-1 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors text-xs",
+                  !editorReady && "opacity-40 pointer-events-none"
+                )}
                 title="Inserir bloco pronto"
               >
                 <LayoutTemplate className="h-4 w-4" />
@@ -300,17 +308,23 @@ export function ContractRichEditor({ content, onChange, className }: Props) {
 
           <Separator orientation="vertical" className="mx-1 h-6" />
 
-          <ToolBtn onClick={() => editor.chain().focus().undo().run()} title="Desfazer">
+          <ToolBtn onClick={() => editor?.chain().focus().undo().run()} title="Desfazer" disabled={!editorReady}>
             <Undo className="h-4 w-4" />
           </ToolBtn>
-          <ToolBtn onClick={() => editor.chain().focus().redo().run()} title="Refazer">
+          <ToolBtn onClick={() => editor?.chain().focus().redo().run()} title="Refazer" disabled={!editorReady}>
             <Redo className="h-4 w-4" />
           </ToolBtn>
         </div>
 
         {/* Editor content */}
         <ScrollArea className="flex-1 max-h-[600px]">
-          <EditorContent editor={editor} className="[&_.tiptap]:outline-none" />
+          {editorReady ? (
+            <EditorContent editor={editor} className="[&_.tiptap]:outline-none" />
+          ) : (
+            <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">
+              Carregando editor...
+            </div>
+          )}
         </ScrollArea>
       </div>
 
