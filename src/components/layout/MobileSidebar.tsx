@@ -55,9 +55,9 @@ export function MobileSidebar() {
           <Menu className="h-5 w-5" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-72 p-0 bg-sidebar border-sidebar-border">
+      <SheetContent side="left" className="w-72 p-0 bg-sidebar border-sidebar-border h-[100dvh] max-h-[100dvh] flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         {/* Logo */}
-        <div className="flex h-16 items-center justify-between px-5 border-b border-sidebar-border/30">
+        <div className="flex min-h-[56px] items-center justify-between px-5 border-b border-sidebar-border/30 shrink-0">
           <div className="flex items-center gap-2.5">
             <img src={accordLogo} alt="ACCORD" className="h-8 w-auto" />
             <span className="text-[15px] font-bold tracking-tight text-sidebar-foreground/90">ACCORD</span>
@@ -81,7 +81,7 @@ export function MobileSidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-0.5 overflow-y-auto py-4 px-3">
+        <nav className="flex-1 min-h-0 space-y-0.5 overflow-y-auto py-4 px-3">
           <p className="px-3 pb-2 pt-1 text-[10px] font-medium uppercase tracking-[0.15em] text-sidebar-foreground/20">Menu</p>
           {filteredNavigation.map((item) => {
             const isActive = location.pathname === item.href;
@@ -106,7 +106,7 @@ export function MobileSidebar() {
         </nav>
 
         {/* Config & User */}
-        <div className="border-t border-sidebar-border/50 px-3 py-3">
+        <div className="border-t border-sidebar-border/50 px-3 py-3 shrink-0">
           {filteredConfigNavigation.length > 0 && (
             <div className="space-y-0.5 mb-4">
               <p className="px-3 pb-3 text-[9px] font-bold uppercase tracking-[0.2em] text-sidebar-foreground/15">Config</p>
