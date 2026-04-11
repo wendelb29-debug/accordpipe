@@ -1004,7 +1004,7 @@ export default function AssinarPdf() {
             {/* PDF Viewer */}
             <div className="bg-[hsl(224,50%,15%)] rounded-2xl border border-[hsl(224,40%,20%)] overflow-hidden shadow-2xl shadow-[hsl(224,62%,4%)]/50">
               <div
-                className="overflow-auto max-h-[calc(100vh-260px)] p-4"
+                className="overflow-auto max-h-[calc(100vh-200px)] lg:max-h-[calc(100vh-260px)] p-4 pb-24 lg:pb-4"
                 style={{ transform: `scale(${pdfZoom / 100})`, transformOrigin: "top center" }}
               >
                 {contract && signer && (
