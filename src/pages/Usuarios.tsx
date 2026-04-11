@@ -224,9 +224,12 @@ export default function Usuarios() {
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.error || "Erro desconhecido");
 
+      const isLinked = data?.linked_existing;
       toast({
-        title: "Usuário criado com sucesso",
-        description: `${formData.name} foi criado e vinculado ao tenant.`,
+        title: isLinked ? "Usuário vinculado com sucesso" : "Usuário criado com sucesso",
+        description: isLinked
+          ? `${formData.name} já possuía cadastro e foi vinculado a este tenant.`
+          : `${formData.name} foi criado e vinculado ao tenant.${data?.temp_password ? ` Senha temporária: ${data.temp_password}` : ""}`,
       });
 
       setDialogOpen(false);
