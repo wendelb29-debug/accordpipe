@@ -781,11 +781,11 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   return (
     <div className="flex flex-col h-full overflow-hidden bg-background">
       {/* Header with pipeline progress */}
-      <div className="border-b bg-card px-3 sm:px-4 py-2 sm:py-3">
-        <div className="flex items-center justify-between mb-2 sm:mb-3 gap-2">
+      <div className="border-b bg-card px-3 sm:px-4 py-1.5 sm:py-2">
+        <div className="flex items-center justify-between mb-1 sm:mb-1.5 gap-2">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <div className="min-w-0">
-              <h2 className="text-sm font-bold text-foreground truncate">{lead.source} - {lead.contact_name || lead.company_name}</h2>
+              <h2 className="text-xs sm:text-sm font-bold text-foreground truncate">{lead.source} - {lead.contact_name || lead.company_name}</h2>
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap justify-end">

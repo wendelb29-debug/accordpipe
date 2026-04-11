@@ -65,20 +65,19 @@ export function KanbanStageHeader({
   }
 
   return (
-    <div className="space-y-1">
-      <p className="text-xs text-muted-foreground truncate">
-        Etapa atual: <strong>{currentStageName}</strong>
-        {" · "}{getDaysInStage()} dia(s) nesta etapa
+    <div className="space-y-0.5">
+      <p className="text-[10px] sm:text-xs text-muted-foreground truncate leading-tight">
+        Etapa: <strong>{currentStageName}</strong>
+        {" · "}{getDaysInStage()}d
       </p>
       <div
         ref={scrollRef}
-        className="flex gap-0.5 overflow-x-auto pb-1 -mb-1 scrollbar-hide"
+        className="flex gap-px overflow-x-auto pb-0.5 -mb-0.5 scrollbar-hide"
       >
         {stages.map((stage, i) => {
           const isActive = i === currentStageIndex;
           const isPast = i < currentStageIndex;
 
-          // Determine background color
           const bgStyle: React.CSSProperties = {};
           let colorClass = "";
 
@@ -104,7 +103,7 @@ export function KanbanStageHeader({
               disabled={saving}
               style={bgStyle}
               className={cn(
-                "flex-shrink-0 min-w-[70px] sm:flex-1 py-1.5 text-[10px] font-medium rounded-sm transition-all text-center truncate px-1.5 relative",
+                "flex-shrink-0 min-w-[60px] sm:flex-1 py-1 text-[9px] sm:text-[10px] font-medium rounded-sm transition-all text-center truncate px-1 relative",
                 colorClass,
                 !isActive && !isPast && !stage.rawColor && "bg-muted text-muted-foreground hover:bg-muted/80",
                 !isActive && !isPast && stage.rawColor && "text-muted-foreground hover:opacity-80",
@@ -114,7 +113,7 @@ export function KanbanStageHeader({
             >
               {stage.title}
               {isActive && (
-                <span className="block text-[9px] opacity-80">{getDaysInStage()} dia(s)</span>
+                <span className="block text-[8px] sm:text-[9px] opacity-80">{getDaysInStage()}d</span>
               )}
             </button>
           );
