@@ -305,7 +305,7 @@ export function ContractVariableAudit({ templateText, resolvedValues, compact = 
 
   // Status message
   const statusMessage = !canGenerate
-    ? { text: "Existem variáveis obrigatórias sem valor. Corrija os dados antes de gerar o documento.", type: "error" as const }
+    ? { text: "Existem variáveis obrigatórias sem valor. Você poderá gerar o documento mesmo assim.", type: "warning" as const }
     : summary.signatureOnly > 0
     ? { text: "Modelo validado. Algumas variáveis serão preenchidas no processo de assinatura.", type: "info" as const }
     : { text: "Modelo validado com sucesso. O documento está pronto para ser gerado.", type: "success" as const };
@@ -315,11 +315,11 @@ export function ContractVariableAudit({ templateText, resolvedValues, compact = 
       {/* Status banner */}
       <div className={cn(
         "px-3 py-2 flex items-center gap-2 text-xs font-medium",
-        statusMessage.type === "error" && "bg-red-50 text-red-700 dark:bg-red-900/10 dark:text-red-400",
+        statusMessage.type === "warning" && "bg-amber-50 text-amber-700 dark:bg-amber-900/10 dark:text-amber-400",
         statusMessage.type === "info" && "bg-blue-50 text-blue-700 dark:bg-blue-900/10 dark:text-blue-400",
         statusMessage.type === "success" && "bg-green-50 text-green-700 dark:bg-green-900/10 dark:text-green-400",
       )}>
-        {statusMessage.type === "error" && <Ban className="h-3.5 w-3.5 shrink-0" />}
+        {statusMessage.type === "warning" && <AlertTriangle className="h-3.5 w-3.5 shrink-0" />}
         {statusMessage.type === "info" && <Clock className="h-3.5 w-3.5 shrink-0" />}
         {statusMessage.type === "success" && <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />}
         {statusMessage.text}
@@ -378,12 +378,12 @@ export function ContractVariableAudit({ templateText, resolvedValues, compact = 
 
           {/* Critical missing warning */}
           {criticalMissing.length > 0 && (
-            <div className="px-3 py-2 bg-red-50 dark:bg-red-900/10 border-t border-b border-red-100 dark:border-red-900/30">
+            <div className="px-3 py-2 bg-amber-50 dark:bg-amber-900/10 border-t border-b border-amber-100 dark:border-amber-900/30">
               <div className="flex items-start gap-2">
-                <Ban className="h-3.5 w-3.5 text-red-600 mt-0.5 shrink-0" />
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-[11px] font-medium text-red-700 dark:text-red-400">
-                    Variáveis obrigatórias sem valor — geração bloqueada:
+                  <p className="text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                    Variáveis obrigatórias sem valor — campos ficarão em branco no documento:
                   </p>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {criticalMissing.map((name) => (

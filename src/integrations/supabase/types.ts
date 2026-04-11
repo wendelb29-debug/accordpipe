@@ -1845,6 +1845,7 @@ export type Database = {
           created_by_user_id: string | null
           document_hash: string | null
           expires_at: string | null
+          generated_with_missing_fields: boolean
           html_content: string | null
           id: string
           lead_id: string
@@ -1869,6 +1870,7 @@ export type Database = {
           created_by_user_id?: string | null
           document_hash?: string | null
           expires_at?: string | null
+          generated_with_missing_fields?: boolean
           html_content?: string | null
           id?: string
           lead_id: string
@@ -1893,6 +1895,7 @@ export type Database = {
           created_by_user_id?: string | null
           document_hash?: string | null
           expires_at?: string | null
+          generated_with_missing_fields?: boolean
           html_content?: string | null
           id?: string
           lead_id?: string

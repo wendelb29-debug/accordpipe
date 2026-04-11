@@ -25,6 +25,10 @@ import {
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import type { CrmLead } from "@/hooks/useCrmLeads";
 import { toast } from "sonner";
@@ -408,6 +412,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
   const [previewVendor, setPreviewVendor] = useState<any>(null);
   const [previewRegistration, setPreviewRegistration] = useState<any>(null);
   const [canGenerate, setCanGenerate] = useState(true);
+  const [confirmMissingOpen, setConfirmMissingOpen] = useState(false);
 
   // View
   const [viewDoc, setViewDoc] = useState<GeneratedDoc | null>(null);
@@ -590,11 +595,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
       const vars = buildVariableMap(lead, tenant, proposal, vendor, registration);
       const missingCritical = CRITICAL_VARS.filter((v) => !vars[`{{${v}}}`]);
-      if (missingCritical.length > 0) {
-        toast.error(`Não foi possível gerar: variáveis obrigatórias sem valor (${missingCritical.join(", ")})`);
-        setGenerating(false);
-        return;
-      }
+      const hasMissingFields = missingCritical.length > 0;
 
       const contentTemplate = (template as any).content_template;
       let htmlContent: string;
@@ -625,7 +626,8 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         created_by_user_id: profile?.user_id,
         created_by_name: profile?.name,
         rendered_variables_json: snapshot as any,
-      }).select("id").maybeSingle();
+        generated_with_missing_fields: hasMissingFields,
+      } as any).select("id").maybeSingle();
 
       if (error || !insertedDoc?.id) throw error || new Error("Documento não foi criado");
 
@@ -648,7 +650,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
       await supabase.from("document_events").insert({
         document_id: insertedDoc.id,
         evento: "documento_gerado",
-        descricao: `Documento "${finalName}" gerado a partir do modelo "${template.nome}" por ${profile?.name || "Sistema"}${hasPendingSig ? " (variáveis de assinatura pendentes)" : ""}`,
+        descricao: `Documento "${finalName}" gerado a partir do modelo "${template.nome}" por ${profile?.name || "Sistema"}${hasPendingSig ? " (variáveis de assinatura pendentes)" : ""}${hasMissingFields ? " ⚠ GERADO COM CAMPOS OBRIGATÓRIOS AUSENTES" : ""}`,
         metadata_json: {
           template_id: template.id,
           template_nome: template.nome,
@@ -656,6 +658,8 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
           generated_by: profile?.name,
           generated_at: new Date().toISOString(),
           pending_signature_vars: hasPendingSig,
+          generated_with_missing_fields: hasMissingFields,
+          missing_fields: hasMissingFields ? missingCritical : [],
         },
       });
 
@@ -1082,13 +1086,82 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setGenerateOpen(false)}>Cancelar</Button>
-            <Button size="sm" onClick={handleGenerate} disabled={generating || !selectedTemplate || !canGenerate}>
-              {generating && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
-              {!canGenerate ? "Dados obrigatórios ausentes" : "Gerar Documento"}
-            </Button>
+            {!canGenerate ? (
+              <Button size="sm" variant="destructive" onClick={() => { setGenerateOpen(false); setConfirmMissingOpen(true); }} disabled={generating || !selectedTemplate}>
+                <AlertCircle className="h-3.5 w-3.5 mr-1.5" />
+                Gerar com dados ausentes
+              </Button>
+            ) : (
+              <Button size="sm" onClick={handleGenerate} disabled={generating || !selectedTemplate}>
+                {generating && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
+                Gerar Documento
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Confirmation dialog for missing required fields */}
+      <AlertDialog open={confirmMissingOpen} onOpenChange={setConfirmMissingOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
+              <AlertCircle className="h-5 w-5" />
+              Atenção: dados obrigatórios ausentes
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Este documento possui variáveis obrigatórias sem valor. Você pode voltar para corrigir os dados ou gerar o documento mesmo assim.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Campos não preenchidos ficarão em branco ou incompletos no arquivo final. O documento será marcado como gerado com dados ausentes.
+                </p>
+                {(() => {
+                  const tpl = templates.find(t => t.id === selectedTemplate);
+                  const contentTemplate = (tpl as any)?.content_template || "";
+                  const placeholderList = (tpl as any)?.placeholders_json as string[] | null;
+                  const templateText = contentTemplate
+                    || (placeholderList && placeholderList.length > 0
+                      ? placeholderList.map(p => `{{${p}}}`).join(" ")
+                      : "");
+                  const vars = buildVariableMap(lead, previewTenant, previewProposal, previewVendor, previewRegistration);
+                  const missing = CRITICAL_VARS.filter(v => !vars[`{{${v}}}`]);
+                  if (missing.length === 0) return null;
+                  return (
+                    <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10 p-3 space-y-2">
+                      <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                        Variáveis obrigatórias sem valor ({missing.length}):
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {missing.map(v => {
+                          const def = { nome_completo: "Nome do cliente", documento_contratante: "CPF/CNPJ do contratante", tenant_nome: "Nome do Tenant", tenant_cnpj: "CNPJ do Tenant" }[v] || v;
+                          return (
+                            <code key={v} className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded">
+                              {`{{${v}}}`} — {def}
+                            </code>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setConfirmMissingOpen(false); setGenerateOpen(true); }}>
+              Voltar e corrigir
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+              onClick={() => { setConfirmMissingOpen(false); handleGenerate(); }}
+            >
+              Gerar mesmo assim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* View Dialog */}
       <Dialog open={!!viewDoc} onOpenChange={() => setViewDoc(null)}>
