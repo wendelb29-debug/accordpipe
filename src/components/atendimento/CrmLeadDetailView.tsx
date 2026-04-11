@@ -41,6 +41,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { WonConfirmDialog, WonCelebrationDialog } from "./WonCelebrationDialog";
 import { getOrCreateCadastroWorkspace } from "@/lib/cadastroWorkspace";
+import { KanbanStageHeader } from "./KanbanStageHeader";
 
 const formatCurrency = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
