@@ -778,6 +778,11 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
     }
   };
 
+  const openSignatureDrawer = (contract: SignedContract) => {
+    setSignDrawerContract(contract);
+    setSignDrawerSigners(contract.signers || []);
+  };
+
   const handleViewPdfSignature = (contract: SignedPdfContract) => {
     if (contract.validation_code) {
       window.open(`${window.location.origin}/validar-documento/${contract.validation_code}`, "_blank");
