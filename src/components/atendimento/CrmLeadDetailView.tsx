@@ -272,14 +272,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     return () => { supabase.removeChannel(channel); };
   }, [lead.id, lead.company_id, lead.servidor_id]);
 
-  const pipelineStages = isAdminPipeline ? ADMIN_STAGES : STAGES;
-  const currentStageIndex = pipelineStages.findIndex((s) => s.id === lead.stage);
-
-  const getDaysInStage = () => {
-    const entered = new Date(lead.stage_entered_at);
-    const now = new Date();
-    return Math.floor((now.getTime() - entered.getTime()) / (1000 * 60 * 60 * 24));
-  };
+  // pipelineStages now handled by KanbanStageHeader
 
   const getDaysTotal = () => {
     const created = new Date(lead.created_at);
