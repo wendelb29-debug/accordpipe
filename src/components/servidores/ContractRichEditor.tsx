@@ -175,11 +175,11 @@ export function ContractRichEditor({ content, onChange, className }: Props) {
   const editorReady = !!editor;
 
   const insertVariable = (varKey: string) => {
-    editor.chain().focus().insertContent(`{{${varKey}}}`).run();
+    editor?.chain().focus().insertContent(`{{${varKey}}}`).run();
   };
 
   const insertBlock = (html: string) => {
-    editor.chain().focus().insertContent(html).run();
+    editor?.chain().focus().insertContent(html).run();
   };
 
   const ToolBtn = ({
@@ -187,19 +187,23 @@ export function ContractRichEditor({ content, onChange, className }: Props) {
     onClick,
     children,
     title,
+    disabled,
   }: {
     active?: boolean;
     onClick: () => void;
     children: React.ReactNode;
     title?: string;
+    disabled?: boolean;
   }) => (
     <button
       type="button"
       onClick={onClick}
       title={title}
+      disabled={disabled}
       className={cn(
         "h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors",
-        active && "bg-accent text-accent-foreground"
+        active && "bg-accent text-accent-foreground",
+        disabled && "opacity-40 pointer-events-none"
       )}
     >
       {children}
@@ -210,9 +214,9 @@ export function ContractRichEditor({ content, onChange, className }: Props) {
     <div className={cn("flex border rounded-lg overflow-hidden bg-background", className)}>
       {/* Editor area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Toolbar */}
-        <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b bg-muted/30">
-          <ToolBtn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")} title="Negrito">
+        {/* Toolbar - always rendered, sticky */}
+        <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b bg-muted/30 sticky top-0 z-10 min-h-[42px]">
+          <ToolBtn onClick={() => editor?.chain().focus().toggleBold().run()} active={editor?.isActive("bold")} title="Negrito" disabled={!editorReady}>
             <Bold className="h-4 w-4" />
           </ToolBtn>
           <ToolBtn onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive("italic")} title="Itálico">
