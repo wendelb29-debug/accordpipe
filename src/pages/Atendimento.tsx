@@ -98,9 +98,6 @@ function AtendimentoContent() {
         <TabsContent value="comercial" className="flex-1 overflow-hidden mt-0">
           <CrmKanbanBoard searchTerm={crmSearch} workspaceId={selectedWsId} />
         </TabsContent>
-        <TabsContent value="cadastro" className="flex-1 overflow-hidden mt-0">
-          <AdminKanbanBoard searchTerm={crmSearch} />
-        </TabsContent>
         <TabsContent value="importar" className="flex-1 overflow-hidden mt-0">
           <ImportarPlanilha />
         </TabsContent>
