@@ -2,8 +2,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import {
   FileText, Download, Eye, Camera, CheckCircle2, XCircle,
   Loader2, Shield, Clock, MapPin, User, Mail, Phone,
-  ArrowRight,
+  ArrowRight, ZoomIn, ZoomOut,
 } from "lucide-react";
+import { PdfAllPagesRenderer } from "@/components/contratos/PdfAllPagesRenderer";
 import { supabase } from "@/integrations/supabase/client";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -338,13 +339,8 @@ export default function AssinarDocumento() {
               {document?.pdf_url && (
                 <Card>
                   <CardContent className="p-0">
-                    <div className="rounded-lg overflow-hidden" style={{ height: "500px" }}>
-                      <iframe
-                        src={`${document.pdf_url}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`}
-                        className="w-full h-full"
-                        title="Preview do documento"
-                        style={{ border: "none" }}
-                      />
+                    <div className="rounded-lg overflow-auto max-h-[70vh] sm:max-h-[600px] p-2">
+                      <PdfAllPagesRenderer pdfUrl={document.pdf_url} scale={1.0} />
                     </div>
                   </CardContent>
                 </Card>
@@ -410,13 +406,8 @@ export default function AssinarDocumento() {
               {document?.pdf_url && (
                 <Card>
                   <CardContent className="p-0">
-                    <div className="rounded-lg overflow-hidden" style={{ height: "400px" }}>
-                      <iframe
-                        src={`${document.pdf_url}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`}
-                        className="w-full h-full"
-                        title="Preview do documento"
-                        style={{ border: "none" }}
-                      />
+                    <div className="rounded-lg overflow-auto max-h-[60vh] sm:max-h-[500px] p-2">
+                      <PdfAllPagesRenderer pdfUrl={document.pdf_url} scale={1.0} />
                     </div>
                   </CardContent>
                 </Card>

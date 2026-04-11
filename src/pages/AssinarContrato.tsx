@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { generateContractPdf } from "@/lib/generateContractPdf";
+import { PdfAllPagesRenderer } from "@/components/contratos/PdfAllPagesRenderer";
 
 const roleLabels: Record<string, string> = {
   matriz: "Representante da Matriz",
@@ -71,7 +72,7 @@ function ContractPdfEmbed({ content, code, companyName }: { content: string; cod
 
   if (!pdfUrl) return <p className="text-sm text-muted-foreground">Conteúdo não disponível</p>;
 
-  return <iframe src={pdfUrl} className="w-full h-full rounded-xl border-0" title="Contrato PDF" />;
+  return <PdfAllPagesRenderer pdfUrl={pdfUrl} scale={1.0} />;
 }
 
 export default function AssinarContrato() {
@@ -366,14 +367,14 @@ export default function AssinarContrato() {
                 Voltar
               </Button>
             </div>
-            <div className="h-[80vh] sm:h-[75vh] bg-slate-900/40 rounded-2xl p-1 sm:p-2">
-              <div className="h-full rounded-xl overflow-hidden">
+            <div className="overflow-auto max-h-[80vh] sm:max-h-[75vh] bg-slate-900/40 rounded-2xl p-2">
+              <div className="rounded-xl overflow-hidden bg-white p-2">
                 {contract.pdf_url ? (
-                  <iframe src={contract.pdf_url} className="w-full h-full border-0" style={{ minHeight: "100%" }} title="Contrato PDF" />
+                  <PdfAllPagesRenderer pdfUrl={contract.pdf_url} scale={1.0} />
                 ) : contract.contract_content ? (
                   <ContractPdfEmbed content={contract.contract_content} code={contract.code} companyName={contract.company?.razao_social || ""} />
                 ) : (
-                  <div className="flex items-center justify-center h-full text-slate-400 text-sm">PDF não disponível</div>
+                  <div className="flex items-center justify-center h-64 text-slate-400 text-sm">PDF não disponível</div>
                 )}
               </div>
             </div>
@@ -525,10 +526,10 @@ export default function AssinarContrato() {
             </div>
             <h2 className="text-sm font-semibold text-slate-200">Conteúdo do Contrato</h2>
           </div>
-          <div className="h-[80vh] sm:h-[550px] bg-slate-900/40 p-1 sm:p-4">
-            <div className="h-full rounded-xl overflow-hidden shadow-2xl shadow-black/30 bg-white">
+          <div className="overflow-auto max-h-[75vh] sm:max-h-[600px] bg-slate-900/40 p-2 sm:p-4">
+            <div className="rounded-xl overflow-hidden shadow-2xl shadow-black/30 bg-white p-2">
               {contract.pdf_url ? (
-                <iframe src={contract.pdf_url} className="w-full h-full border-0" title="Contrato PDF" style={{ minHeight: "100%" }} />
+                <PdfAllPagesRenderer pdfUrl={contract.pdf_url} scale={1.0} />
               ) : (
                 <ContractPdfEmbed content={contract.contract_content || ""} code={contract.code} companyName={company?.razao_social || ""} />
               )}
