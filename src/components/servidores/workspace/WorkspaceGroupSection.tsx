@@ -37,6 +37,69 @@ export function WorkspaceGroupSection({ ws, columns, setColumns, expandedWs, set
   const TypeIcon = typeConf.icon;
   const wsCols = (columns[ws.id] || []).sort((a, b) => a.position - b.position);
   const isExpanded = expandedWs[ws.id] ?? false;
+  const seedingRef = useRef(false);
+
+  // Auto-seed default columns when workspace is expanded and has none
+  useEffect(() => {
+    if (!isExpanded || wsCols.length > 0 || seedingRef.current) return;
+    seedingRef.current = true;
+
+    const salesPipeline = [
+      { name: "StandBy", position: 0, sla_days: 90, color: "#6B7280", is_default: true },
+      { name: "Novos Leads", position: 1, sla_days: 1, color: "#22C55E" },
+      { name: "1º Contato", position: 2, sla_days: 5, color: "#3B82F6" },
+      { name: "Call/Negócio", position: 3, sla_days: 3, color: "#F59E0B" },
+      { name: "Follow-up 1", position: 4, sla_days: 15, color: "#A855F7" },
+      { name: "Follow-up 2", position: 5, sla_days: 15, color: "#EC4899" },
+      { name: "Contrato Fechado", position: 6, sla_days: 0, color: "#22C55E", is_final: true },
+    ];
+    const taskPipeline = [
+      { name: "A Fazer", position: 0, sla_days: 7, color: "#6B7280", is_default: true },
+      { name: "Em Progresso", position: 1, sla_days: 5, color: "#3B82F6" },
+      { name: "Concluído", position: 2, sla_days: 0, color: "#22C55E", is_final: true },
+    ];
+    const suportePipeline = [
+      { name: "Novo Ticket", position: 0, sla_days: 1, color: "#6B7280", is_default: true },
+      { name: "Em Análise", position: 1, sla_days: 3, color: "#3B82F6" },
+      { name: "Em Andamento", position: 2, sla_days: 5, color: "#F59E0B" },
+      { name: "Aguardando Retorno", position: 3, sla_days: 7, color: "#A855F7" },
+      { name: "Resolvido", position: 4, sla_days: 0, color: "#22C55E", is_final: true },
+    ];
+    const financeiroPipeline = [
+      { name: "Pendente", position: 0, sla_days: 5, color: "#6B7280", is_default: true },
+      { name: "Em Análise", position: 1, sla_days: 3, color: "#3B82F6" },
+      { name: "Aprovado", position: 2, sla_days: 2, color: "#22C55E" },
+      { name: "Pago", position: 3, sla_days: 0, color: "#10B981", is_final: true },
+    ];
+    const onboardingPipeline = [
+      { name: "Cadastro", position: 0, sla_days: 3, color: "#6B7280", is_default: true },
+      { name: "Documentação", position: 1, sla_days: 5, color: "#3B82F6" },
+      { name: "Validação", position: 2, sla_days: 3, color: "#F59E0B" },
+      { name: "Ativação", position: 3, sla_days: 2, color: "#A855F7" },
+      { name: "Concluído", position: 4, sla_days: 0, color: "#22C55E", is_final: true },
+    ];
+    const defaultCols: Record<string, typeof salesPipeline> = {
+      vendas: salesPipeline, comercial: salesPipeline, pre_venda_sdr: salesPipeline, crm: salesPipeline,
+      task: taskPipeline, suporte: suportePipeline,
+      financeiro: financeiroPipeline, contas_pagar: financeiroPipeline, contas_receber: financeiroPipeline, cobranca: financeiroPipeline,
+      onboarding: onboardingPipeline, pos_venda: onboardingPipeline,
+    };
+    const cols = defaultCols[ws.type] || taskPipeline;
+
+    (async () => {
+      // Double-check in DB before inserting
+      const { data: existing } = await supabase.from("kanban_columns").select("id").eq("workspace_id", ws.id).limit(1);
+      if (existing && existing.length > 0) { seedingRef.current = false; onRefresh(); return; }
+
+      const { error } = await supabase.from("kanban_columns").insert(
+        cols.map((c) => ({ ...c, workspace_id: ws.id })) as any
+      );
+      seedingRef.current = false;
+      if (error) { console.error("Error seeding columns:", error); return; }
+      toast.success(`Colunas padrão criadas para "${ws.name}"`);
+      onRefresh();
+    })();
+  }, [isExpanded, wsCols.length, ws.id, ws.type, ws.name, onRefresh]);
 
   // Column editing
   const [editingColId, setEditingColId] = useState<string | null>(null);
