@@ -79,6 +79,7 @@ export interface DynamicStage {
   color: string;
   rawColor?: string;
   sla_days?: number;
+  allow_mark_as_won?: boolean;
 }
 
 export function useCrmLeads(
