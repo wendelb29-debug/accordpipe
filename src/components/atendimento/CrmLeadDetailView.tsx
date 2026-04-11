@@ -35,12 +35,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { getLeadContractSignatureStats } from "@/lib/contractSigners";
-import { CrmLead, STAGES, ADMIN_STAGES, ALL_STAGES } from "@/hooks/useCrmLeads";
+import { CrmLead, STAGES, ADMIN_STAGES, ALL_STAGES, DynamicStage } from "@/hooks/useCrmLeads";
 import { useCrmActivities } from "@/hooks/useCrmActivities";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { WonConfirmDialog, WonCelebrationDialog } from "./WonCelebrationDialog";
 import { getOrCreateCadastroWorkspace } from "@/lib/cadastroWorkspace";
+import { KanbanStageHeader } from "./KanbanStageHeader";
 
 const formatCurrency = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -136,6 +137,8 @@ interface CrmLeadDetailViewProps {
   onMoveStage: (id: string, stage: string) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
   isAdminPipeline?: boolean;
+  dynamicStages?: DynamicStage[];
+  stagesLoading?: boolean;
 }
 
 const LOST_REASONS = [
@@ -146,7 +149,7 @@ const LOST_REASONS = [
   { value: "sem_contato", label: "SEM CONTATO", description: "Não obteve sucesso em nenhum dos contatos" },
 ];
 
-export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelete, isAdminPipeline }: CrmLeadDetailViewProps) {
+export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelete, isAdminPipeline, dynamicStages, stagesLoading }: CrmLeadDetailViewProps) {
   const { role, profile } = useAuth();
   const { activities, loading: activitiesLoading, addActivity, refetch: refetchActivities } = useCrmActivities(lead.id);
   const [editing, setEditing] = useState(false);
@@ -269,14 +272,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     return () => { supabase.removeChannel(channel); };
   }, [lead.id, lead.company_id, lead.servidor_id]);
 
-  const pipelineStages = isAdminPipeline ? ADMIN_STAGES : STAGES;
-  const currentStageIndex = pipelineStages.findIndex((s) => s.id === lead.stage);
-
-  const getDaysInStage = () => {
-    const entered = new Date(lead.stage_entered_at);
-    const now = new Date();
-    return Math.floor((now.getTime() - entered.getTime()) / (1000 * 60 * 60 * 24));
-  };
+  // pipelineStages now handled by KanbanStageHeader
 
   const getDaysTotal = () => {
     const created = new Date(lead.created_at);
@@ -790,10 +786,6 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <div className="min-w-0">
               <h2 className="text-sm font-bold text-foreground truncate">{lead.source} - {lead.contact_name || lead.company_name}</h2>
-              <p className="text-xs text-muted-foreground truncate">
-                Etapa atual: <strong>{pipelineStages.find((s) => s.id === lead.stage)?.title || ALL_STAGES.find((s) => s.id === lead.stage)?.title}</strong>
-                {" · "}{getDaysInStage()} dia(s) nesta etapa
-              </p>
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap justify-end">
@@ -815,14 +807,12 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                     <Button size="sm" onClick={async () => {
                       setSaving(true);
                       try {
-                        // Find registration for this lead and set client_status to ativo
                         const { data: reg } = await supabase
                           .from("crm_client_registrations")
                           .select("id")
                           .eq("lead_id", lead.id)
                           .maybeSingle();
                         if (reg) {
-                          // Copy lead data into registration
                           const regUpdate: any = {
                             client_status: "ativo",
                             status: "concluido",
@@ -842,7 +832,6 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                             .update(regUpdate)
                             .eq("id", reg.id);
                         }
-                        // Remove "Pendente de Correção" tag if present
                         const currentTags = lead.tags || [];
                         const cleanTags = currentTags.filter(t => t !== "Pendente de Correção");
                         await onUpdate(lead.id, { stage: "cadastro-concluido", tags: cleanTags } as any);
@@ -897,33 +886,16 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
           </div>
         </div>
 
-        {/* Pipeline Progress Bar - scrollable on mobile */}
-        <div className="flex gap-0.5 overflow-x-auto pb-1 -mb-1 scrollbar-hide">
-          {pipelineStages.map((stage, i) => {
-            const isActive = i === currentStageIndex;
-            const isPast = i < currentStageIndex;
-            return (
-              <button
-                key={stage.id}
-                onClick={() => handleStageChange(stage.id)}
-                disabled={saving}
-                className={cn(
-                  "flex-shrink-0 min-w-[70px] sm:flex-1 py-1.5 text-[10px] font-medium rounded-sm transition-all text-center truncate px-1.5",
-                  isActive && `${stage.color} text-white`,
-                  isPast && "bg-primary/20 text-primary",
-                  !isActive && !isPast && "bg-muted text-muted-foreground hover:bg-muted/80",
-                  saving && "opacity-50 cursor-not-allowed"
-                )}
-                title={stage.title}
-              >
-                {stage.title}
-                {isActive && stage.daysLimit && (
-                  <span className="block text-[9px] opacity-80">{getDaysInStage()} dia(s)</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+        {/* Dynamic Pipeline Progress Bar */}
+        <KanbanStageHeader
+          currentStageId={lead.stage}
+          stageEnteredAt={lead.stage_entered_at}
+          dynamicStages={dynamicStages}
+          isAdminPipeline={isAdminPipeline}
+          stagesLoading={stagesLoading}
+          saving={saving}
+          onChangeStage={handleStageChange}
+        />
       </div>
 
       {/* Content: Stack on mobile, side-by-side on desktop */}
