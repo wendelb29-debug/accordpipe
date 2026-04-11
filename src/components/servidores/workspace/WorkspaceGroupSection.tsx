@@ -47,6 +47,7 @@ export function WorkspaceGroupSection({ ws, columns, setColumns, expandedWs, set
   const [editColIsDefault, setEditColIsDefault] = useState(false);
   const [editColIsFinal, setEditColIsFinal] = useState(false);
   const [editColActive, setEditColActive] = useState(true);
+  const [editColAllowWon, setEditColAllowWon] = useState(false);
   const [newlyAddedColId, setNewlyAddedColId] = useState<string | null>(null);
 
   // Drag
@@ -71,6 +72,7 @@ export function WorkspaceGroupSection({ ws, columns, setColumns, expandedWs, set
     setEditColIsDefault(col.is_default ?? false);
     setEditColIsFinal(col.is_final ?? false);
     setEditColActive(col.active ?? true);
+    setEditColAllowWon(col.allow_mark_as_won ?? false);
   };
 
   const handleAddColumn = async () => {
@@ -88,7 +90,7 @@ export function WorkspaceGroupSection({ ws, columns, setColumns, expandedWs, set
     const slaDays = editColSlaUnit === "horas" ? editColSla / 24 : editColSla;
     if (editColIsDefault) await supabase.from("kanban_columns").update({ is_default: false } as any).eq("workspace_id", ws.id);
     const { error } = await supabase.from("kanban_columns")
-      .update({ name: editColName, sla_days: slaDays, color: editColColor, is_default: editColIsDefault, is_final: editColIsFinal, active: editColActive } as any)
+      .update({ name: editColName, sla_days: slaDays, color: editColColor, is_default: editColIsDefault, is_final: editColIsFinal, active: editColActive, allow_mark_as_won: editColAllowWon } as any)
       .eq("id", col.id);
     if (error) toast.error("Erro ao atualizar"); else toast.success("Coluna atualizada");
     setEditingColId(null); onRefresh();
