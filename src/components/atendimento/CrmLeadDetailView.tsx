@@ -793,10 +793,6 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <div className="min-w-0">
               <h2 className="text-sm font-bold text-foreground truncate">{lead.source} - {lead.contact_name || lead.company_name}</h2>
-              <p className="text-xs text-muted-foreground truncate">
-                Etapa atual: <strong>{pipelineStages.find((s) => s.id === lead.stage)?.title || ALL_STAGES.find((s) => s.id === lead.stage)?.title}</strong>
-                {" · "}{getDaysInStage()} dia(s) nesta etapa
-              </p>
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap justify-end">
@@ -818,14 +814,12 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                     <Button size="sm" onClick={async () => {
                       setSaving(true);
                       try {
-                        // Find registration for this lead and set client_status to ativo
                         const { data: reg } = await supabase
                           .from("crm_client_registrations")
                           .select("id")
                           .eq("lead_id", lead.id)
                           .maybeSingle();
                         if (reg) {
-                          // Copy lead data into registration
                           const regUpdate: any = {
                             client_status: "ativo",
                             status: "concluido",
@@ -845,7 +839,6 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                             .update(regUpdate)
                             .eq("id", reg.id);
                         }
-                        // Remove "Pendente de Correção" tag if present
                         const currentTags = lead.tags || [];
                         const cleanTags = currentTags.filter(t => t !== "Pendente de Correção");
                         await onUpdate(lead.id, { stage: "cadastro-concluido", tags: cleanTags } as any);
@@ -900,33 +893,16 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
           </div>
         </div>
 
-        {/* Pipeline Progress Bar - scrollable on mobile */}
-        <div className="flex gap-0.5 overflow-x-auto pb-1 -mb-1 scrollbar-hide">
-          {pipelineStages.map((stage, i) => {
-            const isActive = i === currentStageIndex;
-            const isPast = i < currentStageIndex;
-            return (
-              <button
-                key={stage.id}
-                onClick={() => handleStageChange(stage.id)}
-                disabled={saving}
-                className={cn(
-                  "flex-shrink-0 min-w-[70px] sm:flex-1 py-1.5 text-[10px] font-medium rounded-sm transition-all text-center truncate px-1.5",
-                  isActive && `${stage.color} text-white`,
-                  isPast && "bg-primary/20 text-primary",
-                  !isActive && !isPast && "bg-muted text-muted-foreground hover:bg-muted/80",
-                  saving && "opacity-50 cursor-not-allowed"
-                )}
-                title={stage.title}
-              >
-                {stage.title}
-                {isActive && stage.daysLimit && (
-                  <span className="block text-[9px] opacity-80">{getDaysInStage()} dia(s)</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+        {/* Dynamic Pipeline Progress Bar */}
+        <KanbanStageHeader
+          currentStageId={lead.stage}
+          stageEnteredAt={lead.stage_entered_at}
+          dynamicStages={dynamicStages}
+          isAdminPipeline={isAdminPipeline}
+          stagesLoading={stagesLoading}
+          saving={saving}
+          onChangeStage={handleStageChange}
+        />
       </div>
 
       {/* Content: Stack on mobile, side-by-side on desktop */}
