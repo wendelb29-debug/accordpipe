@@ -832,7 +832,7 @@ export default function ServidoresTab() {
 
       {/* Users Dialog */}
       <Dialog open={usersDialogOpen} onOpenChange={setUsersDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
@@ -856,8 +856,9 @@ export default function ServidoresTab() {
                   <TableRow>
                     <TableHead>Usuário</TableHead>
                     <TableHead>Papel</TableHead>
+                    <TableHead>Escopo</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="w-12" />
+                    <TableHead className="w-20" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -872,21 +873,40 @@ export default function ServidoresTab() {
                       <TableCell>
                         <Select
                           value={u.role}
-                          onValueChange={(val) => handleUpdateUserRole(u.user_id, val)}
+                          onValueChange={(val) => handleUpdateUserRole(u.user_id, val, u.tenant_link_id)}
                         >
-                          <SelectTrigger className="h-8 w-36 text-xs">
+                          <SelectTrigger className="h-8 w-32 text-xs">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="admin">Administrador</SelectItem>
-                            <SelectItem value="operador">Operador</SelectItem>
-                            <SelectItem value="leitura">Leitura</SelectItem>
                             <SelectItem value="ceo">CEO</SelectItem>
+                            <SelectItem value="admin">Administrador</SelectItem>
+                            <SelectItem value="comercial">Comercial</SelectItem>
+                            <SelectItem value="operador">Operador</SelectItem>
                             <SelectItem value="administrativo">Administrativo</SelectItem>
                             <SelectItem value="financeiro">Financeiro</SelectItem>
-                            <SelectItem value="comercial">Comercial</SelectItem>
+                            <SelectItem value="leitura">Leitura</SelectItem>
                           </SelectContent>
                         </Select>
+                      </TableCell>
+                      <TableCell>
+                        {u.tenant_link_id ? (
+                          <Select
+                            value={u.data_scope}
+                            onValueChange={(val) => handleUpdateDataScope(u.tenant_link_id, val)}
+                          >
+                            <SelectTrigger className="h-8 w-28 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="own">Próprios</SelectItem>
+                              <SelectItem value="team">Equipe</SelectItem>
+                              <SelectItem value="all">Todos</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant={u.is_active ? "default" : "secondary"} className="text-[10px]">
@@ -894,15 +914,31 @@ export default function ServidoresTab() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => handleToggleUserStatus(u.user_id, u.is_active)}
-                          title={u.is_active ? "Bloquear usuário" : "Ativar usuário"}
-                        >
-                          <Power className="h-3.5 w-3.5" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            title="Permissões"
+                            onClick={() => {
+                              setPermUserId(u.user_id);
+                              setPermUserName(u.name);
+                              setPermUserIsCeo(u.role === "ceo");
+                              setPermDialogOpen(true);
+                            }}
+                          >
+                            <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => handleToggleUserStatus(u.user_id, u.is_active, u.tenant_link_id)}
+                            title={u.is_active ? "Bloquear usuário" : "Ativar usuário"}
+                          >
+                            <Power className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -910,6 +946,28 @@ export default function ServidoresTab() {
               </Table>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Permissions Dialog */}
+      <Dialog open={permDialogOpen} onOpenChange={setPermDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              Permissões — {permUserName}
+            </DialogTitle>
+            <DialogDescription>
+              Gerencie as permissões de acesso deste usuário por módulo.
+            </DialogDescription>
+          </DialogHeader>
+          {permUserId && (
+            <PermissionsEditor
+              userId={permUserId}
+              isCeoOrMaster={permUserIsCeo}
+              onClose={() => setPermDialogOpen(false)}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
