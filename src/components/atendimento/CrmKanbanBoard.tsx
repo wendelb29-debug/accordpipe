@@ -432,6 +432,8 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
         onUpdate={updateLead}
         onMoveStage={moveToStage}
         onDelete={async (id) => { await deleteLead(id); setDetailLead(null); return true; }}
+        dynamicStages={hasDynamicColumns ? dynamicStages : undefined}
+        stagesLoading={colsLoading}
       />
     );
   }
