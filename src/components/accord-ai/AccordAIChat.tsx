@@ -1,14 +1,27 @@
-import { useState, useRef, useEffect } from "react";
-import { Bot, X, Send, Sparkles } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Bot, X, Send, Sparkles, Minimize2, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/accord-ai-chat`;
+
+const STORAGE_KEY = "ai_assistant_state";
+
+type AssistantState = "expanded" | "minimized";
+
+function loadState(): AssistantState {
+  try {
+    const v = localStorage.getItem(STORAGE_KEY);
+    if (v === "minimized") return "minimized";
+  } catch {}
+  return "expanded";
+}
 
 interface QuickAction {
   label: string;
@@ -84,20 +97,83 @@ function getContextForRoute(pathname: string): { pageName: string; quickActions:
   };
 }
 
+/** Detect if a fixed footer / action bar is present at the bottom of the viewport */
+function useBottomOffset(isMobile: boolean) {
+  const [offset, setOffset] = useState(0);
+
+  useEffect(() => {
+    if (!isMobile) { setOffset(0); return; }
+
+    const compute = () => {
+      // Look for fixed/sticky elements near the bottom
+      const els = document.querySelectorAll("[class*='fixed'], [class*='sticky']");
+      let maxBottom = 0;
+      els.forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        const style = window.getComputedStyle(el);
+        if (
+          (style.position === "fixed" || style.position === "sticky") &&
+          rect.bottom >= window.innerHeight - 10 &&
+          rect.height < 120 &&
+          rect.height > 20
+        ) {
+          maxBottom = Math.max(maxBottom, rect.height);
+        }
+      });
+      setOffset(maxBottom);
+    };
+
+    compute();
+    const interval = setInterval(compute, 1500);
+    return () => clearInterval(interval);
+  }, [isMobile]);
+
+  return offset;
+}
+
 export function AccordAIChat() {
   const [open, setOpen] = useState(false);
+  const [assistantState, setAssistantState] = useState<AssistantState>(loadState);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const { profile, activeCompany } = useAuth();
   const location = useLocation();
+  const isMobile = useIsMobile();
+  const bottomOffset = useBottomOffset(isMobile);
 
   const { pageName, quickActions } = getContextForRoute(location.pathname);
+
+  // Detect if a dialog/modal/drawer is open
+  const [hasOverlay, setHasOverlay] = useState(false);
+  useEffect(() => {
+    const check = () => {
+      const overlay = document.querySelector("[data-state='open'][role='dialog'], [data-state='open'][data-vaul-drawer]");
+      setHasOverlay(!!overlay);
+    };
+    check();
+    const interval = setInterval(check, 800);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, open]);
+
+  const persistState = useCallback((s: AssistantState) => {
+    setAssistantState(s);
+    try { localStorage.setItem(STORAGE_KEY, s); } catch {}
+  }, []);
+
+  const handleMinimize = useCallback(() => {
+    setOpen(false);
+    persistState("minimized");
+  }, [persistState]);
+
+  const handleRestore = useCallback(() => {
+    persistState("expanded");
+  }, [persistState]);
 
   const getContext = () => ({
     usuario: profile?.name,
@@ -188,58 +264,133 @@ export function AccordAIChat() {
 
   const send = () => sendMessage(input);
 
+  // Hide completely when overlay is open on mobile
+  const shouldHide = isMobile && hasOverlay;
+  if (shouldHide) return null;
+
+  // Calculate safe bottom position
+  const baseBottom = isMobile ? 20 : 24;
+  const safeBottom = baseBottom + bottomOffset;
+
+  // ── Minimized state: show a tiny pill ──
+  if (assistantState === "minimized") {
+    return (
+      <button
+        onClick={handleRestore}
+        className="fixed z-40 flex items-center gap-1.5 rounded-full border border-border bg-background/90 backdrop-blur-sm px-2.5 py-1.5 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 group"
+        style={{
+          bottom: `${safeBottom}px`,
+          right: isMobile ? 12 : 20,
+        }}
+        title="Abrir assistente IA"
+      >
+        <div
+          className="h-6 w-6 rounded-full flex items-center justify-center shrink-0"
+          style={{ background: "linear-gradient(135deg, #3B3F9C, #7A3FF2)" }}
+        >
+          <MessageSquare className="h-3 w-3 text-white" />
+        </div>
+        <span className="text-[10px] font-medium text-muted-foreground group-hover:text-foreground transition-colors hidden sm:inline">
+          IA
+        </span>
+      </button>
+    );
+  }
+
+  // ── Expanded state ──
   return (
     <>
       {/* FAB */}
       <button
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "fixed bottom-5 right-4 sm:bottom-6 sm:right-6 z-50 h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 group",
-          "text-primary-foreground"
+          "fixed z-40 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 group",
+          "text-primary-foreground",
+          isMobile ? "h-11 w-11" : "h-12 w-12 sm:h-14 sm:w-14"
         )}
-        style={{ background: 'linear-gradient(135deg, #3B3F9C, #7A3FF2)' }}
+        style={{
+          bottom: `${safeBottom}px`,
+          right: isMobile ? 16 : 24,
+          background: "linear-gradient(135deg, #3B3F9C, #7A3FF2)",
+        }}
         title="✨ Assistente IA"
       >
-        {open ? <X className="h-6 w-6" /> : (
+        {open ? (
+          <X className="h-5 w-5 sm:h-6 sm:w-6" />
+        ) : (
           <div className="relative">
-            <Bot className="h-6 w-6" />
-            <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-green-400 border-2 border-primary animate-pulse" />
+            <Bot className="h-5 w-5 sm:h-6 sm:w-6" />
+            <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-green-400 border border-[#3B3F9C] animate-pulse" />
           </div>
         )}
       </button>
 
       {/* Chat window */}
       {open && (
-        <div className="fixed inset-3 sm:inset-auto sm:bottom-24 sm:right-6 z-50 sm:w-[400px] sm:max-h-[560px] rounded-2xl shadow-2xl border border-border bg-background flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div
+          className={cn(
+            "fixed z-50 rounded-2xl shadow-2xl border border-border bg-background flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300",
+            isMobile
+              ? "inset-x-2 top-14 bottom-2"
+              : "sm:w-[400px] sm:max-h-[560px]"
+          )}
+          style={
+            !isMobile
+              ? { bottom: `${safeBottom + 60}px`, right: 24 }
+              : { paddingBottom: "env(safe-area-inset-bottom, 0px)" }
+          }
+        >
           {/* Header */}
-          <div className="flex items-center gap-3 px-4 py-3 text-primary-foreground" style={{ background: 'linear-gradient(135deg, #3B3F9C, #7A3FF2)' }}>
-            <div className="h-9 w-9 rounded-full bg-white/20 flex items-center justify-center">
-              <Sparkles className="h-5 w-5" />
+          <div
+            className="flex items-center gap-3 px-4 py-3 text-primary-foreground shrink-0"
+            style={{ background: "linear-gradient(135deg, #3B3F9C, #7A3FF2)" }}
+          >
+            <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center">
+              <Sparkles className="h-4 w-4" />
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm">✨ ACCORD IA</p>
-              <p className="text-[11px] opacity-80">Contexto: {pageName}</p>
+              <p className="text-[11px] opacity-80 truncate">Contexto: {pageName}</p>
             </div>
-            <button
-              onClick={() => { setMessages([]); }}
-              className="text-[10px] opacity-70 hover:opacity-100 bg-white/10 rounded-full px-2 py-0.5 transition-opacity"
-            >
-              Limpar
-            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                onClick={() => setMessages([])}
+                className="text-[10px] opacity-70 hover:opacity-100 bg-white/10 rounded-full px-2 py-0.5 transition-opacity"
+              >
+                Limpar
+              </button>
+              <button
+                onClick={handleMinimize}
+                className="opacity-70 hover:opacity-100 bg-white/10 rounded-full p-1 transition-opacity"
+                title="Minimizar"
+              >
+                <Minimize2 className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => setOpen(false)}
+                className="opacity-70 hover:opacity-100 bg-white/10 rounded-full p-1 transition-opacity"
+                title="Fechar"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-[280px] max-h-[380px]">
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
             {messages.length === 0 && (
               <div className="space-y-4">
                 <div className="text-center text-muted-foreground text-sm py-4 space-y-2">
                   <Bot className="h-10 w-10 mx-auto opacity-40" />
                   <p className="font-medium">Olá! Sou o Accord AI.</p>
-                  <p className="text-xs">Estou aqui para ajudar com <strong>{pageName}</strong>.</p>
+                  <p className="text-xs">
+                    Estou aqui para ajudar com <strong>{pageName}</strong>.
+                  </p>
                 </div>
-                {/* Quick Actions */}
                 <div className="space-y-1.5">
-                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide px-1">Ações rápidas</p>
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide px-1">
+                    Ações rápidas
+                  </p>
                   {quickActions.map((action, i) => (
                     <button
                       key={i}
@@ -293,7 +444,7 @@ export function AccordAIChat() {
           </div>
 
           {/* Input */}
-          <div className="flex items-center gap-2 px-3 py-2 border-t border-border">
+          <div className="flex items-center gap-2 px-3 py-2 border-t border-border shrink-0">
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
