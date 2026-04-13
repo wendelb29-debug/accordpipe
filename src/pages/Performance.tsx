@@ -8,6 +8,7 @@ import { PerformanceAlerts } from "@/components/performance/PerformanceAlerts";
 import { PerformanceHierarchy } from "@/components/performance/PerformanceHierarchy";
 import { PerformanceDetailDrawer } from "@/components/performance/PerformanceDetailDrawer";
 import { PerformanceFilters } from "@/components/performance/PerformanceFilters";
+import { PerformanceTeamView } from "@/components/performance/PerformanceTeamView";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWorkspacePermissions } from "@/hooks/useWorkspacePermissions";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
@@ -29,7 +30,15 @@ export default function Performance() {
     [allWorkspaces, filterAllowedWorkspaces]
   );
 
-  const rawPerf = usePerformanceData(filters);
+  // Auto-select workspace if user only has access to one
+  const effectiveFilters = useMemo(() => {
+    if (!filters.workspaceId && allowedWorkspaces.length === 1) {
+      return { ...filters, workspaceId: allowedWorkspaces[0].id };
+    }
+    return filters;
+  }, [filters, allowedWorkspaces]);
+
+  const rawPerf = usePerformanceData(effectiveFilters);
 
   // Filter teams by workspace permissions
   const allowedTeams = rawPerf.teams.filter((t) => {
@@ -44,6 +53,9 @@ export default function Performance() {
   const { users, loading, kpis, workspaceKpis } = rawPerf;
 
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+
+  // Show team view when a workspace is selected
+  const hasWorkspaceSelected = !!effectiveFilters.workspaceId;
 
   return (
     <div className="space-y-6 pb-8">
@@ -61,7 +73,7 @@ export default function Performance() {
           </div>
         </div>
         <PerformanceFilters
-          filters={filters}
+          filters={effectiveFilters}
           setFilters={setFilters}
           teams={teams}
           users={users}
@@ -92,6 +104,17 @@ export default function Performance() {
           {/* Alerts */}
           <PerformanceAlerts goals={goals} users={users} teams={teams} />
 
+          {/* Team View (when workspace selected) */}
+          {hasWorkspaceSelected && (
+            <PerformanceTeamView
+              goals={goals}
+              snapshots={snapshots}
+              users={users}
+              workspaceKpis={workspaceKpis}
+              onSelectUser={(u) => setSelectedUser(u)}
+            />
+          )}
+
           {/* Timeline */}
           <PerformanceTimeline snapshots={snapshots} onSelectSnapshot={(snap) => {
             if (snap.user_id) {
@@ -120,6 +143,13 @@ export default function Performance() {
         user={selectedUser}
         goals={goals}
         snapshots={snapshots}
+        teamAvgScore={snapshots.length > 0 ? Math.round(snapshots.reduce((s, sn) => s + sn.score, 0) / snapshots.length) : 0}
+        teamAvgConversao={(() => {
+          const g = snapshots.reduce((s, sn) => s + sn.ganhos, 0);
+          const p = snapshots.reduce((s, sn) => s + sn.perdas, 0);
+          return (g + p) > 0 ? Math.round((g / (g + p)) * 100) : 0;
+        })()}
+        workspaceKpis={workspaceKpis}
       />
     </div>
   );
