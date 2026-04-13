@@ -2617,9 +2617,11 @@ export type Database = {
           created_at: string
           id: string
           mes: number
+          meta_config: Json | null
           meta_valor: number
           percentual: number | null
           realizado_valor: number
+          resultado_config: Json | null
           team_id: string | null
           tenant_id: string
           updated_at: string
@@ -2631,9 +2633,11 @@ export type Database = {
           created_at?: string
           id?: string
           mes: number
+          meta_config?: Json | null
           meta_valor?: number
           percentual?: number | null
           realizado_valor?: number
+          resultado_config?: Json | null
           team_id?: string | null
           tenant_id: string
           updated_at?: string
@@ -2645,9 +2649,11 @@ export type Database = {
           created_at?: string
           id?: string
           mes?: number
+          meta_config?: Json | null
           meta_valor?: number
           percentual?: number | null
           realizado_valor?: number
+          resultado_config?: Json | null
           team_id?: string | null
           tenant_id?: string
           updated_at?: string
@@ -2717,6 +2723,7 @@ export type Database = {
           data: string
           ganhos: number
           id: string
+          kpi_data: Json | null
           perdas: number
           score: number
           sla: number
@@ -2725,6 +2732,7 @@ export type Database = {
           tenant_id: string
           user_id: string | null
           valor_total: number
+          workspace_id: string | null
         }
         Insert: {
           conversao?: number
@@ -2732,6 +2740,7 @@ export type Database = {
           data?: string
           ganhos?: number
           id?: string
+          kpi_data?: Json | null
           perdas?: number
           score?: number
           sla?: number
@@ -2740,6 +2749,7 @@ export type Database = {
           tenant_id: string
           user_id?: string | null
           valor_total?: number
+          workspace_id?: string | null
         }
         Update: {
           conversao?: number
@@ -2747,6 +2757,7 @@ export type Database = {
           data?: string
           ganhos?: number
           id?: string
+          kpi_data?: Json | null
           perdas?: number
           score?: number
           sla?: number
@@ -2755,6 +2766,7 @@ export type Database = {
           tenant_id?: string
           user_id?: string | null
           valor_total?: number
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -2769,6 +2781,13 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "performance_snapshots_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -3954,6 +3973,51 @@ export type Database = {
           },
         ]
       }
+      workspace_goal_models: {
+        Row: {
+          created_at: string
+          id: string
+          regra_calculo: Json | null
+          tenant_id: string
+          tipo_calculo: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          regra_calculo?: Json | null
+          tenant_id: string
+          tipo_calculo?: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          regra_calculo?: Json | null
+          tenant_id?: string
+          tipo_calculo?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_goal_models_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_goal_models_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspace_groups: {
         Row: {
           active: boolean
@@ -4000,6 +4064,63 @@ export type Database = {
             columns: ["servidor_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_kpis: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          origem: string
+          posicao: number
+          regra: Json | null
+          tenant_id: string
+          tipo: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          origem?: string
+          posicao?: number
+          regra?: Json | null
+          tenant_id: string
+          tipo?: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          origem?: string
+          posicao?: number
+          regra?: Json | null
+          tenant_id?: string
+          tipo?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_kpis_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_kpis_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
