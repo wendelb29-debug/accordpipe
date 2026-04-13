@@ -172,6 +172,7 @@ export default function NovoServidor() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get("id");
+  const fromSetupId = searchParams.get("from_setup");
   const { toast } = useToast();
   // Pre-generate ID for new tenants so child components can use it
   const [pendingNewId] = useState(() => editId ? null : crypto.randomUUID());
