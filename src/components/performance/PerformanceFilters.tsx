@@ -1,11 +1,17 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { PerformanceTeam, UserProfile } from "@/hooks/usePerformanceData";
 
+interface Workspace {
+  id: string;
+  name: string;
+}
+
 interface Filters {
   mes: number;
   ano: number;
   teamId: string | undefined;
   userId: string | undefined;
+  workspaceId: string | undefined;
 }
 
 interface Props {
@@ -13,6 +19,7 @@ interface Props {
   setFilters: (f: Filters) => void;
   teams: PerformanceTeam[];
   users: UserProfile[];
+  workspaces?: Workspace[];
 }
 
 const MESES = [
@@ -20,12 +27,30 @@ const MESES = [
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 ];
 
-export function PerformanceFilters({ filters, setFilters, teams, users }: Props) {
+export function PerformanceFilters({ filters, setFilters, teams, users, workspaces }: Props) {
   const currentYear = new Date().getFullYear();
   const years = [currentYear - 1, currentYear, currentYear + 1];
 
   return (
     <div className="flex flex-wrap gap-2">
+      {/* Workspace selector */}
+      {workspaces && workspaces.length > 0 && (
+        <Select
+          value={filters.workspaceId || "all"}
+          onValueChange={v => setFilters({ ...filters, workspaceId: v === "all" ? undefined : v })}
+        >
+          <SelectTrigger className="w-[180px] h-8 text-xs">
+            <SelectValue placeholder="Todos Workspaces" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all" className="text-xs">Todos Workspaces</SelectItem>
+            {workspaces.map(w => (
+              <SelectItem key={w.id} value={w.id} className="text-xs">{w.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
       <Select value={String(filters.mes)} onValueChange={v => setFilters({ ...filters, mes: Number(v) })}>
         <SelectTrigger className="w-[140px] h-8 text-xs">
           <SelectValue />

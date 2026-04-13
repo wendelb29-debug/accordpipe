@@ -1,5 +1,6 @@
-import { TrendingUp, TrendingDown, Target, Award, Percent, BarChart3 } from "lucide-react";
+import { TrendingUp, TrendingDown, Target, Award, Percent, BarChart3, Activity, Clock, Hash } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { WorkspaceKPI, PerformanceSnapshot } from "@/hooks/usePerformanceData";
 
 interface KPIProps {
   totalMeta: number;
@@ -8,9 +9,103 @@ interface KPIProps {
   totalGanhos: number;
   totalPerdas: number;
   conversaoMedia: number;
+  workspaceKpis?: WorkspaceKPI[];
+  snapshots?: PerformanceSnapshot[];
 }
 
-export function PerformanceKPIs({ totalMeta, totalRealizado, percentualGeral, totalGanhos, totalPerdas, conversaoMedia }: KPIProps) {
+function getKpiIcon(tipo: string) {
+  switch (tipo) {
+    case "valor": return Award;
+    case "percentual": return Percent;
+    case "tempo": return Clock;
+    case "quantidade": return Hash;
+    default: return Activity;
+  }
+}
+
+function computeKpiValue(kpi: WorkspaceKPI, snapshots: PerformanceSnapshot[]): { value: string; raw: number } {
+  // Aggregate kpi_data from snapshots for this KPI
+  const kpiId = kpi.id;
+  let total = 0;
+  let count = 0;
+  snapshots.forEach((s) => {
+    const data = s.kpi_data as Record<string, any> | undefined;
+    if (data && data[kpiId] !== undefined) {
+      total += Number(data[kpiId]) || 0;
+      count++;
+    }
+  });
+
+  // Fallback: use standard fields based on origem
+  if (count === 0) {
+    switch (kpi.origem) {
+      case "crm":
+        total = snapshots.reduce((sum, s) => sum + s.valor_total, 0);
+        break;
+      case "tarefas":
+        total = snapshots.reduce((sum, s) => sum + s.tarefas_concluidas, 0);
+        break;
+      default:
+        total = 0;
+    }
+  }
+
+  // Format by tipo
+  switch (kpi.tipo) {
+    case "valor":
+      return {
+        value: total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }),
+        raw: total,
+      };
+    case "percentual":
+      return { value: `${Math.round(total)}%`, raw: total };
+    case "tempo":
+      return { value: `${Math.round(total)}h`, raw: total };
+    default:
+      return { value: String(Math.round(total)), raw: total };
+  }
+}
+
+export function PerformanceKPIs({
+  totalMeta, totalRealizado, percentualGeral, totalGanhos, totalPerdas, conversaoMedia,
+  workspaceKpis, snapshots,
+}: KPIProps) {
+  // If workspace has custom KPIs, show them instead
+  if (workspaceKpis && workspaceKpis.length > 0 && snapshots) {
+    const dynamicCards = workspaceKpis.map((kpi) => {
+      const Icon = getKpiIcon(kpi.tipo);
+      const { value, raw } = computeKpiValue(kpi, snapshots);
+      return {
+        label: kpi.nome,
+        value,
+        icon: Icon,
+        color: "text-primary",
+        bgColor: "bg-primary/10",
+      };
+    });
+
+    // Always add standard summary cards at the end
+    dynamicCards.push(
+      {
+        label: "Conversão",
+        value: `${conversaoMedia}%`,
+        icon: BarChart3,
+        color: "text-violet-400",
+        bgColor: "bg-violet-500/10",
+      },
+      {
+        label: "Ganhos / Perdas",
+        value: `${totalGanhos} / ${totalPerdas}`,
+        icon: BarChart3,
+        color: "text-cyan-400",
+        bgColor: "bg-cyan-500/10",
+      },
+    );
+
+    return <KPIGrid cards={dynamicCards} />;
+  }
+
+  // Default: standard sales KPIs
   const trending = percentualGeral >= 100;
   const cards = [
     {
@@ -57,8 +152,13 @@ export function PerformanceKPIs({ totalMeta, totalRealizado, percentualGeral, to
     },
   ];
 
+  return <KPIGrid cards={cards} />;
+}
+
+function KPIGrid({ cards }: { cards: { label: string; value: string; icon: any; color: string; bgColor: string }[] }) {
+  const cols = cards.length <= 4 ? "lg:grid-cols-4" : cards.length <= 6 ? "lg:grid-cols-6" : "lg:grid-cols-4";
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+    <div className={cn("grid grid-cols-2 md:grid-cols-3 gap-3", cols)}>
       {cards.map((card) => (
         <div
           key={card.label}
