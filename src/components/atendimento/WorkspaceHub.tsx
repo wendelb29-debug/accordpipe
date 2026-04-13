@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import accordPatternDark from "@/assets/accord-pattern-dark.png";
 import { useWorkspaceContext } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,6 +19,9 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 
@@ -70,6 +73,19 @@ const TYPE_LABELS: Record<string, string> = {
   custom: "Personalizado",
 };
 
+const CARD_LABEL_BY_TYPE: Record<string, string> = {
+  vendas: "oportunidades",
+  comercial: "oportunidades",
+  crm: "oportunidades",
+  pre_venda_sdr: "oportunidades",
+  tarefas: "tarefas",
+  task: "tarefas",
+  cobranca: "casos",
+  onboarding: "clientes",
+  pos_venda: "clientes",
+  suporte: "chamados",
+};
+
 interface WorkspaceGroup {
   id: string;
   name: string;
@@ -77,6 +93,10 @@ interface WorkspaceGroup {
   color: string;
   icon: string;
   position: number;
+}
+
+interface WorkspaceCardCount {
+  total: number;
 }
 
 interface WorkspaceHubProps {
@@ -91,6 +111,7 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
   const [groups, setGroups] = useState<WorkspaceGroup[]>([]);
   const [search, setSearch] = useState("");
   const [filterGroup, setFilterGroup] = useState<string>("all");
+  const [cardCounts, setCardCounts] = useState<Record<string, WorkspaceCardCount>>({});
 
   // Fetch groups
   const fetchGroups = useCallback(async () => {
@@ -104,7 +125,33 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
     setGroups((data || []) as WorkspaceGroup[]);
   }, [companyId]);
 
+  // Fetch card counts per workspace (single aggregated query)
+  const fetchCardCounts = useCallback(async () => {
+    if (!companyId || workspaces.length === 0) return;
+    const wsIds = workspaces.map((w) => w.id);
+    const { data, error } = await supabase
+      .from("crm_leads")
+      .select("workspace_id")
+      .eq("servidor_id", companyId)
+      .in("workspace_id", wsIds)
+      .neq("lead_status", "lost");
+
+    if (error) {
+      console.error("Error fetching card counts:", error);
+      return;
+    }
+
+    const counts: Record<string, WorkspaceCardCount> = {};
+    (data || []).forEach((row: any) => {
+      if (!row.workspace_id) return;
+      if (!counts[row.workspace_id]) counts[row.workspace_id] = { total: 0 };
+      counts[row.workspace_id].total++;
+    });
+    setCardCounts(counts);
+  }, [companyId, workspaces]);
+
   useEffect(() => { fetchGroups(); }, [fetchGroups]);
+  useEffect(() => { fetchCardCounts(); }, [fetchCardCounts]);
 
   const filtered = workspaces.filter((ws) => {
     if (search && !ws.name.toLowerCase().includes(search.toLowerCase())) return false;
@@ -195,21 +242,46 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
 
       {/* Workspace Cards grouped by workspace_groups */}
       <div className="relative z-10 flex-1 overflow-y-auto px-4 sm:px-6 pb-6">
-        {orderedGroups.map((group) => {
-          const wsList = groupedByGroup[group.id] || [];
-          if (wsList.length === 0) return null;
-          const Icon = TYPE_ICONS[group.type] || TrendingUp;
-          return (
-            <div key={group.id} className="mb-6">
+        <TooltipProvider delayDuration={300}>
+          {orderedGroups.map((group) => {
+            const wsList = groupedByGroup[group.id] || [];
+            if (wsList.length === 0) return null;
+            const Icon = TYPE_ICONS[group.type] || TrendingUp;
+            return (
+              <div key={group.id} className="mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <Icon className="h-4 w-4" style={{ color: group.color }} />
+                  <h2 className="text-sm font-bold text-foreground">{group.name}</h2>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {wsList.map((ws) => (
+                    <WorkspaceCard
+                      key={ws.id}
+                      workspace={ws}
+                      cardCount={cardCounts[ws.id]?.total ?? 0}
+                      onClick={() => onSelectWorkspace(ws.id)}
+                      onEdit={isAdminOrCeo ? () => {} : undefined}
+                      onDelete={isAdminOrCeo && !ws.is_default ? () => {} : undefined}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Ungrouped */}
+          {filterGroup === "all" && ungrouped.length > 0 && (
+            <div className="mb-6">
               <div className="flex items-center gap-2 mb-3">
-                <Icon className="h-4 w-4" style={{ color: group.color }} />
-                <h2 className="text-sm font-bold text-foreground">{group.name}</h2>
+                <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-sm font-bold text-foreground">Sem Camada</h2>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {wsList.map((ws) => (
+                {ungrouped.map((ws) => (
                   <WorkspaceCard
                     key={ws.id}
                     workspace={ws}
+                    cardCount={cardCounts[ws.id]?.total ?? 0}
                     onClick={() => onSelectWorkspace(ws.id)}
                     onEdit={isAdminOrCeo ? () => {} : undefined}
                     onDelete={isAdminOrCeo && !ws.is_default ? () => {} : undefined}
@@ -217,29 +289,8 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
                 ))}
               </div>
             </div>
-          );
-        })}
-
-        {/* Ungrouped */}
-        {filterGroup === "all" && ungrouped.length > 0 && (
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <FolderOpen className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-sm font-bold text-foreground">Sem Camada</h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {ungrouped.map((ws) => (
-                <WorkspaceCard
-                  key={ws.id}
-                  workspace={ws}
-                  onClick={() => onSelectWorkspace(ws.id)}
-                  onEdit={isAdminOrCeo ? () => {} : undefined}
-                  onDelete={isAdminOrCeo && !ws.is_default ? () => {} : undefined}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+          )}
+        </TooltipProvider>
 
         {filtered.length === 0 && (
           <div className="text-center py-16 text-muted-foreground">
@@ -254,17 +305,20 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
 
 function WorkspaceCard({
   workspace,
+  cardCount,
   onClick,
   onEdit,
   onDelete,
 }: {
   workspace: any;
+  cardCount: number;
   onClick: () => void;
   onEdit?: (e: React.MouseEvent) => void;
   onDelete?: (e: React.MouseEvent) => void;
 }) {
   const wsType = workspace.type || "vendas";
   const Icon = TYPE_ICONS[wsType] || TrendingUp;
+  const cardLabel = CARD_LABEL_BY_TYPE[wsType] || "cards";
 
   return (
     <button
@@ -284,7 +338,7 @@ function WorkspaceCard({
 
       <div className="p-4">
         <h3 className="text-sm font-bold text-foreground truncate">{workspace.name}</h3>
-        <div className="flex items-center gap-2 mt-1.5">
+        <div className="flex items-center justify-between gap-2 mt-1.5">
           <span
             className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full"
             style={{ backgroundColor: workspace.color + "20", color: workspace.color }}
@@ -292,6 +346,16 @@ function WorkspaceCard({
             <Icon className="h-3 w-3" />
             {TYPE_LABELS[wsType] || wsType}
           </span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors cursor-default">
+                {cardCount} {cardLabel}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">
+              <p className="font-semibold">{cardCount} {cardLabel} ativos</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
