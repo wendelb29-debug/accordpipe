@@ -443,6 +443,19 @@ export default function NovoServidor() {
 
         const { error } = await supabase.from("companies").upsert({ id: newId, ...payload, ...webhookPayload }, { onConflict: "id" });
         if (error) throw error;
+
+        // If created from a setup request, finalize it
+        if (fromSetupId) {
+          await supabase
+            .from("tenant_setup_requests")
+            .update({
+              status: "activated",
+              activated_at: new Date().toISOString(),
+            } as any)
+            .eq("id", fromSetupId);
+        }
+
+        sonnerToast.success("Tenant ativado com sucesso!");
         toast({ title: "Tenant criado", description: "O novo tenant foi criado com sucesso." });
       }
       navigate("/configuracoes/usuarios");
