@@ -45,7 +45,7 @@ const fmtCur = (v: number, cur = "BRL") =>
   v.toLocaleString("pt-BR", { style: "currency", currency: cur });
 
 const statusLabels: Record<string, { label: string; color: string }> = {
-  enviada: { label: "AGUARDANDO ACEITE", color: "#10B981" },
+  enviada: { label: "PROPOSTA APRESENTADA", color: "#3B82F6" },
   aceita: { label: "APROVADA", color: "#10B981" },
   declinada: { label: "DECLINADA", color: "#EF4444" },
   cancelada: { label: "CANCELADA", color: "#6B7280" },
