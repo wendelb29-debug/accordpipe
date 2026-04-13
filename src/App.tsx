@@ -328,6 +328,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route path="/setup-tenant/:token" element={<TenantSetupPublico />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
