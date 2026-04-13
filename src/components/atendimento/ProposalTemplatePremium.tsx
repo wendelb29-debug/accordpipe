@@ -383,7 +383,7 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
               </div>
             )}
 
-            {/* ── SIGNATURE / ACCEPT CARD ── */}
+            {/* ── PRÓXIMOS PASSOS ── */}
             <div
               style={{
                 marginTop: gap,
@@ -392,63 +392,39 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
                 padding: compact ? "14px 14px" : "20px 24px",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: compact ? 10 : 16 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: compact ? 8 : 12 }}>
+                <span style={{ fontSize: f.sm, color: primaryColor }}>&#128640;</span>
+                <span style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor }}>
+                  Próximos Passos
+                </span>
+              </div>
+              {[
+                "Alinhamento final com consultor",
+                "Aprovação interna",
+                "Geração do contrato",
+                "Início da implantação",
+              ].map((step, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: compact ? 5 : 8 }}>
                   <div
                     style={{
-                      width: compact ? 32 : 44,
-                      height: compact ? 32 : 44,
+                      width: compact ? 20 : 24,
+                      height: compact ? 20 : 24,
                       borderRadius: "50%",
-                      backgroundColor: "#F0FDF4",
+                      backgroundColor: `${primaryColor}15`,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       flexShrink: 0,
-                    }}
-                  >
-                    <span style={{ fontSize: compact ? 14 : 20, color: accentColor }}>&#128737;</span>
-                  </div>
-                  <div>
-                    <p style={{ fontSize: f.md, fontWeight: 700, color: textColor, margin: 0 }}>Assinatura Digital</p>
-                    <p style={{ fontSize: f.xs, color: "#6B7280", margin: "2px 0 0" }}>
-                      Documento com validade jurídica conforme MP 2.200-2/2001
-                    </p>
-                  </div>
-                </div>
-                {showAcceptButton && (
-                  <div
-                    style={{
-                      padding: compact ? "6px 14px" : "10px 22px",
-                      backgroundColor: accentColor,
-                      color: "#FFFFFF",
+                      fontSize: f.xs,
                       fontWeight: 700,
-                      fontSize: f.sm,
-                      borderRadius: compact ? 6 : 8,
-                      cursor: "pointer",
-                      whiteSpace: "nowrap",
+                      color: primaryColor,
                     }}
                   >
-                    Aceitar Proposta
+                    {i + 1}
                   </div>
-                )}
-              </div>
-
-              {/* Signature lines */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: compact ? 20 : 40, borderTop: `1px solid ${cardBorder}`, paddingTop: compact ? 12 : 18 }}>
-                {[
-                  { name: `${companyCnpj || ""} ${companyRazaoSocial || companyName}`.trim(), role: "Contratada" },
-                  { name: clientName, role: "Contratante" },
-                ].map((party) => (
-                  <div key={party.role} style={{ textAlign: "center" }}>
-                    <p style={{ fontSize: f.sm, fontWeight: 600, color: textColor, margin: 0 }}>
-                      {party.name}
-                    </p>
-                    <p style={{ fontSize: f.xs, color: "#9CA3AF", margin: "2px 0 0" }}>
-                      {party.role}
-                    </p>
-                  </div>
-                ))}
-              </div>
+                  <span style={{ fontSize: f.sm, color: "#4B5563", lineHeight: 1.5 }}>{step}</span>
+                </div>
+              ))}
             </div>
 
             {/* ── FOOTER ── */}
