@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { ProposalTemplatePremium } from "@/components/atendimento/ProposalTemplatePremium";
+import type { ProposalTemplateData } from "@/components/atendimento/ProposalTemplatePremium";
 import {
   Upload, Palette, Loader2, ImageIcon, Home, BarChart3, Users,
   Settings, FileText, Eye, Monitor, FileSignature, ChevronRight,
@@ -480,185 +482,43 @@ function SystemPreview({
 function ProposalPreview({ formData, deviceView }: { formData: CompanyFormData; deviceView: DeviceView }) {
   const isMobile = deviceView === "mobile";
 
+  const templateData: ProposalTemplateData = {
+    status: "enviada",
+    logoUrl: formData.brandLogoUrl || null,
+    companyName: formData.nomeFantasia || formData.razaoSocial || "Nome da Empresa",
+    companyRazaoSocial: formData.razaoSocial || "Razão Social da Empresa",
+    companyCnpj: formData.cnpj || "00.000.000/0000-00",
+    companyEmail: formData.email || "contato@empresa.com",
+    companyPhone: formData.telefone || "(00) 00000-0000",
+    reference: "#PC-2026-001",
+    emissionDate: new Date().toLocaleDateString("pt-BR"),
+    validityDays: 15,
+    primaryColor: formData.docPrimaryColor,
+    secondaryColor: formData.docSecondaryColor,
+    accentColor: formData.docAccentColor,
+    bgColor: formData.docBgColor,
+    textColor: formData.docTextColor,
+    clientName: formData.nomeFantasia || formData.razaoSocial || "Cliente Exemplo Ltda",
+    clientDocument: formData.cnpj || "00.000.000/0000-00",
+    vendorName: formData.responsavel || "Consultor Responsável",
+    vendorEmail: formData.email || "email@empresa.com",
+    items: [
+      { name: "Plano Premium", quantity: 1, unitValue: 1200, total: 1200 },
+      { name: "Setup Inicial", quantity: 1, unitValue: 300, total: 300 },
+      { name: "Treinamento", quantity: 2, unitValue: 150, total: 300 },
+    ],
+    totalMrr: 1800,
+    currency: "BRL",
+    conditions: [
+      "Fidelidade mínima: 12 meses",
+      "Forma de pagamento: Boleto/PIX",
+      "Reajuste anual pelo IGPM",
+    ],
+  };
+
   return (
-    <div
-      className="rounded-xl border border-border overflow-hidden shadow-md animate-fade-in"
-      style={{ backgroundColor: formData.docBgColor }}
-    >
-      <div className={cn("p-5 space-y-4", isMobile && "p-4 space-y-3")}>
-        {/* Status bar */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[8px] font-bold uppercase tracking-wider text-white"
-            style={{ backgroundColor: formData.docAccentColor }}>
-            <CheckCircle2 className="h-2.5 w-2.5" />
-            Aguardando Aceite
-          </div>
-          <div className="flex items-center gap-1 text-[9px]" style={{ color: formData.docTextColor, opacity: 0.4 }}>
-            <Calendar className="h-3 w-3" />
-            {new Date().toLocaleDateString("pt-BR")}
-          </div>
-        </div>
-
-        {/* Header */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            {formData.brandLogoUrl ? (
-              <img src={formData.brandLogoUrl} alt="Logo" className={cn("object-contain", isMobile ? "h-8" : "h-10")} />
-            ) : (
-              <div className={cn("rounded-lg flex items-center justify-center", isMobile ? "h-8 w-8" : "h-10 w-10")}
-                style={{ backgroundColor: `${formData.docPrimaryColor}15` }}>
-                <FileSignature className="h-5 w-5" style={{ color: formData.docPrimaryColor }} />
-              </div>
-            )}
-            <div>
-              <h3 className={cn("font-bold tracking-wide", isMobile ? "text-xs" : "text-sm")}
-                style={{ color: formData.docPrimaryColor }}>
-                PROPOSTA COMERCIAL
-              </h3>
-              <p className="text-[10px]" style={{ color: formData.docTextColor, opacity: 0.5 }}>
-                {formData.razaoSocial || "Nome da Empresa"} · Ref: #PC-2026-001
-              </p>
-            </div>
-          </div>
-          {!isMobile && (
-            <div className="text-right shrink-0">
-              <p className="text-[10px] font-medium" style={{ color: formData.docTextColor, opacity: 0.6 }}>
-                Válida por 15 dias
-              </p>
-              <p className="text-[9px]" style={{ color: formData.docTextColor, opacity: 0.4 }}>
-                Emissão: {new Date().toLocaleDateString("pt-BR")}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Primary divider */}
-        <div className="h-[3px] rounded-full transition-colors duration-300"
-          style={{ background: `linear-gradient(90deg, ${formData.docPrimaryColor}, ${formData.docSecondaryColor})` }} />
-
-        {/* Client / Vendor info */}
-        <div className={cn("grid gap-4", isMobile ? "grid-cols-1" : "grid-cols-2")}>
-          <div className="space-y-1">
-            <p className="text-[9px] font-bold uppercase tracking-wider"
-              style={{ color: formData.docPrimaryColor, opacity: 0.6 }}>
-              <User className="h-2.5 w-2.5 inline mr-1" />
-              Cliente
-            </p>
-            <p className="text-xs font-medium" style={{ color: formData.docTextColor }}>
-              {formData.nomeFantasia || formData.razaoSocial || "Cliente Exemplo Ltda"}
-            </p>
-            <p className="text-[10px]" style={{ color: formData.docTextColor, opacity: 0.6 }}>
-              CNPJ: {formData.cnpj || "00.000.000/0000-00"}
-            </p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-[9px] font-bold uppercase tracking-wider"
-              style={{ color: formData.docPrimaryColor, opacity: 0.6 }}>
-              <Star className="h-2.5 w-2.5 inline mr-1" />
-              Vendedor
-            </p>
-            <p className="text-xs font-medium" style={{ color: formData.docTextColor }}>
-              {formData.responsavel || "Consultor Responsável"}
-            </p>
-            <p className="text-[10px]" style={{ color: formData.docTextColor, opacity: 0.6 }}>
-              {formData.email || "email@empresa.com"}
-            </p>
-          </div>
-        </div>
-
-        {/* Services table */}
-        <div>
-          <p className="text-[9px] font-bold uppercase tracking-wider mb-2"
-            style={{ color: formData.docPrimaryColor, opacity: 0.6 }}>Serviços Contratados</p>
-          <div className="rounded-lg border overflow-hidden" style={{ borderColor: `${formData.docSecondaryColor}40` }}>
-            <div className={cn("grid gap-0 text-[9px] font-bold px-3 py-1.5", isMobile ? "grid-cols-6" : "grid-cols-12")}
-              style={{ backgroundColor: `${formData.docPrimaryColor}10`, color: formData.docPrimaryColor }}>
-              <span className={cn(isMobile ? "col-span-3" : "col-span-6")}>Serviço</span>
-              {!isMobile && <span className="col-span-2 text-center">Qtd</span>}
-              <span className={cn(isMobile ? "col-span-1 text-center" : "col-span-2 text-right")}>Qtd</span>
-              <span className={cn(isMobile ? "col-span-2 text-right" : "col-span-2 text-right")}>Total</span>
-            </div>
-            {[
-              { name: "Plano Premium", qty: 1, unit: "R$ 1.200", total: "R$ 1.200,00" },
-              { name: "Setup Inicial", qty: 1, unit: "R$ 300", total: "R$ 300,00" },
-              { name: "Treinamento", qty: 2, unit: "R$ 150", total: "R$ 300,00" },
-            ].map((row, i) => (
-              <div key={i} className={cn("grid gap-0 text-[10px] px-3 py-1.5 border-t", isMobile ? "grid-cols-6" : "grid-cols-12")}
-                style={{ borderColor: `${formData.docSecondaryColor}20`, color: formData.docTextColor }}>
-                <span className={cn("font-medium", isMobile ? "col-span-3" : "col-span-6")}>{row.name}</span>
-                {!isMobile && <span className="col-span-2 text-center">{row.qty}</span>}
-                <span className={cn(isMobile ? "col-span-1 text-center" : "col-span-2 text-right")}>{row.qty}</span>
-                <span className={cn("font-semibold", isMobile ? "col-span-2 text-right" : "col-span-2 text-right")}>{row.total}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Total */}
-        <div className="flex items-center justify-end gap-3">
-          <span className="text-xs font-medium" style={{ color: formData.docTextColor, opacity: 0.7 }}>
-            Total Mensal:
-          </span>
-          <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-bold text-white transition-colors duration-300"
-            style={{ backgroundColor: formData.docAccentColor }}>
-            R$ 1.800,00
-            <span className="text-[10px] font-normal opacity-80">/mês</span>
-          </div>
-        </div>
-
-        {/* Commercial Conditions */}
-        <div className="rounded-lg p-3 space-y-1.5" style={{ backgroundColor: `${formData.docPrimaryColor}08`, borderLeft: `3px solid ${formData.docSecondaryColor}` }}>
-          <p className="text-[9px] font-bold uppercase tracking-wider" style={{ color: formData.docPrimaryColor, opacity: 0.7 }}>
-            Condições Comerciais
-          </p>
-          <ul className="space-y-0.5">
-            {["Fidelidade mínima: 12 meses", "Forma de pagamento: Boleto/PIX", "Reajuste anual pelo IGPM"].map((item, i) => (
-              <li key={i} className="text-[9px] flex items-start gap-1.5" style={{ color: formData.docTextColor, opacity: 0.7 }}>
-                <CheckCircle2 className="h-2.5 w-2.5 mt-0.5 shrink-0" style={{ color: formData.docAccentColor }} />
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Signature / Accept area */}
-        <div className="rounded-lg border-2 border-dashed p-3 flex items-center justify-between gap-3"
-          style={{ borderColor: `${formData.docAccentColor}50` }}>
-          <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4" style={{ color: formData.docAccentColor }} />
-            <div>
-              <p className="text-[10px] font-semibold" style={{ color: formData.docTextColor }}>
-                Assinatura Digital
-              </p>
-              <p className="text-[8px]" style={{ color: formData.docTextColor, opacity: 0.5 }}>
-                Documento com validade jurídica
-              </p>
-            </div>
-          </div>
-          <div className="px-3 py-1.5 rounded-md text-[9px] font-bold text-white"
-            style={{ backgroundColor: formData.docAccentColor }}>
-            Aceitar Proposta
-          </div>
-        </div>
-
-        {/* Footer divider */}
-        <div className="h-px transition-colors duration-300" style={{ backgroundColor: `${formData.docSecondaryColor}40` }} />
-
-        {/* Footer */}
-        <div className={cn("flex items-center", isMobile ? "flex-col gap-1 text-center" : "justify-between")}>
-          <div>
-            <p className="text-[9px] font-medium" style={{ color: formData.docPrimaryColor, opacity: 0.5 }}>
-              {formData.razaoSocial || "Empresa"} · CNPJ {formData.cnpj || "00.000.000/0000-00"}
-            </p>
-            <p className="text-[8px]" style={{ color: formData.docTextColor, opacity: 0.3 }}>
-              {formData.email || "contato@empresa.com"} · {formData.telefone || "(00) 00000-0000"}
-            </p>
-          </div>
-          <p className="text-[8px]" style={{ color: formData.docTextColor, opacity: 0.3 }}>
-            Documento gerado automaticamente · Página 1 de 1
-          </p>
-        </div>
-      </div>
+    <div className={cn(isMobile && "max-w-[360px] mx-auto")}>
+      <ProposalTemplatePremium data={templateData} compact={true} />
     </div>
   );
 }
