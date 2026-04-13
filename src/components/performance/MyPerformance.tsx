@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
@@ -13,16 +13,21 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import {
   Target, TrendingUp, MessageSquare, ClipboardList, Eye, EyeOff,
   CheckCircle2, Clock, AlertCircle, Sparkles, Calendar, Send, ChevronDown, ChevronUp,
   ThumbsUp, PlayCircle, Plus, X, AlertTriangle, HeartHandshake, HelpCircle, Check,
+  ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const statusConfig: Record<string, { label: string; icon: typeof Clock; color: string }> = {
+  novo: { label: "Novo", icon: EyeOff, color: "text-purple-500 bg-purple-500/10 border-purple-500/20" },
+  lido: { label: "Lido", icon: Eye, color: "text-sky-500 bg-sky-500/10 border-sky-500/20" },
   pendente: { label: "Pendente", icon: Clock, color: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
+  confirmado: { label: "Confirmado", icon: ThumbsUp, color: "text-teal-500 bg-teal-500/10 border-teal-500/20" },
   em_andamento: { label: "Em andamento", icon: PlayCircle, color: "text-blue-500 bg-blue-500/10 border-blue-500/20" },
   em_risco: { label: "Em risco", icon: AlertTriangle, color: "text-red-500 bg-red-500/10 border-red-500/20" },
   concluido: { label: "Concluído", icon: CheckCircle2, color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
@@ -44,6 +49,38 @@ export function MyPerformance() {
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [newChecklistItem, setNewChecklistItem] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("feedbacks");
+
+  // Navigation blocking state
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const pendingNavRef = useRef<(() => void) | null>(null);
+
+  const unconfirmedFeedbacks = useMemo(
+    () => feedbacks.filter(f => !f.confirmed_at && f.visualizado),
+    [feedbacks]
+  );
+  const hasUnconfirmed = unconfirmedFeedbacks.length > 0;
+
+  // Block browser back/close when unconfirmed feedbacks exist and on feedbacks tab
+  useEffect(() => {
+    if (!hasUnconfirmed || activeTab !== "feedbacks") return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasUnconfirmed, activeTab]);
+
+  // Intercept tab change
+  const handleTabChange = useCallback((newTab: string) => {
+    if (hasUnconfirmed && activeTab === "feedbacks" && newTab !== "feedbacks") {
+      pendingNavRef.current = () => setActiveTab(newTab);
+      setShowBlockModal(true);
+      return;
+    }
+    setActiveTab(newTab);
+  }, [hasUnconfirmed, activeTab]);
 
   const [myGoals, setMyGoals] = useState<any[]>([]);
   useEffect(() => {
@@ -80,7 +117,7 @@ export function MyPerformance() {
     if (fb.visualizado) return;
     await supabase
       .from("performance_feedbacks")
-      .update({ visualizado: true, visualizado_em: new Date().toISOString() } as any)
+      .update({ visualizado: true, visualizado_em: new Date().toISOString(), status: fb.status === "pendente" || !fb.status ? "lido" : fb.status } as any)
       .eq("id", fb.id);
     refetchFeedbacks();
   }, [refetchFeedbacks]);
@@ -94,11 +131,32 @@ export function MyPerformance() {
 
   const confirmUnderstanding = useCallback(async (fb: PerformanceFeedback) => {
     const now = new Date().toISOString();
-    const entry: FeedbackCommentEntry = { text: "Confirmou entendimento do feedback", created_at: now, type: "system" };
+    const viewedAt = fb.visualizado_em || now;
+    const viewedTime = new Date(viewedAt).getTime();
+    const confirmTime = new Date(now).getTime();
+    const secondsToConfirm = Math.round((confirmTime - viewedTime) / 1000);
+
+    const entry: FeedbackCommentEntry = {
+      text: `Confirmou entendimento do feedback (${secondsToConfirm}s após visualização)`,
+      created_at: now,
+      type: "system",
+    };
     const history = [...(fb.comment_history || []), entry];
-    await updateField(fb.id, { confirmed_at: now, comment_history: history });
-    toast.success("Feedback confirmado");
+    await updateField(fb.id, { confirmed_at: now, status: "confirmado", comment_history: history });
+    toast.success("Feedback confirmado com sucesso!");
   }, [updateField]);
+
+  const confirmFromModal = useCallback(async () => {
+    // Confirm all unconfirmed feedbacks
+    for (const fb of unconfirmedFeedbacks) {
+      await confirmUnderstanding(fb);
+    }
+    setShowBlockModal(false);
+    if (pendingNavRef.current) {
+      pendingNavRef.current();
+      pendingNavRef.current = null;
+    }
+  }, [unconfirmedFeedbacks, confirmUnderstanding]);
 
   const assumePlan = useCallback(async (fb: PerformanceFeedback) => {
     const now = new Date().toISOString();
@@ -174,15 +232,25 @@ export function MyPerformance() {
     const doneCount = checklist.filter(i => i.done).length;
     const checklistPct = checklist.length > 0 ? Math.round((doneCount / checklist.length) * 100) : 0;
     const commentHistory = fb.comment_history || [];
+    const needsConfirmation = !fb.confirmed_at;
 
     return (
       <Card
         key={fb.id}
         className={cn(
           "overflow-hidden transition-all duration-300",
-          !fb.visualizado && "ring-1 ring-primary/30 bg-primary/[0.02]"
+          !fb.visualizado && "ring-1 ring-primary/30 bg-primary/[0.02]",
+          needsConfirmation && fb.visualizado && "ring-1 ring-amber-500/40 bg-amber-500/[0.02]"
         )}
       >
+        {/* Pending confirmation banner */}
+        {needsConfirmation && fb.visualizado && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 text-amber-700 dark:text-amber-400">
+            <ShieldAlert className="h-4 w-4 shrink-0" />
+            <span className="text-xs font-medium">Aguardando confirmação de entendimento</span>
+          </div>
+        )}
+
         <button
           className="w-full flex items-center gap-3 p-4 text-left hover:bg-muted/30 transition-colors"
           onClick={() => toggleExpand(fb)}
@@ -254,19 +322,38 @@ export function MyPerformance() {
               </div>
             )}
 
-            {/* Confirmation + Assume buttons */}
-            {(!fb.confirmed_at || !fb.assumed_at) && (
+            {/* Confirmation button - prominent */}
+            {needsConfirmation && (
+              <div className="rounded-xl border-2 border-dashed border-amber-500/40 bg-amber-500/5 p-4 text-center space-y-3">
+                <ShieldAlert className="h-8 w-8 text-amber-500 mx-auto" />
+                <p className="text-sm font-semibold">Confirme que entendeu este feedback</p>
+                <p className="text-xs text-muted-foreground">Você precisa confirmar a leitura antes de prosseguir</p>
+                <Button
+                  onClick={() => confirmUnderstanding(fb)}
+                  disabled={saving === fb.id}
+                  className="gap-2 bg-amber-500 hover:bg-amber-600 text-white"
+                >
+                  <ThumbsUp className="h-4 w-4" /> Confirmar que entendi
+                </Button>
+              </div>
+            )}
+
+            {/* Confirmed stamp */}
+            {fb.confirmed_at && (
+              <div className="flex items-center gap-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10 px-3 py-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                  Confirmado em {new Date(fb.confirmed_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                </span>
+              </div>
+            )}
+
+            {/* Assume plan - only after confirmation */}
+            {fb.confirmed_at && !fb.assumed_at && (
               <div className="flex flex-wrap gap-2">
-                {!fb.confirmed_at && (
-                  <Button size="sm" variant="outline" className="text-xs gap-1.5 border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10" onClick={() => confirmUnderstanding(fb)} disabled={saving === fb.id}>
-                    <ThumbsUp className="h-3.5 w-3.5" /> Confirmar que entendi
-                  </Button>
-                )}
-                {fb.confirmed_at && !fb.assumed_at && (
-                  <Button size="sm" variant="outline" className="text-xs gap-1.5 border-blue-500/30 text-blue-600 hover:bg-blue-500/10" onClick={() => assumePlan(fb)} disabled={saving === fb.id}>
-                    <PlayCircle className="h-3.5 w-3.5" /> Assumir plano de ação
-                  </Button>
-                )}
+                <Button size="sm" variant="outline" className="text-xs gap-1.5 border-blue-500/30 text-blue-600 hover:bg-blue-500/10" onClick={() => assumePlan(fb)} disabled={saving === fb.id}>
+                  <PlayCircle className="h-3.5 w-3.5" /> Assumir plano de ação
+                </Button>
               </div>
             )}
 
@@ -327,20 +414,22 @@ export function MyPerformance() {
             )}
 
             {/* Status */}
-            <div className="flex items-center gap-2">
-              <p className="text-[11px] text-muted-foreground">Status:</p>
-              <Select value={fb.status} onValueChange={(v) => updateField(fb.id, { status: v }).then(() => toast.success("Status atualizado"))}>
-                <SelectTrigger className="h-7 w-40 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pendente">Pendente</SelectItem>
-                  <SelectItem value="em_andamento">Em andamento</SelectItem>
-                  <SelectItem value="em_risco">Em risco</SelectItem>
-                  <SelectItem value="concluido">Concluído</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {fb.confirmed_at && (
+              <div className="flex items-center gap-2">
+                <p className="text-[11px] text-muted-foreground">Status:</p>
+                <Select value={fb.status} onValueChange={(v) => updateField(fb.id, { status: v }).then(() => toast.success("Status atualizado"))}>
+                  <SelectTrigger className="h-7 w-40 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="confirmado">Confirmado</SelectItem>
+                    <SelectItem value="em_andamento">Em andamento</SelectItem>
+                    <SelectItem value="em_risco">Em risco</SelectItem>
+                    <SelectItem value="concluido">Concluído</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Timeline de comentários */}
             {commentHistory.length > 0 && (
@@ -363,23 +452,25 @@ export function MyPerformance() {
             )}
 
             {/* Comentário */}
-            <div className="space-y-2">
-              <Textarea
-                placeholder="Adicionar comentário..."
-                value={commentDrafts[fb.id] || ""}
-                onChange={e => setCommentDrafts(prev => ({ ...prev, [fb.id]: e.target.value }))}
-                rows={2}
-                className="text-xs"
-              />
-              <Button
-                size="sm"
-                className="text-xs gap-1"
-                disabled={!commentDrafts[fb.id]?.trim() || saving === fb.id}
-                onClick={() => saveComment(fb)}
-              >
-                <Send className="h-3 w-3" /> Enviar Comentário
-              </Button>
-            </div>
+            {fb.confirmed_at && (
+              <div className="space-y-2">
+                <Textarea
+                  placeholder="Adicionar comentário..."
+                  value={commentDrafts[fb.id] || ""}
+                  onChange={e => setCommentDrafts(prev => ({ ...prev, [fb.id]: e.target.value }))}
+                  rows={2}
+                  className="text-xs"
+                />
+                <Button
+                  size="sm"
+                  className="text-xs gap-1"
+                  disabled={!commentDrafts[fb.id]?.trim() || saving === fb.id}
+                  onClick={() => saveComment(fb)}
+                >
+                  <Send className="h-3 w-3" /> Enviar Comentário
+                </Button>
+              </div>
+            )}
 
             {fb.visualizado && fb.visualizado_em && (
               <p className="text-[10px] text-muted-foreground flex items-center gap-1">
@@ -394,6 +485,23 @@ export function MyPerformance() {
 
   return (
     <div className="space-y-6">
+      {/* Top warning bar for unconfirmed feedbacks */}
+      {hasUnconfirmed && activeTab === "feedbacks" && (
+        <div className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/20 shrink-0">
+            <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+              {unconfirmedFeedbacks.length} feedback{unconfirmedFeedbacks.length > 1 ? "s" : ""} aguardando confirmação
+            </p>
+            <p className="text-xs text-amber-600/80 dark:text-amber-400/80">
+              Confirme o entendimento dos feedbacks para poder navegar
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center gap-3">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
           <Target className="h-5 w-5 text-primary" />
@@ -409,7 +517,7 @@ export function MyPerformance() {
         )}
       </div>
 
-      <Tabs defaultValue="feedbacks" className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="h-9">
           <TabsTrigger value="metas" className="text-xs gap-1"><Target className="h-3.5 w-3.5" />Minhas Metas</TabsTrigger>
           <TabsTrigger value="performance" className="text-xs gap-1"><TrendingUp className="h-3.5 w-3.5" />Minha Performance</TabsTrigger>
@@ -559,6 +667,39 @@ export function MyPerformance() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Navigation block modal */}
+      <Dialog open={showBlockModal} onOpenChange={(open) => { if (!open) { setShowBlockModal(false); pendingNavRef.current = null; } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex justify-center mb-2">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10">
+                <ShieldAlert className="h-6 w-6 text-amber-500" />
+              </div>
+            </div>
+            <DialogTitle className="text-center">Confirmação pendente</DialogTitle>
+            <DialogDescription className="text-center">
+              Você precisa confirmar que entendeu {unconfirmedFeedbacks.length > 1 ? `os ${unconfirmedFeedbacks.length} feedbacks pendentes` : "este feedback"} antes de sair.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => { setShowBlockModal(false); pendingNavRef.current = null; }}
+              className="gap-1.5"
+            >
+              <Eye className="h-4 w-4" /> Voltar e revisar
+            </Button>
+            <Button
+              onClick={confirmFromModal}
+              disabled={saving !== null}
+              className="gap-1.5 bg-amber-500 hover:bg-amber-600 text-white"
+            >
+              <ThumbsUp className="h-4 w-4" /> Confirmar agora
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
