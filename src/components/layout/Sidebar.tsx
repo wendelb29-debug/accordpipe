@@ -25,6 +25,7 @@ import {
   PinOff,
   Settings,
   ChevronDown,
+  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -43,6 +44,7 @@ const navigation = [
   { name: "Relatórios", href: "/relatorios", icon: BarChart3, roles: ["admin", "leitura", "ceo", "administrativo", "financeiro"] },
   
   { name: "Base de Clientes", href: "/cadastrados", icon: Users, roles: ["admin", "ceo", "administrativo"] },
+  { name: "Performance", href: "/performance", icon: TrendingUp, roles: ["admin", "ceo", "operador", "comercial"] },
   { name: "Descarte", href: "/descarte", icon: Trash2, roles: ["admin", "ceo"] },
 ];
 
