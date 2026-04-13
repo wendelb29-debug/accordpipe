@@ -8,6 +8,7 @@ import {
   CheckCircle2, Clock, Shield, UserPlus,
 } from "lucide-react";
 import { PdfRenderer } from "@/components/contratos/PdfRenderer";
+import { ProposalTemplatePremium } from "./ProposalTemplatePremium";
 import { ProposalItemsManager, ProposalLineItem } from "./ProposalItemsManager";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
