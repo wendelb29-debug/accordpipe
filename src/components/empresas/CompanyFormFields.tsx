@@ -53,9 +53,38 @@ export function CompanyFormFields({ formData, onChange, onCnpjSearch }: CompanyF
     }
     setCnpjLoading(true);
     try {
-      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${digits}`);
-      if (!res.ok) throw new Error("CNPJ não encontrado");
-      const data = await res.json();
+      let data: any = null;
+      try {
+        const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${digits}`);
+        if (res.ok) data = await res.json();
+      } catch (e) {
+        console.warn("BrasilAPI falhou, tentando fallback...", e);
+      }
+      if (!data) {
+        try {
+          const res2 = await fetch(`https://publica.cnpj.ws/cnpj/${digits}`);
+          if (res2.ok) {
+            const raw = await res2.json();
+            data = {
+              razao_social: raw.razao_social,
+              nome_fantasia: raw.estabelecimento?.nome_fantasia,
+              email: raw.estabelecimento?.email,
+              ddd_telefone_1: raw.estabelecimento?.ddd1 && raw.estabelecimento?.telefone1
+                ? `${raw.estabelecimento.ddd1}${raw.estabelecimento.telefone1}` : null,
+              cep: raw.estabelecimento?.cep,
+              logradouro: raw.estabelecimento?.logradouro,
+              numero: raw.estabelecimento?.numero,
+              complemento: raw.estabelecimento?.complemento,
+              bairro: raw.estabelecimento?.bairro,
+              municipio: raw.estabelecimento?.cidade?.nome,
+              uf: raw.estabelecimento?.estado?.sigla,
+            };
+          }
+        } catch (e2) {
+          console.warn("Fallback CNPJ API also failed", e2);
+        }
+      }
+      if (!data) throw new Error("Nenhuma API retornou dados");
       onChange({
         ...formData,
         razaoSocial: data.razao_social || "",
@@ -73,7 +102,8 @@ export function CompanyFormFields({ formData, onChange, onCnpjSearch }: CompanyF
         estado: data.uf || formData.estado,
       });
       toast.success("Dados do CNPJ carregados com sucesso!");
-    } catch {
+    } catch (err) {
+      console.error("Erro ao buscar CNPJ:", err);
       toast.error("Não foi possível buscar o CNPJ. Verifique e tente novamente.");
     } finally {
       setCnpjLoading(false);
