@@ -4,7 +4,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { useWorkspacePermissions } from "@/hooks/useWorkspacePermissions";
 import { toast } from "sonner";
-import { toast } from "sonner";
 
 export interface Workspace {
   id: string;
