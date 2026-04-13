@@ -209,6 +209,17 @@ export default function ServidoresTab() {
     setTimeout(() => setCopiedLinkId(null), 2000);
   };
 
+  const handleDeleteSetupRequest = async (setupRequestId: string) => {
+    try {
+      const { error } = await supabase.from("tenant_setup_requests").delete().eq("id", setupRequestId);
+      if (error) throw error;
+      sonnerToast.success("Solicitação excluída com sucesso!");
+      fetchCompanies();
+    } catch (err: any) {
+      sonnerToast.error("Erro ao excluir: " + (err.message || ""));
+    }
+  };
+
   const handleOpenUsersDialog = async (company: Company) => {
     setUsersDialogCompany(company);
     setUsersDialogOpen(true);
