@@ -493,10 +493,25 @@ export default function ServidoresTab() {
           <p className="text-sm text-muted-foreground">Ambientes independentes vinculados por CNPJ</p>
         </div>
         {isMaster && (
-          <Button className="gap-2" onClick={() => navigate("/servidores/novo")}>
-            <Plus className="h-4 w-4" />
-            Novo Tenant
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                Novo Tenant
+                <ChevronDown className="h-3.5 w-3.5 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem className="gap-2" onClick={() => navigate("/servidores/novo")}>
+                <Building2 className="h-4 w-4" />
+                Criar Tenant Manualmente
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2" onClick={handleGenerateSetupLink} disabled={generatingLink}>
+                {generatingLink ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+                Gerar Link de Configuração
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 
