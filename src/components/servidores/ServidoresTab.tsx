@@ -93,8 +93,10 @@ export default function ServidoresTab() {
   const [permUserId, setPermUserId] = useState<string | null>(null);
   const [permUserName, setPermUserName] = useState("");
   const [permUserIsCeo, setPermUserIsCeo] = useState(false);
+  const [generatingLink, setGeneratingLink] = useState(false);
+  const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const { toast } = useToast();
-  const { isMaster, profile } = useAuth();
+  const { isMaster, profile, user } = useAuth();
 
   const [formData, setFormData] = useState({
     razao_social: "",
