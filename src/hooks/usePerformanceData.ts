@@ -16,17 +16,21 @@ export interface PerformanceGoal {
   id: string;
   user_id: string | null;
   team_id: string | null;
+  workspace_id: string | null;
   mes: number;
   ano: number;
   meta_valor: number;
   realizado_valor: number;
   percentual: number;
+  meta_config?: Record<string, any>;
+  resultado_config?: Record<string, any>;
 }
 
 export interface PerformanceSnapshot {
   id: string;
   user_id: string | null;
   team_id: string | null;
+  workspace_id: string | null;
   data: string;
   ganhos: number;
   perdas: number;
@@ -35,6 +39,7 @@ export interface PerformanceSnapshot {
   tarefas_concluidas: number;
   sla: number;
   score: number;
+  kpi_data?: Record<string, any>;
 }
 
 export interface PerformanceFeedback {
@@ -68,6 +73,26 @@ export interface UserProfile {
   avatar_url?: string;
 }
 
+export interface WorkspaceKPI {
+  id: string;
+  workspace_id: string;
+  tenant_id: string;
+  nome: string;
+  tipo: string; // quantidade, valor, percentual, tempo
+  origem: string; // crm, tarefas, financeiro, webhook, manual
+  regra: Record<string, any>;
+  ativo: boolean;
+  posicao: number;
+}
+
+export interface WorkspaceGoalModel {
+  id: string;
+  workspace_id: string;
+  tenant_id: string;
+  tipo_calculo: string; // manual, auto_crm, auto_tarefas, formula
+  regra_calculo: Record<string, any>;
+}
+
 export function usePerformanceData(filters: {
   mes: number;
   ano: number;
@@ -80,6 +105,8 @@ export function usePerformanceData(filters: {
   const [goals, setGoals] = useState<PerformanceGoal[]>([]);
   const [snapshots, setSnapshots] = useState<PerformanceSnapshot[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [workspaceKpis, setWorkspaceKpis] = useState<WorkspaceKPI[]>([]);
+  const [goalModel, setGoalModel] = useState<WorkspaceGoalModel | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
@@ -102,6 +129,7 @@ export function usePerformanceData(filters: {
         .eq("ano", filters.ano);
       if (filters.teamId) goalsQuery = goalsQuery.eq("team_id", filters.teamId);
       if (filters.userId) goalsQuery = goalsQuery.eq("user_id", filters.userId);
+      if (filters.workspaceId) goalsQuery = goalsQuery.eq("workspace_id", filters.workspaceId);
       const { data: goalsData } = await goalsQuery;
 
       // Fetch snapshots for the month
@@ -119,6 +147,7 @@ export function usePerformanceData(filters: {
         .order("data");
       if (filters.userId) snapQuery = snapQuery.eq("user_id", filters.userId);
       if (filters.teamId) snapQuery = snapQuery.eq("team_id", filters.teamId);
+      if (filters.workspaceId) snapQuery = snapQuery.eq("workspace_id", filters.workspaceId);
       const { data: snapsData } = await snapQuery;
 
       // Fetch users from profiles
@@ -127,6 +156,28 @@ export function usePerformanceData(filters: {
         .select("user_id, name, email, avatar_url")
         .eq("company_id", companyId)
         .eq("is_active", true);
+
+      // Fetch workspace KPIs if a workspace is selected
+      let wsKpis: WorkspaceKPI[] = [];
+      let wsGoalModel: WorkspaceGoalModel | null = null;
+      if (filters.workspaceId) {
+        const { data: kpisData } = await supabase
+          .from("workspace_kpis")
+          .select("*")
+          .eq("workspace_id", filters.workspaceId)
+          .eq("tenant_id", companyId)
+          .eq("ativo", true)
+          .order("posicao");
+        wsKpis = (kpisData as any[]) || [];
+
+        const { data: modelData } = await supabase
+          .from("workspace_goal_models")
+          .select("*")
+          .eq("workspace_id", filters.workspaceId)
+          .eq("tenant_id", companyId)
+          .maybeSingle();
+        wsGoalModel = modelData as any;
+      }
 
       // If no manual goals exist, compute from CRM leads automatically
       let finalGoals = (goalsData as any[]) || [];
@@ -145,6 +196,7 @@ export function usePerformanceData(filters: {
               id: `crm-${row.user_id}`,
               user_id: row.user_id,
               team_id: null,
+              workspace_id: filters.workspaceId || null,
               mes: filters.mes,
               ano: filters.ano,
               meta_valor: 0,
@@ -158,6 +210,7 @@ export function usePerformanceData(filters: {
               id: `crm-snap-${row.user_id}`,
               user_id: row.user_id,
               team_id: null,
+              workspace_id: filters.workspaceId || null,
               data: startDate,
               ganhos: Number(row.ganhos) || 0,
               perdas: Number(row.perdas) || 0,
@@ -175,12 +228,14 @@ export function usePerformanceData(filters: {
       setGoals(finalGoals);
       setSnapshots(finalSnapshots);
       setUsers((profilesData as any[]) || []);
+      setWorkspaceKpis(wsKpis);
+      setGoalModel(wsGoalModel);
     } catch (err) {
       console.error("Error fetching performance data:", err);
     } finally {
       setLoading(false);
     }
-  }, [companyId, filters.mes, filters.ano, filters.teamId, filters.userId]);
+  }, [companyId, filters.mes, filters.ano, filters.teamId, filters.userId, filters.workspaceId]);
 
   useEffect(() => {
     fetchData();
@@ -201,6 +256,8 @@ export function usePerformanceData(filters: {
     goals,
     snapshots,
     users,
+    workspaceKpis,
+    goalModel,
     loading,
     refetch: fetchData,
     kpis: {

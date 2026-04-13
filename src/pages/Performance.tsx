@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { TrendingUp, Sparkles } from "lucide-react";
+import { useState, useMemo } from "react";
+import { TrendingUp } from "lucide-react";
 import { usePerformanceData, type UserProfile } from "@/hooks/usePerformanceData";
 import { PerformanceKPIs } from "@/components/performance/PerformanceKPIs";
 import { PerformanceTimeline } from "@/components/performance/PerformanceTimeline";
@@ -10,6 +10,7 @@ import { PerformanceDetailDrawer } from "@/components/performance/PerformanceDet
 import { PerformanceFilters } from "@/components/performance/PerformanceFilters";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWorkspacePermissions } from "@/hooks/useWorkspacePermissions";
+import { useWorkspaces } from "@/hooks/useWorkspaces";
 
 export default function Performance() {
   const now = new Date();
@@ -18,23 +19,30 @@ export default function Performance() {
     ano: now.getFullYear(),
     teamId: undefined as string | undefined,
     userId: undefined as string | undefined,
+    workspaceId: undefined as string | undefined,
   });
 
   const { filterAllowedWorkspaces } = useWorkspacePermissions();
+  const { workspaces: allWorkspaces } = useWorkspaces();
+  const allowedWorkspaces = useMemo(
+    () => filterAllowedWorkspaces(allWorkspaces),
+    [allWorkspaces, filterAllowedWorkspaces]
+  );
+
   const rawPerf = usePerformanceData(filters);
-  
+
   // Filter teams by workspace permissions
   const allowedTeams = rawPerf.teams.filter((t) => {
     if (!t.workspace_id) return true;
     return filterAllowedWorkspaces([{ id: t.workspace_id }]).length > 0;
   });
   const allowedTeamIds = new Set(allowedTeams.map((t) => t.id));
-  
-  // Filter goals/snapshots to only allowed teams
+
   const teams = allowedTeams;
   const goals = rawPerf.goals.filter((g) => !g.team_id || allowedTeamIds.has(g.team_id));
   const snapshots = rawPerf.snapshots.filter((s) => !s.team_id || allowedTeamIds.has(s.team_id));
-  const { users, loading, kpis } = rawPerf;
+  const { users, loading, kpis, workspaceKpis } = rawPerf;
+
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
 
   return (
@@ -52,7 +60,13 @@ export default function Performance() {
             </div>
           </div>
         </div>
-        <PerformanceFilters filters={filters} setFilters={setFilters} teams={teams} users={users} />
+        <PerformanceFilters
+          filters={filters}
+          setFilters={setFilters}
+          teams={teams}
+          users={users}
+          workspaces={allowedWorkspaces.map((w) => ({ id: w.id, name: w.name }))}
+        />
       </div>
 
       {loading ? (
@@ -69,7 +83,11 @@ export default function Performance() {
       ) : (
         <>
           {/* KPIs */}
-          <PerformanceKPIs {...kpis} />
+          <PerformanceKPIs
+            {...kpis}
+            workspaceKpis={workspaceKpis}
+            snapshots={snapshots}
+          />
 
           {/* Alerts */}
           <PerformanceAlerts goals={goals} users={users} teams={teams} />

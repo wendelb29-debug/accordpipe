@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { userName, goal, snapshots, totalGanhos, totalPerdas, avgScore } = await req.json();
+    const { userName, goal, snapshots, totalGanhos, totalPerdas, avgScore, workspaceContext, workspaceKpis } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -22,12 +22,21 @@ serve(async (req) => {
       ? snapshots.map((s: any) => `${s.data}: ganhos=${s.ganhos}, perdas=${s.perdas}, conversão=${s.conversao}%, score=${s.score}`).join("\n")
       : "Sem snapshots disponíveis";
 
-    const systemPrompt = `Você é o Accord Performance Copilot, um analista de performance comercial de alto nível.
+    const wsContext = workspaceContext
+      ? `\nContexto do Workspace: ${workspaceContext}`
+      : "";
+
+    const kpiInfo = workspaceKpis && workspaceKpis.length > 0
+      ? `\nKPIs do Workspace: ${workspaceKpis.map((k: any) => `${k.nome} (${k.tipo}, origem: ${k.origem})`).join(", ")}`
+      : "";
+
+    const systemPrompt = `Você é o Accord Performance Copilot, um analista de performance universal de alto nível.
 Analise os dados do colaborador e gere um diagnóstico preciso, plano de ação concreto e meta de recuperação.
+Adapte sua análise ao contexto do workspace e seus KPIs específicos.${wsContext}${kpiInfo}
 Responda SEMPRE em JSON com as chaves: diagnostico, sugestoes, meta_recuperacao, data_reavaliacao.
 - diagnostico: texto curto descrevendo a situação atual
 - sugestoes: lista de 3-5 ações práticas separadas por quebra de linha
-- meta_recuperacao: meta específica e mensurável (ex: "5 ganhos nos próximos 7 dias")
+- meta_recuperacao: meta específica e mensurável
 - data_reavaliacao: data ISO (YYYY-MM-DD) sugerida para reavaliação (geralmente 7 dias à frente)
 Seja direto, assertivo e focado em resultado.`;
 
