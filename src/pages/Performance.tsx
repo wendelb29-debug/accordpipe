@@ -70,6 +70,8 @@ export default function Performance() {
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
                 {activeTab === "performance" ? (
                   <TrendingUp className="h-5 w-5 text-primary" />
+                ) : activeTab === "meu-desempenho" ? (
+                  <User className="h-5 w-5 text-primary" />
                 ) : (
                   <Target className="h-5 w-5 text-primary" />
                 )}
