@@ -42,6 +42,25 @@ export interface PerformanceSnapshot {
   kpi_data?: Record<string, any>;
 }
 
+export interface FeedbackChecklistItem {
+  id: string;
+  text: string;
+  done: boolean;
+  done_at?: string;
+}
+
+export interface FeedbackCheckinEntry {
+  status: string;
+  message?: string;
+  created_at: string;
+}
+
+export interface FeedbackCommentEntry {
+  text: string;
+  created_at: string;
+  type?: string;
+}
+
 export interface PerformanceFeedback {
   id: string;
   supervisor_id: string;
@@ -57,6 +76,11 @@ export interface PerformanceFeedback {
   visualizado_em: string | null;
   comentario_usuario: string | null;
   supervisor_name: string | null;
+  confirmed_at: string | null;
+  assumed_at: string | null;
+  checklist: FeedbackChecklistItem[];
+  checkin_history: FeedbackCheckinEntry[];
+  comment_history: FeedbackCommentEntry[];
   created_at?: string;
   updated_at?: string;
 }

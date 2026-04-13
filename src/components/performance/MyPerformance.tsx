@@ -1,27 +1,38 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { usePerformanceFeedbacks, useAIActionPlans } from "@/hooks/usePerformanceData";
-import type { PerformanceFeedback } from "@/hooks/usePerformanceData";
+import type { PerformanceFeedback, FeedbackChecklistItem, FeedbackCheckinEntry, FeedbackCommentEntry } from "@/hooks/usePerformanceData";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Target, TrendingUp, MessageSquare, ClipboardList, Eye, EyeOff,
   CheckCircle2, Clock, AlertCircle, Sparkles, Calendar, Send, ChevronDown, ChevronUp,
+  ThumbsUp, PlayCircle, Plus, X, AlertTriangle, HeartHandshake, HelpCircle, Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const statusConfig: Record<string, { label: string; icon: typeof Clock; color: string }> = {
   pendente: { label: "Pendente", icon: Clock, color: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
-  em_andamento: { label: "Em andamento", icon: AlertCircle, color: "text-blue-500 bg-blue-500/10 border-blue-500/20" },
+  em_andamento: { label: "Em andamento", icon: PlayCircle, color: "text-blue-500 bg-blue-500/10 border-blue-500/20" },
+  em_risco: { label: "Em risco", icon: AlertTriangle, color: "text-red-500 bg-red-500/10 border-red-500/20" },
   concluido: { label: "Concluído", icon: CheckCircle2, color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
 };
+
+function daysUntilReview(proxima_revisao: string | null): { days: number; overdue: boolean } | null {
+  if (!proxima_revisao) return null;
+  const diff = Math.ceil((new Date(proxima_revisao + "T23:59:59").getTime() - Date.now()) / 86400000);
+  return { days: Math.abs(diff), overdue: diff < 0 };
+}
 
 export function MyPerformance() {
   const { user } = useAuth();
@@ -31,6 +42,7 @@ export function MyPerformance() {
 
   const [expandedFb, setExpandedFb] = useState<string | null>(null);
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  const [newChecklistItem, setNewChecklistItem] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
 
   const [myGoals, setMyGoals] = useState<any[]>([]);
@@ -73,30 +85,74 @@ export function MyPerformance() {
     refetchFeedbacks();
   }, [refetchFeedbacks]);
 
-  const updateStatus = useCallback(async (fbId: string, newStatus: string) => {
+  const updateField = useCallback(async (fbId: string, fields: Record<string, any>) => {
     setSaving(fbId);
-    await supabase
-      .from("performance_feedbacks")
-      .update({ status: newStatus } as any)
-      .eq("id", fbId);
-    toast.success("Status atualizado");
+    await supabase.from("performance_feedbacks").update(fields as any).eq("id", fbId);
     refetchFeedbacks();
     setSaving(null);
   }, [refetchFeedbacks]);
 
-  const saveComment = useCallback(async (fbId: string) => {
-    const comment = commentDrafts[fbId];
-    if (!comment?.trim()) return;
-    setSaving(fbId);
-    await supabase
-      .from("performance_feedbacks")
-      .update({ comentario_usuario: comment.trim() } as any)
-      .eq("id", fbId);
+  const confirmUnderstanding = useCallback(async (fb: PerformanceFeedback) => {
+    const now = new Date().toISOString();
+    const entry: FeedbackCommentEntry = { text: "Confirmou entendimento do feedback", created_at: now, type: "system" };
+    const history = [...(fb.comment_history || []), entry];
+    await updateField(fb.id, { confirmed_at: now, comment_history: history });
+    toast.success("Feedback confirmado");
+  }, [updateField]);
+
+  const assumePlan = useCallback(async (fb: PerformanceFeedback) => {
+    const now = new Date().toISOString();
+    const entry: FeedbackCommentEntry = { text: "Assumiu o plano de ação", created_at: now, type: "system" };
+    const history = [...(fb.comment_history || []), entry];
+    await updateField(fb.id, { assumed_at: now, status: "em_andamento", comment_history: history });
+    toast.success("Plano de ação assumido");
+  }, [updateField]);
+
+  const addChecklistItem = useCallback(async (fb: PerformanceFeedback) => {
+    const text = newChecklistItem[fb.id]?.trim();
+    if (!text) return;
+    const item: FeedbackChecklistItem = { id: crypto.randomUUID(), text, done: false };
+    const checklist = [...(fb.checklist || []), item];
+    await updateField(fb.id, { checklist });
+    setNewChecklistItem(prev => ({ ...prev, [fb.id]: "" }));
+  }, [newChecklistItem, updateField]);
+
+  const toggleChecklistItem = useCallback(async (fb: PerformanceFeedback, itemId: string) => {
+    const checklist = (fb.checklist || []).map(item =>
+      item.id === itemId ? { ...item, done: !item.done, done_at: !item.done ? new Date().toISOString() : undefined } : item
+    );
+    await updateField(fb.id, { checklist });
+  }, [updateField]);
+
+  const removeChecklistItem = useCallback(async (fb: PerformanceFeedback, itemId: string) => {
+    const checklist = (fb.checklist || []).filter(item => item.id !== itemId);
+    await updateField(fb.id, { checklist });
+  }, [updateField]);
+
+  const doCheckin = useCallback(async (fb: PerformanceFeedback, status: string) => {
+    const now = new Date().toISOString();
+    const entry: FeedbackCheckinEntry = { status, created_at: now };
+    const checkinHistory = [...(fb.checkin_history || []), entry];
+    const commentEntry: FeedbackCommentEntry = {
+      text: status === "ok" ? "Check-in: Tudo certo" : status === "dificuldade" ? "Check-in: Em dificuldade" : "Check-in: Preciso de ajuda",
+      created_at: now, type: "checkin"
+    };
+    const commentHistory = [...(fb.comment_history || []), commentEntry];
+    const newStatus = status === "ajuda" ? "em_risco" : fb.status;
+    await updateField(fb.id, { checkin_history: checkinHistory, comment_history: commentHistory, status: newStatus });
+    toast.success("Check-in registrado");
+  }, [updateField]);
+
+  const saveComment = useCallback(async (fb: PerformanceFeedback) => {
+    const text = commentDrafts[fb.id]?.trim();
+    if (!text) return;
+    const now = new Date().toISOString();
+    const entry: FeedbackCommentEntry = { text, created_at: now, type: "user" };
+    const history = [...(fb.comment_history || []), entry];
+    await updateField(fb.id, { comentario_usuario: text, comment_history: history });
+    setCommentDrafts(prev => ({ ...prev, [fb.id]: "" }));
     toast.success("Comentário salvo");
-    setCommentDrafts(prev => ({ ...prev, [fbId]: "" }));
-    refetchFeedbacks();
-    setSaving(null);
-  }, [commentDrafts, refetchFeedbacks]);
+  }, [commentDrafts, updateField]);
 
   const toggleExpand = (fb: PerformanceFeedback) => {
     const isExpanding = expandedFb !== fb.id;
@@ -108,6 +164,233 @@ export function MyPerformance() {
   const totalPerdas = mySnaps.reduce((s, sn) => s + (sn.perdas || 0), 0);
   const avgScore = mySnaps.length > 0 ? Math.round(mySnaps.reduce((s, sn) => s + (sn.score || 0), 0) / mySnaps.length) : 0;
   const conversao = (totalGanhos + totalPerdas) > 0 ? Math.round((totalGanhos / (totalGanhos + totalPerdas)) * 100) : 0;
+
+  const renderFeedbackCard = (fb: PerformanceFeedback) => {
+    const isExpanded = expandedFb === fb.id;
+    const cfg = statusConfig[fb.status] || statusConfig.pendente;
+    const StatusIcon = cfg.icon;
+    const review = daysUntilReview(fb.proxima_revisao);
+    const checklist = fb.checklist || [];
+    const doneCount = checklist.filter(i => i.done).length;
+    const checklistPct = checklist.length > 0 ? Math.round((doneCount / checklist.length) * 100) : 0;
+    const commentHistory = fb.comment_history || [];
+
+    return (
+      <Card
+        key={fb.id}
+        className={cn(
+          "overflow-hidden transition-all duration-300",
+          !fb.visualizado && "ring-1 ring-primary/30 bg-primary/[0.02]"
+        )}
+      >
+        <button
+          className="w-full flex items-center gap-3 p-4 text-left hover:bg-muted/30 transition-colors"
+          onClick={() => toggleExpand(fb)}
+        >
+          <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg border shrink-0", cfg.color)}>
+            <StatusIcon className="h-4 w-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium truncate">
+                Feedback de {fb.supervisor_name || "Supervisor"}
+              </p>
+              {!fb.visualizado && (
+                <Badge className="text-[9px] bg-primary/20 text-primary border-0 gap-0.5">
+                  <EyeOff className="h-2.5 w-2.5" /> Novo
+                </Badge>
+              )}
+              {fb.confirmed_at && (
+                <Badge variant="outline" className="text-[9px] text-emerald-500 border-emerald-500/20 gap-0.5">
+                  <ThumbsUp className="h-2.5 w-2.5" /> Confirmado
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+              <Calendar className="h-3 w-3" />
+              {new Date(fb.data + "T00:00:00").toLocaleDateString("pt-BR")}
+              {review && (
+                <span className={cn("ml-1", review.overdue ? "text-red-500 font-semibold" : "text-muted-foreground")}>
+                  • {review.overdue ? `⚠️ Revisão vencida há ${review.days}d` : `Revisão em ${review.days}d`}
+                </span>
+              )}
+            </div>
+          </div>
+          {checklist.length > 0 && (
+            <div className="hidden sm:flex items-center gap-1.5 shrink-0">
+              <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
+                <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${checklistPct}%` }} />
+              </div>
+              <span className="text-[10px] text-muted-foreground">{checklistPct}%</span>
+            </div>
+          )}
+          <Badge variant="outline" className={cn("text-[10px] shrink-0", cfg.color)}>
+            {cfg.label}
+          </Badge>
+          {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
+        </button>
+
+        {isExpanded && (
+          <div className="px-4 pb-4 space-y-4 border-t border-border/50 pt-4 animate-in fade-in slide-in-from-top-2 duration-200">
+            {/* Pontos fortes / melhoria */}
+            {fb.pontos_fortes && (
+              <div className="rounded-lg bg-emerald-500/5 border border-emerald-500/10 p-3">
+                <p className="text-[10px] font-semibold text-emerald-500 uppercase mb-1">✅ Pontos Fortes</p>
+                <p className="text-xs">{fb.pontos_fortes}</p>
+              </div>
+            )}
+            {fb.pontos_melhoria && (
+              <div className="rounded-lg bg-amber-500/5 border border-amber-500/10 p-3">
+                <p className="text-[10px] font-semibold text-amber-500 uppercase mb-1">⚠️ Pontos de Melhoria</p>
+                <p className="text-xs">{fb.pontos_melhoria}</p>
+              </div>
+            )}
+
+            {/* Plano de ação original */}
+            {fb.plano_acao && (
+              <div className="rounded-lg bg-blue-500/5 border border-blue-500/10 p-3">
+                <p className="text-[10px] font-semibold text-blue-500 uppercase mb-1">📋 Plano de Ação</p>
+                <p className="text-xs whitespace-pre-line">{fb.plano_acao}</p>
+              </div>
+            )}
+
+            {/* Confirmation + Assume buttons */}
+            {(!fb.confirmed_at || !fb.assumed_at) && (
+              <div className="flex flex-wrap gap-2">
+                {!fb.confirmed_at && (
+                  <Button size="sm" variant="outline" className="text-xs gap-1.5 border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10" onClick={() => confirmUnderstanding(fb)} disabled={saving === fb.id}>
+                    <ThumbsUp className="h-3.5 w-3.5" /> Confirmar que entendi
+                  </Button>
+                )}
+                {fb.confirmed_at && !fb.assumed_at && (
+                  <Button size="sm" variant="outline" className="text-xs gap-1.5 border-blue-500/30 text-blue-600 hover:bg-blue-500/10" onClick={() => assumePlan(fb)} disabled={saving === fb.id}>
+                    <PlayCircle className="h-3.5 w-3.5" /> Assumir plano de ação
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* Checklist */}
+            {fb.assumed_at && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase">Checklist do Plano</p>
+                  {checklist.length > 0 && (
+                    <span className="text-[10px] text-muted-foreground">{doneCount}/{checklist.length} concluídos</span>
+                  )}
+                </div>
+                {checklist.length > 0 && (
+                  <Progress value={checklistPct} className="h-2" />
+                )}
+                <div className="space-y-1">
+                  {checklist.map(item => (
+                    <div key={item.id} className="flex items-center gap-2 group rounded-md px-2 py-1.5 hover:bg-muted/30 transition-colors">
+                      <Checkbox checked={item.done} onCheckedChange={() => toggleChecklistItem(fb, item.id)} disabled={saving === fb.id} />
+                      <span className={cn("text-xs flex-1", item.done && "line-through text-muted-foreground")}>{item.text}</span>
+                      <button onClick={() => removeChecklistItem(fb, item.id)} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Adicionar tarefa..."
+                    value={newChecklistItem[fb.id] || ""}
+                    onChange={e => setNewChecklistItem(prev => ({ ...prev, [fb.id]: e.target.value }))}
+                    className="h-7 text-xs"
+                    onKeyDown={e => e.key === "Enter" && addChecklistItem(fb)}
+                  />
+                  <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => addChecklistItem(fb)} disabled={!newChecklistItem[fb.id]?.trim()}>
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Check-in rápido */}
+            {fb.assumed_at && fb.status !== "concluido" && (
+              <div className="space-y-2">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase">Check-in Rápido</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" className="text-xs gap-1 h-7 border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10" onClick={() => doCheckin(fb, "ok")} disabled={saving === fb.id}>
+                    <Check className="h-3 w-3" /> Tudo certo
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs gap-1 h-7 border-amber-500/30 text-amber-600 hover:bg-amber-500/10" onClick={() => doCheckin(fb, "dificuldade")} disabled={saving === fb.id}>
+                    <AlertCircle className="h-3 w-3" /> Em dificuldade
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs gap-1 h-7 border-red-500/30 text-red-600 hover:bg-red-500/10" onClick={() => doCheckin(fb, "ajuda")} disabled={saving === fb.id}>
+                    <HelpCircle className="h-3 w-3" /> Preciso de ajuda
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Status */}
+            <div className="flex items-center gap-2">
+              <p className="text-[11px] text-muted-foreground">Status:</p>
+              <Select value={fb.status} onValueChange={(v) => updateField(fb.id, { status: v }).then(() => toast.success("Status atualizado"))}>
+                <SelectTrigger className="h-7 w-40 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                  <SelectItem value="em_andamento">Em andamento</SelectItem>
+                  <SelectItem value="em_risco">Em risco</SelectItem>
+                  <SelectItem value="concluido">Concluído</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Timeline de comentários */}
+            {commentHistory.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase">Histórico</p>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {commentHistory.map((entry, i) => (
+                    <div key={i} className={cn(
+                      "rounded-md px-3 py-2 text-xs flex items-start gap-2",
+                      entry.type === "system" ? "bg-muted/40" : entry.type === "checkin" ? "bg-blue-500/5 border border-blue-500/10" : "bg-primary/5 border border-primary/10"
+                    )}>
+                      <span className="text-[10px] text-muted-foreground shrink-0 pt-0.5">
+                        {new Date(entry.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                      <span className="flex-1">{entry.text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Comentário */}
+            <div className="space-y-2">
+              <Textarea
+                placeholder="Adicionar comentário..."
+                value={commentDrafts[fb.id] || ""}
+                onChange={e => setCommentDrafts(prev => ({ ...prev, [fb.id]: e.target.value }))}
+                rows={2}
+                className="text-xs"
+              />
+              <Button
+                size="sm"
+                className="text-xs gap-1"
+                disabled={!commentDrafts[fb.id]?.trim() || saving === fb.id}
+                onClick={() => saveComment(fb)}
+              >
+                <Send className="h-3 w-3" /> Enviar Comentário
+              </Button>
+            </div>
+
+            {fb.visualizado && fb.visualizado_em && (
+              <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                <Eye className="h-3 w-3" /> Visualizado em {new Date(fb.visualizado_em).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+              </p>
+            )}
+          </div>
+        )}
+      </Card>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -229,122 +512,7 @@ export function MyPerformance() {
               <p className="text-xs text-muted-foreground mt-1">Quando seu supervisor registrar um feedback, ele aparecerá aqui</p>
             </Card>
           ) : (
-            feedbacks.map(fb => {
-              const isExpanded = expandedFb === fb.id;
-              const cfg = statusConfig[fb.status] || statusConfig.pendente;
-              const StatusIcon = cfg.icon;
-
-              return (
-                <Card
-                  key={fb.id}
-                  className={cn(
-                    "overflow-hidden transition-all duration-300",
-                    !fb.visualizado && "ring-1 ring-primary/30 bg-primary/[0.02]"
-                  )}
-                >
-                  <button
-                    className="w-full flex items-center gap-3 p-4 text-left hover:bg-muted/30 transition-colors"
-                    onClick={() => toggleExpand(fb)}
-                  >
-                    <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg border", cfg.color)}>
-                      <StatusIcon className="h-4 w-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium truncate">
-                          Feedback de {fb.supervisor_name || "Supervisor"}
-                        </p>
-                        {!fb.visualizado && (
-                          <Badge className="text-[9px] bg-primary/20 text-primary border-0 gap-0.5">
-                            <EyeOff className="h-2.5 w-2.5" /> Novo
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(fb.data + "T00:00:00").toLocaleDateString("pt-BR")}
-                        {fb.proxima_revisao && (
-                          <span className="ml-2">• Revisão: {new Date(fb.proxima_revisao + "T00:00:00").toLocaleDateString("pt-BR")}</span>
-                        )}
-                      </p>
-                    </div>
-                    <Badge variant="outline" className={cn("text-[10px] shrink-0", cfg.color)}>
-                      {cfg.label}
-                    </Badge>
-                    {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
-                  </button>
-
-                  {isExpanded && (
-                    <div className="px-4 pb-4 space-y-3 border-t border-border/50 pt-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                      {fb.pontos_fortes && (
-                        <div className="rounded-lg bg-emerald-500/5 border border-emerald-500/10 p-3">
-                          <p className="text-[10px] font-semibold text-emerald-500 uppercase mb-1">✅ Pontos Fortes</p>
-                          <p className="text-xs">{fb.pontos_fortes}</p>
-                        </div>
-                      )}
-                      {fb.pontos_melhoria && (
-                        <div className="rounded-lg bg-amber-500/5 border border-amber-500/10 p-3">
-                          <p className="text-[10px] font-semibold text-amber-500 uppercase mb-1">⚠️ Pontos de Melhoria</p>
-                          <p className="text-xs">{fb.pontos_melhoria}</p>
-                        </div>
-                      )}
-                      {fb.plano_acao && (
-                        <div className="rounded-lg bg-blue-500/5 border border-blue-500/10 p-3">
-                          <p className="text-[10px] font-semibold text-blue-500 uppercase mb-1">📋 Plano de Ação</p>
-                          <p className="text-xs">{fb.plano_acao}</p>
-                        </div>
-                      )}
-
-                      <div className="flex items-center gap-2">
-                        <p className="text-[11px] text-muted-foreground">Status:</p>
-                        <Select value={fb.status} onValueChange={(v) => updateStatus(fb.id, v)}>
-                          <SelectTrigger className="h-7 w-40 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pendente">Pendente</SelectItem>
-                            <SelectItem value="em_andamento">Em andamento</SelectItem>
-                            <SelectItem value="concluido">Concluído</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {fb.comentario_usuario && (
-                        <div className="rounded-lg bg-muted/30 border border-border/50 p-3">
-                          <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">💬 Seu Comentário</p>
-                          <p className="text-xs">{fb.comentario_usuario}</p>
-                        </div>
-                      )}
-
-                      <div className="space-y-2">
-                        <Textarea
-                          placeholder="Adicionar comentário sobre este feedback..."
-                          value={commentDrafts[fb.id] || ""}
-                          onChange={e => setCommentDrafts(prev => ({ ...prev, [fb.id]: e.target.value }))}
-                          rows={2}
-                          className="text-xs"
-                        />
-                        <Button
-                          size="sm"
-                          className="text-xs gap-1"
-                          disabled={!commentDrafts[fb.id]?.trim() || saving === fb.id}
-                          onClick={() => saveComment(fb.id)}
-                        >
-                          <Send className="h-3 w-3" />
-                          {fb.comentario_usuario ? "Atualizar Comentário" : "Enviar Comentário"}
-                        </Button>
-                      </div>
-
-                      {fb.visualizado && fb.visualizado_em && (
-                        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                          <Eye className="h-3 w-3" /> Visualizado em {new Date(fb.visualizado_em).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </Card>
-              );
-            })
+            feedbacks.map(renderFeedbackCard)
           )}
         </TabsContent>
 
