@@ -152,6 +152,10 @@ export default function Performance() {
         <TabsContent value="goals" className="mt-6">
           <GoalManagement />
         </TabsContent>
+
+        <TabsContent value="meu-desempenho" className="mt-6">
+          <MyPerformance />
+        </TabsContent>
       </Tabs>
 
       <PerformanceDetailDrawer
