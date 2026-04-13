@@ -584,7 +584,16 @@ export default function NovoServidor() {
                         placeholder="00000-000"
                         className="flex-1"
                       />
-                      {cepLoading && <Loader2 className="h-4 w-4 animate-spin self-center text-muted-foreground" />}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        disabled={cepLoading || cleanDigits(formData.cep).length !== 8}
+                        onClick={() => handleCepSearch(formData.cep)}
+                        title="Buscar CEP"
+                      >
+                        {cepLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                      </Button>
                     </div>
                   </div>
                 </div>
