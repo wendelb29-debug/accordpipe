@@ -21,7 +21,7 @@ import { WorkspacesTab } from "@/components/servidores/WorkspacesTab";
 import { FintechWebhooksTab } from "@/components/servidores/FintechWebhooksTab";
 import TenantUsersTab from "@/components/servidores/TenantUsersTab";
 import CatalogTab from "@/components/servidores/CatalogTab";
-import TenantSetupLinksTab from "@/components/servidores/TenantSetupLinksTab";
+
 import { useEffect } from "react";
 
 const cleanDigits = (v: string) => v.replace(/\D/g, "");
@@ -504,7 +504,7 @@ export default function NovoServidor() {
             { value: "fintech", icon: CreditCard, label: "Webhooks Fintech" },
             { value: "usuarios", icon: Users, label: "Usuários" },
             { value: "catalogo", icon: Package, label: "Catálogo" },
-            ...(!editId ? [{ value: "setup_links", icon: Link2, label: "Links Config." }] : []),
+            
           ].map((item) => (
             <button
               key={item.value}
@@ -727,13 +727,6 @@ export default function NovoServidor() {
             </Card>
           )}
 
-          {activeTab === "setup_links" && !editId && (
-            <Card>
-              <CardContent className="pt-6">
-                <TenantSetupLinksTab />
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
     </div>
