@@ -3332,6 +3332,113 @@ export type Database = {
           },
         ]
       }
+      tenant_setup_requests: {
+        Row: {
+          activated_at: string | null
+          bairro: string | null
+          brand_accent_color: string | null
+          brand_bg_color: string | null
+          brand_logo_url: string | null
+          brand_primary_color: string | null
+          brand_secondary_color: string | null
+          brand_text_color: string | null
+          cep: string | null
+          cidade: string | null
+          cnpj: string | null
+          complemento: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          endereco: string | null
+          estado: string | null
+          id: string
+          nome_fantasia: string | null
+          numero: string | null
+          razao_social: string | null
+          responsavel: string | null
+          resulting_company_id: string | null
+          reviewed_by: string | null
+          reviewer_notes: string | null
+          status: string
+          submitted_at: string | null
+          telefone: string | null
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string | null
+          bairro?: string | null
+          brand_accent_color?: string | null
+          brand_bg_color?: string | null
+          brand_logo_url?: string | null
+          brand_primary_color?: string | null
+          brand_secondary_color?: string | null
+          brand_text_color?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          complemento?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          nome_fantasia?: string | null
+          numero?: string | null
+          razao_social?: string | null
+          responsavel?: string | null
+          resulting_company_id?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          status?: string
+          submitted_at?: string | null
+          telefone?: string | null
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string | null
+          bairro?: string | null
+          brand_accent_color?: string | null
+          brand_bg_color?: string | null
+          brand_logo_url?: string | null
+          brand_primary_color?: string | null
+          brand_secondary_color?: string | null
+          brand_text_color?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          complemento?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          nome_fantasia?: string | null
+          numero?: string | null
+          razao_social?: string | null
+          responsavel?: string | null
+          resulting_company_id?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          status?: string
+          submitted_at?: string | null
+          telefone?: string | null
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_setup_requests_resulting_company_id_fkey"
+            columns: ["resulting_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_custom_permissions: {
         Row: {
           created_at: string
