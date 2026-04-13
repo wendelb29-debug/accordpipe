@@ -690,6 +690,15 @@ export default function ServidoresTab() {
                             Revisar e Ativar
                           </Button>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => handleDeleteSetupRequest((company as any)._setup_request_id)}
+                          title="Excluir solicitação"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     ) : isMaster ? (
                       <DropdownMenu>
