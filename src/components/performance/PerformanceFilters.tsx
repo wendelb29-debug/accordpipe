@@ -4,8 +4,8 @@ import type { PerformanceTeam, UserProfile } from "@/hooks/usePerformanceData";
 interface Filters {
   mes: number;
   ano: number;
-  teamId?: string;
-  userId?: string;
+  teamId: string | undefined;
+  userId: string | undefined;
 }
 
 interface Props {
