@@ -29,6 +29,7 @@ export interface ProposalTemplateData {
   introduction?: string;
   description?: string;
   paymentFrequency?: string;
+  showAcceptButton?: boolean;
 }
 
 export interface ProposalTemplateItem {
@@ -43,57 +44,8 @@ export interface ProposalTemplateItem {
 const fmtCur = (v: number, cur = "BRL") =>
   v.toLocaleString("pt-BR", { style: "currency", currency: cur });
 
-const normalizeHex = (color?: string | null) => {
-  if (!color) return null;
-  const value = color.trim();
-  if (!value.startsWith("#")) return null;
-
-  const hex = value.slice(1);
-  if (hex.length === 3) {
-    return `#${hex
-      .split("")
-      .map((char) => char + char)
-      .join("")}`;
-  }
-
-  return hex.length === 6 ? value : null;
-};
-
-const withAlpha = (color: string | undefined, alpha: number, fallback: string) => {
-  const normalized = normalizeHex(color);
-  if (!normalized) return fallback;
-
-  const hex = normalized.slice(1);
-  const r = Number.parseInt(hex.slice(0, 2), 16);
-  const g = Number.parseInt(hex.slice(2, 4), 16);
-  const b = Number.parseInt(hex.slice(4, 6), 16);
-
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
-
-const getPaymentSuffix = (paymentFrequency?: string) => {
-  const normalized = paymentFrequency?.trim().toLowerCase();
-
-  switch (normalized) {
-    case "anual":
-    case "annual":
-    case "annually":
-    case "yearly":
-      return "/ano";
-    case "único":
-    case "unico":
-    case "one_time":
-    case "once":
-      return "pagamento único";
-    case "mensal":
-    case "monthly":
-    default:
-      return "/mês";
-  }
-};
-
 const statusLabels: Record<string, { label: string; color: string }> = {
-  enviada: { label: "AGUARDANDO ACEITE", color: "#D97706" },
+  enviada: { label: "AGUARDANDO ACEITE", color: "#10B981" },
   aceita: { label: "APROVADA", color: "#10B981" },
   declinada: { label: "DECLINADA", color: "#EF4444" },
   cancelada: { label: "CANCELADA", color: "#6B7280" },
@@ -120,7 +72,6 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
       validityDays = 15,
       validUntil,
       primaryColor = "#1E2952",
-      secondaryColor = "#4F46E5",
       accentColor = "#10B981",
       textColor = "#1F2937",
       clientName = "Cliente",
@@ -133,292 +84,387 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
       conditions = [],
       introduction,
       description,
-      paymentFrequency,
+      showAcceptButton = false,
     } = data;
 
     const statusInfo = statusLabels[status] || statusLabels.enviada;
     const computedTotal = items.length > 0 ? items.reduce((s, i) => s + i.total, 0) : totalMrr;
-    const mutedPrimary = withAlpha(primaryColor, 0.14, "rgba(30, 41, 82, 0.14)");
-    const softPrimary = withAlpha(primaryColor, 0.05, "rgba(30, 41, 82, 0.05)");
-    const mutedSecondary = withAlpha(secondaryColor, 0.3, "rgba(79, 70, 229, 0.3)");
-    const subtleText = withAlpha(textColor, 0.72, "rgba(31, 41, 55, 0.72)");
-    const faintText = withAlpha(textColor, 0.52, "rgba(31, 41, 55, 0.52)");
-    const subtleRule = withAlpha(textColor, 0.12, "rgba(31, 41, 55, 0.12)");
-    const lightZebra = withAlpha(textColor, 0.035, "rgba(31, 41, 55, 0.035)");
-    const signatureRule = withAlpha(textColor, 0.32, "rgba(31, 41, 55, 0.32)");
-    const paymentSuffix = getPaymentSuffix(paymentFrequency);
 
     const f = compact
-      ? { xs: 7, sm: 8, base: 9, md: 10, lg: 12, xl: 14, xxl: 18, val: 22 }
-      : { xs: 9, sm: 10, base: 12, md: 13, lg: 15, xl: 18, xxl: 22, val: 28 };
+      ? { xs: 7, sm: 8, base: 9, md: 10, lg: 12, xl: 14, xxl: 16, val: 20 }
+      : { xs: 10, sm: 11, base: 13, md: 14, lg: 16, xl: 20, xxl: 24, val: 30 };
 
-    const gap = compact ? 12 : 20;
+    const gap = compact ? 14 : 22;
+    const pad = compact ? 20 : 36;
+    const cardBorder = "#E5E7EB";
+    const cardRadius = compact ? 8 : 12;
+    const cnpjOrCpfLabel = clientDocument && clientDocument.replace(/\D/g, "").length <= 11 ? "CPF" : "CNPJ";
+    const companySubtitle = [companyCnpj, companyRazaoSocial || companyName, `Ref: ${reference}`].filter(Boolean).join(" · ");
 
     return (
       <div
         ref={ref}
         className={cn("overflow-hidden", className)}
-          style={{
-            backgroundColor: "#FFFFFF",
-            color: textColor,
-            fontFamily: "system-ui, -apple-system, sans-serif",
-          }}
+        style={{
+          backgroundColor: "#F9FAFB",
+          color: textColor,
+          fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+        }}
       >
-        {/* ── TOP BRAND LINE ── */}
-        <div style={{ height: compact ? 4 : 6, backgroundColor: primaryColor }} />
+        {/* ── INNER WHITE CARD ── */}
+        <div style={{ backgroundColor: "#FFFFFF", borderRadius: compact ? 10 : 16, margin: compact ? 8 : 16, boxShadow: "0 1px 6px rgba(0,0,0,0.06)" }}>
+          {/* ── TOP BRAND LINE ── */}
+          <div style={{ height: compact ? 4 : 5, backgroundColor: accentColor, borderRadius: `${compact ? 10 : 16}px ${compact ? 10 : 16}px 0 0` }} />
 
-        <div style={{ padding: compact ? 20 : 34 }}>
-          {/* ── HEADER ── */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: compact ? 12 : 16 }}>
-              {logoUrl && (
-                <img
-                  src={logoUrl}
-                  alt="Logo"
+          <div style={{ padding: pad }}>
+            {/* ── HEADER ── */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: compact ? 10 : 16 }}>
+                {logoUrl && (
+                  <div
+                    style={{
+                      width: compact ? 48 : 72,
+                      height: compact ? 48 : 72,
+                      borderRadius: compact ? 12 : 18,
+                      backgroundColor: primaryColor,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      overflow: "hidden",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <img src={logoUrl} alt="Logo" style={{ maxWidth: "80%", maxHeight: "80%", objectFit: "contain" }} />
+                  </div>
+                )}
+                <div>
+                  <h1
+                    style={{
+                      fontSize: compact ? f.lg : f.xxl,
+                      fontWeight: 800,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.04em",
+                      color: primaryColor,
+                      margin: 0,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    Proposta Comercial
+                  </h1>
+                  <p style={{ fontSize: f.xs, color: "#6B7280", margin: "4px 0 0", lineHeight: 1.4 }}>
+                    {companySubtitle}
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                <span
                   style={{
-                    height: compact ? 42 : 64,
-                    maxWidth: compact ? 96 : 168,
-                    objectFit: "contain",
-                  }}
-                />
-              )}
-              <div>
-                <h1
-                  style={{
-                    fontSize: compact ? f.xl + 1 : f.xxl,
-                    fontWeight: 800,
+                    display: "inline-block",
+                    padding: compact ? "4px 10px" : "5px 14px",
+                    fontSize: f.xs,
+                    fontWeight: 700,
                     textTransform: "uppercase",
-                    letterSpacing: compact ? "0.07em" : "0.08em",
-                    color: primaryColor,
-                    margin: 0,
-                    lineHeight: 1.2,
+                    letterSpacing: "0.04em",
+                    color: "#FFFFFF",
+                    backgroundColor: statusInfo.color,
+                    borderRadius: 999,
                   }}
                 >
-                  Proposta Comercial
-                </h1>
-                <p style={{ fontSize: f.sm, color: subtleText, margin: "4px 0 0" }}>
-                  {companyRazaoSocial || companyName}
+                  {statusInfo.label}
+                </span>
+                <p style={{ fontSize: f.xs, color: "#6B7280", margin: `${compact ? 6 : 8}px 0 0`, lineHeight: 1.5 }}>
+                  Emissão: {emissionDate}
                 </p>
+                <p style={{ fontSize: f.xs, color: "#6B7280", margin: "2px 0 0", lineHeight: 1.5 }}>
+                  Válida por {validityDays} dias
+                </p>
+                {validUntil && (
+                  <p style={{ fontSize: f.xs, color: "#6B7280", margin: "2px 0 0", lineHeight: 1.5 }}>
+                    Validade: {validUntil}
+                  </p>
+                )}
               </div>
             </div>
 
-            <div style={{ textAlign: "right" }}>
-              <p style={{ fontSize: f.sm, fontWeight: 700, color: textColor, margin: 0 }}>
-                Ref: {reference}
-              </p>
-              <p style={{ fontSize: f.xs, color: faintText, margin: "4px 0 0" }}>
-                Emissão: {emissionDate}
-              </p>
-              <p style={{ fontSize: f.xs, color: faintText, margin: "2px 0 0" }}>
-                Validade: {validityDays} dias{validUntil ? ` (até ${validUntil})` : ""}
-              </p>
-              <span
-                style={{
-                  display: "inline-block",
-                  marginTop: 10,
-                  padding: compact ? "3px 9px" : "4px 12px",
-                  fontSize: f.xs,
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                  color: "#FFFFFF",
-                  backgroundColor: statusInfo.color,
-                  borderRadius: 999,
-                }}
-              >
-                {statusInfo.label}
-              </span>
-            </div>
-          </div>
-
-          {/* ── HEADER DIVIDER ── */}
-          <div
-            style={{
-              marginTop: gap,
-              height: 1,
-              background: `linear-gradient(90deg, ${primaryColor} 0%, ${mutedSecondary} 100%)`,
-            }}
-          />
-
-          {/* ── INTRODUCTION ── */}
-          {introduction && (
-            <p style={{ marginTop: gap, fontSize: f.base, lineHeight: 1.7, color: subtleText }}>
-              {introduction}
-            </p>
-          )}
-
-          {/* ── CLIENT / VENDOR ── */}
-          <div
-            style={{
-              marginTop: gap,
-              paddingBottom: compact ? 12 : 18,
-              borderBottom: `1px solid ${subtleRule}`,
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: compact ? 16 : 28,
-            }}
-          >
-            <div>
-              <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor, margin: "0 0 6px 0" }}>
-                Cliente
-              </p>
-              <p style={{ fontSize: f.md, fontWeight: 700, color: textColor, margin: 0 }}>{clientName}</p>
-              {clientDocument && (
-                <p style={{ fontSize: f.xs, color: faintText, margin: "4px 0 0" }}>
-                  {clientDocument.replace(/\D/g, "").length <= 11 ? "CPF" : "CNPJ"}: {clientDocument}
-                </p>
-              )}
-            </div>
-            <div>
-              <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor, margin: "0 0 6px 0" }}>
-                Consultor
-              </p>
-              <p style={{ fontSize: f.md, fontWeight: 700, color: textColor, margin: 0 }}>{vendorName}</p>
-              {vendorEmail && (
-                <p style={{ fontSize: f.xs, color: faintText, margin: "4px 0 0" }}>{vendorEmail}</p>
-              )}
-            </div>
-          </div>
-
-          {/* ── SERVICES TABLE ── */}
-          {items.length > 0 && (
-            <div style={{ marginTop: gap }}>
-              <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor, margin: "0 0 10px 0" }}>
-                Serviços Contratados
-              </p>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: f.base }}>
-                <thead>
-                  <tr>
-                    {["Serviço", "Qtd", "Unitário", "Desc.", "Total"].map((h, i) => (
-                      <th
-                        key={h}
-                        style={{
-                          padding: compact ? "6px 6px" : "9px 10px",
-                          fontWeight: 700,
-                          fontSize: f.sm,
-                          color: primaryColor,
-                          textAlign: i === 0 ? "left" : i === 1 || i === 3 ? "center" : "right",
-                          borderBottom: `1px solid ${mutedPrimary}`,
-                          backgroundColor: softPrimary,
-                        }}
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((row, i) => {
-                    const discStr =
-                      row.discountValue && row.discountValue > 0
-                        ? row.discountType === "percent"
-                          ? `${row.discountValue}%`
-                          : fmtCur(row.discountValue, currency)
-                        : "—";
-                    const bg = i % 2 !== 0 ? lightZebra : "transparent";
-                    const cellPad = compact ? "5px 6px" : "7px 10px";
-                    return (
-                      <tr key={i} style={{ backgroundColor: bg, borderBottom: `1px solid ${subtleRule}` }}>
-                        <td style={{ padding: cellPad, fontWeight: 500 }}>{row.name}</td>
-                        <td style={{ padding: cellPad, textAlign: "center" }}>{row.quantity}</td>
-                        <td style={{ padding: cellPad, textAlign: "right" }}>{fmtCur(row.unitValue, currency)}</td>
-                        <td style={{ padding: cellPad, textAlign: "center", color: faintText }}>{discStr}</td>
-                        <td style={{ padding: cellPad, textAlign: "right", fontWeight: 700, color: primaryColor }}>{fmtCur(row.total, currency)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* ── TOTAL VALUE — MAIN HIGHLIGHT ── */}
-          {computedTotal > 0 && (
+            {/* ── HEADER DIVIDER — gradient line ── */}
             <div
               style={{
-                marginTop: gap + 4,
-                paddingTop: compact ? 12 : 18,
-                borderTop: `1px solid ${mutedPrimary}`,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-end",
-                justifyContent: "flex-end",
-                gap: compact ? 4 : 6,
+                marginTop: gap,
+                height: compact ? 3 : 4,
+                borderRadius: 4,
+                background: `linear-gradient(90deg, ${primaryColor} 0%, ${accentColor} 100%)`,
+              }}
+            />
+
+            {/* ── INTRODUCTION ── */}
+            {introduction && (
+              <p style={{ marginTop: gap, fontSize: f.base, lineHeight: 1.7, color: "#4B5563" }}>
+                {introduction}
+              </p>
+            )}
+
+            {/* ── CLIENT / VENDOR CARDS ── */}
+            <div
+              style={{
+                marginTop: gap,
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: compact ? 10 : 16,
               }}
             >
-              <span style={{ fontSize: f.sm, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: faintText }}>
-                Investimento Mensal
-              </span>
-              <div style={{ display: "flex", alignItems: "baseline", gap: compact ? 6 : 8 }}>
-                <span style={{ fontSize: compact ? f.val + 2 : f.val + 4, fontWeight: 800, color: accentColor, lineHeight: 1 }}>
-                  {fmtCur(computedTotal, currency)}
+              {/* Cliente */}
+              <div
+                style={{
+                  border: `1px solid ${cardBorder}`,
+                  borderRadius: cardRadius,
+                  padding: compact ? "10px 12px" : "16px 20px",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: compact ? 6 : 10 }}>
+                  <span style={{ fontSize: f.sm, color: primaryColor }}>&#128100;</span>
+                  <span style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor }}>
+                    Cliente
+                  </span>
+                </div>
+                <p style={{ fontSize: f.md, fontWeight: 700, color: textColor, margin: 0 }}>{clientName}</p>
+                {clientDocument && (
+                  <p style={{ fontSize: f.xs, color: "#6B7280", margin: "4px 0 0" }}>
+                    {cnpjOrCpfLabel}: {clientDocument}
+                  </p>
+                )}
+              </div>
+              {/* Consultor */}
+              <div
+                style={{
+                  border: `1px solid ${cardBorder}`,
+                  borderRadius: cardRadius,
+                  padding: compact ? "10px 12px" : "16px 20px",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: compact ? 6 : 10 }}>
+                  <span style={{ fontSize: f.sm, color: primaryColor }}>&#9734;</span>
+                  <span style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor }}>
+                    Consultor
+                  </span>
+                </div>
+                <p style={{ fontSize: f.md, fontWeight: 700, color: textColor, margin: 0 }}>{vendorName}</p>
+                {vendorEmail && (
+                  <p style={{ fontSize: f.xs, color: "#6B7280", margin: "4px 0 0" }}>{vendorEmail}</p>
+                )}
+              </div>
+            </div>
+
+            {/* ── SERVICES TABLE ── */}
+            {items.length > 0 && (
+              <div style={{ marginTop: gap }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: compact ? 8 : 12 }}>
+                  <span style={{ fontSize: f.sm, color: primaryColor }}>&#127970;</span>
+                  <span style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor }}>
+                    Serviços Contratados
+                  </span>
+                </div>
+                <div style={{ border: `1px solid ${cardBorder}`, borderRadius: cardRadius, overflow: "hidden" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: f.base }}>
+                    <thead>
+                      <tr>
+                        {["Serviço", "Qtd", "Unitário", "Desc.", "Total"].map((h, i) => (
+                          <th
+                            key={h}
+                            style={{
+                              padding: compact ? "7px 8px" : "10px 14px",
+                              fontWeight: 700,
+                              fontSize: f.sm,
+                              color: "#FFFFFF",
+                              textAlign: i === 0 ? "left" : i === 1 || i === 3 ? "center" : "right",
+                              backgroundColor: primaryColor,
+                            }}
+                          >
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map((row, i) => {
+                        const discStr =
+                          row.discountValue && row.discountValue > 0
+                            ? row.discountType === "percent"
+                              ? `${row.discountValue}%`
+                              : fmtCur(row.discountValue, currency)
+                            : "—";
+                        const bg = i % 2 !== 0 ? "#F9FAFB" : "#FFFFFF";
+                        const cellPad = compact ? "6px 8px" : "10px 14px";
+                        return (
+                          <tr key={i} style={{ backgroundColor: bg, borderBottom: `1px solid ${cardBorder}` }}>
+                            <td style={{ padding: cellPad, fontWeight: 500 }}>{row.name}</td>
+                            <td style={{ padding: cellPad, textAlign: "center", color: accentColor, fontWeight: 600 }}>{row.quantity}</td>
+                            <td style={{ padding: cellPad, textAlign: "right" }}>{fmtCur(row.unitValue, currency)}</td>
+                            <td style={{ padding: cellPad, textAlign: "center", color: "#9CA3AF" }}>{discStr}</td>
+                            <td style={{ padding: cellPad, textAlign: "right", fontWeight: 700, color: primaryColor }}>{fmtCur(row.total, currency)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* ── TOTAL VALUE — GREEN BANNER ── */}
+            {computedTotal > 0 && (
+              <div
+                style={{
+                  marginTop: gap,
+                  padding: compact ? "12px 16px" : "18px 24px",
+                  borderRadius: cardRadius,
+                  background: `linear-gradient(135deg, ${accentColor} 0%, #059669 100%)`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: f.sm,
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    color: "#FFFFFF",
+                  }}
+                >
+                  Investimento Mensal
                 </span>
-                <span style={{ fontSize: f.sm, color: subtleText, fontWeight: 500 }}>{paymentSuffix}</span>
+                <div style={{ display: "flex", alignItems: "baseline", gap: compact ? 4 : 6 }}>
+                  <span style={{ fontSize: compact ? f.val : f.val + 2, fontWeight: 800, color: "#FFFFFF", lineHeight: 1 }}>
+                    {fmtCur(computedTotal, currency)}
+                  </span>
+                  <span style={{ fontSize: f.sm, color: "rgba(255,255,255,0.8)", fontWeight: 500 }}>/mês</span>
+                </div>
+              </div>
+            )}
+
+            {/* ── CONDITIONS CARD ── */}
+            {conditions.length > 0 && (
+              <div
+                style={{
+                  marginTop: gap,
+                  border: `1px solid ${cardBorder}`,
+                  borderRadius: cardRadius,
+                  padding: compact ? "12px 14px" : "18px 22px",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: compact ? 8 : 12 }}>
+                  <span style={{ fontSize: f.sm, color: primaryColor }}>&#128196;</span>
+                  <span style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor }}>
+                    Condições Comerciais
+                  </span>
+                </div>
+                {conditions.map((item, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: compact ? 4 : 6 }}>
+                    <span style={{ fontSize: f.sm, color: "#9CA3AF" }}>&#9201;</span>
+                    <span style={{ fontSize: f.sm, color: "#4B5563", lineHeight: 1.5 }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ── DESCRIPTION / NOTES ── */}
+            {description && (
+              <div
+                style={{
+                  marginTop: gap,
+                  border: `1px solid ${cardBorder}`,
+                  borderRadius: cardRadius,
+                  padding: compact ? "12px 14px" : "18px 22px",
+                }}
+              >
+                <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor, margin: "0 0 6px 0" }}>
+                  Observações
+                </p>
+                <p style={{ fontSize: f.sm, color: "#4B5563", lineHeight: 1.6, whiteSpace: "pre-wrap", margin: 0 }}>
+                  {description}
+                </p>
+              </div>
+            )}
+
+            {/* ── SIGNATURE / ACCEPT CARD ── */}
+            <div
+              style={{
+                marginTop: gap,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: cardRadius,
+                padding: compact ? "14px 14px" : "20px 24px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: compact ? 10 : 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 12 }}>
+                  <div
+                    style={{
+                      width: compact ? 32 : 44,
+                      height: compact ? 32 : 44,
+                      borderRadius: "50%",
+                      backgroundColor: "#F0FDF4",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <span style={{ fontSize: compact ? 14 : 20, color: accentColor }}>&#128737;</span>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: f.md, fontWeight: 700, color: textColor, margin: 0 }}>Assinatura Digital</p>
+                    <p style={{ fontSize: f.xs, color: "#6B7280", margin: "2px 0 0" }}>
+                      Documento com validade jurídica conforme MP 2.200-2/2001
+                    </p>
+                  </div>
+                </div>
+                {showAcceptButton && (
+                  <div
+                    style={{
+                      padding: compact ? "6px 14px" : "10px 22px",
+                      backgroundColor: accentColor,
+                      color: "#FFFFFF",
+                      fontWeight: 700,
+                      fontSize: f.sm,
+                      borderRadius: compact ? 6 : 8,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Aceitar Proposta
+                  </div>
+                )}
+              </div>
+
+              {/* Signature lines */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: compact ? 20 : 40, borderTop: `1px solid ${cardBorder}`, paddingTop: compact ? 12 : 18 }}>
+                {[
+                  { name: `${companyCnpj || ""} ${companyRazaoSocial || companyName}`.trim(), role: "Contratada" },
+                  { name: clientName, role: "Contratante" },
+                ].map((party) => (
+                  <div key={party.role} style={{ textAlign: "center" }}>
+                    <p style={{ fontSize: f.sm, fontWeight: 600, color: textColor, margin: 0 }}>
+                      {party.name}
+                    </p>
+                    <p style={{ fontSize: f.xs, color: "#9CA3AF", margin: "2px 0 0" }}>
+                      {party.role}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
-          )}
 
-          {/* ── CONDITIONS ── */}
-          {conditions.length > 0 && (
-            <div style={{ marginTop: gap, paddingTop: compact ? 10 : 14, borderTop: `1px solid ${subtleRule}` }}>
-              <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor, margin: "0 0 8px 0" }}>
-                Condições Comerciais
-              </p>
-              {conditions.map((item, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: compact ? 4 : 6 }}>
-                  <span style={{ color: primaryColor, fontWeight: 700, fontSize: f.sm, lineHeight: "1.5" }}>•</span>
-                  <span style={{ fontSize: f.sm, color: subtleText, lineHeight: 1.6 }}>{item}</span>
+            {/* ── FOOTER ── */}
+            <div style={{ marginTop: compact ? 16 : 28, borderTop: `1px solid ${cardBorder}`, paddingTop: compact ? 8 : 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, fontSize: f.xs, color: "#9CA3AF" }}>
+                <div>
+                  <p style={{ margin: 0 }}>{companyRazaoSocial || companyName} — CNPJ {companyCnpj || "00.000.000/0000-00"}</p>
+                  <p style={{ margin: "3px 0 0" }}>{companyEmail || "contato@empresa.com"} — {companyPhone || "(00) 00000-0000"}</p>
                 </div>
-              ))}
-            </div>
-          )}
-
-          {/* ── DESCRIPTION / NOTES ── */}
-          {description && (
-            <div style={{ marginTop: gap, paddingTop: compact ? 10 : 14, borderTop: `1px solid ${subtleRule}` }}>
-              <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor, margin: "0 0 6px 0" }}>
-                Observações
-              </p>
-              <p style={{ fontSize: f.sm, color: subtleText, lineHeight: 1.6, whiteSpace: "pre-wrap", margin: 0 }}>
-                {description}
-              </p>
-            </div>
-          )}
-
-          {/* ── SIGNATURE BLOCK ── */}
-          <div style={{ marginTop: compact ? 24 : 40, paddingTop: compact ? 14 : 20, borderTop: `1px solid ${subtleRule}` }}>
-            <p style={{ textAlign: "center", fontSize: f.xs, color: faintText, margin: "0 0 4px 0" }}>
-              Documento com validade jurídica conforme MP 2.200-2/2001
-            </p>
-            <p style={{ textAlign: "center", fontSize: f.xs, color: faintText, margin: "0 0 18px 0" }}>
-              Assinatura realizada digitalmente via plataforma
-            </p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: compact ? 24 : 48 }}>
-              {[
-                { name: companyRazaoSocial || companyName, role: "CONTRATADA" },
-                { name: clientName, role: "CONTRATANTE" },
-              ].map((party) => (
-                <div key={party.role} style={{ textAlign: "center" }}>
-                  <div style={{ borderBottom: `1px solid ${signatureRule}`, height: compact ? 30 : 44 }} />
-                  <p style={{ fontSize: f.md, fontWeight: 700, color: textColor, margin: "8px 0 0" }}>
-                    {party.name}
-                  </p>
-                  <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: primaryColor, margin: "3px 0 0" }}>
-                    {party.role}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ── FOOTER ── */}
-          <div style={{ marginTop: compact ? 20 : 32, borderTop: `1px solid ${subtleRule}`, paddingTop: compact ? 10 : 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, fontSize: f.xs, color: subtleText }}>
-              <div>
-                <p style={{ margin: 0 }}>{companyRazaoSocial || companyName} — CNPJ {companyCnpj || "00.000.000/0000-00"}</p>
-                <p style={{ margin: "3px 0 0" }}>{companyEmail || "contato@empresa.com"} — {companyPhone || "(00) 00000-0000"}</p>
+                <p style={{ margin: 0, whiteSpace: "nowrap" }}>Documento gerado automaticamente</p>
               </div>
-              <p style={{ margin: 0, whiteSpace: "nowrap" }}>Documento gerado automaticamente</p>
             </div>
           </div>
         </div>
