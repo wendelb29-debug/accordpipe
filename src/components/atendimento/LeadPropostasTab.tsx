@@ -1841,6 +1841,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
       ].filter(Boolean) : [],
       introduction: meta.introduction,
       description: viewProposal.description,
+      showAcceptButton: meta.status === "enviada",
     };
 
     return (
