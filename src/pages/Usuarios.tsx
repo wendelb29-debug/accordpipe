@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Search, User, MoreHorizontal, Pencil, Power, Shield, Eye, EyeOff, Building2, Server, CheckCircle, XCircle, Clock, FlaskConical, Send, MessageCircle } from "lucide-react";
+import { Plus, Search, User, MoreHorizontal, Pencil, Power, Shield, Eye, EyeOff, Building2, Server, CheckCircle, XCircle, Clock, FlaskConical, Send, MessageCircle, LayoutGrid } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ServidoresTab from "@/components/servidores/ServidoresTab";
 import ServidoresTesteTab from "@/components/servidores/ServidoresTesteTab";
@@ -40,6 +40,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AppRole, useAuth } from "@/contexts/AuthContext";
 import { PermissionsEditor } from "@/components/usuarios/PermissionsEditor";
+import { WorkspacePermissionsEditor } from "@/components/usuarios/WorkspacePermissionsEditor";
 
 interface UserWithRole {
   id: string;
@@ -812,11 +813,32 @@ export default function Usuarios() {
                 </DialogDescription>
               </DialogHeader>
               {permUserId && (
-                <PermissionsEditor
-                  userId={permUserId}
-                  isCeoOrMaster={permUserIsCeo}
-                  onClose={() => setPermDialogOpen(false)}
-                />
+                <Tabs defaultValue="modules" className="w-full">
+                  <TabsList className="w-full mb-4">
+                    <TabsTrigger value="modules" className="flex-1 gap-2">
+                      <Shield className="h-4 w-4" />
+                      Módulos
+                    </TabsTrigger>
+                    <TabsTrigger value="workspaces" className="flex-1 gap-2">
+                      <LayoutGrid className="h-4 w-4" />
+                      Workspaces
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="modules">
+                    <PermissionsEditor
+                      userId={permUserId}
+                      isCeoOrMaster={permUserIsCeo}
+                      onClose={() => setPermDialogOpen(false)}
+                    />
+                  </TabsContent>
+                  <TabsContent value="workspaces">
+                    <WorkspacePermissionsEditor
+                      userId={permUserId}
+                      isCeoOrMaster={permUserIsCeo}
+                      onClose={() => setPermDialogOpen(false)}
+                    />
+                  </TabsContent>
+                </Tabs>
               )}
             </DialogContent>
           </Dialog>
