@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { ProposalTemplatePremium } from "@/components/atendimento/ProposalTemplatePremium";
+import type { ProposalTemplateData } from "@/components/atendimento/ProposalTemplatePremium";
 import {
   Upload, Palette, Loader2, ImageIcon, Home, BarChart3, Users,
   Settings, FileText, Eye, Monitor, FileSignature, ChevronRight,
