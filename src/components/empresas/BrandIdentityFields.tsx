@@ -482,7 +482,7 @@ function SystemPreview({
 function ProposalPreview({ formData, deviceView }: { formData: CompanyFormData; deviceView: DeviceView }) {
   const isMobile = deviceView === "mobile";
 
-  const templateData: import("@/components/atendimento/ProposalTemplatePremium").ProposalTemplateData = {
+  const templateData: ProposalTemplateData = {
     status: "enviada",
     logoUrl: formData.brandLogoUrl || null,
     companyName: formData.nomeFantasia || formData.razaoSocial || "Nome da Empresa",
@@ -515,9 +515,6 @@ function ProposalPreview({ formData, deviceView }: { formData: CompanyFormData; 
       "Reajuste anual pelo IGPM",
     ],
   };
-
-  // Lazy import to avoid circular deps
-  const { ProposalTemplatePremium } = require("@/components/atendimento/ProposalTemplatePremium");
 
   return (
     <div className={cn(isMobile && "max-w-[360px] mx-auto")}>
