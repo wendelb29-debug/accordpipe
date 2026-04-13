@@ -44,7 +44,7 @@ const fmtCur = (v: number, cur = "BRL") =>
   v.toLocaleString("pt-BR", { style: "currency", currency: cur });
 
 const statusLabels: Record<string, { label: string; color: string }> = {
-  enviada: { label: "AGUARDANDO ACEITE", color: "" },
+  enviada: { label: "AGUARDANDO ACEITE", color: "#D97706" },
   aceita: { label: "APROVADA", color: "#10B981" },
   declinada: { label: "DECLINADA", color: "#EF4444" },
   cancelada: { label: "CANCELADA", color: "#6B7280" },
@@ -71,6 +71,7 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
       validityDays = 15,
       validUntil,
       primaryColor = "#1E2952",
+      accentColor = "#10B981",
       textColor = "#1F2937",
       clientName = "Cliente",
       clientDocument,
@@ -85,65 +86,80 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
     } = data;
 
     const statusInfo = statusLabels[status] || statusLabels.enviada;
-    const badgeColor = statusInfo.color || primaryColor;
     const computedTotal = items.length > 0 ? items.reduce((s, i) => s + i.total, 0) : totalMrr;
 
-    const sz = compact
-      ? { xs: "text-[8px]", sm: "text-[9px]", base: "text-[10px]", md: "text-xs", lg: "text-sm", xl: "text-base" }
-      : { xs: "text-[10px]", sm: "text-xs", base: "text-sm", md: "text-sm", lg: "text-base", xl: "text-lg" };
+    const f = compact
+      ? { xs: 7, sm: 8, base: 9, md: 10, lg: 12, xl: 14, xxl: 18, val: 22 }
+      : { xs: 9, sm: 10, base: 12, md: 13, lg: 15, xl: 18, xxl: 22, val: 28 };
 
-    const sectionGap = compact ? "mt-4" : "mt-6";
-    const px = compact ? "px-5" : "px-8 md:px-10";
-    const py = compact ? "py-5" : "py-8 md:py-10";
+    const gap = compact ? 12 : 20;
 
     return (
       <div
         ref={ref}
         className={cn("overflow-hidden", className)}
-        style={{ backgroundColor: "#FFFFFF", color: textColor }}
+        style={{ backgroundColor: "#FFFFFF", color: textColor, fontFamily: "system-ui, -apple-system, sans-serif" }}
       >
         {/* ── TOP BRAND LINE ── */}
-        <div style={{ height: compact ? 3 : 4, backgroundColor: primaryColor }} />
+        <div style={{ height: compact ? 4 : 5, backgroundColor: primaryColor }} />
 
-        <div className={cn(px, py)}>
+        <div style={{ padding: compact ? 20 : 36 }}>
           {/* ── HEADER ── */}
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-4">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: compact ? 12 : 16 }}>
               {logoUrl && (
                 <img
                   src={logoUrl}
                   alt="Logo"
-                  className={cn("object-contain", compact ? "h-8 max-w-[60px]" : "h-12 max-w-[100px]")}
+                  style={{
+                    height: compact ? 36 : 52,
+                    maxWidth: compact ? 80 : 140,
+                    objectFit: "contain",
+                  }}
                 />
               )}
               <div>
                 <h1
-                  className={cn("font-bold uppercase tracking-wide", sz.xl)}
-                  style={{ color: primaryColor }}
+                  style={{
+                    fontSize: f.xl,
+                    fontWeight: 800,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    color: primaryColor,
+                    margin: 0,
+                    lineHeight: 1.2,
+                  }}
                 >
                   Proposta Comercial
                 </h1>
-                <p className={cn("mt-0.5", sz.xs)} style={{ color: textColor, opacity: 0.5 }}>
+                <p style={{ fontSize: f.xs, color: textColor, opacity: 0.45, marginTop: 2 }}>
                   {companyRazaoSocial || companyName}
                 </p>
               </div>
             </div>
-            <div className="text-right space-y-0.5">
-              <p className={cn("font-semibold", sz.sm)} style={{ color: textColor }}>
+
+            <div style={{ textAlign: "right" }}>
+              <p style={{ fontSize: f.sm, fontWeight: 600, color: textColor, margin: 0 }}>
                 Ref: {reference}
               </p>
-              <p className={sz.xs} style={{ color: textColor, opacity: 0.55 }}>
-                Emissão: {emissionDate}
+              <p style={{ fontSize: f.xs, color: textColor, opacity: 0.5, margin: "2px 0" }}>
+                Emissao: {emissionDate}
               </p>
-              <p className={sz.xs} style={{ color: textColor, opacity: 0.55 }}>
-                Validade: {validityDays} dias{validUntil ? ` (até ${validUntil})` : ""}
+              <p style={{ fontSize: f.xs, color: textColor, opacity: 0.5, margin: 0 }}>
+                Validade: {validityDays} dias{validUntil ? ` (ate ${validUntil})` : ""}
               </p>
               <span
-                className={cn("inline-block px-2 py-0.5 font-bold uppercase tracking-wider", sz.xs)}
                 style={{
-                  color: badgeColor,
-                  border: `1px solid ${badgeColor}`,
-                  marginTop: 4,
+                  display: "inline-block",
+                  marginTop: 6,
+                  padding: "2px 8px",
+                  fontSize: f.xs,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  color: "#FFFFFF",
+                  backgroundColor: statusInfo.color,
+                  borderRadius: 2,
                 }}
               >
                 {statusInfo.label}
@@ -151,56 +167,65 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
             </div>
           </div>
 
-          {/* ── DIVIDER ── */}
-          <div className={sectionGap} style={{ borderBottom: `1px solid ${primaryColor}20` }} />
+          {/* ── HEADER DIVIDER ── */}
+          <div style={{ marginTop: gap, height: 2, backgroundColor: primaryColor, opacity: 0.15 }} />
 
           {/* ── INTRODUCTION ── */}
           {introduction && (
-            <div className={sectionGap}>
-              <p className={cn("leading-relaxed whitespace-pre-wrap", sz.base)} style={{ color: textColor, opacity: 0.8 }}>
-                {introduction}
-              </p>
-            </div>
+            <p style={{ marginTop: gap, fontSize: f.base, lineHeight: 1.6, color: textColor, opacity: 0.75 }}>
+              {introduction}
+            </p>
           )}
 
           {/* ── CLIENT / VENDOR ── */}
-          <div className={cn("grid grid-cols-2", sectionGap, compact ? "gap-4" : "gap-8")}>
-            <div className="space-y-1">
-              <p className={cn("font-bold uppercase tracking-wider", sz.xs)} style={{ color: primaryColor, opacity: 0.6 }}>
+          <div style={{ marginTop: gap, display: "grid", gridTemplateColumns: "1fr 1fr", gap: compact ? 16 : 28 }}>
+            <div>
+              <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor, opacity: 0.5, margin: "0 0 4px 0" }}>
                 Cliente
               </p>
-              <p className={cn("font-semibold", sz.md)} style={{ color: textColor }}>{clientName}</p>
+              <p style={{ fontSize: f.md, fontWeight: 700, color: textColor, margin: 0 }}>{clientName}</p>
               {clientDocument && (
-                <p className={sz.xs} style={{ color: textColor, opacity: 0.55 }}>
+                <p style={{ fontSize: f.xs, color: textColor, opacity: 0.5, margin: "2px 0 0" }}>
                   {clientDocument.replace(/\D/g, "").length <= 11 ? "CPF" : "CNPJ"}: {clientDocument}
                 </p>
               )}
             </div>
-            <div className="space-y-1">
-              <p className={cn("font-bold uppercase tracking-wider", sz.xs)} style={{ color: primaryColor, opacity: 0.6 }}>
+            <div>
+              <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor, opacity: 0.5, margin: "0 0 4px 0" }}>
                 Consultor
               </p>
-              <p className={cn("font-semibold", sz.md)} style={{ color: textColor }}>{vendorName}</p>
+              <p style={{ fontSize: f.md, fontWeight: 700, color: textColor, margin: 0 }}>{vendorName}</p>
               {vendorEmail && (
-                <p className={sz.xs} style={{ color: textColor, opacity: 0.55 }}>{vendorEmail}</p>
+                <p style={{ fontSize: f.xs, color: textColor, opacity: 0.5, margin: "2px 0 0" }}>{vendorEmail}</p>
               )}
             </div>
           </div>
 
           {/* ── SERVICES TABLE ── */}
           {items.length > 0 && (
-            <div className={sectionGap}>
-              <p className={cn("font-bold uppercase tracking-wider mb-2", sz.xs)} style={{ color: primaryColor, opacity: 0.6 }}>
-                Serviços Contratados
+            <div style={{ marginTop: gap }}>
+              <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor, opacity: 0.5, margin: "0 0 8px 0" }}>
+                Servicos Contratados
               </p>
-              <table className="w-full border-collapse" style={{ fontSize: compact ? 10 : 13 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: f.base }}>
                 <thead>
-                  <tr style={{ borderBottom: `2px solid ${primaryColor}30` }}>
-                    <th className="text-left py-1.5 font-semibold" style={{ color: primaryColor }}>Serviço</th>
-                    <th className="text-center py-1.5 font-semibold w-12" style={{ color: primaryColor }}>Qtd</th>
-                    <th className="text-right py-1.5 font-semibold w-24" style={{ color: primaryColor }}>Unitário</th>
-                    <th className="text-center py-1.5 font-semibold w-16" style={{ color: primaryColor }}>Desc.</th>
-                    <th className="text-right py-1.5 font-semibold w-24" style={{ color: primaryColor }}>Total</th>
+                  <tr>
+                    {["Servico", "Qtd", "Unitario", "Desc.", "Total"].map((h, i) => (
+                      <th
+                        key={h}
+                        style={{
+                          padding: compact ? "5px 6px" : "8px 10px",
+                          fontWeight: 700,
+                          fontSize: f.sm,
+                          color: primaryColor,
+                          textAlign: i === 0 ? "left" : i === 1 || i === 3 ? "center" : "right",
+                          borderBottom: `2px solid ${primaryColor}25`,
+                          backgroundColor: `${primaryColor}06`,
+                        }}
+                      >
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
@@ -211,19 +236,15 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
                           ? `${row.discountValue}%`
                           : fmtCur(row.discountValue, currency)
                         : "—";
+                    const bg = i % 2 !== 0 ? `${textColor}04` : "transparent";
+                    const cellPad = compact ? "5px 6px" : "7px 10px";
                     return (
-                      <tr
-                        key={i}
-                        style={{
-                          borderBottom: `1px solid ${textColor}10`,
-                          backgroundColor: i % 2 !== 0 ? `${textColor}03` : "transparent",
-                        }}
-                      >
-                        <td className="py-1.5">{row.name}</td>
-                        <td className="text-center py-1.5">{row.quantity}</td>
-                        <td className="text-right py-1.5">{fmtCur(row.unitValue, currency)}</td>
-                        <td className="text-center py-1.5" style={{ opacity: 0.5 }}>{discStr}</td>
-                        <td className="text-right py-1.5 font-semibold">{fmtCur(row.total, currency)}</td>
+                      <tr key={i} style={{ backgroundColor: bg, borderBottom: `1px solid ${textColor}08` }}>
+                        <td style={{ padding: cellPad, fontWeight: 500 }}>{row.name}</td>
+                        <td style={{ padding: cellPad, textAlign: "center" }}>{row.quantity}</td>
+                        <td style={{ padding: cellPad, textAlign: "right" }}>{fmtCur(row.unitValue, currency)}</td>
+                        <td style={{ padding: cellPad, textAlign: "center", opacity: 0.45 }}>{discStr}</td>
+                        <td style={{ padding: cellPad, textAlign: "right", fontWeight: 700 }}>{fmtCur(row.total, currency)}</td>
                       </tr>
                     );
                   })}
@@ -232,79 +253,87 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
             </div>
           )}
 
-          {/* ── TOTAL ── */}
+          {/* ── TOTAL VALUE — MAIN HIGHLIGHT ── */}
           {computedTotal > 0 && (
-            <div className={cn("flex items-baseline justify-end gap-2", sectionGap)} style={{ borderTop: `2px solid ${primaryColor}25`, paddingTop: compact ? 8 : 12 }}>
-              <span className={cn("uppercase tracking-wider font-medium", sz.xs)} style={{ color: textColor, opacity: 0.5 }}>
+            <div
+              style={{
+                marginTop: gap + 4,
+                paddingTop: compact ? 10 : 16,
+                borderTop: `2px solid ${primaryColor}20`,
+                display: "flex",
+                alignItems: "baseline",
+                justifyContent: "flex-end",
+                gap: 8,
+              }}
+            >
+              <span style={{ fontSize: f.sm, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: textColor, opacity: 0.4 }}>
                 Investimento Mensal
               </span>
-              <span className={cn("font-bold", compact ? "text-lg" : "text-xl")} style={{ color: primaryColor }}>
+              <span style={{ fontSize: f.val, fontWeight: 800, color: accentColor, lineHeight: 1 }}>
                 {fmtCur(computedTotal, currency)}
               </span>
-              <span className={sz.xs} style={{ color: textColor, opacity: 0.4 }}>/mês</span>
+              <span style={{ fontSize: f.xs, color: textColor, opacity: 0.35 }}>/mes</span>
             </div>
           )}
 
           {/* ── CONDITIONS ── */}
           {conditions.length > 0 && (
-            <div className={sectionGap}>
-              <p className={cn("font-bold uppercase tracking-wider mb-2", sz.xs)} style={{ color: primaryColor, opacity: 0.6 }}>
-                Condições Comerciais
+            <div style={{ marginTop: gap }}>
+              <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor, opacity: 0.5, margin: "0 0 6px 0" }}>
+                Condicoes Comerciais
               </p>
-              <ul className="space-y-1">
-                {conditions.map((item, i) => (
-                  <li key={i} className={cn("flex items-start gap-2", sz.sm)} style={{ color: textColor, opacity: 0.7 }}>
-                    <span style={{ color: primaryColor, fontWeight: 700 }}>&bull;</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
+              {conditions.map((item, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: compact ? 3 : 5 }}>
+                  <span style={{ color: primaryColor, fontWeight: 700, fontSize: f.sm, lineHeight: "1.5" }}>•</span>
+                  <span style={{ fontSize: f.sm, color: textColor, opacity: 0.65, lineHeight: 1.5 }}>{item}</span>
+                </div>
+              ))}
             </div>
           )}
 
           {/* ── DESCRIPTION / NOTES ── */}
           {description && (
-            <div className={sectionGap}>
-              <p className={cn("font-bold uppercase tracking-wider mb-1", sz.xs)} style={{ color: primaryColor, opacity: 0.6 }}>
-                Observações
+            <div style={{ marginTop: gap }}>
+              <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor, opacity: 0.5, margin: "0 0 4px 0" }}>
+                Observacoes
               </p>
-              <p className={cn("whitespace-pre-wrap leading-relaxed", sz.sm)} style={{ color: textColor, opacity: 0.7 }}>
+              <p style={{ fontSize: f.sm, color: textColor, opacity: 0.6, lineHeight: 1.5, whiteSpace: "pre-wrap", margin: 0 }}>
                 {description}
               </p>
             </div>
           )}
 
           {/* ── SIGNATURE BLOCK ── */}
-          <div className={cn(compact ? "mt-6" : "mt-10")}>
-            <p className={cn("text-center mb-1", sz.xs)} style={{ color: textColor, opacity: 0.4 }}>
+          <div style={{ marginTop: compact ? 24 : 40 }}>
+            <p style={{ textAlign: "center", fontSize: f.xs, color: textColor, opacity: 0.35, margin: "0 0 16px 0" }}>
               Documento com validade juridica conforme MP 2.200-2/2001
             </p>
-            <div className={cn("grid grid-cols-2", compact ? "gap-6 mt-4" : "gap-10 mt-6")}>
-              <div className="text-center">
-                <div style={{ borderBottom: `1px solid ${textColor}30`, height: compact ? 24 : 36 }} />
-                <p className={cn("font-medium mt-1", sz.sm)} style={{ color: textColor, opacity: 0.7 }}>
-                  {companyRazaoSocial || companyName}
-                </p>
-                <p className={sz.xs} style={{ color: textColor, opacity: 0.4 }}>Contratada</p>
-              </div>
-              <div className="text-center">
-                <div style={{ borderBottom: `1px solid ${textColor}30`, height: compact ? 24 : 36 }} />
-                <p className={cn("font-medium mt-1", sz.sm)} style={{ color: textColor, opacity: 0.7 }}>
-                  {clientName}
-                </p>
-                <p className={sz.xs} style={{ color: textColor, opacity: 0.4 }}>Contratante</p>
-              </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: compact ? 24 : 48 }}>
+              {[
+                { name: companyRazaoSocial || companyName, role: "CONTRATADA" },
+                { name: clientName, role: "CONTRATANTE" },
+              ].map((party) => (
+                <div key={party.role} style={{ textAlign: "center" }}>
+                  <div style={{ borderBottom: `1px solid ${textColor}30`, height: compact ? 28 : 40 }} />
+                  <p style={{ fontSize: f.md, fontWeight: 600, color: textColor, opacity: 0.75, margin: "6px 0 0" }}>
+                    {party.name}
+                  </p>
+                  <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: primaryColor, opacity: 0.4, margin: "2px 0 0" }}>
+                    {party.role}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
 
           {/* ── FOOTER ── */}
-          <div className={cn(compact ? "mt-6" : "mt-10")} style={{ borderTop: `1px solid ${textColor}12`, paddingTop: compact ? 8 : 12 }}>
-            <div className={cn("flex items-end justify-between", sz.xs)} style={{ color: textColor, opacity: 0.35 }}>
+          <div style={{ marginTop: compact ? 20 : 32, borderTop: `1px solid ${textColor}10`, paddingTop: compact ? 8 : 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", fontSize: f.xs, color: textColor, opacity: 0.3 }}>
               <div>
-                <p>{companyRazaoSocial || companyName} — CNPJ {companyCnpj || "00.000.000/0000-00"}</p>
-                <p>{companyEmail || "contato@empresa.com"} — {companyPhone || "(00) 00000-0000"}</p>
+                <p style={{ margin: 0 }}>{companyRazaoSocial || companyName} — CNPJ {companyCnpj || "00.000.000/0000-00"}</p>
+                <p style={{ margin: "1px 0 0" }}>{companyEmail || "contato@empresa.com"} — {companyPhone || "(00) 00000-0000"}</p>
               </div>
-              <p>Documento gerado automaticamente</p>
+              <p style={{ margin: 0 }}>Documento gerado automaticamente</p>
             </div>
           </div>
         </div>
