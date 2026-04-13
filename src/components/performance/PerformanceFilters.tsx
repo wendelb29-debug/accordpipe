@@ -73,17 +73,6 @@ export function PerformanceFilters({ filters, setFilters, teams, users, workspac
         </SelectContent>
       </Select>
 
-      <Select value={filters.teamId || "all"} onValueChange={v => setFilters({ ...filters, teamId: v === "all" ? undefined : v })}>
-        <SelectTrigger className="w-[160px] h-8 text-xs">
-          <SelectValue placeholder="Todas Equipes" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all" className="text-xs">Todas Equipes</SelectItem>
-          {teams.map(t => (
-            <SelectItem key={t.id} value={t.id} className="text-xs">{t.nome}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
 
       <Select value={filters.userId || "all"} onValueChange={v => setFilters({ ...filters, userId: v === "all" ? undefined : v })}>
         <SelectTrigger className="w-[180px] h-8 text-xs">
