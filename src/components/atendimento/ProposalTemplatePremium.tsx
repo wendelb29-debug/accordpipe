@@ -29,6 +29,7 @@ export interface ProposalTemplateData {
   introduction?: string;
   description?: string;
   paymentFrequency?: string;
+  /** @deprecated No longer used — proposals don't have accept buttons */
   showAcceptButton?: boolean;
 }
 
