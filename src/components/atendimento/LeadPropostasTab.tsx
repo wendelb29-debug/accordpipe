@@ -643,439 +643,125 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
 
   const generateProposalPdf = async (proposal: any) => {
     const meta = (proposal.metadata as any) || {};
-    const { default: jsPDF } = await import("jspdf");
-    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const mL = 15;
-    const mR = 15;
-    const usable = pageWidth - mL - mR;
-    let y = 15;
-
     const srv = meta.servidor_snapshot || servidorData;
     const comp = meta.company_snapshot || companyData;
     const brandInfo = meta.brand_snapshot || brands.find(b => b.id === meta.brand_id);
-    const createdDate = new Date(proposal.created_at).toLocaleDateString("pt-BR");
-    const validUntilStr = meta.valid_until ? new Date(meta.valid_until).toLocaleDateString("pt-BR") : "-";
     const sigla = meta.sigla || "SEM-SIGLA";
-    const version = meta.version || "1";
-    const curCode = meta.currency || "BRL";
 
-    const fmtVal = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: curCode });
-    const fmtCpfCnpj = (doc: string) => {
-      const d = doc.replace(/\D/g, "");
-      if (d.length === 11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-      if (d.length === 14) return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
-      return doc;
-    };
-    const fmtPhone = (p: string) => {
-      const d = p.replace(/\D/g, "");
-      if (d.length === 11) return d.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
-      if (d.length === 10) return d.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
-      return p;
-    };
+    const lineItemsData = (meta.line_items || []).map((it: any) => ({
+      name: it.name || "",
+      quantity: it.quantity || 1,
+      unitValue: it.unitValue || 0,
+      total: it.total || 0,
+      discountValue: it.discountValue || 0,
+      discountType: it.discountType || "percent",
+    }));
 
-    // Colors - use brand colors from servidor if available
-    const hexToRgb = (hex: string) => {
-      const h = hex.replace("#", "");
-      return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16) };
-    };
-    const primary = hexToRgb(srv?.brand_primary_color || "#1E2952");
-    const accent = hexToRgb(srv?.brand_secondary_color || "#4F46E5");
-    const lightBg = hexToRgb(srv?.brand_bg_color || "#F3F4F6");
-    const borderColor = { r: 209, g: 213, b: 219 };
-    const textDark = hexToRgb(srv?.brand_text_color || "#1F2937");
-    const textMuted = { r: 107, g: 114, b: 128 };
-    const greenAccent = hexToRgb(srv?.brand_accent_color || "#10B981");
+    const logoUrl = brandInfo?.logo_url || srv?.brand_logo_url || null;
 
-    const checkPageBreak = (needed: number) => {
-      if (y + needed > pageHeight - 20) {
-        pdf.addPage();
-        y = 15;
-      }
-    };
-
-    const drawSectionTitle = (title: string) => {
-      checkPageBreak(12);
-      pdf.setFillColor(primary.r, primary.g, primary.b);
-      pdf.rect(mL, y, usable, 7, "F");
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(9);
-      pdf.text(title.toUpperCase(), mL + 4, y + 5);
-      y += 10;
-      pdf.setTextColor(textDark.r, textDark.g, textDark.b);
+    const templateData: import("./ProposalTemplatePremium").ProposalTemplateData = {
+      status: meta.status || "enviada",
+      logoUrl,
+      companyName: srv?.nome_fantasia || srv?.razao_social || "Empresa",
+      companyRazaoSocial: srv?.razao_social,
+      companyCnpj: srv?.cnpj,
+      companyEmail: srv?.email,
+      companyPhone: srv?.telefone,
+      reference: sigla,
+      emissionDate: new Date(proposal.created_at).toLocaleDateString("pt-BR"),
+      validityDays: meta.validity_days || 15,
+      validUntil: meta.valid_until ? new Date(meta.valid_until).toLocaleDateString("pt-BR") : undefined,
+      primaryColor: srv?.brand_primary_color || "#1E2952",
+      secondaryColor: srv?.brand_secondary_color || "#4F46E5",
+      accentColor: srv?.brand_accent_color || "#10B981",
+      bgColor: srv?.brand_bg_color || "#F8F9FC",
+      textColor: srv?.brand_text_color || "#1F2937",
+      clientName: lead.contact_name || lead.company_name,
+      clientDocument: lead.documento || comp?.cnpj,
+      vendorName: srv?.responsavel || profile?.name || "Vendedor",
+      vendorEmail: srv?.email,
+      items: lineItemsData,
+      totalMrr: meta.value_mrr || 0,
+      currency: meta.currency || "BRL",
+      conditions: [
+        meta.payment_method ? `Forma de pagamento: ${meta.payment_method}` : "",
+        meta.validity_days ? `Validade: ${meta.validity_days} dias` : "",
+      ].filter(Boolean),
+      introduction: meta.introduction,
+      description: proposal.description,
+      paymentFrequency: meta.payment_frequency,
     };
 
-    const drawInfoRow = (label: string, value: string, indent = 0) => {
-      if (!value || value.trim() === "") return;
-      checkPageBreak(5);
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(8);
-      pdf.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-      pdf.text(label + ":", mL + 4 + indent, y);
-      pdf.setFont("helvetica", "normal");
-      pdf.setTextColor(textDark.r, textDark.g, textDark.b);
-      pdf.text(value, mL + 4 + indent + pdf.getTextWidth(label + ": "), y);
-      y += 4.5;
-    };
+    try {
+      toast.loading("Gerando PDF...", { id: "proposal-pdf" });
 
-    // ===== HEADER WITH LOGO =====
-    let logoLoaded = false;
-    const logoUrl = srv?.brand_logo_url || brandInfo?.logo_url;
-    if (logoUrl) {
-      try {
-        const logoImg = new Image();
-        logoImg.crossOrigin = "anonymous";
-        await new Promise<void>((resolve, reject) => {
-          logoImg.onload = () => resolve();
-          logoImg.onerror = () => reject();
-          logoImg.src = logoUrl;
-        });
-        pdf.addImage(logoImg, "PNG", mL, y, 44, 22);
-        logoLoaded = true;
-      } catch { /* skip */ }
-    }
+      // Create a temporary container to render the template
+      const container = document.createElement("div");
+      container.style.position = "fixed";
+      container.style.left = "-9999px";
+      container.style.top = "0";
+      container.style.width = "800px";
+      container.style.backgroundColor = "#fff";
+      document.body.appendChild(container);
 
-    // Header right: proposal info
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(16);
-    pdf.setTextColor(primary.r, primary.g, primary.b);
-    pdf.text("PROPOSTA COMERCIAL", pageWidth - mR, y + 5, { align: "right" });
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(8);
-    pdf.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-    pdf.text(`Nº ${sigla}  |  Versão ${version}`, pageWidth - mR, y + 10, { align: "right" });
-    pdf.text(`Emissão: ${createdDate}  |  Validade: ${validUntilStr}`, pageWidth - mR, y + 14, { align: "right" });
-
-    y += (logoLoaded ? 26 : 18);
-
-    // Accent line
-    pdf.setDrawColor(accent.r, accent.g, accent.b);
-    pdf.setLineWidth(0.8);
-    pdf.line(mL, y, pageWidth - mR, y);
-    y += 6;
-
-    // ===== EMPRESA EMISSORA =====
-    if (srv) {
-      drawSectionTitle("Empresa Emissora");
-      drawInfoRow("Empresa", srv.nome_fantasia || srv.razao_social || "");
-      if (srv.razao_social && srv.nome_fantasia) drawInfoRow("Razão Social", srv.razao_social);
-      if (srv.cnpj) drawInfoRow("CNPJ", fmtCpfCnpj(srv.cnpj));
-      const srvAddr = [srv.endereco, srv.numero].filter(Boolean).join(", ");
-      const srvAddr2 = [srv.bairro, srv.cidade && srv.estado ? `${srv.cidade}/${srv.estado}` : null, srv.cep].filter(Boolean).join(" - ");
-      const fullSrvAddr = [srvAddr, srvAddr2].filter(Boolean).join(" - ");
-      if (fullSrvAddr) drawInfoRow("Endereço", fullSrvAddr);
-      if (srv.email) drawInfoRow("E-mail", srv.email);
-      if (srv.telefone) drawInfoRow("Telefone", fmtPhone(srv.telefone));
-      y += 2;
-    }
-
-    // ===== CONTATO =====
-    drawSectionTitle("Contato");
-    const contactName = srv?.responsavel || profile?.name || "-";
-    drawInfoRow("Nome", contactName);
-    if (srv?.email) drawInfoRow("E-mail", srv.email);
-    if (srv?.telefone) drawInfoRow("Telefone", fmtPhone(srv.telefone));
-    y += 2;
-
-    // ===== DADOS DA PESSOA =====
-    const isPJ = !!(comp?.cnpj);
-
-    if (isPJ) {
-      // Two-column layout
-      checkPageBreak(40);
-      const halfW = (usable - 4) / 2;
-
-      // Left: Dados da pessoa
-      const leftX = mL;
-      pdf.setFillColor(primary.r, primary.g, primary.b);
-      pdf.rect(leftX, y, halfW, 7, "F");
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(9);
-      pdf.text("DADOS DA PESSOA", leftX + 4, y + 5);
-
-      // Right: Dados da empresa
-      const rightX = mL + halfW + 4;
-      pdf.rect(rightX, y, halfW, 7, "F");
-      pdf.text("DADOS DA EMPRESA", rightX + 4, y + 5);
-      y += 10;
-
-      pdf.setTextColor(textDark.r, textDark.g, textDark.b);
-
-      // Build person data
-      const personLines: { label: string; value: string }[] = [];
-      if (lead.contact_name) personLines.push({ label: "Nome", value: lead.contact_name });
-      if (lead.documento) personLines.push({ label: "CPF", value: fmtCpfCnpj(lead.documento) });
-      if (lead.email) personLines.push({ label: "E-mail", value: lead.email });
-      if (lead.phone) personLines.push({ label: "Telefone", value: fmtPhone(lead.phone) });
-
-      // Build company data
-      const compLines: { label: string; value: string }[] = [];
-      if (comp?.razao_social) compLines.push({ label: "Razão Social", value: comp.razao_social });
-      if (comp?.nome_fantasia) compLines.push({ label: "Nome Fantasia", value: comp.nome_fantasia });
-      if (comp?.cnpj) compLines.push({ label: "CNPJ", value: fmtCpfCnpj(comp.cnpj) });
-      if (comp?.email) compLines.push({ label: "E-mail", value: comp.email });
-      if (comp?.telefone) compLines.push({ label: "Telefone", value: fmtPhone(comp.telefone) });
-      const compAddr = [comp?.endereco, comp?.numero].filter(Boolean).join(", ");
-      const compAddr2 = [comp?.bairro, comp?.cidade && comp?.estado ? `${comp.cidade}/${comp.estado}` : null, comp?.cep].filter(Boolean).join(" - ");
-      const fullCompAddr = [compAddr, compAddr2].filter(Boolean).join(" - ");
-      if (fullCompAddr) compLines.push({ label: "Endereço", value: fullCompAddr });
-
-      const maxRows = Math.max(personLines.length, compLines.length);
-      const savedY = y;
-
-      // Render left column
-      let ly = savedY;
-      for (const line of personLines) {
-        pdf.setFont("helvetica", "bold"); pdf.setFontSize(7.5);
-        pdf.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-        pdf.text(line.label + ":", leftX + 4, ly);
-        pdf.setFont("helvetica", "normal");
-        pdf.setTextColor(textDark.r, textDark.g, textDark.b);
-        const labelW = pdf.getTextWidth(line.label + ": ");
-        const valLines = pdf.splitTextToSize(line.value, halfW - 8 - labelW);
-        pdf.text(valLines, leftX + 4 + labelW, ly);
-        ly += valLines.length * 4;
-      }
-
-      // Render right column
-      let ry = savedY;
-      for (const line of compLines) {
-        pdf.setFont("helvetica", "bold"); pdf.setFontSize(7.5);
-        pdf.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-        pdf.text(line.label + ":", rightX + 4, ry);
-        pdf.setFont("helvetica", "normal");
-        pdf.setTextColor(textDark.r, textDark.g, textDark.b);
-        const labelW = pdf.getTextWidth(line.label + ": ");
-        const valLines = pdf.splitTextToSize(line.value, halfW - 8 - labelW);
-        pdf.text(valLines, rightX + 4 + labelW, ry);
-        ry += valLines.length * 4;
-      }
-
-      // Draw borders
-      const boxH = Math.max(ly, ry) - savedY + 3;
-      pdf.setDrawColor(borderColor.r, borderColor.g, borderColor.b);
-      pdf.setLineWidth(0.3);
-      pdf.rect(leftX, savedY - 3, halfW, boxH + 3);
-      pdf.rect(rightX, savedY - 3, halfW, boxH + 3);
-
-      y = Math.max(ly, ry) + 5;
-    } else {
-      // PF: full width
-      drawSectionTitle("Dados da Pessoa");
-      if (lead.contact_name) drawInfoRow("Nome", lead.contact_name);
-      if (lead.documento) drawInfoRow("CPF", fmtCpfCnpj(lead.documento));
-      if (lead.email) drawInfoRow("E-mail", lead.email);
-      if (lead.phone) drawInfoRow("Telefone", fmtPhone(lead.phone));
-      y += 2;
-    }
-
-    // ===== PRODUTOS E SERVIÇOS (TABELA) =====
-    const items: ProposalLineItem[] = meta.line_items || [];
-    if (items.length > 0) {
-      drawSectionTitle("Produtos e Serviços");
-
-      const colWidths = [12, 15, usable - 12 - 15 - 30 - 30 - 30, 30, 30, 30]; // Order, Qty, Name, Unit, Discount, Total
-      const headers = ["#", "Qtd", "Descrição", "Valor Unit.", "Desconto", "Subtotal"];
-
-      // Table header
-      pdf.setFillColor(lightBg.r, lightBg.g, lightBg.b);
-      pdf.rect(mL, y - 1, usable, 7, "F");
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(7.5);
-      pdf.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-      let cx = mL + 2;
-      headers.forEach((h, i) => {
-        const align = i >= 3 ? "right" : "left";
-        if (align === "right") {
-          pdf.text(h, cx + colWidths[i] - 2, y + 3, { align: "right" });
-        } else {
-          pdf.text(h, cx, y + 3);
-        }
-        cx += colWidths[i];
-      });
-      y += 8;
-
-      // Table rows
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(8);
-      pdf.setTextColor(textDark.r, textDark.g, textDark.b);
-
-      items.forEach((item, idx) => {
-        checkPageBreak(7);
-        if (idx % 2 === 0) {
-          pdf.setFillColor(250, 250, 252);
-          pdf.rect(mL, y - 3, usable, 6, "F");
-        }
-        cx = mL + 2;
-        // Order
-        pdf.text(`${idx + 1}`, cx, y);
-        cx += colWidths[0];
-        // Qty
-        pdf.text(`${item.quantity}`, cx, y);
-        cx += colWidths[1];
-        // Name
-        const nameLines = pdf.splitTextToSize(item.name, colWidths[2] - 4);
-        pdf.text(nameLines[0], cx, y);
-        cx += colWidths[2];
-        // Unit value
-        pdf.text(fmtVal(item.unitValue), cx + colWidths[3] - 2, y, { align: "right" });
-        cx += colWidths[3];
-        // Discount
-        const discStr = item.discountValue > 0
-          ? (item.discountType === "percent" ? `${item.discountValue}%` : fmtVal(item.discountValue))
-          : "-";
-        pdf.text(discStr, cx + colWidths[4] - 2, y, { align: "right" });
-        cx += colWidths[4];
-        // Subtotal
-        pdf.setFont("helvetica", "bold");
-        pdf.text(fmtVal(item.total), cx + colWidths[5] - 2, y, { align: "right" });
-        pdf.setFont("helvetica", "normal");
-
-        y += 6;
+      // Render using React
+      const { createRoot } = await import("react-dom/client");
+      const root = createRoot(container);
+      
+      await new Promise<void>((resolve) => {
+        root.render(
+          <ProposalTemplatePremium data={templateData} />
+        );
+        // Wait for render and images to load
+        setTimeout(resolve, 500);
       });
 
-      // Table footer line
-      pdf.setDrawColor(borderColor.r, borderColor.g, borderColor.b);
-      pdf.setLineWidth(0.3);
-      pdf.line(mL, y - 2, pageWidth - mR, y - 2);
-      y += 2;
-    }
-
-    // ===== RESUMO FINANCEIRO =====
-    checkPageBreak(30);
-    drawSectionTitle("Resumo Financeiro");
-
-    const totalProducts = items.reduce((s, it) => s + it.total, 0);
-    const totalPS = meta.value_ps || 0;
-    const totalMRR = meta.value_mrr || totalProducts;
-    const grandTotal = totalPS + totalMRR;
-
-    const drawSummaryRow = (label: string, value: string, bold = false, highlight = false) => {
-      checkPageBreak(7);
-      if (highlight) {
-        pdf.setFillColor(greenAccent.r, greenAccent.g, greenAccent.b);
-        pdf.rect(mL, y - 3.5, usable, 8, "F");
-        pdf.setTextColor(255, 255, 255);
-      }
-      pdf.setFont("helvetica", bold ? "bold" : "normal");
-      pdf.setFontSize(bold ? 10 : 9);
-      pdf.text(label, mL + 4, y);
-      pdf.text(value, pageWidth - mR - 4, y, { align: "right" });
-      if (highlight) pdf.setTextColor(textDark.r, textDark.g, textDark.b);
-      y += bold ? 7 : 5.5;
-    };
-
-    if (totalPS > 0) drawSummaryRow("Subtotal Produtos/Serviços (P&S)", fmtVal(totalPS));
-    if (totalMRR > 0) drawSummaryRow("Subtotal Recorrente (MRR)", fmtVal(totalMRR));
-    drawSummaryRow("TOTAL GERAL", fmtVal(grandTotal), true, true);
-    y += 3;
-
-    // ===== MENSALIDADE (MRR) - INSTALLMENTS =====
-    const installmentData: import("./ProposalItemsManager").Installment[] = meta.installments || [];
-    if (installmentData.length > 0) {
-      checkPageBreak(20);
-      drawSectionTitle("Mensalidade (MRR) - Parcelamento");
-
-      const freqLabels: Record<string, string> = { mensal: "Mensal", trimestral: "Trimestral", semestral: "Semestral", anual: "Anual", unica: "Única" };
-      const payFreq = meta.payment_frequency || "mensal";
-      drawInfoRow("Periodicidade", freqLabels[payFreq] || payFreq);
-      drawInfoRow("Parcelas", `${installmentData.length}x`);
-      y += 2;
-
-      // Installment table
-      const instColWidths = [20, usable - 20 - 45 - 40, 45, 40];
-      const instHeaders = ["Parcela", "Vencimento", "Valor", "Método"];
-
-      pdf.setFillColor(lightBg.r, lightBg.g, lightBg.b);
-      pdf.rect(mL, y - 1, usable, 6, "F");
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(7.5);
-      pdf.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-      let cx = mL + 2;
-      instHeaders.forEach((h, i) => {
-        pdf.text(h, cx, y + 3);
-        cx += instColWidths[i];
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(container, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
       });
-      y += 7;
 
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(8);
-      pdf.setTextColor(textDark.r, textDark.g, textDark.b);
+      root.unmount();
+      document.body.removeChild(container);
 
-      for (const inst of installmentData) {
-        checkPageBreak(6);
-        let cx = mL + 2;
-        pdf.text(`${inst.number}ª`, cx, y);
-        cx += instColWidths[0];
-        pdf.text(inst.dueDate ? new Date(inst.dueDate + "T12:00:00").toLocaleDateString("pt-BR") : "-", cx, y);
-        cx += instColWidths[1];
-        pdf.setFont("helvetica", "bold");
-        pdf.text(fmtVal(inst.value), cx, y);
-        pdf.setFont("helvetica", "normal");
-        cx += instColWidths[2];
-        const payMethods: Record<string, string> = { boleto: "Boleto", pix: "PIX", cartao: "Cartão", transferencia: "Transf." };
-        pdf.text(payMethods[inst.paymentMethod] || inst.paymentMethod || "Boleto", cx, y);
-        y += 5;
+      const { default: jsPDF } = await import("jspdf");
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pageHeight = 297; // A4 height in mm
+
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+      let position = 0;
+      let remainingHeight = imgHeight;
+      let pageNum = 0;
+
+      while (remainingHeight > 0) {
+        if (pageNum > 0) pdf.addPage();
+        
+        pdf.addImage(imgData, "JPEG", 0, -position, imgWidth, imgHeight);
+        
+        position += pageHeight;
+        remainingHeight -= pageHeight;
+        pageNum++;
       }
 
-      // Total do contrato
-      y += 2;
-      const totalContrato = installmentData.reduce((s, i) => s + i.value, 0);
-      pdf.setDrawColor(borderColor.r, borderColor.g, borderColor.b);
-      pdf.line(mL, y - 1, pageWidth - mR, y - 1);
-      y += 3;
-      drawSummaryRow("TOTAL DO CONTRATO", fmtVal(totalContrato), true, true);
-      y += 3;
+      pdf.save(`${lead.company_name.replace(/\s+/g, "_")}_${sigla}.pdf`);
+      toast.success("PDF baixado!", { id: "proposal-pdf" });
+      
+      await addActivity({
+        type: "pdf_download",
+        title: `PDF da proposta ${sigla} gerado`,
+        description: `Download do PDF da proposta "${proposal.title}" para ${lead.company_name}.`,
+        servidor_id: lead.servidor_id,
+      });
+    } catch (err) {
+      console.error("Error generating PDF:", err);
+      toast.error("Erro ao gerar PDF", { id: "proposal-pdf" });
     }
-
-    // ===== OBSERVAÇÕES =====
-    if (proposal.description || meta.introduction) {
-      checkPageBreak(15);
-      drawSectionTitle("Observações");
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(8);
-      pdf.setTextColor(textDark.r, textDark.g, textDark.b);
-
-      const obsText = [meta.introduction, proposal.description].filter(Boolean).join("\n\n");
-      const obsLines = pdf.splitTextToSize(obsText, usable - 8);
-      for (const line of obsLines) {
-        checkPageBreak(5);
-        pdf.text(line, mL + 4, y);
-        y += 4;
-      }
-      y += 3;
-    }
-
-    // ===== FOOTER =====
-    const totalPages = pdf.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
-      pdf.setPage(i);
-      // Bottom accent line
-      pdf.setDrawColor(accent.r, accent.g, accent.b);
-      pdf.setLineWidth(0.5);
-      pdf.line(mL, pageHeight - 12, pageWidth - mR, pageHeight - 12);
-      // Footer text
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(7);
-      pdf.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-      pdf.text(`Proposta ${sigla} - v${version}`, mL, pageHeight - 8);
-      pdf.text(`Página ${i} de ${totalPages}`, pageWidth - mR, pageHeight - 8, { align: "right" });
-      if (srv?.nome_fantasia || srv?.razao_social) {
-        pdf.text(srv.nome_fantasia || srv.razao_social, pageWidth / 2, pageHeight - 8, { align: "center" });
-      }
-    }
-
-    pdf.save(`${lead.company_name.replace(/\s+/g, "_")}_${sigla}.pdf`);
-    toast.success("PDF baixado!");
-    await addActivity({
-      type: "pdf_download",
-      title: `PDF da proposta ${sigla} gerado`,
-      description: `Download do PDF da proposta "${proposal.title}" para ${lead.company_name}.`,
-      servidor_id: lead.servidor_id,
-    });
   };
 
   const handleDeleteProposal = async (proposal: any) => {
