@@ -193,7 +193,7 @@ export default function ServidoresTab() {
     setTimeout(() => setCopiedLinkId(null), 2000);
   };
 
-
+  const handleOpenUsersDialog = async (company: Company) => {
     setUsersDialogCompany(company);
     setUsersDialogOpen(true);
     setLoadingUsers(true);
