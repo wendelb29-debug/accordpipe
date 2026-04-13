@@ -44,7 +44,7 @@ export function MyPerformance() {
       .eq("user_id", user.id)
       .eq("mes", now.getMonth() + 1)
       .eq("ano", now.getFullYear())
-      .then(({ data }) => setMyGoals((data as any[]) || []));
+      .then(({ data }) => setMyGoals((data as any[] | null) || []));
   }, [companyId, user?.id]);
 
   const [mySnaps, setMySnaps] = useState<any[]>([]);
