@@ -44,6 +44,7 @@ import NovoServidor from "./pages/NovoServidor";
 import AceitarConvite from "./pages/AceitarConvite";
 import AssinarDocumento from "./pages/AssinarDocumento";
 import AuditLogs from "./pages/AuditLogs";
+import Performance from "./pages/Performance";
 
 const queryClient = new QueryClient();
 
@@ -312,6 +313,16 @@ const App = () => (
                 <ProtectedRoute requiredPermission="view_audit_logs">
                   <AppLayout>
                     <AuditLogs />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/performance"
+              element={
+                <ProtectedRoute requiredPermission="view_performance_module">
+                  <AppLayout>
+                    <Performance />
                   </AppLayout>
                 </ProtectedRoute>
               }

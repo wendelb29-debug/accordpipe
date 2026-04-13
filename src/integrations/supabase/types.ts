@@ -2508,6 +2508,360 @@ export type Database = {
           },
         ]
       }
+      performance_ai_plans: {
+        Row: {
+          created_at: string
+          data_reavaliacao: string | null
+          diagnostico: string | null
+          gerado_por: string
+          id: string
+          meta_recuperacao: string | null
+          status: string
+          sugestoes: string | null
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_reavaliacao?: string | null
+          diagnostico?: string | null
+          gerado_por?: string
+          id?: string
+          meta_recuperacao?: string | null
+          status?: string
+          sugestoes?: string | null
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_reavaliacao?: string | null
+          diagnostico?: string | null
+          gerado_por?: string
+          id?: string
+          meta_recuperacao?: string | null
+          status?: string
+          sugestoes?: string | null
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_ai_plans_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      performance_feedbacks: {
+        Row: {
+          created_at: string
+          data: string
+          id: string
+          observacoes: string | null
+          plano_acao: string | null
+          pontos_fortes: string | null
+          pontos_melhoria: string | null
+          proxima_revisao: string | null
+          supervisor_id: string
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: string
+          id?: string
+          observacoes?: string | null
+          plano_acao?: string | null
+          pontos_fortes?: string | null
+          pontos_melhoria?: string | null
+          proxima_revisao?: string | null
+          supervisor_id: string
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          id?: string
+          observacoes?: string | null
+          plano_acao?: string | null
+          pontos_fortes?: string | null
+          pontos_melhoria?: string | null
+          proxima_revisao?: string | null
+          supervisor_id?: string
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_feedbacks_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      performance_goals: {
+        Row: {
+          ano: number
+          created_at: string
+          id: string
+          mes: number
+          meta_valor: number
+          percentual: number | null
+          realizado_valor: number
+          team_id: string | null
+          tenant_id: string
+          updated_at: string
+          user_id: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          ano: number
+          created_at?: string
+          id?: string
+          mes: number
+          meta_valor?: number
+          percentual?: number | null
+          realizado_valor?: number
+          team_id?: string | null
+          tenant_id: string
+          updated_at?: string
+          user_id?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          ano?: number
+          created_at?: string
+          id?: string
+          mes?: number
+          meta_valor?: number
+          percentual?: number | null
+          realizado_valor?: number
+          team_id?: string | null
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_goals_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "performance_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "performance_goals_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "performance_goals_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      performance_hierarchy: {
+        Row: {
+          created_at: string
+          id: string
+          leader_id: string
+          subordinate_id: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          leader_id: string
+          subordinate_id: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          leader_id?: string
+          subordinate_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_hierarchy_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      performance_snapshots: {
+        Row: {
+          conversao: number
+          created_at: string
+          data: string
+          ganhos: number
+          id: string
+          perdas: number
+          score: number
+          sla: number
+          tarefas_concluidas: number
+          team_id: string | null
+          tenant_id: string
+          user_id: string | null
+          valor_total: number
+        }
+        Insert: {
+          conversao?: number
+          created_at?: string
+          data?: string
+          ganhos?: number
+          id?: string
+          perdas?: number
+          score?: number
+          sla?: number
+          tarefas_concluidas?: number
+          team_id?: string | null
+          tenant_id: string
+          user_id?: string | null
+          valor_total?: number
+        }
+        Update: {
+          conversao?: number
+          created_at?: string
+          data?: string
+          ganhos?: number
+          id?: string
+          perdas?: number
+          score?: number
+          sla?: number
+          tarefas_concluidas?: number
+          team_id?: string | null
+          tenant_id?: string
+          user_id?: string | null
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_snapshots_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "performance_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "performance_snapshots_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      performance_team_members: {
+        Row: {
+          created_at: string
+          id: string
+          meta_individual: number | null
+          role: string
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meta_individual?: number | null
+          role?: string
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meta_individual?: number | null
+          role?: string
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "performance_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      performance_teams: {
+        Row: {
+          ativo: boolean | null
+          created_at: string
+          gestor_id: string | null
+          id: string
+          meta_mensal: number | null
+          nome: string
+          supervisor_id: string | null
+          tenant_id: string
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string
+          gestor_id?: string | null
+          id?: string
+          meta_mensal?: number | null
+          nome: string
+          supervisor_id?: string | null
+          tenant_id: string
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string
+          gestor_id?: string | null
+          id?: string
+          meta_mensal?: number | null
+          nome?: string
+          supervisor_id?: string | null
+          tenant_id?: string
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_teams_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "performance_teams_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
