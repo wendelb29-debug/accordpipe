@@ -695,93 +695,10 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     try {
       toast.loading("Gerando PDF...", { id: "proposal-pdf" });
 
-      // Create a temporary container to render the template
-      const container = document.createElement("div");
-      container.style.position = "fixed";
-      container.style.left = "0";
-      container.style.top = "0";
-      container.style.width = "794px";
-      container.style.backgroundColor = "#fff";
-      container.style.opacity = "0";
-      container.style.pointerEvents = "none";
-      container.style.zIndex = "-1";
-      document.body.appendChild(container);
+      const { generateProposalPdf: generateNativePdf } = await import("@/lib/generateProposalPdf");
+      const pdfFilename = `${lead.company_name.replace(/\s+/g, "_")}_${sigla}.pdf`;
+      await generateNativePdf(templateData, pdfFilename);
 
-      // Render using React
-      const { createRoot } = await import("react-dom/client");
-      const root = createRoot(container);
-
-      let canvas: HTMLCanvasElement;
-
-      try {
-        root.render(<ProposalTemplatePremium data={templateData} />);
-
-        await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-
-        const renderedProposal = container.firstElementChild as HTMLElement | null;
-        if (!renderedProposal) {
-          throw new Error("Não foi possível renderizar a proposta para gerar o PDF.");
-        }
-
-        const images = Array.from(renderedProposal.querySelectorAll("img"));
-        await Promise.all(
-          images.map(
-            (img) =>
-              new Promise<void>((resolve) => {
-                if (img.complete) {
-                  resolve();
-                  return;
-                }
-
-                img.addEventListener("load", () => resolve(), { once: true });
-                img.addEventListener("error", () => resolve(), { once: true });
-              })
-          )
-        );
-
-        await (document as Document & { fonts?: FontFaceSet }).fonts?.ready;
-
-        const html2canvas = (await import("html2canvas")).default;
-        canvas = await html2canvas(renderedProposal, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: "#ffffff",
-          width: renderedProposal.scrollWidth,
-          height: renderedProposal.scrollHeight,
-          windowWidth: renderedProposal.scrollWidth,
-          windowHeight: renderedProposal.scrollHeight,
-          scrollX: 0,
-          scrollY: 0,
-        });
-      } finally {
-        root.unmount();
-        document.body.removeChild(container);
-      }
-
-      const { default: jsPDF } = await import("jspdf");
-      const imgData = canvas.toDataURL("image/jpeg", 0.95);
-      const imgWidth = 210; // A4 width in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const pageHeight = 297; // A4 height in mm
-
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-
-      let position = 0;
-      let remainingHeight = imgHeight;
-      let pageNum = 0;
-
-      while (remainingHeight > 0) {
-        if (pageNum > 0) pdf.addPage();
-        
-        pdf.addImage(imgData, "JPEG", 0, -position, imgWidth, imgHeight);
-        
-        position += pageHeight;
-        remainingHeight -= pageHeight;
-        pageNum++;
-      }
-
-      pdf.save(`${lead.company_name.replace(/\s+/g, "_")}_${sigla}.pdf`);
       toast.success("PDF baixado!", { id: "proposal-pdf" });
       
       await addActivity({
