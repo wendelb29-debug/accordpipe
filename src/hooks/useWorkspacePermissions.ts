@@ -49,7 +49,6 @@ export function useWorkspacePermissions() {
   const canViewWorkspace = useCallback(
     (workspaceId: string): boolean => {
       if (isCeoOrMaster) return true;
-      // Admin role also gets full access
       if (role === "admin") return true;
       const perm = permissions.find((p) => p.workspace_id === workspaceId);
       return perm?.can_view ?? false;
@@ -101,6 +100,7 @@ export function useWorkspacePermissions() {
 export function useUserWorkspacePermissions(userId: string | null, tenantId: string | null) {
   const [permissions, setPermissions] = useState<WorkspacePermission[]>([]);
   const [loading, setLoading] = useState(false);
+  const { user: currentUser, profile } = useAuth();
 
   const fetchPermissions = useCallback(async () => {
     if (!userId || !tenantId) {
@@ -131,6 +131,9 @@ export function useUserWorkspacePermissions(userId: string | null, tenantId: str
   ) => {
     if (!userId || !tenantId) return;
 
+    // Capture old state for audit
+    const oldPerms = [...permissions];
+
     // Delete existing
     await supabase
       .from("user_workspace_permissions")
@@ -139,14 +142,15 @@ export function useUserWorkspacePermissions(userId: string | null, tenantId: str
       .eq("tenant_id", tenantId);
 
     // Insert new ones (only those with at least one permission)
+    // Enforce integrity: can_delete requires can_edit, can_edit requires can_view
     const rows = perms
       .filter((p) => p.can_view || p.can_edit || p.can_delete)
       .map((p) => ({
         tenant_id: tenantId,
         user_id: userId,
         workspace_id: p.workspace_id,
-        can_view: p.can_view,
-        can_edit: p.can_edit,
+        can_view: p.can_view || p.can_edit || p.can_delete,
+        can_edit: p.can_edit || p.can_delete,
         can_delete: p.can_delete,
       }));
 
@@ -158,8 +162,63 @@ export function useUserWorkspacePermissions(userId: string | null, tenantId: str
       }
     }
 
+    // Audit log
+    try {
+      const changes = buildAuditChanges(oldPerms, rows);
+      if (changes.length > 0 && currentUser) {
+        await supabase.rpc("log_audit", {
+          _user_id: currentUser.id,
+          _user_name: profile?.name || currentUser.email || "",
+          _action: "workspace_permission_updated",
+          _target_type: "user_workspace_permissions",
+          _target_id: userId,
+          _details: { changes } as any,
+          _servidor_id: tenantId,
+        });
+      }
+    } catch (e) {
+      console.warn("Audit log failed:", e);
+    }
+
     await fetchPermissions();
   };
 
   return { permissions, loading, savePermissions, refresh: fetchPermissions };
+}
+
+function buildAuditChanges(
+  oldPerms: WorkspacePermission[],
+  newRows: { workspace_id: string; can_view: boolean; can_edit: boolean; can_delete: boolean }[]
+) {
+  const changes: { workspace_id: string; action: string; before?: any; after?: any }[] = [];
+  const oldMap = new Map(oldPerms.map((p) => [p.workspace_id, p]));
+  const newMap = new Map(newRows.map((p) => [p.workspace_id, p]));
+
+  // Created or updated
+  newRows.forEach((n) => {
+    const old = oldMap.get(n.workspace_id);
+    if (!old) {
+      changes.push({ workspace_id: n.workspace_id, action: "workspace_permission_created", after: n });
+    } else if (old.can_view !== n.can_view || old.can_edit !== n.can_edit || old.can_delete !== n.can_delete) {
+      changes.push({
+        workspace_id: n.workspace_id,
+        action: "workspace_permission_updated",
+        before: { can_view: old.can_view, can_edit: old.can_edit, can_delete: old.can_delete },
+        after: n,
+      });
+    }
+  });
+
+  // Removed
+  oldPerms.forEach((o) => {
+    if (!newMap.has(o.workspace_id)) {
+      changes.push({
+        workspace_id: o.workspace_id,
+        action: "workspace_permission_removed",
+        before: { can_view: o.can_view, can_edit: o.can_edit, can_delete: o.can_delete },
+      });
+    }
+  });
+
+  return changes;
 }

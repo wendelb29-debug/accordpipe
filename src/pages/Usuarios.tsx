@@ -89,6 +89,7 @@ export default function Usuarios() {
   const [permUserId, setPermUserId] = useState<string | null>(null);
   const [permUserName, setPermUserName] = useState("");
   const [permUserIsCeo, setPermUserIsCeo] = useState(false);
+  const [permUserRole, setPermUserRole] = useState<string>("");
   const { toast } = useToast();
   const { isMaster, isCeo, isAdmin, activeCompanyId, profile, role, isMasterTenantAdmin } = useAuth();
   const canManageUsers = isMaster || isCeo || isAdmin;
@@ -540,6 +541,7 @@ export default function Usuarios() {
                               setPermUserId(user.user_id);
                               setPermUserName(user.name);
                               setPermUserIsCeo(user.role === "ceo" || user.is_master);
+                              setPermUserRole(user.role);
                               setPermDialogOpen(true);
                             }}
                           >
@@ -576,6 +578,7 @@ export default function Usuarios() {
                               setPermUserId(user.user_id);
                               setPermUserName(user.name);
                               setPermUserIsCeo(user.role === "ceo" || user.is_master);
+                              setPermUserRole(user.role);
                               setPermDialogOpen(true);
                             }}>
                               <Shield className="h-4 w-4" />
@@ -834,6 +837,7 @@ export default function Usuarios() {
                   <TabsContent value="workspaces">
                     <WorkspacePermissionsEditor
                       userId={permUserId}
+                      userRole={permUserRole}
                       isCeoOrMaster={permUserIsCeo}
                       onClose={() => setPermDialogOpen(false)}
                     />
