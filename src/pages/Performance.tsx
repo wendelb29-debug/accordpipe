@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, Target } from "lucide-react";
 import { usePerformanceData, type UserProfile } from "@/hooks/usePerformanceData";
 import { PerformanceKPIs } from "@/components/performance/PerformanceKPIs";
 import { PerformanceTimeline } from "@/components/performance/PerformanceTimeline";
@@ -9,12 +9,15 @@ import { PerformanceHierarchy } from "@/components/performance/PerformanceHierar
 import { PerformanceDetailDrawer } from "@/components/performance/PerformanceDetailDrawer";
 import { PerformanceFilters } from "@/components/performance/PerformanceFilters";
 import { PerformanceTeamView } from "@/components/performance/PerformanceTeamView";
+import { GoalManagement } from "@/components/performance/GoalManagement";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useWorkspacePermissions } from "@/hooks/useWorkspacePermissions";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 
 export default function Performance() {
   const now = new Date();
+  const [activeTab, setActiveTab] = useState("performance");
   const [filters, setFilters] = useState({
     mes: now.getMonth() + 1,
     ano: now.getFullYear(),
@@ -30,7 +33,6 @@ export default function Performance() {
     [allWorkspaces, filterAllowedWorkspaces]
   );
 
-  // Auto-select workspace if user only has access to one
   const effectiveFilters = useMemo(() => {
     if (!filters.workspaceId && allowedWorkspaces.length === 1) {
       return { ...filters, workspaceId: allowedWorkspaces[0].id };
@@ -40,7 +42,6 @@ export default function Performance() {
 
   const rawPerf = usePerformanceData(effectiveFilters);
 
-  // Filter teams by workspace permissions
   const allowedTeams = rawPerf.teams.filter((t) => {
     if (!t.workspace_id) return true;
     return filterAllowedWorkspaces([{ id: t.workspace_id }]).length > 0;
@@ -53,90 +54,98 @@ export default function Performance() {
   const { users, loading, kpis, workspaceKpis } = rawPerf;
 
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
-
-  // Show team view when a workspace is selected
   const hasWorkspaceSelected = !!effectiveFilters.workspaceId;
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
-              <TrendingUp className="h-5 w-5 text-primary" />
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+                {activeTab === "performance" ? (
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                ) : (
+                  <Target className="h-5 w-5 text-primary" />
+                )}
+              </div>
+              <div>
+                <h1 className="text-xl font-bold tracking-tight">Accord Performance</h1>
+                <p className="text-xs text-muted-foreground">Centro de Inteligência e Performance</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Accord Performance</h1>
-              <p className="text-xs text-muted-foreground">Centro de Inteligência e Performance</p>
-            </div>
+            <TabsList className="h-8">
+              <TabsTrigger value="performance" className="text-xs h-7 gap-1">
+                <TrendingUp className="h-3.5 w-3.5" />
+                Performance
+              </TabsTrigger>
+              <TabsTrigger value="goals" className="text-xs h-7 gap-1">
+                <Target className="h-3.5 w-3.5" />
+                Gestão de Metas
+              </TabsTrigger>
+            </TabsList>
           </div>
-        </div>
-        <PerformanceFilters
-          filters={effectiveFilters}
-          setFilters={setFilters}
-          teams={teams}
-          users={users}
-          workspaces={allowedWorkspaces.map((w) => ({ id: w.id, name: w.name }))}
-        />
-      </div>
-
-      {loading ? (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
-          </div>
-          <Skeleton className="h-48 rounded-xl" />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Skeleton className="h-64 rounded-xl" />
-            <Skeleton className="h-64 rounded-xl" />
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* KPIs */}
-          <PerformanceKPIs
-            {...kpis}
-            workspaceKpis={workspaceKpis}
-            snapshots={snapshots}
-          />
-
-          {/* Alerts */}
-          <PerformanceAlerts goals={goals} users={users} teams={teams} />
-
-          {/* Team View (when workspace selected) */}
-          {hasWorkspaceSelected && (
-            <PerformanceTeamView
-              goals={goals}
-              snapshots={snapshots}
+          {activeTab === "performance" && (
+            <PerformanceFilters
+              filters={effectiveFilters}
+              setFilters={setFilters}
+              teams={teams}
               users={users}
-              workspaceKpis={workspaceKpis}
-              onSelectUser={(u) => setSelectedUser(u)}
+              workspaces={allowedWorkspaces.map((w) => ({ id: w.id, name: w.name }))}
             />
           )}
+        </div>
 
-          {/* Timeline */}
-          <PerformanceTimeline snapshots={snapshots} onSelectSnapshot={(snap) => {
-            if (snap.user_id) {
-              const u = users.find(usr => usr.user_id === snap.user_id);
-              if (u) setSelectedUser(u);
-            }
-          }} />
+        <TabsContent value="performance" className="mt-6 space-y-6">
+          {loading ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
+              </div>
+              <Skeleton className="h-48 rounded-xl" />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <Skeleton className="h-64 rounded-xl" />
+                <Skeleton className="h-64 rounded-xl" />
+              </div>
+            </div>
+          ) : (
+            <>
+              <PerformanceKPIs {...kpis} workspaceKpis={workspaceKpis} snapshots={snapshots} />
+              <PerformanceAlerts goals={goals} users={users} teams={teams} />
+              {hasWorkspaceSelected && (
+                <PerformanceTeamView
+                  goals={goals}
+                  snapshots={snapshots}
+                  users={users}
+                  workspaceKpis={workspaceKpis}
+                  onSelectUser={(u) => setSelectedUser(u)}
+                />
+              )}
+              <PerformanceTimeline snapshots={snapshots} onSelectSnapshot={(snap) => {
+                if (snap.user_id) {
+                  const u = users.find(usr => usr.user_id === snap.user_id);
+                  if (u) setSelectedUser(u);
+                }
+              }} />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <PerformanceRanking goals={goals} users={users} teams={teams} />
+                <PerformanceHierarchy
+                  teams={teams}
+                  goals={goals}
+                  users={users}
+                  onSelectUser={(u) => setSelectedUser(u)}
+                />
+              </div>
+            </>
+          )}
+        </TabsContent>
 
-          {/* Ranking + Hierarchy */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <PerformanceRanking goals={goals} users={users} teams={teams} />
-            <PerformanceHierarchy
-              teams={teams}
-              goals={goals}
-              users={users}
-              onSelectUser={(u) => setSelectedUser(u)}
-            />
-          </div>
-        </>
-      )}
+        <TabsContent value="goals" className="mt-6">
+          <GoalManagement />
+        </TabsContent>
+      </Tabs>
 
-      {/* Detail Drawer */}
       <PerformanceDetailDrawer
         open={!!selectedUser}
         onClose={() => setSelectedUser(null)}
