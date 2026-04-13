@@ -716,7 +716,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
       try {
         root.render(<ProposalTemplatePremium data={templateData} />);
 
-        await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
 
         const renderedProposal = container.firstElementChild as HTMLElement | null;
         if (!renderedProposal) {
