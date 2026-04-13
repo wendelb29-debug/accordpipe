@@ -88,6 +88,10 @@ export default function Performance() {
                 <Target className="h-3.5 w-3.5" />
                 Gestão de Metas
               </TabsTrigger>
+              <TabsTrigger value="meu-desempenho" className="text-xs h-7 gap-1">
+                <User className="h-3.5 w-3.5" />
+                Meu Desempenho
+              </TabsTrigger>
             </TabsList>
           </div>
           {activeTab === "performance" && (
