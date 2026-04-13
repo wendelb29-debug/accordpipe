@@ -167,7 +167,33 @@ export default function ServidoresTab() {
     }
   };
 
-  const handleOpenUsersDialog = async (company: Company) => {
+  const handleGenerateSetupLink = async () => {
+    setGeneratingLink(true);
+    try {
+      const { data, error } = await supabase.from("tenant_setup_requests").insert({
+        created_by: user?.id,
+      } as any).select().single();
+      if (error) throw error;
+      const link = `${window.location.origin}/setup-tenant/${(data as any).token}`;
+      await navigator.clipboard.writeText(link);
+      sonnerToast.success("Link gerado e copiado!");
+      await fetchCompanies();
+    } catch (err: any) {
+      sonnerToast.error("Erro ao gerar link: " + err.message);
+    } finally {
+      setGeneratingLink(false);
+    }
+  };
+
+  const handleCopySetupLink = (token: string, requestId: string) => {
+    const link = `${window.location.origin}/setup-tenant/${token}`;
+    navigator.clipboard.writeText(link);
+    setCopiedLinkId(requestId);
+    sonnerToast.success("Link copiado!");
+    setTimeout(() => setCopiedLinkId(null), 2000);
+  };
+
+
     setUsersDialogCompany(company);
     setUsersDialogOpen(true);
     setLoadingUsers(true);
