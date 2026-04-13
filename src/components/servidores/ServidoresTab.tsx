@@ -649,7 +649,34 @@ export default function ServidoresTab() {
                     )}
                   </TableCell>
                   <TableCell className="flex items-center gap-2">
-                    {isMaster && (
+                    {isMaster && (company as any)._setup_request_id ? (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handleCopySetupLink((company as any)._setup_token, (company as any)._setup_request_id)}
+                          title="Copiar link"
+                        >
+                          {copiedLinkId === (company as any)._setup_request_id ? (
+                            <Check className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                        {company.status === "pending_activation" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="gap-1 text-xs"
+                            onClick={() => navigate(`/servidores/novo?from_setup=${(company as any)._setup_request_id}`)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            Revisar e Ativar
+                          </Button>
+                        )}
+                      </div>
+                    ) : isMaster ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -669,7 +696,7 @@ export default function ServidoresTab() {
                           )}
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    )}
+                    ) : null}
                     {company.id === profile?.company_id && (
                       <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-600">
                         <Shield className="h-3 w-3 mr-1" /> Master
