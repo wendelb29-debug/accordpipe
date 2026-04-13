@@ -45,6 +45,7 @@ import AceitarConvite from "./pages/AceitarConvite";
 import AssinarDocumento from "./pages/AssinarDocumento";
 import AuditLogs from "./pages/AuditLogs";
 import Performance from "./pages/Performance";
+import TenantSetupPublico from "./pages/TenantSetupPublico";
 
 const queryClient = new QueryClient();
 
@@ -327,6 +328,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route path="/setup-tenant/:token" element={<TenantSetupPublico />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

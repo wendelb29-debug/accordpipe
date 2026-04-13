@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams, Navigate } from "react-router-dom";
 import {
   Building2, Palette, FileSignature, Search, Loader2, Save, Webhook,
   Send, LogOut, MessageSquare, Radio, Activity, Wifi, Copy, Check, RefreshCw, LayoutGrid,
-  CreditCard, Users, Package,
+  CreditCard, Users, Package, Link2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,7 @@ import { WorkspacesTab } from "@/components/servidores/WorkspacesTab";
 import { FintechWebhooksTab } from "@/components/servidores/FintechWebhooksTab";
 import TenantUsersTab from "@/components/servidores/TenantUsersTab";
 import CatalogTab from "@/components/servidores/CatalogTab";
+import TenantSetupLinksTab from "@/components/servidores/TenantSetupLinksTab";
 import { useEffect } from "react";
 
 const cleanDigits = (v: string) => v.replace(/\D/g, "");
@@ -171,6 +172,7 @@ export default function NovoServidor() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get("id");
+  const fromSetupId = searchParams.get("from_setup");
   const { toast } = useToast();
   // Pre-generate ID for new tenants so child components can use it
   const [pendingNewId] = useState(() => editId ? null : crypto.randomUUID());
@@ -256,6 +258,43 @@ export default function NovoServidor() {
     };
     load();
   }, [editId]);
+
+  // Pre-fill from setup request
+  useEffect(() => {
+    if (!fromSetupId || editId) return;
+    const load = async () => {
+      const { data } = await supabase
+        .from("tenant_setup_requests")
+        .select("*")
+        .eq("id", fromSetupId)
+        .maybeSingle();
+      if (data) {
+        setFormData((prev) => ({
+          ...prev,
+          cnpj: data.cnpj || prev.cnpj,
+          razao_social: data.razao_social || prev.razao_social,
+          nome_fantasia: data.nome_fantasia || prev.nome_fantasia,
+          responsavel: data.responsavel || prev.responsavel,
+          email: data.email || prev.email,
+          telefone: data.telefone || prev.telefone,
+          cep: data.cep || prev.cep,
+          endereco: data.endereco || prev.endereco,
+          numero: data.numero || prev.numero,
+          complemento: data.complemento || prev.complemento,
+          bairro: data.bairro || prev.bairro,
+          cidade: data.cidade || prev.cidade,
+          estado: data.estado || prev.estado,
+          brandPrimaryColor: data.brand_primary_color || prev.brandPrimaryColor,
+          brandSecondaryColor: data.brand_secondary_color || prev.brandSecondaryColor,
+          brandAccentColor: data.brand_accent_color || prev.brandAccentColor,
+          brandBgColor: data.brand_bg_color || prev.brandBgColor,
+          brandTextColor: data.brand_text_color || prev.brandTextColor,
+        }));
+        sonnerToast.info("Dados do cliente carregados a partir da solicitação.");
+      }
+    };
+    load();
+  }, [fromSetupId, editId]);
 
   // Block access for non-master-tenant users (after all hooks)
   if (!isMasterTenantAdmin) {
@@ -434,6 +473,7 @@ export default function NovoServidor() {
             { value: "fintech", icon: CreditCard, label: "Webhooks Fintech" },
             { value: "usuarios", icon: Users, label: "Usuários" },
             { value: "catalogo", icon: Package, label: "Catálogo" },
+            ...(!editId ? [{ value: "setup_links", icon: Link2, label: "Links Config." }] : []),
           ].map((item) => (
             <button
               key={item.value}
@@ -643,6 +683,14 @@ export default function NovoServidor() {
             <Card>
               <CardContent className="pt-6">
                 <CatalogTab companyId={editId || pendingNewId} />
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === "setup_links" && !editId && (
+            <Card>
+              <CardContent className="pt-6">
+                <TenantSetupLinksTab />
               </CardContent>
             </Card>
           )}
