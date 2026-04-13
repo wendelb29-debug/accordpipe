@@ -614,9 +614,23 @@ export default function ServidoresTab() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={company.status === "active" ? "default" : "secondary"}>
-                      {company.status === "active" ? "Ativo" : "Bloqueado"}
-                    </Badge>
+                    {company.status === "active" ? (
+                      <Badge variant="default">Ativo</Badge>
+                    ) : company.status === "pending_activation" ? (
+                      <Badge variant="outline" className="border-amber-500/30 text-amber-600 bg-amber-500/10">
+                        Pendente de Ativação
+                      </Badge>
+                    ) : company.status === "em_configuracao" ? (
+                      <Badge variant="outline" className="border-blue-500/30 text-blue-600 bg-blue-500/10">
+                        Em Configuração
+                      </Badge>
+                    ) : company.status === "teste" ? (
+                      <Badge variant="outline" className="border-purple-500/30 text-purple-600 bg-purple-500/10">
+                        Teste
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary">Bloqueado</Badge>
+                    )}
                   </TableCell>
                   <TableCell className="flex items-center gap-2">
                     {isMaster && (
