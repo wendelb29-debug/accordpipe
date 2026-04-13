@@ -9,6 +9,7 @@ import { PerformanceHierarchy } from "@/components/performance/PerformanceHierar
 import { PerformanceDetailDrawer } from "@/components/performance/PerformanceDetailDrawer";
 import { PerformanceFilters } from "@/components/performance/PerformanceFilters";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useWorkspacePermissions } from "@/hooks/useWorkspacePermissions";
 
 export default function Performance() {
   const now = new Date();
@@ -19,6 +20,7 @@ export default function Performance() {
     userId: undefined as string | undefined,
   });
 
+  const { filterAllowedWorkspaces } = useWorkspacePermissions();
   const { teams, goals, snapshots, users, loading, kpis } = usePerformanceData(filters);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
 
