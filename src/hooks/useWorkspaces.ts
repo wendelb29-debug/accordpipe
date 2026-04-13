@@ -40,7 +40,8 @@ export function useWorkspaces() {
   const companyId = useActiveCompanyId();
 
   const isAdminOrCeo = role === "admin" || role === "ceo" || profile?.is_master;
-  const { filterAllowedWorkspaces, canEditWorkspace, canDeleteInWorkspace, loading: wpLoading } = useWorkspacePermissions();
+
+  const fetchWorkspaces = useCallback(async () => {
     if (!companyId) return;
     setLoading(true);
 
