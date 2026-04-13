@@ -52,14 +52,14 @@ export function MyPerformance() {
     if (!companyId || !user?.id) return;
     const now = new Date();
     supabase
-      .from("performance_snapshots")
+      .from("performance_snapshots" as any)
       .select("*")
       .eq("tenant_id", companyId)
       .eq("user_id", user.id)
       .eq("mes", now.getMonth() + 1)
       .eq("ano", now.getFullYear())
       .order("data", { ascending: true })
-      .then(({ data }) => setMySnaps((data as any[]) || []));
+      .then(({ data }: any) => setMySnaps((data as any[]) || []));
   }, [companyId, user?.id]);
 
   const unreadCount = feedbacks.filter(f => !f.visualizado).length;
