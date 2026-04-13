@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield, Webhook, Briefcase, ShieldCheck,
+  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield, Webhook, Briefcase, ShieldCheck, Link2, Copy, Check, ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -93,8 +93,10 @@ export default function ServidoresTab() {
   const [permUserId, setPermUserId] = useState<string | null>(null);
   const [permUserName, setPermUserName] = useState("");
   const [permUserIsCeo, setPermUserIsCeo] = useState(false);
+  const [generatingLink, setGeneratingLink] = useState(false);
+  const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const { toast } = useToast();
-  const { isMaster, profile } = useAuth();
+  const { isMaster, profile, user } = useAuth();
 
   const [formData, setFormData] = useState({
     razao_social: "",
@@ -131,38 +133,80 @@ export default function ServidoresTab() {
 
   const fetchCompanies = async () => {
     try {
-      const { data: companiesData, error } = await supabase
-        .from("companies")
-        .select("*")
-        .is("servidor_id", null)
-        .order("created_at", { ascending: false });
+      const [companiesRes, tenantLinksRes, setupRes] = await Promise.all([
+        supabase.from("companies").select("*").is("servidor_id", null).order("created_at", { ascending: false }),
+        supabase.from("user_tenants").select("tenant_id"),
+        supabase.from("tenant_setup_requests").select("*").in("status", ["pending", "submitted"]).order("created_at", { ascending: false }),
+      ]);
 
-      if (error) throw error;
-
-      // Count users per tenant from user_tenants
-      const { data: tenantLinks } = await supabase
-        .from("user_tenants")
-        .select("tenant_id");
+      if (companiesRes.error) throw companiesRes.error;
 
       const countMap: Record<string, number> = {};
-      (tenantLinks || []).forEach((l: any) => {
-        if (l.tenant_id) {
-          countMap[l.tenant_id] = (countMap[l.tenant_id] || 0) + 1;
-        }
+      (tenantLinksRes.data || []).forEach((l: any) => {
+        if (l.tenant_id) countMap[l.tenant_id] = (countMap[l.tenant_id] || 0) + 1;
       });
 
-      const enriched = (companiesData || []).map((c) => ({
+      const enriched: Company[] = (companiesRes.data || []).map((c) => ({
         ...c,
         user_count: countMap[c.id] || 0,
       }));
 
-      setCompanies(enriched);
+      // Add setup requests as virtual entries
+      const setupEntries: Company[] = ((setupRes.data as any[]) || []).map((req: any) => ({
+        id: `setup_${req.id}`,
+        razao_social: req.razao_social || "Aguardando preenchimento",
+        nome_fantasia: req.nome_fantasia || null,
+        cnpj: req.cnpj || "—",
+        email: req.email || null,
+        telefone: req.telefone || null,
+        responsavel: req.responsavel || null,
+        status: req.status === "submitted" ? "pending_activation" : "em_configuracao",
+        cidade: req.cidade || null,
+        estado: req.estado || null,
+        endereco: req.endereco || null,
+        bairro: req.bairro || null,
+        cep: req.cep || null,
+        numero: req.numero || null,
+        complemento: req.complemento || null,
+        created_at: req.created_at,
+        user_count: 0,
+        _setup_request_id: req.id,
+        _setup_token: req.token,
+      }));
+
+      setCompanies([...setupEntries, ...enriched]);
     } catch (error) {
       console.error("Error fetching companies:", error);
       toast({ title: "Erro", description: "Não foi possível carregar os tenants.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGenerateSetupLink = async () => {
+    setGeneratingLink(true);
+    try {
+      const { data, error } = await supabase.from("tenant_setup_requests").insert({
+        created_by: user?.id,
+      } as any).select().single();
+      if (error) throw error;
+      const link = `${window.location.origin}/setup-tenant/${(data as any).token}`;
+      await navigator.clipboard.writeText(link);
+      sonnerToast.success("Link gerado e copiado!");
+      await fetchCompanies();
+    } catch (err: any) {
+      sonnerToast.error("Erro ao gerar link: " + err.message);
+    } finally {
+      setGeneratingLink(false);
+    }
+  };
+
+  const handleCopySetupLink = (token: string, requestId: string) => {
+    const link = `${window.location.origin}/setup-tenant/${token}`;
+    navigator.clipboard.writeText(link);
+    setCopiedLinkId(requestId);
+    sonnerToast.success("Link copiado!");
+    setTimeout(() => setCopiedLinkId(null), 2000);
   };
 
   const handleOpenUsersDialog = async (company: Company) => {
@@ -465,10 +509,25 @@ export default function ServidoresTab() {
           <p className="text-sm text-muted-foreground">Ambientes independentes vinculados por CNPJ</p>
         </div>
         {isMaster && (
-          <Button className="gap-2" onClick={() => navigate("/servidores/novo")}>
-            <Plus className="h-4 w-4" />
-            Novo Tenant
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                Novo Tenant
+                <ChevronDown className="h-3.5 w-3.5 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem className="gap-2" onClick={() => navigate("/servidores/novo")}>
+                <Building2 className="h-4 w-4" />
+                Criar Tenant Manualmente
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2" onClick={handleGenerateSetupLink} disabled={generatingLink}>
+                {generatingLink ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+                Gerar Link de Configuração
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 
@@ -545,8 +604,12 @@ export default function ServidoresTab() {
                 <TableRow key={company.id} className="group">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                        <Building2 className="h-5 w-5 text-primary" />
+                      <div className={`flex h-10 w-10 items-center justify-center rounded-full ${(company as any)._setup_request_id ? "bg-amber-500/10" : "bg-primary/10"}`}>
+                        {(company as any)._setup_request_id ? (
+                          <Link2 className="h-5 w-5 text-amber-600" />
+                        ) : (
+                          <Building2 className="h-5 w-5 text-primary" />
+                        )}
                       </div>
                       <div>
                         <p className="font-medium text-foreground">
@@ -571,12 +634,53 @@ export default function ServidoresTab() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={company.status === "active" ? "default" : "secondary"}>
-                      {company.status === "active" ? "Ativo" : "Bloqueado"}
-                    </Badge>
+                    {company.status === "active" ? (
+                      <Badge variant="default">Ativo</Badge>
+                    ) : company.status === "pending_activation" ? (
+                      <Badge variant="outline" className="border-amber-500/30 text-amber-600 bg-amber-500/10">
+                        Pendente de Ativação
+                      </Badge>
+                    ) : company.status === "em_configuracao" ? (
+                      <Badge variant="outline" className="border-blue-500/30 text-blue-600 bg-blue-500/10">
+                        Em Configuração
+                      </Badge>
+                    ) : company.status === "teste" ? (
+                      <Badge variant="outline" className="border-purple-500/30 text-purple-600 bg-purple-500/10">
+                        Teste
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary">Bloqueado</Badge>
+                    )}
                   </TableCell>
                   <TableCell className="flex items-center gap-2">
-                    {isMaster && (
+                    {isMaster && (company as any)._setup_request_id ? (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handleCopySetupLink((company as any)._setup_token, (company as any)._setup_request_id)}
+                          title="Copiar link"
+                        >
+                          {copiedLinkId === (company as any)._setup_request_id ? (
+                            <Check className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                        {company.status === "pending_activation" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="gap-1 text-xs"
+                            onClick={() => navigate(`/servidores/novo?from_setup=${(company as any)._setup_request_id}`)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            Revisar e Ativar
+                          </Button>
+                        )}
+                      </div>
+                    ) : isMaster ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -596,7 +700,7 @@ export default function ServidoresTab() {
                           )}
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    )}
+                    ) : null}
                     {company.id === profile?.company_id && (
                       <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-600">
                         <Shield className="h-3 w-3 mr-1" /> Master
