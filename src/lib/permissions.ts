@@ -54,6 +54,7 @@ export const MODULE_GROUPS = [
   "Descarte",
   "Usuários e Acessos",
   "Plataforma / Tenant",
+  "Performance",
 ] as const;
 
 export const PERMISSION_MODULES: PermissionModule[] = [
@@ -309,6 +310,24 @@ export const PERMISSION_MODULES: PermissionModule[] = [
       { key: "view_audit_logs", label: "Ver Logs de Auditoria", description: "Acessar logs de auditoria do sistema", restrictedTo: ["ceo", "master", "admin"] },
     ],
   },
+
+  // ===== Performance =====
+  {
+    key: "performance",
+    label: "Accord Performance",
+    icon: Activity,
+    group: "Performance",
+    permissions: [
+      { key: "view_performance_module", label: "Visualizar Performance", description: "Acessar módulo de performance", scopable: true },
+      { key: "view_team_performance", label: "Ver Performance do Time", description: "Ver performance da equipe", scopable: true },
+      { key: "view_all_performance", label: "Ver Performance Global", description: "Ver performance de todos", scopable: true },
+      { key: "manage_team_goals", label: "Gerenciar Metas do Time", description: "Definir e editar metas de equipe" },
+      { key: "manage_individual_goals", label: "Gerenciar Metas Individuais", description: "Definir e editar metas individuais" },
+      { key: "create_feedback", label: "Registrar Feedback", description: "Registrar feedbacks one-on-one" },
+      { key: "view_feedback", label: "Ver Feedbacks", description: "Visualizar feedbacks registrados", scopable: true },
+      { key: "generate_ai_action_plan", label: "Gerar Plano IA", description: "Gerar plano de ação com inteligência artificial" },
+    ],
+  },
 ];
 
 export const ALL_PERMISSION_KEYS = PERMISSION_MODULES.flatMap(m => m.permissions.map(p => p.key));
@@ -340,6 +359,7 @@ export const ROUTE_PERMISSIONS: Record<string, string> = {
   "/empresas": "edit_clients",
   "/accord-stack": "create_user",
   "/configuracoes/auditoria": "view_audit_logs",
+  "/performance": "view_performance_module",
 };
 
 // Legacy permission key mapping (old -> new) for backward compatibility
