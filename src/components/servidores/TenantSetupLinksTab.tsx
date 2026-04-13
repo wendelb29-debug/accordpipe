@@ -99,18 +99,12 @@ export default function TenantSetupLinksTab() {
     if (!reviewRequest) return;
     setActivating(true);
 
-    // Navigate to NovoServidor with pre-filled data from the request
-    const params = new URLSearchParams();
-    params.set("from_setup", reviewRequest.id);
-    
-    // Update status to activated
+    // Save reviewer notes without changing status yet — status will be updated when tenant is actually created
     await supabase
       .from("tenant_setup_requests")
       .update({
-        status: "activated",
         reviewed_by: user?.id,
         reviewer_notes: reviewNotes || null,
-        activated_at: new Date().toISOString(),
       } as any)
       .eq("id", reviewRequest.id);
 
