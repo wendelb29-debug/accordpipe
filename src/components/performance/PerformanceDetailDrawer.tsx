@@ -6,13 +6,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sparkles, MessageSquare, Target, TrendingUp, Calendar, Loader2 } from "lucide-react";
+import { Sparkles, MessageSquare, Target, TrendingUp, TrendingDown, Calendar, Loader2, BarChart3 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePerformanceFeedbacks, useAIActionPlans } from "@/hooks/usePerformanceData";
-import type { PerformanceGoal, PerformanceSnapshot, UserProfile } from "@/hooks/usePerformanceData";
+import type { PerformanceGoal, PerformanceSnapshot, UserProfile, WorkspaceKPI } from "@/hooks/usePerformanceData";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -22,9 +22,12 @@ interface Props {
   user: UserProfile | null;
   goals: PerformanceGoal[];
   snapshots: PerformanceSnapshot[];
+  teamAvgScore?: number;
+  teamAvgConversao?: number;
+  workspaceKpis?: WorkspaceKPI[];
 }
 
-export function PerformanceDetailDrawer({ open, onClose, user, goals, snapshots }: Props) {
+export function PerformanceDetailDrawer({ open, onClose, user, goals, snapshots, teamAvgScore = 0, teamAvgConversao = 0, workspaceKpis }: Props) {
   const companyId = useActiveCompanyId();
   const { profile } = useAuth();
   const { feedbacks, refetch: refetchFeedbacks } = usePerformanceFeedbacks(user?.user_id);
@@ -42,6 +45,27 @@ export function PerformanceDetailDrawer({ open, onClose, user, goals, snapshots 
   const totalPerdas = userSnaps.reduce((s, snap) => s + snap.perdas, 0);
   const totalValor = userSnaps.reduce((s, snap) => s + snap.valor_total, 0);
   const avgScore = userSnaps.length > 0 ? Math.round(userSnaps.reduce((s, snap) => s + snap.score, 0) / userSnaps.length) : 0;
+  const conversao = (totalGanhos + totalPerdas) > 0 ? Math.round((totalGanhos / (totalGanhos + totalPerdas)) * 100) : 0;
+  const pct = userGoal?.percentual || 0;
+
+  // Trend
+  const trend = (() => {
+    if (userSnaps.length < 2) return "stable";
+    const recent = userSnaps.slice(-3);
+    const older = userSnaps.slice(-6, -3);
+    if (older.length === 0) return "stable";
+    const r = recent.reduce((s, sn) => s + sn.score, 0) / recent.length;
+    const o = older.reduce((s, sn) => s + sn.score, 0) / older.length;
+    return r > o + 5 ? "up" : r < o - 5 ? "down" : "stable";
+  })();
+
+  // Diagnosis
+  const diagnosis = (() => {
+    if (pct >= 100) return { text: "Excelente performance — acima da meta!", color: "text-emerald-400" };
+    if (pct >= 70) return { text: "Desempenho sólido — dentro do esperado.", color: "text-blue-400" };
+    if (pct >= 40) return { text: "Atenção — desempenho abaixo do esperado.", color: "text-amber-400" };
+    return { text: "Alerta crítico — performance em risco.", color: "text-red-400" };
+  })();
 
   const initials = user.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
 
@@ -82,6 +106,7 @@ export function PerformanceDetailDrawer({ open, onClose, user, goals, snapshots 
           totalGanhos,
           totalPerdas,
           avgScore,
+          workspaceKpis: workspaceKpis?.map(k => ({ nome: k.nome, tipo: k.tipo, origem: k.origem })),
         },
       });
       if (error) throw error;
@@ -117,16 +142,26 @@ export function PerformanceDetailDrawer({ open, onClose, user, goals, snapshots 
             <div>
               <SheetTitle className="text-base">{user.name}</SheetTitle>
               <p className="text-xs text-muted-foreground">{user.email}</p>
+              <div className="flex items-center gap-2 mt-1">
+                {trend === "up" && <Badge variant="outline" className="text-[9px] text-emerald-400 border-emerald-500/30 gap-0.5"><TrendingUp className="h-2.5 w-2.5" />Subindo</Badge>}
+                {trend === "down" && <Badge variant="outline" className="text-[9px] text-red-400 border-red-500/30 gap-0.5"><TrendingDown className="h-2.5 w-2.5" />Caindo</Badge>}
+                {trend === "stable" && <Badge variant="outline" className="text-[9px] gap-0.5">Estável</Badge>}
+              </div>
             </div>
           </div>
         </SheetHeader>
+
+        {/* Diagnosis */}
+        <div className={cn("rounded-lg border p-3 mb-4", diagnosis.color === "text-emerald-400" ? "border-emerald-500/20 bg-emerald-500/5" : diagnosis.color === "text-blue-400" ? "border-blue-500/20 bg-blue-500/5" : diagnosis.color === "text-amber-400" ? "border-amber-500/20 bg-amber-500/5" : "border-red-500/20 bg-red-500/5")}>
+          <p className={cn("text-xs font-medium", diagnosis.color)}>{diagnosis.text}</p>
+        </div>
 
         {/* KPIs */}
         <div className="grid grid-cols-3 gap-2 mb-4">
           {[
             { label: "Meta", value: userGoal?.meta_valor?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) || "—" },
-            { label: "Realizado", value: userGoal?.realizado_valor?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) || "—" },
-            { label: "% Atingido", value: userGoal ? `${userGoal.percentual}%` : "—" },
+            { label: "Realizado", value: userGoal?.realizado_valor?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) || totalValor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) },
+            { label: "% Atingido", value: pct ? `${pct}%` : "—" },
             { label: "Ganhos", value: totalGanhos },
             { label: "Perdas", value: totalPerdas },
             { label: "Score Médio", value: avgScore },
@@ -138,6 +173,53 @@ export function PerformanceDetailDrawer({ open, onClose, user, goals, snapshots 
           ))}
         </div>
 
+        {/* Team Comparison */}
+        {(teamAvgScore > 0 || teamAvgConversao > 0) && (
+          <div className="rounded-lg border border-border/50 p-3 mb-4">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">📊 vs Média do Time</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-[10px] text-muted-foreground">Score</p>
+                <div className="flex items-center gap-2">
+                  <span className={cn("text-sm font-bold", avgScore >= teamAvgScore ? "text-emerald-400" : "text-red-400")}>{avgScore}</span>
+                  <span className="text-[10px] text-muted-foreground">/ {teamAvgScore} avg</span>
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground">Conversão</p>
+                <div className="flex items-center gap-2">
+                  <span className={cn("text-sm font-bold", conversao >= teamAvgConversao ? "text-emerald-400" : "text-red-400")}>{conversao}%</span>
+                  <span className="text-[10px] text-muted-foreground">/ {teamAvgConversao}% avg</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Mini Timeline */}
+        {userSnaps.length > 1 && (
+          <div className="rounded-lg border border-border/50 p-3 mb-4">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">📈 Evolução</p>
+            <div className="flex items-end gap-1 h-12">
+              {userSnaps.map((sn) => {
+                const maxScore = Math.max(...userSnaps.map(s => s.score), 1);
+                const h = Math.max(4, (sn.score / maxScore) * 48);
+                return (
+                  <div
+                    key={sn.id}
+                    className={cn(
+                      "flex-1 rounded-sm transition-all",
+                      sn.score >= 80 ? "bg-emerald-500" : sn.score >= 60 ? "bg-amber-500" : "bg-red-500"
+                    )}
+                    style={{ height: `${h}px` }}
+                    title={`${new Date(sn.data + "T00:00:00").toLocaleDateString("pt-BR")}: score ${sn.score}`}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <Tabs defaultValue="feedback" className="w-full">
           <TabsList className="w-full bg-muted/30">
             <TabsTrigger value="feedback" className="flex-1 text-xs gap-1"><MessageSquare className="h-3 w-3" />Feedback</TabsTrigger>
@@ -145,7 +227,6 @@ export function PerformanceDetailDrawer({ open, onClose, user, goals, snapshots 
           </TabsList>
 
           <TabsContent value="feedback" className="space-y-4 mt-3">
-            {/* New feedback form */}
             <div className="space-y-3 rounded-lg border border-border/50 p-4">
               <p className="text-xs font-semibold">Registrar Feedback (One-on-One)</p>
               <div>
@@ -170,7 +251,6 @@ export function PerformanceDetailDrawer({ open, onClose, user, goals, snapshots 
               </Button>
             </div>
 
-            {/* Feedback history */}
             <div className="space-y-2">
               <p className="text-xs font-semibold text-muted-foreground">Histórico</p>
               {feedbacks.length === 0 && <p className="text-xs text-muted-foreground text-center py-3">Nenhum feedback registrado.</p>}
