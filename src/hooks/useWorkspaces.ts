@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
+import { useWorkspacePermissions } from "@/hooks/useWorkspacePermissions";
 import { toast } from "sonner";
 
 export interface Workspace {
@@ -36,6 +37,7 @@ export function useWorkspaces() {
   const [loading, setLoading] = useState(true);
   const { profile, role } = useAuth();
   const companyId = useActiveCompanyId();
+  const { filterAllowedWorkspaces } = useWorkspacePermissions();
 
   const isAdminOrCeo = role === "admin" || role === "ceo" || profile?.is_master;
 
@@ -53,7 +55,7 @@ export function useWorkspaces() {
     if (error) {
       console.error("Error fetching workspaces:", error);
     } else {
-      const ws = (data || []) as Workspace[];
+      const ws = filterAllowedWorkspaces((data || []) as Workspace[]);
       setWorkspaces(ws);
 
       // Auto-select: last used, or default, or first
@@ -70,7 +72,7 @@ export function useWorkspaces() {
       }
     }
     setLoading(false);
-  }, [companyId]);
+  }, [companyId, filterAllowedWorkspaces]);
 
   useEffect(() => {
     fetchWorkspaces();
