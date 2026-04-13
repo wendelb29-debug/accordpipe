@@ -604,8 +604,12 @@ export default function ServidoresTab() {
                 <TableRow key={company.id} className="group">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                        <Building2 className="h-5 w-5 text-primary" />
+                      <div className={`flex h-10 w-10 items-center justify-center rounded-full ${(company as any)._setup_request_id ? "bg-amber-500/10" : "bg-primary/10"}`}>
+                        {(company as any)._setup_request_id ? (
+                          <Link2 className="h-5 w-5 text-amber-600" />
+                        ) : (
+                          <Building2 className="h-5 w-5 text-primary" />
+                        )}
                       </div>
                       <div>
                         <p className="font-medium text-foreground">
