@@ -2080,88 +2080,65 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
     const meta = (viewProposal.metadata as any) || {};
     const srv = meta.servidor_snapshot || servidorData;
     const comp = meta.company_snapshot || companyData;
+    const lineItemsData = (meta.line_items || []).map((it: any) => ({
+      name: it.name || "",
+      quantity: it.quantity || 1,
+      unitValue: it.unitValue || 0,
+      total: it.total || 0,
+      discountValue: it.discountValue || 0,
+      discountType: it.discountType || "percent",
+    }));
+
+    const brandInfo = meta.brand_snapshot || brands.find((b: any) => b.id === meta.brand_id);
+    const logoUrl = brandInfo?.logo_url || srv?.brand_logo_url || null;
+
+    const templateData: import("./ProposalTemplatePremium").ProposalTemplateData = {
+      status: meta.status || "enviada",
+      logoUrl,
+      companyName: srv?.nome_fantasia || srv?.razao_social || "Empresa",
+      companyRazaoSocial: srv?.razao_social,
+      companyCnpj: srv?.cnpj,
+      companyEmail: srv?.email,
+      companyPhone: srv?.telefone,
+      reference: meta.sigla || viewProposal.title,
+      emissionDate: new Date(viewProposal.created_at).toLocaleDateString("pt-BR"),
+      validityDays: meta.validity_days || 15,
+      validUntil: meta.valid_until ? new Date(meta.valid_until).toLocaleDateString("pt-BR") : undefined,
+      primaryColor: srv?.brand_primary_color || "#1E2952",
+      secondaryColor: srv?.brand_secondary_color || "#4F46E5",
+      accentColor: srv?.brand_accent_color || "#10B981",
+      bgColor: srv?.brand_bg_color || "#F8F9FC",
+      textColor: srv?.brand_text_color || "#1F2937",
+      clientName: lead.contact_name || lead.company_name,
+      clientDocument: lead.documento || comp?.cnpj,
+      vendorName: srv?.responsavel || profile?.name || "Vendedor",
+      vendorEmail: srv?.email,
+      items: lineItemsData,
+      totalMrr: meta.value_mrr || 0,
+      currency: meta.currency || "BRL",
+      conditions: meta.payment_method ? [
+        meta.payment_method ? `Forma de pagamento: ${meta.payment_method}` : "",
+        meta.validity_days ? `Validade: ${meta.validity_days} dias` : "",
+      ].filter(Boolean) : [],
+      introduction: meta.introduction,
+      description: viewProposal.description,
+    };
+
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewProposal(null)}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h3 className="text-sm font-semibold">{viewProposal.title}</h3>
-        </div>
-
-        {/* Servidor + Contact + Version */}
-        <div className="grid grid-cols-3 gap-3">
-          <Card><CardContent className="p-3 text-xs space-y-1">
-            <p className="font-semibold flex items-center gap-1"><Building2 className="h-3.5 w-3.5 text-primary" /> {srv?.razao_social || "Servidor"}</p>
-            {srv?.cnpj && <p className="text-muted-foreground">CNPJ: {srv.cnpj}</p>}
-            {srv?.nome_fantasia && <p className="text-muted-foreground">Nome Fantasia: {srv.nome_fantasia}</p>}
-          </CardContent></Card>
-          <Card><CardContent className="p-3 text-xs space-y-1">
-            <p className="font-semibold flex items-center gap-1"><Mail className="h-3.5 w-3.5 text-primary" /> Contato comercial</p>
-            <p className="text-muted-foreground">Nome: {srv?.responsavel || "-"}</p>
-            <p className="text-muted-foreground">Telefone: {srv?.telefone || "-"}</p>
-          </CardContent></Card>
-          <Card><CardContent className="p-3 text-xs space-y-1">
-            <p className="font-semibold">Versão: {meta.version || "1"}</p>
-            <p className="text-muted-foreground">Sigla: {meta.sigla || "-"}</p>
-          </CardContent></Card>
-        </div>
-
-        {/* Person + Company data */}
-        <div className="grid grid-cols-2 gap-3">
-          <Card><CardContent className="p-3 text-xs space-y-1">
-            <p className="font-semibold flex items-center gap-1"><User className="h-3.5 w-3.5 text-primary" /> Dados da pessoa</p>
-            <p className="text-foreground text-sm font-medium">{lead.contact_name || "Não informado"}</p>
-            {lead.email && <p className="text-muted-foreground">E-mail: {lead.email}</p>}
-            {lead.phone && <p className="text-muted-foreground">Telefone: {lead.phone}</p>}
-          </CardContent></Card>
-          <Card><CardContent className="p-3 text-xs space-y-1">
-            <p className="font-semibold flex items-center gap-1"><Building2 className="h-3.5 w-3.5 text-primary" /> Dados da empresa</p>
-            <p className="text-foreground text-sm font-medium">{comp?.razao_social || lead.company_name}</p>
-            {comp?.cnpj && <p className="text-muted-foreground">CNPJ: {comp.cnpj}</p>}
-            {comp?.email && <p className="text-muted-foreground">E-mail: {comp.email}</p>}
-          </CardContent></Card>
-        </div>
-
-        {/* Proposal details */}
-        <Card><CardContent className="p-3 text-xs space-y-2">
-          <p className="font-semibold flex items-center gap-1"><Briefcase className="h-3.5 w-3.5 text-primary" /> Dados da proposta</p>
-          <div className="grid grid-cols-4 gap-3">
-            <div><span className="text-muted-foreground">Data criação:</span> <span className="font-medium">{new Date(viewProposal.created_at).toLocaleDateString("pt-BR")}</span></div>
-            <div><span className="text-muted-foreground">Validade:</span> <span className="font-medium">{meta.valid_until ? new Date(meta.valid_until).toLocaleDateString("pt-BR") : "-"}</span></div>
-            <div><span className="text-muted-foreground">Valor P&S:</span> <span className="font-medium">{fmtCur(meta.value_ps || 0)}</span></div>
-            <div><span className="text-muted-foreground">Valor MRR:</span> <span className="font-medium">{fmtCur(meta.value_mrr || 0)}</span></div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewProposal(null)}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h3 className="text-sm font-semibold">{viewProposal.title}</h3>
           </div>
-        </CardContent></Card>
-
-        {meta.introduction && (
-          <Card><CardContent className="p-3 text-xs">
-            <p className="font-semibold mb-1">Introdução</p>
-            <p className="whitespace-pre-wrap text-muted-foreground">{meta.introduction}</p>
-          </CardContent></Card>
-        )}
-
-        {meta.items && (
-          <Card><CardContent className="p-3 text-xs">
-            <p className="font-semibold mb-1">Itens</p>
-            <ul className="list-disc ml-4 space-y-0.5">
-              {meta.items.split("\n").filter(Boolean).map((item: string, i: number) => <li key={i}>{item}</li>)}
-            </ul>
-          </CardContent></Card>
-        )}
-
-        {viewProposal.description && (
-          <Card><CardContent className="p-3 text-xs">
-            <p className="font-semibold mb-1">Observações</p>
-            <p className="whitespace-pre-wrap text-muted-foreground">{viewProposal.description}</p>
-          </CardContent></Card>
-        )}
-
-        <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={() => generateProposalPdf(viewProposal)} className="gap-1.5 text-xs">
             <Download className="h-3.5 w-3.5" /> Gerar PDF
           </Button>
         </div>
+
+        <ProposalTemplatePremium data={templateData} />
       </div>
     );
   }
