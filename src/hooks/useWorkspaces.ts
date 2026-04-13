@@ -37,6 +37,7 @@ export function useWorkspaces() {
   const [loading, setLoading] = useState(true);
   const { profile, role } = useAuth();
   const companyId = useActiveCompanyId();
+  const { filterAllowedWorkspaces } = useWorkspacePermissions();
 
   const isAdminOrCeo = role === "admin" || role === "ceo" || profile?.is_master;
 
@@ -71,7 +72,7 @@ export function useWorkspaces() {
       }
     }
     setLoading(false);
-  }, [companyId]);
+  }, [companyId, filterAllowedWorkspaces]);
 
   useEffect(() => {
     fetchWorkspaces();
