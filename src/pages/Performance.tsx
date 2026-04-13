@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
-import { TrendingUp, Target } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { TrendingUp, Target, User } from "lucide-react";
 import { usePerformanceData, type UserProfile } from "@/hooks/usePerformanceData";
 import { PerformanceKPIs } from "@/components/performance/PerformanceKPIs";
 import { PerformanceTimeline } from "@/components/performance/PerformanceTimeline";
@@ -10,14 +11,17 @@ import { PerformanceDetailDrawer } from "@/components/performance/PerformanceDet
 import { PerformanceFilters } from "@/components/performance/PerformanceFilters";
 import { PerformanceTeamView } from "@/components/performance/PerformanceTeamView";
 import { GoalManagement } from "@/components/performance/GoalManagement";
+import { MyPerformance } from "@/components/performance/MyPerformance";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useWorkspacePermissions } from "@/hooks/useWorkspacePermissions";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 
 export default function Performance() {
+  const [searchParams] = useSearchParams();
   const now = new Date();
-  const [activeTab, setActiveTab] = useState("performance");
+  const initialTab = searchParams.get("tab") || "performance";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [filters, setFilters] = useState({
     mes: now.getMonth() + 1,
     ano: now.getFullYear(),
@@ -66,6 +70,8 @@ export default function Performance() {
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
                 {activeTab === "performance" ? (
                   <TrendingUp className="h-5 w-5 text-primary" />
+                ) : activeTab === "meu-desempenho" ? (
+                  <User className="h-5 w-5 text-primary" />
                 ) : (
                   <Target className="h-5 w-5 text-primary" />
                 )}
@@ -83,6 +89,10 @@ export default function Performance() {
               <TabsTrigger value="goals" className="text-xs h-7 gap-1">
                 <Target className="h-3.5 w-3.5" />
                 Gestão de Metas
+              </TabsTrigger>
+              <TabsTrigger value="meu-desempenho" className="text-xs h-7 gap-1">
+                <User className="h-3.5 w-3.5" />
+                Meu Desempenho
               </TabsTrigger>
             </TabsList>
           </div>
@@ -143,6 +153,10 @@ export default function Performance() {
 
         <TabsContent value="goals" className="mt-6">
           <GoalManagement />
+        </TabsContent>
+
+        <TabsContent value="meu-desempenho" className="mt-6">
+          <MyPerformance />
         </TabsContent>
       </Tabs>
 

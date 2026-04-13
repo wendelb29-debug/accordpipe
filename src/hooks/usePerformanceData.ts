@@ -52,6 +52,13 @@ export interface PerformanceFeedback {
   plano_acao: string | null;
   observacoes: string | null;
   proxima_revisao: string | null;
+  status: string;
+  visualizado: boolean;
+  visualizado_em: string | null;
+  comentario_usuario: string | null;
+  supervisor_name: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface AIActionPlan {

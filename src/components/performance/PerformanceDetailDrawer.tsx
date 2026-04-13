@@ -76,13 +76,27 @@ export function PerformanceDetailDrawer({ open, onClose, user, goals, snapshots,
       await supabase.from("performance_feedbacks").insert({
         tenant_id: companyId,
         supervisor_id: profile.user_id,
+        supervisor_name: profile.name || null,
         user_id: user.user_id,
         pontos_fortes: fbForm.pontos_fortes || null,
         pontos_melhoria: fbForm.pontos_melhoria || null,
         plano_acao: fbForm.plano_acao || null,
         proxima_revisao: fbForm.proxima_revisao || null,
+        status: "pendente",
+        visualizado: false,
       } as any);
-      toast.success("Feedback registrado");
+
+      // Create notification for the user
+      await supabase.rpc("create_notification", {
+        _user_id: user.user_id,
+        _title: "Novo feedback recebido",
+        _message: `Você recebeu um novo feedback do seu supervisor ${profile.name || ""}`.trim(),
+        _type: "feedback_recebido",
+        _link: "/performance?tab=meu-desempenho",
+        _servidor_id: companyId,
+      });
+
+      toast.success("Feedback registrado e notificação enviada");
       setFbForm({ pontos_fortes: "", pontos_melhoria: "", plano_acao: "", proxima_revisao: "" });
       refetchFeedbacks();
     } catch {

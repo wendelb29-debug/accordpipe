@@ -2560,6 +2560,7 @@ export type Database = {
       }
       performance_feedbacks: {
         Row: {
+          comentario_usuario: string | null
           created_at: string
           data: string
           id: string
@@ -2568,12 +2569,17 @@ export type Database = {
           pontos_fortes: string | null
           pontos_melhoria: string | null
           proxima_revisao: string | null
+          status: string
           supervisor_id: string
+          supervisor_name: string | null
           tenant_id: string
           updated_at: string
           user_id: string
+          visualizado: boolean
+          visualizado_em: string | null
         }
         Insert: {
+          comentario_usuario?: string | null
           created_at?: string
           data?: string
           id?: string
@@ -2582,12 +2588,17 @@ export type Database = {
           pontos_fortes?: string | null
           pontos_melhoria?: string | null
           proxima_revisao?: string | null
+          status?: string
           supervisor_id: string
+          supervisor_name?: string | null
           tenant_id: string
           updated_at?: string
           user_id: string
+          visualizado?: boolean
+          visualizado_em?: string | null
         }
         Update: {
+          comentario_usuario?: string | null
           created_at?: string
           data?: string
           id?: string
@@ -2596,10 +2607,14 @@ export type Database = {
           pontos_fortes?: string | null
           pontos_melhoria?: string | null
           proxima_revisao?: string | null
+          status?: string
           supervisor_id?: string
+          supervisor_name?: string | null
           tenant_id?: string
           updated_at?: string
           user_id?: string
+          visualizado?: boolean
+          visualizado_em?: string | null
         }
         Relationships: [
           {
