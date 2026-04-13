@@ -128,9 +128,52 @@ export function usePerformanceData(filters: {
         .eq("company_id", companyId)
         .eq("is_active", true);
 
+      // If no manual goals exist, compute from CRM leads automatically
+      let finalGoals = (goalsData as any[]) || [];
+      let finalSnapshots = (snapsData as any[]) || [];
+
+      if (finalGoals.length === 0 || finalSnapshots.length === 0) {
+        const { data: crmPerf } = await supabase.rpc("compute_crm_performance", {
+          _tenant_id: companyId,
+          _mes: filters.mes,
+          _ano: filters.ano,
+        });
+
+        if (crmPerf && crmPerf.length > 0) {
+          if (finalGoals.length === 0) {
+            finalGoals = (crmPerf as any[]).map((row: any) => ({
+              id: `crm-${row.user_id}`,
+              user_id: row.user_id,
+              team_id: null,
+              mes: filters.mes,
+              ano: filters.ano,
+              meta_valor: 0,
+              realizado_valor: Number(row.valor_total) || 0,
+              percentual: 0,
+            }));
+          }
+
+          if (finalSnapshots.length === 0) {
+            finalSnapshots = (crmPerf as any[]).map((row: any) => ({
+              id: `crm-snap-${row.user_id}`,
+              user_id: row.user_id,
+              team_id: null,
+              data: startDate,
+              ganhos: Number(row.ganhos) || 0,
+              perdas: Number(row.perdas) || 0,
+              conversao: Number(row.conversao) || 0,
+              valor_total: Number(row.valor_total) || 0,
+              tarefas_concluidas: 0,
+              sla: 0,
+              score: Number(row.conversao) || 0,
+            }));
+          }
+        }
+      }
+
       setTeams((teamsData as any[]) || []);
-      setGoals((goalsData as any[]) || []);
-      setSnapshots((snapsData as any[]) || []);
+      setGoals(finalGoals);
+      setSnapshots(finalSnapshots);
       setUsers((profilesData as any[]) || []);
     } catch (err) {
       console.error("Error fetching performance data:", err);

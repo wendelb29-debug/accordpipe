@@ -4088,6 +4088,17 @@ export type Database = {
           result_status: string
         }[]
       }
+      compute_crm_performance: {
+        Args: { _ano: number; _mes: number; _tenant_id: string }
+        Returns: {
+          conversao: number
+          ganhos: number
+          perdas: number
+          user_id: string
+          user_name: string
+          valor_total: number
+        }[]
+      }
       create_notification:
         | {
             Args: {
