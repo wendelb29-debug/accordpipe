@@ -686,6 +686,14 @@ export default function NovoServidor() {
               </CardContent>
             </Card>
           )}
+
+          {activeTab === "setup_links" && !editId && (
+            <Card>
+              <CardContent className="pt-6">
+                <TenantSetupLinksTab />
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
