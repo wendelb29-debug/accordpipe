@@ -121,21 +121,16 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div style={{ display: "flex", alignItems: "center", gap: compact ? 10 : 16 }}>
                 {logoUrl && (
-                  <div
+                  <img
+                    src={logoUrl}
+                    alt="Logo"
                     style={{
-                      width: compact ? 48 : 72,
-                      height: compact ? 48 : 72,
-                      borderRadius: compact ? 12 : 18,
-                      backgroundColor: primaryColor,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      overflow: "hidden",
+                      height: compact ? 44 : 64,
+                      maxWidth: compact ? 100 : 160,
+                      objectFit: "contain",
                       flexShrink: 0,
                     }}
-                  >
-                    <img src={logoUrl} alt="Logo" style={{ maxWidth: "80%", maxHeight: "80%", objectFit: "contain" }} />
-                  </div>
+                  />
                 )}
                 <div>
                   <h1
