@@ -259,6 +259,43 @@ export default function NovoServidor() {
     load();
   }, [editId]);
 
+  // Pre-fill from setup request
+  useEffect(() => {
+    if (!fromSetupId || editId) return;
+    const load = async () => {
+      const { data } = await supabase
+        .from("tenant_setup_requests")
+        .select("*")
+        .eq("id", fromSetupId)
+        .maybeSingle();
+      if (data) {
+        setFormData((prev) => ({
+          ...prev,
+          cnpj: data.cnpj || prev.cnpj,
+          razao_social: data.razao_social || prev.razao_social,
+          nome_fantasia: data.nome_fantasia || prev.nome_fantasia,
+          responsavel: data.responsavel || prev.responsavel,
+          email: data.email || prev.email,
+          telefone: data.telefone || prev.telefone,
+          cep: data.cep || prev.cep,
+          endereco: data.endereco || prev.endereco,
+          numero: data.numero || prev.numero,
+          complemento: data.complemento || prev.complemento,
+          bairro: data.bairro || prev.bairro,
+          cidade: data.cidade || prev.cidade,
+          estado: data.estado || prev.estado,
+          brandPrimaryColor: data.brand_primary_color || prev.brandPrimaryColor,
+          brandSecondaryColor: data.brand_secondary_color || prev.brandSecondaryColor,
+          brandAccentColor: data.brand_accent_color || prev.brandAccentColor,
+          brandBgColor: data.brand_bg_color || prev.brandBgColor,
+          brandTextColor: data.brand_text_color || prev.brandTextColor,
+        }));
+        sonnerToast.info("Dados do cliente carregados a partir da solicitação.");
+      }
+    };
+    load();
+  }, [fromSetupId, editId]);
+
   // Block access for non-master-tenant users (after all hooks)
   if (!isMasterTenantAdmin) {
     return <Navigate to="/home" replace />;
