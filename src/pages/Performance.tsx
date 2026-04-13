@@ -21,7 +21,20 @@ export default function Performance() {
   });
 
   const { filterAllowedWorkspaces } = useWorkspacePermissions();
-  const { teams, goals, snapshots, users, loading, kpis } = usePerformanceData(filters);
+  const rawPerf = usePerformanceData(filters);
+  
+  // Filter teams by workspace permissions
+  const allowedTeams = rawPerf.teams.filter((t) => {
+    if (!t.workspace_id) return true;
+    return filterAllowedWorkspaces([{ id: t.workspace_id }]).length > 0;
+  });
+  const allowedTeamIds = new Set(allowedTeams.map((t) => t.id));
+  
+  // Filter goals/snapshots to only allowed teams
+  const teams = allowedTeams;
+  const goals = rawPerf.goals.filter((g) => !g.team_id || allowedTeamIds.has(g.team_id));
+  const snapshots = rawPerf.snapshots.filter((s) => !s.team_id || allowedTeamIds.has(s.team_id));
+  const { users, loading, kpis } = rawPerf;
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
 
   return (
