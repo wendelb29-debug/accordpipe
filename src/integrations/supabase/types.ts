@@ -3485,6 +3485,54 @@ export type Database = {
           },
         ]
       }
+      user_workspace_permissions: {
+        Row: {
+          can_delete: boolean
+          can_edit: boolean
+          can_view: boolean
+          created_at: string
+          id: string
+          tenant_id: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          can_delete?: boolean
+          can_edit?: boolean
+          can_view?: boolean
+          created_at?: string
+          id?: string
+          tenant_id: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          can_delete?: boolean
+          can_edit?: boolean
+          can_view?: boolean
+          created_at?: string
+          id?: string
+          tenant_id?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_workspace_permissions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_workspace_permissions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendas_orbit: {
         Row: {
           aluno_email: string
@@ -4299,6 +4347,10 @@ export type Database = {
       resolve_tenant_by_webhook_token: {
         Args: { p_token: string }
         Returns: string
+      }
+      user_can_access_workspace: {
+        Args: { _permission?: string; _user_id: string; _workspace_id: string }
+        Returns: boolean
       }
     }
     Enums: {
