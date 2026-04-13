@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield, Webhook, Briefcase, ShieldCheck, Link2, Copy, Check, ChevronDown,
+  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield, Webhook, Briefcase, ShieldCheck, Link2, Copy, Check, ChevronDown, Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -207,6 +207,17 @@ export default function ServidoresTab() {
     setCopiedLinkId(requestId);
     sonnerToast.success("Link copiado!");
     setTimeout(() => setCopiedLinkId(null), 2000);
+  };
+
+  const handleDeleteSetupRequest = async (setupRequestId: string) => {
+    try {
+      const { error } = await supabase.from("tenant_setup_requests").delete().eq("id", setupRequestId);
+      if (error) throw error;
+      sonnerToast.success("Solicitação excluída com sucesso!");
+      fetchCompanies();
+    } catch (err: any) {
+      sonnerToast.error("Erro ao excluir: " + (err.message || ""));
+    }
   };
 
   const handleOpenUsersDialog = async (company: Company) => {
@@ -679,6 +690,15 @@ export default function ServidoresTab() {
                             Revisar e Ativar
                           </Button>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => handleDeleteSetupRequest((company as any)._setup_request_id)}
+                          title="Excluir solicitação"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     ) : isMaster ? (
                       <DropdownMenu>
