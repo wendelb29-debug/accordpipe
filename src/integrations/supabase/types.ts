@@ -2560,7 +2560,12 @@ export type Database = {
       }
       performance_feedbacks: {
         Row: {
+          assumed_at: string | null
+          checkin_history: Json | null
+          checklist: Json | null
           comentario_usuario: string | null
+          comment_history: Json | null
+          confirmed_at: string | null
           created_at: string
           data: string
           id: string
@@ -2579,7 +2584,12 @@ export type Database = {
           visualizado_em: string | null
         }
         Insert: {
+          assumed_at?: string | null
+          checkin_history?: Json | null
+          checklist?: Json | null
           comentario_usuario?: string | null
+          comment_history?: Json | null
+          confirmed_at?: string | null
           created_at?: string
           data?: string
           id?: string
@@ -2598,7 +2608,12 @@ export type Database = {
           visualizado_em?: string | null
         }
         Update: {
+          assumed_at?: string | null
+          checkin_history?: Json | null
+          checklist?: Json | null
           comentario_usuario?: string | null
+          comment_history?: Json | null
+          confirmed_at?: string | null
           created_at?: string
           data?: string
           id?: string
