@@ -473,6 +473,7 @@ export default function NovoServidor() {
             { value: "fintech", icon: CreditCard, label: "Webhooks Fintech" },
             { value: "usuarios", icon: Users, label: "Usuários" },
             { value: "catalogo", icon: Package, label: "Catálogo" },
+            ...(!editId ? [{ value: "setup_links", icon: Link2, label: "Links Config." }] : []),
           ].map((item) => (
             <button
               key={item.value}
