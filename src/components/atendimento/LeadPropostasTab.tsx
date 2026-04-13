@@ -698,34 +698,66 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
       // Create a temporary container to render the template
       const container = document.createElement("div");
       container.style.position = "fixed";
-      container.style.left = "-9999px";
+      container.style.left = "0";
       container.style.top = "0";
-      container.style.width = "800px";
+      container.style.width = "794px";
       container.style.backgroundColor = "#fff";
+      container.style.opacity = "0";
+      container.style.pointerEvents = "none";
+      container.style.zIndex = "-1";
       document.body.appendChild(container);
 
       // Render using React
       const { createRoot } = await import("react-dom/client");
       const root = createRoot(container);
-      
-      await new Promise<void>((resolve) => {
-        root.render(
-          <ProposalTemplatePremium data={templateData} />
+
+      let canvas: HTMLCanvasElement;
+
+      try {
+        root.render(<ProposalTemplatePremium data={templateData} />);
+
+        await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+        const renderedProposal = container.firstElementChild as HTMLElement | null;
+        if (!renderedProposal) {
+          throw new Error("Não foi possível renderizar a proposta para gerar o PDF.");
+        }
+
+        const images = Array.from(renderedProposal.querySelectorAll("img"));
+        await Promise.all(
+          images.map(
+            (img) =>
+              new Promise<void>((resolve) => {
+                if (img.complete) {
+                  resolve();
+                  return;
+                }
+
+                img.addEventListener("load", () => resolve(), { once: true });
+                img.addEventListener("error", () => resolve(), { once: true });
+              })
+          )
         );
-        // Wait for render and images to load
-        setTimeout(resolve, 500);
-      });
 
-      const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(container, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: "#ffffff",
-      });
+        await (document as Document & { fonts?: FontFaceSet }).fonts?.ready;
 
-      root.unmount();
-      document.body.removeChild(container);
+        const html2canvas = (await import("html2canvas")).default;
+        canvas = await html2canvas(renderedProposal, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: "#ffffff",
+          width: renderedProposal.scrollWidth,
+          height: renderedProposal.scrollHeight,
+          windowWidth: renderedProposal.scrollWidth,
+          windowHeight: renderedProposal.scrollHeight,
+          scrollX: 0,
+          scrollY: 0,
+        });
+      } finally {
+        root.unmount();
+        document.body.removeChild(container);
+      }
 
       const { default: jsPDF } = await import("jspdf");
       const imgData = canvas.toDataURL("image/jpeg", 0.95);

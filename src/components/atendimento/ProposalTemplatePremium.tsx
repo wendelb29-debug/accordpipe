@@ -43,6 +43,55 @@ export interface ProposalTemplateItem {
 const fmtCur = (v: number, cur = "BRL") =>
   v.toLocaleString("pt-BR", { style: "currency", currency: cur });
 
+const normalizeHex = (color?: string | null) => {
+  if (!color) return null;
+  const value = color.trim();
+  if (!value.startsWith("#")) return null;
+
+  const hex = value.slice(1);
+  if (hex.length === 3) {
+    return `#${hex
+      .split("")
+      .map((char) => char + char)
+      .join("")}`;
+  }
+
+  return hex.length === 6 ? value : null;
+};
+
+const withAlpha = (color: string | undefined, alpha: number, fallback: string) => {
+  const normalized = normalizeHex(color);
+  if (!normalized) return fallback;
+
+  const hex = normalized.slice(1);
+  const r = Number.parseInt(hex.slice(0, 2), 16);
+  const g = Number.parseInt(hex.slice(2, 4), 16);
+  const b = Number.parseInt(hex.slice(4, 6), 16);
+
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+const getPaymentSuffix = (paymentFrequency?: string) => {
+  const normalized = paymentFrequency?.trim().toLowerCase();
+
+  switch (normalized) {
+    case "anual":
+    case "annual":
+    case "annually":
+    case "yearly":
+      return "/ano";
+    case "único":
+    case "unico":
+    case "one_time":
+    case "once":
+      return "pagamento único";
+    case "mensal":
+    case "monthly":
+    default:
+      return "/mês";
+  }
+};
+
 const statusLabels: Record<string, { label: string; color: string }> = {
   enviada: { label: "AGUARDANDO ACEITE", color: "#D97706" },
   aceita: { label: "APROVADA", color: "#10B981" },
@@ -71,6 +120,7 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
       validityDays = 15,
       validUntil,
       primaryColor = "#1E2952",
+      secondaryColor = "#4F46E5",
       accentColor = "#10B981",
       textColor = "#1F2937",
       clientName = "Cliente",
@@ -83,10 +133,20 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
       conditions = [],
       introduction,
       description,
+      paymentFrequency,
     } = data;
 
     const statusInfo = statusLabels[status] || statusLabels.enviada;
     const computedTotal = items.length > 0 ? items.reduce((s, i) => s + i.total, 0) : totalMrr;
+    const mutedPrimary = withAlpha(primaryColor, 0.14, "rgba(30, 41, 82, 0.14)");
+    const softPrimary = withAlpha(primaryColor, 0.05, "rgba(30, 41, 82, 0.05)");
+    const mutedSecondary = withAlpha(secondaryColor, 0.3, "rgba(79, 70, 229, 0.3)");
+    const subtleText = withAlpha(textColor, 0.72, "rgba(31, 41, 55, 0.72)");
+    const faintText = withAlpha(textColor, 0.52, "rgba(31, 41, 55, 0.52)");
+    const subtleRule = withAlpha(textColor, 0.12, "rgba(31, 41, 55, 0.12)");
+    const lightZebra = withAlpha(textColor, 0.035, "rgba(31, 41, 55, 0.035)");
+    const signatureRule = withAlpha(textColor, 0.32, "rgba(31, 41, 55, 0.32)");
+    const paymentSuffix = getPaymentSuffix(paymentFrequency);
 
     const f = compact
       ? { xs: 7, sm: 8, base: 9, md: 10, lg: 12, xl: 14, xxl: 18, val: 22 }
@@ -98,12 +158,16 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
       <div
         ref={ref}
         className={cn("overflow-hidden", className)}
-        style={{ backgroundColor: "#FFFFFF", color: textColor, fontFamily: "system-ui, -apple-system, sans-serif" }}
+          style={{
+            backgroundColor: "#FFFFFF",
+            color: textColor,
+            fontFamily: "system-ui, -apple-system, sans-serif",
+          }}
       >
         {/* ── TOP BRAND LINE ── */}
-        <div style={{ height: compact ? 4 : 5, backgroundColor: primaryColor }} />
+        <div style={{ height: compact ? 4 : 6, backgroundColor: primaryColor }} />
 
-        <div style={{ padding: compact ? 20 : 36 }}>
+        <div style={{ padding: compact ? 20 : 34 }}>
           {/* ── HEADER ── */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div style={{ display: "flex", alignItems: "center", gap: compact ? 12 : 16 }}>
@@ -112,8 +176,8 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
                   src={logoUrl}
                   alt="Logo"
                   style={{
-                    height: compact ? 36 : 52,
-                    maxWidth: compact ? 80 : 140,
+                    height: compact ? 42 : 64,
+                    maxWidth: compact ? 96 : 168,
                     objectFit: "contain",
                   }}
                 />
@@ -121,10 +185,10 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
               <div>
                 <h1
                   style={{
-                    fontSize: f.xl,
+                    fontSize: compact ? f.xl + 1 : f.xxl,
                     fontWeight: 800,
                     textTransform: "uppercase",
-                    letterSpacing: "0.06em",
+                    letterSpacing: compact ? "0.07em" : "0.08em",
                     color: primaryColor,
                     margin: 0,
                     lineHeight: 1.2,
@@ -132,34 +196,34 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
                 >
                   Proposta Comercial
                 </h1>
-                <p style={{ fontSize: f.xs, color: textColor, opacity: 0.45, marginTop: 2 }}>
+                <p style={{ fontSize: f.sm, color: subtleText, margin: "4px 0 0" }}>
                   {companyRazaoSocial || companyName}
                 </p>
               </div>
             </div>
 
             <div style={{ textAlign: "right" }}>
-              <p style={{ fontSize: f.sm, fontWeight: 600, color: textColor, margin: 0 }}>
+              <p style={{ fontSize: f.sm, fontWeight: 700, color: textColor, margin: 0 }}>
                 Ref: {reference}
               </p>
-              <p style={{ fontSize: f.xs, color: textColor, opacity: 0.5, margin: "2px 0" }}>
-                Emissao: {emissionDate}
+              <p style={{ fontSize: f.xs, color: faintText, margin: "4px 0 0" }}>
+                Emissão: {emissionDate}
               </p>
-              <p style={{ fontSize: f.xs, color: textColor, opacity: 0.5, margin: 0 }}>
-                Validade: {validityDays} dias{validUntil ? ` (ate ${validUntil})` : ""}
+              <p style={{ fontSize: f.xs, color: faintText, margin: "2px 0 0" }}>
+                Validade: {validityDays} dias{validUntil ? ` (até ${validUntil})` : ""}
               </p>
               <span
                 style={{
                   display: "inline-block",
-                  marginTop: 6,
-                  padding: "2px 8px",
+                  marginTop: 10,
+                  padding: compact ? "3px 9px" : "4px 12px",
                   fontSize: f.xs,
                   fontWeight: 700,
                   textTransform: "uppercase",
                   letterSpacing: "0.05em",
                   color: "#FFFFFF",
                   backgroundColor: statusInfo.color,
-                  borderRadius: 2,
+                  borderRadius: 999,
                 }}
               >
                 {statusInfo.label}
@@ -168,35 +232,50 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
           </div>
 
           {/* ── HEADER DIVIDER ── */}
-          <div style={{ marginTop: gap, height: 2, backgroundColor: primaryColor, opacity: 0.15 }} />
+          <div
+            style={{
+              marginTop: gap,
+              height: 1,
+              background: `linear-gradient(90deg, ${primaryColor} 0%, ${mutedSecondary} 100%)`,
+            }}
+          />
 
           {/* ── INTRODUCTION ── */}
           {introduction && (
-            <p style={{ marginTop: gap, fontSize: f.base, lineHeight: 1.6, color: textColor, opacity: 0.75 }}>
+            <p style={{ marginTop: gap, fontSize: f.base, lineHeight: 1.7, color: subtleText }}>
               {introduction}
             </p>
           )}
 
           {/* ── CLIENT / VENDOR ── */}
-          <div style={{ marginTop: gap, display: "grid", gridTemplateColumns: "1fr 1fr", gap: compact ? 16 : 28 }}>
+          <div
+            style={{
+              marginTop: gap,
+              paddingBottom: compact ? 12 : 18,
+              borderBottom: `1px solid ${subtleRule}`,
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: compact ? 16 : 28,
+            }}
+          >
             <div>
-              <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor, opacity: 0.5, margin: "0 0 4px 0" }}>
+              <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor, margin: "0 0 6px 0" }}>
                 Cliente
               </p>
               <p style={{ fontSize: f.md, fontWeight: 700, color: textColor, margin: 0 }}>{clientName}</p>
               {clientDocument && (
-                <p style={{ fontSize: f.xs, color: textColor, opacity: 0.5, margin: "2px 0 0" }}>
+                <p style={{ fontSize: f.xs, color: faintText, margin: "4px 0 0" }}>
                   {clientDocument.replace(/\D/g, "").length <= 11 ? "CPF" : "CNPJ"}: {clientDocument}
                 </p>
               )}
             </div>
             <div>
-              <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor, opacity: 0.5, margin: "0 0 4px 0" }}>
+              <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor, margin: "0 0 6px 0" }}>
                 Consultor
               </p>
               <p style={{ fontSize: f.md, fontWeight: 700, color: textColor, margin: 0 }}>{vendorName}</p>
               {vendorEmail && (
-                <p style={{ fontSize: f.xs, color: textColor, opacity: 0.5, margin: "2px 0 0" }}>{vendorEmail}</p>
+                <p style={{ fontSize: f.xs, color: faintText, margin: "4px 0 0" }}>{vendorEmail}</p>
               )}
             </div>
           </div>
@@ -204,23 +283,23 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
           {/* ── SERVICES TABLE ── */}
           {items.length > 0 && (
             <div style={{ marginTop: gap }}>
-              <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor, opacity: 0.5, margin: "0 0 8px 0" }}>
-                Servicos Contratados
+              <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor, margin: "0 0 10px 0" }}>
+                Serviços Contratados
               </p>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: f.base }}>
                 <thead>
                   <tr>
-                    {["Servico", "Qtd", "Unitario", "Desc.", "Total"].map((h, i) => (
+                    {["Serviço", "Qtd", "Unitário", "Desc.", "Total"].map((h, i) => (
                       <th
                         key={h}
                         style={{
-                          padding: compact ? "5px 6px" : "8px 10px",
+                          padding: compact ? "6px 6px" : "9px 10px",
                           fontWeight: 700,
                           fontSize: f.sm,
                           color: primaryColor,
                           textAlign: i === 0 ? "left" : i === 1 || i === 3 ? "center" : "right",
-                          borderBottom: `2px solid ${primaryColor}25`,
-                          backgroundColor: `${primaryColor}06`,
+                          borderBottom: `1px solid ${mutedPrimary}`,
+                          backgroundColor: softPrimary,
                         }}
                       >
                         {h}
@@ -236,15 +315,15 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
                           ? `${row.discountValue}%`
                           : fmtCur(row.discountValue, currency)
                         : "—";
-                    const bg = i % 2 !== 0 ? `${textColor}04` : "transparent";
+                    const bg = i % 2 !== 0 ? lightZebra : "transparent";
                     const cellPad = compact ? "5px 6px" : "7px 10px";
                     return (
-                      <tr key={i} style={{ backgroundColor: bg, borderBottom: `1px solid ${textColor}08` }}>
+                      <tr key={i} style={{ backgroundColor: bg, borderBottom: `1px solid ${subtleRule}` }}>
                         <td style={{ padding: cellPad, fontWeight: 500 }}>{row.name}</td>
                         <td style={{ padding: cellPad, textAlign: "center" }}>{row.quantity}</td>
                         <td style={{ padding: cellPad, textAlign: "right" }}>{fmtCur(row.unitValue, currency)}</td>
-                        <td style={{ padding: cellPad, textAlign: "center", opacity: 0.45 }}>{discStr}</td>
-                        <td style={{ padding: cellPad, textAlign: "right", fontWeight: 700 }}>{fmtCur(row.total, currency)}</td>
+                        <td style={{ padding: cellPad, textAlign: "center", color: faintText }}>{discStr}</td>
+                        <td style={{ padding: cellPad, textAlign: "right", fontWeight: 700, color: primaryColor }}>{fmtCur(row.total, currency)}</td>
                       </tr>
                     );
                   })}
@@ -258,34 +337,37 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
             <div
               style={{
                 marginTop: gap + 4,
-                paddingTop: compact ? 10 : 16,
-                borderTop: `2px solid ${primaryColor}20`,
+                paddingTop: compact ? 12 : 18,
+                borderTop: `1px solid ${mutedPrimary}`,
                 display: "flex",
-                alignItems: "baseline",
+                flexDirection: "column",
+                alignItems: "flex-end",
                 justifyContent: "flex-end",
-                gap: 8,
+                gap: compact ? 4 : 6,
               }}
             >
-              <span style={{ fontSize: f.sm, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: textColor, opacity: 0.4 }}>
+              <span style={{ fontSize: f.sm, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: faintText }}>
                 Investimento Mensal
               </span>
-              <span style={{ fontSize: f.val, fontWeight: 800, color: accentColor, lineHeight: 1 }}>
-                {fmtCur(computedTotal, currency)}
-              </span>
-              <span style={{ fontSize: f.xs, color: textColor, opacity: 0.35 }}>/mes</span>
+              <div style={{ display: "flex", alignItems: "baseline", gap: compact ? 6 : 8 }}>
+                <span style={{ fontSize: compact ? f.val + 2 : f.val + 4, fontWeight: 800, color: accentColor, lineHeight: 1 }}>
+                  {fmtCur(computedTotal, currency)}
+                </span>
+                <span style={{ fontSize: f.sm, color: subtleText, fontWeight: 500 }}>{paymentSuffix}</span>
+              </div>
             </div>
           )}
 
           {/* ── CONDITIONS ── */}
           {conditions.length > 0 && (
-            <div style={{ marginTop: gap }}>
-              <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor, opacity: 0.5, margin: "0 0 6px 0" }}>
-                Condicoes Comerciais
+            <div style={{ marginTop: gap, paddingTop: compact ? 10 : 14, borderTop: `1px solid ${subtleRule}` }}>
+              <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor, margin: "0 0 8px 0" }}>
+                Condições Comerciais
               </p>
               {conditions.map((item, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: compact ? 3 : 5 }}>
+                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: compact ? 4 : 6 }}>
                   <span style={{ color: primaryColor, fontWeight: 700, fontSize: f.sm, lineHeight: "1.5" }}>•</span>
-                  <span style={{ fontSize: f.sm, color: textColor, opacity: 0.65, lineHeight: 1.5 }}>{item}</span>
+                  <span style={{ fontSize: f.sm, color: subtleText, lineHeight: 1.6 }}>{item}</span>
                 </div>
               ))}
             </div>
@@ -293,20 +375,23 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
 
           {/* ── DESCRIPTION / NOTES ── */}
           {description && (
-            <div style={{ marginTop: gap }}>
-              <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor, opacity: 0.5, margin: "0 0 4px 0" }}>
-                Observacoes
+            <div style={{ marginTop: gap, paddingTop: compact ? 10 : 14, borderTop: `1px solid ${subtleRule}` }}>
+              <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: primaryColor, margin: "0 0 6px 0" }}>
+                Observações
               </p>
-              <p style={{ fontSize: f.sm, color: textColor, opacity: 0.6, lineHeight: 1.5, whiteSpace: "pre-wrap", margin: 0 }}>
+              <p style={{ fontSize: f.sm, color: subtleText, lineHeight: 1.6, whiteSpace: "pre-wrap", margin: 0 }}>
                 {description}
               </p>
             </div>
           )}
 
           {/* ── SIGNATURE BLOCK ── */}
-          <div style={{ marginTop: compact ? 24 : 40 }}>
-            <p style={{ textAlign: "center", fontSize: f.xs, color: textColor, opacity: 0.35, margin: "0 0 16px 0" }}>
-              Documento com validade juridica conforme MP 2.200-2/2001
+          <div style={{ marginTop: compact ? 24 : 40, paddingTop: compact ? 14 : 20, borderTop: `1px solid ${subtleRule}` }}>
+            <p style={{ textAlign: "center", fontSize: f.xs, color: faintText, margin: "0 0 4px 0" }}>
+              Documento com validade jurídica conforme MP 2.200-2/2001
+            </p>
+            <p style={{ textAlign: "center", fontSize: f.xs, color: faintText, margin: "0 0 18px 0" }}>
+              Assinatura realizada digitalmente via plataforma
             </p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: compact ? 24 : 48 }}>
               {[
@@ -314,11 +399,11 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
                 { name: clientName, role: "CONTRATANTE" },
               ].map((party) => (
                 <div key={party.role} style={{ textAlign: "center" }}>
-                  <div style={{ borderBottom: `1px solid ${textColor}30`, height: compact ? 28 : 40 }} />
-                  <p style={{ fontSize: f.md, fontWeight: 600, color: textColor, opacity: 0.75, margin: "6px 0 0" }}>
+                  <div style={{ borderBottom: `1px solid ${signatureRule}`, height: compact ? 30 : 44 }} />
+                  <p style={{ fontSize: f.md, fontWeight: 700, color: textColor, margin: "8px 0 0" }}>
                     {party.name}
                   </p>
-                  <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: primaryColor, opacity: 0.4, margin: "2px 0 0" }}>
+                  <p style={{ fontSize: f.xs, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: primaryColor, margin: "3px 0 0" }}>
                     {party.role}
                   </p>
                 </div>
@@ -327,13 +412,13 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
           </div>
 
           {/* ── FOOTER ── */}
-          <div style={{ marginTop: compact ? 20 : 32, borderTop: `1px solid ${textColor}10`, paddingTop: compact ? 8 : 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", fontSize: f.xs, color: textColor, opacity: 0.3 }}>
+          <div style={{ marginTop: compact ? 20 : 32, borderTop: `1px solid ${subtleRule}`, paddingTop: compact ? 10 : 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, fontSize: f.xs, color: subtleText }}>
               <div>
                 <p style={{ margin: 0 }}>{companyRazaoSocial || companyName} — CNPJ {companyCnpj || "00.000.000/0000-00"}</p>
-                <p style={{ margin: "1px 0 0" }}>{companyEmail || "contato@empresa.com"} — {companyPhone || "(00) 00000-0000"}</p>
+                <p style={{ margin: "3px 0 0" }}>{companyEmail || "contato@empresa.com"} — {companyPhone || "(00) 00000-0000"}</p>
               </div>
-              <p style={{ margin: 0 }}>Documento gerado automaticamente</p>
+              <p style={{ margin: 0, whiteSpace: "nowrap" }}>Documento gerado automaticamente</p>
             </div>
           </div>
         </div>
