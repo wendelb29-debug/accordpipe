@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
         phone: telefone.trim().substring(0, 30),
         cidade: cidade ? String(cidade).trim().substring(0, 100) : null,
         notes: fullNotes,
-        tags: resolvedFormId ? ["formulario"] : ["landing-page"],
+        tags: resolvedFormId ? [...formTags, "formulario"] : ["landing-page"],
         stage: "novos",
         created_by_name: nome.trim().substring(0, 200),
         form_id: resolvedFormId,
