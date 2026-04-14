@@ -50,12 +50,8 @@ export function CreateDemandModal({ open, onOpenChange, contact, companyId, last
     if (!open || !companyId) return;
     setLoadingWs(true);
     const fetchWorkspaces = async () => {
-      const { data } = await supabase
-        .from("workspaces")
-        .select("id, name, color")
-        .eq("company_id", companyId)
-        .eq("is_active", true)
-        .order("name");
+      const query = supabase.from("workspaces").select("id, name, color");
+      const { data } = await query.eq("company_id", companyId).eq("is_active", true);
       setWorkspaces((data || []) as WorkspaceOption[]);
       setLoadingWs(false);
     };
