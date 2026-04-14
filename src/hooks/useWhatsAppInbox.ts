@@ -17,6 +17,9 @@ export interface InboxContact {
   company_id: string;
   workspace_id: string | null;
   lead_id: string | null;
+  conversation_status: string;
+  created_at: string;
+  notes: string | null;
 }
 
 export interface InboxMessage {
@@ -184,6 +187,25 @@ export function useWhatsAppInbox() {
     await assignContact(contactId, newUserId);
   }, [assignContact]);
 
+  // Update conversation status
+  const updateConversationStatus = useCallback(async (contactId: string, status: string) => {
+    const { error } = await supabase
+      .from("whatsapp_contacts")
+      .update({ conversation_status: status } as any)
+      .eq("id", contactId);
+
+    if (error) {
+      toast.error("Erro ao atualizar status");
+      return;
+    }
+    toast.success(
+      status === "encerrado" ? "Atendimento encerrado!" :
+      status === "em_atendimento" ? "Atendimento reaberto!" :
+      "Status atualizado!"
+    );
+    fetchContacts();
+  }, [fetchContacts]);
+
   // Check Z-API connection status
   const checkConnection = useCallback(async () => {
     if (!companyId) {
@@ -311,6 +333,7 @@ export function useWhatsAppInbox() {
     checkConnection,
     assignContact,
     transferContact,
+    updateConversationStatus,
     companyId,
   };
 }

@@ -3,16 +3,18 @@ import { toast } from "sonner";
 import {
   Send, Paperclip, Smile, Mic, MoreVertical, Bot, Loader2,
   Check, CheckCheck, Clock, AlertCircle, UserPlus, ArrowRightLeft,
-  Phone, Info, Tag, ExternalLink,
+  Phone, Info, Tag, ExternalLink, CheckCircle2, XCircle,
+  KanbanSquare, RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { InboxContact, InboxMessage } from "@/hooks/useWhatsAppInbox";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -26,6 +28,10 @@ interface InboxChatProps {
   onAssignToMe: (contactId: string) => void;
   isAdmin: boolean;
   companyId: string | null | undefined;
+  onToggleInfo: () => void;
+  showInfo: boolean;
+  onCreateDemand: () => void;
+  onUpdateStatus: (contactId: string, status: string) => void;
 }
 
 function MessageStatusIcon({ status }: { status: string }) {
@@ -38,7 +44,10 @@ function MessageStatusIcon({ status }: { status: string }) {
   }
 }
 
-export function InboxChat({ contact, messages, onSendMessage, onTransfer, onAssignToMe, isAdmin, companyId }: InboxChatProps) {
+export function InboxChat({
+  contact, messages, onSendMessage, onTransfer, onAssignToMe, isAdmin,
+  companyId, onToggleInfo, showInfo, onCreateDemand, onUpdateStatus,
+}: InboxChatProps) {
   const [inputValue, setInputValue] = useState("");
   const [accordLoading, setAccordLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -86,8 +95,8 @@ export function InboxChat({ contact, messages, onSendMessage, onTransfer, onAssi
     return (
       <div className="flex-1 flex items-center justify-center bg-muted/20">
         <div className="text-center space-y-5 max-w-sm px-6">
-          <div className="h-28 w-28 mx-auto rounded-full bg-gradient-to-br from-emerald-500/10 to-primary/10 flex items-center justify-center">
-            <Send className="h-10 w-10 text-emerald-500/40" />
+          <div className="h-28 w-28 mx-auto rounded-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+            <Send className="h-10 w-10 text-primary/30" />
           </div>
           <div className="space-y-1.5">
             <h2 className="text-lg font-semibold text-foreground">Inbox Inteligente</h2>
@@ -103,6 +112,8 @@ export function InboxChat({ contact, messages, onSendMessage, onTransfer, onAssi
   const getInitials = (name: string) =>
     name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
 
+  const isEncerrado = contact.conversation_status === "encerrado";
+
   return (
     <div className="flex-1 flex flex-col min-w-0">
       {/* Chat header */}
@@ -110,42 +121,64 @@ export function InboxChat({ contact, messages, onSendMessage, onTransfer, onAssi
         <div className="flex items-center gap-3">
           <div className="relative">
             <Avatar className="h-9 w-9">
-              <AvatarFallback className="bg-emerald-500 text-white text-xs font-medium">
+              <AvatarFallback className="bg-primary/80 text-primary-foreground text-xs font-medium">
                 {getInitials(contact.name)}
               </AvatarFallback>
             </Avatar>
-            <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-card" />
+            <span className={cn(
+              "absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card",
+              contact.conversation_status === "em_atendimento" ? "bg-blue-500" :
+              contact.conversation_status === "encerrado" ? "bg-muted-foreground" : "bg-amber-500"
+            )} />
           </div>
           <div>
             <p className="text-sm font-medium text-foreground leading-tight">{contact.name}</p>
-            <p className="text-[11px] text-emerald-600 font-medium">online</p>
+            <p className="text-[11px] text-muted-foreground">{contact.phone}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-0.5">
+          {/* Encerrar / Reabrir */}
+          {isEncerrado ? (
+            <Button
+              size="sm" variant="outline"
+              className="h-8 text-xs gap-1.5 rounded-lg border-primary/20 text-primary hover:bg-primary/5"
+              onClick={() => onUpdateStatus(contact.id, "em_atendimento")}
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Reabrir
+            </Button>
+          ) : (
+            <Button
+              size="sm" variant="outline"
+              className="h-8 text-xs gap-1.5 rounded-lg border-destructive/30 text-destructive hover:bg-destructive/5"
+              onClick={() => onUpdateStatus(contact.id, "encerrado")}
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Encerrar atendimento
+            </Button>
+          )}
+
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                <Phone className="h-4 w-4" />
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={onCreateDemand}>
+                <KanbanSquare className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Ligar</TooltipContent>
+            <TooltipContent>Abrir demanda no Kanban</TooltipContent>
           </Tooltip>
+
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                <Tag className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Tags</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+              <Button
+                size="icon" variant="ghost"
+                className={cn("h-8 w-8", showInfo ? "text-primary" : "text-muted-foreground hover:text-foreground")}
+                onClick={onToggleInfo}
+              >
                 <Info className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Informações</TooltipContent>
+            <TooltipContent>Detalhes</TooltipContent>
           </Tooltip>
 
           {!contact.assigned_to && (
@@ -165,7 +198,7 @@ export function InboxChat({ contact, messages, onSendMessage, onTransfer, onAssi
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-52">
               <DropdownMenuItem onClick={() => onAssignToMe(contact.id)}>
                 <UserPlus className="h-4 w-4 mr-2" /> Assumir conversa
               </DropdownMenuItem>
@@ -174,8 +207,12 @@ export function InboxChat({ contact, messages, onSendMessage, onTransfer, onAssi
                   <ArrowRightLeft className="h-4 w-4 mr-2" /> Transferir
                 </DropdownMenuItem>
               )}
-              {(contact as any).lead_id && (
-                <DropdownMenuItem onClick={() => navigate(`/atendimento?lead=${(contact as any).lead_id}`)}>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onCreateDemand}>
+                <KanbanSquare className="h-4 w-4 mr-2" /> Abrir demanda no Kanban
+              </DropdownMenuItem>
+              {contact.lead_id && (
+                <DropdownMenuItem onClick={() => navigate(`/atendimento?lead=${contact.lead_id}`)}>
                   <ExternalLink className="h-4 w-4 mr-2" /> Abrir no CRM
                 </DropdownMenuItem>
               )}
@@ -210,7 +247,7 @@ export function InboxChat({ contact, messages, onSendMessage, onTransfer, onAssi
                   className={cn(
                     "relative max-w-[70%] rounded-2xl px-3 pt-2 pb-1.5 text-sm shadow-sm transition-all",
                     msg.direction === "outbound"
-                      ? "bg-emerald-500 text-white rounded-br-md"
+                      ? "bg-primary text-primary-foreground rounded-br-md"
                       : "bg-card text-foreground border border-border/50 rounded-bl-md"
                   )}
                 >
@@ -220,7 +257,7 @@ export function InboxChat({ contact, messages, onSendMessage, onTransfer, onAssi
                   <div className="flex items-center justify-end gap-1 mt-0.5">
                     <span className={cn(
                       "text-[10px]",
-                      msg.direction === "outbound" ? "text-white/60" : "text-muted-foreground"
+                      msg.direction === "outbound" ? "text-primary-foreground/60" : "text-muted-foreground"
                     )}>
                       {format(new Date(msg.created_at), "HH:mm", { locale: ptBR })}
                     </span>
@@ -228,8 +265,8 @@ export function InboxChat({ contact, messages, onSendMessage, onTransfer, onAssi
                   </div>
                   {msg.status === "failed" && (
                     <div className="flex items-center gap-1 mt-0.5">
-                      <AlertCircle className="h-3 w-3 text-red-400" />
-                      <span className="text-[10px] text-red-400">Não entregue</span>
+                      <AlertCircle className="h-3 w-3 text-destructive" />
+                      <span className="text-[10px] text-destructive">Não entregue</span>
                     </div>
                   )}
                 </div>
@@ -252,7 +289,7 @@ export function InboxChat({ contact, messages, onSendMessage, onTransfer, onAssi
           <TooltipTrigger asChild>
             <Button
               size="icon" variant="ghost"
-              className="h-8 w-8 shrink-0 text-emerald-600 hover:bg-emerald-500/10"
+              className="h-8 w-8 shrink-0 text-primary hover:bg-primary/10"
               onClick={handleAccordAI}
               disabled={accordLoading}
             >
@@ -275,9 +312,9 @@ export function InboxChat({ contact, messages, onSendMessage, onTransfer, onAssi
         {inputValue.trim() ? (
           <Button
             size="icon" onClick={handleSend}
-            className="h-9 w-9 shrink-0 rounded-full bg-emerald-500 hover:bg-emerald-600 shadow-sm transition-all"
+            className="h-9 w-9 shrink-0 rounded-full bg-primary hover:bg-primary/90 shadow-sm transition-all"
           >
-            <Send className="h-4 w-4 text-white" />
+            <Send className="h-4 w-4 text-primary-foreground" />
           </Button>
         ) : (
           <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground">
