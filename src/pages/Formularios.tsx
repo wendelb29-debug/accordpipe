@@ -57,10 +57,11 @@ export default function Formularios() {
     if (!formName.trim()) { toast.error("Nome é obrigatório"); return; }
     if (!selectedWorkspaceId) { toast.error("Selecione o workspace de destino"); return; }
     const fields = ["nome", "telefone", ...selectedFields.filter((f) => f !== "nome" && f !== "telefone")];
+    const payload = { name: formName.trim(), description: formDescription.trim() || null, fields, workspace_id: selectedWorkspaceId, tags: formTags.length > 0 ? formTags : null };
     if (editingForm) {
-      await updateForm(editingForm.id, { name: formName.trim(), description: formDescription.trim() || null, fields, workspace_id: selectedWorkspaceId } as any);
+      await updateForm(editingForm.id, payload as any);
     } else {
-      await createForm({ name: formName.trim(), description: formDescription.trim() || null, fields, workspace_id: selectedWorkspaceId } as any);
+      await createForm(payload as any);
     }
     setDialogOpen(false);
   };
