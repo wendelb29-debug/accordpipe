@@ -28,6 +28,8 @@ export default function Formularios() {
   const [formDescription, setFormDescription] = useState("");
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState("");
   const [selectedFields, setSelectedFields] = useState<string[]>(["nome", "telefone", "email", "empresa"]);
+  const [formTags, setFormTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
 
   const openNew = () => {
     setEditingForm(null);
@@ -35,6 +37,8 @@ export default function Formularios() {
     setFormDescription("");
     setSelectedWorkspaceId("");
     setSelectedFields(["nome", "telefone", "email", "empresa"]);
+    setFormTags([]);
+    setTagInput("");
     setDialogOpen(true);
   };
 
@@ -44,6 +48,8 @@ export default function Formularios() {
     setFormDescription(form.description || "");
     setSelectedWorkspaceId(form.workspace_id || "");
     setSelectedFields(form.fields || ["nome", "telefone"]);
+    setFormTags(form.tags || []);
+    setTagInput("");
     setDialogOpen(true);
   };
 
@@ -51,10 +57,11 @@ export default function Formularios() {
     if (!formName.trim()) { toast.error("Nome é obrigatório"); return; }
     if (!selectedWorkspaceId) { toast.error("Selecione o workspace de destino"); return; }
     const fields = ["nome", "telefone", ...selectedFields.filter((f) => f !== "nome" && f !== "telefone")];
+    const payload = { name: formName.trim(), description: formDescription.trim() || null, fields, workspace_id: selectedWorkspaceId, tags: formTags.length > 0 ? formTags : null };
     if (editingForm) {
-      await updateForm(editingForm.id, { name: formName.trim(), description: formDescription.trim() || null, fields, workspace_id: selectedWorkspaceId } as any);
+      await updateForm(editingForm.id, payload as any);
     } else {
-      await createForm({ name: formName.trim(), description: formDescription.trim() || null, fields, workspace_id: selectedWorkspaceId } as any);
+      await createForm(payload as any);
     }
     setDialogOpen(false);
   };
@@ -185,6 +192,15 @@ export default function Formularios() {
                       {form.description && (
                         <p className="text-xs text-muted-foreground truncate max-w-[200px]">{form.description}</p>
                       )}
+                      {form.tags && form.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {form.tags.map((tag) => (
+                            <Badge key={tag} variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
@@ -265,6 +281,47 @@ export default function Formularios() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">Selecione em qual workspace os leads deste formulário serão criados.</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Tags do formulário</Label>
+              <p className="text-xs text-muted-foreground">Tags serão aplicadas automaticamente aos leads criados por este formulário.</p>
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {formTags.map((tag) => (
+                  <Badge key={tag} variant="secondary" className="gap-1 text-xs">
+                    {tag}
+                    <button onClick={() => setFormTags(prev => prev.filter(t => t !== tag))} className="ml-0.5 hover:text-destructive">×</button>
+                  </Badge>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && tagInput.trim()) {
+                      e.preventDefault();
+                      const newTag = tagInput.trim();
+                      if (!formTags.includes(newTag)) setFormTags(prev => [...prev, newTag]);
+                      setTagInput("");
+                    }
+                  }}
+                  placeholder="Ex: Via Lead Ads, Site, Instagram..."
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (tagInput.trim() && !formTags.includes(tagInput.trim())) {
+                      setFormTags(prev => [...prev, tagInput.trim()]);
+                      setTagInput("");
+                    }
+                  }}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Campos do formulário</Label>

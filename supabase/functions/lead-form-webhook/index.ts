@@ -64,16 +64,18 @@ Deno.serve(async (req) => {
     let resolvedFormId = form_id || null;
 
     let resolvedWorkspaceId: string | null = null;
+    let formTags: string[] = [];
 
     if (!resolvedServidorId && resolvedFormId) {
       const { data: formData } = await supabaseAdmin
         .from("crm_forms")
-        .select("servidor_id, is_active, workspace_id")
+        .select("servidor_id, is_active, workspace_id, tags")
         .eq("id", resolvedFormId)
         .maybeSingle();
       if (formData?.is_active) {
         resolvedServidorId = formData.servidor_id;
         resolvedWorkspaceId = formData.workspace_id || null;
+        formTags = (formData.tags as string[]) || [];
       } else {
         resolvedFormId = null; // form inactive or not found
       }
@@ -117,7 +119,7 @@ Deno.serve(async (req) => {
         phone: telefone.trim().substring(0, 30),
         cidade: cidade ? String(cidade).trim().substring(0, 100) : null,
         notes: fullNotes,
-        tags: resolvedFormId ? ["formulario"] : ["landing-page"],
+        tags: resolvedFormId ? [...formTags, "formulario"] : ["landing-page"],
         stage: "novos",
         created_by_name: nome.trim().substring(0, 200),
         form_id: resolvedFormId,
