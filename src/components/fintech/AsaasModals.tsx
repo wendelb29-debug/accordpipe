@@ -25,8 +25,15 @@ async function callAsaasApi(action: string, tenantId: string, params: Record<str
   const { data, error } = await supabase.functions.invoke("asaas-api", {
     body: { action, tenant_id: tenantId, ...params },
   });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
+  if (error) {
+    console.error("[AsaasModals] invoke error:", error);
+    throw new Error("Erro de comunicação com o servidor. Tente novamente.");
+  }
+  if (data?.success === false || data?.error) {
+    const msg = data?.details || data?.message || data?.error || "Erro desconhecido";
+    console.error("[AsaasModals] API error:", data?.code, msg);
+    throw new Error(msg);
+  }
   return data;
 }
 
