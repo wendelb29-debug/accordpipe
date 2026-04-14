@@ -1,0 +1,1 @@
+UPDATE tenant_fintech_integrations SET environment = 'production', connection_status = 'connected' WHERE id = '409cb52f-4ac0-4a94-b1dc-3dbf43e560e8' AND api_key_encrypted LIKE '$aact_prod%';
