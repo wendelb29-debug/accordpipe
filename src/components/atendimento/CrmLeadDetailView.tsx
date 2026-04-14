@@ -796,6 +796,17 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <div className="min-w-0">
               <h2 className="text-xs sm:text-sm font-bold text-foreground truncate">{lead.source} - {lead.contact_name || lead.company_name}</h2>
+              {/* Form origin tags */}
+              {lead.tags && lead.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-0.5">
+                  {lead.tags.filter(t => t !== "formulario" && t !== "landing-page" && t !== "Devolvido" && t !== "Pendente de Correção").map(tag => (
+                    <Badge key={tag} variant="outline" className="text-[10px] h-5 gap-1 border-emerald-500/30 text-emerald-600 bg-emerald-500/5">
+                      <Plus className="h-2.5 w-2.5" />
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap justify-end">
