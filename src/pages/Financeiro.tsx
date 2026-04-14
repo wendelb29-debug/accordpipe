@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { toast } from "sonner";
-import { GerarPixModal, LinkPagamentoModal, RecorrenciaModal, NovaCobrancaModal } from "@/components/fintech/EduzzModals";
+import { GerarPixModal, LinkPagamentoModal, RecorrenciaModal, NovaCobrancaModal } from "@/components/fintech/AsaasModals";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip,
   ResponsiveContainer, CartesianGrid,
