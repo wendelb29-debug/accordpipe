@@ -396,6 +396,60 @@ export function Sidebar() {
           </Tooltip>
         )}
 
+        {/* Language Selector */}
+        {collapsed ? (
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex justify-center w-full p-2 rounded-lg text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors mb-1">
+                    <Globe className="h-4 w-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="right" align="end" className="w-52 rounded-xl">
+                  {LANGUAGES.map((lang) => (
+                    <DropdownMenuItem
+                      key={lang.code}
+                      className="rounded-lg cursor-pointer gap-2.5 text-xs"
+                      onClick={() => { setCurrentLang(lang.code); localStorage.setItem("accord-lang", lang.code); }}
+                    >
+                      <span className="text-[10px] font-bold text-muted-foreground w-5 shrink-0">{lang.flag}</span>
+                      <span className="flex-1">{lang.label}</span>
+                      {currentLang === lang.code && <Check className="h-3.5 w-3.5 text-primary" />}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="text-xs">Idioma</TooltipContent>
+          </Tooltip>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-all duration-200 text-[13px] font-medium mb-1">
+                <Globe className="h-[18px] w-[18px] shrink-0" />
+                <span className="flex-1 text-left truncate">
+                  {LANGUAGES.find(l => l.code === currentLang)?.flag}{" "}
+                  {LANGUAGES.find(l => l.code === currentLang)?.label}
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="right" align="end" className="w-56 rounded-xl">
+              {LANGUAGES.map((lang) => (
+                <DropdownMenuItem
+                  key={lang.code}
+                  className="rounded-lg cursor-pointer gap-2.5 text-xs"
+                  onClick={() => { setCurrentLang(lang.code); localStorage.setItem("accord-lang", lang.code); }}
+                >
+                  <span className="text-[10px] font-bold text-muted-foreground w-5 shrink-0">{lang.flag}</span>
+                  <span className="flex-1">{lang.label}</span>
+                  {currentLang === lang.code && <Check className="h-3.5 w-3.5 text-primary" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             <button
