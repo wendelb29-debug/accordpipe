@@ -333,6 +333,7 @@ export function useWhatsAppInbox() {
     checkConnection,
     assignContact,
     transferContact,
+    updateConversationStatus,
     companyId,
   };
 }
