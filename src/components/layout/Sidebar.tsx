@@ -11,7 +11,6 @@ import {
   Receipt,
   FileText,
   BarChart3,
-  
   Users,
   LogOut,
   MessageSquare,
@@ -19,19 +18,25 @@ import {
   Rocket,
   ClipboardList,
   Trash2,
-  PanelLeftClose,
-  PanelLeftOpen,
   Pin,
   PinOff,
   Settings,
   ChevronDown,
   TrendingUp,
+  Globe,
+  Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const navigation = [
   { name: "Início", href: "/home", icon: Home, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
