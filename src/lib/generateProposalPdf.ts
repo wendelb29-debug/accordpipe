@@ -323,12 +323,20 @@ export async function generateProposalPdf(data: ProposalTemplateData, filename: 
     pdf.setTextColor(255, 255, 255);
     pdf.text("INVESTIMENTO MENSAL", ML + 8, y + bannerH / 2 + 1);
 
+    const totalStr = fmtCur(computedTotal, currency);
+    const mesStr = "/mês";
+    pdf.setFontSize(8);
+    pdf.setFont("helvetica", "normal");
+    const mesW = pdf.getTextWidth(mesStr);
     pdf.setFontSize(16);
-    pdf.text(fmtCur(computedTotal, currency), W - MR - 20, y + bannerH / 2 + 1.5);
+    pdf.setFont("helvetica", "bold");
+    const totalW = pdf.getTextWidth(totalStr);
+    const totalX = W - MR - 6 - mesW - totalW;
+    pdf.text(totalStr, totalX, y + bannerH / 2 + 2);
 
     pdf.setFontSize(8);
     pdf.setFont("helvetica", "normal");
-    pdf.text("/mês", W - MR - 4, y + bannerH / 2 + 1, { align: "right" });
+    pdf.text(mesStr, totalX + totalW + 2, y + bannerH / 2 + 1);
 
     y += bannerH + 8;
   }
