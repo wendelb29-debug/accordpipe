@@ -28,6 +28,7 @@ import { toast as sonnerToast } from "sonner";
 import { BrandIdentityFields } from "@/components/empresas/BrandIdentityFields";
 import { CompanyFormData } from "@/components/empresas/types";
 import { PermissionsEditor } from "@/components/usuarios/PermissionsEditor";
+import { AsaasIntegrationTab } from "@/components/servidores/AsaasIntegrationTab";
 
 interface Company {
   id: string;
