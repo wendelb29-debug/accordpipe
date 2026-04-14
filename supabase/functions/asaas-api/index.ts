@@ -153,15 +153,25 @@ Deno.serve(async (req) => {
 
     /* ──────── GENERATE WEBHOOK TOKEN ──────── */
     if (action === "generate_webhook_token") {
-      const integration = await getIntegration();
-      if (!integration) {
-        return new Response(JSON.stringify({ error: "Integração não encontrada" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
+      let integration = await getIntegration();
       const newToken = crypto.randomUUID();
-      await supabaseAdmin
-        .from("tenant_fintech_integrations")
-        .update({ webhook_auth_token: newToken, updated_by: userId } as any)
-        .eq("id", integration.id);
+      if (!integration) {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const webhookUrl = `${supabaseUrl}/functions/v1/asaas-webhook?tenant=${tenant_id}`;
+        await supabaseAdmin
+          .from("tenant_fintech_integrations")
+          .insert({
+            tenant_id, provider: "asaas", environment: "sandbox",
+            api_key_encrypted: "", api_key_masked: "",
+            webhook_url: webhookUrl, webhook_auth_token: newToken,
+            created_by: userId, updated_by: userId,
+          } as any);
+      } else {
+        await supabaseAdmin
+          .from("tenant_fintech_integrations")
+          .update({ webhook_auth_token: newToken, updated_by: userId } as any)
+          .eq("id", integration.id);
+      }
 
       return new Response(JSON.stringify({ success: true, token: newToken }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
