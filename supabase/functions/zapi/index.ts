@@ -36,8 +36,8 @@ Deno.serve(async (req) => {
 
     if (credsError || !creds) {
       return new Response(
-        JSON.stringify({ error: "API credentials not found for this company" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: "API credentials not found for this company" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
