@@ -11,7 +11,7 @@ import {
   Receipt,
   FileText,
   BarChart3,
-  FileSignature,
+  
   Users,
   LogOut,
   MessageSquare,
