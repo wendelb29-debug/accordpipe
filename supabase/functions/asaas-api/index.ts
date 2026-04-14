@@ -10,6 +10,18 @@ const ASAAS_URLS: Record<string, string> = {
   production: "https://api.asaas.com/api/v3",
 };
 
+const ASAAS_ENVIRONMENT_MISMATCH_MESSAGE = "A chave de API informada não pertence a este ambiente";
+
+class HttpError extends Error {
+  status: number;
+
+  constructor(message: string, status = 400) {
+    super(message);
+    this.name = "HttpError";
+    this.status = status;
+  }
+}
+
 function maskApiKey(key: string): string {
   if (key.length <= 10) return "****";
   return key.substring(0, 10) + "****";
@@ -17,6 +29,22 @@ function maskApiKey(key: string): string {
 
 function json(body: any, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+}
+
+function getAsaasErrorDescription(data: any, fallback: string) {
+  if (Array.isArray(data?.errors) && data.errors.length > 0) {
+    const firstDescription = data.errors.find((item: any) => typeof item?.description === "string")?.description;
+    if (firstDescription) return firstDescription;
+  }
+
+  if (typeof data?.message === "string" && data.message.trim()) return data.message;
+  if (typeof data?.error === "string" && data.error.trim()) return data.error;
+
+  return fallback;
+}
+
+function isEnvironmentMismatch(message: string) {
+  return /não pertence a este ambiente/i.test(message);
 }
 
 Deno.serve(async (req) => {
@@ -58,11 +86,66 @@ Deno.serve(async (req) => {
         headers: { "Content-Type": "application/json", "access_token": apiKey },
         ...(payload ? { body: JSON.stringify(payload) } : {}),
       });
-      const data = await res.json();
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
+      }
       return { ok: res.ok, status: res.status, data };
     }
 
-    async function ensureCustomer(apiKey: string, env: string, localId: string, name: string, email?: string, cpfCnpj?: string, phone?: string) {
+    async function callAsaasWithEnvironmentFallback(integration: any, method: string, path: string, payload?: any) {
+      const currentEnvironment = integration?.environment || "sandbox";
+      const primaryResult = await callAsaas(method, path, integration.api_key_encrypted, currentEnvironment, payload);
+      const primaryError = getAsaasErrorDescription(primaryResult.data, "Erro ao comunicar com o Asaas");
+
+      if (primaryResult.ok || !isEnvironmentMismatch(primaryError)) {
+        return {
+          ...primaryResult,
+          environment: currentEnvironment,
+          environmentAutoCorrected: false,
+          errorMessage: primaryError,
+        };
+      }
+
+      const fallbackEnvironment = currentEnvironment === "sandbox" ? "production" : "sandbox";
+      const fallbackResult = await callAsaas(method, path, integration.api_key_encrypted, fallbackEnvironment, payload);
+      const fallbackError = getAsaasErrorDescription(fallbackResult.data, primaryError);
+
+      if (fallbackResult.ok) {
+        await supabaseAdmin
+          .from("tenant_fintech_integrations")
+          .update({
+            environment: fallbackEnvironment,
+            connection_status: "connected",
+            last_connection_check_at: new Date().toISOString(),
+            last_connection_error: null,
+            updated_by: userId,
+          } as any)
+          .eq("id", integration.id);
+
+        integration.environment = fallbackEnvironment;
+
+        return {
+          ...fallbackResult,
+          environment: fallbackEnvironment,
+          environmentAutoCorrected: true,
+          errorMessage: fallbackError,
+        };
+      }
+
+      return {
+        ...fallbackResult,
+        environment: currentEnvironment,
+        environmentAutoCorrected: false,
+        errorMessage: isEnvironmentMismatch(fallbackError)
+          ? `${ASAAS_ENVIRONMENT_MISMATCH_MESSAGE}. Verifique se a chave foi gerada em Sandbox ou Produção e salve no ambiente correspondente.`
+          : fallbackError,
+      };
+    }
+
+    async function ensureCustomer(integration: any, localId: string, name: string, email?: string, cpfCnpj?: string, phone?: string) {
       const { data: existing } = await supabaseAdmin
         .from("tenant_asaas_customers")
         .select("asaas_customer_id")
@@ -71,10 +154,10 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (existing) return (existing as any).asaas_customer_id;
 
-      const result = await callAsaas("POST", "/customers", apiKey, env, {
+      const result = await callAsaasWithEnvironmentFallback(integration, "POST", "/customers", {
         name, email, cpfCnpj, phone, externalReference: localId,
       });
-      if (!result.ok) throw new Error(result.data?.errors?.[0]?.description || "Erro ao criar cliente no Asaas");
+      if (!result.ok) throw new HttpError(result.errorMessage || "Erro ao criar cliente no Asaas", 400);
 
       await supabaseAdmin.from("tenant_asaas_customers").insert({
         tenant_id, local_customer_id: localId, asaas_customer_id: result.data.id,
@@ -107,9 +190,8 @@ Deno.serve(async (req) => {
           .update({ api_key_encrypted: api_key, api_key_masked: masked, environment: environment || "sandbox", webhook_url: webhookUrl, updated_by: userId } as any)
           .eq("id", existing.id);
       } else {
-        const token = crypto.randomUUID();
         await supabaseAdmin.from("tenant_fintech_integrations")
-          .insert({ tenant_id, provider: "asaas", environment: environment || "sandbox", api_key_encrypted: api_key, api_key_masked: masked, webhook_url: webhookUrl, webhook_auth_token: token, created_by: userId, updated_by: userId } as any);
+          .insert({ tenant_id, provider: "asaas", environment: environment || "sandbox", api_key_encrypted: api_key, api_key_masked: masked, webhook_url: webhookUrl, webhook_auth_token: null, created_by: userId, updated_by: userId } as any);
       }
       await auditLog(existing ? "asaas_credentials_updated" : "asaas_integration_created", tenant_id, { environment: environment || "sandbox" });
       return json({ success: true });
@@ -119,36 +201,32 @@ Deno.serve(async (req) => {
     if (action === "test_connection") {
       const integration = await getIntegration();
       if (!integration?.api_key_encrypted) return json({ error: "Credenciais não configuradas" }, 400);
-      const { ok, data } = await callAsaas("GET", "/finance/balance", integration.api_key_encrypted, integration.environment);
+      const { ok, data, errorMessage, environment, environmentAutoCorrected } = await callAsaasWithEnvironmentFallback(integration, "GET", "/finance/balance");
       const newStatus = ok ? "connected" : "error";
       await supabaseAdmin.from("tenant_fintech_integrations")
-        .update({ connection_status: newStatus, last_connection_check_at: new Date().toISOString(), last_connection_error: ok ? null : (data?.errors?.[0]?.description || "Falha na conexão") } as any)
+        .update({
+          connection_status: newStatus,
+          environment,
+          last_connection_check_at: new Date().toISOString(),
+          last_connection_error: ok ? null : errorMessage,
+        } as any)
         .eq("id", integration.id);
-      await auditLog("asaas_connection_tested", tenant_id, { status: newStatus });
-      return json({ status: newStatus, balance: ok ? data : null });
+      await auditLog("asaas_connection_tested", tenant_id, { status: newStatus, environment, environment_auto_corrected: environmentAutoCorrected });
+      return json({ status: newStatus, balance: ok ? data : null, environment, environment_auto_corrected: environmentAutoCorrected, error: ok ? null : errorMessage });
     }
 
     /* ──────── GENERATE WEBHOOK TOKEN ──────── */
     if (action === "generate_webhook_token") {
-      let integration = await getIntegration();
-      const newToken = crypto.randomUUID();
-      if (!integration) {
-        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-        const webhookUrl = `${supabaseUrl}/functions/v1/asaas-webhook?tenant=${tenant_id}`;
-        await supabaseAdmin.from("tenant_fintech_integrations")
-          .insert({ tenant_id, provider: "asaas", environment: "sandbox", api_key_encrypted: "", api_key_masked: "", webhook_url: webhookUrl, webhook_auth_token: newToken, created_by: userId, updated_by: userId } as any);
-      } else {
-        await supabaseAdmin.from("tenant_fintech_integrations")
-          .update({ webhook_auth_token: newToken, updated_by: userId } as any)
-          .eq("id", integration.id);
-      }
-      return json({ success: true, token: newToken });
+      return json({ error: "O token do webhook deve ser informado manualmente com o accessToken gerado no Asaas." }, 400);
     }
 
     /* ──────── CREATE/UPDATE WEBHOOK ──────── */
     if (action === "create_webhook") {
       const integration = await getIntegration();
       if (!integration?.api_key_encrypted) return json({ error: "Credenciais não configuradas" }, 400);
+      if (!integration?.webhook_auth_token) {
+        return json({ error: "Informe primeiro o accessToken do webhook gerado no Asaas." }, 400);
+      }
       const webhookPayload = {
         name: `ACCORD Webhook - ${tenant_id.substring(0, 8)}`,
         url: integration.webhook_url, email: "", enabled: true, interrupted: false, apiVersion: 3,
@@ -166,17 +244,17 @@ Deno.serve(async (req) => {
       };
       let result;
       if (integration.webhook_remote_id) {
-        result = await callAsaas("PUT", `/webhooks/${integration.webhook_remote_id}`, integration.api_key_encrypted, integration.environment, webhookPayload);
+        result = await callAsaasWithEnvironmentFallback(integration, "PUT", `/webhooks/${integration.webhook_remote_id}`, webhookPayload);
       } else {
-        result = await callAsaas("POST", "/webhooks", integration.api_key_encrypted, integration.environment, webhookPayload);
+        result = await callAsaasWithEnvironmentFallback(integration, "POST", "/webhooks", webhookPayload);
       }
       if (result.ok) {
         await supabaseAdmin.from("tenant_fintech_integrations")
-          .update({ webhook_remote_id: result.data.id || integration.webhook_remote_id, webhook_enabled: true, updated_by: userId } as any)
+          .update({ webhook_remote_id: result.data.id || integration.webhook_remote_id, webhook_enabled: true, environment: result.environment, updated_by: userId } as any)
           .eq("id", integration.id);
         await auditLog(integration.webhook_remote_id ? "asaas_webhook_updated" : "asaas_webhook_created");
       }
-      return json(result.ok ? { success: true } : { error: result.data?.errors?.[0]?.description || "Erro ao criar webhook" }, result.ok ? 200 : 400);
+      return json(result.ok ? { success: true, environment: result.environment, environment_auto_corrected: result.environmentAutoCorrected } : { error: result.errorMessage || "Erro ao criar webhook" }, result.ok ? 200 : 400);
     }
 
     /* ──────── CREATE CUSTOMER ──────── */
@@ -184,8 +262,8 @@ Deno.serve(async (req) => {
       const integration = await getIntegration();
       if (!integration?.api_key_encrypted) return json({ error: "Credenciais não configuradas" }, 400);
       const { local_customer_id, name, email, cpf_cnpj, phone } = body;
-      const asaasId = await ensureCustomer(integration.api_key_encrypted, integration.environment, local_customer_id, name, email, cpf_cnpj, phone);
-      return json({ asaas_customer_id: asaasId });
+      const asaasId = await ensureCustomer(integration, local_customer_id, name, email, cpf_cnpj, phone);
+      return json({ asaas_customer_id: asaasId, environment: integration.environment });
     }
 
     /* ──────── CREATE BILLING (BOLETO / PIX / UNDEFINED) ──────── */
@@ -216,8 +294,8 @@ Deno.serve(async (req) => {
         billingPayload.installmentValue = installment_value || (value / installment_count);
       }
 
-      const result = await callAsaas("POST", "/payments", integration.api_key_encrypted, integration.environment, billingPayload);
-      if (!result.ok) return json({ error: result.data?.errors?.[0]?.description || "Erro ao criar cobrança" }, 400);
+      const result = await callAsaasWithEnvironmentFallback(integration, "POST", "/payments", billingPayload);
+      if (!result.ok) return json({ error: result.errorMessage || "Erro ao criar cobrança" }, 400);
 
       const payment = result.data;
 
@@ -225,7 +303,7 @@ Deno.serve(async (req) => {
       let boletoDetails: any = {};
       if (billing_type === "BOLETO") {
         try {
-          const idResult = await callAsaas("GET", `/payments/${payment.id}/identificationField`, integration.api_key_encrypted, integration.environment);
+          const idResult = await callAsaasWithEnvironmentFallback(integration, "GET", `/payments/${payment.id}/identificationField`);
           if (idResult.ok) {
             boletoDetails = { identification_field: idResult.data.identificationField, bar_code: idResult.data.barCode, nosso_numero: idResult.data.nossoNumero };
           }
@@ -236,7 +314,7 @@ Deno.serve(async (req) => {
       let pixDetails: any = {};
       if (billing_type === "PIX") {
         try {
-          const pixResult = await callAsaas("GET", `/payments/${payment.id}/pixQrCode`, integration.api_key_encrypted, integration.environment);
+          const pixResult = await callAsaasWithEnvironmentFallback(integration, "GET", `/payments/${payment.id}/pixQrCode`);
           if (pixResult.ok) {
             pixDetails = { pix_payload: pixResult.data.payload, pix_qrcode_url: pixResult.data.encodedImage, pix_expiration: pixResult.data.expirationDate };
           }
@@ -258,7 +336,7 @@ Deno.serve(async (req) => {
       return json({
         success: true, payment_id: payment.id, status: payment.status,
         invoice_url: payment.invoiceUrl, bank_slip_url: payment.bankSlipUrl,
-        due_date: payment.dueDate, ...boletoDetails, ...pixDetails,
+        due_date: payment.dueDate, environment: result.environment, environment_auto_corrected: result.environmentAutoCorrected, ...boletoDetails, ...pixDetails,
       });
     }
 
@@ -267,9 +345,9 @@ Deno.serve(async (req) => {
       const integration = await getIntegration();
       if (!integration?.api_key_encrypted) return json({ error: "Credenciais não configuradas" }, 400);
       const { asaas_payment_id } = body;
-      const result = await callAsaas("GET", `/payments/${asaas_payment_id}/pixQrCode`, integration.api_key_encrypted, integration.environment);
-      if (!result.ok) return json({ error: "QR Code não disponível" }, 400);
-      return json({ success: true, payload: result.data.payload, qrcode_image: result.data.encodedImage, expiration: result.data.expirationDate });
+      const result = await callAsaasWithEnvironmentFallback(integration, "GET", `/payments/${asaas_payment_id}/pixQrCode`);
+      if (!result.ok) return json({ error: result.errorMessage || "QR Code não disponível" }, 400);
+      return json({ success: true, payload: result.data.payload, qrcode_image: result.data.encodedImage, expiration: result.data.expirationDate, environment: result.environment, environment_auto_corrected: result.environmentAutoCorrected });
     }
 
     /* ──────── CREATE PAYMENT LINK ──────── */
@@ -291,11 +369,11 @@ Deno.serve(async (req) => {
       if (max_installment_count) linkPayload.maxInstallmentCount = max_installment_count;
       if (end_date) linkPayload.endDate = end_date;
 
-      const result = await callAsaas("POST", "/paymentLinks", integration.api_key_encrypted, integration.environment, linkPayload);
-      if (!result.ok) return json({ error: result.data?.errors?.[0]?.description || "Erro ao criar link" }, 400);
+      const result = await callAsaasWithEnvironmentFallback(integration, "POST", "/paymentLinks", linkPayload);
+      if (!result.ok) return json({ error: result.errorMessage || "Erro ao criar link" }, 400);
 
       await auditLog("asaas_payment_link_created", result.data.id, { value, name });
-      return json({ success: true, link: result.data });
+      return json({ success: true, link: result.data, environment: result.environment, environment_auto_corrected: result.environmentAutoCorrected });
     }
 
     /* ──────── CREATE SUBSCRIPTION ──────── */
@@ -316,8 +394,8 @@ Deno.serve(async (req) => {
       };
       if (end_date) subPayload.endDate = end_date;
 
-      const result = await callAsaas("POST", "/subscriptions", integration.api_key_encrypted, integration.environment, subPayload);
-      if (!result.ok) return json({ error: result.data?.errors?.[0]?.description || "Erro ao criar assinatura" }, 400);
+      const result = await callAsaasWithEnvironmentFallback(integration, "POST", "/subscriptions", subPayload);
+      if (!result.ok) return json({ error: result.errorMessage || "Erro ao criar assinatura" }, 400);
 
       await supabaseAdmin.from("tenant_asaas_subscriptions").insert({
         tenant_id, local_customer_id, asaas_customer_id,
@@ -328,7 +406,7 @@ Deno.serve(async (req) => {
 
       await auditLog("asaas_subscription_created", result.data.id, { value, cycle, billing_type });
 
-      return json({ success: true, subscription: result.data });
+      return json({ success: true, subscription: result.data, environment: result.environment, environment_auto_corrected: result.environmentAutoCorrected });
     }
 
     /* ──────── REFUND PAYMENT ──────── */
@@ -341,8 +419,8 @@ Deno.serve(async (req) => {
       if (refundValue) refundPayload.value = refundValue;
       if (refundDesc) refundPayload.description = refundDesc;
 
-      const result = await callAsaas("POST", `/payments/${asaas_payment_id}/refund`, integration.api_key_encrypted, integration.environment, refundPayload);
-      if (!result.ok) return json({ error: result.data?.errors?.[0]?.description || "Erro ao estornar" }, 400);
+      const result = await callAsaasWithEnvironmentFallback(integration, "POST", `/payments/${asaas_payment_id}/refund`, refundPayload);
+      if (!result.ok) return json({ error: result.errorMessage || "Erro ao estornar" }, 400);
 
       await supabaseAdmin.from("tenant_asaas_payments")
         .update({ status: "REFUNDED", raw_payload: result.data } as any)
@@ -357,8 +435,8 @@ Deno.serve(async (req) => {
       const integration = await getIntegration();
       if (!integration?.api_key_encrypted) return json({ error: "Credenciais não configuradas" }, 400);
       const { asaas_subscription_id } = body;
-      const result = await callAsaas("DELETE", `/subscriptions/${asaas_subscription_id}`, integration.api_key_encrypted, integration.environment);
-      if (!result.ok) return json({ error: result.data?.errors?.[0]?.description || "Erro ao cancelar" }, 400);
+      const result = await callAsaasWithEnvironmentFallback(integration, "DELETE", `/subscriptions/${asaas_subscription_id}`);
+      if (!result.ok) return json({ error: result.errorMessage || "Erro ao cancelar" }, 400);
 
       await supabaseAdmin.from("tenant_asaas_subscriptions")
         .update({ status: "CANCELLED" } as any)
@@ -387,18 +465,19 @@ Deno.serve(async (req) => {
       const integration = await getIntegration();
       if (!integration?.api_key_encrypted) return json({ error: "Credenciais não configuradas" }, 400);
       const { asaas_payment_id } = body;
-      const result = await callAsaas("GET", `/payments/${asaas_payment_id}`, integration.api_key_encrypted, integration.environment);
+      const result = await callAsaasWithEnvironmentFallback(integration, "GET", `/payments/${asaas_payment_id}`);
       if (!result.ok) return json({ error: "Cobrança não encontrada no Asaas" }, 404);
       const p = result.data;
       await supabaseAdmin.from("tenant_asaas_payments")
         .update({ status: p.status, value: p.value, net_value: p.netValue, payment_date: p.paymentDate, invoice_url: p.invoiceUrl, bank_slip_url: p.bankSlipUrl, raw_payload: p } as any)
         .eq("tenant_id", tenant_id).eq("asaas_payment_id", asaas_payment_id);
-      return json({ success: true, payment: p });
+      return json({ success: true, payment: p, environment: result.environment, environment_auto_corrected: result.environmentAutoCorrected });
     }
 
     return json({ error: "Unknown action" }, 400);
   } catch (e: any) {
     console.error("asaas-api error:", e);
-    return json({ error: e.message || "Internal error" }, 500);
+    const status = e instanceof HttpError ? e.status : 500;
+    return json({ error: e.message || "Internal error" }, status);
   }
 });
