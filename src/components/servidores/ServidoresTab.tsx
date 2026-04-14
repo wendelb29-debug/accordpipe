@@ -948,6 +948,13 @@ export default function ServidoresTab() {
                   <p className="text-sm text-muted-foreground text-center py-8">Salve o tenant primeiro para configurar workspaces.</p>
                 )}
               </TabsContent>
+              <TabsContent value="fintech" className="mt-0">
+                {editingCompany ? (
+                  <AsaasIntegrationTab companyId={editingCompany.id} />
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">Salve o tenant primeiro para configurar a integração Fintech.</p>
+                )}
+              </TabsContent>
             </div>
           </Tabs>
 
