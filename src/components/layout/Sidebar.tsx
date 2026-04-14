@@ -11,7 +11,7 @@ import {
   Receipt,
   FileText,
   BarChart3,
-  FileSignature,
+  
   Users,
   LogOut,
   MessageSquare,
@@ -50,7 +50,7 @@ const navigation = [
 
 const configNavigation = [
   { name: "Usuários", href: "/configuracoes/usuarios", icon: Users, roles: ["admin", "ceo", "administrativo"] },
-  { name: "Assinaturas", href: "/configuracoes/assinaturas", icon: FileSignature, roles: ["admin", "ceo"] },
+  
   { name: "Auditoria", href: "/configuracoes/auditoria", icon: Settings, roles: ["ceo", "master"] },
 ];
 
