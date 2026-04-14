@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield, Webhook, Briefcase, ShieldCheck, Link2, Copy, Check, ChevronDown, Trash2,
+  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield, Webhook, Briefcase, ShieldCheck, Link2, Copy, Check, ChevronDown, Trash2, CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
