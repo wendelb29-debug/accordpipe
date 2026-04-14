@@ -17,6 +17,7 @@ import { toast } from "sonner";
 
 export default function Formularios() {
   const { forms, loading, createForm, updateForm, deleteForm } = useCrmForms();
+  const { workspaces } = useWorkspaceContext();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingForm, setEditingForm] = useState<CrmForm | null>(null);
   const [embedDialogOpen, setEmbedDialogOpen] = useState(false);
@@ -25,12 +26,14 @@ export default function Formularios() {
 
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState("");
   const [selectedFields, setSelectedFields] = useState<string[]>(["nome", "telefone", "email", "empresa"]);
 
   const openNew = () => {
     setEditingForm(null);
     setFormName("");
     setFormDescription("");
+    setSelectedWorkspaceId("");
     setSelectedFields(["nome", "telefone", "email", "empresa"]);
     setDialogOpen(true);
   };
@@ -39,17 +42,19 @@ export default function Formularios() {
     setEditingForm(form);
     setFormName(form.name);
     setFormDescription(form.description || "");
+    setSelectedWorkspaceId(form.workspace_id || "");
     setSelectedFields(form.fields || ["nome", "telefone"]);
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
     if (!formName.trim()) { toast.error("Nome é obrigatório"); return; }
+    if (!selectedWorkspaceId) { toast.error("Selecione o workspace de destino"); return; }
     const fields = ["nome", "telefone", ...selectedFields.filter((f) => f !== "nome" && f !== "telefone")];
     if (editingForm) {
-      await updateForm(editingForm.id, { name: formName.trim(), description: formDescription.trim() || null, fields } as any);
+      await updateForm(editingForm.id, { name: formName.trim(), description: formDescription.trim() || null, fields, workspace_id: selectedWorkspaceId } as any);
     } else {
-      await createForm({ name: formName.trim(), description: formDescription.trim() || null, fields } as any);
+      await createForm({ name: formName.trim(), description: formDescription.trim() || null, fields, workspace_id: selectedWorkspaceId } as any);
     }
     setDialogOpen(false);
   };
