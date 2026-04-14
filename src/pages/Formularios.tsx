@@ -247,6 +247,20 @@ export default function Formularios() {
               <Textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} placeholder="Descrição exibida no topo do formulário" rows={2} />
             </div>
             <div className="space-y-2">
+              <Label>Workspace de destino *</Label>
+              <Select value={selectedWorkspaceId} onValueChange={setSelectedWorkspaceId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o workspace..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {workspaces.map((ws) => (
+                    <SelectItem key={ws.id} value={ws.id}>{ws.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Selecione em qual workspace os leads deste formulário serão criados.</p>
+            </div>
+            <div className="space-y-2">
               <Label>Campos do formulário</Label>
               <div className="space-y-2 rounded-lg border p-3">
                 {AVAILABLE_FIELDS.map((field) => (
