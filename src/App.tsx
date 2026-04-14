@@ -126,7 +126,9 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AppLayout>
-                    <Relatorios />
+                    <WorkspaceProvider>
+                      <Relatorios />
+                    </WorkspaceProvider>
                   </AppLayout>
                 </ProtectedRoute>
               }
