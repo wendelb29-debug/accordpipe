@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { toast } from "sonner";
-import { GerarPixModal, LinkPagamentoModal, RecorrenciaModal, NovaCobrancaModal } from "@/components/fintech/EduzzModals";
+import { GerarPixModal, LinkPagamentoModal, RecorrenciaModal, NovaCobrancaModal } from "@/components/fintech/AsaasModals";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip,
   ResponsiveContainer, CartesianGrid,
@@ -450,42 +450,34 @@ export default function Financeiro() {
         </CardContent>
       </Card>
 
-      {/* Eduzz Modals */}
+      {/* Asaas Modals */}
       <GerarPixModal
         open={pixOpen}
         onOpenChange={setPixOpen}
-        servidorId={activeCompanyId}
+        tenantId={activeCompanyId}
         registrations={registrations}
-        onTransactionCreated={fetchData}
-        profileUserId={profile?.user_id}
-        profileName={profile?.name}
+        onSuccess={fetchData}
       />
       <LinkPagamentoModal
         open={linkOpen}
         onOpenChange={setLinkOpen}
-        servidorId={activeCompanyId}
+        tenantId={activeCompanyId}
         registrations={registrations}
-        onTransactionCreated={fetchData}
-        profileUserId={profile?.user_id}
-        profileName={profile?.name}
+        onSuccess={fetchData}
       />
       <RecorrenciaModal
         open={recorrenciaOpen}
         onOpenChange={setRecorrenciaOpen}
-        servidorId={activeCompanyId}
+        tenantId={activeCompanyId}
         registrations={registrations}
-        onTransactionCreated={fetchData}
-        profileUserId={profile?.user_id}
-        profileName={profile?.name}
+        onSuccess={fetchData}
       />
       <NovaCobrancaModal
         open={cobrancaOpen}
         onOpenChange={setCobrancaOpen}
-        servidorId={activeCompanyId}
+        tenantId={activeCompanyId}
         registrations={registrations}
-        onTransactionCreated={fetchData}
-        profileUserId={profile?.user_id}
-        profileName={profile?.name}
+        onSuccess={fetchData}
       />
     </div>
   );

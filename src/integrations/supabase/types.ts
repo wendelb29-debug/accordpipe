@@ -3426,6 +3426,71 @@ export type Database = {
           },
         ]
       }
+      tenant_asaas_subscriptions: {
+        Row: {
+          asaas_customer_id: string
+          asaas_subscription_id: string
+          billing_type: string
+          created_at: string | null
+          cycle: string
+          description: string | null
+          end_date: string | null
+          external_reference: string | null
+          id: string
+          local_customer_id: string | null
+          next_due_date: string | null
+          raw_payload: Json | null
+          status: string
+          tenant_id: string
+          updated_at: string | null
+          value: number
+        }
+        Insert: {
+          asaas_customer_id: string
+          asaas_subscription_id: string
+          billing_type?: string
+          created_at?: string | null
+          cycle?: string
+          description?: string | null
+          end_date?: string | null
+          external_reference?: string | null
+          id?: string
+          local_customer_id?: string | null
+          next_due_date?: string | null
+          raw_payload?: Json | null
+          status?: string
+          tenant_id: string
+          updated_at?: string | null
+          value: number
+        }
+        Update: {
+          asaas_customer_id?: string
+          asaas_subscription_id?: string
+          billing_type?: string
+          created_at?: string | null
+          cycle?: string
+          description?: string | null
+          end_date?: string | null
+          external_reference?: string | null
+          id?: string
+          local_customer_id?: string | null
+          next_due_date?: string | null
+          raw_payload?: Json | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_asaas_subscriptions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_asaas_webhook_events: {
         Row: {
           asaas_payment_id: string | null
