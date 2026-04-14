@@ -1,14 +1,15 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWhatsAppInbox } from "@/hooks/useWhatsAppInbox";
 import { toast } from "sonner";
-import { QrCodeModal } from "@/components/accord-inbox/QrCodeModal";
-import { InboxHeader } from "@/components/accord-inbox/InboxHeader";
 import { InboxSidebar, ConversationStatusFilter } from "@/components/accord-inbox/InboxSidebar";
 import { InboxChat } from "@/components/accord-inbox/InboxChat";
 import { TransferDialog } from "@/components/accord-inbox/TransferDialog";
 import { ContactDetailSidebar } from "@/components/accord-inbox/ContactDetailSidebar";
 import { CreateDemandModal } from "@/components/accord-inbox/CreateDemandModal";
+import { WifiOff, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 export default function AccordStack() {
   const {
@@ -18,10 +19,8 @@ export default function AccordStack() {
     updateConversationStatus,
   } = useWhatsAppInbox();
 
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  const [qrModalOpen, setQrModalOpen] = useState(false);
-  const [qrCode, setQrCode] = useState<string | null>(null);
-  const [qrLoading, setQrLoading] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [transferContactId, setTransferContactId] = useState<string | null>(null);
   const [showInfo, setShowInfo] = useState(false);
@@ -34,23 +33,6 @@ export default function AccordStack() {
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.phone.includes(searchTerm)
   );
-
-  const handleConnectClick = async () => {
-    setQrModalOpen(true);
-    if (connectionStatus !== "connected") {
-      setQrLoading(true);
-      const qr = await generateQrCode();
-      if (qr) {
-        setQrCode(qr);
-        toast.success("QR Code gerado! Escaneie com seu WhatsApp.");
-      } else {
-        setQrCode(null);
-        setQrModalOpen(false);
-        toast.success("WhatsApp já conectado!");
-      }
-      setQrLoading(false);
-    }
-  };
 
   const handleTransfer = (contactId: string) => {
     setTransferContactId(contactId);
@@ -69,7 +51,6 @@ export default function AccordStack() {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       await assignContact(contactId, user.id);
-      // Auto-set status to em_atendimento when assigning
       await updateConversationStatus(contactId, "em_atendimento");
     }
   };
@@ -80,74 +61,77 @@ export default function AccordStack() {
 
   const handleSelectContact = (id: string) => {
     selectContact(id);
-    // Don't auto-close info panel
   };
 
-  // Get last messages summary for demand creation
   const lastMessagesSummary = messages
     .slice(-5)
     .map(m => `${m.direction === "inbound" ? "Cliente" : "Atendente"}: ${m.message}`)
     .join("\n");
 
-  return (
-    <div className="flex flex-col h-[calc(100vh-3.5rem)] bg-background">
-      <InboxHeader
-        connectionStatus={connectionStatus}
-        onConnectClick={handleConnectClick}
-      />
-
-      <div className="flex flex-1 min-h-0">
-        <InboxSidebar
-          contacts={filteredContacts}
-          selectedId={selectedContactId}
-          onSelect={handleSelectContact}
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          filter={filter}
-          onFilterChange={setFilter}
-          isAdmin={isAdminOrCeo}
-          loading={loading}
-          statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
-        />
-
-        <InboxChat
-          contact={selectedContact}
-          messages={messages}
-          onSendMessage={sendMessage}
-          onTransfer={handleTransfer}
-          onAssignToMe={handleAssignToMe}
-          isAdmin={isAdminOrCeo}
-          companyId={companyId}
-          onToggleInfo={() => setShowInfo(!showInfo)}
-          showInfo={showInfo}
-          onCreateDemand={() => setDemandModalOpen(true)}
-          onUpdateStatus={handleUpdateStatus}
-        />
-
-        {showInfo && selectedContact && (
-          <ContactDetailSidebar
-            contact={selectedContact}
-            onClose={() => setShowInfo(false)}
-            onCreateDemand={() => setDemandModalOpen(true)}
-            companyId={companyId}
-          />
-        )}
+  // If WhatsApp not connected, show elegant empty state
+  if (connectionStatus === "disconnected" && !loading && contacts.length === 0) {
+    return (
+      <div className="flex h-[calc(100vh-3.5rem)] bg-background items-center justify-center">
+        <div className="text-center space-y-5 max-w-md px-6">
+          <div className="h-20 w-20 mx-auto rounded-2xl bg-muted/50 flex items-center justify-center">
+            <WifiOff className="h-9 w-9 text-muted-foreground/50" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-lg font-semibold text-foreground">WhatsApp não conectado</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Conecte seu canal na página de perfil para iniciar os atendimentos.
+            </p>
+          </div>
+          <Button
+            onClick={() => navigate("/perfil")}
+            className="gap-2 h-10 px-6 rounded-xl"
+          >
+            <User className="h-4 w-4" />
+            Ir para Meu Perfil
+          </Button>
+        </div>
       </div>
+    );
+  }
 
-      <QrCodeModal
-        open={qrModalOpen}
-        onOpenChange={setQrModalOpen}
-        qrCode={qrCode}
-        connectionStatus={connectionStatus}
-        loading={qrLoading}
-        onGenerateQrCode={async () => {
-          setQrLoading(true);
-          const qr = await generateQrCode();
-          if (qr) setQrCode(qr);
-          setQrLoading(false);
-        }}
+  return (
+    <div className="flex h-[calc(100vh-3.5rem)] bg-background">
+      <InboxSidebar
+        contacts={filteredContacts}
+        selectedId={selectedContactId}
+        onSelect={handleSelectContact}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        filter={filter}
+        onFilterChange={setFilter}
+        isAdmin={isAdminOrCeo}
+        loading={loading}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
       />
+
+      <InboxChat
+        contact={selectedContact}
+        messages={messages}
+        onSendMessage={sendMessage}
+        onTransfer={handleTransfer}
+        onAssignToMe={handleAssignToMe}
+        isAdmin={isAdminOrCeo}
+        companyId={companyId}
+        onToggleInfo={() => setShowInfo(!showInfo)}
+        showInfo={showInfo}
+        onCreateDemand={() => setDemandModalOpen(true)}
+        onUpdateStatus={handleUpdateStatus}
+      />
+
+      {showInfo && selectedContact && (
+        <ContactDetailSidebar
+          contact={selectedContact}
+          onClose={() => setShowInfo(false)}
+          onCreateDemand={() => setDemandModalOpen(true)}
+          companyId={companyId}
+        />
+      )}
 
       <TransferDialog
         open={transferOpen}
