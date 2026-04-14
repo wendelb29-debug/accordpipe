@@ -769,6 +769,10 @@ export default function ServidoresTab() {
                 <Briefcase className="h-4 w-4" />
                 Workspaces
               </TabsTrigger>
+              <TabsTrigger value="fintech" className="justify-start gap-2 px-3 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg" disabled={!editingCompany}>
+                <CreditCard className="h-4 w-4" />
+                Fintech
+              </TabsTrigger>
             </TabsList>
 
             <div className="flex-1 overflow-y-auto py-2">
