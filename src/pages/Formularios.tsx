@@ -274,6 +274,47 @@ export default function Formularios() {
               <p className="text-xs text-muted-foreground">Selecione em qual workspace os leads deste formulário serão criados.</p>
             </div>
             <div className="space-y-2">
+              <Label>Tags do formulário</Label>
+              <p className="text-xs text-muted-foreground">Tags serão aplicadas automaticamente aos leads criados por este formulário.</p>
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {formTags.map((tag) => (
+                  <Badge key={tag} variant="secondary" className="gap-1 text-xs">
+                    {tag}
+                    <button onClick={() => setFormTags(prev => prev.filter(t => t !== tag))} className="ml-0.5 hover:text-destructive">×</button>
+                  </Badge>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && tagInput.trim()) {
+                      e.preventDefault();
+                      const newTag = tagInput.trim();
+                      if (!formTags.includes(newTag)) setFormTags(prev => [...prev, newTag]);
+                      setTagInput("");
+                    }
+                  }}
+                  placeholder="Ex: Via Lead Ads, Site, Instagram..."
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (tagInput.trim() && !formTags.includes(tagInput.trim())) {
+                      setFormTags(prev => [...prev, tagInput.trim()]);
+                      setTagInput("");
+                    }
+                  }}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-2">
               <Label>Campos do formulário</Label>
               <div className="space-y-2 rounded-lg border p-3">
                 {AVAILABLE_FIELDS.map((field) => (
