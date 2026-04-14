@@ -3332,6 +3332,8 @@ export type Database = {
           bank_slip_url: string | null
           bar_code: string | null
           billing_type: string
+          boleto_viewed_at: string | null
+          checkout_viewed_at: string | null
           created_at: string | null
           description: string | null
           due_date: string | null
@@ -3362,6 +3364,8 @@ export type Database = {
           bank_slip_url?: string | null
           bar_code?: string | null
           billing_type?: string
+          boleto_viewed_at?: string | null
+          checkout_viewed_at?: string | null
           created_at?: string | null
           description?: string | null
           due_date?: string | null
@@ -3392,6 +3396,8 @@ export type Database = {
           bank_slip_url?: string | null
           bar_code?: string | null
           billing_type?: string
+          boleto_viewed_at?: string | null
+          checkout_viewed_at?: string | null
           created_at?: string | null
           description?: string | null
           due_date?: string | null
@@ -3501,6 +3507,7 @@ export type Database = {
           processed: boolean | null
           processed_at: string | null
           processing_error: string | null
+          processing_status: string
           received_at: string | null
           tenant_id: string
         }
@@ -3513,6 +3520,7 @@ export type Database = {
           processed?: boolean | null
           processed_at?: string | null
           processing_error?: string | null
+          processing_status?: string
           received_at?: string | null
           tenant_id: string
         }
@@ -3525,6 +3533,7 @@ export type Database = {
           processed?: boolean | null
           processed_at?: string | null
           processing_error?: string | null
+          processing_status?: string
           received_at?: string | null
           tenant_id?: string
         }
