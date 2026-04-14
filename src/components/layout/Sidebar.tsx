@@ -427,7 +427,7 @@ export function Sidebar() {
                     <DropdownMenuItem
                       key={lang.code}
                       className="rounded-lg cursor-pointer gap-2.5 text-xs"
-                      onClick={() => { setCurrentLang(lang.code); localStorage.setItem("accord-lang", lang.code); }}
+                      onClick={() => handleLanguageChange(lang.code)}
                     >
                       <span className="text-[10px] font-bold text-muted-foreground w-5 shrink-0">{lang.flag}</span>
                       <span className="flex-1">{lang.label}</span>
@@ -455,7 +455,7 @@ export function Sidebar() {
                 <DropdownMenuItem
                   key={lang.code}
                   className="rounded-lg cursor-pointer gap-2.5 text-xs"
-                  onClick={() => { setCurrentLang(lang.code); localStorage.setItem("accord-lang", lang.code); }}
+                  onClick={() => handleLanguageChange(lang.code)}
                 >
                   <span className="text-[10px] font-bold text-muted-foreground w-5 shrink-0">{lang.flag}</span>
                   <span className="flex-1">{lang.label}</span>
