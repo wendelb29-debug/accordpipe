@@ -315,7 +315,7 @@ export function AsaasIntegrationTab({ companyId }: Props) {
           </div>
 
           <div className="flex gap-2 flex-wrap">
-            <Button size="sm" variant="outline" onClick={handleGenerateToken}>
+            <Button size="sm" variant="outline" onClick={handleGenerateToken} disabled={!integration}>
               <Zap className="h-4 w-4 mr-1" /> Gerar Token
             </Button>
             <Button size="sm" variant="outline" onClick={handleCreateWebhook} disabled={creatingWebhook || !integration?.api_key_masked}>
