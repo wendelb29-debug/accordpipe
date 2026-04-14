@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield, Webhook, Briefcase, ShieldCheck, Link2, Copy, Check, ChevronDown, Trash2,
+  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield, Webhook, Briefcase, ShieldCheck, Link2, Copy, Check, ChevronDown, Trash2, CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -28,6 +28,7 @@ import { toast as sonnerToast } from "sonner";
 import { BrandIdentityFields } from "@/components/empresas/BrandIdentityFields";
 import { CompanyFormData } from "@/components/empresas/types";
 import { PermissionsEditor } from "@/components/usuarios/PermissionsEditor";
+import { AsaasIntegrationTab } from "@/components/servidores/AsaasIntegrationTab";
 
 interface Company {
   id: string;
@@ -768,6 +769,10 @@ export default function ServidoresTab() {
                 <Briefcase className="h-4 w-4" />
                 Workspaces
               </TabsTrigger>
+              <TabsTrigger value="fintech" className="justify-start gap-2 px-3 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg" disabled={!editingCompany}>
+                <CreditCard className="h-4 w-4" />
+                Fintech
+              </TabsTrigger>
             </TabsList>
 
             <div className="flex-1 overflow-y-auto py-2">
@@ -941,6 +946,13 @@ export default function ServidoresTab() {
                   <WorkspacesTab companyId={editingCompany.id} />
                 ) : (
                   <p className="text-sm text-muted-foreground text-center py-8">Salve o tenant primeiro para configurar workspaces.</p>
+                )}
+              </TabsContent>
+              <TabsContent value="fintech" className="mt-0">
+                {editingCompany ? (
+                  <AsaasIntegrationTab companyId={editingCompany.id} />
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">Salve o tenant primeiro para configurar a integração Fintech.</p>
                 )}
               </TabsContent>
             </div>

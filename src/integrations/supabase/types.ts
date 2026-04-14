@@ -3278,6 +3278,201 @@ export type Database = {
         }
         Relationships: []
       }
+      tenant_asaas_customers: {
+        Row: {
+          asaas_customer_id: string
+          cpf_cnpj: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          local_customer_id: string
+          name: string | null
+          phone: string | null
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          asaas_customer_id: string
+          cpf_cnpj?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          local_customer_id: string
+          name?: string | null
+          phone?: string | null
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          asaas_customer_id?: string
+          cpf_cnpj?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          local_customer_id?: string
+          name?: string | null
+          phone?: string | null
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_asaas_customers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_asaas_payments: {
+        Row: {
+          asaas_customer_id: string | null
+          asaas_payment_id: string
+          bank_slip_url: string | null
+          bar_code: string | null
+          billing_type: string
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          external_reference: string | null
+          id: string
+          identification_field: string | null
+          installment_count: number | null
+          installment_id: string | null
+          installment_value: number | null
+          invoice_url: string | null
+          local_contract_id: string | null
+          local_customer_id: string | null
+          local_proposal_id: string | null
+          local_sale_id: string | null
+          net_value: number | null
+          nosso_numero: string | null
+          original_value: number | null
+          payment_date: string | null
+          raw_payload: Json | null
+          status: string | null
+          tenant_id: string
+          updated_at: string | null
+          value: number | null
+        }
+        Insert: {
+          asaas_customer_id?: string | null
+          asaas_payment_id: string
+          bank_slip_url?: string | null
+          bar_code?: string | null
+          billing_type?: string
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          external_reference?: string | null
+          id?: string
+          identification_field?: string | null
+          installment_count?: number | null
+          installment_id?: string | null
+          installment_value?: number | null
+          invoice_url?: string | null
+          local_contract_id?: string | null
+          local_customer_id?: string | null
+          local_proposal_id?: string | null
+          local_sale_id?: string | null
+          net_value?: number | null
+          nosso_numero?: string | null
+          original_value?: number | null
+          payment_date?: string | null
+          raw_payload?: Json | null
+          status?: string | null
+          tenant_id: string
+          updated_at?: string | null
+          value?: number | null
+        }
+        Update: {
+          asaas_customer_id?: string | null
+          asaas_payment_id?: string
+          bank_slip_url?: string | null
+          bar_code?: string | null
+          billing_type?: string
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          external_reference?: string | null
+          id?: string
+          identification_field?: string | null
+          installment_count?: number | null
+          installment_id?: string | null
+          installment_value?: number | null
+          invoice_url?: string | null
+          local_contract_id?: string | null
+          local_customer_id?: string | null
+          local_proposal_id?: string | null
+          local_sale_id?: string | null
+          net_value?: number | null
+          nosso_numero?: string | null
+          original_value?: number | null
+          payment_date?: string | null
+          raw_payload?: Json | null
+          status?: string | null
+          tenant_id?: string
+          updated_at?: string | null
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_asaas_payments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_asaas_webhook_events: {
+        Row: {
+          asaas_payment_id: string | null
+          event_id: string | null
+          event_type: string
+          id: string
+          payload: Json
+          processed: boolean | null
+          processed_at: string | null
+          processing_error: string | null
+          received_at: string | null
+          tenant_id: string
+        }
+        Insert: {
+          asaas_payment_id?: string | null
+          event_id?: string | null
+          event_type: string
+          id?: string
+          payload: Json
+          processed?: boolean | null
+          processed_at?: string | null
+          processing_error?: string | null
+          received_at?: string | null
+          tenant_id: string
+        }
+        Update: {
+          asaas_payment_id?: string | null
+          event_id?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          processed?: boolean | null
+          processed_at?: string | null
+          processing_error?: string | null
+          received_at?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_asaas_webhook_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_contract_sequences: {
         Row: {
           last_number: number
@@ -3340,6 +3535,80 @@ export type Database = {
             foreignKeyName: "tenant_financial_config_servidor_id_fkey"
             columns: ["servidor_id"]
             isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_fintech_integrations: {
+        Row: {
+          api_key_encrypted: string | null
+          api_key_masked: string | null
+          connection_status: string | null
+          created_at: string | null
+          created_by: string | null
+          environment: string
+          id: string
+          last_connection_check_at: string | null
+          last_connection_error: string | null
+          last_webhook_event: string | null
+          last_webhook_received_at: string | null
+          provider: string
+          tenant_id: string
+          updated_at: string | null
+          updated_by: string | null
+          webhook_auth_token: string | null
+          webhook_enabled: boolean | null
+          webhook_remote_id: string | null
+          webhook_url: string | null
+        }
+        Insert: {
+          api_key_encrypted?: string | null
+          api_key_masked?: string | null
+          connection_status?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          environment?: string
+          id?: string
+          last_connection_check_at?: string | null
+          last_connection_error?: string | null
+          last_webhook_event?: string | null
+          last_webhook_received_at?: string | null
+          provider?: string
+          tenant_id: string
+          updated_at?: string | null
+          updated_by?: string | null
+          webhook_auth_token?: string | null
+          webhook_enabled?: boolean | null
+          webhook_remote_id?: string | null
+          webhook_url?: string | null
+        }
+        Update: {
+          api_key_encrypted?: string | null
+          api_key_masked?: string | null
+          connection_status?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          environment?: string
+          id?: string
+          last_connection_check_at?: string | null
+          last_connection_error?: string | null
+          last_webhook_event?: string | null
+          last_webhook_received_at?: string | null
+          provider?: string
+          tenant_id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          webhook_auth_token?: string | null
+          webhook_enabled?: boolean | null
+          webhook_remote_id?: string | null
+          webhook_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_fintech_integrations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
