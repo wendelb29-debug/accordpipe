@@ -192,6 +192,15 @@ export default function Formularios() {
                       {form.description && (
                         <p className="text-xs text-muted-foreground truncate max-w-[200px]">{form.description}</p>
                       )}
+                      {form.tags && form.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {form.tags.map((tag) => (
+                            <Badge key={tag} variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
