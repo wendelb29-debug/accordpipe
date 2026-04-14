@@ -9,12 +9,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useCrmForms, AVAILABLE_FIELDS, CrmForm } from "@/hooks/useCrmForms";
+import { useWorkspaceContext } from "@/contexts/WorkspaceContext";
 import { toast } from "sonner";
 
 export default function Formularios() {
   const { forms, loading, createForm, updateForm, deleteForm } = useCrmForms();
+  const { workspaces } = useWorkspaceContext();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingForm, setEditingForm] = useState<CrmForm | null>(null);
   const [embedDialogOpen, setEmbedDialogOpen] = useState(false);
@@ -23,12 +26,14 @@ export default function Formularios() {
 
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState("");
   const [selectedFields, setSelectedFields] = useState<string[]>(["nome", "telefone", "email", "empresa"]);
 
   const openNew = () => {
     setEditingForm(null);
     setFormName("");
     setFormDescription("");
+    setSelectedWorkspaceId("");
     setSelectedFields(["nome", "telefone", "email", "empresa"]);
     setDialogOpen(true);
   };
@@ -37,17 +42,19 @@ export default function Formularios() {
     setEditingForm(form);
     setFormName(form.name);
     setFormDescription(form.description || "");
+    setSelectedWorkspaceId(form.workspace_id || "");
     setSelectedFields(form.fields || ["nome", "telefone"]);
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
     if (!formName.trim()) { toast.error("Nome é obrigatório"); return; }
+    if (!selectedWorkspaceId) { toast.error("Selecione o workspace de destino"); return; }
     const fields = ["nome", "telefone", ...selectedFields.filter((f) => f !== "nome" && f !== "telefone")];
     if (editingForm) {
-      await updateForm(editingForm.id, { name: formName.trim(), description: formDescription.trim() || null, fields } as any);
+      await updateForm(editingForm.id, { name: formName.trim(), description: formDescription.trim() || null, fields, workspace_id: selectedWorkspaceId } as any);
     } else {
-      await createForm({ name: formName.trim(), description: formDescription.trim() || null, fields } as any);
+      await createForm({ name: formName.trim(), description: formDescription.trim() || null, fields, workspace_id: selectedWorkspaceId } as any);
     }
     setDialogOpen(false);
   };
@@ -162,6 +169,7 @@ export default function Formularios() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
+                <TableHead className="hidden md:table-cell">Workspace</TableHead>
                 <TableHead className="hidden sm:table-cell">Campos</TableHead>
                 <TableHead className="text-center">Leads</TableHead>
                 <TableHead className="text-center">Status</TableHead>
@@ -178,6 +186,11 @@ export default function Formularios() {
                         <p className="text-xs text-muted-foreground truncate max-w-[200px]">{form.description}</p>
                       )}
                     </div>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    <Badge variant="outline" className="text-xs">
+                      {workspaces.find((ws) => ws.id === form.workspace_id)?.name || "—"}
+                    </Badge>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
                     <div className="flex flex-wrap gap-1">
@@ -238,6 +251,20 @@ export default function Formularios() {
             <div className="space-y-2">
               <Label>Descrição (opcional)</Label>
               <Textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} placeholder="Descrição exibida no topo do formulário" rows={2} />
+            </div>
+            <div className="space-y-2">
+              <Label>Workspace de destino *</Label>
+              <Select value={selectedWorkspaceId} onValueChange={setSelectedWorkspaceId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o workspace..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {workspaces.map((ws) => (
+                    <SelectItem key={ws.id} value={ws.id}>{ws.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Selecione em qual workspace os leads deste formulário serão criados.</p>
             </div>
             <div className="space-y-2">
               <Label>Campos do formulário</Label>

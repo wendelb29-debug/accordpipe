@@ -1040,6 +1040,7 @@ export type Database = {
           servidor_id: string
           tags: string[] | null
           updated_at: string
+          workspace_id: string | null
         }
         Insert: {
           created_at?: string
@@ -1053,6 +1054,7 @@ export type Database = {
           servidor_id: string
           tags?: string[] | null
           updated_at?: string
+          workspace_id?: string | null
         }
         Update: {
           created_at?: string
@@ -1066,6 +1068,7 @@ export type Database = {
           servidor_id?: string
           tags?: string[] | null
           updated_at?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -1073,6 +1076,13 @@ export type Database = {
             columns: ["servidor_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_forms_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
