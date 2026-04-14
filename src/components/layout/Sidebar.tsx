@@ -101,7 +101,23 @@ export function Sidebar() {
   const activeCompanyId = useActiveCompanyId();
   const [tenantLogoUrl, setTenantLogoUrl] = useState<string | null>(null);
 
-  // Fetch tenant logo when active company changes
+  // Sync language from profile on load
+  useEffect(() => {
+    if (profile && (profile as any).preferred_language) {
+      const lang = (profile as any).preferred_language;
+      setCurrentLang(lang);
+      localStorage.setItem("accord-lang", lang);
+    }
+  }, [profile]);
+
+  const handleLanguageChange = async (code: string) => {
+    setCurrentLang(code);
+    localStorage.setItem("accord-lang", code);
+    if (profile) {
+      await supabase.from("profiles").update({ preferred_language: code } as any).eq("id", profile.id);
+    }
+  };
+
   useEffect(() => {
     if (!activeCompanyId) { setTenantLogoUrl(null); return; }
     const fetchLogo = async () => {
