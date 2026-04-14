@@ -95,8 +95,27 @@ Deno.serve(async (req) => {
       return { ok: res.ok, status: res.status, data };
     }
 
+    function detectEnvironmentFromKey(apiKey: string): string | null {
+      if (apiKey?.startsWith("$aact_prod")) return "production";
+      if (apiKey?.startsWith("$aact_")) return "sandbox";
+      return null;
+    }
+
     async function callAsaasWithEnvironmentFallback(integration: any, method: string, path: string, payload?: any) {
-      const currentEnvironment = integration?.environment || "sandbox";
+      // Auto-detect environment from API key prefix
+      const detectedEnv = detectEnvironmentFromKey(integration.api_key_encrypted);
+      const currentEnvironment = detectedEnv || integration?.environment || "sandbox";
+
+      // If detected env differs from stored, update DB proactively
+      if (detectedEnv && detectedEnv !== integration.environment) {
+        console.log(`[asaas-api] Auto-correcting environment from ${integration.environment} to ${detectedEnv} based on key prefix`);
+        await supabaseAdmin
+          .from("tenant_fintech_integrations")
+          .update({ environment: detectedEnv } as any)
+          .eq("id", integration.id);
+        integration.environment = detectedEnv;
+      }
+
       const primaryResult = await callAsaas(method, path, integration.api_key_encrypted, currentEnvironment, payload);
       const primaryError = getAsaasErrorDescription(primaryResult.data, "Erro ao comunicar com o Asaas");
 
