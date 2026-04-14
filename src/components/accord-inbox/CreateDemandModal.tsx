@@ -49,15 +49,17 @@ export function CreateDemandModal({ open, onOpenChange, contact, companyId, last
   useEffect(() => {
     if (!open || !companyId) return;
     setLoadingWs(true);
-    supabase
-      .from("workspaces")
-      .select("id, name, color")
-      .eq("company_id", companyId)
-      .eq("is_active", true)
-      .order("name")
-      .then(({ data }) => {
-        setWorkspaces(data || []);
-        setLoadingWs(false);
+    const fetchWorkspaces = async () => {
+      const { data } = await supabase
+        .from("workspaces")
+        .select("id, name, color")
+        .eq("company_id", companyId)
+        .eq("is_active", true)
+        .order("name");
+      setWorkspaces((data || []) as WorkspaceOption[]);
+      setLoadingWs(false);
+    };
+    fetchWorkspaces();
       });
     setLeadName(contact.name);
     setNotes("");
