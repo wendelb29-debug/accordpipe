@@ -99,8 +99,8 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
 
     const gap = compact ? 14 : 22;
     const pad = compact ? 20 : 36;
-    const cardBorder = "#E5E7EB";
-    const cardRadius = compact ? 8 : 12;
+     const cardBorder = secondaryColor ? `${secondaryColor}33` : "#E5E7EB";
+     const cardRadius = compact ? 8 : 12;
     const cnpjOrCpfLabel = clientDocument && clientDocument.replace(/\D/g, "").length <= 11 ? "CPF" : "CNPJ";
     const companySubtitle = [companyCnpj, companyRazaoSocial || companyName, `Ref: ${reference}`].filter(Boolean).join(" · ");
 
@@ -109,7 +109,7 @@ export const ProposalTemplatePremium = forwardRef<HTMLDivElement, Props>(
         ref={ref}
         className={cn("overflow-hidden", className)}
         style={{
-          backgroundColor: "#F9FAFB",
+          backgroundColor: bgColor,
           color: textColor,
           fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
         }}
