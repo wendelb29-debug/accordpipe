@@ -60,7 +60,6 @@ export function CreateDemandModal({ open, onOpenChange, contact, companyId, last
       setLoadingWs(false);
     };
     fetchWorkspaces();
-      });
     setLeadName(contact.name);
     setNotes("");
     setSelectedWorkspace("");
