@@ -169,6 +169,7 @@ export default function Formularios() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
+                <TableHead className="hidden md:table-cell">Workspace</TableHead>
                 <TableHead className="hidden sm:table-cell">Campos</TableHead>
                 <TableHead className="text-center">Leads</TableHead>
                 <TableHead className="text-center">Status</TableHead>
@@ -185,6 +186,11 @@ export default function Formularios() {
                         <p className="text-xs text-muted-foreground truncate max-w-[200px]">{form.description}</p>
                       )}
                     </div>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    <Badge variant="outline" className="text-xs">
+                      {workspaces.find((ws) => ws.id === form.workspace_id)?.name || "—"}
+                    </Badge>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
                     <div className="flex flex-wrap gap-1">
