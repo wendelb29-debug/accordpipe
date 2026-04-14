@@ -7,6 +7,7 @@ import { toast } from "sonner";
 export interface CrmForm {
   id: string;
   servidor_id: string;
+  workspace_id: string | null;
   name: string;
   description: string | null;
   fields: string[];
