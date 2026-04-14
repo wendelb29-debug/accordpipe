@@ -72,6 +72,23 @@ export function Sidebar() {
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [currentLang, setCurrentLang] = useState(() => localStorage.getItem("accord-lang") || "pt-BR");
 
+  // Sync language from profile on load
+  useEffect(() => {
+    if (profile && (profile as any).preferred_language) {
+      const lang = (profile as any).preferred_language;
+      setCurrentLang(lang);
+      localStorage.setItem("accord-lang", lang);
+    }
+  }, [profile]);
+
+  const handleLanguageChange = async (code: string) => {
+    setCurrentLang(code);
+    localStorage.setItem("accord-lang", code);
+    if (profile) {
+      await supabase.from("profiles").update({ preferred_language: code } as any).eq("id", profile.id);
+    }
+  };
+
   // Sidebar is expanded when pinned OR hovered
   const collapsed = !pinned && !hovered;
 
