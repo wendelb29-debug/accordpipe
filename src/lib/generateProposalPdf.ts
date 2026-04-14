@@ -383,9 +383,9 @@ export async function generateProposalPdf(data: ProposalTemplateData, filename: 
   // ═══════════════════════════════════════════
   // PRÓXIMOS PASSOS
   // ═══════════════════════════════════════════
-  ensureSpace(35);
+  ensureSpace(45);
   drawSectionBox(pdf, ML, y, UW, "PRÓXIMOS PASSOS", primaryRgb, lightGray);
-  y += 8;
+  y += 12;
 
   const steps_list = [
     "Alinhamento final com consultor",
