@@ -64,10 +64,6 @@ export function ProtectedRoute({ children, allowedRoles, requiredPermission }: P
     );
   }
 
-  // Check if signature is completed
-  if (profile && !(profile as any).signature_completed && location.pathname !== "/onboarding/assinatura") {
-    return <Navigate to="/onboarding/assinatura" replace />;
-  }
 
   // Permission-based access check (takes priority if specified)
   const permToCheck = requiredPermission || ROUTE_PERMISSIONS[location.pathname];
