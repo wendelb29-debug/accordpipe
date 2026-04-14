@@ -86,20 +86,22 @@ export function CreateDemandModal({ open, onOpenChange, contact, companyId, last
     }
     setLoading(true);
     try {
+      const insertData: Record<string, unknown> = {
+        servidor_id: companyId,
+        company_name: leadName,
+        contact_name: contact.name,
+        phone: contact.phone,
+        source: "whatsapp",
+        workspace_id: selectedWorkspace,
+        notes: notes || `Criado via WhatsApp. ${lastMessages}`.slice(0, 1000),
+        created_by_user_id: user?.id,
+        created_by_name: profile?.name,
+      };
+      if (selectedColumn) insertData.stage = selectedColumn;
+
       const { data: lead, error } = await supabase
         .from("crm_leads")
-        .insert({
-          servidor_id: companyId,
-          company_name: leadName,
-          contact_name: contact.name,
-          phone: contact.phone,
-          source: "whatsapp",
-          workspace_id: selectedWorkspace,
-          stage: selectedColumn || undefined,
-          notes: notes || `Criado via WhatsApp. ${lastMessages}`.slice(0, 1000),
-          created_by_user_id: user?.id,
-          created_by_name: profile?.name,
-        })
+        .insert(insertData as any)
         .select("id")
         .single();
 

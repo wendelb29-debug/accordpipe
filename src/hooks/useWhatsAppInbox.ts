@@ -17,6 +17,9 @@ export interface InboxContact {
   company_id: string;
   workspace_id: string | null;
   lead_id: string | null;
+  conversation_status: string;
+  created_at: string;
+  notes: string | null;
 }
 
 export interface InboxMessage {
