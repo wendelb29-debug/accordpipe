@@ -216,7 +216,9 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["admin", "operador", "administrativo", "comercial"]}>
                   <AppLayout>
-                    <Formularios />
+                    <WorkspaceProvider>
+                      <Formularios />
+                    </WorkspaceProvider>
                   </AppLayout>
                 </ProtectedRoute>
               }
