@@ -11,7 +11,6 @@ import {
   Receipt,
   FileText,
   BarChart3,
-  
   Users,
   LogOut,
   MessageSquare,
@@ -19,19 +18,25 @@ import {
   Rocket,
   ClipboardList,
   Trash2,
-  PanelLeftClose,
-  PanelLeftOpen,
   Pin,
   PinOff,
   Settings,
   ChevronDown,
   TrendingUp,
+  Globe,
+  Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const navigation = [
   { name: "Início", href: "/home", icon: Home, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
@@ -50,15 +55,22 @@ const navigation = [
 
 const configNavigation = [
   { name: "Usuários", href: "/configuracoes/usuarios", icon: Users, roles: ["admin", "ceo", "administrativo"] },
-  
   { name: "Auditoria", href: "/configuracoes/auditoria", icon: Settings, roles: ["ceo", "master"] },
 ];
+
+const LANGUAGES = [
+  { code: "pt-BR", label: "Português (Brasil)", flag: "BR" },
+  { code: "pt-PT", label: "Português (Portugal)", flag: "PT" },
+  { code: "en", label: "English", flag: "US" },
+  { code: "es", label: "Español", flag: "ES" },
+] as const;
 
 export function Sidebar() {
   const location = useLocation();
   const [hovered, setHovered] = useState(false);
   const [pinned, setPinned] = useState(() => localStorage.getItem("sidebar-pinned") === "true");
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [currentLang, setCurrentLang] = useState(() => localStorage.getItem("accord-lang") || "pt-BR");
 
   // Sidebar is expanded when pinned OR hovered
   const collapsed = !pinned && !hovered;
@@ -382,6 +394,60 @@ export function Sidebar() {
             </TooltipTrigger>
             <TooltipContent side="right" className="text-xs">{profile.name}</TooltipContent>
           </Tooltip>
+        )}
+
+        {/* Language Selector */}
+        {collapsed ? (
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex justify-center w-full p-2 rounded-lg text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors mb-1">
+                    <Globe className="h-4 w-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="right" align="end" className="w-52 rounded-xl">
+                  {LANGUAGES.map((lang) => (
+                    <DropdownMenuItem
+                      key={lang.code}
+                      className="rounded-lg cursor-pointer gap-2.5 text-xs"
+                      onClick={() => { setCurrentLang(lang.code); localStorage.setItem("accord-lang", lang.code); }}
+                    >
+                      <span className="text-[10px] font-bold text-muted-foreground w-5 shrink-0">{lang.flag}</span>
+                      <span className="flex-1">{lang.label}</span>
+                      {currentLang === lang.code && <Check className="h-3.5 w-3.5 text-primary" />}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="text-xs">Idioma</TooltipContent>
+          </Tooltip>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-all duration-200 text-[13px] font-medium mb-1">
+                <Globe className="h-[18px] w-[18px] shrink-0" />
+                <span className="flex-1 text-left truncate">
+                  {LANGUAGES.find(l => l.code === currentLang)?.flag}{" "}
+                  {LANGUAGES.find(l => l.code === currentLang)?.label}
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="right" align="end" className="w-56 rounded-xl">
+              {LANGUAGES.map((lang) => (
+                <DropdownMenuItem
+                  key={lang.code}
+                  className="rounded-lg cursor-pointer gap-2.5 text-xs"
+                  onClick={() => { setCurrentLang(lang.code); localStorage.setItem("accord-lang", lang.code); }}
+                >
+                  <span className="text-[10px] font-bold text-muted-foreground w-5 shrink-0">{lang.flag}</span>
+                  <span className="flex-1">{lang.label}</span>
+                  {currentLang === lang.code && <Check className="h-3.5 w-3.5 text-primary" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
 
         <Tooltip delayDuration={0}>
