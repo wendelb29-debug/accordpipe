@@ -2934,6 +2934,7 @@ export type Database = {
           is_master: boolean
           last_assigned_at: string | null
           name: string
+          preferred_language: string
           signature_completed: boolean
           status: string
           tags: string[] | null
@@ -2954,6 +2955,7 @@ export type Database = {
           is_master?: boolean
           last_assigned_at?: string | null
           name: string
+          preferred_language?: string
           signature_completed?: boolean
           status?: string
           tags?: string[] | null
@@ -2974,6 +2976,7 @@ export type Database = {
           is_master?: boolean
           last_assigned_at?: string | null
           name?: string
+          preferred_language?: string
           signature_completed?: boolean
           status?: string
           tags?: string[] | null

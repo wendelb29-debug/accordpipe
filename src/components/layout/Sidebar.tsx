@@ -101,7 +101,23 @@ export function Sidebar() {
   const activeCompanyId = useActiveCompanyId();
   const [tenantLogoUrl, setTenantLogoUrl] = useState<string | null>(null);
 
-  // Fetch tenant logo when active company changes
+  // Sync language from profile on load
+  useEffect(() => {
+    if (profile && (profile as any).preferred_language) {
+      const lang = (profile as any).preferred_language;
+      setCurrentLang(lang);
+      localStorage.setItem("accord-lang", lang);
+    }
+  }, [profile]);
+
+  const handleLanguageChange = async (code: string) => {
+    setCurrentLang(code);
+    localStorage.setItem("accord-lang", code);
+    if (profile) {
+      await supabase.from("profiles").update({ preferred_language: code } as any).eq("id", profile.id);
+    }
+  };
+
   useEffect(() => {
     if (!activeCompanyId) { setTenantLogoUrl(null); return; }
     const fetchLogo = async () => {
@@ -411,7 +427,7 @@ export function Sidebar() {
                     <DropdownMenuItem
                       key={lang.code}
                       className="rounded-lg cursor-pointer gap-2.5 text-xs"
-                      onClick={() => { setCurrentLang(lang.code); localStorage.setItem("accord-lang", lang.code); }}
+                      onClick={() => handleLanguageChange(lang.code)}
                     >
                       <span className="text-[10px] font-bold text-muted-foreground w-5 shrink-0">{lang.flag}</span>
                       <span className="flex-1">{lang.label}</span>
@@ -439,7 +455,7 @@ export function Sidebar() {
                 <DropdownMenuItem
                   key={lang.code}
                   className="rounded-lg cursor-pointer gap-2.5 text-xs"
-                  onClick={() => { setCurrentLang(lang.code); localStorage.setItem("accord-lang", lang.code); }}
+                  onClick={() => handleLanguageChange(lang.code)}
                 >
                   <span className="text-[10px] font-bold text-muted-foreground w-5 shrink-0">{lang.flag}</span>
                   <span className="flex-1">{lang.label}</span>
