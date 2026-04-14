@@ -450,42 +450,34 @@ export default function Financeiro() {
         </CardContent>
       </Card>
 
-      {/* Eduzz Modals */}
+      {/* Asaas Modals */}
       <GerarPixModal
         open={pixOpen}
         onOpenChange={setPixOpen}
-        servidorId={activeCompanyId}
+        tenantId={activeCompanyId}
         registrations={registrations}
-        onTransactionCreated={fetchData}
-        profileUserId={profile?.user_id}
-        profileName={profile?.name}
+        onSuccess={fetchData}
       />
       <LinkPagamentoModal
         open={linkOpen}
         onOpenChange={setLinkOpen}
-        servidorId={activeCompanyId}
+        tenantId={activeCompanyId}
         registrations={registrations}
-        onTransactionCreated={fetchData}
-        profileUserId={profile?.user_id}
-        profileName={profile?.name}
+        onSuccess={fetchData}
       />
       <RecorrenciaModal
         open={recorrenciaOpen}
         onOpenChange={setRecorrenciaOpen}
-        servidorId={activeCompanyId}
+        tenantId={activeCompanyId}
         registrations={registrations}
-        onTransactionCreated={fetchData}
-        profileUserId={profile?.user_id}
-        profileName={profile?.name}
+        onSuccess={fetchData}
       />
       <NovaCobrancaModal
         open={cobrancaOpen}
         onOpenChange={setCobrancaOpen}
-        servidorId={activeCompanyId}
+        tenantId={activeCompanyId}
         registrations={registrations}
-        onTransactionCreated={fetchData}
-        profileUserId={profile?.user_id}
-        profileName={profile?.name}
+        onSuccess={fetchData}
       />
     </div>
   );
