@@ -20,6 +20,7 @@ interface Profile {
   theme: string;
   cpf: string | null;
   whatsapp: string | null;
+  preferred_language: string;
 }
 
 interface CompanyOption {
