@@ -55,9 +55,15 @@ const navigation = [
 
 const configNavigation = [
   { name: "Usuários", href: "/configuracoes/usuarios", icon: Users, roles: ["admin", "ceo", "administrativo"] },
-  
   { name: "Auditoria", href: "/configuracoes/auditoria", icon: Settings, roles: ["ceo", "master"] },
 ];
+
+const LANGUAGES = [
+  { code: "pt-BR", label: "Português (Brasil)", flag: "BR" },
+  { code: "pt-PT", label: "Português (Portugal)", flag: "PT" },
+  { code: "en", label: "English", flag: "US" },
+  { code: "es", label: "Español", flag: "ES" },
+] as const;
 
 export function Sidebar() {
   const location = useLocation();
