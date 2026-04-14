@@ -132,17 +132,34 @@ export function AsaasIntegrationTab({ companyId }: Props) {
     }
   };
 
-  const handleGenerateToken = async () => {
+  const [webhookToken, setWebhookToken] = useState("");
+
+  const handleSaveWebhookToken = async () => {
+    if (!webhookToken.trim()) { toast.error("Cole o token do webhook do Asaas."); return; }
     try {
-      const { data, error } = await supabase.functions.invoke("asaas-api", {
-        body: { action: "generate_webhook_token", tenant_id: companyId },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      toast.success("Token do webhook gerado!");
+      if (integration) {
+        const { error } = await supabase
+          .from("tenant_fintech_integrations")
+          .update({ webhook_auth_token: webhookToken.trim() } as any)
+          .eq("id", integration.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("tenant_fintech_integrations")
+          .insert({
+            tenant_id: companyId,
+            provider: "asaas",
+            environment,
+            webhook_auth_token: webhookToken.trim(),
+            webhook_url: `https://nglwgzknqgihlbkdnflu.supabase.co/functions/v1/asaas-webhook?tenant=${companyId}`,
+          } as any);
+        if (error) throw error;
+      }
+      toast.success("Token do webhook salvo!");
+      setWebhookToken("");
       await fetchIntegration();
     } catch (err: any) {
-      toast.error("Erro: " + err.message);
+      toast.error("Erro ao salvar token: " + err.message);
     }
   };
 
@@ -293,13 +310,23 @@ export function AsaasIntegrationTab({ companyId }: Props) {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Token de Autenticação</Label>
+              <Label className="text-xs">Token de Autenticação (cole o token gerado no Asaas)</Label>
               <div className="flex gap-2">
-                <Input value={integration?.webhook_auth_token || "—"} readOnly className="font-mono text-xs bg-muted/50" />
-                <Button size="icon" variant="outline" className="shrink-0" onClick={() => integration?.webhook_auth_token && copyToClipboard(integration.webhook_auth_token, "token")}>
-                  {copiedField === "token" ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
-                </Button>
+                <Input
+                  value={webhookToken}
+                  onChange={(e) => setWebhookToken(e.target.value)}
+                  placeholder={integration?.webhook_auth_token || "Cole aqui o accessToken do webhook do Asaas"}
+                  className="font-mono text-xs"
+                />
+                {integration?.webhook_auth_token && (
+                  <Button size="icon" variant="outline" className="shrink-0" onClick={() => copyToClipboard(integration.webhook_auth_token!, "token")}>
+                    {copiedField === "token" ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                )}
               </div>
+              {integration?.webhook_auth_token && (
+                <p className="text-[10px] text-muted-foreground">Token atual: <span className="font-mono">{integration.webhook_auth_token.slice(0, 12)}...{integration.webhook_auth_token.slice(-6)}</span></p>
+              )}
             </div>
           </div>
 
@@ -315,8 +342,8 @@ export function AsaasIntegrationTab({ companyId }: Props) {
           </div>
 
           <div className="flex gap-2 flex-wrap">
-            <Button size="sm" variant="outline" onClick={handleGenerateToken} disabled={!integration}>
-              <Zap className="h-4 w-4 mr-1" /> Gerar Token
+            <Button size="sm" variant="outline" onClick={handleSaveWebhookToken} disabled={!webhookToken.trim()}>
+              <Zap className="h-4 w-4 mr-1" /> Salvar Token
             </Button>
             <Button size="sm" variant="outline" onClick={handleCreateWebhook} disabled={creatingWebhook || !integration?.api_key_masked}>
               {creatingWebhook ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Webhook className="h-4 w-4 mr-1" />}
