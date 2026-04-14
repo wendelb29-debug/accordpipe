@@ -28,6 +28,8 @@ export default function Formularios() {
   const [formDescription, setFormDescription] = useState("");
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState("");
   const [selectedFields, setSelectedFields] = useState<string[]>(["nome", "telefone", "email", "empresa"]);
+  const [formTags, setFormTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
 
   const openNew = () => {
     setEditingForm(null);
@@ -35,6 +37,8 @@ export default function Formularios() {
     setFormDescription("");
     setSelectedWorkspaceId("");
     setSelectedFields(["nome", "telefone", "email", "empresa"]);
+    setFormTags([]);
+    setTagInput("");
     setDialogOpen(true);
   };
 
@@ -44,6 +48,8 @@ export default function Formularios() {
     setFormDescription(form.description || "");
     setSelectedWorkspaceId(form.workspace_id || "");
     setSelectedFields(form.fields || ["nome", "telefone"]);
+    setFormTags(form.tags || []);
+    setTagInput("");
     setDialogOpen(true);
   };
 
