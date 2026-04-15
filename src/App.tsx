@@ -48,6 +48,7 @@ import TenantSetupPublico from "./pages/TenantSetupPublico";
 import Planos from "./pages/Planos";
 import Eventos from "./pages/Eventos";
 import MeusTenants from "./pages/MeusTenants";
+import Academy from "./pages/Academy";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1 } },
@@ -345,6 +346,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <MeusTenants />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/academy"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Academy />
                   </AppLayout>
                 </ProtectedRoute>
               }
