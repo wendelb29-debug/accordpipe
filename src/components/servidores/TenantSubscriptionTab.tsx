@@ -35,7 +35,7 @@ const statusColors: Record<string, string> = {
   cancelled: "border-muted text-muted-foreground bg-muted/50",
 };
 
-export function TenantSubscriptionTab({ companyId }: Props) {
+export function TenantSubscriptionTab({ companyId, resellerMode }: Props) {
   const { plans, loading: plansLoading, fetchPlans } = useBillingPlans();
   const { subscription, activeUsers, loading: subLoading, upsertSubscription } = useTenantSubscription(companyId);
   const { user, isMasterTenantAdmin, isMaster } = useAuth();
@@ -62,8 +62,8 @@ export function TenantSubscriptionTab({ companyId }: Props) {
     }
   }, [subscription]);
 
-  // Only master/CEO of master tenant can manage plans
-  if (!isMasterTenantAdmin && !isMaster) {
+  // Only master/CEO of master tenant or reseller managing child can access
+  if (!resellerMode && !isMasterTenantAdmin && !isMaster) {
     return (
       <Card className="p-8 text-center">
         <Crown className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
