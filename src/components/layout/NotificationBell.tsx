@@ -35,6 +35,29 @@ export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"unread" | "read">("unread");
+  const { enabled: pushEnabled, permissionState, enableNotifications, disableNotifications, sendTestNotification } = useNotificationManager();
+  const notifSupported = typeof window !== "undefined" && "Notification" in window;
+
+  const handlePushToggle = async () => {
+    if (pushEnabled) {
+      disableNotifications();
+      toast.success("Notificações desativadas");
+    } else {
+      if (notifSupported && Notification.permission === "denied") {
+        toast.error("Notificações bloqueadas pelo navegador. Verifique as configurações do site.");
+        return;
+      }
+      const granted = await enableNotifications();
+      if (granted) toast.success("Notificações ativadas!");
+      else toast.error("Permissão negada pelo navegador.");
+    }
+  };
+
+  const handlePushTest = () => {
+    if (permissionState !== "granted") { toast.error("Permita as notificações primeiro"); return; }
+    sendTestNotification();
+    toast.success("Notificação de teste enviada!");
+  };
 
   const fetchNotifications = useCallback(async () => {
     if (!user || !activeCompanyId) return;
