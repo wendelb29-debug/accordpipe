@@ -98,12 +98,30 @@ export default function AssinarPdf() {
         if (company) setCompanyBrand(company);
       }
 
+      // Resolve signed URLs for private bucket files
+      if (resolvedContract.pdf_url) {
+        const { data: signedPdfData } = await supabase.functions.invoke("storage-signed-url", {
+          body: { token, context: "pdf_contract" },
+        });
+        if (signedPdfData?.signedUrl) {
+          resolvedContract.pdf_url = signedPdfData.signedUrl;
+        }
+      }
+
       setContract(resolvedContract);
       if (resolvedContract.pdf_assinado_url) {
-        setSignedPdfUrl((prev) => {
-          if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
-          return resolvedContract.pdf_assinado_url;
-        });
+        // Resolve signed URL for the signed PDF too
+        const parsed = resolvedContract.pdf_assinado_path || resolvedContract.pdf_assinado_url;
+        if (parsed) {
+          const { data: signedAssinado } = await supabase.storage.from("contract-pdfs").createSignedUrl(
+            resolvedContract.pdf_assinado_path || "",
+            3600
+          );
+          setSignedPdfUrl((prev) => {
+            if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+            return signedAssinado?.signedUrl || resolvedContract.pdf_assinado_url;
+          });
+        }
       }
 
       setSigner(signerData);

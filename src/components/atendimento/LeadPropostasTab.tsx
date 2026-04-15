@@ -986,8 +986,8 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
                 .from("contract-pdfs")
                 .upload(pdfFileName, pdfBlob, { contentType: "application/pdf" });
               if (!uploadErr) {
-                const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(pdfFileName);
-                await supabase.from("contracts").update({ pdf_url: urlData.publicUrl } as any).eq("id", result.id);
+                const { data: signedData } = await supabase.storage.from("contract-pdfs").createSignedUrl(pdfFileName, 86400);
+                await supabase.from("contracts").update({ pdf_url: signedData?.signedUrl || "" } as any).eq("id", result.id);
               }
             }
           } catch (e) {

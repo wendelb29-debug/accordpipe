@@ -93,7 +93,7 @@ export function useDriveFiles(parentId: string | null) {
       toast.error("Erro no upload: " + uploadErr.message);
       return null;
     }
-    const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(filePath);
+    const { data: signedData } = await supabase.storage.from("contract-pdfs").createSignedUrl(filePath, 86400);
 
     const { data, error } = await supabase
       .from("drive_files")
@@ -102,7 +102,7 @@ export function useDriveFiles(parentId: string | null) {
         parent_id: parentId,
         name: file.name,
         type: "file",
-        file_url: urlData.publicUrl,
+        file_url: signedData?.signedUrl || "",
         file_path: filePath,
         file_size: file.size,
         file_type: file.type,

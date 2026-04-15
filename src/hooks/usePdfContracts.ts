@@ -121,7 +121,8 @@ export function usePdfContracts() {
         .upload(filePath, pdfFile, { contentType: "application/pdf" });
       if (uploadErr) throw uploadErr;
 
-      const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(filePath);
+      const { data: signedData } = await supabase.storage.from("contract-pdfs").createSignedUrl(filePath, 86400);
+      const fileUrl = signedData?.signedUrl || "";
 
       const { data: contract, error: contractErr } = await supabase
         .from("pdf_contracts")
@@ -129,7 +130,7 @@ export function usePdfContracts() {
           servidor_id: companyId,
           name,
           description: description || null,
-          pdf_url: urlData.publicUrl,
+          pdf_url: fileUrl,
           pdf_path: filePath,
           created_by_user_id: profile.user_id,
           created_by_name: profile.name,

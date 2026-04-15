@@ -663,8 +663,8 @@ Deno.serve(async (req) => {
               const { error: upErr } = await supabase.storage.from("contract-pdfs").upload(signedPath, finalPdfBytes, { contentType: "application/pdf" });
 
               if (!upErr) {
-                const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(signedPath);
-                docUpdate.signed_pdf_url = urlData.publicUrl;
+                const { data: urlData } = await supabase.storage.from("contract-pdfs").createSignedUrl(signedPath, 2592000);
+                docUpdate.signed_pdf_url = urlData?.signedUrl || "";
               }
             }
           } catch (pdfErr) {

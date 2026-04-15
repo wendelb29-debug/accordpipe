@@ -365,8 +365,8 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
           .upload(filePath, pdfBlob, { contentType: "application/pdf" });
         if (uploadErr) throw uploadErr;
 
-        const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(filePath);
-        finalPdfUrl = urlData.publicUrl;
+        const { data: signedData } = await supabase.storage.from("contract-pdfs").createSignedUrl(filePath, 86400);
+        finalPdfUrl = signedData?.signedUrl || "";
       }
 
       const { data: contract, error } = await supabase
@@ -438,14 +438,14 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
         .upload(filePath, file, { contentType: file.type });
       if (uploadErr) throw uploadErr;
 
-      const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(filePath);
+      const { data: signedData } = await supabase.storage.from("contract-pdfs").createSignedUrl(filePath, 86400);
 
       const { error: insertErr } = await (supabase as any).from("lead_documents").insert({
         lead_id: lead.id,
         servidor_id: lead.servidor_id,
         doc_type: docType,
         file_name: file.name,
-        file_url: urlData.publicUrl,
+        file_url: signedData?.signedUrl || "",
         file_path: filePath,
         file_size: file.size,
         uploaded_by_name: profile?.name || null,

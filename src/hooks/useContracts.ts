@@ -328,14 +328,14 @@ ${company.responsavel || "[RESPONSÁVEL]"}`;
         .upload(fileName, photoBlob, { contentType: "image/jpeg" });
       if (uploadErr) throw uploadErr;
 
-      const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
+      const { data: signedUrlData } = await supabase.storage.from("signatures").createSignedUrl(fileName, 2592000);
 
       const { error: updateErr } = await supabase
         .from("contracts")
         .update({
           signature_status: "signed",
           signed_at: signedAt,
-          signature_photo_url: urlData.publicUrl,
+          signature_photo_url: signedUrlData?.signedUrl || "",
           signature_latitude: location.lat,
           signature_longitude: location.lng,
           signature_address: location.address,

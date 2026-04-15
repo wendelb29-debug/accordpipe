@@ -145,9 +145,9 @@ async function resolveSignaturePositions(supabase: ReturnType<typeof createClien
   });
 }
 
-function buildSignedPdfPublicUrl(path: string) {
-  const baseUrl = Deno.env.get("SUPABASE_URL")!;
-  return `${baseUrl}/storage/v1/object/public/contract-pdfs/${path}`;
+async function buildSignedPdfUrl(supabase: ReturnType<typeof createClient>, path: string) {
+  const { data } = await supabase.storage.from("contract-pdfs").createSignedUrl(path, 2592000);
+  return data?.signedUrl || "";
 }
 
 async function buildSignedPdfBytes(data: {
@@ -503,12 +503,11 @@ async function persistSignedPdfForPdfContract(
 
   if (uploadSignedError) throw uploadSignedError;
 
-  const signedPublicUrl = buildSignedPdfPublicUrl(signedPath);
-  const cacheBustedUrl = `${signedPublicUrl}?v=${Date.now()}`;
+  const signedPdfUrl = await buildSignedPdfUrl(supabase, signedPath);
   const { error: updatePdfUrlError } = await supabase
     .from("pdf_contracts")
     .update({
-      pdf_assinado_url: cacheBustedUrl,
+      pdf_assinado_url: signedPdfUrl,
       pdf_assinado_path: signedPath,
     })
     .eq("id", contract.id);
@@ -516,7 +515,7 @@ async function persistSignedPdfForPdfContract(
   if (updatePdfUrlError) throw updatePdfUrlError;
 
   return {
-    url: cacheBustedUrl,
+    url: signedPdfUrl,
     path: signedPath,
   };
 }
@@ -595,18 +594,17 @@ async function persistSignedPdfForContract(
 
   if (uploadError) throw uploadError;
 
-  const signedPublicUrl = buildSignedPdfPublicUrl(signedPath);
-  const cacheBustedUrl = `${signedPublicUrl}?v=${Date.now()}`;
+  const signedPdfUrl2 = await buildSignedPdfUrl(supabase, signedPath);
 
   await supabase
     .from("contracts")
     .update({
-      pdf_assinado_url: cacheBustedUrl,
+      pdf_assinado_url: signedPdfUrl2,
       pdf_assinado_path: signedPath,
     } as any)
     .eq("id", contractId);
 
-  return { url: cacheBustedUrl, path: signedPath };
+  return { url: signedPdfUrl2, path: signedPath };
 }
 
 Deno.serve(async (req) => {
@@ -682,7 +680,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
+      const { data: urlData } = await supabase.storage.from("signatures").createSignedUrl(fileName, 2592000);
       const signatureHash = await generateHash(
         `${contractId}|${signerName || ""}|${signerDocument || ""}|${signedAt}|${clientIp}`,
       );
@@ -691,7 +689,7 @@ Deno.serve(async (req) => {
         .from("contract_signatures")
         .update({
           signed_at: signedAt,
-          signature_photo_url: urlData.publicUrl,
+          signature_photo_url: urlData?.signedUrl || "",
           signature_latitude: latitude,
           signature_longitude: longitude,
           signature_address: address,
@@ -779,7 +777,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
+      const { data: urlData } = await supabase.storage.from("signatures").createSignedUrl(fileName, 2592000);
       const signatureHash = await generateHash(
         `${contractId}|${signerName || pdfSigner.name || ""}|${signerDocument || pdfSigner.cpf_cnpj || ""}|${signedAt}|${clientIp}`,
       );
@@ -789,7 +787,7 @@ Deno.serve(async (req) => {
         .update({
           status: "assinado",
           signed_at: signedAt,
-          signature_photo_url: urlData.publicUrl,
+          signature_photo_url: urlData?.signedUrl || "",
           signature_latitude: latitude,
           signature_longitude: longitude,
           signature_address: address,
@@ -903,7 +901,7 @@ Deno.serve(async (req) => {
         JSON.stringify({
           success: true,
           signature_hash: signatureHash,
-          photo_url: urlData.publicUrl,
+          photo_url: urlData?.signedUrl || "",
           signed_pdf_url: signedPdfUrl,
           pdf_error: pdfError,
         }),
@@ -939,7 +937,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
+      const { data: urlData } = await supabase.storage.from("signatures").createSignedUrl(fileName, 2592000);
       const signatureHash = await generateHash(
         `${contractId}|${signerName || ""}|${signerDocument || ""}|${signedAt}|${clientIp}`,
       );
@@ -949,7 +947,7 @@ Deno.serve(async (req) => {
         .update({
           status: "assinado",
           signed_at: signedAt,
-          signature_photo_url: urlData.publicUrl,
+          signature_photo_url: urlData?.signedUrl || "",
           signature_latitude: latitude,
           signature_longitude: longitude,
           signature_address: address,
@@ -1036,7 +1034,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
+      const { data: urlData } = await supabase.storage.from("signatures").createSignedUrl(fileName, 2592000);
       const documentHash = await generateHash(
         `${contractId}|${clientContract.client_name}|${clientContract.client_cpf || ""}|${signedAt}`,
       );
@@ -1047,7 +1045,7 @@ Deno.serve(async (req) => {
         .update({
           contract_status: "assinado",
           signed_at: signedAt,
-          signature_photo_url: urlData.publicUrl,
+          signature_photo_url: urlData?.signedUrl || "",
           signature_latitude: latitude,
           signature_longitude: longitude,
           signature_address: address,
@@ -1122,7 +1120,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
+    const { data: urlData } = await supabase.storage.from("signatures").createSignedUrl(fileName, 2592000);
     const documentHash = await generateHash(
       `${contractId2}|${contract.contract_content || ""}|${signedAt}`,
     );
@@ -1133,7 +1131,7 @@ Deno.serve(async (req) => {
       .update({
         signature_status: "signed",
         signed_at: new Date().toISOString(),
-        signature_photo_url: urlData.publicUrl,
+        signature_photo_url: urlData?.signedUrl || "",
         signature_latitude: latitude,
         signature_longitude: longitude,
         signature_address: address,
