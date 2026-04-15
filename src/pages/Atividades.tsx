@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   PhoneCall, Mail, Users, Briefcase, MessageSquare, CheckCircle,
   Ban, MoreVertical, Calendar, ListOrdered, Filter, Settings,
@@ -20,6 +20,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { CrmLeadDetailView } from "@/components/atendimento/CrmLeadDetailView";
+import { CrmLead } from "@/hooks/useCrmLeads";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -74,6 +77,11 @@ export default function Atividades() {
   const [dateFilter, setDateFilter] = useState("today");
   const [userAvatars, setUserAvatars] = useState<UserAvatarMap>({});
   const [expandedActivityId, setExpandedActivityId] = useState<string | null>(null);
+
+  // Lead detail drawer state
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerLead, setDrawerLead] = useState<CrmLead | null>(null);
+  const [drawerLoading, setDrawerLoading] = useState(false);
 
   useEffect(() => {
     fetchActivities();
@@ -216,13 +224,48 @@ export default function Atividades() {
       "\n" + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   };
 
-  const handleLeadClick = (activity: ActivityRow) => {
-    if (isMobile) {
-      setExpandedActivityId(expandedActivityId === activity.id ? null : activity.id);
-    } else {
-      window.open(`/gestao-vendas?lead=${activity.lead_id}`, "_blank");
+  const handleLeadClick = async (activity: ActivityRow) => {
+    if (!activity.lead_id) {
+      toast.error("Esta atividade não está vinculada a uma oportunidade");
+      return;
     }
+    setDrawerLoading(true);
+    setDrawerOpen(true);
+    const { data, error } = await supabase
+      .from("crm_leads")
+      .select("*")
+      .eq("id", activity.lead_id)
+      .maybeSingle();
+    setDrawerLoading(false);
+    if (error || !data) {
+      toast.error("Oportunidade não encontrada");
+      setDrawerOpen(false);
+      return;
+    }
+    setDrawerLead(data as CrmLead);
   };
+
+  const handleDrawerUpdate = useCallback(async (id: string, updates: Partial<CrmLead>) => {
+    const { error } = await supabase.from("crm_leads").update(updates as any).eq("id", id);
+    if (error) { toast.error("Erro ao atualizar"); return false; }
+    setDrawerLead((prev) => prev ? { ...prev, ...updates } : prev);
+    return true;
+  }, []);
+
+  const handleDrawerMoveStage = useCallback(async (id: string, stage: string) => {
+    const { error } = await supabase.from("crm_leads").update({ stage, stage_entered_at: new Date().toISOString() } as any).eq("id", id);
+    if (error) { toast.error("Erro ao mover etapa"); return false; }
+    setDrawerLead((prev) => prev ? { ...prev, stage, stage_entered_at: new Date().toISOString() } : prev);
+    return true;
+  }, []);
+
+  const handleDrawerDelete = useCallback(async (id: string) => {
+    const { error } = await supabase.from("crm_leads").delete().eq("id", id);
+    if (error) { toast.error("Erro ao excluir"); return false; }
+    setDrawerOpen(false);
+    setDrawerLead(null);
+    return true;
+  }, []);
 
   const dateFilterLabels: Record<string, string> = {
     today: "Hoje",
@@ -597,6 +640,28 @@ export default function Atividades() {
           <WeeklyCalendarView activities={activities} loading={loading} />
         </TabsContent>
       </Tabs>
+
+      {/* Lead Detail Drawer */}
+      <Sheet open={drawerOpen} onOpenChange={(open) => { if (!open) { setDrawerOpen(false); setDrawerLead(null); } }}>
+        <SheetContent side="right" className="w-full sm:max-w-[85vw] lg:max-w-[70vw] p-0 overflow-y-auto">
+          <SheetTitle className="sr-only">Detalhes da Oportunidade</SheetTitle>
+          {drawerLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : drawerLead ? (
+            <div className="h-full overflow-y-auto">
+              <CrmLeadDetailView
+                lead={drawerLead}
+                onBack={() => { setDrawerOpen(false); setDrawerLead(null); }}
+                onUpdate={handleDrawerUpdate}
+                onMoveStage={handleDrawerMoveStage}
+                onDelete={handleDrawerDelete}
+              />
+            </div>
+          ) : null}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
