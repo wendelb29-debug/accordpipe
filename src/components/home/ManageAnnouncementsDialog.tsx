@@ -38,10 +38,10 @@ export function ManageAnnouncementsDialog({ open, onOpenChange, announcements, o
       const path = `announcements/${Date.now()}.${ext}`;
       const { error: ue } = await supabase.storage.from("documents").upload(path, file);
       if (ue) throw ue;
-      const { data: ud } = supabase.storage.from("documents").getPublicUrl(path);
+      const { data: signedData } = await supabase.storage.from("documents").createSignedUrl(path, 3600);
       const servidorId = isMaster ? activeCompanyId : profile?.company_id;
       const { error } = await supabase.from("announcements").insert({
-        title, description: desc || null, image_url: ud.publicUrl,
+        title, description: desc || null, image_url: signedData?.signedUrl || "",
         created_by: user?.id, display_order: announcements.length, servidor_id: servidorId,
       } as any);
       if (error) throw error;

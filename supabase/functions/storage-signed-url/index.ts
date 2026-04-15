@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PRIVATE_BUCKETS = ["contract-pdfs", "signatures", "user-signatures"];
+const PRIVATE_BUCKETS = ["contract-pdfs", "signatures", "user-signatures", "documents"];
 
 function parseStorageUrl(url: string): { bucket: string; path: string } | null {
   for (const bucket of PRIVATE_BUCKETS) {

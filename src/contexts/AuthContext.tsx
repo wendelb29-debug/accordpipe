@@ -2,6 +2,31 @@ import { createContext, useContext, useEffect, useState, useRef, ReactNode } fro
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
+const PRIVATE_BUCKETS = ["contract-pdfs", "signatures", "user-signatures", "documents"];
+
+function parseStorageUrl(url: string): { bucket: string; path: string } | null {
+  if (!url) return null;
+  for (const bucket of PRIVATE_BUCKETS) {
+    const marker = `/storage/v1/object/public/${bucket}/`;
+    const idx = url.indexOf(marker);
+    if (idx !== -1) {
+      const path = decodeURIComponent(url.substring(idx + marker.length).split("?")[0]);
+      return { bucket, path };
+    }
+  }
+  return null;
+}
+
+async function resolveAvatarUrl(storedUrl: string): Promise<string> {
+  const parsed = parseStorageUrl(storedUrl);
+  if (!parsed) return storedUrl;
+  const { data, error } = await supabase.storage
+    .from(parsed.bucket)
+    .createSignedUrl(parsed.path, 3600);
+  if (!error && data?.signedUrl) return data.signedUrl;
+  return storedUrl;
+}
+
 export type AppRole = "admin" | "operador" | "leitura" | "ceo" | "master" | "administrativo" | "financeiro" | "comercial";
 
 interface Profile {
@@ -139,8 +164,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (profileError) throw profileError;
       if (roleError) throw roleError;
 
-      const typedProfile = profileData as unknown as Profile | null;
+      let typedProfile = profileData as unknown as Profile | null;
       const typedRole = roleData?.role as AppRole || null;
+
+      // Resolve avatar signed URL if stored as old public URL
+      if (typedProfile?.avatar_url) {
+        const resolved = await resolveAvatarUrl(typedProfile.avatar_url);
+        if (resolved !== typedProfile.avatar_url) {
+          typedProfile = { ...typedProfile, avatar_url: resolved };
+        }
+      }
 
       setProfile(typedProfile);
       setRole(typedRole);

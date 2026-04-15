@@ -679,8 +679,8 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
           setSavingNote(false);
           return;
         }
-        const { data: urlData } = supabase.storage.from("documents").getPublicUrl(path);
-        imageUrl = urlData.publicUrl;
+        const { data: signedData } = await supabase.storage.from("documents").createSignedUrl(path, 3600);
+        imageUrl = signedData?.signedUrl || "";
       }
 
       await addActivity({

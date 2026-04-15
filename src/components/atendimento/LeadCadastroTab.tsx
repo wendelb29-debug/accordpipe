@@ -267,8 +267,8 @@ export function LeadCadastroTab({ lead, onUpdate }: LeadCadastroTabProps) {
       const path = `cadastros/${lead.id}/comprovante-${Date.now()}.${ext}`;
       const { error } = await supabase.storage.from("documents").upload(path, file);
       if (error) throw error;
-      const { data: urlData } = supabase.storage.from("documents").getPublicUrl(path);
-      setRegistration(prev => ({ ...prev, comprovante_url: urlData.publicUrl }));
+      const { data: signedData } = await supabase.storage.from("documents").createSignedUrl(path, 3600);
+      setRegistration(prev => ({ ...prev, comprovante_url: signedData?.signedUrl || "" }));
       toast.success("Comprovante enviado!");
     } catch {
       toast.error("Erro ao enviar arquivo");

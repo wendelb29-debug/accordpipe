@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const PRIVATE_BUCKETS = ["contract-pdfs", "signatures", "user-signatures"];
+const PRIVATE_BUCKETS = ["contract-pdfs", "signatures", "user-signatures", "documents"];
 
 /**
  * Parse a Supabase storage public URL into bucket + path.

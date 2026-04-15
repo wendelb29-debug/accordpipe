@@ -65,14 +65,14 @@ export function useDocuments() {
       return false;
     }
 
-    const { data: urlData } = supabase.storage
+    const { data: signedData } = await supabase.storage
       .from("documents")
-      .getPublicUrl(filePath);
+      .createSignedUrl(filePath, 3600);
 
     const { error: insertError } = await supabase.from("documents").insert({
       name: file.name,
       file_path: filePath,
-      file_url: urlData.publicUrl,
+      file_url: signedData?.signedUrl || "",
       file_size: file.size,
       file_type: file.type,
       category,

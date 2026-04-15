@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Megaphone, Loader2 } from "lucide-react";
+import { resolveSignedUrl } from "@/hooks/useSignedUrl";
 
 interface Announcement {
   id: string;
@@ -24,7 +25,15 @@ export function AnnouncementsCarousel() {
         .eq("is_active", true).order("display_order");
       if (isMaster && activeCompanyId) q = q.eq("servidor_id", activeCompanyId);
       const { data } = await q;
-      setItems((data as Announcement[]) || []);
+      const raw = (data as Announcement[]) || [];
+      // Resolve signed URLs for images from private buckets
+      const resolved = await Promise.all(
+        raw.map(async (item) => ({
+          ...item,
+          image_url: await resolveSignedUrl(item.image_url),
+        }))
+      );
+      setItems(resolved);
       setLoading(false);
     })();
   }, [activeCompanyId]);
