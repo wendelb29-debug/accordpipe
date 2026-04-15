@@ -139,8 +139,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (profileError) throw profileError;
       if (roleError) throw roleError;
 
-      const typedProfile = profileData as unknown as Profile | null;
+      let typedProfile = profileData as unknown as Profile | null;
       const typedRole = roleData?.role as AppRole || null;
+
+      // Resolve avatar signed URL if stored as old public URL
+      if (typedProfile?.avatar_url) {
+        const resolved = await resolveAvatarUrl(typedProfile.avatar_url);
+        if (resolved !== typedProfile.avatar_url) {
+          typedProfile = { ...typedProfile, avatar_url: resolved };
+        }
+      }
 
       setProfile(typedProfile);
       setRole(typedRole);
