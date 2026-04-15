@@ -183,8 +183,8 @@ export default function AssinaturaOnboarding() {
             .from("user-signatures")
             .upload(path, blob, { contentType: "image/png" });
           if (upErr) throw upErr;
-          const { data: urlData } = supabase.storage.from("user-signatures").getPublicUrl(path);
-          signatureImageUrl = urlData.publicUrl;
+          const { data: signedData } = await supabase.storage.from("user-signatures").createSignedUrl(path, 86400);
+          signatureImageUrl = signedData?.signedUrl || "";
         }
       } else if (signatureType === "upload" && uploadFile) {
         const path = `${user.id}/signature-${Date.now()}.${uploadFile.name.split(".").pop()}`;
@@ -192,8 +192,8 @@ export default function AssinaturaOnboarding() {
           .from("user-signatures")
           .upload(path, uploadFile);
         if (upErr) throw upErr;
-        const { data: urlData } = supabase.storage.from("user-signatures").getPublicUrl(path);
-        signatureImageUrl = urlData.publicUrl;
+        const { data: signedData } = await supabase.storage.from("user-signatures").createSignedUrl(path, 86400);
+        signatureImageUrl = signedData?.signedUrl || "";
       } else if (signatureType === "typed") {
         const tempCanvas = document.createElement("canvas");
         tempCanvas.width = 400;
@@ -215,8 +215,8 @@ export default function AssinaturaOnboarding() {
             .from("user-signatures")
             .upload(path, blob, { contentType: "image/png" });
           if (upErr) throw upErr;
-          const { data: urlData } = supabase.storage.from("user-signatures").getPublicUrl(path);
-          signatureImageUrl = urlData.publicUrl;
+          const { data: signedData } = await supabase.storage.from("user-signatures").createSignedUrl(path, 86400);
+          signatureImageUrl = signedData?.signedUrl || "";
         }
       }
 
