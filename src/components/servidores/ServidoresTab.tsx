@@ -314,6 +314,17 @@ export default function ServidoresTab() {
   const handleToggleUserStatus = async (userId: string, currentActive: boolean, tenantLinkId: string) => {
     try {
       const newStatus = currentActive ? "bloqueado" : "ativo";
+
+      // If reactivating, check user limit
+      if (!currentActive && usersDialogCompany) {
+        const { data: limitCheck } = await supabase.rpc("check_user_limit", { _tenant_id: usersDialogCompany.id });
+        const lc = limitCheck as any;
+        if (lc && !lc.can_add) {
+          sonnerToast.error(`Limite atingido (${lc.active_users}/${lc.effective_limit}). Não é possível reativar.`);
+          return;
+        }
+      }
+
       // Update user_tenants status
       if (tenantLinkId) {
         await supabase.from("user_tenants").update({ status: newStatus } as any).eq("id", tenantLinkId);
