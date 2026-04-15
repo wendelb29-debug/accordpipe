@@ -23,6 +23,8 @@ export function ChildTenantManageDialog({ child, open, onOpenChange, onUpdated }
   const canManageSubscription = hasPermission("manage_child_tenant_subscription");
   const canManageUsers = hasPermission("manage_child_tenant_users");
 
+  const tabCount = 1 + (canManageSubscription ? 1 : 0) + (canManageUsers ? 1 : 0);
+
   if (!child) return null;
 
   const displayName = child.nome_fantasia || child.razao_social;
@@ -48,7 +50,7 @@ export function ChildTenantManageDialog({ child, open, onOpenChange, onUpdated }
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
-          <TabsList className="w-full grid grid-cols-3">
+          <TabsList className={`w-full grid ${tabCount === 1 ? "grid-cols-1" : tabCount === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
             <TabsTrigger value="dados" className="gap-2 text-xs">
               <FileText className="h-3.5 w-3.5" />
               Dados
