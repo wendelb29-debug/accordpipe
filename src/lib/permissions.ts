@@ -34,6 +34,12 @@ export const FIXED_PERMISSION_RULES: Record<string, string[]> = {
   add_item_proposal: ["ceo", "master", "administrativo"],
   view_audit_logs: ["ceo", "master", "admin"],
   manage_integrations: ["ceo", "master", "admin"],
+  view_billing_plans: ["ceo", "master"],
+  create_billing_plans: ["ceo", "master"],
+  edit_billing_plans: ["ceo", "master"],
+  manage_tenant_subscription: ["ceo", "master"],
+  view_tenant_plan_usage: ["ceo", "master", "admin"],
+  manage_tenant_users_limit: ["ceo", "master"],
 };
 
 export const MODULE_GROUPS = [
@@ -308,6 +314,12 @@ export const PERMISSION_MODULES: PermissionModule[] = [
       { key: "manage_tenant_limits", label: "Alterar Limites", description: "Alterar limites de usuários do tenant", restrictedTo: ["ceo", "master"] },
       { key: "manage_integrations", label: "Gerenciar Integrações", description: "Configurar integrações externas", restrictedTo: ["ceo", "master", "admin"] },
       { key: "view_audit_logs", label: "Ver Logs de Auditoria", description: "Acessar logs de auditoria do sistema", restrictedTo: ["ceo", "master", "admin"] },
+      { key: "view_billing_plans", label: "Ver Planos", description: "Visualizar planos de assinatura", restrictedTo: ["ceo", "master"] },
+      { key: "create_billing_plans", label: "Criar Planos", description: "Criar novos planos", restrictedTo: ["ceo", "master"] },
+      { key: "edit_billing_plans", label: "Editar Planos", description: "Editar planos existentes", restrictedTo: ["ceo", "master"] },
+      { key: "manage_tenant_subscription", label: "Gerenciar Assinatura", description: "Alterar assinatura de tenants", restrictedTo: ["ceo", "master"] },
+      { key: "view_tenant_plan_usage", label: "Ver Consumo do Plano", description: "Visualizar uso do plano de um tenant", restrictedTo: ["ceo", "master", "admin"] },
+      { key: "manage_tenant_users_limit", label: "Gerenciar Limite Usuários", description: "Ajustar limites de usuários por tenant", restrictedTo: ["ceo", "master"] },
     ],
   },
 
