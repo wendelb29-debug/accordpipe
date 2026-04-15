@@ -33,12 +33,12 @@ export function useActivityReminders() {
 
       // Fetch planned activities with reminders in the next 24 hours
       const now = new Date();
-      const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
       const { data, error } = await supabase
         .from("crm_lead_activities")
         .select("id, title, type, metadata, created_by_name")
         .eq("servidor_id", servidorId)
+        .eq("status", "planned")
         .in("type", ["activity", "meeting", "call", "email", "internal", "whatsapp"])
         .order("created_at", { ascending: false })
         .limit(200);

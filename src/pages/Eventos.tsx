@@ -7,8 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Plus, Calendar as CalendarIcon, List, Search, Clock, MapPin,
-  Link2, Star, AlertTriangle, Sparkles,
+  Link2, Star, AlertTriangle, Sparkles, CalendarPlus, Check,
 } from "lucide-react";
+import { useEventAgenda } from "@/hooks/useEventAgenda";
 import { useEvents, EVENT_TYPES, type TenantEvent, type EventFormData } from "@/hooks/useEvents";
 import { EventFormDialog } from "@/components/eventos/EventFormDialog";
 import { EventDetailDialog } from "@/components/eventos/EventDetailDialog";
@@ -44,6 +45,7 @@ const TYPE_GRADIENTS: Record<string, string> = {
 export default function Eventos() {
   const { events, isLoading, createEvent, updateEvent, cancelEvent, deleteEvent } = useEvents();
   const { hasPermission } = usePermissions();
+  const { isAdded, addToAgenda } = useEventAgenda();
   const canCreate = hasPermission("create_events");
   const canEdit = hasPermission("edit_events");
   const canDelete = hasPermission("delete_events");
@@ -167,11 +169,27 @@ export default function Eventos() {
             </div>
 
             {/* Hover actions */}
-            {(canEdit || canDelete) && ev.status === "scheduled" && (
+            {ev.status === "scheduled" && new Date(ev.start_at) >= new Date() && (
               <div
-                className="flex gap-1.5 pt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                className="flex flex-wrap gap-1.5 pt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                 onClick={(e) => e.stopPropagation()}
               >
+                {/* Add to agenda - available to all users */}
+                {!isAdded(ev.id) ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="h-7 text-xs gap-1"
+                    onClick={() => addToAgenda.mutate({ event: ev, reminderMinutes: 15 })}
+                    disabled={addToAgenda.isPending}
+                  >
+                    <CalendarPlus className="h-3 w-3" /> Agenda
+                  </Button>
+                ) : (
+                  <Badge className="h-7 text-[10px] bg-green-500/20 text-green-400 border border-green-500/30 flex items-center gap-1">
+                    <Check className="h-3 w-3" /> Na agenda
+                  </Badge>
+                )}
                 {canEdit && (
                   <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={() => setEditEvent(ev)}>
                     Editar
