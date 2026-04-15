@@ -46,6 +46,7 @@ import AuditLogs from "./pages/AuditLogs";
 import Performance from "./pages/Performance";
 import TenantSetupPublico from "./pages/TenantSetupPublico";
 import Planos from "./pages/Planos";
+import Eventos from "./pages/Eventos";
 
 const queryClient = new QueryClient();
 
@@ -321,6 +322,16 @@ const App = () => (
                 <ProtectedRoute requiredPermission="view_billing_plans">
                   <AppLayout>
                     <Planos />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/eventos"
+              element={
+                <ProtectedRoute requiredPermission="view_events">
+                  <AppLayout>
+                    <Eventos />
                   </AppLayout>
                 </ProtectedRoute>
               }
