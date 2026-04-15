@@ -25,6 +25,7 @@ const navigation = [
   
   { name: "Gestão de Vendas", href: "/gestao-vendas", icon: Webhook, roles: ["admin", "ceo"] },
   { name: "Base de Clientes", href: "/cadastrados", icon: Users, roles: ["admin", "ceo", "administrativo"] },
+  { name: "Eventos", href: "/eventos", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
   { name: "Descarte", href: "/descarte", icon: Trash2, roles: ["admin", "ceo"] },
 ];
 

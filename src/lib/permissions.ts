@@ -61,6 +61,7 @@ export const MODULE_GROUPS = [
   "Usuários e Acessos",
   "Plataforma / Tenant",
   "Performance",
+  "Eventos",
 ] as const;
 
 export const PERMISSION_MODULES: PermissionModule[] = [
@@ -340,6 +341,22 @@ export const PERMISSION_MODULES: PermissionModule[] = [
       { key: "generate_ai_action_plan", label: "Gerar Plano IA", description: "Gerar plano de ação com inteligência artificial" },
     ],
   },
+
+  // ===== Eventos =====
+  {
+    key: "eventos",
+    label: "Eventos",
+    icon: Activity,
+    group: "Eventos",
+    permissions: [
+      { key: "view_events", label: "Visualizar Eventos", description: "Acesso à agenda de eventos", scopable: true },
+      { key: "create_events", label: "Criar Eventos", description: "Criar novos eventos" },
+      { key: "edit_events", label: "Editar Eventos", description: "Editar eventos existentes" },
+      { key: "delete_events", label: "Excluir Eventos", description: "Excluir eventos" },
+      { key: "confirm_event_attendance", label: "Confirmar Presença", description: "Confirmar presença em eventos" },
+      { key: "manage_event_notifications", label: "Gerenciar Notificações", description: "Gerenciar notificações de eventos" },
+    ],
+  },
 ];
 
 export const ALL_PERMISSION_KEYS = PERMISSION_MODULES.flatMap(m => m.permissions.map(p => p.key));
@@ -373,6 +390,7 @@ export const ROUTE_PERMISSIONS: Record<string, string> = {
   "/configuracoes/auditoria": "view_audit_logs",
   "/performance": "view_performance_module",
   "/planos": "view_billing_plans",
+  "/eventos": "view_events",
 };
 
 // Legacy permission key mapping (old -> new) for backward compatibility
