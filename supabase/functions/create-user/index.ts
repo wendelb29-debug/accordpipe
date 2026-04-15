@@ -77,6 +77,43 @@ serve(async (req) => {
       return respond(false, { error: "Todos os campos são obrigatórios" });
     }
 
+    // ──────────────────────────────────────────────
+    // CHECK USER LIMIT BEFORE PROCEEDING
+    // ──────────────────────────────────────────────
+    const { data: limitCheck } = await supabase.rpc("check_user_limit", { _tenant_id: company_id });
+    if (limitCheck && !limitCheck.can_add) {
+      const status = limitCheck.billing_status;
+      let reason = `Limite de usuários atingido para este tenant (${limitCheck.active_users}/${limitCheck.effective_limit}).`;
+      if (status === "suspended") reason = "Assinatura suspensa. Criação de usuários bloqueada.";
+      if (status === "cancelled") reason = "Assinatura cancelada. Criação de usuários bloqueada.";
+
+      await supabase.rpc("log_audit", {
+        _user_id: caller.id,
+        _user_name: callerProfile?.name || caller.email || "",
+        _action: "user_creation_blocked_limit",
+        _target_type: "user",
+        _target_id: null,
+        _details: JSON.stringify({
+          reason,
+          plan: limitCheck.plan_name,
+          active_users: limitCheck.active_users,
+          effective_limit: limitCheck.effective_limit,
+          billing_status: status,
+        }),
+      });
+
+      return respond(false, {
+        error: reason,
+        limit_info: {
+          plan_name: limitCheck.plan_name,
+          active_users: limitCheck.active_users,
+          effective_limit: limitCheck.effective_limit,
+          remaining: limitCheck.remaining,
+          billing_status: status,
+        },
+      });
+    }
+
     const cleanCpf = cpf.replace(/\D/g, "");
     const cleanWhatsapp = whatsapp.replace(/\D/g, "");
 

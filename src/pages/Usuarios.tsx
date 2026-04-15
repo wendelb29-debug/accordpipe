@@ -225,7 +225,19 @@ export default function Usuarios() {
       });
 
       if (error) throw error;
-      if (!data?.ok) throw new Error(data?.error || "Erro desconhecido");
+      if (!data?.ok) {
+        // Show limit info if available
+        if (data?.limit_info) {
+          const li = data.limit_info;
+          toast({
+            title: "Limite de usuários atingido",
+            description: `Plano ${li.plan_name}: ${li.active_users}/${li.effective_limit} usuários. Restam ${li.remaining} vagas. Ajuste o plano ou contrate extras.`,
+            variant: "destructive",
+          });
+          return;
+        }
+        throw new Error(data?.error || "Erro desconhecido");
+      }
 
       const isLinked = data?.linked_existing;
       toast({
@@ -329,6 +341,24 @@ export default function Usuarios() {
     try {
       const newActive = !user.is_active;
       const newStatus = newActive ? "ativo" : "bloqueado";
+
+      // If reactivating, check user limit
+      if (newActive) {
+        const companyId = user.company_id || activeCompanyId || profile?.company_id;
+        if (companyId) {
+          const { data: limitCheck } = await supabase.rpc("check_user_limit", { _tenant_id: companyId });
+          const lc = limitCheck as any;
+          if (lc && !lc.can_add) {
+            toast({
+              title: "Limite de usuários atingido",
+              description: `Plano ${lc.plan_name}: ${lc.active_users}/${lc.effective_limit} usuários. Não é possível reativar.`,
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+      }
+
       const { error } = await supabase
         .from("profiles")
         .update({ is_active: newActive, status: newStatus })
