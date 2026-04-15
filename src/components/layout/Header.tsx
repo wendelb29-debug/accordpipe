@@ -54,7 +54,8 @@ export function Header() {
   const location = useLocation();
   const isMobile = useIsMobile();
 
-  const pageTitle = ROUTE_TITLES[location.pathname] || "";
+  const titleKey = ROUTE_TITLE_KEYS[location.pathname];
+  const pageTitle = titleKey ? (titleKey.startsWith("ACCORD") ? titleKey : t(titleKey)) : "";
   const pageSubtitle = ROUTE_SUBTITLES[location.pathname] || "";
 
   useEffect(() => {
