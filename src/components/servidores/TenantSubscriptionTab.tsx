@@ -104,6 +104,9 @@ export function TenantSubscriptionTab({ companyId, resellerMode }: Props) {
       const plan = plans.find((p) => p.id === selectedPlanId);
       if (!plan) throw new Error("Plano não encontrado");
 
+      const oldPlanName = subscription?.plan_name_snapshot;
+      const oldLimit = subscription?.effective_user_limit;
+
       if (subscription) {
         await supabase.from("tenant_subscription_history").insert({
           tenant_id: companyId,
@@ -137,7 +140,26 @@ export function TenantSubscriptionTab({ companyId, resellerMode }: Props) {
         yearly_price_snapshot: plan.yearly_price,
       } as any);
 
-      if (ok) toast.success("Assinatura do tenant atualizada!");
+      if (ok) {
+        toast.success("Assinatura do tenant atualizada!");
+        // Audit log for reseller actions
+        if (resellerMode && user) {
+          await supabase.from("audit_logs").insert({
+            user_id: user.id,
+            user_name: user.email,
+            action: "update_child_tenant_subscription",
+            target_type: "tenant_subscription",
+            target_id: companyId,
+            details: {
+              old_plan: oldPlanName,
+              new_plan: plan.name,
+              old_limit: oldLimit,
+              new_limit: plan.base_user_limit + extraFree + extraPaid,
+              billing_status: billingStatus,
+            },
+          });
+        }
+      }
     } catch (err: any) {
       toast.error("Erro ao salvar: " + err.message);
     } finally {
