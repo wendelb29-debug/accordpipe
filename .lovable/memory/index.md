@@ -1,0 +1,84 @@
+# Memory: index.md
+Updated: 1h ago
+
+# Project Memory
+
+## Core
+- **Identity:** Dark theme (#050505), h-14 compact headers. Global 'Ganho' button MUST be emerald (#10B981).
+- **Terminology:** 'Base de Clientes', 'Accord Sales', 'Fintech', 'Accord Insights', 'Accord Performance'. Profile uses `whatsapp`, not `phone`.
+- **Navigation:** Global navigation via header blue arrow (`navigate(-1)`). No redundant back buttons.
+- **Strict Tech constraints:** React 18 compat REQUIRES `@radix-ui/react-tooltip` v1.1.6 exactly. DO NOT upgrade.
+- **Integrations:** Asaas is the ONLY payment provider.
+- **Constraints:** CRM Lead details MUST use legacy `LeadPropostasTab` (NOT `LeadPropostasTabNew`). REMOVED 'WhatsApp' tab.
+- **PDF Generation:** `pdf-lib` Helvetica REQUIRES stripping emojis/unicode (use `[OK]`) due to winAnsi limitation.
+- **Security:** RLS for `pdf_contracts` MUST NOT use subqueries (compare directly with `auth.uid()` or `server_id`).
+- **Architecture:** Multi-tenancy strictly isolated by `server_id`. Global profile identity linked via `user_tenants`. Profiles hold identity only; leads hold commercial data.
+
+## Memories
+- [Role-based Dashboard](mem://features/role-based-dashboard) — Role-specific dynamic dashboard (Operator, Admin, CEO)
+- [Form Validation](mem://features/form-validation-rules) — Mandatory fields for Leads to Won and administrative forms
+- [Business Workflow](mem://project/business-workflow) — CRM -> Admin -> Contract -> Financial -> Client Status
+- [Client Reporting](mem://features/client-reporting-and-export) — Export logic for client reports and dependent rows
+- [Activity Visual Alerts](mem://features/activity-visual-alerts) — Visual hierarchy for SLA alerts and delayed activities
+- [Data Protection](mem://constraints/data-protection) — Deletion disabled in 'Cadastrados' for audit integrity
+- [PWA & Mobile](mem://features/pwa-and-mobile-optimization) — PWA 100dvh, collapsible left panel, mobile drawers
+- [WhatsApp API Stability](mem://integrations/whatsapp-api-stability) — Silent error handling for unconfigured WhatsApp
+- [Branding System](mem://style/accord-branding-system) — Nomenclature, specific UI colors, no-background logos on docs
+- [Auth Guard UI](mem://security/infrastructure-and-auth) — Required Loading state before auth redirects
+- [Accord AI System](mem://features/accord-ai-system) — Floating assistant state persistence and specific UI behaviors
+- [Accord Inbox](mem://features/accord-inbox-center) — Three-column multi-tenant WhatsApp inbox
+- [Home Portal](mem://features/accord-home-portal) — Social intranet home page instead of dashboard
+- [React Tooltip Compat](mem://architecture/react-compatibility) — v1.1.6 strict requirement for @radix-ui/react-tooltip
+- [Notification UI](mem://features/notification-center-ui) — Emerald colored unread state, tabbed layout
+- [Global Logo](mem://design/global-logo-centralization) — System UI vs Document logos defined in admin
+- [RLS Recursion](mem://security/rls-policy-recursion-prevention) — RLS policies avoid subqueries referencing same table
+- [Client Management](mem://features/client-management-system) — Base de Clientes module, KPIs, internal tabs
+- [RLS Hardening](mem://security/rls-hardening-architecture) — Signatures restricted from public client access
+- [API Credential Isolation](mem://security/api-credential-isolation) — company_api_credentials isolated to Master/Admin/CEO
+- [PII Protection RPC](mem://security/pii-protection-rpc) — PII protected in signature public links via SECURITY DEFINER
+- [Storage Ownership](mem://security/storage-ownership-enforcement) — user-signatures bucket RLS by auth.uid()
+- [PDF Generation Encoding](mem://constraints/pdf-generation-encoding) — pdf-lib winAnsi restriction for emojis
+- [Conversational CRM](mem://features/conversational-crm-integration) — WhatsApp tab removed from CRM layout
+- [Global Navigation](mem://style/global-navigation-ux) — Blue arrow header navigation, fallback logic
+- [User Profile](mem://features/user-settings-and-profile) — 'Meu Perfil' required fields (Name, CPF, DOB, WhatsApp)
+- [Master Tenant Protection](mem://security/master-tenant-protection) — Protection against deletion for master tenant
+- [Avatar Storage](mem://security/avatar-storage-policy) — Avatar upload RLS policies
+- [WhatsApp Workspace](mem://integrations/whatsapp-workspace-mapping) — WhatsApp connection mapped to workspace
+- [MRR Management](mem://features/financial-and-mrr-management) — Financial MRR sync and contract dynamic variables
+- [CRM Lead Management](mem://features/crm-lead-and-team-management) — Kanban logic, lost leads reactivation behavior
+- [Tenant Master Visuals](mem://style/tenant-master-visuals) — Visual distinction of Master Tenant vs custom child tenants
+- [Profile Field Mapping](mem://constraints/user-profile-field-mapping) — 'whatsapp' field usage over 'phone'
+- [Tenant AI Config](mem://features/tenant-ai-customization) — AI features customized per tenant
+- [Notification Isolation](mem://features/notification-tenant-isolation) — Tenant-specific websocket isolated notifications
+- [Branding Separation](mem://style/branding-context-separation) — Separation of UI and document branding colors
+- [Webhook Integrations](mem://integrations/external-apis-and-whatsapp-webhooks) — Webhook structure for WhatsApp integration
+- [Multi-tenancy Architecture](mem://architecture/multi-tenancy-and-white-label-system) — Server_id isolation, docs scoping
+- [Proposal Legacy Tab](mem://style/proposal-tab-legacy-restore) — Mandatory usage of LeadPropostasTab component
+- [Premium CRM Card](mem://style/premium-crm-card-design) — Clean CRM card layout design
+- [Tenant Webhooks](mem://integrations/tenant-webhook-architecture) — Tenant-specific webhook tokens
+- [Dynamic Kanban Header](mem://features/dynamic-kanban-stage-header) — Lead detailed view progress bar mapped to Kanban stages
+- [User Creation](mem://features/user-creation-workflow-direct-v3) — Direct user creation linking existing global profile
+- [Sales Pipeline v2](mem://features/workspace-kanban-and-sales-pipelines-v2) — allow_mark_as_won config, pipeline logic
+- [Post-sale Workflow](mem://features/post-sale-workflow-and-cs-consolidated) — Automated workflow via 'Cadastro' workspace
+- [Cadastro Standards](mem://features/cadastro-workspace-standards) — Standard stages for the administrative Cadastro workspace
+- [Product Catalog](mem://features/tenant-product-catalog) — Product catalog feeds CRM proposals
+- [Master Restrictions](mem://security/master-tenant-restriction) — Tenant management isolated to Master profiles
+- [Card Return Workflow](mem://features/card-return-workflow-cadastro) — 'Devolver' card logic between commercial/admin
+- [Tenant Onboarding](mem://features/tenant-configuration-link) — Tenant config via onboarding links
+- [Proposal Unified](mem://features/proposal-system-unified-template) — Native jsPDF proposal separate from signature contracts
+- [Editor Toolbar](mem://style/editor-toolbar-consistency) — Sticky editor toolbar required
+- [RBAC Governance](mem://security/rbac-governance) — Strict RBAC and audit logs system
+- [Global Architecture](mem://auth/global-multi-tenant-architecture) — Global vs tenant-specific profile separation
+- [Premium UI](mem://style/premium-visual-identity) — Dark theme, safe-area-insets, sophisticated 'A' pattern background
+- [Document Management](mem://features/document-and-signature-management) — E-signature only on Contract, mandatory mobile reading
+- [Capture Form Routing](mem://features/capture-form-workspace-routing) — Mandatory workspace destination for lead capture forms
+- [Audit Standards](mem://security/governance-and-audit-standard) — Standardized audit log payload and 4-step execution rule
+- [Identity Data Separation](mem://architecture/identity-vs-commercial-data-separation) — profiles for identity vs crm_leads for business
+- [Payment Restriction](mem://integrations/payment-provider-restriction) — Asaas is the only payment provider allowed
+- [Fintech Webhooks](mem://security/fintech-webhook-management) — Fintech webhooks per tenant isolated via webhook_token
+- [Tenant Admin UX](mem://features/tenant-administration-ux) — Users and Catalog tabs within Edit Tenant view
+- [Workspace Access](mem://features/workspace-access-refinement) — View, Operate, Delete roles per workspace
+- [Accord Insights](mem://features/accord-insights) — Reports module with mandatory workspace filtering
+- [Asaas Fintech](mem://integrations/asaas-fintech) — Features of the Asaas Fintech integration module
+- [Performance Management](mem://features/performance-management) — Accord Performance, individual KPIs, checklists
+- [Reseller White Label](mem://features/reseller-white-label) — Multi-level tenant hierarchy (platform_master/reseller/standard) for white-label SaaS

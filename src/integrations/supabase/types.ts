@@ -494,12 +494,15 @@ export type Database = {
           brand_primary_color: string | null
           brand_secondary_color: string | null
           brand_text_color: string | null
+          can_create_tenants: boolean
+          can_manage_child_tenants: boolean
           cep: string | null
           cidade: string | null
           cnpj: string
           complemento: string | null
           created_at: string
           created_by: string | null
+          created_by_tenant_id: string | null
           doc_accent_color: string | null
           doc_bg_color: string | null
           doc_primary_color: string | null
@@ -509,14 +512,18 @@ export type Database = {
           endereco: string | null
           estado: string | null
           id: string
+          is_reseller: boolean
           is_trial: boolean
+          max_child_tenants: number | null
           nome_fantasia: string | null
           numero: string | null
+          parent_tenant_id: string | null
           razao_social: string
           responsavel: string | null
           servidor_id: string | null
           status: string
           telefone: string | null
+          tenant_type: string
           trial_expires_at: string | null
           trial_extensions: number
           trial_start: string | null
@@ -543,12 +550,15 @@ export type Database = {
           brand_primary_color?: string | null
           brand_secondary_color?: string | null
           brand_text_color?: string | null
+          can_create_tenants?: boolean
+          can_manage_child_tenants?: boolean
           cep?: string | null
           cidade?: string | null
           cnpj: string
           complemento?: string | null
           created_at?: string
           created_by?: string | null
+          created_by_tenant_id?: string | null
           doc_accent_color?: string | null
           doc_bg_color?: string | null
           doc_primary_color?: string | null
@@ -558,14 +568,18 @@ export type Database = {
           endereco?: string | null
           estado?: string | null
           id?: string
+          is_reseller?: boolean
           is_trial?: boolean
+          max_child_tenants?: number | null
           nome_fantasia?: string | null
           numero?: string | null
+          parent_tenant_id?: string | null
           razao_social: string
           responsavel?: string | null
           servidor_id?: string | null
           status?: string
           telefone?: string | null
+          tenant_type?: string
           trial_expires_at?: string | null
           trial_extensions?: number
           trial_start?: string | null
@@ -592,12 +606,15 @@ export type Database = {
           brand_primary_color?: string | null
           brand_secondary_color?: string | null
           brand_text_color?: string | null
+          can_create_tenants?: boolean
+          can_manage_child_tenants?: boolean
           cep?: string | null
           cidade?: string | null
           cnpj?: string
           complemento?: string | null
           created_at?: string
           created_by?: string | null
+          created_by_tenant_id?: string | null
           doc_accent_color?: string | null
           doc_bg_color?: string | null
           doc_primary_color?: string | null
@@ -607,14 +624,18 @@ export type Database = {
           endereco?: string | null
           estado?: string | null
           id?: string
+          is_reseller?: boolean
           is_trial?: boolean
+          max_child_tenants?: number | null
           nome_fantasia?: string | null
           numero?: string | null
+          parent_tenant_id?: string | null
           razao_social?: string
           responsavel?: string | null
           servidor_id?: string | null
           status?: string
           telefone?: string | null
+          tenant_type?: string
           trial_expires_at?: string | null
           trial_extensions?: number
           trial_start?: string | null
@@ -633,6 +654,20 @@ export type Database = {
           zapi_webhook_on_send?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "companies_created_by_tenant_id_fkey"
+            columns: ["created_by_tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "companies_parent_tenant_id_fkey"
+            columns: ["parent_tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "companies_servidor_id_fkey"
             columns: ["servidor_id"]
@@ -5172,6 +5207,7 @@ export type Database = {
         Args: { _tenant_id: string }
         Returns: number
       }
+      count_child_tenants: { Args: { _reseller_id: string }; Returns: number }
       create_notification:
         | {
             Args: {
@@ -5317,6 +5353,7 @@ export type Database = {
         }[]
       }
       get_profile_company_id: { Args: { _user_id: string }; Returns: string }
+      get_tenant_type: { Args: { _tenant_id: string }; Returns: string }
       get_tenant_user_limit: { Args: { _tenant_id: string }; Returns: number }
       get_today_birthdays: {
         Args: { _company_id?: string }
@@ -5341,6 +5378,10 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_master: { Args: { _user_id: string }; Returns: boolean }
+      is_reseller_of: {
+        Args: { _child_id: string; _reseller_id: string }
+        Returns: boolean
+      }
       log_audit: {
         Args: {
           _action: string
@@ -5368,6 +5409,10 @@ export type Database = {
       }
       pdf_contract_has_signer_token: {
         Args: { _contract_id: string }
+        Returns: boolean
+      }
+      reseller_can_add_child: {
+        Args: { _reseller_id: string }
         Returns: boolean
       }
       resolve_tenant_by_webhook_token: {
