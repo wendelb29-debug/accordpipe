@@ -28,6 +28,7 @@ interface CompanyOption {
   nome_fantasia: string | null;
   razao_social: string;
   cnpj: string;
+  is_reseller?: boolean;
 }
 
 interface AuthContextType {
@@ -159,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (isMasterUser || isCeoUser) {
         const { data: companiesData } = await supabase
           .from("companies")
-          .select("id, nome_fantasia, razao_social, cnpj")
+          .select("id, nome_fantasia, razao_social, cnpj, is_reseller")
           .is("servidor_id", null)
           .in("status", ["active", "teste"])
           .order("razao_social");
@@ -167,7 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (typedProfile?.company_id) {
         const { data: companyData } = await supabase
           .from("companies")
-          .select("id, nome_fantasia, razao_social, cnpj")
+          .select("id, nome_fantasia, razao_social, cnpj, is_reseller")
           .eq("id", typedProfile.company_id)
           .maybeSingle();
         if (companyData) setCompanies([companyData as CompanyOption]);
