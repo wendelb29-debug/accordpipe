@@ -78,6 +78,11 @@ export default function Atividades() {
   const [userAvatars, setUserAvatars] = useState<UserAvatarMap>({});
   const [expandedActivityId, setExpandedActivityId] = useState<string | null>(null);
 
+  // Lead detail drawer state
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerLead, setDrawerLead] = useState<CrmLead | null>(null);
+  const [drawerLoading, setDrawerLoading] = useState(false);
+
   useEffect(() => {
     fetchActivities();
   }, [activeCompanyId, dateFilter, view]);
