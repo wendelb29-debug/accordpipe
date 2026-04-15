@@ -297,7 +297,7 @@ export function Sidebar() {
               </button>
             </TooltipTrigger>
             <TooltipContent side="right" className="font-medium text-xs">
-              {pinned ? "Desafixar sidebar" : "Fixar sidebar"}
+              {pinned ? t("common.close") : t("common.view")}
             </TooltipContent>
           </Tooltip>
         )}
@@ -355,7 +355,7 @@ export function Sidebar() {
                     <Settings className="h-4 w-4" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="right">Configurações</TooltipContent>
+                <TooltipContent side="right">{t("nav.settings")}</TooltipContent>
               </Tooltip>
             ) : (
               <button
@@ -363,7 +363,7 @@ export function Sidebar() {
                 className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors text-xs font-semibold"
               >
                 <Settings className="h-4 w-4" />
-                <span className="flex-1 text-left">Configurações</span>
+                <span className="flex-1 text-left">{t("nav.settings")}</span>
                 <ChevronDown className={cn("h-3 w-3 transition-transform", configOpen && "rotate-180")} />
               </button>
             )}
