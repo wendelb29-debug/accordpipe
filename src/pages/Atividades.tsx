@@ -640,6 +640,28 @@ export default function Atividades() {
           <WeeklyCalendarView activities={activities} loading={loading} />
         </TabsContent>
       </Tabs>
+
+      {/* Lead Detail Drawer */}
+      <Sheet open={drawerOpen} onOpenChange={(open) => { if (!open) { setDrawerOpen(false); setDrawerLead(null); } }}>
+        <SheetContent side="right" className="w-full sm:max-w-[85vw] lg:max-w-[70vw] p-0 overflow-y-auto">
+          <SheetTitle className="sr-only">Detalhes da Oportunidade</SheetTitle>
+          {drawerLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : drawerLead ? (
+            <div className="h-full overflow-y-auto">
+              <CrmLeadDetailView
+                lead={drawerLead}
+                onBack={() => { setDrawerOpen(false); setDrawerLead(null); }}
+                onUpdate={handleDrawerUpdate}
+                onMoveStage={handleDrawerMoveStage}
+                onDelete={handleDrawerDelete}
+              />
+            </div>
+          ) : null}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
