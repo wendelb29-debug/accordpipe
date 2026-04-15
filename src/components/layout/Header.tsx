@@ -160,13 +160,13 @@ export function Header() {
           <DropdownMenuContent align="end" className="w-64 rounded-xl shadow-lg max-h-[80vh] overflow-y-auto">
             <DropdownMenuLabel>
               <div className="flex flex-col">
-                <span className="font-semibold">{profile?.name || "Usuário"}</span>
+                <span className="font-semibold">{profile?.name || t("header.user")}</span>
                 <span className="text-xs font-normal text-muted-foreground">
                   {profile?.email}
                 </span>
                 {role && (
                   <Badge variant="outline" className="mt-1.5 w-fit text-[10px] rounded-md border-primary/20 text-primary">
-                    {roleLabels[role]}
+                    {t(`roles.${role}`)}
                   </Badge>
                 )}
               </div>
@@ -177,7 +177,7 @@ export function Header() {
               <>
                 <DropdownMenuItem className="rounded-lg cursor-pointer gap-2" onClick={() => navigate("/servidores")}>
                   <Building2 className="h-4 w-4" />
-                  Tenants
+                  {t("nav.tenants")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
               </>
@@ -187,20 +187,20 @@ export function Header() {
               <>
                 <DropdownMenuItem className="rounded-lg cursor-pointer gap-2" onClick={() => navigate("/meus-tenants")}>
                   <Network className="h-4 w-4" />
-                  Meus Tenants
+                  {t("nav.myTenants")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
               </>
             )}
 
-            <DropdownMenuItem className="rounded-lg cursor-pointer" onClick={() => navigate("/perfil")}>Meu Perfil</DropdownMenuItem>
-            <DropdownMenuItem className="rounded-lg cursor-pointer" onClick={() => navigate("/perfil")}>Alterar Senha</DropdownMenuItem>
+            <DropdownMenuItem className="rounded-lg cursor-pointer" onClick={() => navigate("/perfil")}>{t("header.profile")}</DropdownMenuItem>
+            <DropdownMenuItem className="rounded-lg cursor-pointer" onClick={() => navigate("/perfil")}>{t("header.changePassword")}</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-destructive rounded-lg cursor-pointer"
               onClick={signOut}
             >
-              Sair
+              {t("header.logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
