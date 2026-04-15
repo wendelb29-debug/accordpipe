@@ -7,8 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Plus, Calendar as CalendarIcon, List, Search, Clock, MapPin,
-  Link2, Star, AlertTriangle, Sparkles,
+  Link2, Star, AlertTriangle, Sparkles, CalendarPlus, Check,
 } from "lucide-react";
+import { useEventAgenda } from "@/hooks/useEventAgenda";
 import { useEvents, EVENT_TYPES, type TenantEvent, type EventFormData } from "@/hooks/useEvents";
 import { EventFormDialog } from "@/components/eventos/EventFormDialog";
 import { EventDetailDialog } from "@/components/eventos/EventDetailDialog";
