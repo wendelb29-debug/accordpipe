@@ -22,6 +22,19 @@ function AtendimentoContent() {
   const canSeeCommercial = isMaster || role === "admin" || role === "operador" || role === "ceo" || role === "comercial";
   const canSeeAdmin = isMaster || role === "admin" || role === "administrativo" || role === "ceo";
 
+  // Auto-select workspace from query params (e.g. coming from Atividades drawer)
+  useEffect(() => {
+    const wsParam = searchParams.get("workspace");
+    if (wsParam && !selectedWsId && !wsLoading) {
+      selectWorkspace(wsParam);
+      setSelectedWsId(wsParam);
+      // Clean up query params after consuming
+      searchParams.delete("workspace");
+      searchParams.delete("lead");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, selectedWsId, wsLoading, selectWorkspace, setSearchParams]);
+
   // Register back handler: when workspace is selected, go back to hub
   useEffect(() => {
     if (!selectedWsId) return;
