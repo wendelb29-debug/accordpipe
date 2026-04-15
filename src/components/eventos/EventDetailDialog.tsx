@@ -1,9 +1,16 @@
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, Clock, MapPin, Link2, Users, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import {
+  Calendar, Clock, MapPin, Link2, Users, CheckCircle2, XCircle,
+  AlertTriangle, CalendarPlus, CalendarMinus, Bell,
+} from "lucide-react";
 import { type TenantEvent, useEventConfirmations } from "@/hooks/useEvents";
+import { useEventAgenda } from "@/hooks/useEventAgenda";
 
 interface Props {
   open: boolean;
@@ -27,22 +34,57 @@ const typeColors: Record<string, string> = {
   online: "bg-indigo-500/20 text-indigo-400",
 };
 
+const REMINDER_OPTIONS = [
+  { value: "0", label: "Sem lembrete" },
+  { value: "5", label: "5 minutos antes" },
+  { value: "10", label: "10 minutos antes" },
+  { value: "15", label: "15 minutos antes" },
+  { value: "30", label: "30 minutos antes" },
+  { value: "60", label: "1 hora antes" },
+  { value: "120", label: "2 horas antes" },
+  { value: "1440", label: "1 dia antes" },
+];
+
 export function EventDetailDialog({ open, onOpenChange, event }: Props) {
   const { myStatus, confirmed, declined, pending, respond } = useEventConfirmations(event?.id ?? null);
+  const { isAdded, addToAgenda, removeFromAgenda } = useEventAgenda();
+  const [reminderMinutes, setReminderMinutes] = useState("15");
 
   if (!event) return null;
 
   const total = confirmed + declined + pending;
   const pct = total > 0 ? Math.round((confirmed / total) * 100) : 0;
+  const eventAdded = isAdded(event.id);
+  const isScheduled = event.status === "scheduled" && new Date(event.start_at) >= new Date();
 
   const fmtDate = (d: string) =>
     new Date(d).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
   const fmtTime = (d: string) =>
     new Date(d).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
+  const handleAddToAgenda = () => {
+    addToAgenda.mutate({ event, reminderMinutes: parseInt(reminderMinutes, 10) });
+  };
+
+  const handleRemoveFromAgenda = () => {
+    removeFromAgenda.mutate(event.id);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        {/* Banner image */}
+        {(event.banner_url || event.thumbnail_url) && (
+          <div className="relative -mx-6 -mt-6 mb-4 rounded-t-lg overflow-hidden h-40">
+            <img
+              src={event.banner_url || event.thumbnail_url || ""}
+              alt={event.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+          </div>
+        )}
+
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 flex-wrap">
             {event.title}
@@ -89,6 +131,58 @@ export function EventDetailDialog({ open, onOpenChange, event }: Props) {
 
           {event.description && (
             <p className="text-sm text-muted-foreground whitespace-pre-wrap">{event.description}</p>
+          )}
+
+          {/* Add to Agenda section */}
+          {isScheduled && (
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <CalendarPlus className="h-4 w-4 text-primary" /> Minha Agenda
+              </div>
+
+              {eventAdded ? (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-green-400" />
+                    Adicionado à sua agenda
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 text-destructive"
+                    onClick={handleRemoveFromAgenda}
+                    disabled={removeFromAgenda.isPending}
+                  >
+                    <CalendarMinus className="h-4 w-4" /> Remover
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Bell className="h-4 w-4 text-muted-foreground" />
+                    <Label className="text-sm">Lembrete</Label>
+                  </div>
+                  <Select value={reminderMinutes} onValueChange={setReminderMinutes}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {REMINDER_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    className="w-full gap-1.5"
+                    onClick={handleAddToAgenda}
+                    disabled={addToAgenda.isPending}
+                  >
+                    <CalendarPlus className="h-4 w-4" /> Adicionar à Minha Agenda
+                  </Button>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Confirmations */}
