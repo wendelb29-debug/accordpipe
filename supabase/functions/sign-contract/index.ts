@@ -503,12 +503,11 @@ async function persistSignedPdfForPdfContract(
 
   if (uploadSignedError) throw uploadSignedError;
 
-  const signedPublicUrl = buildSignedPdfPublicUrl(signedPath);
-  const cacheBustedUrl = `${signedPublicUrl}?v=${Date.now()}`;
+  const signedPdfUrl = await buildSignedPdfUrl(supabase, signedPath);
   const { error: updatePdfUrlError } = await supabase
     .from("pdf_contracts")
     .update({
-      pdf_assinado_url: cacheBustedUrl,
+      pdf_assinado_url: signedPdfUrl,
       pdf_assinado_path: signedPath,
     })
     .eq("id", contract.id);
@@ -516,7 +515,7 @@ async function persistSignedPdfForPdfContract(
   if (updatePdfUrlError) throw updatePdfUrlError;
 
   return {
-    url: cacheBustedUrl,
+    url: signedPdfUrl,
     path: signedPath,
   };
 }
@@ -789,7 +788,7 @@ Deno.serve(async (req) => {
         .update({
           status: "assinado",
           signed_at: signedAt,
-          signature_photo_url: urlData.publicUrl,
+          signature_photo_url: urlData?.signedUrl || "",
           signature_latitude: latitude,
           signature_longitude: longitude,
           signature_address: address,
@@ -939,7 +938,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
+      const { data: urlData } = await supabase.storage.from("signatures").createSignedUrl(fileName, 2592000);
       const signatureHash = await generateHash(
         `${contractId}|${signerName || ""}|${signerDocument || ""}|${signedAt}|${clientIp}`,
       );
@@ -1036,7 +1035,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
+      const { data: urlData } = await supabase.storage.from("signatures").createSignedUrl(fileName, 2592000);
       const documentHash = await generateHash(
         `${contractId}|${clientContract.client_name}|${clientContract.client_cpf || ""}|${signedAt}`,
       );
@@ -1122,7 +1121,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
+    const { data: urlData } = await supabase.storage.from("signatures").createSignedUrl(fileName, 2592000);
     const documentHash = await generateHash(
       `${contractId2}|${contract.contract_content || ""}|${signedAt}`,
     );
