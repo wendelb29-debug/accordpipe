@@ -3597,6 +3597,53 @@ export type Database = {
         }
         Relationships: []
       }
+      system_error_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          message: string
+          metadata: Json | null
+          module: string
+          severity: string
+          stack_trace: string | null
+          tenant_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          message: string
+          metadata?: Json | null
+          module: string
+          severity?: string
+          stack_trace?: string | null
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          message?: string
+          metadata?: Json | null
+          module?: string
+          severity?: string
+          stack_trace?: string | null
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_error_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_asaas_customers: {
         Row: {
           asaas_customer_id: string
@@ -5626,6 +5673,19 @@ export type Database = {
           _user_name: string
         }
         Returns: undefined
+      }
+      log_system_error: {
+        Args: {
+          _action: string
+          _message: string
+          _metadata?: Json
+          _module: string
+          _severity?: string
+          _stack_trace?: string
+          _tenant_id?: string
+          _user_id?: string
+        }
+        Returns: string
       }
       lookup_servidor_by_cnpj: {
         Args: { _cnpj: string }
