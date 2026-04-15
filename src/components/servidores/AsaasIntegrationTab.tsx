@@ -86,7 +86,7 @@ export function AsaasIntegrationTab({ companyId }: Props) {
         body: { action: "save_credentials", tenant_id: companyId, api_key: apiKey, environment },
       });
       if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      if (data && !data.success) throw new Error(data.details || data.message || "Erro desconhecido");
       toast.success("Credenciais salvas com sucesso!");
       setApiKey("");
       await fetchIntegration();
@@ -129,7 +129,7 @@ export function AsaasIntegrationTab({ companyId }: Props) {
         body: { action: "create_webhook", tenant_id: companyId },
       });
       if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      if (data && !data.success) throw new Error(data.details || data.message || "Erro desconhecido");
       toast.success("Webhook criado no Asaas!");
       await fetchIntegration();
     } catch (err: any) {
