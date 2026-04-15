@@ -239,18 +239,28 @@ export function GerarPixModal({ open, onOpenChange, tenantId, registrations, onS
   const [loading, setLoading] = useState(false);
   const [hasIntegration, setHasIntegration] = useState<boolean | null>(null);
   const [result, setResult] = useState<any>(null);
-  const [form, setForm] = useState({ registration_id: "", value: "", due_date: "", description: "" });
+  const [form, setForm] = useState({ registration_id: "", value: "", due_date: "", description: "", cpf_cnpj: "" });
 
   useEffect(() => {
     if (open && tenantId) {
       setResult(null);
-      setForm({ registration_id: "", value: "", due_date: "", description: "" });
+      setForm({ registration_id: "", value: "", due_date: "", description: "", cpf_cnpj: "" });
       getAsaasIntegration(tenantId).then((int) => setHasIntegration(!!int?.api_key_masked));
     }
   }, [open, tenantId]);
 
+  // Auto-fill cpf_cnpj when client changes
+  useEffect(() => {
+    if (form.registration_id) {
+      const reg = registrations.find((r) => r.id === form.registration_id);
+      setForm((prev) => ({ ...prev, cpf_cnpj: reg?.cpf || prev.cpf_cnpj }));
+    }
+  }, [form.registration_id, registrations]);
+
   const handleSubmit = async () => {
     if (!tenantId || !form.value || !form.due_date) { toast.error("Preencha valor e vencimento"); return; }
+    const cleanDoc = form.cpf_cnpj.replace(/\D/g, "");
+    if (!cleanDoc) { toast.error("Preencha o CPF ou CNPJ do cliente"); return; }
     setLoading(true);
     try {
       const clientReg = registrations.find((r) => r.id === form.registration_id);
@@ -258,7 +268,7 @@ export function GerarPixModal({ open, onOpenChange, tenantId, registrations, onS
       if (clientReg) {
         const custResult = await callAsaasApi("create_customer", tenantId, {
           local_customer_id: clientReg.id, name: clientReg.nome_completo || "Cliente",
-          email: clientReg.email || "", cpf_cnpj: clientReg.cpf || "", phone: clientReg.telefone || "",
+          email: clientReg.email || "", cpf_cnpj: cleanDoc, phone: clientReg.telefone || "",
         });
         asaasCustomerId = custResult.asaas_customer_id;
       }
