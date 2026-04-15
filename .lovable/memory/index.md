@@ -82,3 +82,4 @@ Updated: 1h ago
 - [Asaas Fintech](mem://integrations/asaas-fintech) — Features of the Asaas Fintech integration module
 - [Performance Management](mem://features/performance-management) — Accord Performance, individual KPIs, checklists
 - [Reseller White Label](mem://features/reseller-white-label) — Multi-level tenant hierarchy (platform_master/reseller/standard) for white-label SaaS
+- [Accord Academy](mem://features/accord-academy) — EAD module with global/tenant courses, categories, lessons, user progress tracking
