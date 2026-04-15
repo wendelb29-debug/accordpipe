@@ -558,14 +558,21 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
           const dynCol = kanbanCols.find(c => c.id === stage.id);
           const slaDays = dynCol?.sla_days || (stage.daysLimit ? parseInt(stage.daysLimit) || 0 : 0);
 
+
           return (
             <div
               key={stage.id}
               className={cn(
                 "flex-shrink-0 w-[220px] rounded-xl flex flex-col border transition-all duration-200",
-                dynCol ? "border-border/50 bg-muted/20" : `${colors.border} ${colors.bg}`,
+                dynCol ? "border-border/50" : `${colors.border} ${colors.bg}`,
+                !dynCol && !colors.bg && "bg-muted/20",
                 dragOverStage === stage.id && "ring-2 ring-primary/60 scale-[1.01]"
               )}
+              style={dynCol?.color ? {
+                backgroundColor: `color-mix(in srgb, ${dynCol.color} 6%, transparent)`,
+                borderTopColor: dynCol.color,
+                borderTopWidth: '2px',
+              } : undefined}
               onDragOver={(e) => { e.preventDefault(); setDragOverStage(stage.id); }}
               onDragLeave={() => setDragOverStage(null)}
               onDrop={(e) => handleDrop(e, stage.id)}
