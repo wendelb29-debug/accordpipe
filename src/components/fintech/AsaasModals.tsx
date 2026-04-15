@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   Loader2, QrCode, Link2, RefreshCw, Copy, ExternalLink,
-  AlertCircle, CheckCircle2, CreditCard, FileText, Wallet,
+  AlertCircle, CheckCircle2, CreditCard, FileText, Wallet, UserCog,
 } from "lucide-react";
 
 interface ModalProps {
@@ -62,9 +62,36 @@ function NoIntegrationState({ onClose }: { onClose: () => void }) {
   );
 }
 
+/** Warning shown when selected client has no CPF/CNPJ */
+function MissingDocWarning({ clientName }: { clientName?: string }) {
+  return (
+    <div className="flex items-start gap-2 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5">
+      <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+      <div className="space-y-1">
+        <p className="text-xs font-medium text-foreground">
+          {clientName ? `"${clientName}"` : "Este cliente"} não possui CPF/CNPJ cadastrado.
+        </p>
+        <p className="text-[11px] text-muted-foreground">
+          Preencha o campo abaixo ou atualize o cadastro do cliente antes de gerar a cobrança.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function copyText(text: string) {
   navigator.clipboard.writeText(text);
   toast.success("Copiado!");
+}
+
+/** Helper: get clean doc from registration or manual input */
+function useClientDoc(registrations: any[], registrationId: string) {
+  const selectedReg = useMemo(
+    () => registrations.find((r) => r.id === registrationId),
+    [registrations, registrationId]
+  );
+  const regDoc = selectedReg?.cpf?.replace(/\D/g, "") || "";
+  return { selectedReg, regDoc };
 }
 
 /* ═══════════════════════════════════════════ */
@@ -77,29 +104,42 @@ export function NovaCobrancaModal({ open, onOpenChange, tenantId, registrations,
   const [form, setForm] = useState({
     registration_id: "", billing_type: "BOLETO", value: "", due_date: "",
     description: "", fine_value: "", interest_value: "", discount_value: "",
-    installment_count: "", origin: "manual",
+    installment_count: "", origin: "manual", cpf_cnpj: "",
   });
 
   useEffect(() => {
     if (open && tenantId) {
       setResult(null);
-      setForm({ registration_id: "", billing_type: "BOLETO", value: "", due_date: "", description: "", fine_value: "", interest_value: "", discount_value: "", installment_count: "", origin: "manual" });
+      setForm({ registration_id: "", billing_type: "BOLETO", value: "", due_date: "", description: "", fine_value: "", interest_value: "", discount_value: "", installment_count: "", origin: "manual", cpf_cnpj: "" });
       getAsaasIntegration(tenantId).then((int) => setHasIntegration(!!int?.api_key_masked));
     }
   }, [open, tenantId]);
 
+  const { selectedReg, regDoc } = useClientDoc(registrations, form.registration_id);
+
+  // Auto-fill cpf_cnpj when client changes
+  useEffect(() => {
+    if (form.registration_id) {
+      setForm((prev) => ({ ...prev, cpf_cnpj: regDoc || prev.cpf_cnpj }));
+    }
+  }, [form.registration_id, regDoc]);
+
+  const cleanDoc = form.cpf_cnpj.replace(/\D/g, "");
+  const showDocWarning = form.registration_id && !regDoc && !cleanDoc;
+
   const handleSubmit = async () => {
     if (!tenantId || !form.value || !form.due_date) { toast.error("Preencha valor e vencimento"); return; }
+    if (!cleanDoc) { toast.error("Preencha o CPF ou CNPJ do cliente"); return; }
     setLoading(true);
     try {
-      const clientReg = registrations.find((r) => r.id === form.registration_id);
+      const clientReg = selectedReg;
       let asaasCustomerId = "";
       if (clientReg) {
         const custResult = await callAsaasApi("create_customer", tenantId, {
           local_customer_id: clientReg.id,
           name: clientReg.nome_completo || "Cliente",
           email: clientReg.email || "",
-          cpf_cnpj: clientReg.cpf || "",
+          cpf_cnpj: cleanDoc,
           phone: clientReg.telefone || "",
         });
         asaasCustomerId = custResult.asaas_customer_id;
@@ -150,6 +190,15 @@ export function NovaCobrancaModal({ open, onOpenChange, tenantId, registrations,
                 </SelectContent>
               </Select>
             </div>
+
+            {showDocWarning && <MissingDocWarning clientName={selectedReg?.nome_completo} />}
+
+            {form.registration_id && (
+              <div className="space-y-1">
+                <Label className="text-xs">CPF ou CNPJ *</Label>
+                <Input value={form.cpf_cnpj} onChange={(e) => setForm({ ...form, cpf_cnpj: e.target.value })} className="h-9 text-xs" placeholder="000.000.000-00 ou 00.000.000/0001-00" />
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
@@ -216,7 +265,7 @@ export function NovaCobrancaModal({ open, onOpenChange, tenantId, registrations,
 
             <DialogFooter>
               <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Cancelar</Button>
-              <Button size="sm" onClick={handleSubmit} disabled={loading || !form.value || !form.due_date || !form.registration_id}>
+              <Button size="sm" onClick={handleSubmit} disabled={loading || !form.value || !form.due_date || !form.registration_id || !cleanDoc}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CreditCard className="h-4 w-4 mr-1" />}
                 Gerar Cobrança
               </Button>
@@ -249,21 +298,23 @@ export function GerarPixModal({ open, onOpenChange, tenantId, registrations, onS
     }
   }, [open, tenantId]);
 
-  // Auto-fill cpf_cnpj when client changes
+  const { selectedReg, regDoc } = useClientDoc(registrations, form.registration_id);
+
   useEffect(() => {
     if (form.registration_id) {
-      const reg = registrations.find((r) => r.id === form.registration_id);
-      setForm((prev) => ({ ...prev, cpf_cnpj: reg?.cpf || prev.cpf_cnpj }));
+      setForm((prev) => ({ ...prev, cpf_cnpj: regDoc || prev.cpf_cnpj }));
     }
-  }, [form.registration_id, registrations]);
+  }, [form.registration_id, regDoc]);
+
+  const cleanDoc = form.cpf_cnpj.replace(/\D/g, "");
+  const showDocWarning = form.registration_id && !regDoc && !cleanDoc;
 
   const handleSubmit = async () => {
     if (!tenantId || !form.value || !form.due_date) { toast.error("Preencha valor e vencimento"); return; }
-    const cleanDoc = form.cpf_cnpj.replace(/\D/g, "");
     if (!cleanDoc) { toast.error("Preencha o CPF ou CNPJ do cliente"); return; }
     setLoading(true);
     try {
-      const clientReg = registrations.find((r) => r.id === form.registration_id);
+      const clientReg = selectedReg;
       let asaasCustomerId = "";
       if (clientReg) {
         const custResult = await callAsaasApi("create_customer", tenantId, {
@@ -306,10 +357,16 @@ export function GerarPixModal({ open, onOpenChange, tenantId, registrations, onS
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">CPF ou CNPJ *</Label>
-              <Input value={form.cpf_cnpj} onChange={(e) => setForm({ ...form, cpf_cnpj: e.target.value })} className="h-9 text-xs" placeholder="000.000.000-00 ou 00.000.000/0001-00" />
-            </div>
+
+            {showDocWarning && <MissingDocWarning clientName={selectedReg?.nome_completo} />}
+
+            {form.registration_id && (
+              <div className="space-y-1">
+                <Label className="text-xs">CPF ou CNPJ *</Label>
+                <Input value={form.cpf_cnpj} onChange={(e) => setForm({ ...form, cpf_cnpj: e.target.value })} className="h-9 text-xs" placeholder="000.000.000-00 ou 00.000.000/0001-00" />
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Valor (R$) *</Label>
@@ -326,7 +383,7 @@ export function GerarPixModal({ open, onOpenChange, tenantId, registrations, onS
             </div>
             <DialogFooter>
               <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Cancelar</Button>
-              <Button size="sm" onClick={handleSubmit} disabled={loading || !form.value || !form.due_date || !form.registration_id}>
+              <Button size="sm" onClick={handleSubmit} disabled={loading || !form.value || !form.due_date || !form.registration_id || !cleanDoc}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <QrCode className="h-4 w-4 mr-1" />}
                 Gerar PIX
               </Button>
@@ -485,27 +542,39 @@ export function RecorrenciaModal({ open, onOpenChange, tenantId, registrations, 
   const [result, setResult] = useState<any>(null);
   const [form, setForm] = useState({
     registration_id: "", billing_type: "BOLETO", value: "", next_due_date: "",
-    cycle: "MONTHLY", description: "", end_date: "",
+    cycle: "MONTHLY", description: "", end_date: "", cpf_cnpj: "",
   });
 
   useEffect(() => {
     if (open && tenantId) {
       setResult(null);
-      setForm({ registration_id: "", billing_type: "BOLETO", value: "", next_due_date: "", cycle: "MONTHLY", description: "", end_date: "" });
+      setForm({ registration_id: "", billing_type: "BOLETO", value: "", next_due_date: "", cycle: "MONTHLY", description: "", end_date: "", cpf_cnpj: "" });
       getAsaasIntegration(tenantId).then((int) => setHasIntegration(!!int?.api_key_masked));
     }
   }, [open, tenantId]);
 
+  const { selectedReg, regDoc } = useClientDoc(registrations, form.registration_id);
+
+  useEffect(() => {
+    if (form.registration_id) {
+      setForm((prev) => ({ ...prev, cpf_cnpj: regDoc || prev.cpf_cnpj }));
+    }
+  }, [form.registration_id, regDoc]);
+
+  const cleanDoc = form.cpf_cnpj.replace(/\D/g, "");
+  const showDocWarning = form.registration_id && !regDoc && !cleanDoc;
+
   const handleSubmit = async () => {
     if (!tenantId || !form.value || !form.next_due_date) { toast.error("Preencha valor e próximo vencimento"); return; }
+    if (!cleanDoc) { toast.error("Preencha o CPF ou CNPJ do cliente"); return; }
     setLoading(true);
     try {
-      const clientReg = registrations.find((r) => r.id === form.registration_id);
+      const clientReg = selectedReg;
       let asaasCustomerId = "";
       if (clientReg) {
         const custResult = await callAsaasApi("create_customer", tenantId, {
           local_customer_id: clientReg.id, name: clientReg.nome_completo || "Cliente",
-          email: clientReg.email || "", cpf_cnpj: clientReg.cpf || "", phone: clientReg.telefone || "",
+          email: clientReg.email || "", cpf_cnpj: cleanDoc, phone: clientReg.telefone || "",
         });
         asaasCustomerId = custResult.asaas_customer_id;
       }
@@ -549,6 +618,16 @@ export function RecorrenciaModal({ open, onOpenChange, tenantId, registrations, 
                 </SelectContent>
               </Select>
             </div>
+
+            {showDocWarning && <MissingDocWarning clientName={selectedReg?.nome_completo} />}
+
+            {form.registration_id && (
+              <div className="space-y-1">
+                <Label className="text-xs">CPF ou CNPJ *</Label>
+                <Input value={form.cpf_cnpj} onChange={(e) => setForm({ ...form, cpf_cnpj: e.target.value })} className="h-9 text-xs" placeholder="000.000.000-00 ou 00.000.000/0001-00" />
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Forma de Pagamento</Label>
@@ -592,7 +671,7 @@ export function RecorrenciaModal({ open, onOpenChange, tenantId, registrations, 
             </div>
             <DialogFooter>
               <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Cancelar</Button>
-              <Button size="sm" onClick={handleSubmit} disabled={loading || !form.value || !form.next_due_date || !form.registration_id}>
+              <Button size="sm" onClick={handleSubmit} disabled={loading || !form.value || !form.next_due_date || !form.registration_id || !cleanDoc}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RefreshCw className="h-4 w-4 mr-1" />}
                 Criar Recorrência
               </Button>
