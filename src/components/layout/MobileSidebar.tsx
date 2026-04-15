@@ -3,7 +3,7 @@ import accordLogo from "@/assets/accord-logo.png";
 import {
   Home, LayoutDashboard, Building2, Receipt, FileText, BarChart3,
   FileSignature, Users, LogOut, MessageSquare, CalendarCheck, Rocket,
-  Webhook, ClipboardList, Trash2, Menu, X,
+  Webhook, ClipboardList, Trash2, Menu, X, Network,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -27,6 +27,7 @@ const navigation = [
   { name: "Base de Clientes", href: "/cadastrados", icon: Users, roles: ["admin", "ceo", "administrativo"] },
   { name: "Eventos", href: "/eventos", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
   { name: "Descarte", href: "/descarte", icon: Trash2, roles: ["admin", "ceo"] },
+  { name: "Meus Tenants", href: "/meus-tenants", icon: Network, roles: ["admin", "ceo", "master"] },
 ];
 
 const configNavigation = [
