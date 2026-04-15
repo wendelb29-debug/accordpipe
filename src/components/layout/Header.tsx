@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Search, User, Moon, Sun, Clock, ChevronLeft, Building2, Network } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { MobileSidebar } from "./MobileSidebar";
@@ -20,36 +21,28 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const ROUTE_TITLES: Record<string, string> = {
-  "/home": "Início",
-  "/dashboard": "Dashboard",
-  "/atendimento": "Workspaces",
-  "/formularios": "Formulários",
-  "/atividades": "Atividades",
-  "/financeiro": "Financeiro",
-  "/documentos": "Documentos",
-  "/relatorios": "Relatórios",
-  "/contratos": "Contratos",
-  "/gestao-vendas": "Gestão de Vendas",
-  "/cadastrados": "Base de Clientes",
-  "/descarte": "Descarte",
-  "/perfil": "Meu Perfil",
+const ROUTE_TITLE_KEYS: Record<string, string> = {
+  "/home": "nav.home",
+  "/dashboard": "nav.dashboard",
+  "/atendimento": "header.workspaces",
+  "/formularios": "nav.forms",
+  "/atividades": "nav.activities",
+  "/financeiro": "nav.fintech",
+  "/documentos": "nav.documents",
+  "/relatorios": "nav.reports",
+  "/contratos": "nav.contracts",
+  "/gestao-vendas": "nav.salesManagement",
+  "/cadastrados": "nav.clientBase",
+  "/descarte": "nav.discard",
+  "/perfil": "header.profile",
   "/accord-stack": "ACCORD Stack",
-  "/configuracoes/usuarios": "Usuários",
-  "/configuracoes/assinaturas": "Assinaturas",
+  "/configuracoes/usuarios": "nav.users",
+  "/configuracoes/assinaturas": "nav.signatures",
+  "/performance": "nav.performance",
+  "/eventos": "nav.events",
 };
 
 const ROUTE_SUBTITLES: Record<string, string> = {};
-
-const roleLabels: Record<string, string> = {
-  admin: "Administrador",
-  operador: "Operador",
-  leitura: "Leitura",
-  ceo: "CEO",
-  administrativo: "Administrativo",
-  financeiro: "Financeiro",
-  comercial: "Comercial",
-};
 
 export function Header() {
   const { profile, role, signOut, loading, companies, activeCompanyId, setActiveCompanyId, activeCompany, isMaster, isCeo, isMasterTenantAdmin } = useAuth();
