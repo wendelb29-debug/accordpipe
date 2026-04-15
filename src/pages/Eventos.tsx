@@ -169,11 +169,27 @@ export default function Eventos() {
             </div>
 
             {/* Hover actions */}
-            {(canEdit || canDelete) && ev.status === "scheduled" && (
+            {ev.status === "scheduled" && new Date(ev.start_at) >= new Date() && (
               <div
-                className="flex gap-1.5 pt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                className="flex flex-wrap gap-1.5 pt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                 onClick={(e) => e.stopPropagation()}
               >
+                {/* Add to agenda - available to all users */}
+                {!isAdded(ev.id) ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="h-7 text-xs gap-1"
+                    onClick={() => addToAgenda.mutate({ event: ev, reminderMinutes: 15 })}
+                    disabled={addToAgenda.isPending}
+                  >
+                    <CalendarPlus className="h-3 w-3" /> Agenda
+                  </Button>
+                ) : (
+                  <Badge className="h-7 text-[10px] bg-green-500/20 text-green-400 border border-green-500/30 flex items-center gap-1">
+                    <Check className="h-3 w-3" /> Na agenda
+                  </Badge>
+                )}
                 {canEdit && (
                   <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={() => setEditEvent(ev)}>
                     Editar
