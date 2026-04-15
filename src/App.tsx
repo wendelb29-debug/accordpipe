@@ -8,6 +8,7 @@ import { ThemeSync } from "@/components/layout/ThemeSync";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Home from "./pages/Home";
@@ -55,9 +56,10 @@ const queryClient = new QueryClient({
 });
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
+  <ErrorBoundary fallbackModule="app_root">
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
@@ -366,6 +368,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
