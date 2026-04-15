@@ -50,16 +50,6 @@ export function TenantSubscriptionTab({ companyId }: Props) {
   const [showHistory, setShowHistory] = useState(false);
   const [managePlansOpen, setManagePlansOpen] = useState(false);
 
-  // Only master/CEO of master tenant can manage plans
-  if (!isMasterTenantAdmin && !isMaster) {
-    return (
-      <Card className="p-8 text-center">
-        <Crown className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
-        <p className="text-muted-foreground">Acesso restrito. Apenas o CEO ou Master do tenant principal pode gerenciar planos e limites de usuários.</p>
-      </Card>
-    );
-  }
-
   useEffect(() => {
     if (subscription) {
       setSelectedPlanId(subscription.plan_id || "");
@@ -70,6 +60,16 @@ export function TenantSubscriptionTab({ companyId }: Props) {
       setHasCustomOverride(subscription.has_custom_override);
     }
   }, [subscription]);
+
+  // Only master/CEO of master tenant can manage plans
+  if (!isMasterTenantAdmin && !isMaster) {
+    return (
+      <Card className="p-8 text-center">
+        <Crown className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
+        <p className="text-muted-foreground">Acesso restrito. Apenas o CEO ou Master do tenant principal pode gerenciar planos e limites de usuários.</p>
+      </Card>
+    );
+  }
 
   const selectedPlan = plans.find((p) => p.id === selectedPlanId);
   const baseLimit = selectedPlan?.base_user_limit ?? subscription?.base_user_limit_snapshot ?? 3;
