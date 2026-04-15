@@ -49,7 +49,9 @@ import Planos from "./pages/Planos";
 import Eventos from "./pages/Eventos";
 import MeusTenants from "./pages/MeusTenants";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: 1 } },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
