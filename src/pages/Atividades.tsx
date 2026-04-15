@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   PhoneCall, Mail, Users, Briefcase, MessageSquare, CheckCircle, ExternalLink,
   Ban, MoreVertical, Calendar, ListOrdered, Filter, Settings,
-  UserCircle, Plus, Loader2, ChevronLeft, ChevronRight, AlertTriangle,
+  UserCircle, Plus, Loader2, ChevronLeft, ChevronRight, AlertTriangle, Eye,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,7 +21,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { CrmLeadDetailView } from "@/components/atendimento/CrmLeadDetailView";
+import { ActivityStatusModal } from "@/components/atendimento/ActivityStatusModal";
 import { CrmLead } from "@/hooks/useCrmLeads";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -53,6 +55,13 @@ interface ActivityRow {
   created_by_name: string | null;
   created_by_user_id: string | null;
   created_at: string;
+  status: string;
+  completed_at: string | null;
+  completed_by_name: string | null;
+  completion_note: string | null;
+  no_show_at: string | null;
+  no_show_by_name: string | null;
+  no_show_note: string | null;
   // joined
   lead_company_name?: string;
   lead_contact_name?: string;
@@ -72,6 +81,7 @@ export default function Atividades() {
   const [activities, setActivities] = useState<ActivityRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"list" | "agenda">("list");
+  const [statusTab, setStatusTab] = useState<"planned" | "completed" | "no_show">("planned");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(20);
   const [dateFilter, setDateFilter] = useState("today");
@@ -83,6 +93,13 @@ export default function Atividades() {
   const [drawerLead, setDrawerLead] = useState<CrmLead | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
 
+  // Modal state
+  const [modalTarget, setModalTarget] = useState<ActivityRow | null>(null);
+  const [modalType, setModalType] = useState<"complete" | "no_show">("complete");
+
+  // View note dialog
+  const [viewNoteItem, setViewNoteItem] = useState<ActivityRow | null>(null);
+
   useEffect(() => {
     fetchActivities();
   }, [activeCompanyId, dateFilter, view]);
@@ -91,8 +108,6 @@ export default function Atividades() {
     setLoading(true);
     try {
       const servidorId = isMaster ? activeCompanyId : profile?.company_id;
-
-      // Build activity types filter for scheduled activities only
       const scheduledTypes = ["call", "email", "meeting", "internal", "whatsapp"];
 
       let query = supabase
@@ -105,12 +120,10 @@ export default function Atividades() {
         query = query.eq("servidor_id", servidorId);
       }
 
-      // User isolation: non-admin/non-master users only see their own activities
       if (!isMaster && !isAdmin && user?.id) {
         query = query.eq("created_by_user_id", user.id);
       }
 
-      // Date filter - skip for agenda view (loads all and filters client-side)
       const effectiveFilter = view === "agenda" ? "all" : dateFilter;
       const now = new Date();
       if (effectiveFilter === "today") {
@@ -134,7 +147,6 @@ export default function Atividades() {
       const { data, error } = await query;
       if (error) throw error;
 
-      // Fetch lead info for each activity
       const leadIds = [...new Set((data || []).map((a) => a.lead_id))];
       let leadsMap: Record<string, { company_name: string; contact_name: string | null; source: string }> = {};
 
@@ -150,23 +162,17 @@ export default function Atividades() {
         }
       }
 
-      const enriched: ActivityRow[] = (data || [])
-        .filter((a) => {
-          const meta = (a.metadata as any) || {};
-          return meta.status !== "concluida" && meta.status !== "no_show";
-        })
-        .map((a) => ({
-          ...a,
-          metadata: a.metadata as any,
-          lead_company_name: leadsMap[a.lead_id]?.company_name || "-",
-          lead_contact_name: leadsMap[a.lead_id]?.contact_name || "-",
-          lead_source: leadsMap[a.lead_id]?.source || "Manual",
-        }));
+      const enriched: ActivityRow[] = (data || []).map((a) => ({
+        ...a,
+        metadata: a.metadata as any,
+        lead_company_name: leadsMap[a.lead_id]?.company_name || "-",
+        lead_contact_name: leadsMap[a.lead_id]?.contact_name || "-",
+        lead_source: leadsMap[a.lead_id]?.source || "Manual",
+      }));
 
       setActivities(enriched);
       setPage(1);
 
-      // Fetch user avatars for all unique created_by_user_id
       const userIds = [...new Set(enriched.map((a) => a.created_by_user_id).filter(Boolean))] as string[];
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
@@ -189,32 +195,75 @@ export default function Atividades() {
     }
   };
 
-  const handleMarkDone = async (activity: ActivityRow) => {
-    const meta = activity.metadata || {};
-    const { error } = await supabase
-      .from("crm_lead_activities")
-      .update({ metadata: { ...meta, status: "concluida" } } as any)
-      .eq("id", activity.id);
-    if (error) { toast.error("Erro ao atualizar"); return; }
-    toast.success("Atividade concluída!");
-    fetchActivities();
+  // Resolve status from column + metadata fallback
+  const getStatus = (a: ActivityRow): "planned" | "completed" | "no_show" => {
+    if (a.status === "completed") return "completed";
+    if (a.status === "no_show") return "no_show";
+    const ms = (a.metadata as any)?.activity_status || (a.metadata as any)?.status;
+    if (ms === "concluida") return "completed";
+    if (ms === "no_show") return "no_show";
+    return "planned";
   };
 
-  const handleMarkNoShow = async (activity: ActivityRow) => {
+  const planned = activities.filter(a => getStatus(a) === "planned");
+  const completed = activities.filter(a => getStatus(a) === "completed");
+  const noShowList = activities.filter(a => getStatus(a) === "no_show");
+
+  const currentList = statusTab === "planned" ? planned : statusTab === "completed" ? completed : noShowList;
+
+  const handleOpenModal = (activity: ActivityRow, type: "complete" | "no_show") => {
+    setModalTarget(activity);
+    setModalType(type);
+  };
+
+  const handleModalConfirm = async (note: string, _createAnother: boolean) => {
+    if (!modalTarget) return;
+    const activity = modalTarget;
+    const isComplete = modalType === "complete";
+
+    const updateData: any = isComplete
+      ? {
+          status: "completed",
+          completed_at: new Date().toISOString(),
+          completed_by_user_id: profile?.user_id || null,
+          completed_by_name: profile?.name || null,
+          completion_note: note,
+        }
+      : {
+          status: "no_show",
+          no_show_at: new Date().toISOString(),
+          no_show_by_user_id: profile?.user_id || null,
+          no_show_by_name: profile?.name || null,
+          no_show_note: note,
+        };
+
     const meta = activity.metadata || {};
+    updateData.metadata = {
+      ...meta,
+      activity_status: isComplete ? "concluida" : "no_show",
+      ...(isComplete ? { completed_at: updateData.completed_at, completion_comment: note } : {}),
+    };
+
     const { error } = await supabase
       .from("crm_lead_activities")
-      .update({ metadata: { ...meta, status: "no_show" } } as any)
+      .update(updateData)
       .eq("id", activity.id);
-    if (error) { toast.error("Erro ao atualizar"); return; }
-    toast.success("Marcada como no-show");
-    fetchActivities();
+
+    if (error) {
+      toast.error("Erro ao atualizar status");
+      setModalTarget(null);
+      return;
+    }
+
+    toast.success(isComplete ? "Atividade concluída!" : "Marcada como no-show");
+    setModalTarget(null);
+    await fetchActivities();
   };
 
   // Pagination
-  const totalItems = activities.length;
+  const totalItems = currentList.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / perPage));
-  const paginated = activities.slice((page - 1) * perPage, page * perPage);
+  const paginated = currentList.slice((page - 1) * perPage, page * perPage);
   const startItem = totalItems === 0 ? 0 : (page - 1) * perPage + 1;
   const endItem = Math.min(page * perPage, totalItems);
 
@@ -267,13 +316,6 @@ export default function Atividades() {
     return true;
   }, []);
 
-  const dateFilterLabels: Record<string, string> = {
-    today: "Hoje",
-    week: "Esta semana",
-    month: "Este mês",
-    all: "Todos",
-  };
-
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
@@ -295,7 +337,6 @@ export default function Atividades() {
             </SelectContent>
           </Select>
 
-          {/* View toggles */}
           <div className="flex border rounded-lg overflow-hidden">
             <Button
               variant={view === "list" ? "default" : "ghost"}
@@ -317,7 +358,7 @@ export default function Atividades() {
         </div>
       </div>
 
-      {/* Tabs: Atividades / Agenda */}
+      {/* Tabs: List / Agenda */}
       <Tabs value={view} onValueChange={(v) => setView(v as "list" | "agenda")}>
         <TabsList className="mb-4">
           <TabsTrigger value="list" className="gap-2">
@@ -331,315 +372,328 @@ export default function Atividades() {
         </TabsList>
 
         <TabsContent value="list">
-          {loading ? (
-            <div className="flex justify-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <>
-              {/* Mobile card view */}
-              <div className="md:hidden space-y-3">
-                {paginated.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    Nenhuma atividade encontrada para o período selecionado.
-                  </div>
-                ) : (
-                  paginated.map((activity) => {
-                    const meta = activity.metadata || {};
-                    const actType = meta.activity_type || activity.type;
-                    const TypeIcon = ACTIVITY_TYPE_ICONS[actType] || Briefcase;
-                    const status = meta.status || "planejada";
-                    const scheduledDate = meta.scheduled_at ? new Date(meta.scheduled_at).toLocaleDateString("pt-BR") : (meta.scheduled_date ? new Date(meta.scheduled_date).toLocaleDateString("pt-BR") : null);
-                    const scheduledTime = meta.scheduled_at ? new Date(meta.scheduled_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : (meta.scheduled_time || meta.time || null);
-                    const scheduledAt = meta.scheduled_at ? new Date(meta.scheduled_at) : (meta.scheduled_date ? new Date(meta.scheduled_date) : null);
-                    const isOverdue = scheduledAt && status !== "concluida" && status !== "no_show" && scheduledAt < new Date();
-                    const creatorAvatar = activity.created_by_user_id ? userAvatars[activity.created_by_user_id] : null;
+          {/* Status sub-tabs */}
+          <Tabs value={statusTab} onValueChange={(v) => { setStatusTab(v as any); setPage(1); }}>
+            <TabsList className="mb-4 bg-muted/50">
+              <TabsTrigger value="planned" className="text-xs gap-1.5">
+                Planejadas <Badge variant="secondary" className="text-[10px] ml-1 h-4 px-1">{planned.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="completed" className="text-xs gap-1.5">
+                Concluídas <Badge variant="secondary" className="text-[10px] ml-1 h-4 px-1">{completed.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="no_show" className="text-xs gap-1.5">
+                No-show <Badge variant="secondary" className="text-[10px] ml-1 h-4 px-1">{noShowList.length}</Badge>
+              </TabsTrigger>
+            </TabsList>
 
-                    return (
-                      <div key={activity.id} className={cn("rounded-xl border border-border bg-card p-4 shadow-sm relative", isOverdue && "border-l-2 border-l-destructive bg-destructive/5")}>
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className={cn("shrink-0 h-9 w-9 rounded-lg flex items-center justify-center", isOverdue ? "bg-destructive/10" : "bg-muted")}>
-                              <TypeIcon className={cn("h-4 w-4", isOverdue ? "text-destructive" : "text-muted-foreground")} />
+            {loading ? (
+              <div className="flex justify-center py-16">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <>
+                {/* Mobile card view */}
+                <div className="md:hidden space-y-3">
+                  {paginated.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      Nenhuma atividade encontrada.
+                    </div>
+                  ) : (
+                    paginated.map((activity) => {
+                      const meta = activity.metadata || {};
+                      const actType = meta.activity_type || activity.type;
+                      const TypeIcon = ACTIVITY_TYPE_ICONS[actType] || Briefcase;
+                      const resolvedStatus = getStatus(activity);
+                      const scheduledDate = meta.scheduled_at ? new Date(meta.scheduled_at).toLocaleDateString("pt-BR") : null;
+                      const scheduledTime = meta.scheduled_at ? new Date(meta.scheduled_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : null;
+                      const scheduledAt = meta.scheduled_at ? new Date(meta.scheduled_at) : null;
+                      const isOverdue = scheduledAt && resolvedStatus === "planned" && scheduledAt < new Date();
+
+                      return (
+                        <div key={activity.id} className={cn("rounded-xl border border-border bg-card p-4 shadow-sm relative", isOverdue && "border-l-2 border-l-destructive bg-destructive/5")}>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className={cn("shrink-0 h-9 w-9 rounded-lg flex items-center justify-center", isOverdue ? "bg-destructive/10" : "bg-muted")}>
+                                <TypeIcon className={cn("h-4 w-4", isOverdue ? "text-destructive" : "text-muted-foreground")} />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-foreground truncate">
+                                  {ACTIVITY_TYPE_LABELS[actType] || activity.title}
+                                </p>
+                                {activity.description && (
+                                  <p className="text-xs text-muted-foreground truncate mt-0.5">{activity.description}</p>
+                                )}
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <p className="text-sm font-semibold text-foreground truncate">
-                                {ACTIVITY_TYPE_LABELS[actType] || activity.title}
-                              </p>
-                              {activity.description && (
-                                <p className="text-xs text-muted-foreground truncate mt-0.5">{activity.description}</p>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {resolvedStatus === "planned" && (
+                                <>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenModal(activity, "complete")} title="Concluir">
+                                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenModal(activity, "no_show")} title="No-show">
+                                    <Ban className="h-4 w-4 text-muted-foreground" />
+                                  </Button>
+                                </>
+                              )}
+                              {resolvedStatus !== "planned" && (
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewNoteItem(activity)} title="Ver observação">
+                                  <Eye className="h-4 w-4 text-muted-foreground" />
+                                </Button>
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            {status !== "concluida" && (
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleMarkDone(activity)} title="Concluir">
-                                <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                              </Button>
-                            )}
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleMarkDone(activity)}>
-                                  <CheckCircle className="h-3.5 w-3.5 mr-2" /> Concluir
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleMarkNoShow(activity)}>
-                                  <Ban className="h-3.5 w-3.5 mr-2" /> No-show
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </div>
 
-                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <UserCircle className="h-3.5 w-3.5 shrink-0" />
-                            <span className="truncate">{activity.created_by_name || "Sistema"}</span>
+                          <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                              <UserCircle className="h-3.5 w-3.5 shrink-0" />
+                              <span className="truncate">{activity.created_by_name || "Sistema"}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                              <Calendar className="h-3.5 w-3.5 shrink-0" />
+                              <span>{scheduledDate || formatDate(activity.created_at).split("\n")[0]}</span>
+                              {scheduledTime && <span className="text-foreground font-medium">{scheduledTime}</span>}
+                            </div>
+                            {activity.lead_company_name && activity.lead_company_name !== "-" && (
+                              <div
+                                className="col-span-2 flex items-center gap-1.5 text-primary text-xs font-medium cursor-pointer hover:underline"
+                                onClick={() => handleLeadClick(activity)}
+                              >
+                                <Briefcase className="h-3.5 w-3.5 shrink-0" />
+                                <span className="truncate">{activity.lead_company_name}</span>
+                                {activity.lead_contact_name && <span className="text-muted-foreground">· {activity.lead_contact_name}</span>}
+                              </div>
+                            )}
                           </div>
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <Calendar className="h-3.5 w-3.5 shrink-0" />
-                            <span>{scheduledDate || formatDate(activity.created_at).split("\n")[0]}</span>
-                            {scheduledTime && <span className="text-foreground font-medium">{scheduledTime}</span>}
-                          </div>
-                          {activity.lead_company_name && activity.lead_company_name !== "-" && (
-                            <div
-                              className="col-span-2 flex items-center gap-1.5 text-primary text-xs font-medium cursor-pointer hover:underline"
-                              onClick={() => handleLeadClick(activity)}
-                            >
-                              <Briefcase className="h-3.5 w-3.5 shrink-0" />
-                              <span className="truncate">{activity.lead_company_name}</span>
-                              {activity.lead_contact_name && <span className="text-muted-foreground">· {activity.lead_contact_name}</span>}
+
+                          {isOverdue && (
+                            <div className="mt-2 flex items-center gap-1 text-destructive text-[11px] font-medium">
+                              <AlertTriangle className="h-3 w-3" />
+                              Atrasada
                             </div>
                           )}
                         </div>
+                      );
+                    })
+                  )}
+                </div>
 
-                        {/* Expanded activity details on mobile */}
-                        {expandedActivityId === activity.id && (
-                          <div className="mt-3 p-3 rounded-lg bg-muted/50 border border-border text-xs space-y-2">
-                            <p className="font-semibold text-foreground">{activity.title}</p>
-                            {activity.description && <p className="text-muted-foreground">{activity.description}</p>}
-                            <div className="grid grid-cols-2 gap-1 text-muted-foreground">
-                              <span>Empresa: {activity.lead_company_name}</span>
-                              <span>Pessoa: {activity.lead_contact_name || "--"}</span>
-                              <span>Responsável: {activity.created_by_name || "Sistema"}</span>
-                              <span>Origem: {activity.lead_source || "Manual"}</span>
-                            </div>
-                          </div>
+                {/* Desktop table view */}
+                <div className="hidden md:block rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50 [&>th]:h-9 [&>th]:py-2 [&>th]:px-3">
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider">Título</TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider">Descrição</TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider">Responsável</TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider">Oportunidade</TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider">Pessoa</TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider">Empresa</TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider">Início</TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider">Duração</TableHead>
+                        {statusTab !== "planned" && (
+                          <TableHead className="font-semibold text-xs uppercase tracking-wider">
+                            {statusTab === "completed" ? "Concluído por" : "Registrado por"}
+                          </TableHead>
                         )}
-
-                        {isOverdue && (
-                          <div className="mt-2 flex items-center gap-1 text-destructive text-[11px] font-medium">
-                            <AlertTriangle className="h-3 w-3" />
-                            Atrasada
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-
-              {/* Desktop table view */}
-              <div className="hidden md:block rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50 [&>th]:h-9 [&>th]:py-2 [&>th]:px-3">
-                      <TableHead className="w-10"><Checkbox /></TableHead>
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider">Título</TableHead>
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider">Descrição</TableHead>
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider">Responsável</TableHead>
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider">Oportunidade</TableHead>
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider">Pessoa</TableHead>
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider">Empresa</TableHead>
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider">Início</TableHead>
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider">Duração</TableHead>
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginated.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
-                          Nenhuma atividade encontrada para o período selecionado.
-                        </TableCell>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-right">Ações</TableHead>
                       </TableRow>
-                    ) : (
-                      paginated.map((activity) => {
-                        const meta = activity.metadata || {};
-                        const actType = meta.activity_type || activity.type;
-                        const TypeIcon = ACTIVITY_TYPE_ICONS[actType] || Briefcase;
-                        const status = meta.status || "planejada";
-                        const scheduledDate = meta.scheduled_at ? new Date(meta.scheduled_at).toLocaleDateString("pt-BR") : (meta.scheduled_date ? new Date(meta.scheduled_date).toLocaleDateString("pt-BR") : null);
-                        const scheduledTime = meta.scheduled_at ? new Date(meta.scheduled_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : (meta.scheduled_time || meta.time || null);
-                        const duration = meta.duration || "--";
-                        const scheduledAt = meta.scheduled_at ? new Date(meta.scheduled_at) : (meta.scheduled_date ? new Date(meta.scheduled_date) : null);
-                        const isOverdue = scheduledAt && status !== "concluida" && status !== "no_show" && scheduledAt < new Date();
-                        const creatorAvatar = activity.created_by_user_id ? userAvatars[activity.created_by_user_id] : null;
+                    </TableHeader>
+                    <TableBody>
+                      {paginated.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
+                            Nenhuma atividade encontrada.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginated.map((activity) => {
+                          const meta = activity.metadata || {};
+                          const actType = meta.activity_type || activity.type;
+                          const TypeIcon = ACTIVITY_TYPE_ICONS[actType] || Briefcase;
+                          const resolvedStatus = getStatus(activity);
+                          const scheduledDate = meta.scheduled_at ? new Date(meta.scheduled_at).toLocaleDateString("pt-BR") : null;
+                          const scheduledTime = meta.scheduled_at ? new Date(meta.scheduled_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : null;
+                          const duration = meta.duration || "--";
+                          const scheduledAt = meta.scheduled_at ? new Date(meta.scheduled_at) : null;
+                          const isOverdue = scheduledAt && resolvedStatus === "planned" && scheduledAt < new Date();
+                          const creatorAvatar = activity.created_by_user_id ? userAvatars[activity.created_by_user_id] : null;
 
-                        return (
-                          <TableRow key={activity.id} className={cn("group hover:bg-muted/30 relative [&>td]:py-2 [&>td]:px-3", isOverdue && "bg-destructive/5")}>
-                            {isOverdue && (
-                              <td className="absolute left-0 top-0 bottom-0 w-1 bg-destructive rounded-l" />
-                            )}
-                            <TableCell><Checkbox /></TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <TypeIcon className="h-4 w-4 text-muted-foreground shrink-0" />
-                                <span className="font-medium text-sm text-foreground">
-                                  {ACTIVITY_TYPE_LABELS[actType] || activity.title}
+                          return (
+                            <TableRow key={activity.id} className={cn("group hover:bg-muted/30 relative [&>td]:py-2 [&>td]:px-3", isOverdue && "bg-destructive/5")}>
+                              {isOverdue && (
+                                <td className="absolute left-0 top-0 bottom-0 w-1 bg-destructive rounded-l" />
+                              )}
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <TypeIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                                  <span className="font-medium text-sm text-foreground">
+                                    {ACTIVITY_TYPE_LABELS[actType] || activity.title}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground max-w-[150px] truncate">
+                                {activity.description || "--"}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-6 w-6">
+                                    {creatorAvatar?.avatar_url ? (
+                                      <AvatarImage src={creatorAvatar.avatar_url} alt={creatorAvatar.name} />
+                                    ) : null}
+                                    <AvatarFallback className="text-[10px] bg-muted">
+                                      {(activity.created_by_name || "S").slice(0, 2).toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span className="text-sm truncate max-w-[100px]">
+                                    {activity.created_by_name || "Sistema"}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div
+                                  className="flex items-center gap-1.5 cursor-pointer hover:underline"
+                                  onClick={() => handleLeadClick(activity)}
+                                >
+                                  <span className="text-sm text-primary font-medium truncate max-w-[150px]">
+                                    {activity.lead_source || "Manual"} {activity.lead_company_name !== "-" ? `[${activity.lead_company_name?.substring(0, 10)}...]` : ""}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <span
+                                  className="text-sm text-primary font-medium cursor-pointer hover:underline"
+                                  onClick={() => handleLeadClick(activity)}
+                                >
+                                  {activity.lead_contact_name || "--"}
                                 </span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground max-w-[150px] truncate">
-                              {activity.description || "--"}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Avatar className="h-6 w-6">
-                                  {creatorAvatar?.avatar_url ? (
-                                    <AvatarImage src={creatorAvatar.avatar_url} alt={creatorAvatar.name} />
-                                  ) : null}
-                                  <AvatarFallback className="text-[10px] bg-muted">
-                                    {(activity.created_by_name || "S").slice(0, 2).toUpperCase()}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <span className="text-sm truncate max-w-[100px]">
-                                  {activity.created_by_name || "Sistema"}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div
-                                className="flex items-center gap-1.5 cursor-pointer hover:underline"
-                                onClick={() => handleLeadClick(activity)}
-                                title="Abrir oportunidade em nova aba"
-                              >
-                                {activity.lead_source && activity.lead_source !== "Manual" && (
-                                  <span className="text-amber-500">★</span>
-                                )}
-                                <span className="text-sm text-primary font-medium truncate max-w-[150px]">
-                                  {activity.lead_source || "Manual"} {activity.lead_company_name !== "-" ? `[${activity.lead_company_name?.substring(0, 10)}...]` : ""}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <span
-                                className="text-sm text-primary font-medium cursor-pointer hover:underline"
-                                onClick={() => handleLeadClick(activity)}
-                                title="Abrir oportunidade em nova aba"
-                              >
-                                {activity.lead_contact_name || "--"}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-sm text-primary">
-                              {activity.lead_company_name}
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm text-foreground whitespace-pre-line">
-                                {scheduledDate && scheduledTime
-                                  ? `${scheduledDate}\n${scheduledTime}`
-                                  : formatDate(activity.created_at)}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-sm text-foreground">
-                              {duration}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center justify-end gap-1">
-                                {status !== "concluida" && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7"
-                                    onClick={() => handleMarkDone(activity)}
-                                    title="Concluir"
-                                  >
-                                    <CheckCircle className="h-4 w-4 text-muted-foreground hover:text-emerald-600" />
-                                  </Button>
-                                )}
-                                {status !== "no_show" && status !== "concluida" && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7"
-                                    onClick={() => handleMarkNoShow(activity)}
-                                    title="No-show"
-                                  >
-                                    <Ban className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                                  </Button>
-                                )}
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7">
-                                      <MoreVertical className="h-4 w-4" />
+                              </TableCell>
+                              <TableCell className="text-sm text-primary">
+                                {activity.lead_company_name}
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm text-foreground whitespace-pre-line">
+                                  {scheduledDate && scheduledTime
+                                    ? `${scheduledDate}\n${scheduledTime}`
+                                    : formatDate(activity.created_at)}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-sm text-foreground">
+                                {duration}
+                              </TableCell>
+                              {statusTab !== "planned" && (
+                                <TableCell className="text-sm text-muted-foreground">
+                                  {statusTab === "completed" ? activity.completed_by_name : activity.no_show_by_name || "—"}
+                                </TableCell>
+                              )}
+                              <TableCell>
+                                <div className="flex items-center justify-end gap-1">
+                                  {resolvedStatus === "planned" && (
+                                    <>
+                                      <Button variant="ghost" size="icon" className="h-7 w-7"
+                                        onClick={() => handleOpenModal(activity, "complete")} title="Concluir">
+                                        <CheckCircle className="h-4 w-4 text-muted-foreground hover:text-emerald-600" />
+                                      </Button>
+                                      <Button variant="ghost" size="icon" className="h-7 w-7"
+                                        onClick={() => handleOpenModal(activity, "no_show")} title="No-show">
+                                        <Ban className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                                      </Button>
+                                    </>
+                                  )}
+                                  {resolvedStatus !== "planned" && (
+                                    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1"
+                                      onClick={() => setViewNoteItem(activity)} title="Ver observação">
+                                      <Eye className="h-3.5 w-3.5" /> Observação
                                     </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => handleMarkDone(activity)}>
-                                      <CheckCircle className="h-3.5 w-3.5 mr-2" /> Concluir
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleMarkNoShow(activity)}>
-                                      <Ban className="h-3.5 w-3.5 mr-2" /> No-show
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
 
-              {/* Pagination */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2">
-                <div className="flex items-center gap-2">
-                  <Select value={String(perPage)} onValueChange={(v) => { setPerPage(Number(v)); setPage(1); }}>
-                    <SelectTrigger className="w-[100px] h-8 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PER_PAGE_OPTIONS.map((n) => (
-                        <SelectItem key={n} value={String(n)}>{n} por pág.</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <span className="text-xs text-muted-foreground">
-                    {startItem}-{endItem} de {totalItems}
-                  </span>
+                {/* Pagination */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2">
+                  <div className="flex items-center gap-2">
+                    <Select value={String(perPage)} onValueChange={(v) => { setPerPage(Number(v)); setPage(1); }}>
+                      <SelectTrigger className="w-[100px] h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PER_PAGE_OPTIONS.map((n) => (
+                          <SelectItem key={n} value={String(n)}>{n} por pág.</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <span className="text-xs text-muted-foreground">
+                      {startItem}-{endItem} de {totalItems}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="sm" className="text-xs h-8 hidden sm:inline-flex" disabled={page === 1} onClick={() => setPage(1)}>
+                      Primeira
+                    </Button>
+                    <Button variant="outline" size="icon" className="h-8 w-8" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="flex items-center justify-center h-8 w-8 rounded-md border text-xs font-medium bg-primary text-primary-foreground">
+                      {page}
+                    </span>
+                    <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="sm" className="text-xs h-8 hidden sm:inline-flex" disabled={page >= totalPages} onClick={() => setPage(totalPages)}>
+                      Última
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Button variant="outline" size="sm" className="text-xs h-8 hidden sm:inline-flex" disabled={page === 1} onClick={() => setPage(1)}>
-                    Primeira
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="flex items-center justify-center h-8 w-8 rounded-md border text-xs font-medium bg-primary text-primary-foreground">
-                    {page}
-                  </span>
-                  <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" className="text-xs h-8 hidden sm:inline-flex" disabled={page >= totalPages} onClick={() => setPage(totalPages)}>
-                    Última
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
+              </>
+            )}
+          </Tabs>
         </TabsContent>
 
         <TabsContent value="agenda">
-          <WeeklyCalendarView activities={activities} loading={loading} />
+          <WeeklyCalendarView activities={planned} loading={loading} />
         </TabsContent>
       </Tabs>
+
+      {/* Completion / No-Show Modal */}
+      <ActivityStatusModal
+        open={!!modalTarget}
+        onClose={() => setModalTarget(null)}
+        onConfirm={handleModalConfirm}
+        type={modalType}
+        activityTitle={modalTarget?.title}
+      />
+
+      {/* View Note Dialog */}
+      <Dialog open={!!viewNoteItem} onOpenChange={(o) => { if (!o) setViewNoteItem(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {getStatus(viewNoteItem!) === "completed" ? "Observação de Conclusão" : "Observação de No-Show"}
+            </DialogTitle>
+            <DialogDescription>{viewNoteItem?.title}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            <div className="p-3 rounded-lg bg-muted/50 border text-sm whitespace-pre-wrap">
+              {viewNoteItem?.completion_note || viewNoteItem?.no_show_note || (viewNoteItem?.metadata as any)?.completion_comment || "Sem observação registrada."}
+            </div>
+            <div className="text-xs text-muted-foreground space-y-1">
+              {(viewNoteItem?.completed_by_name || viewNoteItem?.no_show_by_name) && (
+                <p>Por: {viewNoteItem?.completed_by_name || viewNoteItem?.no_show_by_name}</p>
+              )}
+              {(viewNoteItem?.completed_at || viewNoteItem?.no_show_at) && (
+                <p>Em: {new Date(viewNoteItem?.completed_at || viewNoteItem?.no_show_at || "").toLocaleString("pt-BR")}</p>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Lead Detail Drawer */}
       <Sheet open={drawerOpen} onOpenChange={(open) => { if (!open) { setDrawerOpen(false); setDrawerLead(null); } }}>
@@ -651,7 +705,6 @@ export default function Atividades() {
             </div>
           ) : drawerLead ? (
             <div className="h-full overflow-y-auto">
-              {/* Go to CRM button */}
               <div className="sticky top-0 z-20 flex items-center justify-end gap-2 px-4 py-2 bg-background/80 backdrop-blur-sm border-b border-border">
                 <Button
                   size="sm"
@@ -686,7 +739,7 @@ export default function Atividades() {
   );
 }
 
-// ===== WEEKLY CALENDAR VIEW (PipeRun style) =====
+// ===== WEEKLY CALENDAR VIEW =====
 const WEEKDAY_LABELS = ["domingo", "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado"];
 const TIME_SLOTS: string[] = [];
 for (let h = 8; h <= 19; h++) {
@@ -727,7 +780,17 @@ function parseDuration(durStr: string): number {
   return (h || 0) * 60 + (m || 0);
 }
 
-function WeeklyCalendarView({ activities, loading }: { activities: ActivityRow[]; loading: boolean }) {
+interface ActivityRow2 {
+  id: string;
+  metadata: any;
+  type: string;
+  title: string;
+  created_by_name: string | null;
+  created_at: string;
+  lead_company_name?: string;
+}
+
+function WeeklyCalendarView({ activities, loading }: { activities: ActivityRow2[]; loading: boolean }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [calendarMode, setCalendarMode] = useState<"week" | "month">("week");
 
@@ -739,10 +802,8 @@ function WeeklyCalendarView({ activities, loading }: { activities: ActivityRow[]
   const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
   const todayStr = now.toISOString().slice(0, 10);
 
-  // Map activities to their scheduled date/time
-  // Activities store scheduled_at as full datetime OR separate date/time fields
   const activityMap = useMemo(() => {
-    const map: Record<string, ActivityRow[]> = {};
+    const map: Record<string, ActivityRow2[]> = {};
     for (const a of activities) {
       const meta = a.metadata || {};
       let dateKey: string;
@@ -757,7 +818,6 @@ function WeeklyCalendarView({ activities, loading }: { activities: ActivityRow[]
         timeVal = meta.time || "";
       }
 
-      // Enrich metadata with resolved time for slot matching
       a.metadata = { ...meta, _resolved_date: dateKey, _resolved_time: timeVal };
       if (!map[dateKey]) map[dateKey] = [];
       map[dateKey].push(a);
@@ -771,28 +831,13 @@ function WeeklyCalendarView({ activities, loading }: { activities: ActivityRow[]
 
   return (
     <div className="space-y-4">
-      {/* Calendar header */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-foreground italic">
           {formatWeekRange(weekDays)}
         </h2>
         <div className="flex items-center gap-2">
-          <Button
-            variant={calendarMode === "month" ? "outline" : "outline"}
-            size="sm"
-            className="text-xs h-8"
-            onClick={() => setCalendarMode("month")}
-          >
-            Mês
-          </Button>
-          <Button
-            variant={calendarMode === "week" ? "default" : "outline"}
-            size="sm"
-            className="text-xs h-8"
-            onClick={() => setCalendarMode("week")}
-          >
-            Semana
-          </Button>
+          <Button variant="outline" size="sm" className="text-xs h-8" onClick={() => setCalendarMode("month")}>Mês</Button>
+          <Button variant={calendarMode === "week" ? "default" : "outline"} size="sm" className="text-xs h-8" onClick={() => setCalendarMode("week")}>Semana</Button>
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setWeekOffset(w => w - 1)}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -802,7 +847,6 @@ function WeeklyCalendarView({ activities, loading }: { activities: ActivityRow[]
         </div>
       </div>
 
-      {/* Weekly grid */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="overflow-auto max-h-[calc(100vh-280px)]">
           <table className="w-full border-collapse table-fixed">
@@ -813,14 +857,11 @@ function WeeklyCalendarView({ activities, loading }: { activities: ActivityRow[]
                   const isToday = day.toISOString().slice(0, 10) === todayStr;
                   const isWeekend = i === 0 || i === 6;
                   return (
-                    <th
-                      key={i}
-                      className={cn(
-                        "border-b border-r last:border-r-0 border-border p-2 text-center text-sm font-semibold",
-                        isToday ? "text-primary" : "text-foreground",
-                        isWeekend && "bg-muted/30"
-                      )}
-                    >
+                    <th key={i} className={cn(
+                      "border-b border-r last:border-r-0 border-border p-2 text-center text-sm font-semibold",
+                      isToday ? "text-primary" : "text-foreground",
+                      isWeekend && "bg-muted/30"
+                    )}>
                       {WEEKDAY_LABELS[i]}, {day.getDate()}
                     </th>
                   );
@@ -847,7 +888,6 @@ function WeeklyCalendarView({ activities, loading }: { activities: ActivityRow[]
                       const isToday = dateKey === todayStr;
                       const dayActivities = activityMap[dateKey] || [];
 
-                      // Find activities that start in this slot
                       const slotActivities = dayActivities.filter((a) => {
                         const meta = a.metadata || {};
                         const time = meta._resolved_time || meta.time || "";
@@ -856,42 +896,25 @@ function WeeklyCalendarView({ activities, loading }: { activities: ActivityRow[]
                         return actMinutes >= slotMinutes && actMinutes < slotMinutes + 30;
                       });
 
-                      // Filter out past activities (time + duration has passed)
-                      const visibleActivities = slotActivities.filter((a) => {
-                        const meta = a.metadata || {};
-                        const time = meta._resolved_time || meta.time || "";
-                        const duration = parseDuration(meta.duration || "00:30");
-                        const actMinutes = parseTime(time);
-                        const endMinutes = actMinutes + duration;
-
-                        // Only hide if it's today and past the end time
-                        if (dateKey === todayStr && weekOffset === 0) {
-                          return currentTimeMinutes < endMinutes;
-                        }
-                        // For past days, hide all; for future days, show all
-                        if (day < new Date(todayStr)) return false;
-                        return true;
-                      });
-
                       return (
-                        <td
-                          key={colIdx}
-                          className={cn(
-                            "border-r border-b last:border-r-0 border-border p-0 align-top relative",
-                            isWeekend && "bg-muted/20",
-                            isToday && "bg-primary/5"
-                          )}
-                        >
-                          {visibleActivities.map((a) => {
+                        <td key={colIdx} className={cn(
+                          "border-r border-b last:border-r-0 border-border p-0 align-top relative",
+                          isWeekend && "bg-muted/20",
+                          isToday && "bg-primary/5"
+                        )}>
+                          {slotActivities.map((a) => {
                             const meta = a.metadata || {};
                             const actType = meta.activity_type || a.type;
                             const time = meta._resolved_time || meta.time || "";
+                            const LABELS: Record<string, string> = {
+                              call: "Ligação", email: "E-mail", meeting: "Reunião",
+                              internal: "Atividade Interna", whatsapp: "WhatsApp",
+                            };
 
                             return (
-                              <div
-                                key={a.id}
+                              <div key={a.id}
                                 className="m-0.5 rounded border border-border bg-card shadow-sm p-1.5 text-[11px] cursor-default hover:shadow-md transition-shadow"
-                                title={`${ACTIVITY_TYPE_LABELS[actType] || a.title} - ${a.lead_company_name}`}
+                                title={`${LABELS[actType] || a.title} - ${a.lead_company_name}`}
                               >
                                 <div className="flex items-center gap-1">
                                   <UserCircle className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -903,7 +926,7 @@ function WeeklyCalendarView({ activities, loading }: { activities: ActivityRow[]
                                   </span>
                                 </div>
                                 <p className="text-muted-foreground truncate mt-0.5">
-                                  {ACTIVITY_TYPE_LABELS[actType] || a.title}
+                                  {LABELS[actType] || a.title}
                                 </p>
                               </div>
                             );
