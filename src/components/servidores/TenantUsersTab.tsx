@@ -174,11 +174,33 @@ export default function TenantUsersTab({ companyId, companyName }: TenantUsersTa
     }
     try {
       const newStatus = user.status === "ativo" ? "inativo" : "ativo";
+
+      // If reactivating, check user limit
+      if (newStatus === "ativo" && companyId) {
+        const { data: limitCheck } = await supabase.rpc("check_user_limit", { _tenant_id: companyId });
+        const lc = limitCheck as any;
+        if (lc && !lc.can_add) {
+          toast({
+            title: "Limite de usuários atingido",
+            description: `Plano ${lc.plan_name}: ${lc.active_users}/${lc.effective_limit} usuários. Não é possível reativar.`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from("user_tenants")
         .update({ status: newStatus } as any)
         .eq("id", user.id);
       if (error) throw error;
+
+      // Also sync profiles for consistency
+      await supabase
+        .from("profiles")
+        .update({ is_active: newStatus === "ativo", status: newStatus === "ativo" ? "ativo" : "bloqueado" })
+        .eq("user_id", user.user_id);
+
       toast({ title: newStatus === "ativo" ? "Ativado" : "Desativado", description: `${user.name} foi ${newStatus === "ativo" ? "ativado" : "desativado"} neste tenant.` });
       fetchUsers();
     } catch (err: any) {

@@ -25,6 +25,17 @@ export function ChildTenantDadosTab({ child, onUpdated }: Props) {
     telefone: child.telefone || "",
   });
 
+  // Reset form when child changes
+  useEffect(() => {
+    setForm({
+      nome_fantasia: child.nome_fantasia || "",
+      responsavel: child.responsavel || "",
+      email: child.email || "",
+      telefone: child.telefone || "",
+    });
+    setEditing(false);
+  }, [child.id]);
+
   const handleSave = async () => {
     setSaving(true);
     try {

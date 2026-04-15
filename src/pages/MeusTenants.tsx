@@ -221,19 +221,19 @@ export default function MeusTenants() {
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                          <MoreHorizontal className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem className="gap-2" onClick={() => setManageChild(child)}>
-                            <Settings className="h-4 w-4" />
-                            Gerenciar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="gap-2" onClick={() => toggleChildStatus(child.id, child.status)}>
-                            <Power className="h-4 w-4" />
-                            {child.status === "active" ? "Bloquear" : "Ativar"}
-                          </DropdownMenuItem>
+                          <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); setManageChild(child); }}>
+                             <Settings className="h-4 w-4" />
+                             Gerenciar
+                           </DropdownMenuItem>
+                           <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); toggleChildStatus(child.id, child.status); }}>
+                             <Power className="h-4 w-4" />
+                             {child.status === "active" ? "Bloquear" : "Ativar"}
+                           </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
