@@ -78,12 +78,33 @@ export function AsaasIntegrationTab({ companyId }: Props) {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
+  const sanitizeApiKey = (key: string) => key.trim().replace(/[^\w$_.-]/g, "");
+
+  const validateApiKeyFormat = (key: string, env: string): string | null => {
+    if (!key) return "Informe a API Key do Asaas.";
+    if (key.length < 20) return "API Key muito curta. Verifique se copiou corretamente.";
+    const prodPrefix = "$aact_prod";
+    const sandboxPrefix = "$aact_";
+    if (env === "production" && !key.startsWith(prodPrefix)) {
+      return `Para ambiente de Produção, a API Key deve começar com "${prodPrefix}".`;
+    }
+    if (env === "sandbox" && key.startsWith(prodPrefix)) {
+      return "Esta chave é de Produção. Selecione o ambiente correto ou use uma chave Sandbox.";
+    }
+    if (!key.startsWith("$aact_")) {
+      return 'Formato de API Key inválido. A chave deve começar com "$aact_".';
+    }
+    return null;
+  };
+
   const handleSaveCredentials = async () => {
-    if (!apiKey.trim()) { toast.error("Informe a API Key do Asaas."); return; }
+    const sanitized = sanitizeApiKey(apiKey);
+    const validationError = validateApiKeyFormat(sanitized, environment);
+    if (validationError) { toast.error(validationError); return; }
     setSaving(true);
     try {
       const { data, error } = await supabase.functions.invoke("asaas-api", {
-        body: { action: "save_credentials", tenant_id: companyId, api_key: apiKey, environment },
+        body: { action: "save_credentials", tenant_id: companyId, api_key: sanitized, environment },
       });
       if (error) throw error;
       if (data && !data.success) throw new Error(data.details || data.message || "Erro desconhecido");
