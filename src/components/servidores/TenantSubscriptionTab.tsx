@@ -37,7 +37,17 @@ const statusColors: Record<string, string> = {
 export function TenantSubscriptionTab({ companyId }: Props) {
   const { plans, loading: plansLoading, fetchPlans } = useBillingPlans();
   const { subscription, activeUsers, loading: subLoading, upsertSubscription } = useTenantSubscription(companyId);
-  const { user } = useAuth();
+  const { user, isMasterTenantAdmin, isMaster } = useAuth();
+
+  // Only master/CEO of master tenant can manage plans
+  if (!isMasterTenantAdmin && !isMaster) {
+    return (
+      <Card className="p-8 text-center">
+        <Crown className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
+        <p className="text-muted-foreground">Acesso restrito. Apenas o CEO ou Master do tenant principal pode gerenciar planos e limites de usuários.</p>
+      </Card>
+    );
+  }
 
   const [selectedPlanId, setSelectedPlanId] = useState("");
   const [extraFree, setExtraFree] = useState(0);
