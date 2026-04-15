@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, Plus, Search, Power, Users, Loader2, Crown, MoreHorizontal, Pencil } from "lucide-react";
+import { Building2, Plus, Search, Power, Users, Loader2, Crown, MoreHorizontal, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +14,8 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useChildTenants } from "@/hooks/useChildTenants";
+import { useChildTenants, ChildTenant } from "@/hooks/useChildTenants";
+import { ChildTenantManageDialog } from "@/components/meus-tenants/ChildTenantManageDialog";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
