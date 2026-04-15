@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { setMonitoringUser, clearMonitoringUser } from "@/lib/monitoring";
 
 const PRIVATE_BUCKETS = ["contract-pdfs", "signatures", "user-signatures", "documents"];
 
@@ -136,6 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setCompanies([]);
           setActiveCompanyIdState(null);
           setLoading(false);
+          clearMonitoringUser();
           // Reset theme to light on logout
           localStorage.setItem("theme", "light");
           document.documentElement.classList.remove("dark");
@@ -177,6 +179,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setProfile(typedProfile);
       setRole(typedRole);
+
+      // Set monitoring context
+      if (typedProfile) {
+        setMonitoringUser(userId, typedProfile.email, typedProfile.company_id);
+      }
 
       // Apply theme immediately from profile
       if (typedProfile?.theme) {
