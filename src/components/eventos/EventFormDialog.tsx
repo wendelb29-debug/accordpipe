@@ -25,6 +25,9 @@ export function EventFormDialog({ open, onOpenChange, onSubmit, event, loading }
     description: "",
     location: "",
     meeting_url: "",
+    thumbnail_url: "",
+    banner_url: "",
+    highlight_on_home: false,
     target_mode: "all",
     is_mandatory: false,
   });
@@ -39,11 +42,18 @@ export function EventFormDialog({ open, onOpenChange, onSubmit, event, loading }
         description: event.description ?? "",
         location: event.location ?? "",
         meeting_url: event.meeting_url ?? "",
+        thumbnail_url: event.thumbnail_url ?? "",
+        banner_url: event.banner_url ?? "",
+        highlight_on_home: event.highlight_on_home ?? false,
         target_mode: event.target_mode,
         is_mandatory: event.is_mandatory,
       });
     } else {
-      setForm({ title: "", event_type: "reunião", start_at: "", end_at: "", description: "", location: "", meeting_url: "", target_mode: "all", is_mandatory: false });
+      setForm({
+        title: "", event_type: "reunião", start_at: "", end_at: "", description: "",
+        location: "", meeting_url: "", thumbnail_url: "", banner_url: "",
+        highlight_on_home: false, target_mode: "all", is_mandatory: false,
+      });
     }
   }, [event, open]);
 
@@ -99,6 +109,21 @@ export function EventFormDialog({ open, onOpenChange, onSubmit, event, loading }
           <div>
             <Label>Link da Reunião</Label>
             <Input value={form.meeting_url ?? ""} onChange={(e) => setForm({ ...form, meeting_url: e.target.value })} placeholder="https://meet.google.com/..." />
+          </div>
+
+          {/* Image fields */}
+          <div>
+            <Label>URL da Imagem (Thumbnail)</Label>
+            <Input value={form.thumbnail_url ?? ""} onChange={(e) => setForm({ ...form, thumbnail_url: e.target.value })} placeholder="https://exemplo.com/imagem.jpg" />
+          </div>
+          <div>
+            <Label>URL do Banner</Label>
+            <Input value={form.banner_url ?? ""} onChange={(e) => setForm({ ...form, banner_url: e.target.value })} placeholder="https://exemplo.com/banner.jpg" />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Switch checked={form.highlight_on_home} onCheckedChange={(v) => setForm({ ...form, highlight_on_home: v })} />
+            <Label>Destacar na Home</Label>
           </div>
           <div className="flex items-center gap-3">
             <Switch checked={form.is_mandatory} onCheckedChange={(v) => setForm({ ...form, is_mandatory: v })} />

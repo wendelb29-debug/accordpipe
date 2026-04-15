@@ -13,6 +13,7 @@ import { ManageAnnouncementsDialog } from "@/components/home/ManageAnnouncements
 import { BirthdayBanner } from "@/components/home/BirthdayBanner";
 import { BirthdayCard } from "@/components/home/BirthdayCard";
 import { BirthdayCelebration } from "@/components/home/BirthdayCelebration";
+import { HighlightedEventsCarousel } from "@/components/home/HighlightedEventsCarousel";
 
 interface Announcement {
   id: string; title: string; image_url: string; description: string | null;
@@ -69,6 +70,9 @@ export default function Home() {
 
       {/* Quick actions */}
       <QuickActions />
+
+      {/* Highlighted events */}
+      <HighlightedEventsCarousel />
 
       {/* Main content: announcements + activity feed */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

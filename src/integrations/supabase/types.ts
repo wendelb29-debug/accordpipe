@@ -4009,6 +4009,7 @@ export type Database = {
           description: string | null
           end_at: string | null
           event_type: string
+          highlight_on_home: boolean
           id: string
           is_mandatory: boolean
           location: string | null
@@ -4018,6 +4019,7 @@ export type Database = {
           status: string
           target_mode: string
           tenant_id: string
+          thumbnail_url: string | null
           title: string
           updated_at: string
         }
@@ -4028,6 +4030,7 @@ export type Database = {
           description?: string | null
           end_at?: string | null
           event_type?: string
+          highlight_on_home?: boolean
           id?: string
           is_mandatory?: boolean
           location?: string | null
@@ -4037,6 +4040,7 @@ export type Database = {
           status?: string
           target_mode?: string
           tenant_id: string
+          thumbnail_url?: string | null
           title: string
           updated_at?: string
         }
@@ -4047,6 +4051,7 @@ export type Database = {
           description?: string | null
           end_at?: string | null
           event_type?: string
+          highlight_on_home?: boolean
           id?: string
           is_mandatory?: boolean
           location?: string | null
@@ -4056,6 +4061,7 @@ export type Database = {
           status?: string
           target_mode?: string
           tenant_id?: string
+          thumbnail_url?: string | null
           title?: string
           updated_at?: string
         }
