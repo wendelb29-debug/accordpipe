@@ -1408,6 +1408,10 @@ export type Database = {
       }
       crm_lead_activities: {
         Row: {
+          completed_at: string | null
+          completed_by_name: string | null
+          completed_by_user_id: string | null
+          completion_note: string | null
           created_at: string
           created_by_name: string | null
           created_by_user_id: string | null
@@ -1415,11 +1419,20 @@ export type Database = {
           id: string
           lead_id: string
           metadata: Json | null
+          no_show_at: string | null
+          no_show_by_name: string | null
+          no_show_by_user_id: string | null
+          no_show_note: string | null
           servidor_id: string
+          status: string
           title: string
           type: string
         }
         Insert: {
+          completed_at?: string | null
+          completed_by_name?: string | null
+          completed_by_user_id?: string | null
+          completion_note?: string | null
           created_at?: string
           created_by_name?: string | null
           created_by_user_id?: string | null
@@ -1427,11 +1440,20 @@ export type Database = {
           id?: string
           lead_id: string
           metadata?: Json | null
+          no_show_at?: string | null
+          no_show_by_name?: string | null
+          no_show_by_user_id?: string | null
+          no_show_note?: string | null
           servidor_id: string
+          status?: string
           title: string
           type?: string
         }
         Update: {
+          completed_at?: string | null
+          completed_by_name?: string | null
+          completed_by_user_id?: string | null
+          completion_note?: string | null
           created_at?: string
           created_by_name?: string | null
           created_by_user_id?: string | null
@@ -1439,7 +1461,12 @@ export type Database = {
           id?: string
           lead_id?: string
           metadata?: Json | null
+          no_show_at?: string | null
+          no_show_by_name?: string | null
+          no_show_by_user_id?: string | null
+          no_show_note?: string | null
           servidor_id?: string
+          status?: string
           title?: string
           type?: string
         }
