@@ -372,6 +372,7 @@ export const ROUTE_PERMISSIONS: Record<string, string> = {
   "/accord-stack": "create_user",
   "/configuracoes/auditoria": "view_audit_logs",
   "/performance": "view_performance_module",
+  "/planos": "view_billing_plans",
 };
 
 // Legacy permission key mapping (old -> new) for backward compatibility

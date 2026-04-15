@@ -55,6 +55,7 @@ const navigation = [
 
 const configNavigation = [
   { name: "Usuários", href: "/configuracoes/usuarios", icon: Users, roles: ["admin", "ceo", "administrativo"] },
+  { name: "Planos", href: "/planos", icon: Crown, roles: ["ceo", "master"] },
   { name: "Auditoria", href: "/configuracoes/auditoria", icon: Settings, roles: ["ceo", "master"] },
 ];
 
