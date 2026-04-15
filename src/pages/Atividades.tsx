@@ -224,13 +224,48 @@ export default function Atividades() {
       "\n" + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   };
 
-  const handleLeadClick = (activity: ActivityRow) => {
-    if (isMobile) {
-      setExpandedActivityId(expandedActivityId === activity.id ? null : activity.id);
-    } else {
-      window.open(`/gestao-vendas?lead=${activity.lead_id}`, "_blank");
+  const handleLeadClick = async (activity: ActivityRow) => {
+    if (!activity.lead_id) {
+      toast.error("Esta atividade não está vinculada a uma oportunidade");
+      return;
     }
+    setDrawerLoading(true);
+    setDrawerOpen(true);
+    const { data, error } = await supabase
+      .from("crm_leads")
+      .select("*")
+      .eq("id", activity.lead_id)
+      .maybeSingle();
+    setDrawerLoading(false);
+    if (error || !data) {
+      toast.error("Oportunidade não encontrada");
+      setDrawerOpen(false);
+      return;
+    }
+    setDrawerLead(data as CrmLead);
   };
+
+  const handleDrawerUpdate = useCallback(async (id: string, updates: Partial<CrmLead>) => {
+    const { error } = await supabase.from("crm_leads").update(updates as any).eq("id", id);
+    if (error) { toast.error("Erro ao atualizar"); return false; }
+    setDrawerLead((prev) => prev ? { ...prev, ...updates } : prev);
+    return true;
+  }, []);
+
+  const handleDrawerMoveStage = useCallback(async (id: string, stage: string) => {
+    const { error } = await supabase.from("crm_leads").update({ stage, stage_entered_at: new Date().toISOString() } as any).eq("id", id);
+    if (error) { toast.error("Erro ao mover etapa"); return false; }
+    setDrawerLead((prev) => prev ? { ...prev, stage, stage_entered_at: new Date().toISOString() } : prev);
+    return true;
+  }, []);
+
+  const handleDrawerDelete = useCallback(async (id: string) => {
+    const { error } = await supabase.from("crm_leads").delete().eq("id", id);
+    if (error) { toast.error("Erro ao excluir"); return false; }
+    setDrawerOpen(false);
+    setDrawerLead(null);
+    return true;
+  }, []);
 
   const dateFilterLabels: Record<string, string> = {
     today: "Hoje",
