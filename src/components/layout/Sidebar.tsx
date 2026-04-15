@@ -226,7 +226,7 @@ export function Sidebar() {
           "truncate flex-1 transition-all duration-300 whitespace-nowrap",
           collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 w-auto"
         )}>
-          {item.name}
+          {t(item.nameKey)}
         </span>
         {!collapsed && badge > 0 && (
           <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive/80 text-[10px] font-bold text-destructive-foreground px-1">
@@ -241,7 +241,7 @@ export function Sidebar() {
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>{content}</TooltipTrigger>
           <TooltipContent side="right" className="font-medium text-xs">
-            {item.name}
+            {t(item.nameKey)}
           </TooltipContent>
         </Tooltip>
       );
@@ -337,7 +337,7 @@ export function Sidebar() {
           </p>
         )}
         {filteredNavigation.map((item) => (
-          <NavItem key={item.name} item={item} isActive={location.pathname === item.href} />
+          <NavItem key={t(item.nameKey)} item={item} isActive={location.pathname === item.href} />
         ))}
       </nav>
 
@@ -370,7 +370,7 @@ export function Sidebar() {
             {configOpen && (
               <div className="space-y-0.5 pl-1">
                 {filteredConfigNavigation.map((item) => (
-                  <NavItem key={item.name} item={item} isActive={location.pathname === item.href} />
+                  <NavItem key={t(item.nameKey)} item={item} isActive={location.pathname === item.href} />
                 ))}
               </div>
             )}
