@@ -6,6 +6,21 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const PRIVATE_BUCKETS = ["contract-pdfs", "signatures", "user-signatures"];
+
+function parsePrivateStorageUrl(url: string): { bucket: string; path: string } | null {
+  if (!url) return null;
+  for (const bucket of PRIVATE_BUCKETS) {
+    const marker = `/storage/v1/object/public/${bucket}/`;
+    const idx = url.indexOf(marker);
+    if (idx !== -1) {
+      const path = decodeURIComponent(url.substring(idx + marker.length).split("?")[0]);
+      return { bucket, path };
+    }
+  }
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
