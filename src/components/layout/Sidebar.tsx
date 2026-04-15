@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import accordLogo from "@/assets/accord-logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
@@ -41,26 +42,24 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const navigation = [
-  { name: "Início", href: "/home", icon: Home, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
-  { name: "Accord Sales", href: "/atendimento", icon: MessageSquare, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
-  { name: "Formulários", href: "/formularios", icon: ClipboardList, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
-  { name: "Atividades", href: "/atividades", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
-  { name: "Fintech", href: "/financeiro", icon: Receipt, roles: ["admin", "ceo", "financeiro"] },
-  { name: "Documentos", href: "/documentos", icon: FileText, roles: ["admin", "ceo", "administrativo", "financeiro"] },
-  { name: "Relatórios", href: "/relatorios", icon: BarChart3, roles: ["admin", "leitura", "ceo", "administrativo", "financeiro"] },
-  
-  { name: "Base de Clientes", href: "/cadastrados", icon: Users, roles: ["admin", "ceo", "administrativo"] },
-  { name: "Performance", href: "/performance", icon: TrendingUp, roles: ["admin", "ceo", "operador", "comercial"] },
-  { name: "Eventos", href: "/eventos", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
-  { name: "Descarte", href: "/descarte", icon: Trash2, roles: ["admin", "ceo"] },
-  
+  { nameKey: "nav.home", href: "/home", icon: Home, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
+  { nameKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
+  { nameKey: "nav.accordSales", href: "/atendimento", icon: MessageSquare, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
+  { nameKey: "nav.forms", href: "/formularios", icon: ClipboardList, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
+  { nameKey: "nav.activities", href: "/atividades", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
+  { nameKey: "nav.fintech", href: "/financeiro", icon: Receipt, roles: ["admin", "ceo", "financeiro"] },
+  { nameKey: "nav.documents", href: "/documentos", icon: FileText, roles: ["admin", "ceo", "administrativo", "financeiro"] },
+  { nameKey: "nav.reports", href: "/relatorios", icon: BarChart3, roles: ["admin", "leitura", "ceo", "administrativo", "financeiro"] },
+  { nameKey: "nav.clientBase", href: "/cadastrados", icon: Users, roles: ["admin", "ceo", "administrativo"] },
+  { nameKey: "nav.performance", href: "/performance", icon: TrendingUp, roles: ["admin", "ceo", "operador", "comercial"] },
+  { nameKey: "nav.events", href: "/eventos", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
+  { nameKey: "nav.discard", href: "/descarte", icon: Trash2, roles: ["admin", "ceo"] },
 ];
 
 const configNavigation = [
-  { name: "Usuários", href: "/configuracoes/usuarios", icon: Users, roles: ["admin", "ceo", "administrativo"] },
-  { name: "Planos", href: "/planos", icon: Crown, roles: ["ceo", "master"] },
-  { name: "Auditoria", href: "/configuracoes/auditoria", icon: Settings, roles: ["ceo", "master"] },
+  { nameKey: "nav.users", href: "/configuracoes/usuarios", icon: Users, roles: ["admin", "ceo", "administrativo"] },
+  { nameKey: "nav.plans", href: "/planos", icon: Crown, roles: ["ceo", "master"] },
+  { nameKey: "nav.audit", href: "/configuracoes/auditoria", icon: Settings, roles: ["ceo", "master"] },
 ];
 
 const LANGUAGES = [
@@ -72,6 +71,7 @@ const LANGUAGES = [
 
 export function Sidebar() {
   const location = useLocation();
+  const { t, i18n } = useTranslation();
   const [hovered, setHovered] = useState(false);
   const [pinned, setPinned] = useState(() => localStorage.getItem("sidebar-pinned") === "true");
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -118,6 +118,7 @@ export function Sidebar() {
   const handleLanguageChange = async (code: string) => {
     setCurrentLang(code);
     localStorage.setItem("accord-lang", code);
+    i18n.changeLanguage(code);
     if (profile) {
       await supabase.from("profiles").update({ preferred_language: code } as any).eq("id", profile.id);
     }
@@ -225,7 +226,7 @@ export function Sidebar() {
           "truncate flex-1 transition-all duration-300 whitespace-nowrap",
           collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 w-auto"
         )}>
-          {item.name}
+          {t(item.nameKey)}
         </span>
         {!collapsed && badge > 0 && (
           <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive/80 text-[10px] font-bold text-destructive-foreground px-1">
@@ -240,7 +241,7 @@ export function Sidebar() {
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>{content}</TooltipTrigger>
           <TooltipContent side="right" className="font-medium text-xs">
-            {item.name}
+            {t(item.nameKey)}
           </TooltipContent>
         </Tooltip>
       );
@@ -296,7 +297,7 @@ export function Sidebar() {
               </button>
             </TooltipTrigger>
             <TooltipContent side="right" className="font-medium text-xs">
-              {pinned ? "Desafixar sidebar" : "Fixar sidebar"}
+              {pinned ? t("common.close") : t("common.view")}
             </TooltipContent>
           </Tooltip>
         )}
@@ -336,7 +337,7 @@ export function Sidebar() {
           </p>
         )}
         {filteredNavigation.map((item) => (
-          <NavItem key={item.name} item={item} isActive={location.pathname === item.href} />
+          <NavItem key={t(item.nameKey)} item={item} isActive={location.pathname === item.href} />
         ))}
       </nav>
 
@@ -354,7 +355,7 @@ export function Sidebar() {
                     <Settings className="h-4 w-4" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="right">Configurações</TooltipContent>
+                <TooltipContent side="right">{t("nav.settings")}</TooltipContent>
               </Tooltip>
             ) : (
               <button
@@ -362,14 +363,14 @@ export function Sidebar() {
                 className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors text-xs font-semibold"
               >
                 <Settings className="h-4 w-4" />
-                <span className="flex-1 text-left">Configurações</span>
+                <span className="flex-1 text-left">{t("nav.settings")}</span>
                 <ChevronDown className={cn("h-3 w-3 transition-transform", configOpen && "rotate-180")} />
               </button>
             )}
             {configOpen && (
               <div className="space-y-0.5 pl-1">
                 {filteredConfigNavigation.map((item) => (
-                  <NavItem key={item.name} item={item} isActive={location.pathname === item.href} />
+                  <NavItem key={t(item.nameKey)} item={item} isActive={location.pathname === item.href} />
                 ))}
               </div>
             )}

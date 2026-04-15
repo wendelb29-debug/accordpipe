@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Search, User, Moon, Sun, Clock, ChevronLeft, Building2, Network } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { MobileSidebar } from "./MobileSidebar";
@@ -20,38 +21,31 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const ROUTE_TITLES: Record<string, string> = {
-  "/home": "Início",
-  "/dashboard": "Dashboard",
-  "/atendimento": "Workspaces",
-  "/formularios": "Formulários",
-  "/atividades": "Atividades",
-  "/financeiro": "Financeiro",
-  "/documentos": "Documentos",
-  "/relatorios": "Relatórios",
-  "/contratos": "Contratos",
-  "/gestao-vendas": "Gestão de Vendas",
-  "/cadastrados": "Base de Clientes",
-  "/descarte": "Descarte",
-  "/perfil": "Meu Perfil",
+const ROUTE_TITLE_KEYS: Record<string, string> = {
+  "/home": "nav.home",
+  "/dashboard": "nav.dashboard",
+  "/atendimento": "header.workspaces",
+  "/formularios": "nav.forms",
+  "/atividades": "nav.activities",
+  "/financeiro": "nav.fintech",
+  "/documentos": "nav.documents",
+  "/relatorios": "nav.reports",
+  "/contratos": "nav.contracts",
+  "/gestao-vendas": "nav.salesManagement",
+  "/cadastrados": "nav.clientBase",
+  "/descarte": "nav.discard",
+  "/perfil": "header.profile",
   "/accord-stack": "ACCORD Stack",
-  "/configuracoes/usuarios": "Usuários",
-  "/configuracoes/assinaturas": "Assinaturas",
+  "/configuracoes/usuarios": "nav.users",
+  "/configuracoes/assinaturas": "nav.signatures",
+  "/performance": "nav.performance",
+  "/eventos": "nav.events",
 };
 
 const ROUTE_SUBTITLES: Record<string, string> = {};
 
-const roleLabels: Record<string, string> = {
-  admin: "Administrador",
-  operador: "Operador",
-  leitura: "Leitura",
-  ceo: "CEO",
-  administrativo: "Administrativo",
-  financeiro: "Financeiro",
-  comercial: "Comercial",
-};
-
 export function Header() {
+  const { t } = useTranslation();
   const { profile, role, signOut, loading, companies, activeCompanyId, setActiveCompanyId, activeCompany, isMaster, isCeo, isMasterTenantAdmin } = useAuth();
   const { handleBack } = useBackNavigation();
   const [currentTheme, setCurrentTheme] = useState(() => document.documentElement.classList.contains("dark") ? "dark" : "light");
@@ -60,7 +54,8 @@ export function Header() {
   const location = useLocation();
   const isMobile = useIsMobile();
 
-  const pageTitle = ROUTE_TITLES[location.pathname] || "";
+  const titleKey = ROUTE_TITLE_KEYS[location.pathname];
+  const pageTitle = titleKey ? (titleKey.startsWith("ACCORD") ? titleKey : t(titleKey)) : "";
   const pageSubtitle = ROUTE_SUBTITLES[location.pathname] || "";
 
   useEffect(() => {
@@ -92,7 +87,7 @@ export function Header() {
       <div className="flex items-center gap-2 min-w-0 shrink-0">
         <button
           onClick={handleBack}
-          title="Voltar"
+          title={t("header.back")}
           className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/60 hover:bg-primary/10 hover:text-primary text-muted-foreground transition-all duration-200 shrink-0 active:scale-95"
         >
           <ChevronLeft className="h-5 w-5" />
@@ -128,7 +123,7 @@ export function Header() {
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
           <Input
             type="search"
-            placeholder="Buscar..."
+            placeholder={t("header.search")}
             className="pl-8 pr-2 bg-muted/40 border-border/40 focus-visible:ring-1 focus-visible:ring-primary/50 rounded-xl h-8 text-xs w-full"
           />
         </div>
@@ -165,13 +160,13 @@ export function Header() {
           <DropdownMenuContent align="end" className="w-64 rounded-xl shadow-lg max-h-[80vh] overflow-y-auto">
             <DropdownMenuLabel>
               <div className="flex flex-col">
-                <span className="font-semibold">{profile?.name || "Usuário"}</span>
+                <span className="font-semibold">{profile?.name || t("header.user")}</span>
                 <span className="text-xs font-normal text-muted-foreground">
                   {profile?.email}
                 </span>
                 {role && (
                   <Badge variant="outline" className="mt-1.5 w-fit text-[10px] rounded-md border-primary/20 text-primary">
-                    {roleLabels[role]}
+                    {t(`roles.${role}`)}
                   </Badge>
                 )}
               </div>
@@ -182,7 +177,7 @@ export function Header() {
               <>
                 <DropdownMenuItem className="rounded-lg cursor-pointer gap-2" onClick={() => navigate("/servidores")}>
                   <Building2 className="h-4 w-4" />
-                  Tenants
+                  {t("nav.tenants")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
               </>
@@ -192,20 +187,20 @@ export function Header() {
               <>
                 <DropdownMenuItem className="rounded-lg cursor-pointer gap-2" onClick={() => navigate("/meus-tenants")}>
                   <Network className="h-4 w-4" />
-                  Meus Tenants
+                  {t("nav.myTenants")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
               </>
             )}
 
-            <DropdownMenuItem className="rounded-lg cursor-pointer" onClick={() => navigate("/perfil")}>Meu Perfil</DropdownMenuItem>
-            <DropdownMenuItem className="rounded-lg cursor-pointer" onClick={() => navigate("/perfil")}>Alterar Senha</DropdownMenuItem>
+            <DropdownMenuItem className="rounded-lg cursor-pointer" onClick={() => navigate("/perfil")}>{t("header.profile")}</DropdownMenuItem>
+            <DropdownMenuItem className="rounded-lg cursor-pointer" onClick={() => navigate("/perfil")}>{t("header.changePassword")}</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-destructive rounded-lg cursor-pointer"
               onClick={signOut}
             >
-              Sair
+              {t("header.logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
