@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield, Webhook, Briefcase, ShieldCheck, Link2, Copy, Check, ChevronDown, Trash2, CreditCard,
+  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield, Webhook, Briefcase, ShieldCheck, Link2, Copy, Check, ChevronDown, Trash2, CreditCard, Crown,
 } from "lucide-react";
+import { TenantSubscriptionTab } from "./TenantSubscriptionTab";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ContractTemplateTab } from "./ContractTemplateTab";
@@ -773,6 +774,10 @@ export default function ServidoresTab() {
                 <CreditCard className="h-4 w-4" />
                 Fintech
               </TabsTrigger>
+              <TabsTrigger value="plano" className="justify-start gap-2 px-3 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg" disabled={!editingCompany}>
+                <Crown className="h-4 w-4" />
+                Plano
+              </TabsTrigger>
             </TabsList>
 
             <div className="flex-1 overflow-y-auto py-2">
@@ -953,6 +958,13 @@ export default function ServidoresTab() {
                   <AsaasIntegrationTab companyId={editingCompany.id} />
                 ) : (
                   <p className="text-sm text-muted-foreground text-center py-8">Salve o tenant primeiro para configurar a integração Fintech.</p>
+                )}
+              </TabsContent>
+              <TabsContent value="plano" className="mt-0">
+                {editingCompany ? (
+                  <TenantSubscriptionTab companyId={editingCompany.id} />
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">Salve o tenant primeiro para configurar o plano.</p>
                 )}
               </TabsContent>
             </div>
