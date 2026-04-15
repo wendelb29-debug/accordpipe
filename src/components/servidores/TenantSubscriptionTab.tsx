@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Crown, Users, AlertTriangle, Save, History } from "lucide-react";
+import { Crown, Users, AlertTriangle, Save, History, Settings2, DollarSign } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useBillingPlans, useTenantSubscription, type BillingPlan } from "@/hooks/useBillingPlans";
+import { useBillingPlans, useTenantSubscription } from "@/hooks/useBillingPlans";
+import { ManagePlansDialog } from "./ManagePlansDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -34,11 +35,11 @@ const statusColors: Record<string, string> = {
 };
 
 export function TenantSubscriptionTab({ companyId }: Props) {
-  const { plans, loading: plansLoading } = useBillingPlans();
-  const { subscription, activeUsers, loading: subLoading, upsertSubscription, refetch } = useTenantSubscription(companyId);
+  const { plans, loading: plansLoading, fetchPlans } = useBillingPlans();
+  const { subscription, activeUsers, loading: subLoading, upsertSubscription } = useTenantSubscription(companyId);
   const { user } = useAuth();
 
-  const [selectedPlanId, setSelectedPlanId] = useState<string>("");
+  const [selectedPlanId, setSelectedPlanId] = useState("");
   const [extraFree, setExtraFree] = useState(0);
   const [extraPaid, setExtraPaid] = useState(0);
   const [billingStatus, setBillingStatus] = useState("active");
@@ -47,8 +48,8 @@ export function TenantSubscriptionTab({ companyId }: Props) {
   const [saving, setSaving] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [managePlansOpen, setManagePlansOpen] = useState(false);
 
-  // Populate form from subscription
   useEffect(() => {
     if (subscription) {
       setSelectedPlanId(subscription.plan_id || "");
@@ -66,6 +67,12 @@ export function TenantSubscriptionTab({ companyId }: Props) {
   const remaining = Math.max(0, effectiveLimit - activeUsers);
   const usagePercent = effectiveLimit > 0 ? Math.min(100, (activeUsers / effectiveLimit) * 100) : 0;
   const isOverLimit = activeUsers > effectiveLimit;
+
+  const monthlyPrice = selectedPlan?.monthly_price ?? (subscription as any)?.monthly_price_snapshot ?? 0;
+  const yearlyPrice = selectedPlan?.yearly_price ?? (subscription as any)?.yearly_price_snapshot ?? 0;
+  const pricePerExtra = selectedPlan?.price_per_extra_user ?? subscription?.price_per_extra_user_snapshot ?? 0;
+  const displayPrice = billingCycle === "yearly" ? yearlyPrice : monthlyPrice;
+  const extraCost = extraPaid * pricePerExtra;
 
   const handlePlanSelect = (planId: string) => {
     setSelectedPlanId(planId);
@@ -86,7 +93,6 @@ export function TenantSubscriptionTab({ companyId }: Props) {
       const plan = plans.find((p) => p.id === selectedPlanId);
       if (!plan) throw new Error("Plano não encontrado");
 
-      // Record history before saving
       if (subscription) {
         await supabase.from("tenant_subscription_history").insert({
           tenant_id: companyId,
@@ -116,7 +122,9 @@ export function TenantSubscriptionTab({ companyId }: Props) {
         billing_cycle: billingCycle,
         billing_status: billingStatus,
         has_custom_override: hasCustomOverride || extraFree !== plan.extra_free_users_default,
-      });
+        monthly_price_snapshot: plan.monthly_price,
+        yearly_price_snapshot: plan.yearly_price,
+      } as any);
 
       if (ok) toast.success("Assinatura do tenant atualizada!");
     } catch (err: any) {
@@ -137,27 +145,27 @@ export function TenantSubscriptionTab({ companyId }: Props) {
     setShowHistory(true);
   };
 
+  const fmtCurrency = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
   if (plansLoading || subLoading) {
     return <Skeleton className="h-64 w-full" />;
   }
 
   return (
     <div className="space-y-6">
-      {/* Status alert */}
+      {/* Status alerts */}
       {isOverLimit && (
         <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           Este tenant está acima do limite contratado ({activeUsers}/{effectiveLimit}). Não será possível adicionar novos usuários até regularizar.
         </div>
       )}
-
       {billingStatus === "past_due" && (
         <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-600">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           Assinatura inadimplente. Regularize para evitar suspensão.
         </div>
       )}
-
       {["suspended", "cancelled"].includes(billingStatus) && (
         <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
           <AlertTriangle className="h-4 w-4 shrink-0" />
@@ -165,7 +173,7 @@ export function TenantSubscriptionTab({ companyId }: Props) {
         </div>
       )}
 
-      {/* Usage card */}
+      {/* Usage + Price card */}
       <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-background">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -182,6 +190,7 @@ export function TenantSubscriptionTab({ companyId }: Props) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* User stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatBox label="Base" value={baseLimit} />
             <StatBox label="Extras grátis" value={extraFree} />
@@ -200,13 +209,39 @@ export function TenantSubscriptionTab({ companyId }: Props) {
             </div>
             <Progress value={usagePercent} className="h-3" />
           </div>
+
+          {/* Price summary */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-border/50">
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground">Mensal</div>
+              <div className="text-sm font-semibold">{fmtCurrency(monthlyPrice)}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground">Anual</div>
+              <div className="text-sm font-semibold">{fmtCurrency(yearlyPrice)}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground">Extra/usuário</div>
+              <div className="text-sm font-semibold">{fmtCurrency(pricePerExtra)}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground">Custo extras</div>
+              <div className="text-sm font-semibold">{fmtCurrency(extraCost)}</div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
       {/* Plan selection */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Configuração do Plano</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">Configuração do Plano</CardTitle>
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => setManagePlansOpen(true)}>
+              <Settings2 className="h-4 w-4" />
+              Gerenciar Planos
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -219,7 +254,7 @@ export function TenantSubscriptionTab({ companyId }: Props) {
                 <SelectContent>
                   {plans.filter((p) => p.is_active).map((p) => (
                     <SelectItem key={p.id} value={p.id}>
-                      {p.name} ({p.base_user_limit} usuários)
+                      {p.name} ({p.base_user_limit} usuários — {fmtCurrency(p.monthly_price)}/mês)
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -228,9 +263,7 @@ export function TenantSubscriptionTab({ companyId }: Props) {
             <div className="space-y-2">
               <Label>Status da Assinatura</Label>
               <Select value={billingStatus} onValueChange={setBillingStatus}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">Ativo</SelectItem>
                   <SelectItem value="trial">Trial</SelectItem>
@@ -254,9 +287,7 @@ export function TenantSubscriptionTab({ companyId }: Props) {
             <div className="space-y-2">
               <Label>Ciclo</Label>
               <Select value={billingCycle} onValueChange={setBillingCycle}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="monthly">Mensal</SelectItem>
                   <SelectItem value="yearly">Anual</SelectItem>
@@ -312,6 +343,16 @@ export function TenantSubscriptionTab({ companyId }: Props) {
           </CardContent>
         </Card>
       )}
+
+      {/* Manage Plans Dialog */}
+      <ManagePlansDialog
+        open={managePlansOpen}
+        onOpenChange={(v) => {
+          setManagePlansOpen(v);
+          if (!v) fetchPlans();
+        }}
+        onPlanSelected={handlePlanSelect}
+      />
     </div>
   );
 }
