@@ -45,6 +45,7 @@ const ROUTE_TITLE_KEYS: Record<string, string> = {
 const ROUTE_SUBTITLES: Record<string, string> = {};
 
 export function Header() {
+  const { t } = useTranslation();
   const { profile, role, signOut, loading, companies, activeCompanyId, setActiveCompanyId, activeCompany, isMaster, isCeo, isMasterTenantAdmin } = useAuth();
   const { handleBack } = useBackNavigation();
   const [currentTheme, setCurrentTheme] = useState(() => document.documentElement.classList.contains("dark") ? "dark" : "light");
