@@ -32,7 +32,12 @@ export function useChildTenants() {
         .from("companies")
         .select("id, is_reseller, can_create_tenants, can_manage_child_tenants, max_child_tenants, tenant_type, nome_fantasia, razao_social")
         .eq("id", activeCompanyId)
-        .single();
+        .maybeSingle();
+
+      if (!parent) {
+        setLoading(false);
+        return;
+      }
 
       setParentCompany(parent);
 
