@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import {
   Calendar, Clock, Edit, Trash2, Copy, Ban, Plus, Loader2, Send,
-  PhoneCall, Mail, Users, Briefcase, MessageSquare, CheckCircle2, X,
+  PhoneCall, Mail, Users, Briefcase, MessageSquare, CheckCircle2, Eye,
+  AlertTriangle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,10 +14,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { CrmLead } from "@/hooks/useCrmLeads";
 import { toast } from "sonner";
+import { ActivityStatusModal } from "./ActivityStatusModal";
 
 const ACTIVITY_TYPES = [
   { value: "internal", label: "Atividade Interna", icon: Briefcase },
@@ -47,13 +51,14 @@ interface ActivityItem {
   created_by_user_id: string | null;
   created_by_name: string | null;
   created_at: string;
+  status: string;
+  completed_at: string | null;
+  completed_by_name: string | null;
+  completion_note: string | null;
+  no_show_at: string | null;
+  no_show_by_name: string | null;
+  no_show_note: string | null;
 }
-
-const formatDateTime = (dateStr: string) => {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }) +
-    "\n" + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-};
 
 export function LeadAtividadesTab({
   lead,
@@ -68,14 +73,18 @@ export function LeadAtividadesTab({
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [subTab, setSubTab] = useState("planejadas");
-  const [completionTarget, setCompletionTarget] = useState<ActivityItem | null>(null);
-  const [completionComment, setCompletionComment] = useState("");
+
+  // Modal state
+  const [modalTarget, setModalTarget] = useState<ActivityItem | null>(null);
+  const [modalType, setModalType] = useState<"complete" | "no_show">("complete");
+
+  // View note dialog
+  const [viewNoteItem, setViewNoteItem] = useState<ActivityItem | null>(null);
 
   const [form, setForm] = useState({
     type: "meeting",
     title: "",
     description: "",
-    status: "planejada" as "planejada" | "concluida",
     date: new Date().toISOString().slice(0, 10),
     time: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
     duration: "00:30",
@@ -95,13 +104,11 @@ export function LeadAtividadesTab({
       .in("type", ["activity", "meeting", "call", "email", "internal", "whatsapp"])
       .order("created_at", { ascending: false });
     if (!error) {
-      // Filter out system log entries (completion/deletion/reopen logs) — only keep real scheduled activities
-      const real = ((data as ActivityItem[]) || []).filter(a => {
+      const real = ((data as any[]) || []).filter(a => {
         const meta = a.metadata || {};
-        // Real activities have scheduled_at in metadata; system logs don't
-        return meta.scheduled_at || meta.activity_status;
+        return meta.scheduled_at || meta.activity_status || a.status !== "planned" || meta.scheduled_date;
       });
-      setActivities(real);
+      setActivities(real as ActivityItem[]);
     }
     setLoading(false);
   };
@@ -111,7 +118,6 @@ export function LeadAtividadesTab({
       type: "meeting",
       title: "",
       description: "",
-      status: "planejada",
       date: new Date().toISOString().slice(0, 10),
       time: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
       duration: "00:30",
@@ -133,7 +139,7 @@ export function LeadAtividadesTab({
         description: form.description || undefined,
         servidor_id: lead.servidor_id,
         metadata: {
-          activity_status: form.status,
+          activity_status: "planejada",
           scheduled_at: scheduledAt,
           duration: form.duration,
           reminder: form.reminder,
@@ -147,14 +153,11 @@ export function LeadAtividadesTab({
       }
 
       // Schedule reminder notification
-      if (form.reminder !== "none" && form.status === "planejada" && profile?.user_id) {
+      if (form.reminder !== "none" && profile?.user_id) {
         const reminderMinutes = parseInt(form.reminder);
         const scheduledDate = new Date(scheduledAt);
         const reminderDate = new Date(scheduledDate.getTime() - reminderMinutes * 60 * 1000);
-        const now = new Date();
-
-        if (reminderDate > now) {
-          // Create notification with reminder metadata
+        if (reminderDate > new Date()) {
           await supabase.rpc("create_notification", {
             _user_id: profile.user_id,
             _title: `Lembrete: ${form.title}`,
@@ -183,59 +186,88 @@ export function LeadAtividadesTab({
     }
   };
 
-  const handleToggleStatus = async (activity: ActivityItem, newStatus: string, comment?: string) => {
-    // If trying to complete, show dialog first
-    if (newStatus === "concluida" && !comment) {
-      setCompletionTarget(activity);
-      setCompletionComment("");
-      return;
-    }
-
-    const meta = activity.metadata || {};
-    const updatedMeta: any = { ...meta, activity_status: newStatus };
-    if (comment) {
-      updatedMeta.completion_comment = comment;
-      updatedMeta.completed_at = new Date().toISOString();
-    }
-    const { error } = await supabase
-      .from("crm_lead_activities")
-      .update({ metadata: updatedMeta } as any)
-      .eq("id", activity.id);
-    if (error) {
-      toast.error("Erro ao atualizar status");
-      return;
-    }
-    await addActivity({
-      type: newStatus === "concluida" ? "activity_completed" : "activity_reopened",
-      title: `Atividade ${newStatus === "concluida" ? "concluída" : "reaberta"}: ${activity.title}`,
-      description: newStatus === "concluida"
-        ? `Status alterado para "Concluída".\n\n**Comentário:** ${comment}`
-        : `Status alterado para "Planejada".`,
-      servidor_id: lead.servidor_id,
-    });
-    toast.success(newStatus === "concluida" ? "Atividade concluída!" : "Atividade reaberta");
-    await fetchActivities();
+  const handleStatusChange = (activity: ActivityItem, type: "complete" | "no_show") => {
+    setModalTarget(activity);
+    setModalType(type);
   };
 
-  const handleConfirmCompletion = async () => {
-    if (!completionComment.trim()) {
-      toast.error("Comentário obrigatório para concluir a atividade");
+  const handleModalConfirm = async (note: string, createAnother: boolean) => {
+    if (!modalTarget) return;
+    const activity = modalTarget;
+    const isComplete = modalType === "complete";
+
+    const updateData: any = isComplete
+      ? {
+          status: "completed",
+          completed_at: new Date().toISOString(),
+          completed_by_user_id: profile?.user_id || null,
+          completed_by_name: profile?.name || null,
+          completion_note: note,
+        }
+      : {
+          status: "no_show",
+          no_show_at: new Date().toISOString(),
+          no_show_by_user_id: profile?.user_id || null,
+          no_show_by_name: profile?.name || null,
+          no_show_note: note,
+        };
+
+    // Also update metadata for backward compat
+    const meta = activity.metadata || {};
+    updateData.metadata = {
+      ...meta,
+      activity_status: isComplete ? "concluida" : "no_show",
+      ...(isComplete ? { completed_at: updateData.completed_at, completion_comment: note } : {}),
+    };
+
+    const { error } = await supabase
+      .from("crm_lead_activities")
+      .update(updateData)
+      .eq("id", activity.id);
+
+    if (error) {
+      toast.error("Erro ao atualizar status");
+      setModalTarget(null);
       return;
     }
-    if (!completionTarget) return;
-    await handleToggleStatus(completionTarget, "concluida", completionComment.trim());
-    setCompletionTarget(null);
-    setCompletionComment("");
+
+    // Log event
+    await addActivity({
+      type: isComplete ? "activity_completed" : "activity_no_show",
+      title: `Atividade ${isComplete ? "concluída" : "marcada como no-show"}: ${activity.title}`,
+      description: `**Observação:** ${note}`,
+      servidor_id: lead.servidor_id,
+    });
+
+    toast.success(isComplete ? "Atividade concluída!" : "Marcada como no-show");
+    setModalTarget(null);
+    await fetchActivities();
+
+    // Create another activity with same data
+    if (createAnother) {
+      const meta = activity.metadata || {};
+      setForm({
+        type: activity.type === "activity" ? "internal" : activity.type,
+        title: activity.title,
+        description: activity.description || "",
+        date: new Date().toISOString().slice(0, 10),
+        time: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+        duration: meta.duration || "00:30",
+        reminder: meta.reminder || "none",
+      });
+      setShowForm(true);
+    }
   };
 
   const handleDelete = async (activity: ActivityItem) => {
+    if (!confirm("Tem certeza que deseja excluir esta atividade permanentemente? Esta ação não pode ser desfeita.")) return;
     const { error } = await supabase.from("crm_lead_activities").delete().eq("id", activity.id);
     if (error) {
       toast.error("Erro ao excluir atividade");
       return;
     }
     await addActivity({
-      type: "activity",
+      type: "activity_deleted",
       title: `Atividade excluída: ${activity.title}`,
       servidor_id: lead.servidor_id,
     });
@@ -256,18 +288,27 @@ export function LeadAtividadesTab({
     await fetchActivities();
   };
 
-  // Filter activities by status
-  const getStatus = (a: ActivityItem) => a.metadata?.activity_status || "planejada";
-  const planejadas = activities.filter(a => getStatus(a) === "planejada");
-  const concluidas = activities.filter(a => getStatus(a) === "concluida");
+  // Filter by real status column (with fallback to metadata for old records)
+  const getStatus = (a: ActivityItem) => {
+    if (a.status === "completed") return "completed";
+    if (a.status === "no_show") return "no_show";
+    // Fallback to metadata
+    const ms = a.metadata?.activity_status;
+    if (ms === "concluida") return "completed";
+    if (ms === "no_show") return "no_show";
+    return "planned";
+  };
+
+  const planejadas = activities.filter(a => getStatus(a) === "planned");
+  const concluidas = activities.filter(a => getStatus(a) === "completed");
   const noshow = activities.filter(a => getStatus(a) === "no_show");
 
   const getTypeIcon = (type: string) => {
-    const found = ACTIVITY_TYPES.find(t => t.value === type);
+    const found = ACTIVITY_TYPES.find(t => t.value === type || (t.value === "internal" && type === "activity"));
     return found?.icon || Briefcase;
   };
 
-  const renderTable = (items: ActivityItem[], showCheckbox: boolean) => {
+  const renderTable = (items: ActivityItem[], variant: "planned" | "completed" | "no_show") => {
     if (items.length === 0) {
       return (
         <div className="text-center py-8 text-muted-foreground">
@@ -282,12 +323,16 @@ export function LeadAtividadesTab({
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b bg-muted/50">
-              {showCheckbox && <th className="w-10 p-2.5"></th>}
               <th className="text-left p-2.5 font-medium text-muted-foreground">Data Início</th>
               <th className="text-left p-2.5 font-medium text-muted-foreground">Duração</th>
               <th className="text-left p-2.5 font-medium text-muted-foreground">Tipo</th>
               <th className="text-left p-2.5 font-medium text-muted-foreground">Título</th>
               <th className="text-left p-2.5 font-medium text-muted-foreground">Resp.</th>
+              {variant !== "planned" && (
+                <th className="text-left p-2.5 font-medium text-muted-foreground">
+                  {variant === "completed" ? "Concluído por" : "Registrado por"}
+                </th>
+              )}
               <th className="text-right p-2.5 font-medium text-muted-foreground">Ações</th>
             </tr>
           </thead>
@@ -295,22 +340,12 @@ export function LeadAtividadesTab({
             {items.map((a) => {
               const meta = a.metadata || {};
               const TypeIcon = getTypeIcon(a.type);
-              const typeLabel = meta.activity_type_label || ACTIVITY_TYPES.find(t => t.value === a.type)?.label || a.type;
+              const typeLabel = meta.activity_type_label || ACTIVITY_TYPES.find(t => t.value === a.type || (t.value === "internal" && a.type === "activity"))?.label || a.type;
               const scheduledAt = meta.scheduled_at ? new Date(meta.scheduled_at) : new Date(a.created_at);
-              const isPast = scheduledAt < new Date() && getStatus(a) === "planejada";
+              const isPast = variant === "planned" && scheduledAt < new Date();
 
               return (
                 <tr key={a.id} className={cn("border-b last:border-0 hover:bg-muted/30", isPast && "bg-destructive/5")}>
-                  {showCheckbox && (
-                    <td className="p-2.5 text-center">
-                      <Checkbox
-                        checked={getStatus(a) === "concluida"}
-                        onCheckedChange={(checked) =>
-                          handleToggleStatus(a, checked ? "concluida" : "planejada")
-                        }
-                      />
-                    </td>
-                  )}
                   <td className="p-2.5 text-muted-foreground whitespace-pre-line">
                     {scheduledAt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}
                     {"\n"}
@@ -325,47 +360,60 @@ export function LeadAtividadesTab({
                       {typeLabel}
                     </span>
                   </td>
-                  <td className="p-2.5 font-medium text-foreground">{a.title}</td>
+                  <td className="p-2.5 font-medium text-foreground">
+                    {a.title}
+                    {isPast && (
+                      <span className="ml-1.5 inline-flex items-center text-destructive">
+                        <AlertTriangle className="h-3 w-3" />
+                      </span>
+                    )}
+                  </td>
                   <td className="p-2.5 text-muted-foreground">{a.created_by_name || "Sistema"}</td>
+                  {variant !== "planned" && (
+                    <td className="p-2.5 text-muted-foreground">
+                      {variant === "completed" ? a.completed_by_name : a.no_show_by_name || "—"}
+                    </td>
+                  )}
                   <td className="p-2.5">
                     <div className="flex items-center justify-end gap-0.5">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" title="Editar"
-                        onClick={() => {
-                          const m = a.metadata || {};
-                          const sd = m.scheduled_at ? new Date(m.scheduled_at) : new Date(a.created_at);
-                          setForm({
-                            type: a.type === "activity" ? "internal" : a.type,
-                            title: a.title,
-                            description: a.description || "",
-                            status: getStatus(a) as any,
-                            date: sd.toISOString().slice(0, 10),
-                            time: sd.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-                            duration: m.duration || "00:30",
-                            reminder: m.reminder || "none",
-                          });
-                          // Delete old and recreate
-                          handleDelete(a).then(() => setShowForm(true));
-                        }}
-                      >
-                        <Edit className="h-3.5 w-3.5" />
-                      </Button>
-                      {getStatus(a) === "planejada" && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7" title="No-show"
-                          onClick={() => handleToggleStatus(a, "no_show")}
+                      {variant === "planned" && (
+                        <>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Concluir"
+                            onClick={() => handleStatusChange(a, "complete")}
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="No-show"
+                            onClick={() => handleStatusChange(a, "no_show")}
+                          >
+                            <Ban className="h-3.5 w-3.5 text-amber-600" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Duplicar"
+                            onClick={() => handleDuplicate(a)}
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Excluir"
+                            onClick={() => handleDelete(a)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
+                      )}
+                      {variant === "completed" && (
+                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" title="Ver observação"
+                          onClick={() => setViewNoteItem(a)}
                         >
-                          <Ban className="h-3.5 w-3.5" />
+                          <Eye className="h-3.5 w-3.5" /> Observação
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" className="h-7 w-7" title="Duplicar"
-                        onClick={() => handleDuplicate(a)}
-                      >
-                        <Copy className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Excluir"
-                        onClick={() => handleDelete(a)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      {variant === "no_show" && (
+                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" title="Ver observação"
+                          onClick={() => setViewNoteItem(a)}
+                        >
+                          <Eye className="h-3.5 w-3.5" /> Observação
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -399,7 +447,6 @@ export function LeadAtividadesTab({
             <h4 className="text-sm font-semibold">Criar atividade</h4>
 
             <div className="grid grid-cols-3 gap-3">
-              {/* Tipo */}
               <div className="space-y-1">
                 <Label className="text-xs font-semibold text-primary">Tipo</Label>
                 <Select value={form.type} onValueChange={(v) => {
@@ -419,7 +466,6 @@ export function LeadAtividadesTab({
                 </Select>
               </div>
 
-              {/* Lembrete */}
               <div className="space-y-1">
                 <Label className="text-xs font-semibold text-primary">Lembrete</Label>
                 <Select value={form.reminder} onValueChange={(v) => setForm({ ...form, reminder: v })}>
@@ -432,31 +478,9 @@ export function LeadAtividadesTab({
                 </Select>
               </div>
 
-              {/* Status */}
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-primary">Status</Label>
-                <div className="flex gap-1">
-                  <Button
-                    size="sm"
-                    variant={form.status === "planejada" ? "default" : "outline"}
-                    className={cn("text-xs flex-1 h-8", form.status === "planejada" && "bg-emerald-600 hover:bg-emerald-700 text-white")}
-                    onClick={() => setForm({ ...form, status: "planejada" })}
-                  >
-                    Planejada
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={form.status === "concluida" ? "default" : "outline"}
-                    className={cn("text-xs flex-1 h-8", form.status === "concluida" && "bg-emerald-600 hover:bg-emerald-700 text-white")}
-                    onClick={() => setForm({ ...form, status: "concluida" })}
-                  >
-                    Concluída
-                  </Button>
-                </div>
-              </div>
+              <div /> {/* spacer */}
             </div>
 
-            {/* Título */}
             <div className="space-y-1">
               <Label className="text-xs font-semibold text-primary">Título</Label>
               <Input
@@ -467,7 +491,6 @@ export function LeadAtividadesTab({
               />
             </div>
 
-            {/* Descrição */}
             <div className="space-y-1">
               <Label className="text-xs font-semibold text-primary">Descrição</Label>
               <Textarea
@@ -478,51 +501,33 @@ export function LeadAtividadesTab({
               />
             </div>
 
-            {/* Data, Hora, Duração */}
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs font-semibold text-primary flex items-center gap-1">
                   <Calendar className="h-3 w-3" /> Data
                 </Label>
-                <Input
-                  className="h-8 text-xs"
-                  type="date"
-                  value={form.date}
-                  onChange={(e) => setForm({ ...form, date: e.target.value })}
-                />
+                <Input className="h-8 text-xs" type="date" value={form.date}
+                  onChange={(e) => setForm({ ...form, date: e.target.value })} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs font-semibold text-primary flex items-center gap-1">
                   <Clock className="h-3 w-3" /> Hora
                 </Label>
-                <Input
-                  className="h-8 text-xs"
-                  type="time"
-                  value={form.time}
-                  onChange={(e) => setForm({ ...form, time: e.target.value })}
-                />
+                <Input className="h-8 text-xs" type="time" value={form.time}
+                  onChange={(e) => setForm({ ...form, time: e.target.value })} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs font-semibold text-primary flex items-center gap-1">
                   <Clock className="h-3 w-3" /> Duração
                 </Label>
-                <Input
-                  className="h-8 text-xs"
-                  type="time"
-                  value={form.duration}
-                  onChange={(e) => setForm({ ...form, duration: e.target.value })}
-                />
+                <Input className="h-8 text-xs" type="time" value={form.duration}
+                  onChange={(e) => setForm({ ...form, duration: e.target.value })} />
               </div>
             </div>
 
-            {/* Responsável */}
             <div className="space-y-1">
               <Label className="text-xs font-semibold text-primary">Responsável</Label>
-              <Input
-                className="h-8 text-xs bg-muted"
-                value={profile?.name || ""}
-                readOnly
-              />
+              <Input className="h-8 text-xs bg-muted" value={profile?.name || ""} readOnly />
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
@@ -552,8 +557,8 @@ export function LeadAtividadesTab({
           <TabsTrigger value="concluidas" className="text-xs gap-1.5">
             Concluídas <Badge variant="secondary" className="text-[10px] ml-1 h-4 px-1">{concluidas.length}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="noshow" className="text-xs">
-            No-show
+          <TabsTrigger value="noshow" className="text-xs gap-1.5">
+            No-show <Badge variant="secondary" className="text-[10px] ml-1 h-4 px-1">{noshow.length}</Badge>
           </TabsTrigger>
         </TabsList>
 
@@ -564,51 +569,54 @@ export function LeadAtividadesTab({
         ) : (
           <>
             <TabsContent value="planejadas" className="mt-3">
-              {renderTable(planejadas, true)}
+              {renderTable(planejadas, "planned")}
             </TabsContent>
             <TabsContent value="concluidas" className="mt-3">
-              {renderTable(concluidas, false)}
+              {renderTable(concluidas, "completed")}
             </TabsContent>
             <TabsContent value="noshow" className="mt-3">
-              {renderTable(noshow, false)}
+              {renderTable(noshow, "no_show")}
             </TabsContent>
           </>
         )}
       </Tabs>
 
-      {/* Completion comment dialog */}
-      {completionTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="bg-background rounded-lg shadow-xl w-full max-w-md p-6 space-y-4">
-            <h3 className="text-xl font-bold text-center text-foreground">
-              Faça seu comentário abaixo:
-            </h3>
-            <Textarea
-              className="min-h-[160px] text-sm"
-              placeholder="Descreva o resultado da atividade..."
-              value={completionComment}
-              onChange={(e) => setCompletionComment(e.target.value)}
-              autoFocus
-            />
-            <div className="flex justify-center gap-3">
-              <Button
-                variant="destructive"
-                className="gap-1.5 px-6"
-                onClick={() => { setCompletionTarget(null); setCompletionComment(""); }}
-              >
-                <X className="h-4 w-4" /> Cancelar
-              </Button>
-              <Button
-                className="gap-1.5 px-6 bg-emerald-600 hover:bg-emerald-700 text-white"
-                onClick={handleConfirmCompletion}
-                disabled={!completionComment.trim()}
-              >
-                <CheckCircle2 className="h-4 w-4" /> Confirmar
-              </Button>
+      {/* Completion / No-Show Modal */}
+      <ActivityStatusModal
+        open={!!modalTarget}
+        onClose={() => setModalTarget(null)}
+        onConfirm={handleModalConfirm}
+        type={modalType}
+        activityTitle={modalTarget?.title}
+      />
+
+      {/* View Note Dialog */}
+      <Dialog open={!!viewNoteItem} onOpenChange={(o) => { if (!o) setViewNoteItem(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {viewNoteItem?.status === "completed" || viewNoteItem?.metadata?.activity_status === "concluida"
+                ? "Observação de Conclusão"
+                : "Observação de No-Show"
+              }
+            </DialogTitle>
+            <DialogDescription>{viewNoteItem?.title}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            <div className="p-3 rounded-lg bg-muted/50 border text-sm whitespace-pre-wrap">
+              {viewNoteItem?.completion_note || viewNoteItem?.no_show_note || viewNoteItem?.metadata?.completion_comment || "Sem observação registrada."}
+            </div>
+            <div className="text-xs text-muted-foreground space-y-1">
+              {(viewNoteItem?.completed_by_name || viewNoteItem?.no_show_by_name) && (
+                <p>Por: {viewNoteItem?.completed_by_name || viewNoteItem?.no_show_by_name}</p>
+              )}
+              {(viewNoteItem?.completed_at || viewNoteItem?.no_show_at) && (
+                <p>Em: {new Date(viewNoteItem?.completed_at || viewNoteItem?.no_show_at || "").toLocaleString("pt-BR")}</p>
+              )}
             </div>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
