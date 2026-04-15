@@ -230,14 +230,16 @@ Deno.serve(async (req) => {
       const integration = await getIntegration();
       const err = validateIntegration(integration);
       if (err) return err;
-      const { ok, data, errorMessage, environment, environmentAutoCorrected } = await callAsaasWithEnvironmentFallback(integration, "GET", "/finance/balance");
+      const { ok, status: httpStatus, data, errorMessage, environment, environmentAutoCorrected } = await callAsaasWithEnvironmentFallback(integration, "GET", "/customers?limit=1");
+      console.log(`[asaas-api] test_connection result: ok=${ok} httpStatus=${httpStatus} errorMessage=${errorMessage} body=${JSON.stringify(data)}`);
       const newStatus = ok ? "connected" : "error";
+      const detailedError = ok ? null : `HTTP ${httpStatus} — ${errorMessage}`;
       await supabaseAdmin.from("tenant_fintech_integrations")
-        .update({ connection_status: newStatus, environment, last_connection_check_at: new Date().toISOString(), last_connection_error: ok ? null : errorMessage } as any)
+        .update({ connection_status: newStatus, environment, last_connection_check_at: new Date().toISOString(), last_connection_error: detailedError } as any)
         .eq("id", integration.id);
-      await auditLog("asaas_connection_tested", tenant_id, { status: newStatus, environment, environment_auto_corrected: environmentAutoCorrected });
-      if (!ok) return errorResponse("ASAAS_CONNECTION_FAILED", "Falha na conexão com o Asaas", errorMessage);
-      return json({ success: true, status: newStatus, balance: data, environment, environment_auto_corrected: environmentAutoCorrected });
+      await auditLog("asaas_connection_tested", tenant_id, { status: newStatus, httpStatus, environment, environment_auto_corrected: environmentAutoCorrected });
+      if (!ok) return errorResponse("ASAAS_CONNECTION_FAILED", detailedError!, detailedError!);
+      return json({ success: true, status: newStatus, data, environment, environment_auto_corrected: environmentAutoCorrected });
     }
 
     /* ──────── GENERATE WEBHOOK TOKEN ──────── */

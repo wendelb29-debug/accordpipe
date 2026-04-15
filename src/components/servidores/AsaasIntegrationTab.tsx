@@ -104,11 +104,18 @@ export function AsaasIntegrationTab({ companyId }: Props) {
         body: { action: "test_connection", tenant_id: companyId },
       });
       if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      toast.success(data?.status === "connected" ? "Conexão estabelecida!" : "Teste concluído.");
+      if (data && !data.success) {
+        const detail = data.details || data.message || "Erro desconhecido";
+        toast.error(detail, { duration: 8000 });
+        await fetchIntegration();
+        return;
+      }
+      toast.success(data?.environment_auto_corrected
+        ? `Conexão estabelecida! Ambiente corrigido para ${data.environment}.`
+        : "Conexão estabelecida com sucesso!");
       await fetchIntegration();
     } catch (err: any) {
-      toast.error("Erro no teste: " + err.message);
+      toast.error("Erro ao comunicar com o servidor: " + err.message);
       await fetchIntegration();
     } finally {
       setTesting(false);
