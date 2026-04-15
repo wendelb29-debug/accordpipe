@@ -309,6 +309,7 @@ export function GerarPixModal({ open, onOpenChange, tenantId, registrations, onS
             <div className="space-y-1">
               <Label className="text-xs">CPF ou CNPJ *</Label>
               <Input value={form.cpf_cnpj} onChange={(e) => setForm({ ...form, cpf_cnpj: e.target.value })} className="h-9 text-xs" placeholder="000.000.000-00 ou 00.000.000/0001-00" />
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Valor (R$) *</Label>
