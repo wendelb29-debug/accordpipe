@@ -101,12 +101,12 @@ export function useTenantSubscription(tenantId: string | null) {
   const fetch = useCallback(async () => {
     if (!tenantId) { setLoading(false); return; }
     setLoading(true);
-    const [{ data: sub }, { data: countData }] = await Promise.all([
+    const [{ data: sub }, countResult] = await Promise.all([
       supabase.from("tenant_subscriptions").select("*").eq("tenant_id", tenantId).maybeSingle(),
       supabase.from("profiles").select("id", { count: "exact", head: true }).eq("company_id", tenantId).eq("is_active", true).eq("status", "ativo"),
     ]);
     setSubscription(sub as any);
-    setActiveUsers(countData ? (countData as any).length || 0 : 0);
+    setActiveUsers(countResult.count || 0);
     setLoading(false);
   }, [tenantId]);
 
