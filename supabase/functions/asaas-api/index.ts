@@ -220,11 +220,11 @@ Deno.serve(async (req) => {
 
       if (existing) {
         await supabaseAdmin.from("tenant_fintech_integrations")
-          .update({ api_key_encrypted: api_key, api_key_masked: masked, environment: environment || "sandbox", webhook_url: webhookUrl, updated_by: userId } as any)
+          .update({ api_key_encrypted: sanitizedKey, api_key_masked: masked, environment: environment || "sandbox", webhook_url: webhookUrl, updated_by: userId } as any)
           .eq("id", existing.id);
       } else {
         await supabaseAdmin.from("tenant_fintech_integrations")
-          .insert({ tenant_id, provider: "asaas", environment: environment || "sandbox", api_key_encrypted: api_key, api_key_masked: masked, webhook_url: webhookUrl, webhook_auth_token: null, created_by: userId, updated_by: userId } as any);
+          .insert({ tenant_id, provider: "asaas", environment: environment || "sandbox", api_key_encrypted: sanitizedKey, api_key_masked: masked, webhook_url: webhookUrl, webhook_auth_token: null, created_by: userId, updated_by: userId } as any);
       }
       await auditLog(existing ? "asaas_credentials_updated" : "asaas_integration_created", tenant_id, { environment: environment || "sandbox" });
       return json({ success: true });
