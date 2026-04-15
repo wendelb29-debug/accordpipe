@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, Plus, Search, Power, Users, Loader2, Crown, MoreHorizontal, Pencil } from "lucide-react";
+import { Building2, Plus, Search, Power, Users, Loader2, Crown, MoreHorizontal, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +14,8 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useChildTenants } from "@/hooks/useChildTenants";
+import { useChildTenants, ChildTenant } from "@/hooks/useChildTenants";
+import { ChildTenantManageDialog } from "@/components/meus-tenants/ChildTenantManageDialog";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -30,11 +31,12 @@ const formatCnpj = (v: string) => {
 };
 
 export default function MeusTenants() {
-  const { children, loading, parentCompany, createChildTenant, toggleChildStatus, canCreate } = useChildTenants();
+  const { children, loading, parentCompany, createChildTenant, toggleChildStatus, canCreate, refetch } = useChildTenants();
   const { role, profile } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [manageChild, setManageChild] = useState<ChildTenant | null>(null);
   const [formData, setFormData] = useState({
     razao_social: "",
     nome_fantasia: "",
@@ -189,7 +191,7 @@ export default function MeusTenants() {
               </TableRow>
             ) : (
               filteredChildren.map((child) => (
-                <TableRow key={child.id} className="group">
+                <TableRow key={child.id} className="group cursor-pointer" onClick={() => setManageChild(child)}>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
@@ -223,12 +225,16 @@ export default function MeusTenants() {
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem className="gap-2" onClick={() => toggleChildStatus(child.id, child.status)}>
-                          <Power className="h-4 w-4" />
-                          {child.status === "active" ? "Bloquear" : "Ativar"}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem className="gap-2" onClick={() => setManageChild(child)}>
+                            <Settings className="h-4 w-4" />
+                            Gerenciar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="gap-2" onClick={() => toggleChildStatus(child.id, child.status)}>
+                            <Power className="h-4 w-4" />
+                            {child.status === "active" ? "Bloquear" : "Ativar"}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
@@ -285,6 +291,14 @@ export default function MeusTenants() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Manage Child Tenant Dialog */}
+      <ChildTenantManageDialog
+        child={manageChild}
+        open={!!manageChild}
+        onOpenChange={(open) => { if (!open) setManageChild(null); }}
+        onUpdated={refetch}
+      />
     </div>
   );
 }
