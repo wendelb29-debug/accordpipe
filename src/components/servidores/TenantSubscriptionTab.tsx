@@ -39,16 +39,6 @@ export function TenantSubscriptionTab({ companyId }: Props) {
   const { subscription, activeUsers, loading: subLoading, upsertSubscription } = useTenantSubscription(companyId);
   const { user, isMasterTenantAdmin, isMaster } = useAuth();
 
-  // Only master/CEO of master tenant can manage plans
-  if (!isMasterTenantAdmin && !isMaster) {
-    return (
-      <Card className="p-8 text-center">
-        <Crown className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
-        <p className="text-muted-foreground">Acesso restrito. Apenas o CEO ou Master do tenant principal pode gerenciar planos e limites de usuários.</p>
-      </Card>
-    );
-  }
-
   const [selectedPlanId, setSelectedPlanId] = useState("");
   const [extraFree, setExtraFree] = useState(0);
   const [extraPaid, setExtraPaid] = useState(0);
@@ -59,6 +49,16 @@ export function TenantSubscriptionTab({ companyId }: Props) {
   const [history, setHistory] = useState<any[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [managePlansOpen, setManagePlansOpen] = useState(false);
+
+  // Only master/CEO of master tenant can manage plans
+  if (!isMasterTenantAdmin && !isMaster) {
+    return (
+      <Card className="p-8 text-center">
+        <Crown className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
+        <p className="text-muted-foreground">Acesso restrito. Apenas o CEO ou Master do tenant principal pode gerenciar planos e limites de usuários.</p>
+      </Card>
+    );
+  }
 
   useEffect(() => {
     if (subscription) {
