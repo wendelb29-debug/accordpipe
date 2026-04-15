@@ -2,6 +2,31 @@ import { createContext, useContext, useEffect, useState, useRef, ReactNode } fro
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
+const PRIVATE_BUCKETS = ["contract-pdfs", "signatures", "user-signatures", "documents"];
+
+function parseStorageUrl(url: string): { bucket: string; path: string } | null {
+  if (!url) return null;
+  for (const bucket of PRIVATE_BUCKETS) {
+    const marker = `/storage/v1/object/public/${bucket}/`;
+    const idx = url.indexOf(marker);
+    if (idx !== -1) {
+      const path = decodeURIComponent(url.substring(idx + marker.length).split("?")[0]);
+      return { bucket, path };
+    }
+  }
+  return null;
+}
+
+async function resolveAvatarUrl(storedUrl: string): Promise<string> {
+  const parsed = parseStorageUrl(storedUrl);
+  if (!parsed) return storedUrl;
+  const { data, error } = await supabase.storage
+    .from(parsed.bucket)
+    .createSignedUrl(parsed.path, 3600);
+  if (!error && data?.signedUrl) return data.signedUrl;
+  return storedUrl;
+}
+
 export type AppRole = "admin" | "operador" | "leitura" | "ceo" | "master" | "administrativo" | "financeiro" | "comercial";
 
 interface Profile {
