@@ -118,6 +118,7 @@ export function Sidebar() {
   const handleLanguageChange = async (code: string) => {
     setCurrentLang(code);
     localStorage.setItem("accord-lang", code);
+    i18n.changeLanguage(code);
     if (profile) {
       await supabase.from("profiles").update({ preferred_language: code } as any).eq("id", profile.id);
     }
