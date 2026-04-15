@@ -45,6 +45,7 @@ import AssinarDocumento from "./pages/AssinarDocumento";
 import AuditLogs from "./pages/AuditLogs";
 import Performance from "./pages/Performance";
 import TenantSetupPublico from "./pages/TenantSetupPublico";
+import Planos from "./pages/Planos";
 
 const queryClient = new QueryClient();
 
@@ -314,6 +315,16 @@ const App = () => (
               }
             />
             <Route path="/setup-tenant/:token" element={<TenantSetupPublico />} />
+            <Route
+              path="/planos"
+              element={
+                <ProtectedRoute requiredPermission="view_billing_plans">
+                  <AppLayout>
+                    <Planos />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
