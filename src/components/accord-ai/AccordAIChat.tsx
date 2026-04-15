@@ -252,13 +252,10 @@ export function AccordAIChat() {
           }
         }
       }
-    } catch (e: any) {
-      const msg = e.message?.includes("fetch")
-        ? "Erro ao conectar com a IA. Tente novamente ou contate o suporte."
-        : e.message || "Erro ao conectar com a IA. Tente novamente ou contate o suporte.";
+    } catch {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: `⚠️ ${msg}` },
+        { role: "assistant", content: "⚠️ Não foi possível conectar. Tente novamente em alguns segundos." },
       ]);
     } finally {
       setIsLoading(false);
