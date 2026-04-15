@@ -347,10 +347,11 @@ export default function Usuarios() {
         const companyId = user.company_id || activeCompanyId || profile?.company_id;
         if (companyId) {
           const { data: limitCheck } = await supabase.rpc("check_user_limit", { _tenant_id: companyId });
-          if (limitCheck && !limitCheck.can_add) {
+          const lc = limitCheck as any;
+          if (lc && !lc.can_add) {
             toast({
               title: "Limite de usuários atingido",
-              description: `Plano ${limitCheck.plan_name}: ${limitCheck.active_users}/${limitCheck.effective_limit} usuários. Não é possível reativar.`,
+              description: `Plano ${lc.plan_name}: ${lc.active_users}/${lc.effective_limit} usuários. Não é possível reativar.`,
               variant: "destructive",
             });
             return;
