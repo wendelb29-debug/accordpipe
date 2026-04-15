@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import {
-  PhoneCall, Mail, Users, Briefcase, MessageSquare, CheckCircle,
+  PhoneCall, Mail, Users, Briefcase, MessageSquare, CheckCircle, ExternalLink,
   Ban, MoreVertical, Calendar, ListOrdered, Filter, Settings,
   UserCircle, Plus, Loader2, ChevronLeft, ChevronRight, AlertTriangle,
 } from "lucide-react";
