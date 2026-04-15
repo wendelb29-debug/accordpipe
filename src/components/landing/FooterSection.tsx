@@ -8,7 +8,7 @@ export function FooterSection() {
         <div className="grid gap-6 sm:gap-8 md:grid-cols-3">
           <div>
             <div className="flex items-center gap-2 mb-3 sm:mb-4">
-              <img src={accordLogo} alt="ACCORD" className="h-7 sm:h-8 w-auto brightness-200" />
+              <img src={accordLogo} alt="ACCORD" className="h-7 sm:h-8 w-auto brightness-200" width="38" height="32" />
               <span className="text-base sm:text-lg font-bold text-[#E5E7EB]">ACCORD</span>
             </div>
             <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed">
