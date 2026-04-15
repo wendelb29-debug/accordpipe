@@ -191,7 +191,7 @@ export default function MeusTenants() {
               </TableRow>
             ) : (
               filteredChildren.map((child) => (
-                <TableRow key={child.id} className="group">
+                <TableRow key={child.id} className="group cursor-pointer" onClick={() => setManageChild(child)}>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
