@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams, Navigate } from "react-router-dom";
 import {
   Building2, Palette, FileSignature, Search, Loader2, Save, Webhook,
   Send, LogOut, MessageSquare, Radio, Activity, Wifi, Copy, Check, RefreshCw, LayoutGrid,
-  CreditCard, Users, Package, Crown,
+  CreditCard, Users, Package, Crown, Network,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,7 @@ import { FintechWebhooksTab } from "@/components/servidores/FintechWebhooksTab";
 import TenantUsersTab from "@/components/servidores/TenantUsersTab";
 import CatalogTab from "@/components/servidores/CatalogTab";
 import { TenantSubscriptionTab } from "@/components/servidores/TenantSubscriptionTab";
+import { ResellerTab } from "@/components/servidores/ResellerTab";
 
 import { useEffect } from "react";
 
@@ -519,6 +520,7 @@ export default function NovoServidor() {
             { value: "usuarios", icon: Users, label: "Usuários" },
             { value: "catalogo", icon: Package, label: "Catálogo" },
             { value: "plano", icon: Crown, label: "Plano & Usuários" },
+            { value: "revenda", icon: Network, label: "Revenda" },
           ].map((item) => (
             <button
               key={item.value}
@@ -748,6 +750,18 @@ export default function NovoServidor() {
               <Card>
                 <CardContent className="pt-6">
                   <p className="text-sm text-muted-foreground text-center py-8">Salve o tenant primeiro para configurar o plano.</p>
+                </CardContent>
+              </Card>
+            )
+          )}
+
+          {activeTab === "revenda" && (
+            editId ? (
+              <ResellerTab companyId={editId} />
+            ) : (
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-sm text-muted-foreground text-center py-8">Salve o tenant primeiro para configurar a revenda.</p>
                 </CardContent>
               </Card>
             )
