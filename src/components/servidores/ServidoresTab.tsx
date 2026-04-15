@@ -983,6 +983,13 @@ export default function ServidoresTab() {
                   <p className="text-sm text-muted-foreground text-center py-8">Salve o tenant primeiro para configurar o plano.</p>
                 )}
               </TabsContent>
+              <TabsContent value="revenda" className="mt-0">
+                {editingCompany ? (
+                  <ResellerTab companyId={editingCompany.id} />
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">Salve o tenant primeiro para configurar revenda.</p>
+                )}
+              </TabsContent>
             </div>
           </Tabs>
 

@@ -47,6 +47,7 @@ import Performance from "./pages/Performance";
 import TenantSetupPublico from "./pages/TenantSetupPublico";
 import Planos from "./pages/Planos";
 import Eventos from "./pages/Eventos";
+import MeusTenants from "./pages/MeusTenants";
 
 const queryClient = new QueryClient();
 
@@ -332,6 +333,16 @@ const App = () => (
                 <ProtectedRoute requiredPermission="view_events">
                   <AppLayout>
                     <Eventos />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/meus-tenants"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <MeusTenants />
                   </AppLayout>
                 </ProtectedRoute>
               }
