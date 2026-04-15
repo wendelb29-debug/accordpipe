@@ -375,7 +375,7 @@ export default function AssinarDocumento() {
                   Para assinar este documento, confirme seus dados abaixo.
                 </p>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">CPF</Label>
+                  <Label className="text-xs">CPF/CNPJ</Label>
                   <Input
                     value={cpfInput}
                     onChange={(e) => setCpfInput(e.target.value)}
