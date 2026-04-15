@@ -657,7 +657,12 @@ export default function Atividades() {
         </TabsContent>
 
         <TabsContent value="agenda">
-          <WeeklyCalendarView activities={planned} loading={loading} />
+          <WeeklyCalendarView
+            activities={planned}
+            loading={loading}
+            userAvatars={userAvatars}
+            onActivityClick={handleLeadClick}
+          />
         </TabsContent>
       </Tabs>
 
@@ -675,7 +680,7 @@ export default function Atividades() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {getStatus(viewNoteItem!) === "completed" ? "Observação de Conclusão" : "Observação de No-Show"}
+              {viewNoteItem ? (getStatus(viewNoteItem) === "completed" ? "Observação de Conclusão" : "Observação de No-Show") : ""}
             </DialogTitle>
             <DialogDescription>{viewNoteItem?.title}</DialogDescription>
           </DialogHeader>
@@ -739,12 +744,13 @@ export default function Atividades() {
   );
 }
 
-// ===== WEEKLY CALENDAR VIEW =====
+// ===== WEEKLY CALENDAR VIEW (Premium) =====
 const WEEKDAY_LABELS = ["domingo", "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado"];
+const WEEKDAY_SHORT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const TIME_SLOTS: string[] = [];
-for (let h = 8; h <= 19; h++) {
+for (let h = 7; h <= 20; h++) {
   TIME_SLOTS.push(`${String(h).padStart(2, "0")}:00`);
-  if (h < 19) TIME_SLOTS.push(`${String(h).padStart(2, "0")}:30`);
+  if (h < 20) TIME_SLOTS.push(`${String(h).padStart(2, "0")}:30`);
 }
 
 function getWeekDays(refDate: Date): Date[] {
@@ -765,8 +771,13 @@ function getWeekDays(refDate: Date): Date[] {
 function formatWeekRange(days: Date[]): string {
   const first = days[0];
   const last = days[6];
-  const months = ["jan.", "fev.", "mar.", "abr.", "mai.", "jun.", "jul.", "ago.", "set.", "out.", "nov.", "dez."];
-  return `${first.getDate()} – ${last.getDate()} de ${months[first.getMonth()]} de ${first.getFullYear()}`;
+  const months = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+  if (first.getMonth() === last.getMonth()) {
+    return `${first.getDate()} – ${last.getDate()} de ${months[first.getMonth()]} de ${first.getFullYear()}`;
+  }
+  const m1 = months[first.getMonth()].slice(0, 3);
+  const m2 = months[last.getMonth()].slice(0, 3);
+  return `${first.getDate()} ${m1}. – ${last.getDate()} ${m2}. ${first.getFullYear()}`;
 }
 
 function parseTime(timeStr: string): number {
@@ -780,19 +791,31 @@ function parseDuration(durStr: string): number {
   return (h || 0) * 60 + (m || 0);
 }
 
-interface ActivityRow2 {
-  id: string;
-  metadata: any;
-  type: string;
-  title: string;
-  created_by_name: string | null;
-  created_at: string;
-  lead_company_name?: string;
+const ACTIVITY_TYPE_COLORS: Record<string, string> = {
+  call: "border-l-blue-500",
+  email: "border-l-amber-500",
+  meeting: "border-l-emerald-500",
+  internal: "border-l-purple-500",
+  whatsapp: "border-l-green-500",
+};
+
+const ACTIVITY_TYPE_BG: Record<string, string> = {
+  call: "bg-blue-500/10",
+  email: "bg-amber-500/10",
+  meeting: "bg-emerald-500/10",
+  internal: "bg-purple-500/10",
+  whatsapp: "bg-green-500/10",
+};
+
+interface WeeklyCalendarProps {
+  activities: ActivityRow[];
+  loading: boolean;
+  userAvatars: UserAvatarMap;
+  onActivityClick: (activity: ActivityRow) => void;
 }
 
-function WeeklyCalendarView({ activities, loading }: { activities: ActivityRow2[]; loading: boolean }) {
+function WeeklyCalendarView({ activities, loading, userAvatars, onActivityClick }: WeeklyCalendarProps) {
   const [weekOffset, setWeekOffset] = useState(0);
-  const [calendarMode, setCalendarMode] = useState<"week" | "month">("week");
 
   const now = new Date();
   const refDate = new Date(now);
@@ -803,7 +826,7 @@ function WeeklyCalendarView({ activities, loading }: { activities: ActivityRow2[
   const todayStr = now.toISOString().slice(0, 10);
 
   const activityMap = useMemo(() => {
-    const map: Record<string, ActivityRow2[]> = {};
+    const map: Record<string, ActivityRow[]> = {};
     for (const a of activities) {
       const meta = a.metadata || {};
       let dateKey: string;
@@ -830,57 +853,98 @@ function WeeklyCalendarView({ activities, loading }: { activities: ActivityRow2[
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {/* Premium Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-foreground italic">
-          {formatWeekRange(weekDays)}
-        </h2>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="text-xs h-8" onClick={() => setCalendarMode("month")}>Mês</Button>
-          <Button variant={calendarMode === "week" ? "default" : "outline"} size="sm" className="text-xs h-8" onClick={() => setCalendarMode("week")}>Semana</Button>
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setWeekOffset(w => w - 1)}>
-            <ChevronLeft className="h-4 w-4" />
+        <div>
+          <h2 className="text-xl font-bold text-foreground tracking-tight">
+            {formatWeekRange(weekDays)}
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {activities.length} atividade{activities.length !== 1 ? "s" : ""} planejada{activities.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs h-8 px-3"
+            onClick={() => setWeekOffset(0)}
+            disabled={weekOffset === 0}
+          >
+            Hoje
           </Button>
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setWeekOffset(w => w + 1)}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          <div className="flex border rounded-lg overflow-hidden">
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none" onClick={() => setWeekOffset(w => w - 1)}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none" onClick={() => setWeekOffset(w => w + 1)}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <div className="overflow-auto max-h-[calc(100vh-280px)]">
+      {/* Calendar Grid */}
+      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+        <div className="overflow-auto max-h-[calc(100vh-260px)]">
           <table className="w-full border-collapse table-fixed">
-            <thead className="sticky top-0 z-10 bg-card">
-              <tr>
-                <th className="w-16 border-b border-r border-border p-0" />
+            {/* Header with day names */}
+            <thead className="sticky top-0 z-10">
+              <tr className="bg-muted/60 backdrop-blur-sm">
+                <th className="w-[60px] border-b border-r border-border p-0" />
                 {weekDays.map((day, i) => {
                   const isToday = day.toISOString().slice(0, 10) === todayStr;
                   const isWeekend = i === 0 || i === 6;
+                  const dayCount = (activityMap[day.toISOString().slice(0, 10)] || []).length;
                   return (
-                    <th key={i} className={cn(
-                      "border-b border-r last:border-r-0 border-border p-2 text-center text-sm font-semibold",
-                      isToday ? "text-primary" : "text-foreground",
-                      isWeekend && "bg-muted/30"
-                    )}>
-                      {WEEKDAY_LABELS[i]}, {day.getDate()}
+                    <th
+                      key={i}
+                      className={cn(
+                        "border-b border-r last:border-r-0 border-border py-3 px-2 text-center transition-colors",
+                        isWeekend && "bg-muted/40"
+                      )}
+                    >
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className={cn(
+                          "text-[10px] uppercase tracking-widest font-medium",
+                          isToday ? "text-primary" : "text-muted-foreground"
+                        )}>
+                          {WEEKDAY_SHORT[i]}
+                        </span>
+                        <span className={cn(
+                          "text-lg font-bold leading-none",
+                          isToday
+                            ? "bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center"
+                            : "text-foreground"
+                        )}>
+                          {day.getDate()}
+                        </span>
+                        {dayCount > 0 && (
+                          <span className="text-[9px] text-muted-foreground font-medium mt-0.5">
+                            {dayCount} ativ.
+                          </span>
+                        )}
+                      </div>
                     </th>
                   );
                 })}
               </tr>
             </thead>
             <tbody>
-              {TIME_SLOTS.map((slot) => {
+              {TIME_SLOTS.map((slot, slotIdx) => {
                 const slotMinutes = parseTime(slot);
-                const isCurrentSlot = todayStr && Math.abs(currentTimeMinutes - slotMinutes) < 30 && weekOffset === 0;
+                const isCurrentSlot = weekOffset === 0 && Math.abs(currentTimeMinutes - slotMinutes) < 15;
+                const isFullHour = slot.endsWith(":00");
 
                 return (
-                  <tr key={slot} className="h-10">
+                  <tr key={slot} className={cn("h-12", isFullHour ? "border-t border-border/60" : "")}>
                     <td className={cn(
-                      "border-r border-b border-border text-xs text-muted-foreground text-right pr-2 align-top pt-1 w-16 select-none",
-                      isCurrentSlot && "text-destructive font-bold"
+                      "border-r border-border text-right pr-2 align-top pt-1 w-[60px] select-none",
+                      isFullHour ? "text-xs font-medium text-muted-foreground" : "text-[10px] text-muted-foreground/50",
+                      isCurrentSlot && "text-primary font-bold"
                     )}>
-                      {isCurrentSlot && <span className="text-destructive mr-0.5">▸</span>}
-                      {slot}
+                      {isFullHour && slot}
                     </td>
                     {weekDays.map((day, colIdx) => {
                       const dateKey = day.toISOString().slice(0, 10);
@@ -896,12 +960,34 @@ function WeeklyCalendarView({ activities, loading }: { activities: ActivityRow2[
                         return actMinutes >= slotMinutes && actMinutes < slotMinutes + 30;
                       });
 
+                      // Current time indicator
+                      const showTimeLine = isToday && weekOffset === 0 &&
+                        currentTimeMinutes >= slotMinutes && currentTimeMinutes < slotMinutes + 30;
+                      const timeLineTop = showTimeLine
+                        ? `${((currentTimeMinutes - slotMinutes) / 30) * 100}%`
+                        : undefined;
+
                       return (
-                        <td key={colIdx} className={cn(
-                          "border-r border-b last:border-r-0 border-border p-0 align-top relative",
-                          isWeekend && "bg-muted/20",
-                          isToday && "bg-primary/5"
-                        )}>
+                        <td
+                          key={colIdx}
+                          className={cn(
+                            "border-r last:border-r-0 border-border/40 p-0 align-top relative",
+                            isFullHour && "border-t border-border/30",
+                            isWeekend && "bg-muted/10",
+                            isToday && "bg-primary/[0.03]"
+                          )}
+                        >
+                          {/* Current time red line */}
+                          {showTimeLine && (
+                            <div
+                              className="absolute left-0 right-0 z-10 flex items-center pointer-events-none"
+                              style={{ top: timeLineTop }}
+                            >
+                              <div className="w-2 h-2 rounded-full bg-destructive -ml-1" />
+                              <div className="flex-1 h-[2px] bg-destructive" />
+                            </div>
+                          )}
+
                           {slotActivities.map((a) => {
                             const meta = a.metadata || {};
                             const actType = meta.activity_type || a.type;
@@ -909,25 +995,61 @@ function WeeklyCalendarView({ activities, loading }: { activities: ActivityRow2[
                             const LABELS: Record<string, string> = {
                               call: "Ligação", email: "E-mail", meeting: "Reunião",
                               internal: "Atividade Interna", whatsapp: "WhatsApp",
+                              activity: "Atividade",
                             };
+                            const TypeIcon = ACTIVITY_TYPE_ICONS[actType] || Briefcase;
+                            const colorClass = ACTIVITY_TYPE_COLORS[actType] || "border-l-primary";
+                            const bgClass = ACTIVITY_TYPE_BG[actType] || "bg-primary/5";
+                            const avatar = a.created_by_user_id ? userAvatars[a.created_by_user_id] : null;
+                            const initials = (a.created_by_name || "S").slice(0, 2).toUpperCase();
 
                             return (
-                              <div key={a.id}
-                                className="m-0.5 rounded border border-border bg-card shadow-sm p-1.5 text-[11px] cursor-default hover:shadow-md transition-shadow"
-                                title={`${LABELS[actType] || a.title} - ${a.lead_company_name}`}
+                              <div
+                                key={a.id}
+                                className={cn(
+                                  "m-0.5 rounded-md border-l-[3px] shadow-sm p-1.5 text-[11px] cursor-pointer",
+                                  "hover:shadow-lg hover:scale-[1.02] transition-all duration-150",
+                                  "group relative",
+                                  colorClass,
+                                  bgClass,
+                                )}
+                                onClick={() => onActivityClick(a)}
+                                title={`${LABELS[actType] || a.title}\n${a.lead_company_name || ""}\nResponsável: ${a.created_by_name || "Sistema"}\nHorário: ${time}`}
                               >
-                                <div className="flex items-center gap-1">
-                                  <UserCircle className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                                  <span className="font-medium text-foreground truncate">
+                                <div className="flex items-center gap-1.5">
+                                  {/* Avatar */}
+                                  <Avatar className="h-5 w-5 shrink-0">
+                                    {avatar?.avatar_url ? (
+                                      <AvatarImage src={avatar.avatar_url} alt={avatar.name} className="object-cover" />
+                                    ) : null}
+                                    <AvatarFallback className="text-[8px] bg-muted font-semibold">
+                                      {initials}
+                                    </AvatarFallback>
+                                  </Avatar>
+
+                                  <span className="font-semibold text-foreground truncate flex-1 leading-tight">
                                     {a.created_by_name || "Sistema"}
                                   </span>
-                                  <span className="ml-auto bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0">
+
+                                  {/* Time badge */}
+                                  <span className="shrink-0 bg-primary text-primary-foreground text-[9px] font-bold px-1.5 py-[1px] rounded-md">
                                     {time}
                                   </span>
                                 </div>
-                                <p className="text-muted-foreground truncate mt-0.5">
-                                  {LABELS[actType] || a.title}
-                                </p>
+
+                                <div className="flex items-center gap-1 mt-1">
+                                  <TypeIcon className="h-3 w-3 text-muted-foreground shrink-0" />
+                                  <span className="text-muted-foreground truncate leading-tight">
+                                    {LABELS[actType] || a.title}
+                                  </span>
+                                </div>
+
+                                {/* Company name */}
+                                {a.lead_company_name && a.lead_company_name !== "-" && (
+                                  <p className="text-[10px] text-primary/80 truncate mt-0.5 font-medium">
+                                    {a.lead_company_name}
+                                  </p>
+                                )}
                               </div>
                             );
                           })}
