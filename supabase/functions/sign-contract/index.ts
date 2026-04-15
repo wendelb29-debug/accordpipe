@@ -594,18 +594,17 @@ async function persistSignedPdfForContract(
 
   if (uploadError) throw uploadError;
 
-  const signedPublicUrl = buildSignedPdfPublicUrl(signedPath);
-  const cacheBustedUrl = `${signedPublicUrl}?v=${Date.now()}`;
+  const signedPdfUrl2 = await buildSignedPdfUrl(supabase, signedPath);
 
   await supabase
     .from("contracts")
     .update({
-      pdf_assinado_url: cacheBustedUrl,
+      pdf_assinado_url: signedPdfUrl2,
       pdf_assinado_path: signedPath,
     } as any)
     .eq("id", contractId);
 
-  return { url: cacheBustedUrl, path: signedPath };
+  return { url: signedPdfUrl2, path: signedPath };
 }
 
 Deno.serve(async (req) => {
@@ -902,7 +901,7 @@ Deno.serve(async (req) => {
         JSON.stringify({
           success: true,
           signature_hash: signatureHash,
-          photo_url: urlData.publicUrl,
+          photo_url: urlData?.signedUrl || "",
           signed_pdf_url: signedPdfUrl,
           pdf_error: pdfError,
         }),
@@ -948,7 +947,7 @@ Deno.serve(async (req) => {
         .update({
           status: "assinado",
           signed_at: signedAt,
-          signature_photo_url: urlData.publicUrl,
+          signature_photo_url: urlData?.signedUrl || "",
           signature_latitude: latitude,
           signature_longitude: longitude,
           signature_address: address,
@@ -1046,7 +1045,7 @@ Deno.serve(async (req) => {
         .update({
           contract_status: "assinado",
           signed_at: signedAt,
-          signature_photo_url: urlData.publicUrl,
+          signature_photo_url: urlData?.signedUrl || "",
           signature_latitude: latitude,
           signature_longitude: longitude,
           signature_address: address,
@@ -1132,7 +1131,7 @@ Deno.serve(async (req) => {
       .update({
         signature_status: "signed",
         signed_at: new Date().toISOString(),
-        signature_photo_url: urlData.publicUrl,
+        signature_photo_url: urlData?.signedUrl || "",
         signature_latitude: latitude,
         signature_longitude: longitude,
         signature_address: address,
