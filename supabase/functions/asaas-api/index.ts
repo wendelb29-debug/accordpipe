@@ -207,7 +207,7 @@ Deno.serve(async (req) => {
     if (action === "save_credentials") {
       const { api_key, environment } = body;
       if (!api_key) return errorResponse("MISSING_API_KEY", "api_key required");
-      const sanitizedKey = api_key.trim().replace(/[^\w$_.\-]/g, "");
+      const sanitizedKey = api_key.trim().replace(/[\s]/g, "");
       if (sanitizedKey.length < 20) return errorResponse("INVALID_API_KEY", "API Key muito curta.");
       if (!sanitizedKey.startsWith("$aact_")) return errorResponse("INVALID_API_KEY", 'Formato de API Key inválido. A chave deve começar com "$aact_".');
       if (environment === "production" && !sanitizedKey.startsWith("$aact_prod")) return errorResponse("INVALID_API_KEY", 'Para Produção, a chave deve começar com "$aact_prod".');

@@ -78,7 +78,7 @@ export function AsaasIntegrationTab({ companyId }: Props) {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  const sanitizeApiKey = (key: string) => key.trim().replace(/[^\w$_.-]/g, "");
+  const sanitizeApiKey = (key: string) => key.trim().replace(/[\s]/g, "");
 
   const validateApiKeyFormat = (key: string, env: string): string | null => {
     if (!key) return "Informe a API Key do Asaas.";
