@@ -36,6 +36,7 @@ export default function MeusTenants() {
   const [searchTerm, setSearchTerm] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [manageChild, setManageChild] = useState<ChildTenant | null>(null);
   const [formData, setFormData] = useState({
     razao_social: "",
     nome_fantasia: "",
@@ -224,12 +225,16 @@ export default function MeusTenants() {
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem className="gap-2" onClick={() => toggleChildStatus(child.id, child.status)}>
-                          <Power className="h-4 w-4" />
-                          {child.status === "active" ? "Bloquear" : "Ativar"}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem className="gap-2" onClick={() => setManageChild(child)}>
+                            <Settings className="h-4 w-4" />
+                            Gerenciar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="gap-2" onClick={() => toggleChildStatus(child.id, child.status)}>
+                            <Power className="h-4 w-4" />
+                            {child.status === "active" ? "Bloquear" : "Ativar"}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
