@@ -291,6 +291,14 @@ export default function MeusTenants() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Manage Child Tenant Dialog */}
+      <ChildTenantManageDialog
+        child={manageChild}
+        open={!!manageChild}
+        onOpenChange={(open) => { if (!open) setManageChild(null); }}
+        onUpdated={refetch}
+      />
     </div>
   );
 }
