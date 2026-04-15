@@ -4035,11 +4035,13 @@ export type Database = {
           extra_paid_users: number
           has_custom_override: boolean
           id: string
+          monthly_price_snapshot: number
           plan_id: string | null
           plan_name_snapshot: string
           price_per_extra_user_snapshot: number
           tenant_id: string
           updated_at: string
+          yearly_price_snapshot: number
         }
         Insert: {
           base_user_limit_snapshot?: number
@@ -4051,11 +4053,13 @@ export type Database = {
           extra_paid_users?: number
           has_custom_override?: boolean
           id?: string
+          monthly_price_snapshot?: number
           plan_id?: string | null
           plan_name_snapshot?: string
           price_per_extra_user_snapshot?: number
           tenant_id: string
           updated_at?: string
+          yearly_price_snapshot?: number
         }
         Update: {
           base_user_limit_snapshot?: number
@@ -4067,11 +4071,13 @@ export type Database = {
           extra_paid_users?: number
           has_custom_override?: boolean
           id?: string
+          monthly_price_snapshot?: number
           plan_id?: string | null
           plan_name_snapshot?: string
           price_per_extra_user_snapshot?: number
           tenant_id?: string
           updated_at?: string
+          yearly_price_snapshot?: number
         }
         Relationships: [
           {
