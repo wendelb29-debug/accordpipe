@@ -5423,6 +5423,10 @@ export type Database = {
         Args: { _permission?: string; _user_id: string; _workspace_id: string }
         Returns: boolean
       }
+      user_is_reseller_of: {
+        Args: { _child_tenant_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role:
