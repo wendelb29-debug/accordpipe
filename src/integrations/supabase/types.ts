@@ -100,6 +100,57 @@ export type Database = {
         }
         Relationships: []
       }
+      billing_plans: {
+        Row: {
+          base_user_limit: number
+          created_at: string
+          description: string | null
+          extra_free_users_default: number
+          id: string
+          is_active: boolean
+          is_custom: boolean
+          monthly_price: number
+          name: string
+          price_per_extra_user: number
+          slug: string
+          sort_order: number
+          updated_at: string
+          yearly_price: number
+        }
+        Insert: {
+          base_user_limit?: number
+          created_at?: string
+          description?: string | null
+          extra_free_users_default?: number
+          id?: string
+          is_active?: boolean
+          is_custom?: boolean
+          monthly_price?: number
+          name: string
+          price_per_extra_user?: number
+          slug: string
+          sort_order?: number
+          updated_at?: string
+          yearly_price?: number
+        }
+        Update: {
+          base_user_limit?: number
+          created_at?: string
+          description?: string | null
+          extra_free_users_default?: number
+          id?: string
+          is_active?: boolean
+          is_custom?: boolean
+          monthly_price?: number
+          name?: string
+          price_per_extra_user?: number
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+          yearly_price?: number
+        }
+        Relationships: []
+      }
       card_history: {
         Row: {
           from_column_id: string | null
@@ -3795,6 +3846,72 @@ export type Database = {
           },
         ]
       }
+      tenant_subscriptions: {
+        Row: {
+          base_user_limit_snapshot: number
+          billing_cycle: string
+          billing_status: string
+          created_at: string
+          effective_user_limit: number
+          extra_free_users: number
+          extra_paid_users: number
+          has_custom_override: boolean
+          id: string
+          plan_id: string | null
+          plan_name_snapshot: string
+          price_per_extra_user_snapshot: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          base_user_limit_snapshot?: number
+          billing_cycle?: string
+          billing_status?: string
+          created_at?: string
+          effective_user_limit?: number
+          extra_free_users?: number
+          extra_paid_users?: number
+          has_custom_override?: boolean
+          id?: string
+          plan_id?: string | null
+          plan_name_snapshot?: string
+          price_per_extra_user_snapshot?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          base_user_limit_snapshot?: number
+          billing_cycle?: string
+          billing_status?: string
+          created_at?: string
+          effective_user_limit?: number
+          extra_free_users?: number
+          extra_paid_users?: number
+          has_custom_override?: boolean
+          id?: string
+          plan_id?: string | null
+          plan_name_snapshot?: string
+          price_per_extra_user_snapshot?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "billing_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_subscriptions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_custom_permissions: {
         Row: {
           created_at: string
@@ -4866,6 +4983,10 @@ export type Database = {
           valor_total: number
         }[]
       }
+      count_active_tenant_users: {
+        Args: { _tenant_id: string }
+        Returns: number
+      }
       create_notification:
         | {
             Args: {
@@ -5011,6 +5132,7 @@ export type Database = {
         }[]
       }
       get_profile_company_id: { Args: { _user_id: string }; Returns: string }
+      get_tenant_user_limit: { Args: { _tenant_id: string }; Returns: number }
       get_today_birthdays: {
         Args: { _company_id?: string }
         Returns: {
