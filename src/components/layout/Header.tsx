@@ -87,7 +87,7 @@ export function Header() {
       <div className="flex items-center gap-2 min-w-0 shrink-0">
         <button
           onClick={handleBack}
-          title="Voltar"
+          title={t("header.back")}
           className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/60 hover:bg-primary/10 hover:text-primary text-muted-foreground transition-all duration-200 shrink-0 active:scale-95"
         >
           <ChevronLeft className="h-5 w-5" />
@@ -123,7 +123,7 @@ export function Header() {
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
           <Input
             type="search"
-            placeholder="Buscar..."
+            placeholder={t("header.search")}
             className="pl-8 pr-2 bg-muted/40 border-border/40 focus-visible:ring-1 focus-visible:ring-primary/50 rounded-xl h-8 text-xs w-full"
           />
         </div>
