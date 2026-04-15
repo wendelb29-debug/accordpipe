@@ -3846,6 +3846,78 @@ export type Database = {
           },
         ]
       }
+      tenant_subscription_history: {
+        Row: {
+          change_reason: string | null
+          changed_by: string | null
+          created_at: string
+          id: string
+          new_base_limit: number | null
+          new_effective_user_limit: number | null
+          new_extra_free_users: number | null
+          new_extra_paid_users: number | null
+          new_plan_name: string | null
+          old_base_limit: number | null
+          old_effective_user_limit: number | null
+          old_extra_free_users: number | null
+          old_extra_paid_users: number | null
+          old_plan_name: string | null
+          subscription_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_base_limit?: number | null
+          new_effective_user_limit?: number | null
+          new_extra_free_users?: number | null
+          new_extra_paid_users?: number | null
+          new_plan_name?: string | null
+          old_base_limit?: number | null
+          old_effective_user_limit?: number | null
+          old_extra_free_users?: number | null
+          old_extra_paid_users?: number | null
+          old_plan_name?: string | null
+          subscription_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          change_reason?: string | null
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_base_limit?: number | null
+          new_effective_user_limit?: number | null
+          new_extra_free_users?: number | null
+          new_extra_paid_users?: number | null
+          new_plan_name?: string | null
+          old_base_limit?: number | null
+          old_effective_user_limit?: number | null
+          old_extra_free_users?: number | null
+          old_extra_paid_users?: number | null
+          old_plan_name?: string | null
+          subscription_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_subscription_history_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_subscription_history_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_subscriptions: {
         Row: {
           base_user_limit_snapshot: number
@@ -4972,6 +5044,7 @@ export type Database = {
           result_status: string
         }[]
       }
+      check_user_limit: { Args: { _tenant_id: string }; Returns: Json }
       compute_crm_performance: {
         Args: { _ano: number; _mes: number; _tenant_id: string }
         Returns: {
