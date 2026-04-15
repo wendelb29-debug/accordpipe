@@ -15,6 +15,8 @@ export interface TenantEvent {
   location: string | null;
   meeting_url: string | null;
   banner_url: string | null;
+  thumbnail_url: string | null;
+  highlight_on_home: boolean;
   target_mode: string;
   is_mandatory: boolean;
   status: string;
@@ -43,6 +45,8 @@ export type EventFormData = {
   location?: string;
   meeting_url?: string;
   banner_url?: string;
+  thumbnail_url?: string;
+  highlight_on_home?: boolean;
   target_mode?: string;
   is_mandatory?: boolean;
   reminder_minutes?: number[];
@@ -91,7 +95,6 @@ export function useEvents() {
         .single();
       if (error) throw error;
 
-      // Notify all active users of the tenant
       if (form.target_mode === "all" || !form.target_mode) {
         await notifyTenantUsers(
           data.id,
