@@ -45,6 +45,7 @@ const TYPE_GRADIENTS: Record<string, string> = {
 export default function Eventos() {
   const { events, isLoading, createEvent, updateEvent, cancelEvent, deleteEvent } = useEvents();
   const { hasPermission } = usePermissions();
+  const { isAdded, addToAgenda } = useEventAgenda();
   const canCreate = hasPermission("create_events");
   const canEdit = hasPermission("edit_events");
   const canDelete = hasPermission("delete_events");
