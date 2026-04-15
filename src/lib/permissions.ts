@@ -61,6 +61,7 @@ export const MODULE_GROUPS = [
   "Usuários e Acessos",
   "Plataforma / Tenant",
   "Performance",
+  "Eventos",
 ] as const;
 
 export const PERMISSION_MODULES: PermissionModule[] = [
@@ -373,6 +374,7 @@ export const ROUTE_PERMISSIONS: Record<string, string> = {
   "/configuracoes/auditoria": "view_audit_logs",
   "/performance": "view_performance_module",
   "/planos": "view_billing_plans",
+  "/eventos": "view_events",
 };
 
 // Legacy permission key mapping (old -> new) for backward compatibility

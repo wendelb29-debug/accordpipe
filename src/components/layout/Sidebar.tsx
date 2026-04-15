@@ -51,6 +51,7 @@ const navigation = [
   
   { name: "Base de Clientes", href: "/cadastrados", icon: Users, roles: ["admin", "ceo", "administrativo"] },
   { name: "Performance", href: "/performance", icon: TrendingUp, roles: ["admin", "ceo", "operador", "comercial"] },
+  { name: "Eventos", href: "/eventos", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
   { name: "Descarte", href: "/descarte", icon: Trash2, roles: ["admin", "ceo"] },
 ];
 
