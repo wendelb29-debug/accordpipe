@@ -27,7 +27,7 @@ const navigation = [
   { name: "Base de Clientes", href: "/cadastrados", icon: Users, roles: ["admin", "ceo", "administrativo"] },
   { name: "Eventos", href: "/eventos", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
   { name: "Descarte", href: "/descarte", icon: Trash2, roles: ["admin", "ceo"] },
-  { name: "Meus Tenants", href: "/meus-tenants", icon: Network, roles: ["admin", "ceo", "master"] },
+  
 ];
 
 const configNavigation = [
