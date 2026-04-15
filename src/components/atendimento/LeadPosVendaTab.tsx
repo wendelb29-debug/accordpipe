@@ -157,10 +157,10 @@ export function LeadPosVendaTab({ lead }: LeadPosVendaTabProps) {
       setUploading(false);
       return;
     }
-    const { data: urlData } = supabase.storage.from("contract-pdfs").getPublicUrl(filePath);
+    const { data: signedData } = await supabase.storage.from("contract-pdfs").createSignedUrl(filePath, 86400);
     setData((d) => ({
       ...d,
-      comprovante_url: urlData.publicUrl,
+      comprovante_url: signedData?.signedUrl || "",
       comprovante_path: filePath,
     }));
     toast.success("Comprovante enviado!");

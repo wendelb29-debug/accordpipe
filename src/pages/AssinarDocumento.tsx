@@ -209,8 +209,8 @@ export default function AssinarDocumento() {
 
     let selfieUrl = "";
     if (!uploadError) {
-      const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
-      selfieUrl = urlData.publicUrl;
+      const { data: signedData } = await supabase.storage.from("signatures").createSignedUrl(fileName, 2592000);
+      selfieUrl = signedData?.signedUrl || "";
     }
 
     const { data, error } = await supabase.functions.invoke("sign-document", {
