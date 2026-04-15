@@ -25,6 +25,7 @@ import {
   TrendingUp,
   Globe,
   Check,
+  Crown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useCallback, useRef } from "react";
