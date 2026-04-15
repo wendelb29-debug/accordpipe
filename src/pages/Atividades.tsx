@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   PhoneCall, Mail, Users, Briefcase, MessageSquare, CheckCircle,
   Ban, MoreVertical, Calendar, ListOrdered, Filter, Settings,
@@ -20,6 +20,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { CrmLeadDetailView } from "@/components/atendimento/CrmLeadDetailView";
+import { CrmLead } from "@/hooks/useCrmLeads";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
