@@ -3,7 +3,7 @@ import accordLogo from "@/assets/accord-logo.png";
 import {
   Home, LayoutDashboard, Building2, Receipt, FileText, BarChart3,
   FileSignature, Users, LogOut, MessageSquare, CalendarCheck, Rocket,
-  Webhook, ClipboardList, Trash2, Menu, X, Network,
+  Webhook, ClipboardList, Trash2, Menu, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
