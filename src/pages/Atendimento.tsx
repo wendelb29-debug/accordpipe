@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CrmKanbanBoard } from "@/components/atendimento/CrmKanbanBoard";
 import { AdminKanbanBoard } from "@/components/atendimento/AdminKanbanBoard";
@@ -14,6 +15,7 @@ function AtendimentoContent() {
   const { role, isMaster } = useAuth();
   const { activeWorkspaceId, workspaces, loading: wsLoading, selectWorkspace, activeWorkspace } = useWorkspaceContext();
   const [selectedWsId, setSelectedWsId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { pushBackHandler } = useBackNavigation();
 
