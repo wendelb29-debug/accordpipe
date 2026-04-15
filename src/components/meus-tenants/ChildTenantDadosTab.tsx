@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Building2, Mail, Phone, User, Calendar, Save, Pencil } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,17 @@ export function ChildTenantDadosTab({ child, onUpdated }: Props) {
     email: child.email || "",
     telefone: child.telefone || "",
   });
+
+  // Reset form when child changes
+  useEffect(() => {
+    setForm({
+      nome_fantasia: child.nome_fantasia || "",
+      responsavel: child.responsavel || "",
+      email: child.email || "",
+      telefone: child.telefone || "",
+    });
+    setEditing(false);
+  }, [child.id]);
 
   const handleSave = async () => {
     setSaving(true);
