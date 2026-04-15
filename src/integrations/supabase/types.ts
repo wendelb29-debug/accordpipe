@@ -3621,6 +3621,112 @@ export type Database = {
           },
         ]
       }
+      tenant_event_confirmations: {
+        Row: {
+          confirmed_at: string | null
+          created_at: string
+          event_id: string
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          confirmed_at?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          confirmed_at?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_event_confirmations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_events: {
+        Row: {
+          banner_url: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_at: string | null
+          event_type: string
+          id: string
+          is_mandatory: boolean
+          location: string | null
+          meeting_url: string | null
+          reminder_minutes: number[] | null
+          start_at: string
+          status: string
+          target_mode: string
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          banner_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_at?: string | null
+          event_type?: string
+          id?: string
+          is_mandatory?: boolean
+          location?: string | null
+          meeting_url?: string | null
+          reminder_minutes?: number[] | null
+          start_at: string
+          status?: string
+          target_mode?: string
+          tenant_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          banner_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_at?: string | null
+          event_type?: string
+          id?: string
+          is_mandatory?: boolean
+          location?: string | null
+          meeting_url?: string | null
+          reminder_minutes?: number[] | null
+          start_at?: string
+          status?: string
+          target_mode?: string
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_financial_config: {
         Row: {
           created_at: string
