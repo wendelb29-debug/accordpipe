@@ -29,6 +29,7 @@ interface Notification {
 }
 
 export function NotificationBell() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const activeCompanyId = useActiveCompanyId();
