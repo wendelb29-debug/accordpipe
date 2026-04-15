@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Search, User, Moon, Sun, Clock, ChevronLeft, Building2 } from "lucide-react";
+import { Search, User, Moon, Sun, Clock, ChevronLeft, Building2, Network } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { MobileSidebar } from "./MobileSidebar";
 import { Button } from "@/components/ui/button";
@@ -183,6 +183,16 @@ export function Header() {
                 <DropdownMenuItem className="rounded-lg cursor-pointer gap-2" onClick={() => navigate("/servidores")}>
                   <Building2 className="h-4 w-4" />
                   Tenants
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
+
+            {activeCompany?.is_reseller && (
+              <>
+                <DropdownMenuItem className="rounded-lg cursor-pointer gap-2" onClick={() => navigate("/meus-tenants")}>
+                  <Network className="h-4 w-4" />
+                  Meus Tenants
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
               </>

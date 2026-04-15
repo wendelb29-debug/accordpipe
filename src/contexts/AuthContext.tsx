@@ -28,6 +28,7 @@ interface CompanyOption {
   nome_fantasia: string | null;
   razao_social: string;
   cnpj: string;
+  is_reseller?: boolean;
 }
 
 interface AuthContextType {
