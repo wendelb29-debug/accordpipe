@@ -7,7 +7,7 @@ const corsHeaders = {
 
 const ASAAS_URLS: Record<string, string> = {
   sandbox: "https://sandbox.asaas.com/api/v3",
-  production: "https://api.asaas.com/api/v3",
+  production: "https://api.asaas.com/v3",
 };
 
 function maskApiKey(key: string): string {
