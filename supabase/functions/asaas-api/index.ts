@@ -161,14 +161,42 @@ Deno.serve(async (req) => {
         .maybeSingle();
       
       if (lookupErr) console.error("[asaas-api] customer lookup error:", lookupErr.message);
+      const cleanCpfCnpj = cpfCnpj ? cpfCnpj.replace(/\D/g, "") : undefined;
       if (existing) {
         console.log(`[asaas-api] existing customer found: ${(existing as any).asaas_customer_id}`);
+        const updatePayload: Record<string, any> = { name };
+        if (email) updatePayload.email = email;
+        if (cleanCpfCnpj) updatePayload.cpfCnpj = cleanCpfCnpj;
+        if (phone) updatePayload.phone = phone;
+
+        if (Object.keys(updatePayload).length > 1) {
+          const updateResult = await callAsaasWithEnvironmentFallback(
+            integration,
+            "POST",
+            `/customers/${(existing as any).asaas_customer_id}`,
+            updatePayload,
+          );
+
+          if (!updateResult.ok) {
+            console.error(`[asaas-api] existing customer update FAILED: ${updateResult.errorMessage}`);
+            return { asaas_customer_id: null, error: updateResult.errorMessage };
+          }
+
+          await supabaseAdmin
+            .from("tenant_asaas_customers")
+            .update({
+              name,
+              email: email || null,
+              cpf_cnpj: cleanCpfCnpj || null,
+              phone: phone || null,
+            } as any)
+            .eq("tenant_id", tenant_id)
+            .eq("local_customer_id", localId);
+        }
+
         return { asaas_customer_id: (existing as any).asaas_customer_id, error: null };
       }
 
-      // Clean cpfCnpj - remove non-numeric chars
-      const cleanCpfCnpj = cpfCnpj ? cpfCnpj.replace(/\D/g, "") : undefined;
-      
       const customerPayload: any = { name, externalReference: localId };
       if (email) customerPayload.email = email;
       if (cleanCpfCnpj) customerPayload.cpfCnpj = cleanCpfCnpj;
