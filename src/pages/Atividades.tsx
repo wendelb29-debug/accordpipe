@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import {
-  PhoneCall, Mail, Users, Briefcase, MessageSquare, CheckCircle,
+  PhoneCall, Mail, Users, Briefcase, MessageSquare, CheckCircle, ExternalLink,
   Ban, MoreVertical, Calendar, ListOrdered, Filter, Settings,
   UserCircle, Plus, Loader2, ChevronLeft, ChevronRight, AlertTriangle,
 } from "lucide-react";
@@ -651,6 +651,26 @@ export default function Atividades() {
             </div>
           ) : drawerLead ? (
             <div className="h-full overflow-y-auto">
+              {/* Go to CRM button */}
+              <div className="sticky top-0 z-20 flex items-center justify-end gap-2 px-4 py-2 bg-background/80 backdrop-blur-sm border-b border-border">
+                <Button
+                  size="sm"
+                  className="gap-1.5 text-xs font-semibold"
+                  onClick={() => {
+                    const wsId = drawerLead.workspace_id;
+                    if (!wsId) {
+                      toast.error("Esta oportunidade não está vinculada a um workspace");
+                      return;
+                    }
+                    setDrawerOpen(false);
+                    setDrawerLead(null);
+                    navigate(`/atendimento?workspace=${wsId}&lead=${drawerLead.id}`);
+                  }}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Abrir no CRM
+                </Button>
+              </div>
               <CrmLeadDetailView
                 lead={drawerLead}
                 onBack={() => { setDrawerOpen(false); setDrawerLead(null); }}

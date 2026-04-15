@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CrmKanbanBoard } from "@/components/atendimento/CrmKanbanBoard";
 import { AdminKanbanBoard } from "@/components/atendimento/AdminKanbanBoard";
@@ -14,11 +15,25 @@ function AtendimentoContent() {
   const { role, isMaster } = useAuth();
   const { activeWorkspaceId, workspaces, loading: wsLoading, selectWorkspace, activeWorkspace } = useWorkspaceContext();
   const [selectedWsId, setSelectedWsId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { pushBackHandler } = useBackNavigation();
 
   const canSeeCommercial = isMaster || role === "admin" || role === "operador" || role === "ceo" || role === "comercial";
   const canSeeAdmin = isMaster || role === "admin" || role === "administrativo" || role === "ceo";
+
+  // Auto-select workspace from query params (e.g. coming from Atividades drawer)
+  useEffect(() => {
+    const wsParam = searchParams.get("workspace");
+    if (wsParam && !selectedWsId && !wsLoading) {
+      selectWorkspace(wsParam);
+      setSelectedWsId(wsParam);
+      // Clean up query params after consuming
+      searchParams.delete("workspace");
+      searchParams.delete("lead");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, selectedWsId, wsLoading, selectWorkspace, setSearchParams]);
 
   // Register back handler: when workspace is selected, go back to hub
   useEffect(() => {
