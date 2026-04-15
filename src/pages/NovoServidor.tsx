@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams, Navigate } from "react-router-dom";
 import {
   Building2, Palette, FileSignature, Search, Loader2, Save, Webhook,
   Send, LogOut, MessageSquare, Radio, Activity, Wifi, Copy, Check, RefreshCw, LayoutGrid,
-  CreditCard, Users, Package,
+  CreditCard, Users, Package, Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,7 @@ import { WorkspacesTab } from "@/components/servidores/WorkspacesTab";
 import { FintechWebhooksTab } from "@/components/servidores/FintechWebhooksTab";
 import TenantUsersTab from "@/components/servidores/TenantUsersTab";
 import CatalogTab from "@/components/servidores/CatalogTab";
+import { TenantSubscriptionTab } from "@/components/servidores/TenantSubscriptionTab";
 
 import { useEffect } from "react";
 
@@ -517,7 +518,7 @@ export default function NovoServidor() {
             { value: "fintech", icon: CreditCard, label: "Webhooks Fintech" },
             { value: "usuarios", icon: Users, label: "Usuários" },
             { value: "catalogo", icon: Package, label: "Catálogo" },
-            
+            { value: "plano", icon: Crown, label: "Plano & Usuários" },
           ].map((item) => (
             <button
               key={item.value}
@@ -738,6 +739,18 @@ export default function NovoServidor() {
                 <CatalogTab companyId={editId || pendingNewId} />
               </CardContent>
             </Card>
+          )}
+
+          {activeTab === "plano" && (
+            editId ? (
+              <TenantSubscriptionTab companyId={editId} />
+            ) : (
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-sm text-muted-foreground text-center py-8">Salve o tenant primeiro para configurar o plano.</p>
+                </CardContent>
+              </Card>
+            )
           )}
 
         </div>
