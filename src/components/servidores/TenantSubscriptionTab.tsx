@@ -16,6 +16,7 @@ import { toast } from "sonner";
 
 interface Props {
   companyId: string;
+  resellerMode?: boolean;
 }
 
 const statusLabels: Record<string, string> = {
