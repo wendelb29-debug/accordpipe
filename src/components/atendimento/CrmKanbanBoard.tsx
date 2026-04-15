@@ -558,9 +558,6 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
           const dynCol = kanbanCols.find(c => c.id === stage.id);
           const slaDays = dynCol?.sla_days || (stage.daysLimit ? parseInt(stage.daysLimit) || 0 : 0);
 
-          const colBgStyle: React.CSSProperties = dynCol?.color
-            ? { backgroundColor: dynCol.color, '--col-color': dynCol.color } as React.CSSProperties
-            : {};
 
           return (
             <div
