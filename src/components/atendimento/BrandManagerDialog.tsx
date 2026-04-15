@@ -98,8 +98,8 @@ export function BrandManagerDialog({ open, onOpenChange, servidorId, onBrandsCha
       const path = `brands/${servidorId}/${brandId}.${ext}`;
       const { error: upErr } = await supabase.storage.from("documents").upload(path, file, { upsert: true });
       if (upErr) throw upErr;
-      const { data: urlData } = supabase.storage.from("documents").getPublicUrl(path);
-      await supabase.from("proposal_brands").update({ logo_url: urlData.publicUrl, logo_path: path } as any).eq("id", brandId);
+      const { data: signedData } = await supabase.storage.from("documents").createSignedUrl(path, 3600);
+      await supabase.from("proposal_brands").update({ logo_url: signedData?.signedUrl || "", logo_path: path } as any).eq("id", brandId);
       toast.success("Logo atualizado!");
       await fetchBrands();
       onBrandsChange?.();

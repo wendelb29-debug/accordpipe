@@ -83,11 +83,11 @@ export default function Perfil() {
       const filePath = `avatars/${profile.user_id}.${ext}`;
       const { error: uploadError } = await supabase.storage.from("documents").upload(filePath, file, { upsert: true });
       if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage.from("documents").getPublicUrl(filePath);
-      const publicUrl = urlData.publicUrl + `?t=${Date.now()}`;
-      const { error: updateError } = await supabase.from("profiles").update({ avatar_url: publicUrl } as any).eq("user_id", profile.user_id);
+      const { data: signedData } = await supabase.storage.from("documents").createSignedUrl(filePath, 3600);
+      const signedUrl = signedData?.signedUrl || "";
+      const { error: updateError } = await supabase.from("profiles").update({ avatar_url: signedUrl } as any).eq("user_id", profile.user_id);
       if (updateError) throw updateError;
-      setAvatarUrl(publicUrl);
+      setAvatarUrl(signedUrl);
       toast.success("Foto atualizada com sucesso!");
       setTimeout(() => window.location.reload(), 1000);
     } catch (err: any) {

@@ -57,8 +57,8 @@ export function BrandIdentityFields({ formData, onChange }: Props) {
       const path = `brand-logos/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
       const { error } = await supabase.storage.from("documents").upload(path, file, { contentType: file.type });
       if (error) throw error;
-      const { data: urlData } = supabase.storage.from("documents").getPublicUrl(path);
-      onChange({ ...formData, brandLogoUrl: urlData.publicUrl, brandLogoPath: path });
+      const { data: signedData } = await supabase.storage.from("documents").createSignedUrl(path, 3600);
+      onChange({ ...formData, brandLogoUrl: signedData?.signedUrl || "", brandLogoPath: path });
       toast.success("Logo enviado com sucesso!");
     } catch (err: any) {
       toast.error("Erro ao enviar logo: " + (err.message || ""));
