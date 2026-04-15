@@ -205,6 +205,19 @@ Deno.serve(async (req) => {
       contractData.signatures = allSigs || [];
     }
 
+    // Generate signed URLs for private bucket files
+    if (contractData.pdf_url) {
+      const parsed = parsePrivateStorageUrl(contractData.pdf_url);
+      if (parsed) {
+        const { data: signedData } = await supabase.storage
+          .from(parsed.bucket)
+          .createSignedUrl(parsed.path, 3600);
+        if (signedData?.signedUrl) {
+          contractData.pdf_url = signedData.signedUrl;
+        }
+      }
+    }
+
     return new Response(JSON.stringify(contractData), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
