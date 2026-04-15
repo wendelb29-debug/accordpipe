@@ -790,6 +790,10 @@ export default function ServidoresTab() {
                 <Crown className="h-4 w-4" />
                 Plano
               </TabsTrigger>
+              <TabsTrigger value="revenda" className="justify-start gap-2 px-3 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg" disabled={!editingCompany}>
+                <Network className="h-4 w-4" />
+                Revenda
+              </TabsTrigger>
             </TabsList>
 
             <div className="flex-1 overflow-y-auto py-2">
