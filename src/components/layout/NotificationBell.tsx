@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Check, CheckCheck, Clock, UserPlus, Megaphone, CalendarClock, Eye, EyeOff, CircleCheck } from "lucide-react";
+import { Bell, Check, CheckCheck, Clock, UserPlus, Megaphone, CalendarClock, Eye, EyeOff, CircleCheck, BellOff, BellRing, TestTube, CheckCircle2, XCircle } from "lucide-react";
+import { useNotificationManager } from "@/hooks/useNotificationManager";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
