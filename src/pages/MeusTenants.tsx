@@ -31,7 +31,7 @@ const formatCnpj = (v: string) => {
 };
 
 export default function MeusTenants() {
-  const { children, loading, parentCompany, createChildTenant, toggleChildStatus, canCreate } = useChildTenants();
+  const { children, loading, parentCompany, createChildTenant, toggleChildStatus, canCreate, refetch } = useChildTenants();
   const { role, profile } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
