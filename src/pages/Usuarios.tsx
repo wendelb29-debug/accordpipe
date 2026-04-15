@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { PlanUsageCard } from "@/components/usuarios/PlanUsageCard";
 import { Plus, Search, User, MoreHorizontal, Pencil, Power, Shield, Eye, EyeOff, Building2, Server, CheckCircle, XCircle, Clock, FlaskConical, Send, MessageCircle, LayoutGrid } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ServidoresTab from "@/components/servidores/ServidoresTab";
@@ -415,6 +416,8 @@ export default function Usuarios() {
         <h1 className="text-2xl font-bold text-foreground">Gestão de Acesso</h1>
         <p className="text-muted-foreground">Gerencie usuários e tenants do sistema</p>
       </div>
+
+      <PlanUsageCard tenantId={activeCompanyId || profile?.company_id || null} />
 
       <Tabs defaultValue="usuarios" className="space-y-6">
         <TabsList>

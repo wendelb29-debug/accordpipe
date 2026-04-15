@@ -25,6 +25,7 @@ import {
   TrendingUp,
   Globe,
   Check,
+  Crown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -55,6 +56,7 @@ const navigation = [
 
 const configNavigation = [
   { name: "Usuários", href: "/configuracoes/usuarios", icon: Users, roles: ["admin", "ceo", "administrativo"] },
+  { name: "Planos", href: "/planos", icon: Crown, roles: ["ceo", "master"] },
   { name: "Auditoria", href: "/configuracoes/auditoria", icon: Settings, roles: ["ceo", "master"] },
 ];
 
