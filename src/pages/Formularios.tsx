@@ -302,15 +302,37 @@ export default function Formularios() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingForm ? "Editar Formulário" : "Novo Formulário"}</DialogTitle>
-            <DialogDescription>Configure os campos que serão exibidos no formulário público.</DialogDescription>
+            <DialogDescription>Configure os campos e a landing page pública.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label>Nome do formulário *</Label>
-              <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ex: Formulário Site Principal" />
+              <Input value={formName} onChange={(e) => handleNameChange(e.target.value)} placeholder="Ex: Tráfego Pago — Consultoria" />
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Globe className="h-3.5 w-3.5" /> URL pública (slug)
+              </Label>
+              <div className="flex items-center gap-1 rounded-md border bg-muted/40 px-2 text-xs">
+                <span className="text-muted-foreground py-2 select-all">{window.location.origin}/form/</span>
+                <Input
+                  value={formSlug}
+                  onChange={(e) => { setFormSlug(slugify(e.target.value)); setSlugTouched(true); }}
+                  placeholder="trafego-pago"
+                  className="border-0 bg-transparent px-1 focus-visible:ring-0 h-9"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">Use em campanhas: link curto, único e amigável.</p>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <Label className="text-sm">Gerar landing page pública</Label>
+                <p className="text-xs text-muted-foreground">Ative para usar a URL pública em tráfego pago.</p>
+              </div>
+              <Switch checked={landingEnabled} onCheckedChange={setLandingEnabled} />
             </div>
             <div className="space-y-2">
               <Label>Descrição (opcional)</Label>
