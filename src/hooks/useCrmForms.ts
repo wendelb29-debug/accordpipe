@@ -95,18 +95,25 @@ export function useCrmForms() {
       toast.error("Erro - empresa não encontrada");
       return null;
     }
+    const payload = {
+      name: form.name,
+      description: form.description || null,
+      fields: form.fields || ["nome", "telefone"],
+      workspace_id: form.workspace_id || null,
+      tags: form.tags || null,
+      is_active: true,
+      servidor_id: servidorId,
+      created_by_user_id: profile?.user_id || null,
+      created_by_name: profile?.name || null,
+    };
     const { data, error } = await supabase
       .from("crm_forms")
-      .insert({
-        ...form,
-        servidor_id: servidorId,
-        created_by_user_id: profile?.user_id || null,
-        created_by_name: profile?.name || null,
-      } as any)
+      .insert(payload)
       .select()
       .single();
     if (error) {
-      toast.error("Erro ao criar formulário");
+      console.error("Error creating form:", error);
+      toast.error(`Erro ao criar formulário: ${error.message}`);
       return null;
     }
     const newForm = { ...(data as unknown as CrmForm), lead_count: 0 };
