@@ -115,6 +115,22 @@ export function MobileSidebar() {
               </Link>
             );
           })}
+          {isResellerPanel && (
+            <Link
+              to="/minha-revenda"
+              onClick={() => setOpen(false)}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-200 relative",
+                location.pathname === "/minha-revenda"
+                  ? "bg-sidebar-primary/15 text-sidebar-foreground"
+                  : "text-sidebar-foreground/45 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground/80"
+              )}
+            >
+              {location.pathname === "/minha-revenda" && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-sidebar-primary shadow-[0_0_8px_rgba(122,63,242,0.5)]" />}
+              <Crown className={cn("h-[17px] w-[17px]", location.pathname === "/minha-revenda" ? "text-sidebar-primary" : "")} />
+              <span className="truncate">Painel da Revenda</span>
+            </Link>
+          )
         </nav>
 
         {/* Config & User */}
