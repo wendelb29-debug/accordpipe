@@ -737,12 +737,15 @@ function BillingResult({ result, billingType, tenantId, onClose }: { result: any
     setLoadingPix(true);
     try {
       const d = await callAsaasApi("get_pix_qrcode", tenantId, { asaas_payment_id: result.payment_id });
+      console.log("[BillingResult] get_pix_qrcode response:", JSON.stringify(d));
       if (d?.payload) {
         setPixData({ payload: d.payload, qrcode_image: d.qrcode_image });
       } else {
+        console.log("[BillingResult] get_pix_qrcode: no payload, retrying...");
         setPixRetries((p) => p + 1);
       }
-    } catch {
+    } catch (err: any) {
+      console.error("[BillingResult] get_pix_qrcode error:", err.message);
       setPixRetries((p) => p + 1);
     }
     setLoadingPix(false);
