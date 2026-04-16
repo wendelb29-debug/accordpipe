@@ -258,7 +258,7 @@ export function Sidebar() {
       className={cn(
         "fixed left-0 top-0 z-40 h-screen border-r border-sidebar-border bg-sidebar flex flex-col",
         "transition-[width] duration-300 ease-in-out",
-        collapsed ? "w-[52px]" : "w-56"
+        collapsed ? "w-[60px]" : "w-[232px]"
       )}
     >
       {/* Logo */}
