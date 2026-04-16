@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Copy, Check, Trash2, Edit2, Eye, EyeOff, Code2, BarChart3, Loader2, FileText, ExternalLink } from "lucide-react";
+import { Plus, Copy, Check, Trash2, Edit2, Eye, EyeOff, Code2, BarChart3, Loader2, FileText, ExternalLink, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useCrmForms, AVAILABLE_FIELDS, CrmForm } from "@/hooks/useCrmForms";
 import { useWorkspaceContext } from "@/contexts/WorkspaceContext";
+import { slugify } from "@/lib/slugify";
 import { toast } from "sonner";
 
 export default function Formularios() {
@@ -30,6 +31,13 @@ export default function Formularios() {
   const [selectedFields, setSelectedFields] = useState<string[]>(["nome", "telefone", "email", "empresa"]);
   const [formTags, setFormTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
+  const [formSlug, setFormSlug] = useState("");
+  const [slugTouched, setSlugTouched] = useState(false);
+  const [landingEnabled, setLandingEnabled] = useState(true);
+  const [headline, setHeadline] = useState("");
+  const [subheadline, setSubheadline] = useState("");
+  const [ctaText, setCtaText] = useState("");
+  const [thankYouMessage, setThankYouMessage] = useState("");
 
   const openNew = () => {
     setEditingForm(null);
@@ -39,6 +47,13 @@ export default function Formularios() {
     setSelectedFields(["nome", "telefone", "email", "empresa"]);
     setFormTags([]);
     setTagInput("");
+    setFormSlug("");
+    setSlugTouched(false);
+    setLandingEnabled(true);
+    setHeadline("");
+    setSubheadline("");
+    setCtaText("");
+    setThankYouMessage("");
     setDialogOpen(true);
   };
 
@@ -50,14 +65,40 @@ export default function Formularios() {
     setSelectedFields(form.fields || ["nome", "telefone"]);
     setFormTags(form.tags || []);
     setTagInput("");
+    setFormSlug(form.slug || "");
+    setSlugTouched(true);
+    setLandingEnabled(form.landing_page_enabled ?? true);
+    setHeadline(form.headline || "");
+    setSubheadline(form.subheadline || "");
+    setCtaText(form.cta_text || "");
+    setThankYouMessage(form.thank_you_message || "");
     setDialogOpen(true);
+  };
+
+  const handleNameChange = (v: string) => {
+    setFormName(v);
+    if (!slugTouched && !editingForm) {
+      setFormSlug(slugify(v));
+    }
   };
 
   const handleSave = async () => {
     if (!formName.trim()) { toast.error("Nome é obrigatório"); return; }
     if (!selectedWorkspaceId) { toast.error("Selecione o workspace de destino"); return; }
     const fields = ["nome", "telefone", ...selectedFields.filter((f) => f !== "nome" && f !== "telefone")];
-    const payload = { name: formName.trim(), description: formDescription.trim() || null, fields, workspace_id: selectedWorkspaceId, tags: formTags.length > 0 ? formTags : null };
+    const payload = {
+      name: formName.trim(),
+      description: formDescription.trim() || null,
+      fields,
+      workspace_id: selectedWorkspaceId,
+      tags: formTags.length > 0 ? formTags : null,
+      slug: formSlug.trim() || slugify(formName),
+      landing_page_enabled: landingEnabled,
+      headline: headline.trim() || null,
+      subheadline: subheadline.trim() || null,
+      cta_text: ctaText.trim() || null,
+      thank_you_message: thankYouMessage.trim() || null,
+    };
     if (editingForm) {
       await updateForm(editingForm.id, payload as any);
     } else {
