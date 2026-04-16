@@ -55,6 +55,8 @@ interface CompanyOption {
   razao_social: string;
   cnpj: string;
   is_reseller?: boolean;
+  reseller_panel_enabled?: boolean;
+  servidor_id?: string | null;
 }
 
 interface AuthContextType {
