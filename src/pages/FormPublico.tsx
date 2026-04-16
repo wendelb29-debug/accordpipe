@@ -305,11 +305,25 @@ export default function FormPublico() {
 
       <div className="relative max-w-6xl mx-auto px-4 py-6 lg:py-12 min-h-screen flex flex-col">
         {/* Header logo */}
-        <div className="flex items-center justify-between mb-8 lg:mb-12 animate-fade-in">
-          <img src={logoUrl} alt={formConfig.tenant_name || "Logo"} className="h-10 object-contain" />
-          {formConfig.tenant_name && (
-            <span className="text-sm text-white/60 hidden sm:block font-medium">{formConfig.tenant_name}</span>
+        <div className="flex items-center gap-3 mb-8 lg:mb-12 animate-fade-in">
+          {showLogoImage ? (
+            <img
+              src={logoUrl}
+              alt={tenantName}
+              className="h-10 lg:h-12 object-contain"
+              onError={() => setLogoFailed(true)}
+            />
+          ) : (
+            <div
+              className="h-10 lg:h-12 px-4 flex items-center justify-center rounded-xl font-bold text-white text-base"
+              style={{ background: `linear-gradient(135deg, ${primary}, ${secondary})` }}
+            >
+              {tenantInitials}
+            </div>
           )}
+          <span className="text-base lg:text-lg font-semibold text-white tracking-tight">
+            {tenantName}
+          </span>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center flex-1">
