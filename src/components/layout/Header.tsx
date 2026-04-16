@@ -173,21 +173,11 @@ export function Header() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
 
-            {isGlobalMaster && (
+            {(isGlobalMaster || isResellerTenant) && (
               <>
                 <DropdownMenuItem className="rounded-lg cursor-pointer gap-2" onClick={() => navigate("/servidores")}>
                   <Building2 className="h-4 w-4" />
                   {t("nav.tenants")}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </>
-            )}
-
-            {activeCompany?.is_reseller && (
-              <>
-                <DropdownMenuItem className="rounded-lg cursor-pointer gap-2" onClick={() => navigate("/meus-tenants")}>
-                  <Network className="h-4 w-4" />
-                  {t("nav.myTenants")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
               </>
