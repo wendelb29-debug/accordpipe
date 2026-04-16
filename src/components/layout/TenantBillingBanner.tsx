@@ -1,52 +1,94 @@
-import { AlertTriangle, CreditCard, MessageCircle } from "lucide-react";
+import { AlertTriangle, CreditCard, MessageCircle, QrCode, ExternalLink, Copy, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTenantBillingStatus } from "@/hooks/useTenantBillingStatus";
+import { useTenantAccessGuard } from "@/hooks/useTenantAccessGuard";
+import { toast } from "sonner";
 
 export function TenantBillingBanner() {
-  const alert = useTenantBillingStatus();
+  const guard = useTenantAccessGuard();
 
-  if (!alert.show) return null;
+  if (guard.loading || guard.bannerVariant === "none") return null;
 
-  const fmtDate = (d: string | null) =>
-    d ? new Date(d).toLocaleDateString("pt-BR") : "—";
+  const handleCopyPix = () => {
+    if (guard.pixPayload) {
+      navigator.clipboard.writeText(guard.pixPayload);
+      toast.success("Código PIX copiado!");
+    }
+  };
 
-  if (alert.type === "suspended") {
+  if (guard.bannerVariant === "suspended") {
     return (
       <div className="flex flex-wrap items-center justify-center gap-2 bg-destructive text-destructive-foreground text-xs sm:text-sm font-medium py-2.5 px-4">
         <AlertTriangle className="h-4 w-4 shrink-0" />
-        <span>
-          Seu acesso está suspenso por inadimplência. Regularize o pagamento para reativar o sistema.
-        </span>
-        <div className="flex gap-2">
-          <Button size="sm" variant="secondary" className="h-7 text-xs gap-1.5">
-            <CreditCard className="h-3.5 w-3.5" />
-            Regularizar agora
-          </Button>
+        <span>{guard.warningMessage}</span>
+        <div className="flex gap-1.5 flex-wrap">
+          {guard.invoiceUrl && (
+            <Button size="sm" variant="secondary" className="h-7 text-xs gap-1.5" onClick={() => window.open(guard.invoiceUrl!, "_blank")}>
+              <ExternalLink className="h-3.5 w-3.5" /> Fatura
+            </Button>
+          )}
+          {guard.bankSlipUrl && (
+            <Button size="sm" variant="secondary" className="h-7 text-xs gap-1.5" onClick={() => window.open(guard.bankSlipUrl!, "_blank")}>
+              <CreditCard className="h-3.5 w-3.5" /> Boleto
+            </Button>
+          )}
+          {guard.pixPayload && (
+            <Button size="sm" variant="secondary" className="h-7 text-xs gap-1.5" onClick={handleCopyPix}>
+              <QrCode className="h-3.5 w-3.5" /> Copiar PIX
+            </Button>
+          )}
           <Button size="sm" variant="ghost" className="h-7 text-xs gap-1.5 text-destructive-foreground hover:text-destructive-foreground/80">
-            <MessageCircle className="h-3.5 w-3.5" />
-            Suporte
+            <MessageCircle className="h-3.5 w-3.5" /> Suporte
           </Button>
         </div>
       </div>
     );
   }
 
+  if (guard.bannerVariant === "overdue") {
+    return (
+      <div className="flex flex-wrap items-center justify-center gap-2 bg-amber-500 text-white text-xs sm:text-sm font-medium py-2.5 px-4">
+        <AlertTriangle className="h-4 w-4 shrink-0" />
+        <span>{guard.warningMessage}</span>
+        <div className="flex gap-1.5 flex-wrap">
+          {guard.invoiceUrl && (
+            <Button size="sm" variant="secondary" className="h-7 text-xs gap-1.5" onClick={() => window.open(guard.invoiceUrl!, "_blank")}>
+              <ExternalLink className="h-3.5 w-3.5" /> Fatura
+            </Button>
+          )}
+          {guard.bankSlipUrl && (
+            <Button size="sm" variant="secondary" className="h-7 text-xs gap-1.5" onClick={() => window.open(guard.bankSlipUrl!, "_blank")}>
+              <CreditCard className="h-3.5 w-3.5" /> Boleto
+            </Button>
+          )}
+          {guard.pixPayload && (
+            <Button size="sm" variant="secondary" className="h-7 text-xs gap-1.5" onClick={handleCopyPix}>
+              <QrCode className="h-3.5 w-3.5" /> Copiar PIX
+            </Button>
+          )}
+          <Button size="sm" variant="ghost" className="h-7 text-xs gap-1.5 text-white hover:text-white/80">
+            <MessageCircle className="h-3.5 w-3.5" /> Suporte
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // pre_due
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2 bg-amber-500 text-white text-xs sm:text-sm font-medium py-2.5 px-4">
-      <AlertTriangle className="h-4 w-4 shrink-0" />
-      <span>
-        Sua assinatura venceu em {fmtDate(alert.due_date)}.
-        {alert.grace_until && <> Regularize até {fmtDate(alert.grace_until)} para evitar bloqueio.</>}
-      </span>
-      <div className="flex gap-2">
-        <Button size="sm" variant="secondary" className="h-7 text-xs gap-1.5">
-          <CreditCard className="h-3.5 w-3.5" />
-          Ver cobrança
-        </Button>
-        <Button size="sm" variant="ghost" className="h-7 text-xs gap-1.5 text-white hover:text-white/80">
-          <MessageCircle className="h-3.5 w-3.5" />
-          Suporte
-        </Button>
+    <div className="flex flex-wrap items-center justify-center gap-2 bg-blue-500/90 text-white text-xs sm:text-sm font-medium py-2 px-4">
+      <Clock className="h-4 w-4 shrink-0" />
+      <span>{guard.warningMessage}</span>
+      <div className="flex gap-1.5 flex-wrap">
+        {guard.invoiceUrl && (
+          <Button size="sm" variant="secondary" className="h-7 text-xs gap-1.5" onClick={() => window.open(guard.invoiceUrl!, "_blank")}>
+            <ExternalLink className="h-3.5 w-3.5" /> Ver cobrança
+          </Button>
+        )}
+        {guard.pixPayload && (
+          <Button size="sm" variant="secondary" className="h-7 text-xs gap-1.5" onClick={handleCopyPix}>
+            <QrCode className="h-3.5 w-3.5" /> Copiar PIX
+          </Button>
+        )}
       </div>
     </div>
   );
