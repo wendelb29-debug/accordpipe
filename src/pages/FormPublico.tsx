@@ -60,6 +60,7 @@ export default function FormPublico() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [honeypot, setHoneypot] = useState("");
   const [timestamp] = useState(Date.now());
+  const [logoFailed, setLogoFailed] = useState(false);
 
   // UTM tracking
   const utmData = useMemo(() => ({
