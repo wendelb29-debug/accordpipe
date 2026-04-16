@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Copy, Check, Trash2, Edit2, Eye, EyeOff, Code2, BarChart3, Loader2, FileText, ExternalLink } from "lucide-react";
+import { Plus, Copy, Check, Trash2, Edit2, Eye, EyeOff, Code2, BarChart3, Loader2, FileText, ExternalLink, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useCrmForms, AVAILABLE_FIELDS, CrmForm } from "@/hooks/useCrmForms";
 import { useWorkspaceContext } from "@/contexts/WorkspaceContext";
+import { slugify } from "@/lib/slugify";
 import { toast } from "sonner";
 
 export default function Formularios() {
@@ -30,6 +31,13 @@ export default function Formularios() {
   const [selectedFields, setSelectedFields] = useState<string[]>(["nome", "telefone", "email", "empresa"]);
   const [formTags, setFormTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
+  const [formSlug, setFormSlug] = useState("");
+  const [slugTouched, setSlugTouched] = useState(false);
+  const [landingEnabled, setLandingEnabled] = useState(true);
+  const [headline, setHeadline] = useState("");
+  const [subheadline, setSubheadline] = useState("");
+  const [ctaText, setCtaText] = useState("");
+  const [thankYouMessage, setThankYouMessage] = useState("");
 
   const openNew = () => {
     setEditingForm(null);
@@ -39,6 +47,13 @@ export default function Formularios() {
     setSelectedFields(["nome", "telefone", "email", "empresa"]);
     setFormTags([]);
     setTagInput("");
+    setFormSlug("");
+    setSlugTouched(false);
+    setLandingEnabled(true);
+    setHeadline("");
+    setSubheadline("");
+    setCtaText("");
+    setThankYouMessage("");
     setDialogOpen(true);
   };
 
@@ -50,14 +65,40 @@ export default function Formularios() {
     setSelectedFields(form.fields || ["nome", "telefone"]);
     setFormTags(form.tags || []);
     setTagInput("");
+    setFormSlug(form.slug || "");
+    setSlugTouched(true);
+    setLandingEnabled(form.landing_page_enabled ?? true);
+    setHeadline(form.headline || "");
+    setSubheadline(form.subheadline || "");
+    setCtaText(form.cta_text || "");
+    setThankYouMessage(form.thank_you_message || "");
     setDialogOpen(true);
+  };
+
+  const handleNameChange = (v: string) => {
+    setFormName(v);
+    if (!slugTouched && !editingForm) {
+      setFormSlug(slugify(v));
+    }
   };
 
   const handleSave = async () => {
     if (!formName.trim()) { toast.error("Nome é obrigatório"); return; }
     if (!selectedWorkspaceId) { toast.error("Selecione o workspace de destino"); return; }
     const fields = ["nome", "telefone", ...selectedFields.filter((f) => f !== "nome" && f !== "telefone")];
-    const payload = { name: formName.trim(), description: formDescription.trim() || null, fields, workspace_id: selectedWorkspaceId, tags: formTags.length > 0 ? formTags : null };
+    const payload = {
+      name: formName.trim(),
+      description: formDescription.trim() || null,
+      fields,
+      workspace_id: selectedWorkspaceId,
+      tags: formTags.length > 0 ? formTags : null,
+      slug: formSlug.trim() || slugify(formName),
+      landing_page_enabled: landingEnabled,
+      headline: headline.trim() || null,
+      subheadline: subheadline.trim() || null,
+      cta_text: ctaText.trim() || null,
+      thank_you_message: thankYouMessage.trim() || null,
+    };
     if (editingForm) {
       await updateForm(editingForm.id, payload as any);
     } else {
@@ -74,12 +115,17 @@ export default function Formularios() {
     );
   };
 
-  const getFormUrl = (id: string) => `${window.location.origin}/form/${id}`;
+  const getFormUrl = (form: CrmForm | { id: string; slug?: string | null }) => {
+    const slug = (form as any).slug;
+    return slug
+      ? `${window.location.origin}/form/${slug}`
+      : `${window.location.origin}/form/${form.id}`;
+  };
 
-  const copyLink = (id: string) => {
-    navigator.clipboard.writeText(getFormUrl(id));
-    setCopiedId(id);
-    toast.success("Link copiado!");
+  const copyLink = (form: CrmForm) => {
+    navigator.clipboard.writeText(getFormUrl(form));
+    setCopiedId(form.id);
+    toast.success("Link público copiado!");
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -88,8 +134,10 @@ export default function Formularios() {
     setEmbedDialogOpen(true);
   };
 
-  const embedCode = embedFormId
-    ? `<iframe src="${getFormUrl(embedFormId)}" width="100%" height="600" frameborder="0" style="border:none;border-radius:12px;"></iframe>`
+  const embedFormObj = forms.find((f) => f.id === embedFormId);
+  const embedFormUrl = embedFormObj ? getFormUrl(embedFormObj) : "";
+  const embedCode = embedFormObj
+    ? `<iframe src="${embedFormUrl}" width="100%" height="600" frameborder="0" style="border:none;border-radius:12px;"></iframe>`
     : "";
 
   const copyEmbed = () => {
@@ -225,11 +273,11 @@ export default function Formularios() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => copyLink(form.id)} title="Copiar link">
+                      <Button size="sm" variant="ghost" onClick={() => copyLink(form)} title="Copiar link público">
                         {copiedId === form.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => window.open(getFormUrl(form.id), "_blank")} title="Abrir formulário">
-                        <ExternalLink className="h-4 w-4" />
+                      <Button size="sm" variant="ghost" onClick={() => window.open(getFormUrl(form), "_blank")} title="Visualizar Landing Page">
+                        <Globe className="h-4 w-4" />
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => openEmbed(form.id)} title="Código embed">
                         <Code2 className="h-4 w-4" />
@@ -254,15 +302,37 @@ export default function Formularios() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingForm ? "Editar Formulário" : "Novo Formulário"}</DialogTitle>
-            <DialogDescription>Configure os campos que serão exibidos no formulário público.</DialogDescription>
+            <DialogDescription>Configure os campos e a landing page pública.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label>Nome do formulário *</Label>
-              <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ex: Formulário Site Principal" />
+              <Input value={formName} onChange={(e) => handleNameChange(e.target.value)} placeholder="Ex: Tráfego Pago — Consultoria" />
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Globe className="h-3.5 w-3.5" /> URL pública (slug)
+              </Label>
+              <div className="flex items-center gap-1 rounded-md border bg-muted/40 px-2 text-xs">
+                <span className="text-muted-foreground py-2 select-all">{window.location.origin}/form/</span>
+                <Input
+                  value={formSlug}
+                  onChange={(e) => { setFormSlug(slugify(e.target.value)); setSlugTouched(true); }}
+                  placeholder="trafego-pago"
+                  className="border-0 bg-transparent px-1 focus-visible:ring-0 h-9"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">Use em campanhas: link curto, único e amigável.</p>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <Label className="text-sm">Gerar landing page pública</Label>
+                <p className="text-xs text-muted-foreground">Ative para usar a URL pública em tráfego pago.</p>
+              </div>
+              <Switch checked={landingEnabled} onCheckedChange={setLandingEnabled} />
             </div>
             <div className="space-y-2">
               <Label>Descrição (opcional)</Label>
@@ -339,6 +409,31 @@ export default function Formularios() {
                 ))}
               </div>
             </div>
+
+            {/* Landing page customization */}
+            {landingEnabled && (
+              <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <Globe className="h-4 w-4 text-primary" /> Personalização da Landing Page
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Headline (título principal)</Label>
+                  <Input value={headline} onChange={(e) => setHeadline(e.target.value)} placeholder="Transforme sua operação comercial" maxLength={120} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Subheadline</Label>
+                  <Input value={subheadline} onChange={(e) => setSubheadline(e.target.value)} placeholder="Fale com um especialista e veja como podemos ajudar." maxLength={200} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Texto do botão (CTA)</Label>
+                  <Input value={ctaText} onChange={(e) => setCtaText(e.target.value)} placeholder="Quero falar com um especialista" maxLength={60} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Mensagem de sucesso</Label>
+                  <Textarea value={thankYouMessage} onChange={(e) => setThankYouMessage(e.target.value)} placeholder="Recebemos seu contato! Em breve um especialista falará com você." rows={2} maxLength={300} />
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
@@ -361,7 +456,7 @@ export default function Formularios() {
           <div className="space-y-3">
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Link direto</Label>
-              <code className="block bg-muted px-3 py-2 rounded-md text-xs font-mono break-all">{getFormUrl(embedFormId)}</code>
+              <code className="block bg-muted px-3 py-2 rounded-md text-xs font-mono break-all">{embedFormUrl}</code>
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Código iframe</Label>

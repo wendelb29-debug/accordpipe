@@ -1372,13 +1372,22 @@ export type Database = {
           created_at: string
           created_by_name: string | null
           created_by_user_id: string | null
+          cta_text: string | null
           description: string | null
           fields: Json
+          headline: string | null
           id: string
           is_active: boolean
+          landing_page_enabled: boolean
           name: string
+          redirect_url_after_submit: string | null
+          seo_description: string | null
+          seo_title: string | null
           servidor_id: string
+          slug: string | null
+          subheadline: string | null
           tags: string[] | null
+          thank_you_message: string | null
           updated_at: string
           workspace_id: string | null
         }
@@ -1386,13 +1395,22 @@ export type Database = {
           created_at?: string
           created_by_name?: string | null
           created_by_user_id?: string | null
+          cta_text?: string | null
           description?: string | null
           fields?: Json
+          headline?: string | null
           id?: string
           is_active?: boolean
+          landing_page_enabled?: boolean
           name: string
+          redirect_url_after_submit?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
           servidor_id: string
+          slug?: string | null
+          subheadline?: string | null
           tags?: string[] | null
+          thank_you_message?: string | null
           updated_at?: string
           workspace_id?: string | null
         }
@@ -1400,13 +1418,22 @@ export type Database = {
           created_at?: string
           created_by_name?: string | null
           created_by_user_id?: string | null
+          cta_text?: string | null
           description?: string | null
           fields?: Json
+          headline?: string | null
           id?: string
           is_active?: boolean
+          landing_page_enabled?: boolean
           name?: string
+          redirect_url_after_submit?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
           servidor_id?: string
+          slug?: string | null
+          subheadline?: string | null
           tags?: string[] | null
+          thank_you_message?: string | null
           updated_at?: string
           workspace_id?: string | null
         }
@@ -6085,6 +6112,33 @@ export type Database = {
         }[]
       }
       get_profile_company_id: { Args: { _user_id: string }; Returns: string }
+      get_public_form_by_slug: {
+        Args: { p_slug: string }
+        Returns: {
+          brand_accent_color: string
+          brand_bg_color: string
+          brand_logo_url: string
+          brand_primary_color: string
+          brand_secondary_color: string
+          brand_text_color: string
+          cta_text: string
+          description: string
+          fields: Json
+          headline: string
+          id: string
+          name: string
+          redirect_url_after_submit: string
+          seo_description: string
+          seo_title: string
+          servidor_id: string
+          slug: string
+          subheadline: string
+          tags: string[]
+          tenant_name: string
+          thank_you_message: string
+          workspace_id: string
+        }[]
+      }
       get_tenant_type: { Args: { _tenant_id: string }; Returns: string }
       get_tenant_user_limit: { Args: { _tenant_id: string }; Returns: number }
       get_today_birthdays: {
