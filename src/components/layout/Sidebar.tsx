@@ -87,11 +87,12 @@ export function Sidebar() {
     localStorage.setItem("sidebar-pinned", String(pinned));
   }, [pinned]);
 
-  // Notify AppLayout about the sidebar width
+  // Notify AppLayout about the sidebar width — only pinned state matters for layout push
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent("sidebar-toggle", { detail: collapsed }));
-    localStorage.setItem("sidebar-collapsed", String(collapsed));
-  }, [collapsed]);
+    const layoutCollapsed = !pinned;
+    window.dispatchEvent(new CustomEvent("sidebar-toggle", { detail: layoutCollapsed }));
+    localStorage.setItem("sidebar-collapsed", String(layoutCollapsed));
+  }, [pinned]);
 
   const handleMouseEnter = () => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
