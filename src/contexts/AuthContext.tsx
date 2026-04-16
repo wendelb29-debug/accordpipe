@@ -276,6 +276,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isCeo,
     isMaster,
     isMasterTenantAdmin,
+    isGlobalMaster,
+    isResellerTenant,
     activeCompanyId,
     setActiveCompanyId,
     companies,
