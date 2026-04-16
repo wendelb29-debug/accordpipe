@@ -133,8 +133,6 @@ export default function ServidoresTab() {
   const [activeTab, setActiveTab] = useState("cadastro");
 
   const fetchCompanies = async () => {
-
-  const fetchCompanies = async () => {
     try {
       const [companiesRes, tenantLinksRes, setupRes] = await Promise.all([
         supabase.from("companies").select("*").is("servidor_id", null).order("created_at", { ascending: false }),
