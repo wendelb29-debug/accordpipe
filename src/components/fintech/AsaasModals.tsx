@@ -710,10 +710,24 @@ function BillingResult({ result, billingType, tenantId, onClose }: { result: any
   const [loadingPix, setLoadingPix] = useState(false);
   const [pixRetries, setPixRetries] = useState(0);
 
+  // Debug: log all received data
+  useEffect(() => {
+    console.log("[BillingResult] billingType:", billingType);
+    console.log("[BillingResult] result:", JSON.stringify(result, null, 2));
+    console.log("[BillingResult] pix_payload:", result?.pix_payload);
+    console.log("[BillingResult] pix_qrcode_url:", result?.pix_qrcode_url?.substring?.(0, 50));
+    console.log("[BillingResult] bank_slip_url:", result?.bank_slip_url);
+    console.log("[BillingResult] invoice_url:", result?.invoice_url);
+    console.log("[BillingResult] identification_field:", result?.identification_field);
+    console.log("[BillingResult] bar_code:", result?.bar_code);
+  }, [result, billingType]);
+
   useEffect(() => {
     if (billingType === "PIX" && result?.pix_payload) {
+      console.log("[BillingResult] PIX data available from result, setting pixData");
       setPixData({ payload: result.pix_payload, qrcode_image: result.pix_qrcode_url });
     } else if (billingType === "PIX" && result?.payment_id) {
+      console.log("[BillingResult] PIX data NOT in result, fetching from API...");
       fetchPixQrCode();
     }
   }, [result, billingType]);
