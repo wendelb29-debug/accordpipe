@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
+import { slugify } from "@/lib/slugify";
 import { toast } from "sonner";
 
 export interface CrmForm {
@@ -18,6 +19,16 @@ export interface CrmForm {
   created_at: string;
   updated_at: string;
   lead_count?: number;
+  // Landing page fields
+  slug?: string | null;
+  landing_page_enabled?: boolean;
+  headline?: string | null;
+  subheadline?: string | null;
+  cta_text?: string | null;
+  thank_you_message?: string | null;
+  redirect_url_after_submit?: string | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
 }
 
 export const AVAILABLE_FIELDS = [
@@ -89,12 +100,29 @@ export function useCrmForms() {
     return data?.id || null;
   };
 
+  const ensureUniqueSlug = async (servidorId: string, baseSlug: string, excludeId?: string): Promise<string> => {
+    let candidate = baseSlug || "form";
+    let suffix = 0;
+    // Try up to 50 variations
+    for (let i = 0; i < 50; i++) {
+      const trySlug = suffix === 0 ? candidate : `${candidate}-${suffix}`;
+      let q = supabase.from("crm_forms").select("id").eq("servidor_id", servidorId).eq("slug", trySlug);
+      if (excludeId) q = q.neq("id", excludeId);
+      const { data } = await q.maybeSingle();
+      if (!data) return trySlug;
+      suffix++;
+    }
+    return `${candidate}-${Date.now()}`;
+  };
+
   const createForm = async (form: Partial<CrmForm>) => {
     const servidorId = await getServidorId();
     if (!servidorId) {
       toast.error("Erro - empresa não encontrada");
       return null;
     }
+    const baseSlug = form.slug ? slugify(form.slug) : slugify(form.name || "");
+    const finalSlug = baseSlug ? await ensureUniqueSlug(servidorId, baseSlug) : null;
     const payload = {
       name: form.name,
       description: form.description || null,
@@ -105,6 +133,15 @@ export function useCrmForms() {
       servidor_id: servidorId,
       created_by_user_id: profile?.user_id || null,
       created_by_name: profile?.name || null,
+      slug: finalSlug,
+      landing_page_enabled: form.landing_page_enabled ?? true,
+      headline: form.headline || null,
+      subheadline: form.subheadline || null,
+      cta_text: form.cta_text || null,
+      thank_you_message: form.thank_you_message || null,
+      redirect_url_after_submit: form.redirect_url_after_submit || null,
+      seo_title: form.seo_title || null,
+      seo_description: form.seo_description || null,
     };
     const { data, error } = await supabase
       .from("crm_forms")
@@ -123,7 +160,22 @@ export function useCrmForms() {
   };
 
   const updateForm = async (id: string, updates: Partial<CrmForm>) => {
-    const { error } = await supabase.from("crm_forms").update(updates as any).eq("id", id);
+    // If slug is being changed, normalize and ensure uniqueness
+    const finalUpdates: any = { ...updates };
+    if (updates.slug !== undefined && updates.slug !== null) {
+      const normalized = slugify(updates.slug);
+      if (normalized) {
+        const current = forms.find((f) => f.id === id);
+        if (current) {
+          finalUpdates.slug = await ensureUniqueSlug(current.servidor_id, normalized, id);
+        } else {
+          finalUpdates.slug = normalized;
+        }
+      } else {
+        finalUpdates.slug = null;
+      }
+    }
+    const { error } = await supabase.from("crm_forms").update(finalUpdates).eq("id", id);
     if (error) {
       console.error("Error updating form:", error);
       toast.error(`Erro ao atualizar formulário: ${error.message}`);
