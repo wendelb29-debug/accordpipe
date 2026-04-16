@@ -435,7 +435,6 @@ export default function Formularios() {
               </div>
             )}
           </div>
-          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
             <Button onClick={handleSave} disabled={!formName.trim()}>
