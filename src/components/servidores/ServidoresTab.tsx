@@ -101,7 +101,7 @@ export default function ServidoresTab() {
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const { toast } = useToast();
   const { isMaster, profile, user } = useAuth();
-  const { canViewGlobalTenantManagement, canEditResellerSettings } = useTenantAuthorization();
+  const { canViewGlobalTenantManagement, canEditResellerSettings, canViewChildTenantManagement, canCreateChildTenants } = useTenantAuthorization();
 
   const [formData, setFormData] = useState({
     razao_social: "",
@@ -188,9 +188,8 @@ export default function ServidoresTab() {
     fetchCompanies();
   }, []);
 
-  if (!canViewGlobalTenantManagement) {
-    return null;
-  }
+  const canCreate = canViewGlobalTenantManagement || canCreateChildTenants;
+  const canManage = canViewGlobalTenantManagement || canViewChildTenantManagement;
 
   const handleGenerateSetupLink = async () => {
     setGeneratingLink(true);
@@ -539,7 +538,7 @@ export default function ServidoresTab() {
           <h2 className="text-lg font-semibold text-foreground">Tenants</h2>
           <p className="text-sm text-muted-foreground">Ambientes independentes vinculados por CNPJ</p>
         </div>
-        {canViewGlobalTenantManagement && (
+        {canCreate && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button className="gap-2">
@@ -684,7 +683,7 @@ export default function ServidoresTab() {
                     )}
                   </TableCell>
                   <TableCell className="flex items-center gap-2">
-                    {canViewGlobalTenantManagement && (company as any)._setup_request_id ? (
+                    {canManage && (company as any)._setup_request_id ? (
                       <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
@@ -720,7 +719,7 @@ export default function ServidoresTab() {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                    ) : canViewGlobalTenantManagement ? (
+                    ) : canManage ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">

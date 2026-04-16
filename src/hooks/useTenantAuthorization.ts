@@ -11,6 +11,7 @@ interface TenantAuthorizationState {
   canCreateChildTenants: boolean;
   canManageChildTenants: boolean;
   canViewTenantTabs: boolean;
+  canViewTenantTabReadOnly: boolean;
   canEditResellerSettings: boolean;
 }
 
@@ -23,6 +24,7 @@ const DEFAULT_STATE: TenantAuthorizationState = {
   canCreateChildTenants: false,
   canManageChildTenants: false,
   canViewTenantTabs: false,
+  canViewTenantTabReadOnly: false,
   canEditResellerSettings: false,
 };
 
@@ -70,6 +72,7 @@ export function useTenantAuthorization(): TenantAuthorizationState {
         canCreateChildTenants,
         canManageChildTenants,
         canViewTenantTabs: canViewGlobalTenantManagement || canViewChildTenantManagement,
+        canViewTenantTabReadOnly: true,
         canEditResellerSettings: isOperatingInMasterTenant,
       });
     };
