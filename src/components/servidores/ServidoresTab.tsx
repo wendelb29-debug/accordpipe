@@ -683,7 +683,7 @@ export default function ServidoresTab() {
                     )}
                   </TableCell>
                   <TableCell className="flex items-center gap-2">
-                    {canViewGlobalTenantManagement && (company as any)._setup_request_id ? (
+                    {canManage && (company as any)._setup_request_id ? (
                       <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
@@ -719,7 +719,7 @@ export default function ServidoresTab() {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                    ) : canViewGlobalTenantManagement ? (
+                    ) : canManage ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
