@@ -3745,6 +3745,9 @@ export type Database = {
           nosso_numero: string | null
           original_value: number | null
           payment_date: string | null
+          pix_expiration: string | null
+          pix_payload: string | null
+          pix_qrcode_url: string | null
           raw_payload: Json | null
           status: string | null
           tenant_id: string
@@ -3777,6 +3780,9 @@ export type Database = {
           nosso_numero?: string | null
           original_value?: number | null
           payment_date?: string | null
+          pix_expiration?: string | null
+          pix_payload?: string | null
+          pix_qrcode_url?: string | null
           raw_payload?: Json | null
           status?: string | null
           tenant_id: string
@@ -3809,6 +3815,9 @@ export type Database = {
           nosso_numero?: string | null
           original_value?: number | null
           payment_date?: string | null
+          pix_expiration?: string | null
+          pix_payload?: string | null
+          pix_qrcode_url?: string | null
           raw_payload?: Json | null
           status?: string | null
           tenant_id?: string

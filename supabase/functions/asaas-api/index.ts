@@ -382,17 +382,22 @@ Deno.serve(async (req) => {
         } catch (e: any) { console.error("[asaas-api] boleto details error:", e.message); }
       }
 
-      // Fetch PIX QR Code if applicable
+      // Fetch PIX QR Code if applicable (with retry)
       let pixDetails: any = {};
       if (billing_type === "PIX") {
-        try {
-          const pixResult = await callAsaasWithEnvironmentFallback(integration, "GET", `/payments/${payment.id}/pixQrCode`);
-          if (pixResult.ok) {
-            pixDetails = { pix_payload: pixResult.data.payload, pix_qrcode_url: pixResult.data.encodedImage, pix_expiration: pixResult.data.expirationDate };
-          } else {
-            console.log(`[asaas-api] PIX QR not ready yet: ${pixResult.errorMessage}`);
-          }
-        } catch (e: any) { console.error("[asaas-api] pix qrcode error:", e.message); }
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            if (attempt > 0) await new Promise(r => setTimeout(r, 1000 * attempt));
+            const pixResult = await callAsaasWithEnvironmentFallback(integration, "GET", `/payments/${payment.id}/pixQrCode`);
+            if (pixResult.ok && pixResult.data?.payload) {
+              pixDetails = { pix_payload: pixResult.data.payload, pix_qrcode_url: pixResult.data.encodedImage, pix_expiration: pixResult.data.expirationDate };
+              console.log(`[asaas-api] PIX QR fetched on attempt ${attempt + 1}`);
+              break;
+            } else {
+              console.log(`[asaas-api] PIX QR attempt ${attempt + 1} not ready: ${pixResult.errorMessage}`);
+            }
+          } catch (e: any) { console.error(`[asaas-api] pix qrcode attempt ${attempt + 1} error:`, e.message); }
+        }
       }
 
       try {
@@ -403,6 +408,7 @@ Deno.serve(async (req) => {
           due_date: payment.dueDate, invoice_url: payment.invoiceUrl, bank_slip_url: payment.bankSlipUrl,
           description, external_reference: origin, raw_payload: payment,
           ...boletoDetails,
+          ...pixDetails,
           ...(installment_count ? { installment_count, installment_value: installment_value || (value / installment_count), installment_id: payment.installment } : {}),
         } as any);
       } catch (e: any) { console.error("[asaas-api] DB insert error:", e.message); }
