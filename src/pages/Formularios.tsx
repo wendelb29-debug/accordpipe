@@ -409,6 +409,32 @@ export default function Formularios() {
                 ))}
               </div>
             </div>
+
+            {/* Landing page customization */}
+            {landingEnabled && (
+              <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <Globe className="h-4 w-4 text-primary" /> Personalização da Landing Page
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Headline (título principal)</Label>
+                  <Input value={headline} onChange={(e) => setHeadline(e.target.value)} placeholder="Transforme sua operação comercial" maxLength={120} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Subheadline</Label>
+                  <Input value={subheadline} onChange={(e) => setSubheadline(e.target.value)} placeholder="Fale com um especialista e veja como podemos ajudar." maxLength={200} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Texto do botão (CTA)</Label>
+                  <Input value={ctaText} onChange={(e) => setCtaText(e.target.value)} placeholder="Quero falar com um especialista" maxLength={60} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Mensagem de sucesso</Label>
+                  <Textarea value={thankYouMessage} onChange={(e) => setThankYouMessage(e.target.value)} placeholder="Recebemos seu contato! Em breve um especialista falará com você." rows={2} maxLength={300} />
+                </div>
+              </div>
+            )}
+          </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
