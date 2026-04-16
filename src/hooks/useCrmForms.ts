@@ -125,7 +125,8 @@ export function useCrmForms() {
   const updateForm = async (id: string, updates: Partial<CrmForm>) => {
     const { error } = await supabase.from("crm_forms").update(updates as any).eq("id", id);
     if (error) {
-      toast.error("Erro ao atualizar formulário");
+      console.error("Error updating form:", error);
+      toast.error(`Erro ao atualizar formulário: ${error.message}`);
       return false;
     }
     setForms((prev) => prev.map((f) => (f.id === id ? { ...f, ...updates } : f)));
