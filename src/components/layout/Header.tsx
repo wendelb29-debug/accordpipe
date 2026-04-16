@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Search, User, Moon, Sun, Clock, ChevronLeft, Building2, Network } from "lucide-react";
+import { Search, User, Moon, Sun, Clock, ChevronLeft, Building2 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { MobileSidebar } from "./MobileSidebar";
 import { Button } from "@/components/ui/button";
@@ -46,7 +46,7 @@ const ROUTE_SUBTITLES: Record<string, string> = {};
 
 export function Header() {
   const { t } = useTranslation();
-  const { profile, role, signOut, loading, companies, activeCompanyId, setActiveCompanyId, activeCompany, isMaster, isCeo, isMasterTenantAdmin, isGlobalMaster } = useAuth();
+  const { profile, role, signOut, loading, companies, activeCompanyId, setActiveCompanyId, activeCompany, isMaster, isCeo, isMasterTenantAdmin, isGlobalMaster, isResellerTenant } = useAuth();
   const { handleBack } = useBackNavigation();
   const [currentTheme, setCurrentTheme] = useState(() => document.documentElement.classList.contains("dark") ? "dark" : "light");
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -173,21 +173,11 @@ export function Header() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
 
-            {isGlobalMaster && (
+            {(isGlobalMaster || isResellerTenant) && (
               <>
                 <DropdownMenuItem className="rounded-lg cursor-pointer gap-2" onClick={() => navigate("/servidores")}>
                   <Building2 className="h-4 w-4" />
                   {t("nav.tenants")}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </>
-            )}
-
-            {activeCompany?.is_reseller && (
-              <>
-                <DropdownMenuItem className="rounded-lg cursor-pointer gap-2" onClick={() => navigate("/meus-tenants")}>
-                  <Network className="h-4 w-4" />
-                  {t("nav.myTenants")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
               </>
