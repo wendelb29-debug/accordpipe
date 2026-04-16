@@ -60,6 +60,7 @@ export default function FormPublico() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [honeypot, setHoneypot] = useState("");
   const [timestamp] = useState(Date.now());
+  const [logoFailed, setLogoFailed] = useState(false);
 
   // UTM tracking
   const utmData = useMemo(() => ({
@@ -258,7 +259,15 @@ export default function FormPublico() {
   const headline = formConfig.headline || formConfig.name;
   const subheadline = formConfig.subheadline || formConfig.description || "Preencha o formulário e fale com nossa equipe.";
   const ctaText = formConfig.cta_text || "Enviar agora";
+  const tenantName = formConfig.tenant_name || "Accord";
+  const tenantInitials = tenantName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join("") || "A";
   const logoUrl = formConfig.brand_logo_url || accordLogo;
+  const showLogoImage = !logoFailed && !!logoUrl;
   const primary = formConfig.brand_primary_color || "#3B82F6";
   const secondary = formConfig.brand_secondary_color || "#8B5CF6";
 
@@ -296,11 +305,25 @@ export default function FormPublico() {
 
       <div className="relative max-w-6xl mx-auto px-4 py-6 lg:py-12 min-h-screen flex flex-col">
         {/* Header logo */}
-        <div className="flex items-center justify-between mb-8 lg:mb-12 animate-fade-in">
-          <img src={logoUrl} alt={formConfig.tenant_name || "Logo"} className="h-10 object-contain" />
-          {formConfig.tenant_name && (
-            <span className="text-sm text-white/60 hidden sm:block font-medium">{formConfig.tenant_name}</span>
+        <div className="flex items-center gap-3 mb-8 lg:mb-12 animate-fade-in">
+          {showLogoImage ? (
+            <img
+              src={logoUrl}
+              alt={tenantName}
+              className="h-10 lg:h-12 object-contain"
+              onError={() => setLogoFailed(true)}
+            />
+          ) : (
+            <div
+              className="h-10 lg:h-12 px-4 flex items-center justify-center rounded-xl font-bold text-white text-base"
+              style={{ background: `linear-gradient(135deg, ${primary}, ${secondary})` }}
+            >
+              {tenantInitials}
+            </div>
           )}
+          <span className="text-base lg:text-lg font-semibold text-white tracking-tight">
+            {tenantName}
+          </span>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center flex-1">
@@ -315,7 +338,7 @@ export default function FormPublico() {
               }}
             >
               <Sparkles className="h-3.5 w-3.5" />
-              {formConfig.tenant_name || "Atendimento especializado"}
+              Atendimento especializado
             </div>
 
             <h1 className="text-4xl lg:text-6xl font-bold leading-[1.05] tracking-tight text-white">
