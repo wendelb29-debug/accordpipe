@@ -184,6 +184,14 @@ export default function ServidoresTab() {
     }
   };
 
+  useEffect(() => {
+    fetchCompanies();
+  }, []);
+
+  if (!canViewGlobalTenantManagement) {
+    return null;
+  }
+
   const handleGenerateSetupLink = async () => {
     setGeneratingLink(true);
     try {
