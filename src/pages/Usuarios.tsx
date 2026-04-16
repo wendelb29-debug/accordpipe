@@ -96,6 +96,28 @@ export default function Usuarios() {
   const canManageUsers = isMaster || isCeo || isAdmin;
   const [allCompanies, setAllCompanies] = useState<{id: string; nome_fantasia: string | null; razao_social: string; cnpj: string}[]>([]);
 
+  // Check if the active company is actually the master tenant (servidor_id IS NULL)
+  const [isActiveMasterTenant, setIsActiveMasterTenant] = useState(false);
+  useEffect(() => {
+    if (!activeCompanyId || !isMasterTenantAdmin) {
+      setIsActiveMasterTenant(false);
+      return;
+    }
+    const check = async () => {
+      const { data } = await supabase
+        .from("companies")
+        .select("servidor_id")
+        .eq("id", activeCompanyId)
+        .single();
+      // Master tenant has servidor_id = null
+      setIsActiveMasterTenant(data?.servidor_id === null);
+    };
+    check();
+  }, [activeCompanyId, isMasterTenantAdmin]);
+
+  // Only show Tenants tab when: master user is operating in the master tenant context
+  const canManageTenants = isMasterTenantAdmin && isActiveMasterTenant;
+
   // Form state
   const [formData, setFormData] = useState({
     name: "",
