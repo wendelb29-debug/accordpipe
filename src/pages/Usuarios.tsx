@@ -42,6 +42,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppRole, useAuth } from "@/contexts/AuthContext";
 import { PermissionsEditor } from "@/components/usuarios/PermissionsEditor";
 import { WorkspacePermissionsEditor } from "@/components/usuarios/WorkspacePermissionsEditor";
+import { useTenantAuthorization } from "@/hooks/useTenantAuthorization";
 
 interface UserWithRole {
   id: string;
@@ -93,30 +94,9 @@ export default function Usuarios() {
   const [permUserRole, setPermUserRole] = useState<string>("");
   const { toast } = useToast();
   const { isMaster, isCeo, isAdmin, activeCompanyId, profile, role, isMasterTenantAdmin } = useAuth();
+  const { loading: tenantAuthLoading, canViewGlobalTenantManagement } = useTenantAuthorization();
   const canManageUsers = isMaster || isCeo || isAdmin;
   const [allCompanies, setAllCompanies] = useState<{id: string; nome_fantasia: string | null; razao_social: string; cnpj: string}[]>([]);
-
-  // Check if the active company is actually the master tenant (servidor_id IS NULL)
-  const [isActiveMasterTenant, setIsActiveMasterTenant] = useState(false);
-  useEffect(() => {
-    if (!activeCompanyId || !isMasterTenantAdmin) {
-      setIsActiveMasterTenant(false);
-      return;
-    }
-    const check = async () => {
-      const { data } = await supabase
-        .from("companies")
-        .select("servidor_id")
-        .eq("id", activeCompanyId)
-        .single();
-      // Master tenant has servidor_id = null
-      setIsActiveMasterTenant(data?.servidor_id === null);
-    };
-    check();
-  }, [activeCompanyId, isMasterTenantAdmin]);
-
-  // Only show Tenants tab when: master user is operating in the master tenant context
-  const canManageTenants = isMasterTenantAdmin && isActiveMasterTenant;
 
   // Form state
   const [formData, setFormData] = useState({
@@ -477,13 +457,13 @@ export default function Usuarios() {
             <User className="h-4 w-4" />
             Usuários
           </TabsTrigger>
-          {canManageTenants && (
+          {!tenantAuthLoading && canViewGlobalTenantManagement && (
             <TabsTrigger value="servidores" className="gap-2">
               <Server className="h-4 w-4" />
               Tenants
             </TabsTrigger>
           )}
-          {canManageTenants && (
+          {!tenantAuthLoading && canViewGlobalTenantManagement && (
             <TabsTrigger value="servidores-teste" className="gap-2">
               <FlaskConical className="h-4 w-4" />
               Tenants Teste
@@ -903,12 +883,12 @@ export default function Usuarios() {
           </Dialog>
         </TabsContent>
 
-        {isMaster && (
+        {!tenantAuthLoading && canViewGlobalTenantManagement && (
           <TabsContent value="servidores">
             <ServidoresTab />
           </TabsContent>
         )}
-        {isMaster && (
+        {!tenantAuthLoading && canViewGlobalTenantManagement && (
           <TabsContent value="servidores-teste">
             <ServidoresTesteTab />
           </TabsContent>

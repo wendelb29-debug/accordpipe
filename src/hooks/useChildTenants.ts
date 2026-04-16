@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useTenantAuthorization } from "@/hooks/useTenantAuthorization";
 
 export interface ChildTenantSubscription {
   plan_name: string | null;
@@ -45,6 +46,7 @@ export interface ResellerPermissions {
 
 export function useChildTenants() {
   const { activeCompanyId } = useAuth();
+  const { canCreateChildTenants, canManageChildTenants, canViewChildTenantManagement } = useTenantAuthorization();
   const [children, setChildren] = useState<ChildTenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [parentCompany, setParentCompany] = useState<any>(null);
@@ -75,10 +77,10 @@ export function useChildTenants() {
 
       setParentCompany(parent);
 
-      // Derive permissions from parent company flags
-      const isReseller = (parent as any).is_reseller || false;
-      const canCreate = (parent as any).can_create_tenants || false;
-      const canManage = (parent as any).can_manage_child_tenants || false;
+      // Derive permissions from centralized authorization + company flags
+      const isReseller = !!((parent as any).is_reseller && (parent as any).reseller_panel_enabled);
+      const canCreate = canCreateChildTenants && ((parent as any).can_create_child_tenants || (parent as any).can_create_tenants || false);
+      const canManage = canManageChildTenants && !!(parent as any).can_manage_child_tenants;
       setPermissions({
         can_create_tenants: canCreate,
         can_manage_child_tenants: canManage,
@@ -89,11 +91,16 @@ export function useChildTenants() {
         can_view_child_billing: isReseller,
       });
 
-      // Get children
+      if (!canViewChildTenantManagement) {
+        setChildren([]);
+        setLoading(false);
+        return;
+      }
+
       const { data: childData } = await supabase
         .from("companies")
         .select("*")
-        .or(`parent_tenant_id.eq.${activeCompanyId},created_by_tenant_id.eq.${activeCompanyId}`)
+        .eq("parent_tenant_id", activeCompanyId)
         .neq("id", activeCompanyId)
         .order("created_at", { ascending: false });
 
@@ -146,7 +153,7 @@ export function useChildTenants() {
     } finally {
       setLoading(false);
     }
-  }, [activeCompanyId]);
+  }, [activeCompanyId, canCreateChildTenants, canManageChildTenants, canViewChildTenantManagement]);
 
   useEffect(() => {
     fetchChildren();
@@ -161,6 +168,11 @@ export function useChildTenants() {
     responsavel?: string;
   }) => {
     if (!activeCompanyId || !parentCompany) return false;
+
+    if (!canCreateChildTenants) {
+      toast.error("Apenas revendedores habilitados podem criar tenants filhos");
+      return false;
+    }
 
     if (parentCompany.max_child_tenants && children.length >= parentCompany.max_child_tenants) {
       toast.error("Limite de tenants filhos atingido");
@@ -195,6 +207,11 @@ export function useChildTenants() {
   };
 
   const toggleChildStatus = async (childId: string, currentStatus: string) => {
+    if (!canManageChildTenants) {
+      toast.error("Você não tem permissão para gerenciar tenants filhos");
+      return;
+    }
+
     const newStatus = currentStatus === "active" ? "inactive" : "active";
     try {
       const { error } = await supabase.from("companies").update({ status: newStatus }).eq("id", childId);
@@ -214,6 +231,6 @@ export function useChildTenants() {
     createChildTenant,
     toggleChildStatus,
     refetch: fetchChildren,
-    canCreate: permissions.can_create_child_tenants && (!parentCompany?.max_child_tenants || children.length < parentCompany.max_child_tenants),
+    canCreate: canCreateChildTenants && permissions.can_create_child_tenants && (!parentCompany?.max_child_tenants || children.length < parentCompany.max_child_tenants),
   };
 }

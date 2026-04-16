@@ -20,6 +20,7 @@ import { useState, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTenantAuthorization } from "@/hooks/useTenantAuthorization";
 
 const ROUTE_TITLE_KEYS: Record<string, string> = {
   "/home": "nav.home",
@@ -47,6 +48,7 @@ const ROUTE_SUBTITLES: Record<string, string> = {};
 export function Header() {
   const { t } = useTranslation();
   const { profile, role, signOut, loading, companies, activeCompanyId, setActiveCompanyId, activeCompany, isMaster, isCeo, isMasterTenantAdmin } = useAuth();
+  const { canViewGlobalTenantManagement, canViewChildTenantManagement } = useTenantAuthorization();
   const { handleBack } = useBackNavigation();
   const [currentTheme, setCurrentTheme] = useState(() => document.documentElement.classList.contains("dark") ? "dark" : "light");
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -173,7 +175,7 @@ export function Header() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
 
-            {isMasterTenantAdmin && (
+            {canViewGlobalTenantManagement && (
               <>
                 <DropdownMenuItem className="rounded-lg cursor-pointer gap-2" onClick={() => navigate("/servidores")}>
                   <Building2 className="h-4 w-4" />
@@ -183,7 +185,7 @@ export function Header() {
               </>
             )}
 
-            {activeCompany?.is_reseller && (
+            {canViewChildTenantManagement && (
               <>
                 <DropdownMenuItem className="rounded-lg cursor-pointer gap-2" onClick={() => navigate("/meus-tenants")}>
                   <Network className="h-4 w-4" />
