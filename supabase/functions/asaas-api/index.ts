@@ -403,6 +403,7 @@ Deno.serve(async (req) => {
           due_date: payment.dueDate, invoice_url: payment.invoiceUrl, bank_slip_url: payment.bankSlipUrl,
           description, external_reference: origin, raw_payload: payment,
           ...boletoDetails,
+          ...pixDetails,
           ...(installment_count ? { installment_count, installment_value: installment_value || (value / installment_count), installment_id: payment.installment } : {}),
         } as any);
       } catch (e: any) { console.error("[asaas-api] DB insert error:", e.message); }
