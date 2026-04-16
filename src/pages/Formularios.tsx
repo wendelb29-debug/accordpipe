@@ -134,8 +134,10 @@ export default function Formularios() {
     setEmbedDialogOpen(true);
   };
 
-  const embedCode = embedFormId
-    ? `<iframe src="${getFormUrl(embedFormId)}" width="100%" height="600" frameborder="0" style="border:none;border-radius:12px;"></iframe>`
+  const embedFormObj = forms.find((f) => f.id === embedFormId);
+  const embedFormUrl = embedFormObj ? getFormUrl(embedFormObj) : "";
+  const embedCode = embedFormObj
+    ? `<iframe src="${embedFormUrl}" width="100%" height="600" frameborder="0" style="border:none;border-radius:12px;"></iframe>`
     : "";
 
   const copyEmbed = () => {
@@ -271,11 +273,11 @@ export default function Formularios() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => copyLink(form.id)} title="Copiar link">
+                      <Button size="sm" variant="ghost" onClick={() => copyLink(form)} title="Copiar link público">
                         {copiedId === form.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => window.open(getFormUrl(form.id), "_blank")} title="Abrir formulário">
-                        <ExternalLink className="h-4 w-4" />
+                      <Button size="sm" variant="ghost" onClick={() => window.open(getFormUrl(form), "_blank")} title="Visualizar Landing Page">
+                        <Globe className="h-4 w-4" />
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => openEmbed(form.id)} title="Código embed">
                         <Code2 className="h-4 w-4" />
@@ -407,7 +409,7 @@ export default function Formularios() {
           <div className="space-y-3">
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Link direto</Label>
-              <code className="block bg-muted px-3 py-2 rounded-md text-xs font-mono break-all">{getFormUrl(embedFormId)}</code>
+              <code className="block bg-muted px-3 py-2 rounded-md text-xs font-mono break-all">{embedFormUrl}</code>
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Código iframe</Label>
