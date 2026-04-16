@@ -23,7 +23,8 @@
     "tenants": "Tenants",
     "myTenants": "Mis Tenants",
     "language": "Idioma",
-    "academy": "Accord Academy"
+    "academy": "Accord Academy",
+    "tenantManagement": "Gestión de Tenants"
   },
   "header": {
     "search": "Buscar...",
