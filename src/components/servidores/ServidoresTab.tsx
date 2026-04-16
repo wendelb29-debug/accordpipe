@@ -101,7 +101,7 @@ export default function ServidoresTab() {
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const { toast } = useToast();
   const { isMaster, profile, user } = useAuth();
-  const { canViewGlobalTenantManagement, canEditResellerSettings } = useTenantAuthorization();
+  const { canViewGlobalTenantManagement, canEditResellerSettings, canViewChildTenantManagement, canCreateChildTenants } = useTenantAuthorization();
 
   const [formData, setFormData] = useState({
     razao_social: "",
@@ -188,9 +188,8 @@ export default function ServidoresTab() {
     fetchCompanies();
   }, []);
 
-  if (!canViewGlobalTenantManagement) {
-    return null;
-  }
+  const canCreate = canViewGlobalTenantManagement || canCreateChildTenants;
+  const canManage = canViewGlobalTenantManagement || canViewChildTenantManagement;
 
   const handleGenerateSetupLink = async () => {
     setGeneratingLink(true);
