@@ -42,18 +42,18 @@ export function AppLayout({ children }: AppLayoutProps) {
         {!isMobile && <Sidebar />}
 
         <div className={cn(
-          "transition-all duration-300",
-          isMobile ? "pl-0" : (sidebarCollapsed ? "pl-[52px]" : "pl-56")
+          "transition-all duration-300 min-w-0 flex flex-col min-h-screen",
+          isMobile ? "pl-0" : (sidebarCollapsed ? "pl-[60px]" : "pl-[232px]")
         )}>
           {/* Notification activation banner */}
           {bannerVisible && (
-            <div className="flex items-center justify-center gap-3 bg-red-500/80 text-white text-sm font-medium py-2.5 px-4">
+            <div className="flex items-center justify-center gap-3 bg-red-500/80 text-white text-sm font-medium py-2 px-4">
               <Bell className="h-4 w-4 shrink-0" />
-              <span>Ative as notificações para não perder mensagens e lembretes!</span>
+              <span className="text-xs sm:text-sm">Ative as notificações para não perder mensagens e lembretes!</span>
               <Button
                 size="sm"
                 variant="secondary"
-                className="h-7 text-xs px-3"
+                className="h-7 text-xs px-3 shrink-0"
                 onClick={() => navigate("/perfil")}
               >
                 Ativar agora
@@ -64,7 +64,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           {!hasAvatar && profile && (
             <Link
               to="/perfil"
-              className="flex items-center justify-center gap-2 bg-destructive text-destructive-foreground text-sm font-medium py-2 px-4 hover:bg-destructive/90 transition-colors"
+              className="flex items-center justify-center gap-2 bg-destructive text-destructive-foreground text-xs sm:text-sm font-medium py-1.5 px-4 hover:bg-destructive/90 transition-colors"
             >
               <AlertTriangle className="h-4 w-4" />
               Complete seu cadastro — Foto de perfil obrigatória *
@@ -72,8 +72,8 @@ export function AppLayout({ children }: AppLayoutProps) {
           )}
           {!hideHeader && <Header />}
           <main className={cn(
-            "w-full",
-            hideHeader ? "p-0" : (isMobile ? "p-3" : "p-6 lg:p-8")
+            "w-full flex-1 min-w-0",
+            hideHeader ? "p-0" : "p-3 sm:p-4 lg:p-6"
           )}>
             {children}
           </main>

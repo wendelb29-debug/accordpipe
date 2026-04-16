@@ -71,7 +71,7 @@ export default function AccordStack() {
   // If WhatsApp not connected, show elegant empty state
   if (connectionStatus === "disconnected" && !loading && contacts.length === 0) {
     return (
-      <div className="flex h-[calc(100vh-3.5rem)] bg-background items-center justify-center">
+      <div className="flex h-[calc(100vh-3rem)] bg-background items-center justify-center">
         <div className="text-center space-y-5 max-w-md px-6">
           <div className="h-20 w-20 mx-auto rounded-2xl bg-muted/50 flex items-center justify-center">
             <WifiOff className="h-9 w-9 text-muted-foreground/50" />
@@ -95,7 +95,7 @@ export default function AccordStack() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] bg-background">
+    <div className="flex h-[calc(100vh-3rem)] bg-background">
       <InboxSidebar
         contacts={filteredContacts}
         selectedId={selectedContactId}
