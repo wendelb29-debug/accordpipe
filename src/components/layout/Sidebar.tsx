@@ -106,6 +106,7 @@ export function Sidebar() {
   const [overdueCount, setOverdueCount] = useState(0);
   const [configOpen, setConfigOpen] = useState(false);
   const [isResellerPanel, setIsResellerPanel] = useState(false);
+  const [isActiveMasterTenant, setIsActiveMasterTenant] = useState(false);
   const { role, signOut, profile, isMasterTenantAdmin } = useAuth();
   const activeCompanyId = useActiveCompanyId();
   const [tenantLogoUrl, setTenantLogoUrl] = useState<string | null>(null);
@@ -129,7 +130,7 @@ export function Sidebar() {
   };
 
   useEffect(() => {
-    if (!activeCompanyId) { setTenantLogoUrl(null); setIsResellerPanel(false); return; }
+    if (!activeCompanyId) { setTenantLogoUrl(null); setIsResellerPanel(false); setIsActiveMasterTenant(false); return; }
     const fetchCompanyInfo = async () => {
       const { data } = await supabase
         .from("companies")
@@ -143,6 +144,7 @@ export function Sidebar() {
         setTenantLogoUrl(null);
       }
       setIsResellerPanel(!!data?.is_reseller && !!(data as any)?.reseller_panel_enabled);
+      setIsActiveMasterTenant(data?.servidor_id === null);
     };
     fetchCompanyInfo();
     const handler = () => fetchCompanyInfo();
@@ -192,7 +194,8 @@ export function Sidebar() {
 
   const filteredConfigNavigation = configNavigation.filter((item) => {
     if (role && !item.roles.includes(role)) return false;
-    if ((item as any).masterOnly && !isMasterTenantAdmin) return false;
+    // masterOnly items require both is_master AND being in the master tenant context
+    if ((item as any).masterOnly && !(isMasterTenantAdmin && isActiveMasterTenant)) return false;
     const perm = ROUTE_PERMISSIONS[item.href];
     if (perm && !hasPermission(perm)) return false;
     return true;
