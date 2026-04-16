@@ -94,7 +94,7 @@ export default function Usuarios() {
   const [permUserRole, setPermUserRole] = useState<string>("");
   const { toast } = useToast();
   const { isMaster, isCeo, isAdmin, activeCompanyId, profile, role, isMasterTenantAdmin } = useAuth();
-  const { loading: tenantAuthLoading, canViewGlobalTenantManagement } = useTenantAuthorization();
+  const { loading: tenantAuthLoading, canViewGlobalTenantManagement, canViewChildTenantManagement, canCreateChildTenants } = useTenantAuthorization();
   const canManageUsers = isMaster || isCeo || isAdmin;
   const [allCompanies, setAllCompanies] = useState<{id: string; nome_fantasia: string | null; razao_social: string; cnpj: string}[]>([]);
 
