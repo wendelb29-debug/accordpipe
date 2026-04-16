@@ -344,6 +344,12 @@ export function Sidebar() {
         {filteredNavigation.map((item) => (
           <NavItem key={t(item.nameKey)} item={item} isActive={location.pathname === item.href} />
         ))}
+        {isResellerPanel && (
+          <NavItem
+            item={{ nameKey: "nav.resellerPanel", href: "/minha-revenda", icon: Crown, roles: ["admin", "ceo", "master", "operador", "leitura", "administrativo", "financeiro", "comercial"] }}
+            isActive={location.pathname === "/minha-revenda"}
+          />
+        )}
       </nav>
 
       {/* Config & User */}
