@@ -4442,6 +4442,108 @@ export type Database = {
           },
         ]
       }
+      tenant_invoices: {
+        Row: {
+          amount: number
+          asaas_customer_id: string | null
+          asaas_payment_id: string | null
+          bank_slip_url: string | null
+          bar_code: string | null
+          billing_type: string | null
+          blocking_date: string | null
+          created_at: string
+          due_date: string | null
+          external_reference: string | null
+          grace_until: string | null
+          id: string
+          identification_field: string | null
+          invoice_number: string | null
+          invoice_url: string | null
+          is_current: boolean | null
+          last_status_sync_at: string | null
+          paid_at: string | null
+          payment_method_label: string | null
+          pix_payload: string | null
+          pix_qrcode_url: string | null
+          raw_asaas_payload: Json | null
+          status: string
+          subscription_id: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          asaas_customer_id?: string | null
+          asaas_payment_id?: string | null
+          bank_slip_url?: string | null
+          bar_code?: string | null
+          billing_type?: string | null
+          blocking_date?: string | null
+          created_at?: string
+          due_date?: string | null
+          external_reference?: string | null
+          grace_until?: string | null
+          id?: string
+          identification_field?: string | null
+          invoice_number?: string | null
+          invoice_url?: string | null
+          is_current?: boolean | null
+          last_status_sync_at?: string | null
+          paid_at?: string | null
+          payment_method_label?: string | null
+          pix_payload?: string | null
+          pix_qrcode_url?: string | null
+          raw_asaas_payload?: Json | null
+          status?: string
+          subscription_id?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          asaas_customer_id?: string | null
+          asaas_payment_id?: string | null
+          bank_slip_url?: string | null
+          bar_code?: string | null
+          billing_type?: string | null
+          blocking_date?: string | null
+          created_at?: string
+          due_date?: string | null
+          external_reference?: string | null
+          grace_until?: string | null
+          id?: string
+          identification_field?: string | null
+          invoice_number?: string | null
+          invoice_url?: string | null
+          is_current?: boolean | null
+          last_status_sync_at?: string | null
+          paid_at?: string | null
+          payment_method_label?: string | null
+          pix_payload?: string | null
+          pix_qrcode_url?: string | null
+          raw_asaas_payload?: Json | null
+          status?: string
+          subscription_id?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_invoices_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_invoices_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_setup_requests: {
         Row: {
           activated_at: string | null

@@ -2,9 +2,8 @@ import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  Building2, Search, Filter, Users, Crown, CreditCard,
-  AlertTriangle, Ban, RefreshCw, ChevronDown, Eye,
-  Receipt, Copy, QrCode, Check, Calendar, Shield,
+  Building2, Search, Users, Crown, CreditCard,
+  AlertTriangle, Ban, RefreshCw, Eye, Receipt, Check,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,7 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useMasterTenantClients, MasterTenantClient, MasterBillingRecord } from "@/hooks/useMasterTenantClients";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useMasterTenantClients, MasterTenantClient } from "@/hooks/useMasterTenantClients";
+import { TenantBillingTab } from "@/components/gestao-tenants/TenantBillingTab";
 import { toast } from "sonner";
 
 const statusLabels: Record<string, string> = {
@@ -39,11 +40,9 @@ const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString("pt-BR"
 
 export default function GestaoTenants() {
   const { isMasterTenantAdmin } = useAuth();
-  const { clients, loading, filters, setFilters, updateClient, syncUserCount, fetchBillingHistory } = useMasterTenantClients();
+  const { clients, loading, filters, setFilters, updateClient, syncUserCount, fetchClients } = useMasterTenantClients();
   const [search, setSearch] = useState("");
   const [detailClient, setDetailClient] = useState<MasterTenantClient | null>(null);
-  const [billingHistory, setBillingHistory] = useState<MasterBillingRecord[]>([]);
-  const [billingLoading, setBillingLoading] = useState(false);
 
   if (!isMasterTenantAdmin) return <Navigate to="/home" replace />;
 
@@ -56,7 +55,6 @@ export default function GestaoTenants() {
     );
   });
 
-  // Summary stats
   const totalActive = clients.filter((c) => c.subscription_status === "active").length;
   const totalOverdue = clients.filter((c) => ["past_due"].includes(c.subscription_status) || c.payment_status === "overdue").length;
   const totalSuspended = clients.filter((c) => c.subscription_status === "suspended").length;
@@ -64,21 +62,10 @@ export default function GestaoTenants() {
     .filter((c) => c.subscription_status === "active" && c.billing_cycle === "monthly")
     .reduce((sum, c) => sum + c.contracted_value, 0);
 
-  const openDetail = async (client: MasterTenantClient) => {
-    setDetailClient(client);
-    setBillingLoading(true);
-    const history = await fetchBillingHistory(client.tenant_id);
-    setBillingHistory(history);
-    setBillingLoading(false);
-  };
-
   const handleStatusChange = async (client: MasterTenantClient, newStatus: string) => {
     const updates: Partial<MasterTenantClient> = { subscription_status: newStatus } as any;
-    if (newStatus === "suspended") {
-      (updates as any).blocked_at = new Date().toISOString();
-    } else if (newStatus === "active") {
-      (updates as any).blocked_at = null;
-    }
+    if (newStatus === "suspended") (updates as any).blocked_at = new Date().toISOString();
+    else if (newStatus === "active") (updates as any).blocked_at = null;
     await updateClient(client.id, updates);
   };
 
@@ -102,14 +89,12 @@ export default function GestaoTenants() {
           </h1>
           <p className="text-sm text-muted-foreground">Controle centralizado de todos os clientes SaaS</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => clients.forEach((c) => syncUserCount(c.tenant_id))}>
-            <RefreshCw className="h-3.5 w-3.5" /> Sincronizar Usuários
-          </Button>
-        </div>
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => clients.forEach((c) => syncUserCount(c.tenant_id))}>
+          <RefreshCw className="h-3.5 w-3.5" /> Sincronizar Usuários
+        </Button>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <KpiCard icon={Building2} label="Ativos" value={totalActive} color="text-green-600" />
         <KpiCard icon={AlertTriangle} label="Inadimplentes" value={totalOverdue} color="text-amber-600" />
@@ -122,12 +107,7 @@ export default function GestaoTenants() {
         <CardContent className="py-3 flex flex-wrap gap-3 items-center">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar tenant..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-9"
-            />
+            <Input placeholder="Buscar tenant..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9" />
           </div>
           <Select value={filters.subscription_status || "all"} onValueChange={(v) => setFilters({ ...filters, subscription_status: v === "all" ? undefined : v })}>
             <SelectTrigger className="w-[140px] h-9"><SelectValue placeholder="Status" /></SelectTrigger>
@@ -181,7 +161,6 @@ export default function GestaoTenants() {
                   <TableHead className="text-right">Valor</TableHead>
                   <TableHead className="text-center">Usuários</TableHead>
                   <TableHead>Vencimento</TableHead>
-                  <TableHead>Carência</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Pagamento</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
@@ -190,17 +169,15 @@ export default function GestaoTenants() {
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                       Nenhum tenant encontrado.
                     </TableCell>
                   </TableRow>
                 ) : (
                   filtered.map((c) => (
-                    <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openDetail(c)}>
+                    <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setDetailClient(c)}>
                       <TableCell>
-                        <div className="font-medium text-sm truncate max-w-[200px]">
-                          {c.nome_fantasia || c.razao_social || "—"}
-                        </div>
+                        <div className="font-medium text-sm truncate max-w-[200px]">{c.nome_fantasia || c.razao_social || "—"}</div>
                         <div className="text-xs text-muted-foreground">{c.cnpj}</div>
                       </TableCell>
                       <TableCell>
@@ -217,7 +194,6 @@ export default function GestaoTenants() {
                         </span>
                       </TableCell>
                       <TableCell className="text-sm">{fmtDate(c.next_due_date)}</TableCell>
-                      <TableCell className="text-sm">{fmtDate(c.grace_until)}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={`text-[10px] ${statusColors[c.subscription_status] || ""}`}>
                           {statusLabels[c.subscription_status] || c.subscription_status}
@@ -229,7 +205,7 @@ export default function GestaoTenants() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); openDetail(c); }}>
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); setDetailClient(c); }}>
                           <Eye className="h-3.5 w-3.5" />
                         </Button>
                       </TableCell>
@@ -246,10 +222,9 @@ export default function GestaoTenants() {
       <TenantDetailDialog
         client={detailClient}
         onClose={() => setDetailClient(null)}
-        billingHistory={billingHistory}
-        billingLoading={billingLoading}
         onStatusChange={handleStatusChange}
         onUpdate={updateClient}
+        onRefresh={fetchClients}
       />
     </div>
   );
@@ -270,13 +245,12 @@ function KpiCard({ icon: Icon, label, value, color }: { icon: any; label: string
 interface DetailDialogProps {
   client: MasterTenantClient | null;
   onClose: () => void;
-  billingHistory: MasterBillingRecord[];
-  billingLoading: boolean;
   onStatusChange: (client: MasterTenantClient, status: string) => void;
   onUpdate: (id: string, updates: Partial<MasterTenantClient>) => Promise<boolean>;
+  onRefresh: () => void;
 }
 
-function TenantDetailDialog({ client, onClose, billingHistory, billingLoading, onStatusChange, onUpdate }: DetailDialogProps) {
+function TenantDetailDialog({ client, onClose, onStatusChange, onUpdate, onRefresh }: DetailDialogProps) {
   if (!client) return null;
 
   const available = Math.max(0, client.contracted_users - client.active_users_count);
@@ -295,103 +269,77 @@ function TenantDetailDialog({ client, onClose, billingHistory, billingLoading, o
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Info */}
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <InfoRow label="ID" value={client.master_client_id} />
-            <InfoRow label="CNPJ" value={client.cnpj} />
-            <InfoRow label="Email" value={client.email} />
-            <InfoRow label="Telefone" value={client.telefone} />
-            <InfoRow label="Responsável" value={client.responsavel} />
-            <InfoRow label="Tipo" value={client.tenant_type === "reseller" ? "Revenda" : "Standard"} />
-            <InfoRow label="Ativação" value={fmtDate(client.activation_date)} />
-          </div>
+        <Tabs defaultValue="info" className="w-full">
+          <TabsList className="w-full grid grid-cols-3">
+            <TabsTrigger value="info">Dados</TabsTrigger>
+            <TabsTrigger value="subscription">Assinatura</TabsTrigger>
+            <TabsTrigger value="billing">Cobranças</TabsTrigger>
+          </TabsList>
 
-          {/* Subscription */}
-          <Card className="border-primary/20 bg-primary/5">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Crown className="h-4 w-4 text-primary" />
-                Assinatura da Plataforma
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <MiniStat label="Plano" value={client.plan_name || "—"} />
-                <MiniStat label="Ciclo" value={client.billing_cycle === "annual" ? "Anual" : "Mensal"} />
-                <MiniStat label="Valor" value={fmtCurrency(client.contracted_value)} />
-                <MiniStat label="Pagamento" value={paymentStatusLabels[client.payment_status] || client.payment_status} />
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <MiniStat label="Contratados" value={String(client.contracted_users)} />
-                <MiniStat label="Ativos" value={String(client.active_users_count)} />
-                <MiniStat label="Disponíveis" value={String(available)} highlight={available === 0} />
-              </div>
-              <div className="w-full bg-muted rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full transition-all ${usagePercent >= 100 ? "bg-destructive" : "bg-primary"}`}
-                  style={{ width: `${usagePercent}%` }}
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <MiniStat label="Vencimento" value={fmtDate(client.next_due_date)} />
-                <MiniStat label="Carência até" value={fmtDate(client.grace_until)} />
-                <MiniStat label="Bloqueio em" value={fmtDate(client.blocked_at)} />
-              </div>
-            </CardContent>
-          </Card>
+          <TabsContent value="info" className="space-y-4 mt-3">
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <InfoRow label="ID" value={client.master_client_id} />
+              <InfoRow label="CNPJ" value={client.cnpj} />
+              <InfoRow label="Email" value={client.email} />
+              <InfoRow label="Telefone" value={client.telefone} />
+              <InfoRow label="Responsável" value={client.responsavel} />
+              <InfoRow label="Tipo" value={client.tenant_type === "reseller" ? "Revenda" : "Standard"} />
+              <InfoRow label="Ativação" value={fmtDate(client.activation_date)} />
+            </div>
 
-          {/* Quick Actions */}
-          <div className="flex flex-wrap gap-2">
-            {client.subscription_status !== "suspended" && (
-              <Button size="sm" variant="destructive" className="gap-1.5 text-xs" onClick={() => onStatusChange(client, "suspended")}>
-                <Ban className="h-3.5 w-3.5" /> Suspender
-              </Button>
-            )}
-            {client.subscription_status === "suspended" && (
-              <Button size="sm" variant="default" className="gap-1.5 text-xs" onClick={() => onStatusChange(client, "active")}>
-                <Check className="h-3.5 w-3.5" /> Reativar
-              </Button>
-            )}
-            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => onUpdate(client.id, { payment_status: "paid" } as any)}>
-              <CreditCard className="h-3.5 w-3.5" /> Marcar como Pago
-            </Button>
-          </div>
-
-          {/* Billing History */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Receipt className="h-4 w-4" />
-                Histórico de Cobranças
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {billingLoading ? (
-                <Skeleton className="h-20 w-full" />
-              ) : billingHistory.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">Nenhuma cobrança registrada.</p>
-              ) : (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {billingHistory.map((b) => (
-                    <div key={b.id} className="flex items-center justify-between text-xs border rounded-lg p-2">
-                      <div>
-                        <span className="font-medium">{fmtCurrency(b.amount)}</span>
-                        <span className="text-muted-foreground ml-2">Venc: {fmtDate(b.due_date)}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-[10px]">
-                          {b.status === "paid" ? "Pago" : b.status === "overdue" ? "Vencido" : "Pendente"}
-                        </Badge>
-                        {b.paid_at && <span className="text-muted-foreground">Pago: {fmtDate(b.paid_at)}</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            <div className="flex flex-wrap gap-2">
+              {client.subscription_status !== "suspended" && (
+                <Button size="sm" variant="destructive" className="gap-1.5 text-xs" onClick={() => onStatusChange(client, "suspended")}>
+                  <Ban className="h-3.5 w-3.5" /> Suspender
+                </Button>
               )}
-            </CardContent>
-          </Card>
-        </div>
+              {client.subscription_status === "suspended" && (
+                <Button size="sm" variant="default" className="gap-1.5 text-xs" onClick={() => onStatusChange(client, "active")}>
+                  <Check className="h-3.5 w-3.5" /> Reativar
+                </Button>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="subscription" className="space-y-4 mt-3">
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Crown className="h-4 w-4 text-primary" />
+                  Assinatura da Plataforma
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <MiniStat label="Plano" value={client.plan_name || "—"} />
+                  <MiniStat label="Ciclo" value={client.billing_cycle === "annual" ? "Anual" : "Mensal"} />
+                  <MiniStat label="Valor" value={fmtCurrency(client.contracted_value)} />
+                  <MiniStat label="Pagamento" value={paymentStatusLabels[client.payment_status] || client.payment_status} />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <MiniStat label="Contratados" value={String(client.contracted_users)} />
+                  <MiniStat label="Ativos" value={String(client.active_users_count)} />
+                  <MiniStat label="Disponíveis" value={String(available)} highlight={available === 0} />
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div
+                    className={`h-2 rounded-full transition-all ${usagePercent >= 100 ? "bg-destructive" : "bg-primary"}`}
+                    style={{ width: `${usagePercent}%` }}
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <MiniStat label="Vencimento" value={fmtDate(client.next_due_date)} />
+                  <MiniStat label="Carência até" value={fmtDate(client.grace_until)} />
+                  <MiniStat label="Bloqueio em" value={fmtDate(client.blocked_at)} />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="billing" className="mt-3">
+            <TenantBillingTab tenantId={client.tenant_id} onStatusUpdate={onRefresh} />
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
