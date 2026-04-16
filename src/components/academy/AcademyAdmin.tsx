@@ -448,9 +448,36 @@ function LessonDialog({ open, onClose, lesson, courseId }: any) {
             <Label>{t("common.description")}</Label>
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
           </div>
-          <div>
+          <div className="space-y-2">
             <Label>{t("academy.videoUrl")}</Label>
-            <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://youtube.com/..." />
+            <Input
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              placeholder="https://youtube.com/watch?v=... ou https://vimeo.com/..."
+            />
+            <p className="text-xs text-muted-foreground">
+              Cole um link do YouTube ou Vimeo. Ex: youtube.com/watch?v=abc123 ou vimeo.com/123456
+            </p>
+            {videoUrl && (() => {
+              const ytMatch = videoUrl.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]+)/);
+              const vimeoMatch = videoUrl.match(/vimeo\.com\/(\d+)/);
+              const embedSrc = ytMatch
+                ? `https://www.youtube.com/embed/${ytMatch[1]}`
+                : vimeoMatch
+                ? `https://player.vimeo.com/video/${vimeoMatch[1]}`
+                : null;
+              if (!embedSrc) return null;
+              return (
+                <div className="relative w-full rounded-lg overflow-hidden bg-black" style={{ paddingTop: "56.25%" }}>
+                  <iframe
+                    src={embedSrc}
+                    className="absolute inset-0 w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              );
+            })()}
           </div>
           <div>
             <Label>{t("academy.contentHtml")}</Label>
