@@ -267,7 +267,7 @@ export default function FormPublico() {
     .map((w) => w[0]?.toUpperCase())
     .join("") || "A";
   const logoUrl = formConfig.brand_logo_url || accordLogo;
-  const [logoBroken, setLogoBrokenLocal] = [logoFailed, setLogoFailed];
+  const showLogoImage = !logoFailed && !!logoUrl;
   const primary = formConfig.brand_primary_color || "#3B82F6";
   const secondary = formConfig.brand_secondary_color || "#8B5CF6";
 
