@@ -132,14 +132,6 @@ export default function ServidoresTab() {
   });
   const [activeTab, setActiveTab] = useState("cadastro");
 
-  useEffect(() => {
-    fetchCompanies();
-  }, []);
-
-  if (!canViewGlobalTenantManagement) {
-    return null;
-  }
-
   const fetchCompanies = async () => {
     try {
       const [companiesRes, tenantLinksRes, setupRes] = await Promise.all([
@@ -191,6 +183,14 @@ export default function ServidoresTab() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchCompanies();
+  }, []);
+
+  if (!canViewGlobalTenantManagement) {
+    return null;
+  }
 
   const handleGenerateSetupLink = async () => {
     setGeneratingLink(true);
