@@ -262,7 +262,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("accord_active_company");
   };
 
-  const activeCompany = companies.find(c => c.id === activeCompanyId) || null;
+  // activeCompany already computed at top of component
 
   const value = {
     user,
