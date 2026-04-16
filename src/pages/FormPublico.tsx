@@ -375,15 +375,17 @@ export default function FormPublico() {
                     const config = FIELD_CONFIG[fieldId];
                     if (!config) return null;
                     const Icon = config.icon;
+                    const inputClass = "h-11 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-1 focus-visible:ring-offset-0 transition-colors";
+                    const labelClass = "flex items-center gap-1.5 text-xs font-medium text-white/80";
 
                     if (fieldId === "colaboradores") {
                       return (
                         <div key={fieldId} className="space-y-1.5">
-                          <Label className="flex items-center gap-1.5 text-xs font-medium">
+                          <Label className={labelClass}>
                             <Icon className="h-3.5 w-3.5" /> {config.label}
                           </Label>
                           <Select value={values.colaboradores || ""} onValueChange={(v) => setValues({ ...values, colaboradores: v })}>
-                            <SelectTrigger className="h-11"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                            <SelectTrigger className={inputClass}><SelectValue placeholder="Selecione..." /></SelectTrigger>
                             <SelectContent>
                               {COLABORADORES_OPTIONS.map((opt) => (
                                 <SelectItem key={opt} value={opt}>{opt}</SelectItem>
@@ -397,7 +399,7 @@ export default function FormPublico() {
                     if (fieldId === "mensagem") {
                       return (
                         <div key={fieldId} className="space-y-1.5">
-                          <Label className="flex items-center gap-1.5 text-xs font-medium">
+                          <Label className={labelClass}>
                             <Icon className="h-3.5 w-3.5" /> {config.label}
                           </Label>
                           <Textarea
@@ -406,6 +408,7 @@ export default function FormPublico() {
                             onChange={(e) => setValues({ ...values, mensagem: e.target.value })}
                             placeholder={config.placeholder}
                             rows={3}
+                            className="bg-white/5 border-white/10 text-white placeholder:text-white/30 resize-none"
                           />
                         </div>
                       );
@@ -413,7 +416,7 @@ export default function FormPublico() {
 
                     return (
                       <div key={fieldId} className="space-y-1.5">
-                        <Label className="flex items-center gap-1.5 text-xs font-medium">
+                        <Label className={labelClass}>
                           <Icon className="h-3.5 w-3.5" /> {config.label}
                         </Label>
                         <Input
@@ -423,33 +426,34 @@ export default function FormPublico() {
                           value={values[fieldId] || ""}
                           onChange={(e) => setValues({ ...values, [fieldId]: e.target.value })}
                           placeholder={config.placeholder}
-                          className="h-11"
+                          className={inputClass}
                         />
                       </div>
                     );
                   })}
 
                   {error && (
-                    <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
+                    <div className="flex items-center gap-2 text-sm text-red-300 bg-red-500/10 border border-red-500/20 p-3 rounded-lg">
                       <AlertCircle className="h-4 w-4 shrink-0" /> {error}
                     </div>
                   )}
 
                   <Button
                     type="submit"
-                    className="w-full gap-2 h-12 text-base font-semibold border-0 hover:opacity-90 transition-opacity"
+                    className="w-full gap-2 h-12 text-base font-semibold border-0 hover:opacity-95 hover:shadow-lg transition-all"
                     disabled={submitting}
                     style={{
                       background: `linear-gradient(135deg, ${primary}, ${secondary})`,
                       color: "white",
+                      boxShadow: `0 10px 30px -10px ${primary}80`,
                     }}
                   >
                     {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                     {ctaText}
                   </Button>
 
-                  <p className="text-[11px] text-center opacity-60 pt-2">
-                    Seus dados estão protegidos e não serão compartilhados.
+                  <p className="text-[11px] text-center text-white/50 pt-2">
+                    🔒 Seus dados estão protegidos e não serão compartilhados.
                   </p>
                 </form>
               </CardContent>
@@ -458,8 +462,8 @@ export default function FormPublico() {
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-16 pt-8 border-t border-white/5">
-          <p className="text-xs opacity-50">
+        <div className="text-center mt-12 pt-8 border-t border-white/5">
+          <p className="text-xs text-white/40">
             © {new Date().getFullYear()} {formConfig.tenant_name || "Accord"} — Todos os direitos reservados
           </p>
         </div>
