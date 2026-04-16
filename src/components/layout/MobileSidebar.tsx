@@ -130,7 +130,7 @@ export function MobileSidebar() {
               <Crown className={cn("h-[17px] w-[17px]", location.pathname === "/minha-revenda" ? "text-sidebar-primary" : "")} />
               <span className="truncate">Painel da Revenda</span>
             </Link>
-          )
+          )}
         </nav>
 
         {/* Config & User */}
