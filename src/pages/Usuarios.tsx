@@ -457,7 +457,7 @@ export default function Usuarios() {
             <User className="h-4 w-4" />
             Usuários
           </TabsTrigger>
-          {!tenantAuthLoading && canViewGlobalTenantManagement && (
+          {!tenantAuthLoading && (canViewGlobalTenantManagement || canViewChildTenantManagement) && (
             <TabsTrigger value="servidores" className="gap-2">
               <Server className="h-4 w-4" />
               Tenants
