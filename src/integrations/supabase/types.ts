@@ -2530,6 +2530,189 @@ export type Database = {
           },
         ]
       }
+      master_billing_history: {
+        Row: {
+          amount: number
+          asaas_payment_id: string | null
+          bank_slip_url: string | null
+          blocking_date: string | null
+          created_at: string
+          due_date: string
+          grace_until: string | null
+          id: string
+          invoice_url: string | null
+          master_client_id: string | null
+          notes: string | null
+          paid_at: string | null
+          payment_method: string | null
+          pix_payload: string | null
+          pix_qrcode_url: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          asaas_payment_id?: string | null
+          bank_slip_url?: string | null
+          blocking_date?: string | null
+          created_at?: string
+          due_date: string
+          grace_until?: string | null
+          id?: string
+          invoice_url?: string | null
+          master_client_id?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          pix_payload?: string | null
+          pix_qrcode_url?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          asaas_payment_id?: string | null
+          bank_slip_url?: string | null
+          blocking_date?: string | null
+          created_at?: string
+          due_date?: string
+          grace_until?: string | null
+          id?: string
+          invoice_url?: string | null
+          master_client_id?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          pix_payload?: string | null
+          pix_qrcode_url?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "master_billing_history_master_client_id_fkey"
+            columns: ["master_client_id"]
+            isOneToOne: false
+            referencedRelation: "master_tenant_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "master_billing_history_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      master_tenant_clients: {
+        Row: {
+          activation_date: string | null
+          active_users_count: number | null
+          billing_cycle: string
+          blocked_at: string | null
+          cnpj: string | null
+          contracted_users: number | null
+          contracted_value: number | null
+          created_at: string
+          email: string | null
+          grace_days: number | null
+          grace_until: string | null
+          id: string
+          master_client_id: string | null
+          max_users: number | null
+          next_due_date: string | null
+          nome_fantasia: string | null
+          payment_status: string
+          plan_id: string | null
+          plan_name: string | null
+          razao_social: string | null
+          responsavel: string | null
+          status: string
+          subscription_status: string
+          telefone: string | null
+          tenant_id: string
+          tenant_type: string
+          updated_at: string
+        }
+        Insert: {
+          activation_date?: string | null
+          active_users_count?: number | null
+          billing_cycle?: string
+          blocked_at?: string | null
+          cnpj?: string | null
+          contracted_users?: number | null
+          contracted_value?: number | null
+          created_at?: string
+          email?: string | null
+          grace_days?: number | null
+          grace_until?: string | null
+          id?: string
+          master_client_id?: string | null
+          max_users?: number | null
+          next_due_date?: string | null
+          nome_fantasia?: string | null
+          payment_status?: string
+          plan_id?: string | null
+          plan_name?: string | null
+          razao_social?: string | null
+          responsavel?: string | null
+          status?: string
+          subscription_status?: string
+          telefone?: string | null
+          tenant_id: string
+          tenant_type?: string
+          updated_at?: string
+        }
+        Update: {
+          activation_date?: string | null
+          active_users_count?: number | null
+          billing_cycle?: string
+          blocked_at?: string | null
+          cnpj?: string | null
+          contracted_users?: number | null
+          contracted_value?: number | null
+          created_at?: string
+          email?: string | null
+          grace_days?: number | null
+          grace_until?: string | null
+          id?: string
+          master_client_id?: string | null
+          max_users?: number | null
+          next_due_date?: string | null
+          nome_fantasia?: string | null
+          payment_status?: string
+          plan_id?: string | null
+          plan_name?: string | null
+          razao_social?: string | null
+          responsavel?: string | null
+          status?: string
+          subscription_status?: string
+          telefone?: string | null
+          tenant_id?: string
+          tenant_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "master_tenant_clients_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "billing_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "master_tenant_clients_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -4443,16 +4626,24 @@ export type Database = {
           base_user_limit_snapshot: number
           billing_cycle: string
           billing_status: string
+          blocked_at: string | null
           created_at: string
           effective_user_limit: number
+          expires_at: string | null
           extra_free_users: number
           extra_paid_users: number
+          grace_days: number | null
+          grace_until: string | null
           has_custom_override: boolean
           id: string
+          last_payment_date: string | null
           monthly_price_snapshot: number
+          next_due_date: string | null
+          payment_status: string | null
           plan_id: string | null
           plan_name_snapshot: string
           price_per_extra_user_snapshot: number
+          start_date: string | null
           tenant_id: string
           total_extras_recorrentes: number
           total_extras_unicos: number
@@ -4466,16 +4657,24 @@ export type Database = {
           base_user_limit_snapshot?: number
           billing_cycle?: string
           billing_status?: string
+          blocked_at?: string | null
           created_at?: string
           effective_user_limit?: number
+          expires_at?: string | null
           extra_free_users?: number
           extra_paid_users?: number
+          grace_days?: number | null
+          grace_until?: string | null
           has_custom_override?: boolean
           id?: string
+          last_payment_date?: string | null
           monthly_price_snapshot?: number
+          next_due_date?: string | null
+          payment_status?: string | null
           plan_id?: string | null
           plan_name_snapshot?: string
           price_per_extra_user_snapshot?: number
+          start_date?: string | null
           tenant_id: string
           total_extras_recorrentes?: number
           total_extras_unicos?: number
@@ -4489,16 +4688,24 @@ export type Database = {
           base_user_limit_snapshot?: number
           billing_cycle?: string
           billing_status?: string
+          blocked_at?: string | null
           created_at?: string
           effective_user_limit?: number
+          expires_at?: string | null
           extra_free_users?: number
           extra_paid_users?: number
+          grace_days?: number | null
+          grace_until?: string | null
           has_custom_override?: boolean
           id?: string
+          last_payment_date?: string | null
           monthly_price_snapshot?: number
+          next_due_date?: string | null
+          payment_status?: string | null
           plan_id?: string | null
           plan_name_snapshot?: string
           price_per_extra_user_snapshot?: number
+          start_date?: string | null
           tenant_id?: string
           total_extras_recorrentes?: number
           total_extras_unicos?: number
@@ -5829,6 +6036,10 @@ export type Database = {
       resolve_tenant_by_webhook_token: {
         Args: { p_token: string }
         Returns: string
+      }
+      sync_master_client_user_count: {
+        Args: { _tenant_id: string }
+        Returns: undefined
       }
       user_can_access_workspace: {
         Args: { _permission?: string; _user_id: string; _workspace_id: string }
