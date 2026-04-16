@@ -130,7 +130,7 @@ export function Sidebar() {
   };
 
   useEffect(() => {
-    if (!activeCompanyId) { setTenantLogoUrl(null); setIsResellerPanel(false); return; }
+    if (!activeCompanyId) { setTenantLogoUrl(null); setIsResellerPanel(false); setIsActiveMasterTenant(false); return; }
     const fetchCompanyInfo = async () => {
       const { data } = await supabase
         .from("companies")
@@ -144,6 +144,7 @@ export function Sidebar() {
         setTenantLogoUrl(null);
       }
       setIsResellerPanel(!!data?.is_reseller && !!(data as any)?.reseller_panel_enabled);
+      setIsActiveMasterTenant(data?.servidor_id === null);
     };
     fetchCompanyInfo();
     const handler = () => fetchCompanyInfo();
