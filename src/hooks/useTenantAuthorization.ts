@@ -27,7 +27,7 @@ const DEFAULT_STATE: TenantAuthorizationState = {
 };
 
 export function useTenantAuthorization(): TenantAuthorizationState {
-  const { activeCompanyId, isMasterTenantAdmin } = useAuth();
+  const { activeCompanyId, isMasterTenantAdmin, profile } = useAuth();
   const [companyState, setCompanyState] = useState(DEFAULT_STATE);
 
   useEffect(() => {
@@ -49,7 +49,12 @@ export function useTenantAuthorization(): TenantAuthorizationState {
 
       if (cancelled) return;
 
-      const isOperatingInMasterTenant = !!isMasterTenantAdmin && data?.servidor_id === null;
+      // Master can only manage globally when operating in their OWN tenant
+      const isOperatingInMasterTenant =
+        !!isMasterTenantAdmin &&
+        !!profile?.company_id &&
+        activeCompanyId === profile.company_id;
+
       const isExplicitReseller = !!data?.is_reseller && !!data?.reseller_panel_enabled;
       const canViewGlobalTenantManagement = isOperatingInMasterTenant;
       const canViewChildTenantManagement = isExplicitReseller;
@@ -74,7 +79,7 @@ export function useTenantAuthorization(): TenantAuthorizationState {
     return () => {
       cancelled = true;
     };
-  }, [activeCompanyId, isMasterTenantAdmin]);
+  }, [activeCompanyId, isMasterTenantAdmin, profile?.company_id]);
 
   return useMemo(() => companyState, [companyState]);
 }
