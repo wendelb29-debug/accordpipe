@@ -346,6 +346,8 @@ export function TenantSubscriptionTab({ companyId, resellerMode }: Props) {
               Histórico
             </Button>
           </div>
+        </CardContent>
+      </Card>
 
       {/* Extras Manager */}
       <SubscriptionExtrasManager
