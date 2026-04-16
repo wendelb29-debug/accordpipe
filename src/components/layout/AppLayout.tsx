@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useActivityReminders } from "@/hooks/useActivityReminders";
 import { useNotificationManager } from "@/hooks/useNotificationManager";
 import { AccordAIChat } from "@/components/accord-ai/AccordAIChat";
+import { TenantBillingBanner } from "./TenantBillingBanner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { BackNavigationProvider } from "@/contexts/BackNavigationContext";
@@ -45,6 +46,9 @@ export function AppLayout({ children }: AppLayoutProps) {
           "transition-all duration-300 min-w-0 flex flex-col min-h-screen",
           isMobile ? "pl-0" : (sidebarCollapsed ? "pl-[60px]" : "pl-[232px]")
         )}>
+          {/* Tenant billing alert banner */}
+          <TenantBillingBanner />
+
           {/* Notification activation banner */}
           {bannerVisible && (
             <div className="flex items-center justify-center gap-3 bg-red-500/80 text-white text-sm font-medium py-2 px-4">

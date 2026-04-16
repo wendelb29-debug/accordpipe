@@ -59,6 +59,7 @@ const navigation = [
 
 const configNavigation = [
   { nameKey: "nav.users", href: "/configuracoes/usuarios", icon: Users, roles: ["admin", "ceo", "administrativo"] },
+  { nameKey: "nav.tenantManagement", href: "/gestao-tenants", icon: Crown, roles: ["ceo", "master"], masterOnly: true },
   { nameKey: "nav.plans", href: "/planos", icon: Crown, roles: ["ceo", "master"] },
   { nameKey: "nav.audit", href: "/configuracoes/auditoria", icon: Settings, roles: ["ceo", "master"] },
 ];
@@ -103,7 +104,7 @@ export function Sidebar() {
 
   const [overdueCount, setOverdueCount] = useState(0);
   const [configOpen, setConfigOpen] = useState(false);
-  const { role, signOut, profile } = useAuth();
+  const { role, signOut, profile, isMasterTenantAdmin } = useAuth();
   const activeCompanyId = useActiveCompanyId();
   const [tenantLogoUrl, setTenantLogoUrl] = useState<string | null>(null);
 
@@ -188,6 +189,7 @@ export function Sidebar() {
 
   const filteredConfigNavigation = configNavigation.filter((item) => {
     if (role && !item.roles.includes(role)) return false;
+    if ((item as any).masterOnly && !isMasterTenantAdmin) return false;
     const perm = ROUTE_PERMISSIONS[item.href];
     if (perm && !hasPermission(perm)) return false;
     return true;
