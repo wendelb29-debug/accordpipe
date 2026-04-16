@@ -83,3 +83,4 @@ Updated: 1h ago
 - [Performance Management](mem://features/performance-management) — Accord Performance, individual KPIs, checklists
 - [Reseller White Label](mem://features/reseller-white-label) — Multi-level tenant hierarchy (platform_master/reseller/standard) for white-label SaaS
 - [Accord Academy](mem://features/accord-academy) — EAD module with global/tenant courses, categories, lessons, user progress tracking
+- [Master B2B Clients](mem://features/master-tenant-b2b-clients) — Every tenant auto-registered as B2B client of Master for centralized SaaS management
