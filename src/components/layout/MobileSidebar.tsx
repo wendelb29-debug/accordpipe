@@ -3,11 +3,13 @@ import accordLogo from "@/assets/accord-logo.png";
 import {
   Home, LayoutDashboard, Building2, Receipt, FileText, BarChart3,
   FileSignature, Users, LogOut, MessageSquare, CalendarCheck, Rocket,
-  Webhook, ClipboardList, Trash2, Menu, X,
+  Webhook, ClipboardList, Trash2, Menu, X, Crown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
+import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -37,7 +39,15 @@ const configNavigation = [
 export function MobileSidebar() {
   const location = useLocation();
   const { role, signOut, profile } = useAuth();
+  const activeCompanyId = useActiveCompanyId();
   const [open, setOpen] = useState(false);
+  const [isResellerPanel, setIsResellerPanel] = useState(false);
+
+  useEffect(() => {
+    if (!activeCompanyId) { setIsResellerPanel(false); return; }
+    supabase.from("companies").select("is_reseller, reseller_panel_enabled").eq("id", activeCompanyId).single()
+      .then(({ data }) => setIsResellerPanel(!!data?.is_reseller && !!(data as any)?.reseller_panel_enabled));
+  }, [activeCompanyId]);
 
   const filteredNavigation = navigation.filter(
     (item) => !role || item.roles.includes(role)
