@@ -264,9 +264,28 @@ export function TenantSubscriptionTab({ companyId, resellerMode }: Props) {
               <div className="text-sm font-semibold">{fmtCurrency(pricePerExtra)}</div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-muted-foreground">Custo extras</div>
-              <div className="text-sm font-semibold">{fmtCurrency(extraCost)}</div>
+              <div className="text-xs text-muted-foreground">Custo extras ({extraPaid} usr)</div>
+              <div className="text-sm font-semibold text-primary">{fmtCurrency(extraCost)}</div>
             </div>
+          </div>
+
+          {/* Valor Mensal Total - Prominent */}
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-primary" />
+                <span className="font-semibold text-base">Valor Mensal Total</span>
+              </div>
+              <span className="text-2xl font-bold text-primary">{fmtCurrency(displayPrice + extraCost)}</span>
+            </div>
+            <div className="text-xs text-muted-foreground text-center">
+              {fmtCurrency(displayPrice)} (plano) + {fmtCurrency(extraCost)} ({extraPaid} × {fmtCurrency(pricePerExtra)}) = <strong>{fmtCurrency(displayPrice + extraCost)}</strong>
+            </div>
+            {extraPaid > 0 && (
+              <div className="text-[11px] text-muted-foreground text-center">
+                Plano inclui {baseLimit + extraFree} usuário{(baseLimit + extraFree) !== 1 ? "s" : ""} • {extraPaid} usuário{extraPaid !== 1 ? "s" : ""} extra{extraPaid !== 1 ? "s" : ""} pago{extraPaid !== 1 ? "s" : ""}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
