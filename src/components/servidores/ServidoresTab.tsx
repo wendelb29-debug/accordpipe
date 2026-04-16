@@ -132,13 +132,7 @@ export default function ServidoresTab() {
   });
   const [activeTab, setActiveTab] = useState("cadastro");
 
-  useEffect(() => {
-    fetchCompanies();
-  }, []);
-
-  if (!canViewGlobalTenantManagement) {
-    return null;
-  }
+  const fetchCompanies = async () => {
 
   const fetchCompanies = async () => {
     try {
