@@ -98,8 +98,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isCeo = role === "ceo";
   const isMaster = profile?.is_master === true || isCeo;
-  // True only for users with is_master flag (master tenant) who are CEO or Master
   const isMasterTenantAdmin = profile?.is_master === true;
+
+  // Global master: is_master user on a tenant with servidor_id === null (the platform root)
+  const activeCompany = companies.find(c => c.id === activeCompanyId) || null;
+  const isGlobalMaster = isMasterTenantAdmin && activeCompany?.servidor_id === null;
+  // Reseller tenant: active company is a reseller with panel enabled
+  const isResellerTenant = !!(activeCompany?.is_reseller && activeCompany?.reseller_panel_enabled);
 
   const setActiveCompanyId = (id: string | null) => {
     setActiveCompanyIdState(id);
