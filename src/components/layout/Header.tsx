@@ -46,7 +46,7 @@ const ROUTE_SUBTITLES: Record<string, string> = {};
 
 export function Header() {
   const { t } = useTranslation();
-  const { profile, role, signOut, loading, companies, activeCompanyId, setActiveCompanyId, activeCompany, isMaster, isCeo, isMasterTenantAdmin, isGlobalMaster } = useAuth();
+  const { profile, role, signOut, loading, companies, activeCompanyId, setActiveCompanyId, activeCompany, isMaster, isCeo, isMasterTenantAdmin, isGlobalMaster, isResellerTenant } = useAuth();
   const { handleBack } = useBackNavigation();
   const [currentTheme, setCurrentTheme] = useState(() => document.documentElement.classList.contains("dark") ? "dark" : "light");
   const [currentTime, setCurrentTime] = useState(new Date());
