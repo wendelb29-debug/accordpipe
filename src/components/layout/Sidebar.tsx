@@ -32,7 +32,6 @@ import {
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTenantAuthorization } from "@/hooks/useTenantAuthorization";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -88,12 +87,11 @@ export function Sidebar() {
     localStorage.setItem("sidebar-pinned", String(pinned));
   }, [pinned]);
 
-  // Notify AppLayout about the sidebar width — only pinned state matters for layout push
+  // Notify AppLayout about the sidebar width
   useEffect(() => {
-    const layoutCollapsed = !pinned;
-    window.dispatchEvent(new CustomEvent("sidebar-toggle", { detail: layoutCollapsed }));
-    localStorage.setItem("sidebar-collapsed", String(layoutCollapsed));
-  }, [pinned]);
+    window.dispatchEvent(new CustomEvent("sidebar-toggle", { detail: collapsed }));
+    localStorage.setItem("sidebar-collapsed", String(collapsed));
+  }, [collapsed]);
 
   const handleMouseEnter = () => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
@@ -107,7 +105,6 @@ export function Sidebar() {
   const [overdueCount, setOverdueCount] = useState(0);
   const [configOpen, setConfigOpen] = useState(false);
   const { role, signOut, profile, isMasterTenantAdmin } = useAuth();
-  const { canViewChildTenantManagement, isOperatingInMasterTenant } = useTenantAuthorization();
   const activeCompanyId = useActiveCompanyId();
   const [tenantLogoUrl, setTenantLogoUrl] = useState<string | null>(null);
 
@@ -131,7 +128,7 @@ export function Sidebar() {
 
   useEffect(() => {
     if (!activeCompanyId) { setTenantLogoUrl(null); return; }
-    const fetchCompanyInfo = async () => {
+    const fetchLogo = async () => {
       const { data } = await supabase
         .from("companies")
         .select("brand_logo_url, servidor_id")
@@ -144,8 +141,8 @@ export function Sidebar() {
         setTenantLogoUrl(null);
       }
     };
-    fetchCompanyInfo();
-    const handler = () => fetchCompanyInfo();
+    fetchLogo();
+    const handler = () => fetchLogo();
     window.addEventListener("brand-colors-updated", handler);
     window.addEventListener("tenant-switched", handler);
     return () => {
@@ -192,8 +189,7 @@ export function Sidebar() {
 
   const filteredConfigNavigation = configNavigation.filter((item) => {
     if (role && !item.roles.includes(role)) return false;
-    // masterOnly items require both is_master AND being in the master tenant context
-    if ((item as any).masterOnly && !(isMasterTenantAdmin && isOperatingInMasterTenant)) return false;
+    if ((item as any).masterOnly && !isMasterTenantAdmin) return false;
     const perm = ROUTE_PERMISSIONS[item.href];
     if (perm && !hasPermission(perm)) return false;
     return true;
@@ -346,12 +342,6 @@ export function Sidebar() {
         {filteredNavigation.map((item) => (
           <NavItem key={t(item.nameKey)} item={item} isActive={location.pathname === item.href} />
         ))}
-        {canViewChildTenantManagement && (
-          <NavItem
-            item={{ nameKey: "nav.resellerPanel", href: "/minha-revenda", icon: Crown, roles: ["admin", "ceo", "master", "operador", "leitura", "administrativo", "financeiro", "comercial"] }}
-            isActive={location.pathname === "/minha-revenda"}
-          />
-        )}
       </nav>
 
       {/* Config & User */}

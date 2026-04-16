@@ -1,5 +1,5 @@
 # Memory: index.md
-Updated: now
+Updated: 1h ago
 
 # Project Memory
 
@@ -13,7 +13,6 @@ Updated: now
 - **PDF Generation:** `pdf-lib` Helvetica REQUIRES stripping emojis/unicode (use `[OK]`) due to winAnsi limitation.
 - **Security:** RLS for `pdf_contracts` MUST NOT use subqueries (compare directly with `auth.uid()` or `server_id`).
 - **Architecture:** Multi-tenancy strictly isolated by `server_id`. Global profile identity linked via `user_tenants`. Profiles hold identity only; leads hold commercial data.
-- **Tenant Permissions:** Creating tenant does NOT make it a reseller. Tenants tab/actions require (is_master + active master tenant) OR (explicit reseller enabled).
 
 ## Memories
 - [Role-based Dashboard](mem://features/role-based-dashboard) — Role-specific dynamic dashboard (Operator, Admin, CEO)
@@ -85,5 +84,3 @@ Updated: now
 - [Reseller White Label](mem://features/reseller-white-label) — Multi-level tenant hierarchy (platform_master/reseller/standard) for white-label SaaS
 - [Accord Academy](mem://features/accord-academy) — EAD module with global/tenant courses, categories, lessons, user progress tracking
 - [Master B2B Clients](mem://features/master-tenant-b2b-clients) — Every tenant auto-registered as B2B client of Master for centralized SaaS management
-- [Reseller Panel Auto-Enable](mem://features/reseller-panel-auto-enable) — Painel da Revenda auto-enabled on reseller toggle, /minha-revenda route, dynamic sidebar
-- [Tenant Creation Permissions](mem://security/tenant-creation-permissions) — Only master context or enabled resellers can see/create tenants

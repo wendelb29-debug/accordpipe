@@ -3,17 +3,14 @@ import accordLogo from "@/assets/accord-logo.png";
 import {
   Home, LayoutDashboard, Building2, Receipt, FileText, BarChart3,
   FileSignature, Users, LogOut, MessageSquare, CalendarCheck, Rocket,
-  Webhook, ClipboardList, Trash2, Menu, X, Crown,
+  Webhook, ClipboardList, Trash2, Menu, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
-import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { useTenantAuthorization } from "@/hooks/useTenantAuthorization";
 
 const navigation = [
   { name: "Início", href: "/home", icon: Home, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
@@ -40,9 +37,7 @@ const configNavigation = [
 export function MobileSidebar() {
   const location = useLocation();
   const { role, signOut, profile } = useAuth();
-  const activeCompanyId = useActiveCompanyId();
   const [open, setOpen] = useState(false);
-  const { canViewChildTenantManagement } = useTenantAuthorization();
 
   const filteredNavigation = navigation.filter(
     (item) => !role || item.roles.includes(role)
@@ -110,22 +105,6 @@ export function MobileSidebar() {
               </Link>
             );
           })}
-          {canViewChildTenantManagement && (
-            <Link
-              to="/minha-revenda"
-              onClick={() => setOpen(false)}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-200 relative",
-                location.pathname === "/minha-revenda"
-                  ? "bg-sidebar-primary/15 text-sidebar-foreground"
-                  : "text-sidebar-foreground/45 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground/80"
-              )}
-            >
-              {location.pathname === "/minha-revenda" && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-sidebar-primary shadow-[0_0_8px_rgba(122,63,242,0.5)]" />}
-              <Crown className={cn("h-[17px] w-[17px]", location.pathname === "/minha-revenda" ? "text-sidebar-primary" : "")} />
-              <span className="truncate">Painel da Revenda</span>
-            </Link>
-          )}
         </nav>
 
         {/* Config & User */}

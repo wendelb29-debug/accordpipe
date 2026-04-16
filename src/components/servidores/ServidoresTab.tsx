@@ -31,7 +31,6 @@ import { BrandIdentityFields } from "@/components/empresas/BrandIdentityFields";
 import { CompanyFormData } from "@/components/empresas/types";
 import { PermissionsEditor } from "@/components/usuarios/PermissionsEditor";
 import { AsaasIntegrationTab } from "@/components/servidores/AsaasIntegrationTab";
-import { useTenantAuthorization } from "@/hooks/useTenantAuthorization";
 
 interface Company {
   id: string;
@@ -101,7 +100,6 @@ export default function ServidoresTab() {
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const { toast } = useToast();
   const { isMaster, profile, user } = useAuth();
-  const { canViewGlobalTenantManagement, canEditResellerSettings, canViewChildTenantManagement, canCreateChildTenants } = useTenantAuthorization();
 
   const [formData, setFormData] = useState({
     razao_social: "",
@@ -131,6 +129,10 @@ export default function ServidoresTab() {
     docTextColor: "#1F2937",
   });
   const [activeTab, setActiveTab] = useState("cadastro");
+
+  useEffect(() => {
+    fetchCompanies();
+  }, []);
 
   const fetchCompanies = async () => {
     try {
@@ -183,13 +185,6 @@ export default function ServidoresTab() {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchCompanies();
-  }, []);
-
-  const canCreate = canViewGlobalTenantManagement || canCreateChildTenants;
-  const canManage = canViewGlobalTenantManagement || canViewChildTenantManagement;
 
   const handleGenerateSetupLink = async () => {
     setGeneratingLink(true);
@@ -538,7 +533,7 @@ export default function ServidoresTab() {
           <h2 className="text-lg font-semibold text-foreground">Tenants</h2>
           <p className="text-sm text-muted-foreground">Ambientes independentes vinculados por CNPJ</p>
         </div>
-        {canCreate && (
+        {isMaster && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button className="gap-2">
@@ -683,7 +678,7 @@ export default function ServidoresTab() {
                     )}
                   </TableCell>
                   <TableCell className="flex items-center gap-2">
-                    {canManage && (company as any)._setup_request_id ? (
+                    {isMaster && (company as any)._setup_request_id ? (
                       <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
@@ -719,7 +714,7 @@ export default function ServidoresTab() {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                    ) : canManage ? (
+                    ) : isMaster ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -795,12 +790,10 @@ export default function ServidoresTab() {
                 <Crown className="h-4 w-4" />
                 Plano
               </TabsTrigger>
-               {canEditResellerSettings && (
-                 <TabsTrigger value="revenda" className="justify-start gap-2 px-3 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg" disabled={!editingCompany}>
-                   <Network className="h-4 w-4" />
-                   Revenda
-                 </TabsTrigger>
-               )}
+              <TabsTrigger value="revenda" className="justify-start gap-2 px-3 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg" disabled={!editingCompany}>
+                <Network className="h-4 w-4" />
+                Revenda
+              </TabsTrigger>
             </TabsList>
 
             <div className="flex-1 overflow-y-auto py-2">
@@ -990,15 +983,13 @@ export default function ServidoresTab() {
                   <p className="text-sm text-muted-foreground text-center py-8">Salve o tenant primeiro para configurar o plano.</p>
                 )}
               </TabsContent>
-              {canEditResellerSettings && (
-                <TabsContent value="revenda" className="mt-0">
-                  {editingCompany ? (
-                    <ResellerTab companyId={editingCompany.id} />
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-8">Salve o tenant primeiro para configurar revenda.</p>
-                  )}
-                </TabsContent>
-              )}
+              <TabsContent value="revenda" className="mt-0">
+                {editingCompany ? (
+                  <ResellerTab companyId={editingCompany.id} />
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">Salve o tenant primeiro para configurar revenda.</p>
+                )}
+              </TabsContent>
             </div>
           </Tabs>
 

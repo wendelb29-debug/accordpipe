@@ -42,7 +42,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppRole, useAuth } from "@/contexts/AuthContext";
 import { PermissionsEditor } from "@/components/usuarios/PermissionsEditor";
 import { WorkspacePermissionsEditor } from "@/components/usuarios/WorkspacePermissionsEditor";
-import { useTenantAuthorization } from "@/hooks/useTenantAuthorization";
 
 interface UserWithRole {
   id: string;
@@ -94,7 +93,6 @@ export default function Usuarios() {
   const [permUserRole, setPermUserRole] = useState<string>("");
   const { toast } = useToast();
   const { isMaster, isCeo, isAdmin, activeCompanyId, profile, role, isMasterTenantAdmin } = useAuth();
-  const { loading: tenantAuthLoading, canViewGlobalTenantManagement, canViewChildTenantManagement, canCreateChildTenants } = useTenantAuthorization();
   const canManageUsers = isMaster || isCeo || isAdmin;
   const [allCompanies, setAllCompanies] = useState<{id: string; nome_fantasia: string | null; razao_social: string; cnpj: string}[]>([]);
 
@@ -457,13 +455,13 @@ export default function Usuarios() {
             <User className="h-4 w-4" />
             Usuários
           </TabsTrigger>
-          {!tenantAuthLoading && (
+          {isMasterTenantAdmin && (
             <TabsTrigger value="servidores" className="gap-2">
               <Server className="h-4 w-4" />
               Tenants
             </TabsTrigger>
           )}
-          {!tenantAuthLoading && canViewGlobalTenantManagement && (
+          {isMasterTenantAdmin && (
             <TabsTrigger value="servidores-teste" className="gap-2">
               <FlaskConical className="h-4 w-4" />
               Tenants Teste
@@ -883,12 +881,12 @@ export default function Usuarios() {
           </Dialog>
         </TabsContent>
 
-        {!tenantAuthLoading && canViewGlobalTenantManagement && (
+        {isMaster && (
           <TabsContent value="servidores">
             <ServidoresTab />
           </TabsContent>
         )}
-        {!tenantAuthLoading && canViewGlobalTenantManagement && (
+        {isMaster && (
           <TabsContent value="servidores-teste">
             <ServidoresTesteTab />
           </TabsContent>

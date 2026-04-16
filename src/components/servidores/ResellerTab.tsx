@@ -61,7 +61,6 @@ export function ResellerTab({ companyId }: ResellerTabProps) {
         tenant_type: enabled ? "reseller" : "standard",
         can_create_tenants: enabled,
         can_manage_child_tenants: enabled,
-        reseller_panel_enabled: enabled,
       } as any).eq("id", companyId);
 
       if (error) throw error;

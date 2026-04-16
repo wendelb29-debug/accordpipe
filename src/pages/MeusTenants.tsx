@@ -18,7 +18,6 @@ import { useChildTenants, ChildTenant } from "@/hooks/useChildTenants";
 import { ChildTenantManageDialog } from "@/components/meus-tenants/ChildTenantManageDialog";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTenantAuthorization } from "@/hooks/useTenantAuthorization";
 
 const cleanDigits = (v: string) => v.replace(/\D/g, "");
 
@@ -33,7 +32,7 @@ const formatCnpj = (v: string) => {
 
 export default function MeusTenants() {
   const { children, loading, parentCompany, createChildTenant, toggleChildStatus, canCreate, refetch } = useChildTenants();
-  const { canViewChildTenantManagement, canManageChildTenants, loading: tenantAuthLoading } = useTenantAuthorization();
+  const { role, profile } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,7 +47,7 @@ export default function MeusTenants() {
   });
 
   // Only reseller tenants can access
-  if (!tenantAuthLoading && !loading && !canViewChildTenantManagement) {
+  if (!parentCompany?.is_reseller && !loading) {
     return <Navigate to="/home" replace />;
   }
 
@@ -226,20 +225,16 @@ export default function MeusTenants() {
                            <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                         <DropdownMenuContent align="end">
-                           {canManageChildTenants && (
-                             <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); setManageChild(child); }}>
-                                <Settings className="h-4 w-4" />
-                                Gerenciar
-                              </DropdownMenuItem>
-                           )}
-                           {canManageChildTenants && (
-                             <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); toggleChildStatus(child.id, child.status); }}>
-                                <Power className="h-4 w-4" />
-                                {child.status === "active" ? "Bloquear" : "Ativar"}
-                              </DropdownMenuItem>
-                           )}
-                         </DropdownMenuContent>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); setManageChild(child); }}>
+                             <Settings className="h-4 w-4" />
+                             Gerenciar
+                           </DropdownMenuItem>
+                           <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); toggleChildStatus(child.id, child.status); }}>
+                             <Power className="h-4 w-4" />
+                             {child.status === "active" ? "Bloquear" : "Ativar"}
+                           </DropdownMenuItem>
+                        </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
@@ -299,7 +294,7 @@ export default function MeusTenants() {
 
       {/* Manage Child Tenant Dialog */}
       <ChildTenantManageDialog
-        child={canManageChildTenants ? manageChild : null}
+        child={manageChild}
         open={!!manageChild}
         onOpenChange={(open) => { if (!open) setManageChild(null); }}
         onUpdated={refetch}

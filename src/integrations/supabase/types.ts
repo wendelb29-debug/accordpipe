@@ -727,14 +727,8 @@ export type Database = {
           brand_primary_color: string | null
           brand_secondary_color: string | null
           brand_text_color: string | null
-          can_create_child_tenants: boolean
           can_create_tenants: boolean
-          can_create_test_tenants: boolean
-          can_edit_child_tenants: boolean
           can_manage_child_tenants: boolean
-          can_reactivate_child_tenants: boolean
-          can_suspend_child_tenants: boolean
-          can_view_child_billing: boolean
           cep: string | null
           cidade: string | null
           cnpj: string
@@ -758,7 +752,6 @@ export type Database = {
           numero: string | null
           parent_tenant_id: string | null
           razao_social: string
-          reseller_panel_enabled: boolean
           responsavel: string | null
           servidor_id: string | null
           status: string
@@ -790,14 +783,8 @@ export type Database = {
           brand_primary_color?: string | null
           brand_secondary_color?: string | null
           brand_text_color?: string | null
-          can_create_child_tenants?: boolean
           can_create_tenants?: boolean
-          can_create_test_tenants?: boolean
-          can_edit_child_tenants?: boolean
           can_manage_child_tenants?: boolean
-          can_reactivate_child_tenants?: boolean
-          can_suspend_child_tenants?: boolean
-          can_view_child_billing?: boolean
           cep?: string | null
           cidade?: string | null
           cnpj: string
@@ -821,7 +808,6 @@ export type Database = {
           numero?: string | null
           parent_tenant_id?: string | null
           razao_social: string
-          reseller_panel_enabled?: boolean
           responsavel?: string | null
           servidor_id?: string | null
           status?: string
@@ -853,14 +839,8 @@ export type Database = {
           brand_primary_color?: string | null
           brand_secondary_color?: string | null
           brand_text_color?: string | null
-          can_create_child_tenants?: boolean
           can_create_tenants?: boolean
-          can_create_test_tenants?: boolean
-          can_edit_child_tenants?: boolean
           can_manage_child_tenants?: boolean
-          can_reactivate_child_tenants?: boolean
-          can_suspend_child_tenants?: boolean
-          can_view_child_billing?: boolean
           cep?: string | null
           cidade?: string | null
           cnpj?: string
@@ -884,7 +864,6 @@ export type Database = {
           numero?: string | null
           parent_tenant_id?: string | null
           razao_social?: string
-          reseller_panel_enabled?: boolean
           responsavel?: string | null
           servidor_id?: string | null
           status?: string
@@ -5956,14 +5935,6 @@ export type Database = {
             }
             Returns: string
           }
-      current_user_can_create_child_tenants: { Args: never; Returns: boolean }
-      current_user_can_manage_child_tenants: { Args: never; Returns: boolean }
-      current_user_can_reactivate_child_tenants: {
-        Args: never
-        Returns: boolean
-      }
-      current_user_can_suspend_child_tenants: { Args: never; Returns: boolean }
-      current_user_is_enabled_reseller: { Args: never; Returns: boolean }
       get_client_contract_signers_by_token: {
         Args: { p_token: string }
         Returns: {
@@ -6108,10 +6079,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_active_master_tenant: {
-        Args: { _company_id: string }
-        Returns: boolean
-      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_master: { Args: { _user_id: string }; Returns: boolean }
       is_reseller_of: {
@@ -6142,10 +6109,6 @@ export type Database = {
           _user_id?: string
         }
         Returns: string
-      }
-      log_tenant_security_event: {
-        Args: { _action: string; _details?: Json; _target_id: string }
-        Returns: undefined
       }
       lookup_servidor_by_cnpj: {
         Args: { _cnpj: string }

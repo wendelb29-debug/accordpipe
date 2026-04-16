@@ -2,22 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { useTenantAuthorization } from "@/hooks/useTenantAuthorization";
-
-export interface ChildTenantSubscription {
-  plan_name: string | null;
-  billing_cycle: string | null;
-  billing_status: string | null;
-  payment_status: string | null;
-  valor_mensal_total: number | null;
-  next_due_date: string | null;
-  grace_days: number | null;
-  grace_until: string | null;
-  blocked_at: string | null;
-  effective_user_limit: number | null;
-  extra_paid_users: number | null;
-  start_date: string | null;
-}
 
 export interface ChildTenant {
   id: string;
@@ -31,42 +15,22 @@ export interface ChildTenant {
   created_at: string;
   tenant_type: string;
   user_count: number;
-  subscription: ChildTenantSubscription | null;
-}
-
-export interface ResellerPermissions {
-  can_create_tenants: boolean;
-  can_manage_child_tenants: boolean;
-  can_create_child_tenants: boolean;
-  can_edit_child_tenants: boolean;
-  can_suspend_child_tenants: boolean;
-  can_reactivate_child_tenants: boolean;
-  can_view_child_billing: boolean;
 }
 
 export function useChildTenants() {
   const { activeCompanyId } = useAuth();
-  const { canCreateChildTenants, canManageChildTenants, canViewChildTenantManagement } = useTenantAuthorization();
   const [children, setChildren] = useState<ChildTenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [parentCompany, setParentCompany] = useState<any>(null);
-  const [permissions, setPermissions] = useState<ResellerPermissions>({
-    can_create_tenants: false,
-    can_manage_child_tenants: false,
-    can_create_child_tenants: false,
-    can_edit_child_tenants: false,
-    can_suspend_child_tenants: false,
-    can_reactivate_child_tenants: false,
-    can_view_child_billing: false,
-  });
 
   const fetchChildren = useCallback(async () => {
     if (!activeCompanyId) return;
     setLoading(true);
     try {
+      // Get parent info
       const { data: parent } = await supabase
         .from("companies")
-        .select("id, is_reseller, can_create_tenants, can_manage_child_tenants, max_child_tenants, tenant_type, nome_fantasia, razao_social, reseller_panel_enabled")
+        .select("id, is_reseller, can_create_tenants, can_manage_child_tenants, max_child_tenants, tenant_type, nome_fantasia, razao_social")
         .eq("id", activeCompanyId)
         .maybeSingle();
 
@@ -77,66 +41,22 @@ export function useChildTenants() {
 
       setParentCompany(parent);
 
-      // Derive permissions from centralized authorization + company flags
-      const isReseller = !!((parent as any).is_reseller && (parent as any).reseller_panel_enabled);
-      const canCreate = canCreateChildTenants && ((parent as any).can_create_child_tenants || (parent as any).can_create_tenants || false);
-      const canManage = canManageChildTenants && !!(parent as any).can_manage_child_tenants;
-      setPermissions({
-        can_create_tenants: canCreate,
-        can_manage_child_tenants: canManage,
-        can_create_child_tenants: canCreate,
-        can_edit_child_tenants: canManage,
-        can_suspend_child_tenants: canManage,
-        can_reactivate_child_tenants: canManage,
-        can_view_child_billing: isReseller,
-      });
-
-      if (!canViewChildTenantManagement) {
-        setChildren([]);
-        setLoading(false);
-        return;
-      }
-
+      // Get children
       const { data: childData } = await supabase
         .from("companies")
         .select("*")
-        .eq("parent_tenant_id", activeCompanyId)
+        .or(`parent_tenant_id.eq.${activeCompanyId},created_by_tenant_id.eq.${activeCompanyId}`)
         .neq("id", activeCompanyId)
         .order("created_at", { ascending: false });
 
-      const childIds = (childData || []).map((c: any) => c.id);
-
-      // Get subscriptions and user counts in parallel
-      const [{ data: subscriptions }, { data: profiles }] = await Promise.all([
-        childIds.length > 0
-          ? supabase.from("tenant_subscriptions").select("tenant_id, plan_name_snapshot, billing_cycle, billing_status, payment_status, valor_mensal_total, next_due_date, grace_days, grace_until, blocked_at, effective_user_limit, extra_paid_users, start_date").in("tenant_id", childIds)
-          : Promise.resolve({ data: [] }),
-        childIds.length > 0
-          ? supabase.from("profiles").select("company_id").in("company_id", childIds).eq("is_active", true)
-          : Promise.resolve({ data: [] }),
-      ]);
-
-      const subMap: Record<string, ChildTenantSubscription> = {};
-      (subscriptions || []).forEach((s: any) => {
-        subMap[s.tenant_id] = {
-          plan_name: s.plan_name_snapshot,
-          billing_cycle: s.billing_cycle,
-          billing_status: s.billing_status,
-          payment_status: s.payment_status,
-          valor_mensal_total: s.valor_mensal_total,
-          next_due_date: s.next_due_date,
-          grace_days: s.grace_days,
-          grace_until: s.grace_until,
-          blocked_at: s.blocked_at,
-          effective_user_limit: s.effective_user_limit,
-          extra_paid_users: s.extra_paid_users,
-          start_date: s.start_date,
-        };
-      });
+      // Get user counts
+      const { data: tenantLinks } = await supabase
+        .from("user_tenants")
+        .select("tenant_id");
 
       const countMap: Record<string, number> = {};
-      (profiles || []).forEach((p: any) => {
-        if (p.company_id) countMap[p.company_id] = (countMap[p.company_id] || 0) + 1;
+      (tenantLinks || []).forEach((l: any) => {
+        if (l.tenant_id) countMap[l.tenant_id] = (countMap[l.tenant_id] || 0) + 1;
       });
 
       setChildren(
@@ -144,7 +64,6 @@ export function useChildTenants() {
           ...c,
           tenant_type: c.tenant_type || "standard",
           user_count: countMap[c.id] || 0,
-          subscription: subMap[c.id] || null,
         }))
       );
     } catch (err) {
@@ -153,7 +72,7 @@ export function useChildTenants() {
     } finally {
       setLoading(false);
     }
-  }, [activeCompanyId, canCreateChildTenants, canManageChildTenants, canViewChildTenantManagement]);
+  }, [activeCompanyId]);
 
   useEffect(() => {
     fetchChildren();
@@ -169,11 +88,7 @@ export function useChildTenants() {
   }) => {
     if (!activeCompanyId || !parentCompany) return false;
 
-    if (!canCreateChildTenants) {
-      toast.error("Apenas revendedores habilitados podem criar tenants filhos");
-      return false;
-    }
-
+    // Check limit
     if (parentCompany.max_child_tenants && children.length >= parentCompany.max_child_tenants) {
       toast.error("Limite de tenants filhos atingido");
       return false;
@@ -207,11 +122,6 @@ export function useChildTenants() {
   };
 
   const toggleChildStatus = async (childId: string, currentStatus: string) => {
-    if (!canManageChildTenants) {
-      toast.error("Você não tem permissão para gerenciar tenants filhos");
-      return;
-    }
-
     const newStatus = currentStatus === "active" ? "inactive" : "active";
     try {
       const { error } = await supabase.from("companies").update({ status: newStatus }).eq("id", childId);
@@ -227,10 +137,9 @@ export function useChildTenants() {
     children,
     loading,
     parentCompany,
-    permissions,
     createChildTenant,
     toggleChildStatus,
     refetch: fetchChildren,
-    canCreate: canCreateChildTenants && permissions.can_create_child_tenants && (!parentCompany?.max_child_tenants || children.length < parentCompany.max_child_tenants),
+    canCreate: parentCompany?.can_create_tenants && (!parentCompany?.max_child_tenants || children.length < parentCompany.max_child_tenants),
   };
 }
