@@ -369,7 +369,17 @@ Deno.serve(async (req) => {
       if (!result.ok) return errorResponse("ASAAS_PIX_CREATE_FAILED", "Erro ao criar cobrança no Asaas.", result.errorMessage);
 
       const payment = result.data;
-      console.log(`[asaas-api] payment created: ${payment.id} status=${payment.status}`);
+      console.log(`[asaas-api] payment created: ${payment.id} status=${payment.status} invoiceUrl=${payment.invoiceUrl} bankSlipUrl=${payment.bankSlipUrl}`);
+
+      // Re-fetch the payment to get all URLs (some aren't available immediately)
+      let enrichedPayment = payment;
+      try {
+        const refetchResult = await callAsaasWithEnvironmentFallback(integration, "GET", `/payments/${payment.id}`);
+        if (refetchResult.ok) {
+          enrichedPayment = { ...payment, ...refetchResult.data };
+          console.log(`[asaas-api] enriched payment: invoiceUrl=${enrichedPayment.invoiceUrl} bankSlipUrl=${enrichedPayment.bankSlipUrl}`);
+        }
+      } catch (e: any) { console.error("[asaas-api] payment refetch error:", e.message); }
 
       // Fetch boleto details if applicable
       let boletoDetails: any = {};
@@ -378,6 +388,7 @@ Deno.serve(async (req) => {
           const idResult = await callAsaasWithEnvironmentFallback(integration, "GET", `/payments/${payment.id}/identificationField`);
           if (idResult.ok) {
             boletoDetails = { identification_field: idResult.data.identificationField, bar_code: idResult.data.barCode, nosso_numero: idResult.data.nossoNumero };
+            console.log(`[asaas-api] boleto details: identification_field=${boletoDetails.identification_field?.substring(0,20)}...`);
           }
         } catch (e: any) { console.error("[asaas-api] boleto details error:", e.message); }
       }
@@ -391,7 +402,7 @@ Deno.serve(async (req) => {
             const pixResult = await callAsaasWithEnvironmentFallback(integration, "GET", `/payments/${payment.id}/pixQrCode`);
             if (pixResult.ok && pixResult.data?.payload) {
               pixDetails = { pix_payload: pixResult.data.payload, pix_qrcode_url: pixResult.data.encodedImage, pix_expiration: pixResult.data.expirationDate };
-              console.log(`[asaas-api] PIX QR fetched on attempt ${attempt + 1}`);
+              console.log(`[asaas-api] PIX QR fetched on attempt ${attempt + 1}, payload length=${pixDetails.pix_payload?.length}, image length=${pixDetails.pix_qrcode_url?.length}`);
               break;
             } else {
               console.log(`[asaas-api] PIX QR attempt ${attempt + 1} not ready: ${pixResult.errorMessage}`);
@@ -403,23 +414,26 @@ Deno.serve(async (req) => {
       try {
         await supabaseAdmin.from("tenant_asaas_payments").insert({
           tenant_id, local_customer_id, asaas_customer_id,
-          asaas_payment_id: payment.id, billing_type, status: payment.status,
-          value: payment.value, net_value: payment.netValue, original_value: payment.originalValue,
-          due_date: payment.dueDate, invoice_url: payment.invoiceUrl, bank_slip_url: payment.bankSlipUrl,
-          description, external_reference: origin, raw_payload: payment,
+          asaas_payment_id: payment.id, billing_type, status: enrichedPayment.status,
+          value: enrichedPayment.value, net_value: enrichedPayment.netValue, original_value: enrichedPayment.originalValue,
+          due_date: enrichedPayment.dueDate, invoice_url: enrichedPayment.invoiceUrl, bank_slip_url: enrichedPayment.bankSlipUrl,
+          description, external_reference: origin, raw_payload: enrichedPayment,
           ...boletoDetails,
           ...pixDetails,
-          ...(installment_count ? { installment_count, installment_value: installment_value || (value / installment_count), installment_id: payment.installment } : {}),
+          ...(installment_count ? { installment_count, installment_value: installment_value || (value / installment_count), installment_id: enrichedPayment.installment } : {}),
         } as any);
+        console.log(`[asaas-api] DB insert OK`);
       } catch (e: any) { console.error("[asaas-api] DB insert error:", e.message); }
 
       await auditLog("asaas_billing_created", payment.id, { value, billing_type, origin });
 
-      return json({
-        success: true, payment_id: payment.id, status: payment.status,
-        invoice_url: payment.invoiceUrl, bank_slip_url: payment.bankSlipUrl,
-        due_date: payment.dueDate, environment: result.environment, environment_auto_corrected: result.environmentAutoCorrected, ...boletoDetails, ...pixDetails,
-      });
+      const responsePayload = {
+        success: true, payment_id: payment.id, status: enrichedPayment.status,
+        invoice_url: enrichedPayment.invoiceUrl, bank_slip_url: enrichedPayment.bankSlipUrl,
+        due_date: enrichedPayment.dueDate, environment: result.environment, environment_auto_corrected: result.environmentAutoCorrected, ...boletoDetails, ...pixDetails,
+      };
+      console.log(`[asaas-api] RESPONSE TO FRONTEND:`, JSON.stringify(responsePayload));
+      return json(responsePayload);
     }
 
     /* ──────── GET PIX QR CODE ──────── */
