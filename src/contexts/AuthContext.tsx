@@ -208,7 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (isMasterUser || isCeoUser) {
         const { data: companiesData } = await supabase
           .from("companies")
-          .select("id, nome_fantasia, razao_social, cnpj, is_reseller")
+          .select("id, nome_fantasia, razao_social, cnpj, is_reseller, reseller_panel_enabled, servidor_id")
           .is("servidor_id", null)
           .in("status", ["active", "teste"])
           .order("razao_social");
