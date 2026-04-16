@@ -263,8 +263,8 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div className={cn(
-        "flex h-16 items-center border-b border-sidebar-border/30 shrink-0 select-none overflow-hidden",
-        collapsed ? "justify-center px-2" : "justify-start px-5"
+        "flex h-12 items-center border-b border-sidebar-border/30 shrink-0 select-none overflow-hidden",
+        collapsed ? "justify-center px-2" : "justify-start px-4"
       )}>
         <div className="flex items-center gap-2.5 cursor-default shrink-0" onClick={(e) => e.preventDefault()}>
           <img
@@ -305,7 +305,7 @@ export function Sidebar() {
       </div>
 
       {/* ACCORD Stack Button */}
-      <div className={cn("shrink-0 overflow-hidden", collapsed ? "px-2 py-3" : "px-3 py-3")}>
+      <div className={cn("shrink-0 overflow-hidden", collapsed ? "px-2 py-2" : "px-3 py-2")}>
         {collapsed ? (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
@@ -331,7 +331,7 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className={cn("flex-1 space-y-0.5 overflow-y-auto py-4", collapsed ? "px-2" : "px-3")}>
+      <nav className={cn("flex-1 space-y-0.5 overflow-y-auto py-2", collapsed ? "px-2" : "px-3")}>
         {!collapsed && (
           <p className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-sidebar-foreground/20 transition-opacity duration-300">
             Menu
@@ -343,7 +343,7 @@ export function Sidebar() {
       </nav>
 
       {/* Config & User */}
-      <div className={cn("shrink-0 border-t border-sidebar-border/40", collapsed ? "px-2 py-3" : "px-3 py-3")}>
+      <div className={cn("shrink-0 border-t border-sidebar-border/40", collapsed ? "px-2 py-2" : "px-3 py-2")}>
         {filteredConfigNavigation.length > 0 && (
           <div className="space-y-0.5 mb-4">
             {collapsed ? (
