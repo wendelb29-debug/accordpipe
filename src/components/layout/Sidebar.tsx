@@ -106,7 +106,7 @@ export function Sidebar() {
 
   const [overdueCount, setOverdueCount] = useState(0);
   const [configOpen, setConfigOpen] = useState(false);
-  const { role, signOut, profile, isMasterTenantAdmin } = useAuth();
+  const { role, signOut, profile, isMasterTenantAdmin, isGlobalMaster, isResellerTenant } = useAuth();
   const activeCompanyId = useActiveCompanyId();
   const [tenantLogoUrl, setTenantLogoUrl] = useState<string | null>(null);
 
