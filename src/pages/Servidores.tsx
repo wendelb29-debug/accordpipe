@@ -13,11 +13,11 @@ import accordPatternDark from "@/assets/accord-pattern-dark.png";
 export default function Servidores() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { companies, activeCompanyId, setActiveCompanyId, profile, isMasterTenantAdmin } = useAuth();
+  const { companies, activeCompanyId, setActiveCompanyId, profile, isMasterTenantAdmin, isGlobalMaster } = useAuth();
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  // Block access for non-master-tenant users
-  if (!isMasterTenantAdmin) {
+  // Block access for non-global-master users
+  if (!isGlobalMaster) {
     return <Navigate to="/home" replace />;
   }
 
