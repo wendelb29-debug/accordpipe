@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { useTenantAuthorization } from "@/hooks/useTenantAuthorization";
 
 const navigation = [
   { name: "Início", href: "/home", icon: Home, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
@@ -41,13 +42,7 @@ export function MobileSidebar() {
   const { role, signOut, profile } = useAuth();
   const activeCompanyId = useActiveCompanyId();
   const [open, setOpen] = useState(false);
-  const [isResellerPanel, setIsResellerPanel] = useState(false);
-
-  useEffect(() => {
-    if (!activeCompanyId) { setIsResellerPanel(false); return; }
-    supabase.from("companies").select("is_reseller, reseller_panel_enabled").eq("id", activeCompanyId).single()
-      .then(({ data }) => setIsResellerPanel(!!data?.is_reseller && !!(data as any)?.reseller_panel_enabled));
-  }, [activeCompanyId]);
+  const { canViewChildTenantManagement } = useTenantAuthorization();
 
   const filteredNavigation = navigation.filter(
     (item) => !role || item.roles.includes(role)
@@ -115,7 +110,7 @@ export function MobileSidebar() {
               </Link>
             );
           })}
-          {isResellerPanel && (
+          {canViewChildTenantManagement && (
             <Link
               to="/minha-revenda"
               onClick={() => setOpen(false)}
