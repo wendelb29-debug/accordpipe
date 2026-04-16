@@ -37,7 +37,7 @@ export default function Home() {
   useEffect(() => { fetchAnnouncements(); }, [fetchAnnouncements]);
 
   return (
-    <div className="space-y-6 p-1">
+    <div className="space-y-5">
       {/* Birthday celebration modal + confetti */}
       <BirthdayCelebration />
 
