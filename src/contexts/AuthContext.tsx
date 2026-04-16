@@ -71,6 +71,8 @@ interface AuthContextType {
   isCeo: boolean;
   isMaster: boolean;
   isMasterTenantAdmin: boolean;
+  isGlobalMaster: boolean;
+  isResellerTenant: boolean;
   activeCompanyId: string | null;
   setActiveCompanyId: (id: string | null) => void;
   companies: CompanyOption[];
