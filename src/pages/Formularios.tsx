@@ -115,12 +115,17 @@ export default function Formularios() {
     );
   };
 
-  const getFormUrl = (id: string) => `${window.location.origin}/form/${id}`;
+  const getFormUrl = (form: CrmForm | { id: string; slug?: string | null }) => {
+    const slug = (form as any).slug;
+    return slug
+      ? `${window.location.origin}/form/${slug}`
+      : `${window.location.origin}/form/${form.id}`;
+  };
 
-  const copyLink = (id: string) => {
-    navigator.clipboard.writeText(getFormUrl(id));
-    setCopiedId(id);
-    toast.success("Link copiado!");
+  const copyLink = (form: CrmForm) => {
+    navigator.clipboard.writeText(getFormUrl(form));
+    setCopiedId(form.id);
+    toast.success("Link público copiado!");
     setTimeout(() => setCopiedId(null), 2000);
   };
 
