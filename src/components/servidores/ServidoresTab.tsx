@@ -538,7 +538,7 @@ export default function ServidoresTab() {
           <h2 className="text-lg font-semibold text-foreground">Tenants</h2>
           <p className="text-sm text-muted-foreground">Ambientes independentes vinculados por CNPJ</p>
         </div>
-        {canViewGlobalTenantManagement && (
+        {canCreate && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button className="gap-2">
