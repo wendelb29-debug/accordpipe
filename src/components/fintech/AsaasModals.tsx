@@ -708,18 +708,39 @@ export function RecorrenciaModal({ open, onOpenChange, tenantId, registrations, 
 function BillingResult({ result, billingType, tenantId, onClose }: { result: any; billingType: string; tenantId: string; onClose: () => void }) {
   const [pixData, setPixData] = useState<any>(null);
   const [loadingPix, setLoadingPix] = useState(false);
+  const [pixRetries, setPixRetries] = useState(0);
 
   useEffect(() => {
-    if (billingType === "PIX" && result?.payment_id && !result?.pix_payload) {
-      setLoadingPix(true);
-      callAsaasApi("get_pix_qrcode", tenantId, { asaas_payment_id: result.payment_id })
-        .then((d) => setPixData(d))
-        .catch(() => {})
-        .finally(() => setLoadingPix(false));
-    } else if (result?.pix_payload) {
+    if (billingType === "PIX" && result?.pix_payload) {
       setPixData({ payload: result.pix_payload, qrcode_image: result.pix_qrcode_url });
+    } else if (billingType === "PIX" && result?.payment_id) {
+      fetchPixQrCode();
     }
-  }, [result, billingType, tenantId]);
+  }, [result, billingType]);
+
+  const fetchPixQrCode = async () => {
+    if (!result?.payment_id) return;
+    setLoadingPix(true);
+    try {
+      const d = await callAsaasApi("get_pix_qrcode", tenantId, { asaas_payment_id: result.payment_id });
+      if (d?.payload) {
+        setPixData({ payload: d.payload, qrcode_image: d.qrcode_image });
+      } else {
+        setPixRetries((p) => p + 1);
+      }
+    } catch {
+      setPixRetries((p) => p + 1);
+    }
+    setLoadingPix(false);
+  };
+
+  // Auto-retry PIX QR Code up to 3 times with delay
+  useEffect(() => {
+    if (billingType === "PIX" && !pixData && pixRetries > 0 && pixRetries <= 3) {
+      const timer = setTimeout(fetchPixQrCode, 2000 * pixRetries);
+      return () => clearTimeout(timer);
+    }
+  }, [pixRetries]);
 
   const fmtCur = (v: number) => v?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) || "R$ 0,00";
 
@@ -727,20 +748,62 @@ function BillingResult({ result, billingType, tenantId, onClose }: { result: any
     <div className="space-y-4 py-2">
       <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
         <CheckCircle2 className="h-8 w-8 text-emerald-500" />
-        <p className="text-sm font-semibold text-foreground">Cobrança Criada!</p>
+        <p className="text-sm font-semibold text-foreground">Cobrança Criada com Sucesso!</p>
 
         <div className="w-full space-y-2 text-xs">
           <div className="flex justify-between"><span className="text-muted-foreground">Status</span><span className="font-medium">{result.status}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Vencimento</span><span>{result.due_date}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Tipo</span><span className="font-medium">{billingType === "PIX" ? "PIX" : billingType === "BOLETO" ? "Boleto" : "Link"}</span></div>
           {result.payment_id && <div className="flex justify-between"><span className="text-muted-foreground">ID Asaas</span><span className="font-mono text-[10px]">{result.payment_id}</span></div>}
         </div>
+
+        {/* PIX */}
+        {billingType === "PIX" && (
+          <div className="w-full space-y-3">
+            {loadingPix && !pixData && (
+              <div className="flex flex-col items-center gap-2 py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <p className="text-[11px] text-muted-foreground">Carregando QR Code PIX...</p>
+              </div>
+            )}
+            {pixData?.qrcode_image && (
+              <div className="flex justify-center">
+                <img src={`data:image/png;base64,${pixData.qrcode_image}`} alt="QR Code PIX" className="w-48 h-48 rounded-lg border border-border" />
+              </div>
+            )}
+            {pixData?.payload && (
+              <div className="space-y-1">
+                <p className="text-[10px] text-muted-foreground font-medium">Código PIX (copia e cola)</p>
+                <div className="flex items-center gap-2">
+                  <Input value={pixData.payload} readOnly className="font-mono text-[10px] bg-muted/50 flex-1 h-8" />
+                  <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => copyText(pixData.payload)}>
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            )}
+            {!pixData && !loadingPix && pixRetries > 3 && (
+              <div className="text-center space-y-2">
+                <p className="text-xs text-muted-foreground">QR Code ainda não disponível</p>
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => { setPixRetries(0); fetchPixQrCode(); }}>
+                  <RefreshCw className="h-3 w-3" /> Tentar Novamente
+                </Button>
+              </div>
+            )}
+            {result.invoice_url && (
+              <Button variant="outline" size="sm" className="w-full gap-1.5 text-xs" onClick={() => window.open(result.invoice_url, "_blank")}>
+                <ExternalLink className="h-3 w-3" /> Abrir Fatura
+              </Button>
+            )}
+          </div>
+        )}
 
         {/* Boleto */}
         {billingType === "BOLETO" && (
           <div className="w-full space-y-2">
             {result.identification_field && (
               <div className="space-y-1">
-                <p className="text-[10px] text-muted-foreground">Linha Digitável</p>
+                <p className="text-[10px] text-muted-foreground font-medium">Linha Digitável</p>
                 <div className="flex items-center gap-2">
                   <Input value={result.identification_field} readOnly className="font-mono text-[10px] bg-muted/50 flex-1 h-8" />
                   <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => copyText(result.identification_field)}>
@@ -751,7 +814,7 @@ function BillingResult({ result, billingType, tenantId, onClose }: { result: any
             )}
             {result.bar_code && (
               <div className="space-y-1">
-                <p className="text-[10px] text-muted-foreground">Código de Barras</p>
+                <p className="text-[10px] text-muted-foreground font-medium">Código de Barras</p>
                 <div className="flex items-center gap-2">
                   <Input value={result.bar_code} readOnly className="font-mono text-[10px] bg-muted/50 flex-1 h-8" />
                   <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => copyText(result.bar_code)}>
@@ -775,46 +838,23 @@ function BillingResult({ result, billingType, tenantId, onClose }: { result: any
           </div>
         )}
 
-        {/* PIX */}
-        {billingType === "PIX" && (
-          <div className="w-full space-y-3">
-            {loadingPix && <div className="flex justify-center py-4"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>}
-            {pixData?.qrcode_image && (
-              <div className="flex justify-center">
-                <img src={`data:image/png;base64,${pixData.qrcode_image}`} alt="QR Code PIX" className="w-48 h-48 rounded-lg border border-border" />
-              </div>
-            )}
-            {pixData?.payload && (
-              <div className="space-y-1">
-                <p className="text-[10px] text-muted-foreground">Código PIX (copia e cola)</p>
+        {/* UNDEFINED / Link */}
+        {billingType === "UNDEFINED" && (
+          <div className="w-full space-y-2">
+            {result.invoice_url && (
+              <>
+                <p className="text-[10px] text-muted-foreground font-medium">Link de Pagamento</p>
                 <div className="flex items-center gap-2">
-                  <Input value={pixData.payload} readOnly className="font-mono text-[10px] bg-muted/50 flex-1 h-8" />
-                  <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => copyText(pixData.payload)}>
-                    <Copy className="h-3 w-3" />
+                  <Input value={result.invoice_url} readOnly className="font-mono text-xs bg-muted/50 flex-1" />
+                  <Button variant="outline" size="icon" className="shrink-0 h-9 w-9" onClick={() => copyText(result.invoice_url)}>
+                    <Copy className="h-3.5 w-3.5" />
                   </Button>
                 </div>
-              </div>
+                <Button variant="outline" size="sm" className="w-full gap-1.5 text-xs" onClick={() => window.open(result.invoice_url, "_blank")}>
+                  <ExternalLink className="h-3 w-3" /> Abrir Link
+                </Button>
+              </>
             )}
-            {result.invoice_url && (
-              <Button variant="outline" size="sm" className="w-full gap-1.5 text-xs" onClick={() => window.open(result.invoice_url, "_blank")}>
-                <ExternalLink className="h-3 w-3" /> Abrir Fatura
-              </Button>
-            )}
-          </div>
-        )}
-
-        {/* UNDEFINED / Link */}
-        {billingType === "UNDEFINED" && result.invoice_url && (
-          <div className="w-full space-y-2">
-            <div className="flex items-center gap-2">
-              <Input value={result.invoice_url} readOnly className="font-mono text-xs bg-muted/50 flex-1" />
-              <Button variant="outline" size="icon" className="shrink-0 h-9 w-9" onClick={() => copyText(result.invoice_url)}>
-                <Copy className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-            <Button variant="outline" size="sm" className="w-full gap-1.5 text-xs" onClick={() => window.open(result.invoice_url, "_blank")}>
-              <ExternalLink className="h-3 w-3" /> Abrir Link
-            </Button>
           </div>
         )}
       </div>
