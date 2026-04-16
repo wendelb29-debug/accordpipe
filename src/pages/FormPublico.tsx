@@ -338,7 +338,7 @@ export default function FormPublico() {
               }}
             >
               <Sparkles className="h-3.5 w-3.5" />
-              {formConfig.tenant_name || "Atendimento especializado"}
+              Atendimento especializado
             </div>
 
             <h1 className="text-4xl lg:text-6xl font-bold leading-[1.05] tracking-tight text-white">
