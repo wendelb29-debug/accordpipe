@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBillingPlans, useTenantSubscription } from "@/hooks/useBillingPlans";
 import { ManagePlansDialog } from "./ManagePlansDialog";
+import { SubscriptionExtrasManager } from "./SubscriptionExtrasManager";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -139,6 +140,11 @@ export function TenantSubscriptionTab({ companyId, resellerMode }: Props) {
         monthly_price_snapshot: plan.monthly_price,
         yearly_price_snapshot: plan.yearly_price,
       } as any);
+
+      // Recalculate totals on backend
+      if (ok) {
+        await supabase.rpc("recalc_subscription_totals", { _tenant_id: companyId });
+      }
 
       if (ok) {
         toast.success("Assinatura do tenant atualizada!");
@@ -347,6 +353,14 @@ export function TenantSubscriptionTab({ companyId, resellerMode }: Props) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Extras Manager */}
+      <SubscriptionExtrasManager
+        tenantId={companyId}
+        basePlanPrice={displayPrice}
+        extraUserCost={extraCost}
+      />
+
 
       {/* History */}
       {showHistory && (

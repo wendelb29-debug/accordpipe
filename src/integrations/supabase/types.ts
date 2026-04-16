@@ -3594,6 +3594,63 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_extras: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          is_selected: boolean
+          name: string
+          subscription_id: string | null
+          tenant_id: string
+          type: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_selected?: boolean
+          name: string
+          subscription_id?: string | null
+          tenant_id: string
+          type?: string
+          updated_at?: string
+          value?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_selected?: boolean
+          name?: string
+          subscription_id?: string | null
+          tenant_id?: string
+          type?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_extras_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_extras_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_requests: {
         Row: {
           created_at: string
@@ -4397,7 +4454,12 @@ export type Database = {
           plan_name_snapshot: string
           price_per_extra_user_snapshot: number
           tenant_id: string
+          total_extras_recorrentes: number
+          total_extras_unicos: number
           updated_at: string
+          valor_base_plano: number
+          valor_inicial_total: number
+          valor_mensal_total: number
           yearly_price_snapshot: number
         }
         Insert: {
@@ -4415,7 +4477,12 @@ export type Database = {
           plan_name_snapshot?: string
           price_per_extra_user_snapshot?: number
           tenant_id: string
+          total_extras_recorrentes?: number
+          total_extras_unicos?: number
           updated_at?: string
+          valor_base_plano?: number
+          valor_inicial_total?: number
+          valor_mensal_total?: number
           yearly_price_snapshot?: number
         }
         Update: {
@@ -4433,7 +4500,12 @@ export type Database = {
           plan_name_snapshot?: string
           price_per_extra_user_snapshot?: number
           tenant_id?: string
+          total_extras_recorrentes?: number
+          total_extras_unicos?: number
           updated_at?: string
+          valor_base_plano?: number
+          valor_inicial_total?: number
+          valor_mensal_total?: number
           yearly_price_snapshot?: number
         }
         Relationships: [
@@ -5745,6 +5817,10 @@ export type Database = {
       pdf_contract_has_signer_token: {
         Args: { _contract_id: string }
         Returns: boolean
+      }
+      recalc_subscription_totals: {
+        Args: { _tenant_id: string }
+        Returns: undefined
       }
       reseller_can_add_child: {
         Args: { _reseller_id: string }
