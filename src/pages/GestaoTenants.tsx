@@ -41,12 +41,13 @@ const fmtCurrency = (v: number) => v.toLocaleString("pt-BR", { style: "currency"
 const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString("pt-BR") : "—";
 
 export default function GestaoTenants() {
-  const { isMasterTenantAdmin } = useAuth();
+  const { isMasterTenantAdmin, isGlobalMaster, activeCompanyId } = useAuth();
   const { clients, loading, filters, setFilters, updateClient, syncUserCount, fetchClients } = useMasterTenantClients();
   const [search, setSearch] = useState("");
   const [detailClient, setDetailClient] = useState<MasterTenantClient | null>(null);
 
-  if (!isMasterTenantAdmin) return <Navigate to="/home" replace />;
+  // Only global master can access this page
+  if (!isGlobalMaster) return <Navigate to="/home" replace />;
 
   const filtered = clients.filter((c) => {
     const term = search.toLowerCase();

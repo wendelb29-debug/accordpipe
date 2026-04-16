@@ -63,6 +63,7 @@ Updated: 1h ago
 - [Cadastro Standards](mem://features/cadastro-workspace-standards) — Standard stages for the administrative Cadastro workspace
 - [Product Catalog](mem://features/tenant-product-catalog) — Product catalog feeds CRM proposals
 - [Master Restrictions](mem://security/master-tenant-restriction) — Tenant management isolated to Master profiles
+- [Tenant Permission Hierarchy](mem://security/tenant-permission-hierarchy) — isGlobalMaster vs isResellerTenant vs standard tenant access levels
 - [Card Return Workflow](mem://features/card-return-workflow-cadastro) — 'Devolver' card logic between commercial/admin
 - [Tenant Onboarding](mem://features/tenant-configuration-link) — Tenant config via onboarding links
 - [Proposal Unified](mem://features/proposal-system-unified-template) — Native jsPDF proposal separate from signature contracts

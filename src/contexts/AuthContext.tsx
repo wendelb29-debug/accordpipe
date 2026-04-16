@@ -55,6 +55,8 @@ interface CompanyOption {
   razao_social: string;
   cnpj: string;
   is_reseller?: boolean;
+  reseller_panel_enabled?: boolean;
+  servidor_id?: string | null;
 }
 
 interface AuthContextType {
@@ -69,6 +71,8 @@ interface AuthContextType {
   isCeo: boolean;
   isMaster: boolean;
   isMasterTenantAdmin: boolean;
+  isGlobalMaster: boolean;
+  isResellerTenant: boolean;
   activeCompanyId: string | null;
   setActiveCompanyId: (id: string | null) => void;
   companies: CompanyOption[];
@@ -94,8 +98,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isCeo = role === "ceo";
   const isMaster = profile?.is_master === true || isCeo;
-  // True only for users with is_master flag (master tenant) who are CEO or Master
   const isMasterTenantAdmin = profile?.is_master === true;
+
+  // Computed from companies array — defined once, used below and in value
+  const activeCompany = companies.find(c => c.id === activeCompanyId) || null;
+  const isGlobalMaster = isMasterTenantAdmin && activeCompany?.servidor_id === null;
+  const isResellerTenant = !!(activeCompany?.is_reseller && activeCompany?.reseller_panel_enabled);
 
   const setActiveCompanyId = (id: string | null) => {
     setActiveCompanyIdState(id);
@@ -200,7 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (isMasterUser || isCeoUser) {
         const { data: companiesData } = await supabase
           .from("companies")
-          .select("id, nome_fantasia, razao_social, cnpj, is_reseller")
+          .select("id, nome_fantasia, razao_social, cnpj, is_reseller, reseller_panel_enabled, servidor_id")
           .is("servidor_id", null)
           .in("status", ["active", "teste"])
           .order("razao_social");
@@ -208,7 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (typedProfile?.company_id) {
         const { data: companyData } = await supabase
           .from("companies")
-          .select("id, nome_fantasia, razao_social, cnpj, is_reseller")
+          .select("id, nome_fantasia, razao_social, cnpj, is_reseller, reseller_panel_enabled, servidor_id")
           .eq("id", typedProfile.company_id)
           .maybeSingle();
         if (companyData) setCompanies([companyData as CompanyOption]);
@@ -254,7 +262,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("accord_active_company");
   };
 
-  const activeCompany = companies.find(c => c.id === activeCompanyId) || null;
+  // activeCompany already computed at top of component
 
   const value = {
     user,
@@ -268,6 +276,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isCeo,
     isMaster,
     isMasterTenantAdmin,
+    isGlobalMaster,
+    isResellerTenant,
     activeCompanyId,
     setActiveCompanyId,
     companies,

@@ -178,7 +178,7 @@ export default function NovoServidor() {
   const { toast } = useToast();
   // Pre-generate ID for new tenants so child components can use it
   const [pendingNewId] = useState(() => editId ? null : crypto.randomUUID());
-  const { isMaster, isMasterTenantAdmin } = useAuth();
+  const { isMaster, isMasterTenantAdmin, isGlobalMaster } = useAuth();
 
   const [activeTab, setActiveTab] = useState("cadastro");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -298,8 +298,8 @@ export default function NovoServidor() {
     load();
   }, [fromSetupId, editId]);
 
-  // Block access for non-master-tenant users (after all hooks)
-  if (!isMasterTenantAdmin) {
+  // Block access for non-global-master users (after all hooks)
+  if (!isGlobalMaster) {
     return <Navigate to="/home" replace />;
   }
 

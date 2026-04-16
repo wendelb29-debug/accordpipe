@@ -39,7 +39,7 @@ const statusColors: Record<string, string> = {
 export function TenantSubscriptionTab({ companyId, resellerMode }: Props) {
   const { plans, loading: plansLoading, fetchPlans } = useBillingPlans();
   const { subscription, activeUsers, loading: subLoading, upsertSubscription } = useTenantSubscription(companyId);
-  const { user, isMasterTenantAdmin, isMaster } = useAuth();
+  const { user, isGlobalMaster, isMaster } = useAuth();
 
   const [selectedPlanId, setSelectedPlanId] = useState("");
   const [extraFree, setExtraFree] = useState(0);
@@ -64,7 +64,7 @@ export function TenantSubscriptionTab({ companyId, resellerMode }: Props) {
   }, [subscription]);
 
   // Only master/CEO of master tenant or reseller managing child can access
-  if (!resellerMode && !isMasterTenantAdmin && !isMaster) {
+  if (!resellerMode && !isGlobalMaster && !isMaster) {
     return (
       <Card className="p-8 text-center">
         <Crown className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
