@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBillingPlans, useTenantSubscription } from "@/hooks/useBillingPlans";
 import { ManagePlansDialog } from "./ManagePlansDialog";
+import { SubscriptionExtrasManager } from "./SubscriptionExtrasManager";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
