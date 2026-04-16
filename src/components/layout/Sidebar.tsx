@@ -189,6 +189,7 @@ export function Sidebar() {
 
   const filteredConfigNavigation = configNavigation.filter((item) => {
     if (role && !item.roles.includes(role)) return false;
+    if ((item as any).masterOnly && !isMasterTenantAdmin) return false;
     const perm = ROUTE_PERMISSIONS[item.href];
     if (perm && !hasPermission(perm)) return false;
     return true;
