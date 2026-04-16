@@ -141,6 +141,11 @@ export function TenantSubscriptionTab({ companyId, resellerMode }: Props) {
         yearly_price_snapshot: plan.yearly_price,
       } as any);
 
+      // Recalculate totals on backend
+      if (ok) {
+        await supabase.rpc("recalc_subscription_totals", { _tenant_id: companyId });
+      }
+
       if (ok) {
         toast.success("Assinatura do tenant atualizada!");
         // Audit log for reseller actions
