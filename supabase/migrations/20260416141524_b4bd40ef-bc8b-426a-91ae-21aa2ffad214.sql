@@ -1,0 +1,1 @@
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS reseller_panel_enabled boolean NOT NULL DEFAULT false;

@@ -752,6 +752,7 @@ export type Database = {
           numero: string | null
           parent_tenant_id: string | null
           razao_social: string
+          reseller_panel_enabled: boolean
           responsavel: string | null
           servidor_id: string | null
           status: string
@@ -808,6 +809,7 @@ export type Database = {
           numero?: string | null
           parent_tenant_id?: string | null
           razao_social: string
+          reseller_panel_enabled?: boolean
           responsavel?: string | null
           servidor_id?: string | null
           status?: string
@@ -864,6 +866,7 @@ export type Database = {
           numero?: string | null
           parent_tenant_id?: string | null
           razao_social?: string
+          reseller_panel_enabled?: boolean
           responsavel?: string | null
           servidor_id?: string | null
           status?: string
