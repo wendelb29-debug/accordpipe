@@ -2,7 +2,10 @@ import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth, AppRole } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useTenantAccessGuard } from "@/hooks/useTenantAccessGuard";
 import { ROUTE_PERMISSIONS } from "@/lib/permissions";
+import { AlertTriangle, CreditCard, MessageCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -10,12 +13,15 @@ interface ProtectedRouteProps {
   requiredPermission?: string;
 }
 
+// Routes that suspended tenants can still access
+const BILLING_ALLOWED_ROUTES = ["/perfil", "/home"];
+
 export function ProtectedRoute({ children, allowedRoles, requiredPermission }: ProtectedRouteProps) {
   const { user, role, loading, profile } = useAuth();
   const { hasPermission, loading: permLoading } = usePermissions();
+  const tenantAccess = useTenantAccessGuard();
   const location = useLocation();
 
-  // Wait until auth AND permissions are fully resolved before any access check
   const isFullyLoaded = !loading && !permLoading && (user ? !!profile && role !== undefined : true);
 
   if (!isFullyLoaded) {
@@ -64,27 +70,52 @@ export function ProtectedRoute({ children, allowedRoles, requiredPermission }: P
     );
   }
 
+  // Tenant suspended — block operational routes
+  if (
+    !tenantAccess.loading &&
+    tenantAccess.canOnlyAccessBilling &&
+    !BILLING_ALLOWED_ROUTES.includes(location.pathname)
+  ) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center max-w-lg px-6 space-y-4">
+          <AlertTriangle className="h-12 w-12 text-destructive mx-auto" />
+          <h1 className="text-2xl font-bold text-foreground">Acesso Suspenso</h1>
+          <p className="text-muted-foreground">
+            O acesso ao sistema está temporariamente suspenso por pendência financeira. Regularize o pagamento para reativar.
+          </p>
+          <div className="flex justify-center gap-2 flex-wrap">
+            {tenantAccess.invoiceUrl && (
+              <Button variant="default" className="gap-1.5" onClick={() => window.open(tenantAccess.invoiceUrl!, "_blank")}>
+                <CreditCard className="h-4 w-4" /> Ver cobrança
+              </Button>
+            )}
+            <Button variant="outline" className="gap-1.5">
+              <MessageCircle className="h-4 w-4" /> Falar com suporte
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  // Permission-based access check (takes priority if specified)
+  // Permission-based access check
   const permToCheck = requiredPermission || ROUTE_PERMISSIONS[location.pathname];
   if (permToCheck && !hasPermission(permToCheck)) {
-    // Still allow legacy role check as fallback for CEO/admin/master
     const isCeoOrMaster = role === "ceo" || profile?.is_master === true;
     if (!isCeoOrMaster) {
       return (
         <div className="flex min-h-screen items-center justify-center bg-background">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-destructive mb-2">Acesso Negado</h1>
-            <p className="text-muted-foreground">
-              Você não tem permissão para acessar esta área.
-            </p>
+            <p className="text-muted-foreground">Você não tem permissão para acessar esta área.</p>
           </div>
         </div>
       );
     }
   }
 
-  // Legacy role check (backward compat)
+  // Legacy role check
   if (allowedRoles && role && !allowedRoles.includes(role)) {
     const isCeoOrMaster = role === "ceo" || profile?.is_master === true;
     if (!isCeoOrMaster) {
@@ -92,9 +123,7 @@ export function ProtectedRoute({ children, allowedRoles, requiredPermission }: P
         <div className="flex min-h-screen items-center justify-center bg-background">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-destructive mb-2">Acesso Negado</h1>
-            <p className="text-muted-foreground">
-              Você não tem permissão para acessar esta página.
-            </p>
+            <p className="text-muted-foreground">Você não tem permissão para acessar esta página.</p>
           </div>
         </div>
       );

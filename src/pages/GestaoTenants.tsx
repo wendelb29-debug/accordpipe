@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Building2, Search, Users, Crown, CreditCard,
-  AlertTriangle, Ban, RefreshCw, Eye, Receipt, Check,
+  AlertTriangle, Ban, RefreshCw, Eye, Check, TrendingUp, Clock, Key,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,23 +16,25 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMasterTenantClients, MasterTenantClient } from "@/hooks/useMasterTenantClients";
 import { TenantBillingTab } from "@/components/gestao-tenants/TenantBillingTab";
-import { toast } from "sonner";
 
 const statusLabels: Record<string, string> = {
-  active: "Ativo", trial: "Trial", past_due: "Inadimplente",
-  suspended: "Suspenso", cancelled: "Cancelado",
+  active: "Ativo", trial: "Trial", past_due: "Inadimplente", overdue: "Inadimplente",
+  suspended: "Suspenso", cancelled: "Cancelado", expired: "Expirado", canceled: "Cancelado",
 };
 
 const statusColors: Record<string, string> = {
   active: "border-green-500/30 text-green-600 bg-green-500/10",
   trial: "border-blue-500/30 text-blue-600 bg-blue-500/10",
   past_due: "border-amber-500/30 text-amber-600 bg-amber-500/10",
+  overdue: "border-amber-500/30 text-amber-600 bg-amber-500/10",
   suspended: "border-red-500/30 text-red-600 bg-red-500/10",
   cancelled: "border-muted text-muted-foreground bg-muted/50",
+  canceled: "border-muted text-muted-foreground bg-muted/50",
+  expired: "border-muted text-muted-foreground bg-muted/50",
 };
 
 const paymentStatusLabels: Record<string, string> = {
-  pending: "Pendente", paid: "Pago", overdue: "Vencido", refunded: "Reembolsado",
+  pending: "Pendente", paid: "Pago", overdue: "Vencido", refunded: "Reembolsado", failed: "Falhou", canceled: "Cancelado",
 };
 
 const fmtCurrency = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -55,12 +57,21 @@ export default function GestaoTenants() {
     );
   });
 
+  const today = new Date().toISOString().split("T")[0];
+
   const totalActive = clients.filter((c) => c.subscription_status === "active").length;
-  const totalOverdue = clients.filter((c) => ["past_due"].includes(c.subscription_status) || c.payment_status === "overdue").length;
+  const totalOverdue = clients.filter((c) => ["past_due", "overdue"].includes(c.subscription_status) || c.payment_status === "overdue").length;
   const totalSuspended = clients.filter((c) => c.subscription_status === "suspended").length;
   const totalMRR = clients
-    .filter((c) => c.subscription_status === "active" && c.billing_cycle === "monthly")
+    .filter((c) => ["active", "trial"].includes(c.subscription_status) && c.billing_cycle === "monthly")
     .reduce((sum, c) => sum + c.contracted_value, 0);
+  const totalARR = clients
+    .filter((c) => ["active", "trial"].includes(c.subscription_status) && c.billing_cycle === "annual")
+    .reduce((sum, c) => sum + c.contracted_value, 0);
+  const dueToday = clients.filter((c) => c.next_due_date === today).length;
+  const inGrace = clients.filter((c) => c.grace_until && today > (c.next_due_date || "") && today <= c.grace_until).length;
+  const totalLicenses = clients.reduce((sum, c) => sum + c.contracted_users, 0);
+  const totalActiveUsers = clients.reduce((sum, c) => sum + c.active_users_count, 0);
 
   const handleStatusChange = async (client: MasterTenantClient, newStatus: string) => {
     const updates: Partial<MasterTenantClient> = { subscription_status: newStatus } as any;
@@ -94,12 +105,20 @@ export default function GestaoTenants() {
         </Button>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* KPIs - Row 1 */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
         <KpiCard icon={Building2} label="Ativos" value={totalActive} color="text-green-600" />
         <KpiCard icon={AlertTriangle} label="Inadimplentes" value={totalOverdue} color="text-amber-600" />
         <KpiCard icon={Ban} label="Suspensos" value={totalSuspended} color="text-red-600" />
         <KpiCard icon={CreditCard} label="MRR" value={fmtCurrency(totalMRR)} color="text-primary" />
+        <KpiCard icon={TrendingUp} label="ARR" value={fmtCurrency(totalARR)} color="text-primary" />
+      </div>
+      {/* KPIs - Row 2 */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <KpiCard icon={Clock} label="Vencendo hoje" value={dueToday} color="text-amber-500" />
+        <KpiCard icon={AlertTriangle} label="Em carência" value={inGrace} color="text-orange-500" />
+        <KpiCard icon={Key} label="Licenças contratadas" value={totalLicenses} color="text-blue-600" />
+        <KpiCard icon={Users} label="Licenças em uso" value={`${totalActiveUsers}/${totalLicenses}`} color="text-blue-600" />
       </div>
 
       {/* Filters */}
@@ -115,9 +134,10 @@ export default function GestaoTenants() {
               <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="active">Ativos</SelectItem>
               <SelectItem value="trial">Trial</SelectItem>
-              <SelectItem value="past_due">Inadimplentes</SelectItem>
+              <SelectItem value="overdue">Inadimplentes</SelectItem>
               <SelectItem value="suspended">Suspensos</SelectItem>
-              <SelectItem value="cancelled">Cancelados</SelectItem>
+              <SelectItem value="expired">Expirados</SelectItem>
+              <SelectItem value="canceled">Cancelados</SelectItem>
             </SelectContent>
           </Select>
           <Select value={filters.billing_cycle || "all"} onValueChange={(v) => setFilters({ ...filters, billing_cycle: v === "all" ? undefined : v })}>
@@ -169,9 +189,7 @@ export default function GestaoTenants() {
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
-                      Nenhum tenant encontrado.
-                    </TableCell>
+                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">Nenhum tenant encontrado.</TableCell>
                   </TableRow>
                 ) : (
                   filtered.map((c) => (
@@ -286,7 +304,6 @@ function TenantDetailDialog({ client, onClose, onStatusChange, onUpdate, onRefre
               <InfoRow label="Tipo" value={client.tenant_type === "reseller" ? "Revenda" : "Standard"} />
               <InfoRow label="Ativação" value={fmtDate(client.activation_date)} />
             </div>
-
             <div className="flex flex-wrap gap-2">
               {client.subscription_status !== "suspended" && (
                 <Button size="sm" variant="destructive" className="gap-1.5 text-xs" onClick={() => onStatusChange(client, "suspended")}>
@@ -322,11 +339,13 @@ function TenantDetailDialog({ client, onClose, onStatusChange, onUpdate, onRefre
                   <MiniStat label="Disponíveis" value={String(available)} highlight={available === 0} />
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
-                  <div
-                    className={`h-2 rounded-full transition-all ${usagePercent >= 100 ? "bg-destructive" : "bg-primary"}`}
-                    style={{ width: `${usagePercent}%` }}
-                  />
+                  <div className={`h-2 rounded-full transition-all ${usagePercent >= 100 ? "bg-destructive" : "bg-primary"}`} style={{ width: `${usagePercent}%` }} />
                 </div>
+                {available === 0 && (
+                  <p className="text-[11px] text-destructive font-medium text-center">
+                    ⚠ Limite de licenças atingido — novos usuários não podem ser criados neste tenant
+                  </p>
+                )}
                 <div className="grid grid-cols-3 gap-3">
                   <MiniStat label="Vencimento" value={fmtDate(client.next_due_date)} />
                   <MiniStat label="Carência até" value={fmtDate(client.grace_until)} />
