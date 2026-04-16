@@ -216,7 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (typedProfile?.company_id) {
         const { data: companyData } = await supabase
           .from("companies")
-          .select("id, nome_fantasia, razao_social, cnpj, is_reseller")
+          .select("id, nome_fantasia, razao_social, cnpj, is_reseller, reseller_panel_enabled, servidor_id")
           .eq("id", typedProfile.company_id)
           .maybeSingle();
         if (companyData) setCompanies([companyData as CompanyOption]);
