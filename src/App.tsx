@@ -49,6 +49,7 @@ import TenantSetupPublico from "./pages/TenantSetupPublico";
 import Planos from "./pages/Planos";
 import Eventos from "./pages/Eventos";
 import MeusTenants from "./pages/MeusTenants";
+import MinhaRevenda from "./pages/MinhaRevenda";
 import Academy from "./pages/Academy";
 import GestaoTenants from "./pages/GestaoTenants";
 
@@ -349,6 +350,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <MeusTenants />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/minha-revenda"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <MinhaRevenda />
                   </AppLayout>
                 </ProtectedRoute>
               }

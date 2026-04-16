@@ -104,6 +104,7 @@ export function Sidebar() {
 
   const [overdueCount, setOverdueCount] = useState(0);
   const [configOpen, setConfigOpen] = useState(false);
+  const [isResellerPanel, setIsResellerPanel] = useState(false);
   const { role, signOut, profile, isMasterTenantAdmin } = useAuth();
   const activeCompanyId = useActiveCompanyId();
   const [tenantLogoUrl, setTenantLogoUrl] = useState<string | null>(null);
@@ -127,11 +128,11 @@ export function Sidebar() {
   };
 
   useEffect(() => {
-    if (!activeCompanyId) { setTenantLogoUrl(null); return; }
-    const fetchLogo = async () => {
+    if (!activeCompanyId) { setTenantLogoUrl(null); setIsResellerPanel(false); return; }
+    const fetchCompanyInfo = async () => {
       const { data } = await supabase
         .from("companies")
-        .select("brand_logo_url, servidor_id")
+        .select("brand_logo_url, servidor_id, is_reseller, reseller_panel_enabled")
         .eq("id", activeCompanyId)
         .single();
       // Master tenant uses Accord logo
@@ -140,9 +141,10 @@ export function Sidebar() {
       } else {
         setTenantLogoUrl(null);
       }
+      setIsResellerPanel(!!data?.is_reseller && !!(data as any)?.reseller_panel_enabled);
     };
-    fetchLogo();
-    const handler = () => fetchLogo();
+    fetchCompanyInfo();
+    const handler = () => fetchCompanyInfo();
     window.addEventListener("brand-colors-updated", handler);
     window.addEventListener("tenant-switched", handler);
     return () => {
@@ -342,6 +344,12 @@ export function Sidebar() {
         {filteredNavigation.map((item) => (
           <NavItem key={t(item.nameKey)} item={item} isActive={location.pathname === item.href} />
         ))}
+        {isResellerPanel && (
+          <NavItem
+            item={{ nameKey: "nav.resellerPanel", href: "/minha-revenda", icon: Crown, roles: ["admin", "ceo", "master", "operador", "leitura", "administrativo", "financeiro", "comercial"] }}
+            isActive={location.pathname === "/minha-revenda"}
+          />
+        )}
       </nav>
 
       {/* Config & User */}
