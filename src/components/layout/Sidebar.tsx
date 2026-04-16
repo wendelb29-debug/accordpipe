@@ -128,11 +128,11 @@ export function Sidebar() {
   };
 
   useEffect(() => {
-    if (!activeCompanyId) { setTenantLogoUrl(null); return; }
-    const fetchLogo = async () => {
+    if (!activeCompanyId) { setTenantLogoUrl(null); setIsResellerPanel(false); return; }
+    const fetchCompanyInfo = async () => {
       const { data } = await supabase
         .from("companies")
-        .select("brand_logo_url, servidor_id")
+        .select("brand_logo_url, servidor_id, is_reseller, reseller_panel_enabled")
         .eq("id", activeCompanyId)
         .single();
       // Master tenant uses Accord logo
@@ -141,9 +141,10 @@ export function Sidebar() {
       } else {
         setTenantLogoUrl(null);
       }
+      setIsResellerPanel(!!data?.is_reseller && !!(data as any)?.reseller_panel_enabled);
     };
-    fetchLogo();
-    const handler = () => fetchLogo();
+    fetchCompanyInfo();
+    const handler = () => fetchCompanyInfo();
     window.addEventListener("brand-colors-updated", handler);
     window.addEventListener("tenant-switched", handler);
     return () => {
