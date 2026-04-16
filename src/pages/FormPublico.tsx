@@ -258,7 +258,15 @@ export default function FormPublico() {
   const headline = formConfig.headline || formConfig.name;
   const subheadline = formConfig.subheadline || formConfig.description || "Preencha o formulário e fale com nossa equipe.";
   const ctaText = formConfig.cta_text || "Enviar agora";
+  const tenantName = formConfig.tenant_name || "Accord";
+  const tenantInitials = tenantName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join("") || "A";
   const logoUrl = formConfig.brand_logo_url || accordLogo;
+  const [logoBroken, setLogoBrokenLocal] = [logoFailed, setLogoFailed];
   const primary = formConfig.brand_primary_color || "#3B82F6";
   const secondary = formConfig.brand_secondary_color || "#8B5CF6";
 
