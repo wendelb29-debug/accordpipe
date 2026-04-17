@@ -22,7 +22,11 @@ export function ProtectedRoute({ children, allowedRoles, requiredPermission }: P
   const tenantAccess = useTenantAccessGuard();
   const location = useLocation();
 
-  const isFullyLoaded = !loading && !permLoading && (user ? !!profile && role !== undefined : true);
+  const isFullyLoaded =
+    !loading &&
+    !permLoading &&
+    !tenantAccess.loading &&
+    (user ? !!profile && !!role : true);
 
   if (!isFullyLoaded) {
     return (
