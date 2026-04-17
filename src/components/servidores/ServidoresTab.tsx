@@ -99,7 +99,7 @@ export default function ServidoresTab() {
   const [generatingLink, setGeneratingLink] = useState(false);
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const { toast } = useToast();
-  const { isMaster, profile, user } = useAuth();
+  const { isMaster, isGlobalMaster, profile, user } = useAuth();
 
   const [formData, setFormData] = useState({
     razao_social: "",
@@ -533,7 +533,7 @@ export default function ServidoresTab() {
           <h2 className="text-lg font-semibold text-foreground">Tenants</h2>
           <p className="text-sm text-muted-foreground">Ambientes independentes vinculados por CNPJ</p>
         </div>
-        {isMaster && (
+        {isGlobalMaster && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button className="gap-2">
