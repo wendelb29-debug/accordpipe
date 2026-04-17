@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
-import { Building2, Check, ChevronRight, Shield, Loader2, Crown, Users } from "lucide-react";
+import { Building2, Check, ChevronRight, ChevronDown, Shield, Loader2, Crown, Home } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,6 +43,9 @@ export default function Servidores() {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [tenants, setTenants] = useState<TenantItem[]>([]);
   const [fetching, setFetching] = useState(true);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [subTenantsMap, setSubTenantsMap] = useState<Record<string, TenantItem[]>>({});
+  const [loadingSubsId, setLoadingSubsId] = useState<string | null>(null);
 
   const isMasterUser = !!profile?.is_master;
 
@@ -130,16 +133,44 @@ export default function Servidores() {
     }
   };
 
+  const toggleExpand = async (tenantId: string) => {
+    const next = new Set(expandedIds);
+    if (next.has(tenantId)) {
+      next.delete(tenantId);
+      setExpandedIds(next);
+      return;
+    }
+    next.add(tenantId);
+    setExpandedIds(next);
+    if (!subTenantsMap[tenantId]) {
+      setLoadingSubsId(tenantId);
+      try {
+        const { data } = await supabase
+          .from("companies")
+          .select("id, nome_fantasia, razao_social, cnpj, is_reseller, parent_tenant_id, servidor_id, status")
+          .eq("parent_tenant_id", tenantId)
+          .in("status", ["active", "teste"])
+          .order("razao_social");
+        setSubTenantsMap((prev) => ({ ...prev, [tenantId]: (data as TenantItem[]) || [] }));
+      } finally {
+        setLoadingSubsId(null);
+      }
+    }
+  };
+
   // Separate master tenant from rest, and group by hierarchy
   const masterTenants = tenants.filter(t => !t.servidor_id && !t.parent_tenant_id);
-  const childTenants = tenants.filter(t => t.servidor_id !== null || t.parent_tenant_id !== null);
+  // Top-level only: exclude tenants that are children of resellers (they appear nested)
+  const resellerIds = new Set(tenants.filter(t => t.is_reseller).map(t => t.id));
+  const childTenants = tenants.filter(t =>
+    (t.servidor_id !== null || t.parent_tenant_id !== null) &&
+    !(t.parent_tenant_id && resellerIds.has(t.parent_tenant_id))
+  );
 
   // For reseller: show self first then children
   const sortedTenants = isGlobalMaster
     ? [...masterTenants, ...childTenants]
     : tenants;
-
-  const showSwitchHint = tenants.length <= 1;
 
   return (
     <div className="relative min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden">
@@ -192,51 +223,125 @@ export default function Servidores() {
               const badge = typeBadgeConfig[tenantType];
               const isLoading = loadingId === tenant.id;
               const canSwitch = canSwitchTenant(tenant.id);
+              const isExpandable = tenant.is_reseller;
+              const isExpanded = expandedIds.has(tenant.id);
+              const subs = subTenantsMap[tenant.id] || [];
+              const isLoadingSubs = loadingSubsId === tenant.id;
 
               return (
-                <Card
-                  key={tenant.id}
-                  onClick={() => canSwitch && handleSelect(tenant.id)}
-                  className={`flex items-center gap-4 p-4 transition-all duration-200 backdrop-blur-sm ${
-                    canSwitch ? "cursor-pointer hover:shadow-lg hover:border-primary/40 hover:-translate-y-0.5" : "opacity-70 cursor-default"
-                  } ${
-                    isActive ? "border-primary bg-primary/5 shadow-md ring-1 ring-primary/20" : "border-border bg-card/80"
-                  } ${isLoading ? "opacity-80 pointer-events-none" : ""}`}
-                >
-                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                    isActive ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground"
-                  }`}>
-                    {isLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : tenantType === "MASTER" ? (
-                      <Shield className="h-5 w-5" />
-                    ) : tenantType === "REVENDEDOR" ? (
-                      <Crown className="h-5 w-5" />
-                    ) : (
-                      <Building2 className="h-5 w-5" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className={`font-semibold truncate ${isActive ? "text-primary" : "text-foreground"}`}>
-                        {tenant.nome_fantasia || tenant.razao_social}
-                      </p>
-                      <Badge variant="outline" className={`text-[10px] shrink-0 ${badge.className}`}>
-                        {badge.label}
-                      </Badge>
+                <div key={tenant.id} className="flex flex-col gap-2">
+                  <Card
+                    className={`flex items-center gap-4 p-4 transition-all duration-200 backdrop-blur-sm ${
+                      canSwitch ? "hover:shadow-lg hover:border-primary/40" : "opacity-70"
+                    } ${
+                      isActive ? "border-primary bg-primary/5 shadow-md ring-1 ring-primary/20" : "border-border bg-card/80"
+                    } ${isLoading ? "opacity-80 pointer-events-none" : ""}`}
+                  >
+                    <div
+                      onClick={() => canSwitch && handleSelect(tenant.id)}
+                      className={`flex items-center gap-4 flex-1 min-w-0 ${canSwitch ? "cursor-pointer" : "cursor-default"}`}
+                    >
+                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                        isActive ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground"
+                      }`}>
+                        {isLoading ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : tenantType === "MASTER" ? (
+                          <Shield className="h-5 w-5" />
+                        ) : tenantType === "REVENDEDOR" ? (
+                          <Crown className="h-5 w-5" />
+                        ) : (
+                          <Building2 className="h-5 w-5" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className={`font-semibold truncate ${isActive ? "text-primary" : "text-foreground"}`}>
+                            {tenant.nome_fantasia || tenant.razao_social}
+                          </p>
+                          <Badge variant="outline" className={`text-[10px] shrink-0 ${badge.className}`}>
+                            {badge.label}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">{tenant.cnpj}</p>
+                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">{tenant.cnpj}</p>
-                  </div>
-                  {isLoading ? (
-                    <span className="text-xs text-muted-foreground">Carregando...</span>
-                  ) : isActive ? (
-                    <Badge variant="outline" className="border-primary/30 text-primary text-[10px] shrink-0">
-                      <Check className="h-3 w-3 mr-1" /> Ativo
-                    </Badge>
-                  ) : canSwitch ? (
-                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                  ) : null}
-                </Card>
+                    {isLoading ? (
+                      <span className="text-xs text-muted-foreground">Carregando...</span>
+                    ) : isActive ? (
+                      <Badge variant="outline" className="border-primary/30 text-primary text-[10px] shrink-0">
+                        <Check className="h-3 w-3 mr-1" /> Ativo
+                      </Badge>
+                    ) : null}
+                    {isExpandable ? (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleExpand(tenant.id); }}
+                        className="h-8 w-8 rounded-md flex items-center justify-center hover:bg-muted transition-colors shrink-0"
+                        aria-label={isExpanded ? "Recolher" : "Expandir"}
+                      >
+                        {isLoadingSubs ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        ) : isExpanded ? (
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </button>
+                    ) : canSwitch && !isActive ? (
+                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                    ) : null}
+                  </Card>
+
+                  {isExpandable && isExpanded && (
+                    <div className="ml-6 pl-4 border-l-2 border-border/60 flex flex-col gap-2 animate-fade-in">
+                      {isLoadingSubs && subs.length === 0 ? (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                          <Loader2 className="h-3 w-3 animate-spin" /> Carregando sub-tenants...
+                        </div>
+                      ) : subs.length === 0 ? (
+                        <p className="text-xs text-muted-foreground py-2">Nenhum sub-tenant criado.</p>
+                      ) : (
+                        subs.map((sub) => {
+                          const subActive = activeCompanyId === sub.id;
+                          const subLoading = loadingId === sub.id;
+                          const subCanSwitch = canSwitchTenant(sub.id);
+                          return (
+                            <Card
+                              key={sub.id}
+                              onClick={() => subCanSwitch && handleSelect(sub.id)}
+                              className={`flex items-center gap-3 p-3 transition-all duration-200 backdrop-blur-sm ${
+                                subCanSwitch ? "cursor-pointer hover:shadow-md hover:border-primary/40" : "opacity-70 cursor-default"
+                              } ${
+                                subActive ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border bg-card/60"
+                              } ${subLoading ? "opacity-80 pointer-events-none" : ""}`}
+                            >
+                              <div className={`h-8 w-8 rounded-md flex items-center justify-center shrink-0 ${
+                                subActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                              }`}>
+                                {subLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Home className="h-4 w-4" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm font-medium truncate ${subActive ? "text-primary" : "text-foreground"}`}>
+                                  {sub.nome_fantasia || sub.razao_social}
+                                </p>
+                                <p className="text-[11px] text-muted-foreground truncate">{sub.cnpj}</p>
+                              </div>
+                              {subActive ? (
+                                <Badge variant="outline" className="border-primary/30 text-primary text-[10px] shrink-0">
+                                  <Check className="h-3 w-3 mr-1" /> Ativo
+                                </Badge>
+                              ) : subCanSwitch ? (
+                                <span className="text-xs text-primary font-medium flex items-center gap-1 shrink-0">
+                                  Entrar <ChevronRight className="h-3 w-3" />
+                                </span>
+                              ) : null}
+                            </Card>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
