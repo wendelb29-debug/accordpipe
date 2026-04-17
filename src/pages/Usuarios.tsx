@@ -882,12 +882,12 @@ export default function Usuarios() {
           </Dialog>
         </TabsContent>
 
-        {isGlobalMaster && (
+        {canShowGlobalTenantTabs && (
           <TabsContent value="servidores">
             <ServidoresTab />
           </TabsContent>
         )}
-        {isGlobalMaster && (
+        {canShowGlobalTenantTabs && (
           <TabsContent value="servidores-teste">
             <ServidoresTesteTab />
           </TabsContent>
