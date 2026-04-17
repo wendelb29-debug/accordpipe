@@ -41,37 +41,35 @@ export const AccordEmailLayout = ({
     <Body style={main}>
       <Container style={outer}>
         <Container style={card}>
-          <Section style={topBar} />
-
+          {/* HEADER COM GRADIENTE E LOGO */}
           <Section style={headerSection}>
             <table width="100%" cellPadding={0} cellSpacing={0}>
               <tr>
-                <td>
+                <td align="left" valign="middle">
                   <Img
                     src={LOGO_URL}
                     alt="ACCORD"
-                    width="140"
+                    width="130"
                     height="auto"
                     style={logo}
                   />
                 </td>
-                <td align="right">
+                <td align="right" valign="middle">
                   <span style={badge}>ENTERPRISE</span>
                 </td>
               </tr>
             </table>
           </Section>
 
-          <Section style={iconSection}>
+          {/* BODY BRANCO */}
+          <Section style={bodySection}>
             <div style={iconBox}>{emoji}</div>
-            <Heading as="h1" style={h1}>
+            <Heading as="h2" style={h1}>
               {title}
             </Heading>
             <Text style={bodyText}>{body}</Text>
-          </Section>
 
-          <Section style={buttonSection}>
-            <Section style={{ textAlign: 'center' }}>
+            <Section style={{ textAlign: 'center', marginTop: '8px' }}>
               <Button style={button} href={confirmationUrl}>
                 {buttonText}
               </Button>
@@ -83,18 +81,17 @@ export const AccordEmailLayout = ({
                 {confirmationUrl}
               </Link>
             </Section>
-          </Section>
 
-          <Section style={securityWrap}>
             <Section style={securityBox}>
               <Text style={securityText}>
                 🔒 <strong style={securityStrong}>Segurança:</strong> Se você
-                não solicitou esta ação, ignore este e-mail. Nenhuma alteração
-                será feita na sua conta.
+                não solicitou esta ação, ignore este e-mail. Sua conta
+                permanece segura.
               </Text>
             </Section>
           </Section>
 
+          {/* FOOTER */}
           <Section style={footer}>
             <Text style={footerTitle}>ACCORD PLATAFORMA EMPRESARIAL</Text>
             <Text style={footerCopy}>
@@ -110,51 +107,48 @@ export const AccordEmailLayout = ({
 const main = {
   margin: 0,
   padding: 0,
-  backgroundColor: '#ffffff',
+  backgroundColor: '#f0f2f8',
   fontFamily: "'Segoe UI', Arial, sans-serif",
 }
 const outer = {
-  background: '#0a0c14',
+  background: '#f0f2f8',
   padding: '48px 20px',
   width: '100%',
   maxWidth: '100%',
 }
 const card = {
-  width: '540px',
+  width: '520px',
   maxWidth: '100%',
-  backgroundColor: '#12141f',
   borderRadius: '20px',
-  border: '1px solid #1e2035',
   overflow: 'hidden',
   margin: '0 auto',
   padding: 0,
-}
-const topBar = {
-  background: 'linear-gradient(135deg,#1a3a8f 0%,#2563EB 40%,#7A3FF2 100%)',
-  height: '5px',
-  padding: 0,
-  lineHeight: '5px',
-  fontSize: 0,
+  boxShadow: '0 8px 40px rgba(37,99,235,0.12)',
 }
 const headerSection = {
-  padding: '36px 40px 28px',
-  borderBottom: '1px solid #1e2035',
+  background: 'linear-gradient(135deg,#1a3a8f 0%,#2563EB 45%,#7A3FF2 100%)',
+  padding: '36px 40px',
+  borderRadius: '20px 20px 0 0',
 }
 const logo = {
   display: 'block',
-  maxWidth: '140px',
+  maxWidth: '130px',
   height: 'auto',
 }
 const badge = {
-  background: '#1e2240',
-  border: '1px solid #2a2f52',
+  background: 'rgba(255,255,255,0.15)',
+  border: '1px solid rgba(255,255,255,0.25)',
   borderRadius: '20px',
   padding: '4px 12px',
   fontSize: '10px',
-  color: '#6b70a0',
-  letterSpacing: '1px',
+  color: 'rgba(255,255,255,0.85)',
+  letterSpacing: '2px',
 }
-const iconSection = { padding: '40px 40px 0', textAlign: 'center' as const }
+const bodySection = {
+  background: '#ffffff',
+  padding: '48px 40px 36px',
+  textAlign: 'center' as const,
+}
 const iconBox = {
   display: 'inline-block',
   background: 'linear-gradient(135deg,#1e3a8a,#4c1d95)',
@@ -163,23 +157,23 @@ const iconBox = {
   height: '56px',
   lineHeight: '56px',
   fontSize: '26px',
-  marginBottom: '20px',
+  marginBottom: '24px',
+  color: '#ffffff',
 }
 const h1 = {
   margin: '0 0 12px',
-  color: '#ffffff',
+  color: '#0f172a',
   fontSize: '24px',
   fontWeight: 700 as const,
   lineHeight: '1.3',
 }
 const bodyText = {
-  margin: '0 auto',
-  color: '#6b6f94',
+  margin: '0 auto 36px',
+  color: '#64748b',
   fontSize: '14px',
   lineHeight: '1.8',
   maxWidth: '380px',
 }
-const buttonSection = { padding: '36px 40px' }
 const button = {
   display: 'inline-block',
   background: 'linear-gradient(135deg,#2563EB,#7A3FF2)',
@@ -192,51 +186,54 @@ const button = {
   letterSpacing: '0.5px',
 }
 const altLinkBox = {
-  marginTop: '24px',
-  background: '#0f1120',
-  border: '1px solid #1e2035',
+  marginTop: '28px',
+  background: '#f8faff',
+  border: '1px solid #e2e8f0',
   borderRadius: '10px',
   padding: '14px 16px',
+  textAlign: 'left' as const,
 }
 const altLinkLabel = {
-  margin: '0 0 6px',
-  color: '#3d4166',
-  fontSize: '11px',
-  letterSpacing: '1px',
+  margin: '0 0 5px',
+  color: '#94a3b8',
+  fontSize: '10px',
+  letterSpacing: '1.5px',
   textTransform: 'uppercase' as const,
 }
 const altLink = {
-  color: '#4a6cf7',
+  color: '#2563EB',
   fontSize: '12px',
   wordBreak: 'break-all' as const,
   textDecoration: 'none',
 }
-const securityWrap = { padding: '0 40px 32px' }
 const securityBox = {
-  background: '#0f1120',
-  border: '1px solid #1e2035',
+  marginTop: '16px',
+  background: '#f8faff',
+  border: '1px solid #e2e8f0',
   borderLeft: '3px solid #7A3FF2',
   borderRadius: '10px',
   padding: '14px 16px',
+  textAlign: 'left' as const,
 }
 const securityText = {
   margin: 0,
-  color: '#4a4f72',
+  color: '#64748b',
   fontSize: '12px',
   lineHeight: '1.6',
 }
-const securityStrong = { color: '#6b6f94' }
+const securityStrong = { color: '#334155' }
 const footer = {
-  background: '#0a0c14',
-  borderTop: '1px solid #1e2035',
+  background: '#f8faff',
+  borderTop: '1px solid #e2e8f0',
+  borderRadius: '0 0 20px 20px',
   padding: '24px 40px',
   textAlign: 'center' as const,
 }
 const footerTitle = {
-  margin: '0 0 8px',
-  color: '#2a2f52',
+  margin: '0 0 4px',
+  color: '#94a3b8',
   fontSize: '11px',
   letterSpacing: '1px',
   textTransform: 'uppercase' as const,
 }
-const footerCopy = { margin: 0, color: '#1e2240', fontSize: '11px' }
+const footerCopy = { margin: 0, color: '#cbd5e1', fontSize: '11px' }

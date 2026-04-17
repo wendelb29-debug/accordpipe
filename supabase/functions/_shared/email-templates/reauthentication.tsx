@@ -8,10 +8,13 @@ import {
   Head,
   Heading,
   Html,
+  Img,
   Preview,
   Section,
   Text,
 } from 'npm:@react-email/components@0.0.22'
+
+const LOGO_URL = 'https://nglwgzknqgihlbkdnflu.supabase.co/storage/v1/object/public/email-assets/accord-logo.png'
 
 interface ReauthenticationEmailProps {
   token: string
@@ -24,41 +27,28 @@ export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => 
     <Body style={main}>
       <Container style={outer}>
         <Container style={card}>
-          <Section style={topBar} />
-
           <Section style={headerSection}>
             <table width="100%" cellPadding={0} cellSpacing={0}>
               <tr>
-                <td>
-                  <img
-                    src="https://nglwgzknqgihlbkdnflu.supabase.co/storage/v1/object/public/email-assets/accord-logo.png"
-                    alt="ACCORD"
-                    width={140}
-                    style={{ display: 'block', maxWidth: '140px', height: 'auto' }}
-                  />
+                <td align="left" valign="middle">
+                  <Img src={LOGO_URL} alt="ACCORD" width="130" height="auto" style={logo} />
                 </td>
-                <td align="right">
+                <td align="right" valign="middle">
                   <span style={badge}>ENTERPRISE</span>
                 </td>
               </tr>
             </table>
           </Section>
 
-          <Section style={iconSection}>
+          <Section style={bodySection}>
             <div style={iconBox}>🛡️</div>
-            <Heading as="h1" style={h1}>
-              Confirme sua identidade
-            </Heading>
+            <Heading as="h2" style={h1}>Confirme sua identidade</Heading>
             <Text style={bodyText}>
               Por segurança, confirme sua identidade para continuar.
             </Text>
-          </Section>
 
-          <Section style={{ padding: '36px 40px' }}>
             <Text style={codeStyle}>{token}</Text>
-          </Section>
 
-          <Section style={securityWrap}>
             <Section style={securityBox}>
               <Text style={securityText}>
                 🔒 <strong style={securityStrong}>Segurança:</strong> Se você
@@ -69,9 +59,7 @@ export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => 
 
           <Section style={footer}>
             <Text style={footerTitle}>ACCORD PLATAFORMA EMPRESARIAL</Text>
-            <Text style={footerCopy}>
-              © 2026 Accord. Todos os direitos reservados.
-            </Text>
+            <Text style={footerCopy}>© 2026 Accord. Todos os direitos reservados.</Text>
           </Section>
         </Container>
       </Container>
@@ -81,44 +69,32 @@ export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => 
 
 export default ReauthenticationEmail
 
-const main = { margin: 0, padding: 0, backgroundColor: '#ffffff', fontFamily: "'Segoe UI', Arial, sans-serif" }
-const outer = { background: '#0a0c14', padding: '48px 20px', width: '100%', maxWidth: '100%' }
+const main = { margin: 0, padding: 0, backgroundColor: '#f0f2f8', fontFamily: "'Segoe UI', Arial, sans-serif" }
+const outer = { background: '#f0f2f8', padding: '48px 20px', width: '100%', maxWidth: '100%' }
 const card = {
-  width: '540px',
+  width: '520px',
   maxWidth: '100%',
-  backgroundColor: '#12141f',
   borderRadius: '20px',
-  border: '1px solid #1e2035',
   overflow: 'hidden',
   margin: '0 auto',
+  boxShadow: '0 8px 40px rgba(37,99,235,0.12)',
 }
-const topBar = {
-  background: 'linear-gradient(135deg,#1a3a8f 0%,#2563EB 40%,#7A3FF2 100%)',
-  height: '5px',
-  padding: 0,
-  lineHeight: '5px',
-  fontSize: 0,
+const headerSection = {
+  background: 'linear-gradient(135deg,#1a3a8f 0%,#2563EB 45%,#7A3FF2 100%)',
+  padding: '36px 40px',
+  borderRadius: '20px 20px 0 0',
 }
-const headerSection = { padding: '36px 40px 28px', borderBottom: '1px solid #1e2035' }
-const brand = { fontSize: '20px', fontWeight: 800 as const, color: '#ffffff', letterSpacing: '2px' }
-const brandSub = {
-  marginLeft: '8px',
-  fontSize: '11px',
-  color: '#4a4f72',
-  letterSpacing: '3px',
-  textTransform: 'uppercase' as const,
-  verticalAlign: 'middle' as const,
-}
+const logo = { display: 'block', maxWidth: '130px', height: 'auto' }
 const badge = {
-  background: '#1e2240',
-  border: '1px solid #2a2f52',
+  background: 'rgba(255,255,255,0.15)',
+  border: '1px solid rgba(255,255,255,0.25)',
   borderRadius: '20px',
   padding: '4px 12px',
   fontSize: '10px',
-  color: '#6b70a0',
-  letterSpacing: '1px',
+  color: 'rgba(255,255,255,0.85)',
+  letterSpacing: '2px',
 }
-const iconSection = { padding: '40px 40px 0', textAlign: 'center' as const }
+const bodySection = { background: '#ffffff', padding: '48px 40px 36px', textAlign: 'center' as const }
 const iconBox = {
   display: 'inline-block',
   background: 'linear-gradient(135deg,#1e3a8a,#4c1d95)',
@@ -127,43 +103,46 @@ const iconBox = {
   height: '56px',
   lineHeight: '56px',
   fontSize: '26px',
-  marginBottom: '20px',
+  marginBottom: '24px',
+  color: '#ffffff',
 }
-const h1 = { margin: '0 0 12px', color: '#ffffff', fontSize: '24px', fontWeight: 700 as const, lineHeight: '1.3' }
-const bodyText = { margin: '0 auto', color: '#6b6f94', fontSize: '14px', lineHeight: '1.8', maxWidth: '380px' }
+const h1 = { margin: '0 0 12px', color: '#0f172a', fontSize: '24px', fontWeight: 700 as const, lineHeight: '1.3' }
+const bodyText = { margin: '0 auto 28px', color: '#64748b', fontSize: '14px', lineHeight: '1.8', maxWidth: '380px' }
 const codeStyle = {
   fontFamily: 'Courier, monospace',
-  fontSize: '36px',
+  fontSize: '32px',
   fontWeight: 700 as const,
   color: '#ffffff',
   background: 'linear-gradient(135deg,#2563EB,#7A3FF2)',
   letterSpacing: '10px',
-  padding: '24px',
+  padding: '20px',
   borderRadius: '12px',
   textAlign: 'center' as const,
-  margin: 0,
+  margin: '0 0 16px',
 }
-const securityWrap = { padding: '0 40px 32px' }
 const securityBox = {
-  background: '#0f1120',
-  border: '1px solid #1e2035',
+  marginTop: '16px',
+  background: '#f8faff',
+  border: '1px solid #e2e8f0',
   borderLeft: '3px solid #7A3FF2',
   borderRadius: '10px',
   padding: '14px 16px',
+  textAlign: 'left' as const,
 }
-const securityText = { margin: 0, color: '#4a4f72', fontSize: '12px', lineHeight: '1.6' }
-const securityStrong = { color: '#6b6f94' }
+const securityText = { margin: 0, color: '#64748b', fontSize: '12px', lineHeight: '1.6' }
+const securityStrong = { color: '#334155' }
 const footer = {
-  background: '#0a0c14',
-  borderTop: '1px solid #1e2035',
+  background: '#f8faff',
+  borderTop: '1px solid #e2e8f0',
+  borderRadius: '0 0 20px 20px',
   padding: '24px 40px',
   textAlign: 'center' as const,
 }
 const footerTitle = {
-  margin: '0 0 8px',
-  color: '#2a2f52',
+  margin: '0 0 4px',
+  color: '#94a3b8',
   fontSize: '11px',
   letterSpacing: '1px',
   textTransform: 'uppercase' as const,
 }
-const footerCopy = { margin: 0, color: '#1e2240', fontSize: '11px' }
+const footerCopy = { margin: 0, color: '#cbd5e1', fontSize: '11px' }
