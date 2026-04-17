@@ -34,9 +34,15 @@ export default function AceitarConvite() {
         .from("user_invitations")
         .select("*")
         .eq("token", token)
-        .single();
+        .maybeSingle();
 
-      if (error || !data) {
+      if (error) {
+        console.error("[AceitarConvite] erro ao buscar convite:", error);
+        setLoading(false);
+        return;
+      }
+
+      if (!data) {
         setLoading(false);
         return;
       }
@@ -48,8 +54,8 @@ export default function AceitarConvite() {
       }
 
       setInvitation(data);
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error("[AceitarConvite] exceção:", err);
     } finally {
       setLoading(false);
     }
