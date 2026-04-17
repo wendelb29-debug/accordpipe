@@ -11,9 +11,10 @@ interface InviteEmailProps {
 
 export const InviteEmail = ({ confirmationUrl }: InviteEmailProps) => (
   <AccordEmailLayout
-    preview="Você foi convidado para a Accord"
-    title="Você foi convidado! 🚀"
-    body="Você recebeu um convite para acessar a plataforma Accord. Clique abaixo para criar sua conta e aceitar o convite."
+    preview="ACCORD — Você foi convidado"
+    emoji="🚀"
+    title="Você foi convidado!"
+    body="Você recebeu um convite para acessar a Accord."
     buttonText="Aceitar convite"
     confirmationUrl={confirmationUrl}
   />

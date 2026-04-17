@@ -10,9 +10,10 @@ interface MagicLinkEmailProps {
 
 export const MagicLinkEmail = ({ confirmationUrl }: MagicLinkEmailProps) => (
   <AccordEmailLayout
-    preview="Seu link de acesso à Accord"
-    title="Seu link de acesso 🔑"
-    body="Aqui está seu link de acesso instantâneo à Accord. Este link é válido por 24 horas e só pode ser usado uma vez."
+    preview="ACCORD — Seu link de acesso"
+    emoji="🔑"
+    title="Seu link de acesso"
+    body="Link de acesso instantâneo. Válido por 24h, uso único."
     buttonText="Acessar agora"
     confirmationUrl={confirmationUrl}
   />

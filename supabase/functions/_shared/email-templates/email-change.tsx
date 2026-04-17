@@ -12,10 +12,11 @@ interface EmailChangeEmailProps {
 
 export const EmailChangeEmail = ({ confirmationUrl }: EmailChangeEmailProps) => (
   <AccordEmailLayout
-    preview="Confirme seu novo e-mail na Accord"
-    title="Confirmação de novo e-mail ✉️"
-    body="Você solicitou a alteração do e-mail da sua conta. Clique abaixo para confirmar e ativar o novo endereço."
-    buttonText="Confirmar novo e-mail"
+    preview="ACCORD — Confirme seu novo e-mail"
+    emoji="✉️"
+    title="Confirme seu novo e-mail"
+    body="Confirme o novo endereço para ativar a alteração."
+    buttonText="Confirmar e-mail"
     confirmationUrl={confirmationUrl}
   />
 )
