@@ -42,6 +42,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppRole, useAuth } from "@/contexts/AuthContext";
 import { PermissionsEditor } from "@/components/usuarios/PermissionsEditor";
 import { WorkspacePermissionsEditor } from "@/components/usuarios/WorkspacePermissionsEditor";
+import { InviteUserDialog } from "@/components/usuarios/InviteUserDialog";
 
 interface UserWithRole {
   id: string;
@@ -479,10 +480,16 @@ export default function Usuarios() {
                 <h2 className="text-lg font-semibold text-foreground">Usuários</h2>
                 <p className="text-sm text-muted-foreground">Gerencie os usuários do sistema</p>
               </div>
-              <Button className="gap-2" onClick={() => handleOpenDialog()}>
-                <Plus className="h-4 w-4" />
-                Novo Usuário
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" className="gap-2" onClick={() => setInviteOpen(true)}>
+                  <Send className="h-4 w-4" />
+                  Convidar
+                </Button>
+                <Button className="gap-2" onClick={() => handleOpenDialog()}>
+                  <Plus className="h-4 w-4" />
+                  Novo Usuário
+                </Button>
+              </div>
             </div>
 
             {/* Search */}
