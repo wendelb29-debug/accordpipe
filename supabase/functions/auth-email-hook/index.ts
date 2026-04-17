@@ -17,12 +17,12 @@ const corsHeaders = {
 }
 
 const EMAIL_SUBJECTS: Record<string, string> = {
-  signup: 'ACCORD — Confirme seu cadastro',
-  invite: 'ACCORD — Você foi convidado',
-  magiclink: 'ACCORD — Seu link de acesso',
-  recovery: 'ACCORD — Redefinição de senha',
-  email_change: 'ACCORD — Confirme seu novo e-mail',
-  reauthentication: 'ACCORD — Confirme sua identidade',
+  signup: '[Accord] Confirme seu cadastro',
+  invite: '[Accord] Você foi convidado',
+  magiclink: '[Accord] Seu link de acesso',
+  recovery: '[Accord] Redefinição de senha',
+  email_change: '[Accord] Confirme seu novo e-mail',
+  reauthentication: '[Accord] Confirme sua identidade',
 }
 
 // Template mapping
