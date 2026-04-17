@@ -137,7 +137,7 @@ export default function ServidoresTab() {
   const fetchCompanies = async () => {
     try {
       const [companiesRes, tenantLinksRes, setupRes] = await Promise.all([
-        supabase.from("companies").select("*").is("servidor_id", null).order("created_at", { ascending: false }),
+        supabase.from("companies").select("*").order("created_at", { ascending: false }),
         supabase.from("user_tenants").select("tenant_id"),
         supabase.from("tenant_setup_requests").select("*").in("status", ["pending", "submitted"]).order("created_at", { ascending: false }),
       ]);
