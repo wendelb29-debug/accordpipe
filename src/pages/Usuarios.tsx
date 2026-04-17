@@ -455,13 +455,13 @@ export default function Usuarios() {
             <User className="h-4 w-4" />
             Usuários
           </TabsTrigger>
-          {isGlobalMaster && (
+          {isGlobalMaster && profile?.company_id === activeCompanyId && (
             <TabsTrigger value="servidores" className="gap-2">
               <Server className="h-4 w-4" />
               Tenants
             </TabsTrigger>
           )}
-          {isGlobalMaster && (
+          {isGlobalMaster && profile?.company_id === activeCompanyId && (
             <TabsTrigger value="servidores-teste" className="gap-2">
               <FlaskConical className="h-4 w-4" />
               Tenants Teste
@@ -881,12 +881,12 @@ export default function Usuarios() {
           </Dialog>
         </TabsContent>
 
-        {isGlobalMaster && (
+        {isGlobalMaster && profile?.company_id === activeCompanyId && (
           <TabsContent value="servidores">
             <ServidoresTab />
           </TabsContent>
         )}
-        {isGlobalMaster && (
+        {isGlobalMaster && profile?.company_id === activeCompanyId && (
           <TabsContent value="servidores-teste">
             <ServidoresTesteTab />
           </TabsContent>
