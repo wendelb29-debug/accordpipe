@@ -134,7 +134,8 @@ export default function ServidoresTab() {
 
   useEffect(() => {
     fetchCompanies();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCompanyId, isResellerTenant, isGlobalMaster]);
 
   const fetchCompanies = async () => {
     try {
@@ -565,7 +566,7 @@ export default function ServidoresTab() {
           <h2 className="text-lg font-semibold text-foreground">Tenants</h2>
           <p className="text-sm text-muted-foreground">Ambientes independentes vinculados por CNPJ</p>
         </div>
-        {isGlobalMaster && (
+        {(isGlobalMaster || isResellerTenant) && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button className="gap-2">
@@ -579,10 +580,12 @@ export default function ServidoresTab() {
                 <Building2 className="h-4 w-4" />
                 Criar Tenant Manualmente
               </DropdownMenuItem>
-              <DropdownMenuItem className="gap-2" onClick={handleGenerateSetupLink} disabled={generatingLink}>
-                {generatingLink ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
-                Gerar Link de Configuração
-              </DropdownMenuItem>
+              {isGlobalMaster && (
+                <DropdownMenuItem className="gap-2" onClick={handleGenerateSetupLink} disabled={generatingLink}>
+                  {generatingLink ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+                  Gerar Link de Configuração
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
