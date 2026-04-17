@@ -672,6 +672,7 @@ export default function ServidoresTab() {
             <TableRow>
               <TableHead>Tenant</TableHead>
               <TableHead>CNPJ</TableHead>
+              {isGlobalMaster && <TableHead>Revendedor</TableHead>}
               <TableHead>Responsável</TableHead>
               <TableHead>Usuários</TableHead>
               <TableHead>Status</TableHead>
@@ -681,7 +682,7 @@ export default function ServidoresTab() {
           <TableBody>
             {filteredCompanies.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={isGlobalMaster ? 7 : 6} className="text-center text-muted-foreground py-8">
                   Nenhum tenant encontrado.
                 </TableCell>
               </TableRow>
