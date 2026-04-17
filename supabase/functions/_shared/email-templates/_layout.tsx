@@ -36,9 +36,20 @@ export const AccordEmailLayout = ({
   confirmationUrl,
 }: AccordEmailProps) => (
   <Html lang="pt-BR" dir="ltr">
-    <Head />
+    <Head>
+      <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+      <meta name="x-apple-disable-message-reformatting" />
+      <meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no" />
+      <meta name="color-scheme" content="light only" />
+      <meta name="supported-color-schemes" content="light" />
+    </Head>
     <Preview>{preview}</Preview>
     <Body style={main}>
+      {/* Preheader oculto — aparece na prévia do Gmail/Outlook */}
+      <div style={{ display: 'none', maxHeight: 0, overflow: 'hidden', opacity: 0, color: 'transparent' }}>
+        {preview}
+        {'\u00A0\u200C'.repeat(60)}
+      </div>
       <Container style={outer}>
         <Container style={card}>
           {/* HEADER COM GRADIENTE E LOGO CENTRALIZADA */}
