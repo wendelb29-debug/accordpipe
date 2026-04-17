@@ -60,7 +60,6 @@ export default function FormPublico() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [honeypot, setHoneypot] = useState("");
   const [timestamp] = useState(Date.now());
-  const [logoFailed, setLogoFailed] = useState(false);
 
   // UTM tracking
   const utmData = useMemo(() => ({
@@ -259,113 +258,94 @@ export default function FormPublico() {
   const headline = formConfig.headline || formConfig.name;
   const subheadline = formConfig.subheadline || formConfig.description || "Preencha o formulário e fale com nossa equipe.";
   const ctaText = formConfig.cta_text || "Enviar agora";
-  const tenantName = formConfig.tenant_name || "Accord";
-  const tenantInitials = tenantName
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase())
-    .join("") || "A";
   const logoUrl = formConfig.brand_logo_url || accordLogo;
-  const showLogoImage = !logoFailed && !!logoUrl;
-  const primary = formConfig.brand_primary_color || "#3B82F6";
-  const secondary = formConfig.brand_secondary_color || "#8B5CF6";
+  const primary = formConfig.brand_primary_color || "hsl(217, 91%, 60%)";
+  const secondary = formConfig.brand_secondary_color || "hsl(262, 83%, 58%)";
 
   return (
     <div
-      className="min-h-screen relative overflow-hidden text-white"
+      className="min-h-screen relative overflow-hidden"
       style={{
         ...brandStyle,
-        background: "#070B14",
+        background: `linear-gradient(135deg, ${formConfig.brand_bg_color || "#0a0a0f"} 0%, ${primary}10 50%, ${secondary}15 100%)`,
+        color: formConfig.brand_text_color || "hsl(var(--foreground))",
       }}
     >
-      {/* Premium ambient gradients (Accord home style) */}
+      {/* Decorative gradient blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
-          className="absolute -top-48 -right-48 w-[700px] h-[700px] rounded-full blur-3xl opacity-25"
-          style={{ background: `radial-gradient(circle, ${primary} 0%, transparent 70%)` }}
+          className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full blur-3xl opacity-30"
+          style={{ background: primary }}
         />
         <div
-          className="absolute -bottom-48 -left-48 w-[700px] h-[700px] rounded-full blur-3xl opacity-25"
-          style={{ background: `radial-gradient(circle, ${secondary} 0%, transparent 70%)` }}
-        />
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full blur-3xl opacity-10"
-          style={{ background: `radial-gradient(circle, ${primary} 0%, transparent 60%)` }}
-        />
-        {/* Grid overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
-            backgroundSize: "48px 48px",
-          }}
+          className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full blur-3xl opacity-30"
+          style={{ background: secondary }}
         />
       </div>
 
-      <div className="relative max-w-6xl mx-auto px-4 py-6 lg:py-12 min-h-screen flex flex-col">
+      <div className="relative max-w-6xl mx-auto px-4 py-8 lg:py-16">
         {/* Header logo */}
-        <div className="flex items-center mb-8 lg:mb-12 animate-fade-in">
-          <img
-            src={accordLogo}
-            alt="Accord"
-            className="h-10 lg:h-12 object-contain brightness-0 invert"
-          />
+        <div className="flex items-center justify-between mb-12">
+          <img src={logoUrl} alt={formConfig.tenant_name || "Logo"} className="h-10 object-contain" />
+          {formConfig.tenant_name && (
+            <span className="text-sm opacity-70 hidden sm:block">{formConfig.tenant_name}</span>
+          )}
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center flex-1">
-          {/* Left — Hero (mobile: shows after form) */}
-          <div className="space-y-6 lg:pr-8 order-2 lg:order-1 animate-fade-in">
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+          {/* Left — Hero */}
+          <div className="space-y-6 lg:pr-8">
             <div
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium border"
-              style={{
-                background: `${primary}15`,
-                color: primary,
-                borderColor: `${primary}30`,
-              }}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium"
+              style={{ background: `${primary}20`, color: primary }}
             >
               <Sparkles className="h-3.5 w-3.5" />
-              Atendimento especializado
+              {formConfig.tenant_name || "Atendimento personalizado"}
             </div>
 
-            <h1 className="text-4xl lg:text-6xl font-bold leading-[1.05] tracking-tight text-white">
+            <h1
+              className="text-4xl lg:text-6xl font-bold leading-tight tracking-tight"
+              style={{
+                background: `linear-gradient(135deg, ${primary}, ${secondary})`,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
               {headline}
             </h1>
 
-            <p className="text-base lg:text-lg text-white/70 leading-relaxed max-w-xl">
+            <p className="text-lg lg:text-xl opacity-80 leading-relaxed">
               {subheadline}
             </p>
 
             {/* Benefits */}
-            <div className="flex flex-wrap gap-3 pt-2">
+            <div className="grid sm:grid-cols-3 gap-4 pt-4">
               {[
                 { icon: Zap, label: "Atendimento rápido" },
                 { icon: ShieldCheck, label: "Dados seguros" },
                 { icon: Sparkles, label: "Sem compromisso" },
               ].map(({ icon: Icon, label }, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-2 text-sm text-white/80 px-3 py-2 rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-sm"
-                >
+                <div key={i} className="flex items-center gap-2 text-sm opacity-80">
                   <div
-                    className="h-7 w-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                    className="h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0"
                     style={{ background: `${primary}20`, color: primary }}
                   >
-                    <Icon className="h-3.5 w-3.5" />
+                    <Icon className="h-4 w-4" />
                   </div>
-                  <span className="font-medium">{label}</span>
+                  <span>{label}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Right — Form card */}
-          <div className="order-1 lg:order-2 animate-fade-in">
+          <div>
             <Card
-              className="border border-white/10 shadow-2xl backdrop-blur-2xl overflow-hidden"
+              className="border-0 shadow-2xl backdrop-blur-xl"
               style={{
-                background: "rgba(255, 255, 255, 0.04)",
-                boxShadow: `0 30px 90px -20px ${primary}30, 0 0 0 1px rgba(255,255,255,0.05)`,
+                background: "hsl(var(--card) / 0.85)",
+                boxShadow: `0 25px 80px -20px ${primary}40`,
               }}
             >
               <CardContent className="p-6 lg:p-8">
@@ -385,17 +365,15 @@ export default function FormPublico() {
                     const config = FIELD_CONFIG[fieldId];
                     if (!config) return null;
                     const Icon = config.icon;
-                    const inputClass = "h-11 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-1 focus-visible:ring-offset-0 transition-colors";
-                    const labelClass = "flex items-center gap-1.5 text-xs font-medium text-white/80";
 
                     if (fieldId === "colaboradores") {
                       return (
                         <div key={fieldId} className="space-y-1.5">
-                          <Label className={labelClass}>
+                          <Label className="flex items-center gap-1.5 text-xs font-medium">
                             <Icon className="h-3.5 w-3.5" /> {config.label}
                           </Label>
                           <Select value={values.colaboradores || ""} onValueChange={(v) => setValues({ ...values, colaboradores: v })}>
-                            <SelectTrigger className={inputClass}><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                            <SelectTrigger className="h-11"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                             <SelectContent>
                               {COLABORADORES_OPTIONS.map((opt) => (
                                 <SelectItem key={opt} value={opt}>{opt}</SelectItem>
@@ -409,7 +387,7 @@ export default function FormPublico() {
                     if (fieldId === "mensagem") {
                       return (
                         <div key={fieldId} className="space-y-1.5">
-                          <Label className={labelClass}>
+                          <Label className="flex items-center gap-1.5 text-xs font-medium">
                             <Icon className="h-3.5 w-3.5" /> {config.label}
                           </Label>
                           <Textarea
@@ -418,7 +396,6 @@ export default function FormPublico() {
                             onChange={(e) => setValues({ ...values, mensagem: e.target.value })}
                             placeholder={config.placeholder}
                             rows={3}
-                            className="bg-white/5 border-white/10 text-white placeholder:text-white/30 resize-none"
                           />
                         </div>
                       );
@@ -426,7 +403,7 @@ export default function FormPublico() {
 
                     return (
                       <div key={fieldId} className="space-y-1.5">
-                        <Label className={labelClass}>
+                        <Label className="flex items-center gap-1.5 text-xs font-medium">
                           <Icon className="h-3.5 w-3.5" /> {config.label}
                         </Label>
                         <Input
@@ -436,34 +413,33 @@ export default function FormPublico() {
                           value={values[fieldId] || ""}
                           onChange={(e) => setValues({ ...values, [fieldId]: e.target.value })}
                           placeholder={config.placeholder}
-                          className={inputClass}
+                          className="h-11"
                         />
                       </div>
                     );
                   })}
 
                   {error && (
-                    <div className="flex items-center gap-2 text-sm text-red-300 bg-red-500/10 border border-red-500/20 p-3 rounded-lg">
+                    <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
                       <AlertCircle className="h-4 w-4 shrink-0" /> {error}
                     </div>
                   )}
 
                   <Button
                     type="submit"
-                    className="w-full gap-2 h-12 text-base font-semibold border-0 hover:opacity-95 hover:shadow-lg transition-all"
+                    className="w-full gap-2 h-12 text-base font-semibold border-0 hover:opacity-90 transition-opacity"
                     disabled={submitting}
                     style={{
                       background: `linear-gradient(135deg, ${primary}, ${secondary})`,
                       color: "white",
-                      boxShadow: `0 10px 30px -10px ${primary}80`,
                     }}
                   >
                     {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                     {ctaText}
                   </Button>
 
-                  <p className="text-[11px] text-center text-white/50 pt-2">
-                    🔒 Seus dados estão protegidos e não serão compartilhados.
+                  <p className="text-[11px] text-center opacity-60 pt-2">
+                    Seus dados estão protegidos e não serão compartilhados.
                   </p>
                 </form>
               </CardContent>
@@ -472,8 +448,8 @@ export default function FormPublico() {
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-12 pt-8 border-t border-white/5">
-          <p className="text-xs text-white/40">
+        <div className="text-center mt-16 pt-8 border-t border-white/5">
+          <p className="text-xs opacity-50">
             © {new Date().getFullYear()} {formConfig.tenant_name || "Accord"} — Todos os direitos reservados
           </p>
         </div>
