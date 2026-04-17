@@ -105,7 +105,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // isGlobalMaster reflects the user's ORIGINAL identity (is_master flag on profile),
   // not the currently active/impersonated tenant. This ensures master users always
   // retain access to the global tenant switcher even after entering a child tenant.
-  const isGlobalMaster = isMasterTenantAdmin;
+  const ROOT_TENANT_ID = (import.meta.env.VITE_ROOT_TENANT_ID as string) || "";
+  const homeCompanyEarly = companies.find(c => c.id === profile?.company_id) || null;
+  const isGlobalMaster = isMasterTenantAdmin && (
+    (ROOT_TENANT_ID && profile?.company_id === ROOT_TENANT_ID) ||
+    (!ROOT_TENANT_ID && !homeCompanyEarly?.is_reseller)
+  );
   // Reseller capability also follows the user's home tenant (the company matching profile.company_id),
   // not the currently active impersonated tenant — so the menu doesn't disappear on switch.
   const homeCompany = companies.find(c => c.id === profile?.company_id) || null;
