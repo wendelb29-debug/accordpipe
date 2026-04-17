@@ -12,9 +12,10 @@ interface SignupEmailProps {
 
 export const SignupEmail = ({ confirmationUrl }: SignupEmailProps) => (
   <AccordEmailLayout
-    preview="Confirme seu cadastro na Accord"
-    title="Confirme seu cadastro 🎉"
-    body="Bem-vindo à Accord! Clique abaixo para ativar sua conta e começar a usar a plataforma."
+    preview="ACCORD — Confirme seu cadastro"
+    emoji="🎉"
+    title="Confirme seu cadastro"
+    body="Bem-vindo à Accord! Ative sua conta para começar."
     buttonText="Ativar minha conta"
     confirmationUrl={confirmationUrl}
   />

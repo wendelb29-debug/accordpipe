@@ -10,10 +10,11 @@ interface RecoveryEmailProps {
 
 export const RecoveryEmail = ({ confirmationUrl }: RecoveryEmailProps) => (
   <AccordEmailLayout
-    preview="Redefina sua senha na Accord"
-    title="Redefinição de senha 🔐"
-    body="Recebemos uma solicitação para redefinir a senha da sua conta. Clique abaixo para criar uma nova senha. Este link expira em 1 hora."
-    buttonText="Redefinir minha senha"
+    preview="ACCORD — Redefinição de senha"
+    emoji="🔐"
+    title="Redefina sua senha"
+    body="Solicitação de nova senha recebida. Link válido por 1 hora."
+    buttonText="Redefinir senha"
     confirmationUrl={confirmationUrl}
   />
 )
