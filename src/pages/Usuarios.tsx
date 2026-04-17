@@ -456,13 +456,13 @@ export default function Usuarios() {
             <User className="h-4 w-4" />
             Usuários
           </TabsTrigger>
-          {isGlobalMaster && (
+          {canShowGlobalTenantTabs && (
             <TabsTrigger value="servidores" className="gap-2">
               <Server className="h-4 w-4" />
               Tenants
             </TabsTrigger>
           )}
-          {isGlobalMaster && (
+          {canShowGlobalTenantTabs && (
             <TabsTrigger value="servidores-teste" className="gap-2">
               <FlaskConical className="h-4 w-4" />
               Tenants Teste
