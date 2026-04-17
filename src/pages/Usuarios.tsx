@@ -883,12 +883,12 @@ export default function Usuarios() {
           </Dialog>
         </TabsContent>
 
-        {isGlobalMaster && profile?.company_id === activeCompanyId && (
+        {showTenantTabs && (
           <TabsContent value="servidores">
             <ServidoresTab />
           </TabsContent>
         )}
-        {isGlobalMaster && profile?.company_id === activeCompanyId && (
+        {showTenantTabs && (
           <TabsContent value="servidores-teste">
             <ServidoresTesteTab />
           </TabsContent>

@@ -99,7 +99,9 @@ export default function ServidoresTab() {
   const [generatingLink, setGeneratingLink] = useState(false);
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const { toast } = useToast();
-  const { isMaster, isGlobalMaster, profile, user } = useAuth();
+  const { isMaster, isGlobalMaster, isResellerTenant, profile, user, activeCompanyId } = useAuth();
+  const [resellerFilter, setResellerFilter] = useState<string>("all");
+  const [resellerNameMap, setResellerNameMap] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
     razao_social: "",
@@ -136,11 +138,30 @@ export default function ServidoresTab() {
 
   const fetchCompanies = async () => {
     try {
-      const [companiesRes, tenantLinksRes, setupRes] = await Promise.all([
-        supabase.from("companies").select("*").order("created_at", { ascending: false }),
+      // Reseller (non-master) tenants only see their own children.
+      // Global Master sees everything; setup requests only matter for the master.
+      let companiesQuery: any = supabase
+        .from("companies")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (isResellerTenant && !isGlobalMaster && activeCompanyId) {
+        companiesQuery = companiesQuery.or(
+          `parent_tenant_id.eq.${activeCompanyId},created_by_tenant_id.eq.${activeCompanyId}`
+        );
+      }
+
+      const requests: any[] = [
+        companiesQuery,
         supabase.from("user_tenants").select("tenant_id"),
-        supabase.from("tenant_setup_requests").select("*").in("status", ["pending", "submitted"]).order("created_at", { ascending: false }),
-      ]);
+      ];
+      if (isGlobalMaster) {
+        requests.push(
+          supabase.from("tenant_setup_requests").select("*").in("status", ["pending", "submitted"]).order("created_at", { ascending: false })
+        );
+      }
+
+      const [companiesRes, tenantLinksRes, setupRes] = await Promise.all(requests);
 
       if (companiesRes.error) throw companiesRes.error;
 
@@ -149,33 +170,44 @@ export default function ServidoresTab() {
         if (l.tenant_id) countMap[l.tenant_id] = (countMap[l.tenant_id] || 0) + 1;
       });
 
-      const enriched: Company[] = (companiesRes.data || []).map((c) => ({
+      const enriched: Company[] = (companiesRes.data || []).map((c: any) => ({
         ...c,
         user_count: countMap[c.id] || 0,
       }));
 
-      // Add setup requests as virtual entries
-      const setupEntries: Company[] = ((setupRes.data as any[]) || []).map((req: any) => ({
-        id: `setup_${req.id}`,
-        razao_social: req.razao_social || "Aguardando preenchimento",
-        nome_fantasia: req.nome_fantasia || null,
-        cnpj: req.cnpj || "—",
-        email: req.email || null,
-        telefone: req.telefone || null,
-        responsavel: req.responsavel || null,
-        status: req.status === "submitted" ? "pending_activation" : "em_configuracao",
-        cidade: req.cidade || null,
-        estado: req.estado || null,
-        endereco: req.endereco || null,
-        bairro: req.bairro || null,
-        cep: req.cep || null,
-        numero: req.numero || null,
-        complemento: req.complemento || null,
-        created_at: req.created_at,
-        user_count: 0,
-        _setup_request_id: req.id,
-        _setup_token: req.token,
-      }));
+      // Build reseller name map for the badge column (Global Master only)
+      if (isGlobalMaster) {
+        const map: Record<string, string> = {};
+        (companiesRes.data || []).forEach((c: any) => {
+          if (c.is_reseller) map[c.id] = c.nome_fantasia || c.razao_social;
+        });
+        setResellerNameMap(map);
+      }
+
+      // Setup requests are master-only
+      const setupEntries: Company[] = setupRes && !setupRes.error
+        ? ((setupRes.data as any[]) || []).map((req: any) => ({
+            id: `setup_${req.id}`,
+            razao_social: req.razao_social || "Aguardando preenchimento",
+            nome_fantasia: req.nome_fantasia || null,
+            cnpj: req.cnpj || "—",
+            email: req.email || null,
+            telefone: req.telefone || null,
+            responsavel: req.responsavel || null,
+            status: req.status === "submitted" ? "pending_activation" : "em_configuracao",
+            cidade: req.cidade || null,
+            estado: req.estado || null,
+            endereco: req.endereco || null,
+            bairro: req.bairro || null,
+            cep: req.cep || null,
+            numero: req.numero || null,
+            complemento: req.complemento || null,
+            created_at: req.created_at,
+            user_count: 0,
+            _setup_request_id: req.id,
+            _setup_token: req.token,
+          } as any))
+        : [];
 
       setCompanies([...setupEntries, ...enriched]);
     } catch (error) {
