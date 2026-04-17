@@ -21,8 +21,10 @@ interface Props {
 const ROLE_OPTIONS: { value: AppRole; label: string }[] = [
   { value: "admin", label: "Administrador" },
   { value: "ceo", label: "CEO" },
-  { value: "vendedor", label: "Vendedor" },
+  { value: "comercial", label: "Comercial" },
   { value: "administrativo", label: "Administrativo" },
+  { value: "financeiro", label: "Financeiro" },
+  { value: "operador", label: "Operador" },
   { value: "leitura", label: "Leitura" },
 ];
 
