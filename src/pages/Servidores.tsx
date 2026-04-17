@@ -133,16 +133,44 @@ export default function Servidores() {
     }
   };
 
+  const toggleExpand = async (tenantId: string) => {
+    const next = new Set(expandedIds);
+    if (next.has(tenantId)) {
+      next.delete(tenantId);
+      setExpandedIds(next);
+      return;
+    }
+    next.add(tenantId);
+    setExpandedIds(next);
+    if (!subTenantsMap[tenantId]) {
+      setLoadingSubsId(tenantId);
+      try {
+        const { data } = await supabase
+          .from("companies")
+          .select("id, nome_fantasia, razao_social, cnpj, is_reseller, parent_tenant_id, servidor_id, status")
+          .eq("parent_tenant_id", tenantId)
+          .in("status", ["active", "teste"])
+          .order("razao_social");
+        setSubTenantsMap((prev) => ({ ...prev, [tenantId]: (data as TenantItem[]) || [] }));
+      } finally {
+        setLoadingSubsId(null);
+      }
+    }
+  };
+
   // Separate master tenant from rest, and group by hierarchy
   const masterTenants = tenants.filter(t => !t.servidor_id && !t.parent_tenant_id);
-  const childTenants = tenants.filter(t => t.servidor_id !== null || t.parent_tenant_id !== null);
+  // Top-level only: exclude tenants that are children of resellers (they appear nested)
+  const resellerIds = new Set(tenants.filter(t => t.is_reseller).map(t => t.id));
+  const childTenants = tenants.filter(t =>
+    (t.servidor_id !== null || t.parent_tenant_id !== null) &&
+    !(t.parent_tenant_id && resellerIds.has(t.parent_tenant_id))
+  );
 
   // For reseller: show self first then children
   const sortedTenants = isGlobalMaster
     ? [...masterTenants, ...childTenants]
     : tenants;
-
-  const showSwitchHint = tenants.length <= 1;
 
   return (
     <div className="relative min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden">
