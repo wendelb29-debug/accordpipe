@@ -709,6 +709,23 @@ export default function ServidoresTab() {
                     </div>
                   </TableCell>
                   <TableCell className="font-mono text-sm">{company.cnpj}</TableCell>
+                  {isGlobalMaster && (
+                    <TableCell>
+                      {(company as any).parent_tenant_id && resellerNameMap[(company as any).parent_tenant_id] ? (
+                        <Badge variant="outline" className="gap-1 border-primary/30 text-primary bg-primary/5">
+                          <Network className="h-3 w-3" />
+                          {resellerNameMap[(company as any).parent_tenant_id]}
+                        </Badge>
+                      ) : (company as any).is_reseller ? (
+                        <Badge variant="outline" className="gap-1 border-amber-500/30 text-amber-600 bg-amber-500/10">
+                          <Crown className="h-3 w-3" />
+                          Revendedor
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                  )}
                   <TableCell>{company.responsavel || "—"}</TableCell>
                   <TableCell>
                     <Badge
