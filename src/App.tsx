@@ -314,16 +314,6 @@ const App = () => (
             />
             <Route path="/setup-tenant/:token" element={<TenantSetupPublico />} />
             <Route
-              path="/planos"
-              element={
-                <ProtectedRoute requiredPermission="view_billing_plans">
-                  <AppLayout>
-                    <Planos />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/eventos"
               element={
                 <ProtectedRoute requiredPermission="view_events">
