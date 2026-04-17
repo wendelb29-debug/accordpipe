@@ -58,7 +58,6 @@ export function ResellerTab({ companyId }: ResellerTabProps) {
     try {
       const { error } = await supabase.from("companies").update({
         is_reseller: enabled,
-        reseller_panel_enabled: enabled,
         tenant_type: enabled ? "reseller" : "standard",
         can_create_tenants: enabled,
         can_manage_child_tenants: enabled,

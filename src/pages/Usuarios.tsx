@@ -92,8 +92,7 @@ export default function Usuarios() {
   const [permUserIsCeo, setPermUserIsCeo] = useState(false);
   const [permUserRole, setPermUserRole] = useState<string>("");
   const { toast } = useToast();
-  const { isMaster, isCeo, isAdmin, activeCompanyId, activeCompany, profile, role, isMasterTenantAdmin, isGlobalMaster, isResellerTenant } = useAuth();
-  const canShowGlobalTenantTabs = isGlobalMaster && !isResellerTenant && !activeCompany;
+  const { isMaster, isCeo, isAdmin, activeCompanyId, profile, role, isMasterTenantAdmin, isGlobalMaster } = useAuth();
   const canManageUsers = isMaster || isCeo || isAdmin;
   const [allCompanies, setAllCompanies] = useState<{id: string; nome_fantasia: string | null; razao_social: string; cnpj: string}[]>([]);
 
@@ -456,13 +455,13 @@ export default function Usuarios() {
             <User className="h-4 w-4" />
             Usuários
           </TabsTrigger>
-          {canShowGlobalTenantTabs && (
+          {isGlobalMaster && (
             <TabsTrigger value="servidores" className="gap-2">
               <Server className="h-4 w-4" />
               Tenants
             </TabsTrigger>
           )}
-          {canShowGlobalTenantTabs && (
+          {isGlobalMaster && (
             <TabsTrigger value="servidores-teste" className="gap-2">
               <FlaskConical className="h-4 w-4" />
               Tenants Teste
@@ -882,12 +881,12 @@ export default function Usuarios() {
           </Dialog>
         </TabsContent>
 
-        {canShowGlobalTenantTabs && (
+        {isMaster && (
           <TabsContent value="servidores">
             <ServidoresTab />
           </TabsContent>
         )}
-        {canShowGlobalTenantTabs && (
+        {isMaster && (
           <TabsContent value="servidores-teste">
             <ServidoresTesteTab />
           </TabsContent>
