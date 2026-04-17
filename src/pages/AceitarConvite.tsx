@@ -143,7 +143,9 @@ export default function AceitarConvite() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="text-destructive">Convite inválido</CardTitle>
-            <CardDescription>Este link de convite não é válido ou já foi utilizado.</CardDescription>
+            <CardDescription>
+              Este link de convite é inválido ou já foi utilizado. Solicite um novo convite ao administrador.
+            </CardDescription>
           </CardHeader>
         </Card>
       </div>
