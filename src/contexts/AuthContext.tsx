@@ -108,8 +108,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const ROOT_TENANT_ID = (import.meta.env.VITE_ROOT_TENANT_ID as string) || "";
   const homeCompanyEarly = companies.find(c => c.id === profile?.company_id) || null;
   const isGlobalMaster = isMasterTenantAdmin && (
-    (ROOT_TENANT_ID && profile?.company_id === ROOT_TENANT_ID) ||
-    (!ROOT_TENANT_ID && !homeCompanyEarly?.is_reseller)
+    ROOT_TENANT_ID
+      ? profile?.company_id === ROOT_TENANT_ID
+      : profile?.is_master === true && !homeCompanyEarly?.is_reseller
   );
   // Reseller capability also follows the user's home tenant (the company matching profile.company_id),
   // not the currently active impersonated tenant — so the menu doesn't disappear on switch.
