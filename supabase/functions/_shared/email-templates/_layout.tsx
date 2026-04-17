@@ -42,6 +42,19 @@ export const AccordEmailLayout = ({
       <meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no" />
       <meta name="color-scheme" content="light only" />
       <meta name="supported-color-schemes" content="light" />
+      {/* Schema.org markup — ajuda Gmail a exibir o avatar da marca */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'http://schema.org',
+            '@type': 'Organization',
+            name: 'Accord',
+            url: 'https://accordpipe.com.br',
+            logo: 'https://nglwgzknqgihlbkdnflu.supabase.co/storage/v1/object/public/email-assets/accord-avatar.png',
+          }),
+        }}
+      />
     </Head>
     <Preview>{preview}</Preview>
     <Body style={main}>
