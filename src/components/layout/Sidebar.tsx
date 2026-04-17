@@ -62,7 +62,6 @@ const configNavigation = [
   { nameKey: "nav.tenantManagement", href: "/gestao-tenants", icon: Crown, roles: ["ceo", "master"], tenantAdminOnly: true },
   
   { nameKey: "nav.plans", href: "/planos", icon: Crown, roles: ["ceo", "master"] },
-  { nameKey: "nav.audit", href: "/configuracoes/auditoria", icon: Settings, roles: ["ceo", "master"] },
 ];
 
 const LANGUAGES = [

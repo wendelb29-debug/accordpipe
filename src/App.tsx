@@ -43,7 +43,7 @@ import Servidores from "./pages/Servidores";
 import NovoServidor from "./pages/NovoServidor";
 import AceitarConvite from "./pages/AceitarConvite";
 import AssinarDocumento from "./pages/AssinarDocumento";
-import AuditLogs from "./pages/AuditLogs";
+
 import Performance from "./pages/Performance";
 import TenantSetupPublico from "./pages/TenantSetupPublico";
 import Planos from "./pages/Planos";
@@ -298,16 +298,6 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <NovoServidor />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/configuracoes/auditoria"
-              element={
-                <ProtectedRoute requiredPermission="view_audit_logs">
-                  <AppLayout>
-                    <AuditLogs />
                   </AppLayout>
                 </ProtectedRoute>
               }
