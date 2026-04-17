@@ -902,6 +902,13 @@ export default function Usuarios() {
           </TabsContent>
         )}
       </Tabs>
+
+      <InviteUserDialog
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+        tenantId={isMaster ? activeCompanyId : profile?.company_id ?? null}
+        onSuccess={fetchUsers}
+      />
     </div>
   );
 }
