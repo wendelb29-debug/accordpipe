@@ -16,7 +16,10 @@ serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    const { invitation_id } = await req.json();
+    const body = await req.json();
+    console.log("=== SEND-INVITE CHAMADA ===");
+    console.log("Body recebido:", body);
+    const { invitation_id } = body;
 
     // Fetch the invitation
     const { data: invite, error: invErr } = await supabase
@@ -86,21 +89,36 @@ _Este convite expira em 7 dias._`;
       </div>
     `;
 
-    // Try sending email via Supabase Auth invite or just log it
+    // Send custom email via internal email queue (Lovable Emails)
+    // We enqueue directly so the link contains our ?token= (not Supabase auth link)
     try {
-      const { error: emailError } = await supabase.auth.admin.inviteUserByEmail(
-        invite.invitee_email,
-        {
-          redirectTo: inviteLink,
-          data: {
-            name: invite.invitee_name,
-            company_id: invite.company_id,
-            invitation_token: invite.token,
-          },
-        }
-      );
-      if (emailError) {
-        console.error("Email invite error:", emailError);
+      const subject = `Você foi convidado para ${invite.company_name || "Accord"}`;
+      const { error: enqErr } = await supabase.rpc("enqueue_email", {
+        p_queue: "transactional_emails",
+        p_payload: {
+          to: invite.invitee_email,
+          subject,
+          html: emailHtml,
+          template_name: "user_invitation",
+        },
+      });
+      if (enqErr) {
+        console.error("enqueue_email error:", enqErr);
+        // Fallback: Supabase Auth invite (default template, link will not include our token)
+        const { error: emailError } = await supabase.auth.admin.inviteUserByEmail(
+          invite.invitee_email,
+          {
+            redirectTo: inviteLink,
+            data: {
+              name: invite.invitee_name,
+              company_id: invite.company_id,
+              invitation_token: invite.token,
+            },
+          }
+        );
+        if (emailError) console.error("Fallback auth invite error:", emailError);
+      } else {
+        console.log("Email enfileirado com sucesso para:", invite.invitee_email);
       }
     } catch (emailErr) {
       console.error("Email send error:", emailErr);
