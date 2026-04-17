@@ -56,11 +56,20 @@ export function ResellerTab({ companyId }: ResellerTabProps) {
   const handleToggleReseller = async (enabled: boolean) => {
     setSaving(true);
     try {
+      // Flip every flag the backend governance trigger checks. Without
+      // reseller_panel_enabled + can_create_child_tenants + can_edit_child_tenants
+      // the reseller can't actually use the panel even with is_reseller=true.
       const { error } = await supabase.from("companies").update({
         is_reseller: enabled,
+        reseller_panel_enabled: enabled,
         tenant_type: enabled ? "reseller" : "standard",
         can_create_tenants: enabled,
         can_manage_child_tenants: enabled,
+        can_create_child_tenants: enabled,
+        can_edit_child_tenants: enabled,
+        can_suspend_child_tenants: enabled,
+        can_reactivate_child_tenants: enabled,
+        can_view_child_billing: enabled,
       } as any).eq("id", companyId);
 
       if (error) throw error;

@@ -106,7 +106,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // so they don't flip when a Master switches into a child tenant.
   const homeCompany = companies.find(c => c.id === profile?.company_id) || null;
   const isGlobalMaster = isMasterTenantAdmin && (homeCompany ? homeCompany.servidor_id === null : true);
-  const isResellerTenant = !!(homeCompany?.is_reseller && homeCompany?.reseller_panel_enabled);
+  // Reseller flag is based on the ACTIVE company so a tenant that is enabled
+  // as reseller sees the reseller management UI in its own context.
+  const isResellerTenant = !!(activeCompany?.is_reseller && activeCompany?.reseller_panel_enabled);
 
   const setActiveCompanyId = (id: string | null) => {
     setActiveCompanyIdState(id);

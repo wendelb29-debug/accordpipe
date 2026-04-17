@@ -178,7 +178,7 @@ export default function NovoServidor() {
   const { toast } = useToast();
   // Pre-generate ID for new tenants so child components can use it
   const [pendingNewId] = useState(() => editId ? null : crypto.randomUUID());
-  const { isMaster, isMasterTenantAdmin, isGlobalMaster } = useAuth();
+  const { isMaster, isMasterTenantAdmin, isGlobalMaster, isResellerTenant, activeCompanyId } = useAuth();
 
   const [activeTab, setActiveTab] = useState("cadastro");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -200,11 +200,17 @@ export default function NovoServidor() {
       return false;
     }
     try {
+      // When a reseller (non-master) creates a tenant, the governance trigger
+      // requires parent_tenant_id and created_by_tenant_id to equal the actor's tenant.
+      const resellerLink = (isResellerTenant && !isGlobalMaster && activeCompanyId)
+        ? { parent_tenant_id: activeCompanyId, created_by_tenant_id: activeCompanyId }
+        : {};
       const { error } = await supabase.from("companies").insert({
         id: pendingNewId,
         cnpj: formData.cnpj,
         razao_social: formData.razao_social,
         nome_fantasia: formData.nome_fantasia || null,
+        ...resellerLink,
       } as any);
       if (error) throw error;
       setCompanyPreCreated(true);

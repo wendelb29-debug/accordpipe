@@ -99,7 +99,9 @@ export default function ServidoresTab() {
   const [generatingLink, setGeneratingLink] = useState(false);
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const { toast } = useToast();
-  const { isMaster, isGlobalMaster, profile, user } = useAuth();
+  const { isMaster, isGlobalMaster, isResellerTenant, profile, user, activeCompanyId } = useAuth();
+  const [resellerFilter, setResellerFilter] = useState<string>("all");
+  const [resellerNameMap, setResellerNameMap] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
     razao_social: "",
@@ -132,15 +134,35 @@ export default function ServidoresTab() {
 
   useEffect(() => {
     fetchCompanies();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCompanyId, isResellerTenant, isGlobalMaster]);
 
   const fetchCompanies = async () => {
     try {
-      const [companiesRes, tenantLinksRes, setupRes] = await Promise.all([
-        supabase.from("companies").select("*").order("created_at", { ascending: false }),
+      // Reseller (non-master) tenants only see their own children.
+      // Global Master sees everything; setup requests only matter for the master.
+      let companiesQuery: any = supabase
+        .from("companies")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (isResellerTenant && !isGlobalMaster && activeCompanyId) {
+        companiesQuery = companiesQuery.or(
+          `parent_tenant_id.eq.${activeCompanyId},created_by_tenant_id.eq.${activeCompanyId}`
+        );
+      }
+
+      const requests: any[] = [
+        companiesQuery,
         supabase.from("user_tenants").select("tenant_id"),
-        supabase.from("tenant_setup_requests").select("*").in("status", ["pending", "submitted"]).order("created_at", { ascending: false }),
-      ]);
+      ];
+      if (isGlobalMaster) {
+        requests.push(
+          supabase.from("tenant_setup_requests").select("*").in("status", ["pending", "submitted"]).order("created_at", { ascending: false })
+        );
+      }
+
+      const [companiesRes, tenantLinksRes, setupRes] = await Promise.all(requests);
 
       if (companiesRes.error) throw companiesRes.error;
 
@@ -149,33 +171,44 @@ export default function ServidoresTab() {
         if (l.tenant_id) countMap[l.tenant_id] = (countMap[l.tenant_id] || 0) + 1;
       });
 
-      const enriched: Company[] = (companiesRes.data || []).map((c) => ({
+      const enriched: Company[] = (companiesRes.data || []).map((c: any) => ({
         ...c,
         user_count: countMap[c.id] || 0,
       }));
 
-      // Add setup requests as virtual entries
-      const setupEntries: Company[] = ((setupRes.data as any[]) || []).map((req: any) => ({
-        id: `setup_${req.id}`,
-        razao_social: req.razao_social || "Aguardando preenchimento",
-        nome_fantasia: req.nome_fantasia || null,
-        cnpj: req.cnpj || "—",
-        email: req.email || null,
-        telefone: req.telefone || null,
-        responsavel: req.responsavel || null,
-        status: req.status === "submitted" ? "pending_activation" : "em_configuracao",
-        cidade: req.cidade || null,
-        estado: req.estado || null,
-        endereco: req.endereco || null,
-        bairro: req.bairro || null,
-        cep: req.cep || null,
-        numero: req.numero || null,
-        complemento: req.complemento || null,
-        created_at: req.created_at,
-        user_count: 0,
-        _setup_request_id: req.id,
-        _setup_token: req.token,
-      }));
+      // Build reseller name map for the badge column (Global Master only)
+      if (isGlobalMaster) {
+        const map: Record<string, string> = {};
+        (companiesRes.data || []).forEach((c: any) => {
+          if (c.is_reseller) map[c.id] = c.nome_fantasia || c.razao_social;
+        });
+        setResellerNameMap(map);
+      }
+
+      // Setup requests are master-only
+      const setupEntries: Company[] = setupRes && !setupRes.error
+        ? ((setupRes.data as any[]) || []).map((req: any) => ({
+            id: `setup_${req.id}`,
+            razao_social: req.razao_social || "Aguardando preenchimento",
+            nome_fantasia: req.nome_fantasia || null,
+            cnpj: req.cnpj || "—",
+            email: req.email || null,
+            telefone: req.telefone || null,
+            responsavel: req.responsavel || null,
+            status: req.status === "submitted" ? "pending_activation" : "em_configuracao",
+            cidade: req.cidade || null,
+            estado: req.estado || null,
+            endereco: req.endereco || null,
+            bairro: req.bairro || null,
+            cep: req.cep || null,
+            numero: req.numero || null,
+            complemento: req.complemento || null,
+            created_at: req.created_at,
+            user_count: 0,
+            _setup_request_id: req.id,
+            _setup_token: req.token,
+          } as any))
+        : [];
 
       setCompanies([...setupEntries, ...enriched]);
     } catch (error) {
@@ -510,12 +543,22 @@ export default function ServidoresTab() {
     }
   };
 
-  const filteredCompanies = companies.filter(
-    (c) =>
+  const filteredCompanies = companies.filter((c) => {
+    const matchesSearch =
       c.razao_social.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (c.nome_fantasia || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.cnpj.includes(searchTerm)
-  );
+      c.cnpj.includes(searchTerm);
+    if (!matchesSearch) return false;
+    if (isGlobalMaster && resellerFilter !== "all") {
+      if (resellerFilter === "none") return !(c as any).parent_tenant_id;
+      return (c as any).parent_tenant_id === resellerFilter;
+    }
+    return true;
+  });
+
+  const resellerOptions = isGlobalMaster
+    ? Object.entries(resellerNameMap).sort((a, b) => a[1].localeCompare(b[1]))
+    : [];
 
   if (loading) {
     return (
@@ -533,7 +576,7 @@ export default function ServidoresTab() {
           <h2 className="text-lg font-semibold text-foreground">Tenants</h2>
           <p className="text-sm text-muted-foreground">Ambientes independentes vinculados por CNPJ</p>
         </div>
-        {isGlobalMaster && (
+        {(isGlobalMaster || isResellerTenant) && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button className="gap-2">
@@ -547,24 +590,42 @@ export default function ServidoresTab() {
                 <Building2 className="h-4 w-4" />
                 Criar Tenant Manualmente
               </DropdownMenuItem>
-              <DropdownMenuItem className="gap-2" onClick={handleGenerateSetupLink} disabled={generatingLink}>
-                {generatingLink ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
-                Gerar Link de Configuração
-              </DropdownMenuItem>
+              {isGlobalMaster && (
+                <DropdownMenuItem className="gap-2" onClick={handleGenerateSetupLink} disabled={generatingLink}>
+                  {generatingLink ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+                  Gerar Link de Configuração
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Buscar por nome, fantasia ou CNPJ..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
+      {/* Search + reseller filter (master only) */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative max-w-md flex-1 min-w-[240px]">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome, fantasia ou CNPJ..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        {isGlobalMaster && resellerOptions.length > 0 && (
+          <Select value={resellerFilter} onValueChange={setResellerFilter}>
+            <SelectTrigger className="w-56">
+              <SelectValue placeholder="Filtrar por revendedor" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os tenants</SelectItem>
+              <SelectItem value="none">Sem revendedor (diretos)</SelectItem>
+              {resellerOptions.map(([id, name]) => (
+                <SelectItem key={id} value={id}>{name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Stats cards */}
@@ -611,6 +672,7 @@ export default function ServidoresTab() {
             <TableRow>
               <TableHead>Tenant</TableHead>
               <TableHead>CNPJ</TableHead>
+              {isGlobalMaster && <TableHead>Revendedor</TableHead>}
               <TableHead>Responsável</TableHead>
               <TableHead>Usuários</TableHead>
               <TableHead>Status</TableHead>
@@ -620,7 +682,7 @@ export default function ServidoresTab() {
           <TableBody>
             {filteredCompanies.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={isGlobalMaster ? 7 : 6} className="text-center text-muted-foreground py-8">
                   Nenhum tenant encontrado.
                 </TableCell>
               </TableRow>
@@ -647,6 +709,23 @@ export default function ServidoresTab() {
                     </div>
                   </TableCell>
                   <TableCell className="font-mono text-sm">{company.cnpj}</TableCell>
+                  {isGlobalMaster && (
+                    <TableCell>
+                      {(company as any).parent_tenant_id && resellerNameMap[(company as any).parent_tenant_id] ? (
+                        <Badge variant="outline" className="gap-1 border-primary/30 text-primary bg-primary/5">
+                          <Network className="h-3 w-3" />
+                          {resellerNameMap[(company as any).parent_tenant_id]}
+                        </Badge>
+                      ) : (company as any).is_reseller ? (
+                        <Badge variant="outline" className="gap-1 border-amber-500/30 text-amber-600 bg-amber-500/10">
+                          <Crown className="h-3 w-3" />
+                          Revendedor
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                  )}
                   <TableCell>{company.responsavel || "—"}</TableCell>
                   <TableCell>
                     <Badge
