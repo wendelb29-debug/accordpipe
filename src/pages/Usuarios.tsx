@@ -98,6 +98,7 @@ export default function Usuarios() {
   const showTenantTabs = (isGlobalMaster && profile?.company_id === activeCompanyId) || isResellerTenant;
   const canManageUsers = isMaster || isCeo || isAdmin;
   const [allCompanies, setAllCompanies] = useState<{id: string; nome_fantasia: string | null; razao_social: string; cnpj: string}[]>([]);
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
