@@ -43,6 +43,9 @@ export default function Servidores() {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [tenants, setTenants] = useState<TenantItem[]>([]);
   const [fetching, setFetching] = useState(true);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [subTenantsMap, setSubTenantsMap] = useState<Record<string, TenantItem[]>>({});
+  const [loadingSubsId, setLoadingSubsId] = useState<string | null>(null);
 
   const isMasterUser = !!profile?.is_master;
 
