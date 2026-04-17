@@ -30,8 +30,12 @@ export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => 
             <table width="100%" cellPadding={0} cellSpacing={0}>
               <tr>
                 <td>
-                  <span style={brand}>ACCORD</span>
-                  <span style={brandSub}>Plataforma</span>
+                  <img
+                    src="https://nglwgzknqgihlbkdnflu.supabase.co/storage/v1/object/public/email-assets/accord-logo.png"
+                    alt="ACCORD"
+                    width={140}
+                    style={{ display: 'block', maxWidth: '140px', height: 'auto' }}
+                  />
                 </td>
                 <td align="right">
                   <span style={badge}>ENTERPRISE</span>

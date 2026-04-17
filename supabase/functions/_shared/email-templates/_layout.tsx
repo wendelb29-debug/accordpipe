@@ -9,11 +9,14 @@ import {
   Head,
   Heading,
   Html,
+  Img,
   Link,
   Preview,
   Section,
   Text,
 } from 'npm:@react-email/components@0.0.22'
+
+const LOGO_URL = 'https://nglwgzknqgihlbkdnflu.supabase.co/storage/v1/object/public/email-assets/accord-logo.png'
 
 interface AccordEmailProps {
   preview: string
@@ -44,8 +47,13 @@ export const AccordEmailLayout = ({
             <table width="100%" cellPadding={0} cellSpacing={0}>
               <tr>
                 <td>
-                  <span style={brand}>ACCORD</span>
-                  <span style={brandSub}>Plataforma</span>
+                  <Img
+                    src={LOGO_URL}
+                    alt="ACCORD"
+                    width="140"
+                    height="auto"
+                    style={logo}
+                  />
                 </td>
                 <td align="right">
                   <span style={badge}>ENTERPRISE</span>
@@ -132,19 +140,10 @@ const headerSection = {
   padding: '36px 40px 28px',
   borderBottom: '1px solid #1e2035',
 }
-const brand = {
-  fontSize: '20px',
-  fontWeight: 800 as const,
-  color: '#ffffff',
-  letterSpacing: '2px',
-}
-const brandSub = {
-  marginLeft: '8px',
-  fontSize: '11px',
-  color: '#4a4f72',
-  letterSpacing: '3px',
-  textTransform: 'uppercase' as const,
-  verticalAlign: 'middle' as const,
+const logo = {
+  display: 'block',
+  maxWidth: '140px',
+  height: 'auto',
 }
 const badge = {
   background: '#1e2240',
