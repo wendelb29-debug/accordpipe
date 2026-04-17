@@ -34,9 +34,15 @@ export default function AceitarConvite() {
         .from("user_invitations")
         .select("*")
         .eq("token", token)
-        .single();
+        .maybeSingle();
 
-      if (error || !data) {
+      if (error) {
+        console.error("[AceitarConvite] erro ao buscar convite:", error);
+        setLoading(false);
+        return;
+      }
+
+      if (!data) {
         setLoading(false);
         return;
       }
@@ -48,8 +54,8 @@ export default function AceitarConvite() {
       }
 
       setInvitation(data);
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error("[AceitarConvite] exceção:", err);
     } finally {
       setLoading(false);
     }
@@ -137,7 +143,9 @@ export default function AceitarConvite() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="text-destructive">Convite inválido</CardTitle>
-            <CardDescription>Este link de convite não é válido ou já foi utilizado.</CardDescription>
+            <CardDescription>
+              Este link de convite é inválido ou já foi utilizado. Solicite um novo convite ao administrador.
+            </CardDescription>
           </CardHeader>
         </Card>
       </div>
