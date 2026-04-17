@@ -41,24 +41,18 @@ export const AccordEmailLayout = ({
     <Body style={main}>
       <Container style={outer}>
         <Container style={card}>
-          {/* HEADER COM GRADIENTE E LOGO */}
+          {/* HEADER COM GRADIENTE E LOGO CENTRALIZADA */}
           <Section style={headerSection}>
-            <table width="100%" cellPadding={0} cellSpacing={0}>
-              <tr>
-                <td align="left" valign="middle">
-                  <Img
-                    src={LOGO_URL}
-                    alt="ACCORD"
-                    width="130"
-                    height="auto"
-                    style={logo}
-                  />
-                </td>
-                <td align="right" valign="middle">
-                  <span style={badge}>ENTERPRISE</span>
-                </td>
-              </tr>
-            </table>
+            <Img
+              src={LOGO_URL}
+              alt="ACCORD"
+              width="200"
+              height="auto"
+              style={logo}
+            />
+            <div style={{ textAlign: 'center', marginTop: '14px' }}>
+              <span style={badge}>ENTERPRISE</span>
+            </div>
           </Section>
 
           {/* BODY BRANCO */}
@@ -127,12 +121,14 @@ const card = {
 }
 const headerSection = {
   background: 'linear-gradient(135deg,#1a3a8f 0%,#2563EB 45%,#7A3FF2 100%)',
-  padding: '36px 40px',
+  padding: '40px 40px 32px',
   borderRadius: '20px 20px 0 0',
+  textAlign: 'center' as const,
 }
 const logo = {
   display: 'block',
-  maxWidth: '130px',
+  margin: '0 auto',
+  maxWidth: '200px',
   height: 'auto',
 }
 const badge = {
