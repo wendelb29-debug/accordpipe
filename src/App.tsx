@@ -46,7 +46,7 @@ import AssinarDocumento from "./pages/AssinarDocumento";
 
 import Performance from "./pages/Performance";
 import TenantSetupPublico from "./pages/TenantSetupPublico";
-import Planos from "./pages/Planos";
+
 import Eventos from "./pages/Eventos";
 import MeusTenants from "./pages/MeusTenants";
 import Academy from "./pages/Academy";
