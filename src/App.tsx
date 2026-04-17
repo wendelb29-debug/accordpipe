@@ -303,16 +303,6 @@ const App = () => (
               }
             />
             <Route
-              path="/configuracoes/auditoria"
-              element={
-                <ProtectedRoute requiredPermission="view_audit_logs">
-                  <AppLayout>
-                    <AuditLogs />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/performance"
               element={
                 <ProtectedRoute requiredPermission="view_performance_module">
