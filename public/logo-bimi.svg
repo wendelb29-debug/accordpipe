@@ -1,6 +1,2 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg version="2.0" baseProfile="tiny-ps" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <title>Accord</title>
-  <circle cx="50" cy="50" r="50" fill="#0f172a"/>
-  <text x="50" y="70" text-anchor="middle" font-family="Arial, sans-serif" font-weight="800" font-size="62" fill="#ffffff">A</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="2.0" baseProfile="tiny-ps" viewBox="0 0 100 100"><title>Accord</title><circle cx="50" cy="50" r="50" fill="#0f172a"/><path d="M50 22 L32 74 L40 74 L44 62 L56 62 L60 74 L68 74 L50 22 Z M46 55 L50 40 L54 55 Z" fill="#ffffff"/></svg>
