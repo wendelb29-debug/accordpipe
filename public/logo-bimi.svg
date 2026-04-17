@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" baseProfile="tiny-ps" version="1.2">
+  <title>Accord</title>
+  <circle cx="50" cy="50" r="50" fill="#0F172A"/>
+  <text x="50" y="68" text-anchor="middle" font-family="Arial, sans-serif" font-weight="800" font-size="58" fill="#FFFFFF">A</text>
+</svg>
