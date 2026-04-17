@@ -543,12 +543,22 @@ export default function ServidoresTab() {
     }
   };
 
-  const filteredCompanies = companies.filter(
-    (c) =>
+  const filteredCompanies = companies.filter((c) => {
+    const matchesSearch =
       c.razao_social.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (c.nome_fantasia || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.cnpj.includes(searchTerm)
-  );
+      c.cnpj.includes(searchTerm);
+    if (!matchesSearch) return false;
+    if (isGlobalMaster && resellerFilter !== "all") {
+      if (resellerFilter === "none") return !(c as any).parent_tenant_id;
+      return (c as any).parent_tenant_id === resellerFilter;
+    }
+    return true;
+  });
+
+  const resellerOptions = isGlobalMaster
+    ? Object.entries(resellerNameMap).sort((a, b) => a[1].localeCompare(b[1]))
+    : [];
 
   if (loading) {
     return (
@@ -591,15 +601,31 @@ export default function ServidoresTab() {
         )}
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Buscar por nome, fantasia ou CNPJ..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
+      {/* Search + reseller filter (master only) */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative max-w-md flex-1 min-w-[240px]">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome, fantasia ou CNPJ..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        {isGlobalMaster && resellerOptions.length > 0 && (
+          <Select value={resellerFilter} onValueChange={setResellerFilter}>
+            <SelectTrigger className="w-56">
+              <SelectValue placeholder="Filtrar por revendedor" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os tenants</SelectItem>
+              <SelectItem value="none">Sem revendedor (diretos)</SelectItem>
+              {resellerOptions.map(([id, name]) => (
+                <SelectItem key={id} value={id}>{name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Stats cards */}
