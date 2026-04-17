@@ -9,10 +9,14 @@ import {
   Head,
   Heading,
   Html,
+  Img,
   Link,
   Preview,
+  Section,
   Text,
 } from 'npm:@react-email/components@0.0.22'
+
+const LOGO_URL = 'https://nglwgzknqgihlbkdnflu.supabase.co/storage/v1/object/public/email-assets/accord-logo.png'
 
 interface EmailChangeEmailProps {
   siteName: string
@@ -32,6 +36,9 @@ export const EmailChangeEmail = ({
     <Preview>Confirme a alteração de e-mail no {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
+        <Section style={logoSection}>
+          <Img src={LOGO_URL} alt="Accord" width="160" style={logo} />
+        </Section>
         <Heading style={h1}>Confirmar alteração de e-mail</Heading>
         <Text style={text}>
           Você solicitou alterar o e-mail da sua conta no {siteName} de{' '}
@@ -62,6 +69,8 @@ export default EmailChangeEmail
 
 const main = { backgroundColor: '#ffffff', fontFamily: 'Inter, Arial, sans-serif' }
 const container = { padding: '32px 28px', maxWidth: '560px' }
+const logoSection = { margin: '0 0 28px' }
+const logo = { display: 'block', height: 'auto' }
 const h1 = {
   fontSize: '24px',
   fontWeight: 'bold' as const,
