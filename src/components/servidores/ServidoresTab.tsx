@@ -99,7 +99,7 @@ export default function ServidoresTab() {
   const [generatingLink, setGeneratingLink] = useState(false);
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const { toast } = useToast();
-  const { isMaster, profile, user } = useAuth();
+  const { isMaster, isGlobalMaster, profile, user } = useAuth();
 
   const [formData, setFormData] = useState({
     razao_social: "",
