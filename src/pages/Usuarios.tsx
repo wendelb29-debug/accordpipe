@@ -92,7 +92,9 @@ export default function Usuarios() {
   const [permUserIsCeo, setPermUserIsCeo] = useState(false);
   const [permUserRole, setPermUserRole] = useState<string>("");
   const { toast } = useToast();
-  const { isMaster, isCeo, isAdmin, activeCompanyId, profile, role, isMasterTenantAdmin, isGlobalMaster } = useAuth();
+  const { isMaster, isCeo, isAdmin, activeCompanyId, profile, role, isMasterTenantAdmin, isGlobalMaster, isResellerTenant } = useAuth();
+  // Tenant management tabs: Global Master in their own (master) tenant OR a reseller tenant.
+  const showTenantTabs = (isGlobalMaster && profile?.company_id === activeCompanyId) || isResellerTenant;
   const canManageUsers = isMaster || isCeo || isAdmin;
   const [allCompanies, setAllCompanies] = useState<{id: string; nome_fantasia: string | null; razao_social: string; cnpj: string}[]>([]);
 
