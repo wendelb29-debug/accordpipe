@@ -8,6 +8,8 @@ import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { InstanceCredentialsCard } from "./InstanceCredentialsCard";
+import { UazapiWebhookSection } from "./UazapiWebhookSection";
+import type { WhatsAppProvider } from "@/hooks/useTenantWhatsAppIntegration";
 
 interface WebhookFieldDef {
   key: string;
