@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useWhatsAppInbox } from "@/hooks/useWhatsAppInbox";
+import { useWhatsAppInbox, InboxFilter } from "@/hooks/useWhatsAppInbox";
 import { InboxSidebar, ConversationStatusFilter } from "@/components/accord-inbox/InboxSidebar";
 import { InboxChat } from "@/components/accord-inbox/InboxChat";
 import { TransferDialog } from "@/components/accord-inbox/TransferDialog";
 import { ContactDetailSidebar } from "@/components/accord-inbox/ContactDetailSidebar";
 import { CreateDemandModal } from "@/components/accord-inbox/CreateDemandModal";
+import { NewConversationModal } from "@/components/accord-inbox/NewConversationModal";
 import { WifiOff, User, MessageSquare, Users, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -32,6 +33,17 @@ function NavIcon({
   );
 }
 
+const FILTER_LABEL_TO_VALUE: Record<string, InboxFilter> = {
+  Minhas: "mine",
+  Todas: "all",
+  "Não atrib.": "unassigned",
+};
+const FILTER_VALUE_TO_LABEL: Record<InboxFilter, string> = {
+  mine: "Minhas",
+  all: "Todas",
+  unassigned: "Não atrib.",
+};
+
 export default function AccordStack() {
   const {
     contacts, messages, selectedContactId, selectContact, sendMessage,
@@ -46,6 +58,7 @@ export default function AccordStack() {
   const [transferContactId, setTransferContactId] = useState<string | null>(null);
   const [showInfo, setShowInfo] = useState(false);
   const [demandModalOpen, setDemandModalOpen] = useState(false);
+  const [newConvOpen, setNewConvOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<ConversationStatusFilter>("em_atendimento");
 
   const selectedContact = contacts.find((c) => c.id === selectedContactId) || null;
@@ -54,6 +67,43 @@ export default function AccordStack() {
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.phone.includes(searchTerm)
   );
+
+  // Map InboxContact -> SidebarContact
+  const sidebarContacts = filteredContacts.map((c) => ({
+    id: c.id,
+    name: c.name,
+    phone: c.phone,
+    lastMessage: c.last_message || undefined,
+    lastMessageTime: c.last_message_at
+      ? new Date(c.last_message_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+      : undefined,
+    profilePicUrl: c.avatar_url || undefined,
+    conversationStatus: c.conversation_status,
+    assignedTo: c.assigned_to || undefined,
+  }));
+
+  // Map InboxContact -> ChatContact
+  const chatContact = selectedContact
+    ? {
+        id: selectedContact.id,
+        name: selectedContact.name,
+        phone: selectedContact.phone,
+        profilePicUrl: selectedContact.avatar_url || undefined,
+        conversationStatus: selectedContact.conversation_status,
+        assignedTo: selectedContact.assigned_to || undefined,
+      }
+    : null;
+
+  // Map InboxMessage -> ChatMessage
+  const chatMessages = messages.map((m) => ({
+    id: m.id,
+    message: m.message,
+    direction: m.direction,
+    created_at: m.created_at,
+    type: m.message_type,
+    mediaUrl: m.media_url || undefined,
+    status: m.status,
+  }));
 
   const handleTransfer = (contactId: string) => {
     setTransferContactId(contactId);
@@ -85,6 +135,22 @@ export default function AccordStack() {
     .map((m) => `${m.direction === "inbound" ? "Cliente" : "Atendente"}: ${m.message}`)
     .join("\n");
 
+  const integrations = activeIntegration
+    ? [
+        {
+          id: "active",
+          provider: (activeIntegration.provider_type === "zapi"
+            ? "zapi"
+            : activeIntegration.provider_type === "uazapi"
+            ? "uazapi"
+            : "cloud") as "zapi" | "uazapi" | "cloud",
+          label: activeIntegration.connected_phone || "Instância ativa",
+          phone: activeIntegration.connected_phone || undefined,
+          isConnected: activeIntegration.connection_status === "connected",
+        },
+      ]
+    : [];
+
   if (!loading && !activeIntegration) {
     return (
       <div className="flex h-[calc(100vh-3rem)] bg-background items-center justify-center">
@@ -112,9 +178,7 @@ export default function AccordStack() {
       {/* Nav Rail */}
       <div className="w-14 flex-shrink-0 border-r border-border/60 bg-background flex flex-col items-center py-3 gap-1">
         <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center mb-4 flex-shrink-0">
-          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-          </svg>
+          <MessageSquare className="w-4 h-4 text-primary-foreground" />
         </div>
 
         <NavIcon icon={<MessageSquare size={16} />} active title="Atendimentos" />
@@ -129,22 +193,23 @@ export default function AccordStack() {
       </div>
 
       <InboxSidebar
-        contacts={filteredContacts}
+        contacts={sidebarContacts}
         selectedId={selectedContactId}
         onSelect={selectContact}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
-        filter={filter}
-        onFilterChange={setFilter}
+        filter={FILTER_VALUE_TO_LABEL[filter]}
+        onFilterChange={(label) => setFilter(FILTER_LABEL_TO_VALUE[label] || "mine")}
         isAdmin={isAdminOrCeo}
         loading={loading}
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
+        onNewConversation={() => setNewConvOpen(true)}
       />
 
       <InboxChat
-        contact={selectedContact}
-        messages={messages}
+        contact={chatContact}
+        messages={chatMessages}
         onSendMessage={sendMessage}
         onTransfer={handleTransfer}
         onAssignToMe={handleAssignToMe}
@@ -181,6 +246,15 @@ export default function AccordStack() {
           lastMessages={lastMessagesSummary}
         />
       )}
+
+      <NewConversationModal
+        open={newConvOpen}
+        onOpenChange={setNewConvOpen}
+        integrations={integrations}
+        onStart={({ phone, name, integrationId, initialMessage }) => {
+          console.log("Nova conversa:", { phone, name, integrationId, initialMessage });
+        }}
+      />
     </div>
   );
 }
