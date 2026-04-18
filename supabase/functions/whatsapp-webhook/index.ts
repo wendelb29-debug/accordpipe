@@ -397,6 +397,8 @@ async function handleIncomingMessage(
       .insert({
         company_id, phone,
         name: sender_name || phone,
+        avatar_url: sender_avatar || null,
+        avatar_synced_at: sender_avatar ? new Date().toISOString() : null,
         last_message: message,
         last_message_at: new Date().toISOString(),
         workspace_id,
@@ -409,6 +411,10 @@ async function handleIncomingMessage(
   } else {
     const updates: any = { last_message: message, last_message_at: new Date().toISOString() };
     if (contact.conversation_status === "finalizado") updates.conversation_status = "aguardando";
+    if (sender_avatar) {
+      updates.avatar_url = sender_avatar;
+      updates.avatar_synced_at = new Date().toISOString();
+    }
     await supabase.from("whatsapp_contacts").update(updates).eq("id", contact.id);
   }
 
