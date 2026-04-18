@@ -89,39 +89,85 @@ _Este convite expira em 7 dias._`;
       </div>
     `;
 
-    // Send custom email via internal email queue (Lovable Emails)
-    // We enqueue directly so the link contains our ?token= (not Supabase auth link)
-    try {
-      const subject = `Você foi convidado para ${invite.company_name || "Accord"}`;
-      const { error: enqErr } = await supabase.rpc("enqueue_email", {
-        p_queue: "transactional_emails",
-        p_payload: {
-          to: invite.invitee_email,
-          subject,
-          html: emailHtml,
-          template_name: "user_invitation",
-        },
-      });
-      if (enqErr) {
-        console.error("enqueue_email error:", enqErr);
-        // Fallback: Supabase Auth invite (default template, link will not include our token)
-        const { error: emailError } = await supabase.auth.admin.inviteUserByEmail(
-          invite.invitee_email,
-          {
-            redirectTo: inviteLink,
-            data: {
-              name: invite.invitee_name,
-              company_id: invite.company_id,
-              invitation_token: invite.token,
+    // Send email via Resend (link contains our ?token= for /aceitar-convite)
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+    const FROM_EMAIL = "Accord <noreply@accordpipe.com.br>";
+
+    if (!RESEND_API_KEY) {
+      console.error("RESEND_API_KEY não configurada!");
+    } else {
+      try {
+        const resendHtml = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
+  <div style="max-width:600px;margin:32px auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 32px rgba(0,0,0,0.07);">
+    <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:36px 48px;text-align:center;">
+      <h1 style="color:#ffffff;font-size:24px;font-weight:700;margin:0;">Accord</h1>
+      <p style="color:#94a3b8;font-size:13px;margin:6px 0 0;">accordpipe.com.br</p>
+    </div>
+    <div style="padding:40px 48px;">
+      <div style="text-align:center;font-size:48px;margin-bottom:24px;">🚀</div>
+      <h2 style="color:#0f172a;font-size:20px;font-weight:700;margin:0 0 16px;">Você foi convidado!</h2>
+      <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 20px;">
+        <strong>${invite.inviter_name || "Um administrador"}</strong> convidou você
+        para fazer parte de <strong>${invite.company_name || "nossa equipe"}</strong>
+        na plataforma Accord.
+      </p>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;margin:0 0 24px;">
+        <span style="color:#64748b;font-size:12px;display:block;margin-bottom:4px;">Ambiente</span>
+        <strong style="color:#0f172a;font-size:17px;">${invite.company_name || "Accord"}</strong>
+      </div>
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin:0 0 24px;">
+        <p style="color:#92400e;font-size:13px;margin:0;">⏳ Este convite expira em <strong>7 dias</strong>.</p>
+      </div>
+      <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 24px;">Clique no botão abaixo para criar sua senha e acessar sua conta:</p>
+      <div style="text-align:center;margin:28px 0;">
+        <a href="${inviteLink}" style="display:inline-block;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#ffffff;text-decoration:none;padding:14px 40px;border-radius:10px;font-size:15px;font-weight:700;">✉️ Aceitar Convite</a>
+      </div>
+      <p style="color:#94a3b8;font-size:12px;text-align:center;margin:0;">Se você não esperava este convite, ignore este e-mail com segurança.</p>
+    </div>
+    <div style="background:#f8fafc;padding:24px 48px;border-top:1px solid #e2e8f0;text-align:center;">
+      <p style="color:#94a3b8;font-size:12px;line-height:1.6;margin:0;">
+        © ${new Date().getFullYear()} <strong>Accord</strong> · accordpipe.com.br<br/>
+        Você está recebendo este e-mail pois foi convidado por um administrador.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+        const emailResponse = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${RESEND_API_KEY}`,
+          },
+          body: JSON.stringify({
+            from: FROM_EMAIL,
+            reply_to: "suporte@accordpipe.com.br",
+            to: [invite.invitee_email],
+            subject: `Você foi convidado para ${invite.company_name || "Accord"}`,
+            headers: {
+              "X-Priority": "1",
+              "X-MSMail-Priority": "High",
+              "Importance": "High",
             },
-          }
-        );
-        if (emailError) console.error("Fallback auth invite error:", emailError);
-      } else {
-        console.log("Email enfileirado com sucesso para:", invite.invitee_email);
+            html: resendHtml,
+          }),
+        });
+
+        const resendResult = await emailResponse.json();
+        console.log("Resend response:", resendResult);
+
+        if (!emailResponse.ok) {
+          console.error("Resend error:", resendResult);
+        } else {
+          console.log("Email enviado com sucesso para:", invite.invitee_email);
+        }
+      } catch (emailErr) {
+        console.error("Email send error:", emailErr);
       }
-    } catch (emailErr) {
-      console.error("Email send error:", emailErr);
     }
 
     return new Response(JSON.stringify({ success: true, invite_link: inviteLink }), {
