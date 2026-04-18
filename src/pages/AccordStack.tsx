@@ -140,7 +140,7 @@ export default function AccordStack() {
   // e connection_status não explicitamente "disconnected"/"error" (aceita "connected", "unknown", null)
   const isIntegrationConnected = !!activeIntegration?.is_active &&
     (activeIntegration.provider_type === "uazapi"
-      ? !!activeIntegration.server_url && !!activeIntegration.instance_name
+      ? !!activeIntegration.server_url
       : true) &&
     activeIntegration?.connection_status !== "disconnected" &&
     activeIntegration?.connection_status !== "error";
