@@ -135,18 +135,31 @@ export default function AccordStack() {
     .map((m) => `${m.direction === "inbound" ? "Cliente" : "Atendente"}: ${m.message}`)
     .join("\n");
 
+  // Deriva isConnected diretamente da integração ativa: is_active + credenciais válidas
+  // e connection_status não explicitamente "disconnected"/"error" (aceita "connected", "unknown", null)
+  const isIntegrationConnected = !!activeIntegration?.is_active &&
+    (activeIntegration.provider_type === "uazapi"
+      ? !!activeIntegration.server_url && !!activeIntegration.instance_name
+      : true) &&
+    activeIntegration?.connection_status !== "disconnected" &&
+    activeIntegration?.connection_status !== "error";
+
+  console.log("[AccordStack] activeIntegration:", activeIntegration, "→ isConnected:", isIntegrationConnected);
+
   const integrations = activeIntegration
     ? [
         {
-          id: "active",
+          id: activeIntegration.id || "active",
           provider: (activeIntegration.provider_type === "zapi"
             ? "zapi"
             : activeIntegration.provider_type === "uazapi"
             ? "uazapi"
             : "cloud") as "zapi" | "uazapi" | "cloud",
-          label: activeIntegration.connected_phone || "Instância ativa",
+          label: activeIntegration.instance_name || activeIntegration.connected_phone || "Instância ativa",
           phone: activeIntegration.connected_phone || undefined,
-          isConnected: connectionStatus === "connected",
+          serverUrl: activeIntegration.server_url || undefined,
+          instanceName: activeIntegration.instance_name || undefined,
+          isConnected: isIntegrationConnected,
         },
       ]
     : [];
