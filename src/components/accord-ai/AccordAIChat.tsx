@@ -284,13 +284,14 @@ export function AccordAIChat() {
 
   const send = () => sendMessage(input);
 
-  // Hide completely when overlay is open on mobile
-  const shouldHide = isMobile && hasOverlay;
+  // Hide completely when overlay is open on mobile, or when mobile keyboard is up
+  const shouldHide = (isMobile && hasOverlay) || (isMobile && keyboardOpen);
   if (shouldHide) return null;
 
-  // Calculate safe bottom position
+  // Calculate safe bottom position (extra clearance on chat routes to avoid send button)
   const baseBottom = isMobile ? 20 : 24;
-  const safeBottom = baseBottom + bottomOffset;
+  const extraClearance = needsExtraClearance ? (isMobile ? 80 : 90) : 0;
+  const safeBottom = baseBottom + bottomOffset + extraClearance;
 
   // ── Minimized state: show a tiny pill ──
   if (assistantState === "minimized") {
