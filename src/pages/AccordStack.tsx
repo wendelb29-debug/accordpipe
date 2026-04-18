@@ -1,21 +1,42 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWhatsAppInbox } from "@/hooks/useWhatsAppInbox";
-import { toast } from "sonner";
 import { InboxSidebar, ConversationStatusFilter } from "@/components/accord-inbox/InboxSidebar";
 import { InboxChat } from "@/components/accord-inbox/InboxChat";
 import { TransferDialog } from "@/components/accord-inbox/TransferDialog";
 import { ContactDetailSidebar } from "@/components/accord-inbox/ContactDetailSidebar";
 import { CreateDemandModal } from "@/components/accord-inbox/CreateDemandModal";
-import { WifiOff, User } from "lucide-react";
+import { WifiOff, User, MessageSquare, Users, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
+
+function NavIcon({
+  icon, active, title, onClick,
+}: {
+  icon: React.ReactNode; active?: boolean; title?: string; onClick?: () => void;
+}) {
+  return (
+    <button
+      title={title}
+      onClick={onClick}
+      className={cn(
+        "w-9 h-9 rounded-xl flex items-center justify-center transition-all",
+        active
+          ? "bg-primary/15 text-primary"
+          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+      )}
+    >
+      {icon}
+    </button>
+  );
+}
 
 export default function AccordStack() {
   const {
     contacts, messages, selectedContactId, selectContact, sendMessage,
-    filter, setFilter, loading, isAdminOrCeo, connectionStatus,
-    generateQrCode, assignContact, transferContact, companyId,
+    filter, setFilter, loading, isAdminOrCeo,
+    assignContact, transferContact, companyId,
     updateConversationStatus, activeIntegration,
   } = useWhatsAppInbox();
 
@@ -27,9 +48,9 @@ export default function AccordStack() {
   const [demandModalOpen, setDemandModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<ConversationStatusFilter>("em_atendimento");
 
-  const selectedContact = contacts.find(c => c.id === selectedContactId) || null;
+  const selectedContact = contacts.find((c) => c.id === selectedContactId) || null;
 
-  const filteredContacts = contacts.filter(c =>
+  const filteredContacts = contacts.filter((c) =>
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.phone.includes(searchTerm)
   );
@@ -59,17 +80,11 @@ export default function AccordStack() {
     await updateConversationStatus(contactId, status);
   };
 
-  const handleSelectContact = (id: string) => {
-    selectContact(id);
-  };
-
   const lastMessagesSummary = messages
     .slice(-5)
-    .map(m => `${m.direction === "inbound" ? "Cliente" : "Atendente"}: ${m.message}`)
+    .map((m) => `${m.direction === "inbound" ? "Cliente" : "Atendente"}: ${m.message}`)
     .join("\n");
 
-  // Block UI only when there is truly no active integration configured for this tenant
-  console.log("[AccordStack] state →", { loading, hasIntegration: !!activeIntegration, contacts: contacts.length, status: activeIntegration?.connection_status });
   if (!loading && !activeIntegration) {
     return (
       <div className="flex h-[calc(100vh-3rem)] bg-background items-center justify-center">
@@ -83,10 +98,7 @@ export default function AccordStack() {
               Configure sua integração de WhatsApp (Uazapi ou Z-API) nas configurações do tenant para iniciar os atendimentos.
             </p>
           </div>
-          <Button
-            onClick={() => navigate("/perfil")}
-            className="gap-2 h-10 px-6 rounded-xl"
-          >
+          <Button onClick={() => navigate("/perfil")} className="gap-2 h-10 px-6 rounded-xl">
             <User className="h-4 w-4" />
             Ir para Configurações
           </Button>
@@ -96,11 +108,30 @@ export default function AccordStack() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-3rem)] bg-background">
+    <div className="flex h-[calc(100vh-3rem)] bg-background overflow-hidden">
+      {/* Nav Rail */}
+      <div className="w-14 flex-shrink-0 border-r border-border/60 bg-background flex flex-col items-center py-3 gap-1">
+        <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center mb-4 flex-shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+        </div>
+
+        <NavIcon icon={<MessageSquare size={16} />} active title="Atendimentos" />
+        <NavIcon icon={<Users size={16} />} title="Contatos" />
+
+        <div className="mt-auto flex flex-col items-center gap-2">
+          <NavIcon icon={<Settings size={16} />} title="Configurações" onClick={() => navigate("/perfil")} />
+          <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-[11px] font-medium text-primary-foreground cursor-pointer border-2 border-primary/30">
+            A
+          </div>
+        </div>
+      </div>
+
       <InboxSidebar
         contacts={filteredContacts}
         selectedId={selectedContactId}
-        onSelect={handleSelectContact}
+        onSelect={selectContact}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         filter={filter}
