@@ -146,7 +146,7 @@ export default function AccordStack() {
             : "cloud") as "zapi" | "uazapi" | "cloud",
           label: activeIntegration.connected_phone || "Instância ativa",
           phone: activeIntegration.connected_phone || undefined,
-          isConnected: activeIntegration.connection_status === "connected",
+          isConnected: connectionStatus === "connected",
         },
       ]
     : [];
