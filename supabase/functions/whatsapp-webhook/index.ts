@@ -94,10 +94,14 @@ function normalizeZapi(body: any): NormalizedEvent {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  const reqId = crypto.randomUUID().slice(0, 8);
+  const log = (...args: unknown[]) => console.log(`[whatsapp-webhook ${reqId}]`, ...args);
+
   try {
     const url = new URL(req.url);
     const provider = (url.searchParams.get("provider") || "").toLowerCase();
     const queryToken = url.searchParams.get("token");
+    log("incoming", { method: req.method, provider, hasToken: !!queryToken, tokenPrefix: queryToken?.slice(0, 6) });
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -109,52 +113,63 @@ Deno.serve(async (req) => {
 
     // ── AUTH PATH 1: provider+token in query (new multi-provider flow)
     if (provider && queryToken) {
-      const { data: tenant } = await supabase
+      const { data: tenant, error: tenantErr } = await supabase
         .from("companies")
         .select("id")
         .eq("webhook_token", queryToken)
         .maybeSingle();
+      if (tenantErr) log("tenant lookup error", tenantErr.message);
       if (!tenant) {
-        return new Response(JSON.stringify({ error: "Invalid token" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        log("REJECTED: invalid token");
+        // Return 200 with ok:false so Uazapi doesn't keep retrying and we keep visibility
+        return new Response(
+          JSON.stringify({ ok: false, error: "Invalid token", reqId }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
       }
       companyId = tenant.id;
       providerType = provider === "uazapi" ? "uazapi" : "zapi";
+      log("authenticated tenant", { companyId, providerType });
     } else {
       // ── AUTH PATH 2: legacy header secret + JSON {event, data}
       const webhookSecret = req.headers.get("x-whatsapp-secret");
       const expectedSecret = Deno.env.get("WHATSAPP_WEBHOOK_SECRET");
       if (!expectedSecret || webhookSecret !== expectedSecret) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        log("REJECTED: legacy auth failed (missing query token + bad secret)");
+        return new Response(
+          JSON.stringify({ ok: false, error: "Unauthorized", reqId }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
       }
     }
 
-    const rawBody = await req.json();
+    const rawBody = await req.json().catch(() => ({}));
+    log("payload received", { keys: Object.keys(rawBody || {}), event: (rawBody as any)?.event });
 
     // ── Legacy path: { event, data } structure with company_id inside payload
     if (!providerType) {
       const { event, data } = rawBody as any;
+      log("legacy event path", { event });
       return await handleLegacyEvent(supabase, event, data);
     }
 
     // ── New multi-provider path
     const normalized =
       providerType === "uazapi" ? normalizeUazapi(rawBody) : normalizeZapi(rawBody);
+    log("normalized", normalized);
 
-    // Update last_seen_at on the active integration of this tenant
+    // Update last_seen_at AND mark connection as connected (we're receiving events)
     await supabase
       .from("tenant_whatsapp_integrations")
-      .update({ last_seen_at: new Date().toISOString() })
+      .update({
+        last_seen_at: new Date().toISOString(),
+        connection_status: "connected",
+      })
       .eq("tenant_id", companyId!)
       .eq("provider_type", providerType);
 
     if (normalized.kind === "ignore") {
-      return new Response(JSON.stringify({ success: true, ignored: normalized.reason }), {
+      return new Response(JSON.stringify({ ok: true, ignored: normalized.reason, reqId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -172,7 +187,7 @@ Deno.serve(async (req) => {
         .eq("tenant_id", companyId!)
         .eq("provider_type", providerType);
 
-      return new Response(JSON.stringify({ success: true }), {
+      return new Response(JSON.stringify({ ok: true, reqId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -189,10 +204,10 @@ Deno.serve(async (req) => {
       provider: providerType,
     });
   } catch (err) {
-    console.error("whatsapp-webhook error:", err);
+    console.error(`[whatsapp-webhook ${reqId}] ERROR:`, err);
     return new Response(
-      JSON.stringify({ error: (err as Error).message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      JSON.stringify({ ok: false, error: (err as Error).message, reqId }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
