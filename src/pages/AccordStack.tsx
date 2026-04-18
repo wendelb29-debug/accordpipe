@@ -49,7 +49,7 @@ export default function AccordStack() {
   const {
     contacts, messages, selectedContactId, selectContact, sendMessage,
     filter, setFilter, loading, isAdminOrCeo, connectionStatus,
-    assignContact, transferContact, companyId,
+    assignContact, transferContact, companyId, refetchContacts,
     updateConversationStatus, activeIntegration,
   } = useWhatsAppInbox();
 
