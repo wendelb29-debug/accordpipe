@@ -236,7 +236,7 @@ export function useWhatsAppInbox() {
       // connection_status pode ser "connected", "unknown" ou null — confiamos em is_active + credenciais
       const hasCredentials = !!integData && (
         integData.provider_type === "uazapi"
-          ? !!integData.server_url && !!integData.instance_name
+          ? !!integData.server_url
           : true
       );
       const normalized = integData
