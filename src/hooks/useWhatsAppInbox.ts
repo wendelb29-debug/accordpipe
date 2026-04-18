@@ -74,9 +74,11 @@ export function useWhatsAppInbox() {
 
     const { data, error } = await query;
     if (error) {
-      console.error("Error fetching contacts:", error);
+      console.error("[useWhatsAppInbox] Error fetching contacts:", error);
+      setLoading(false);
       return;
     }
+    console.log("[useWhatsAppInbox] fetched contacts:", data?.length ?? 0, "for tenant:", companyId);
     setContacts((data || []) as InboxContact[]);
     setLoading(false);
   }, [companyId, filter, user?.id]);
