@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import {
   Search, ArrowLeftRight, Info, X, Paperclip, Image, Mic,
   Square, Send, Bold, Italic, Zap, FileText, Play, Pause,
-  MoreVertical, Users,
+  MoreVertical, Users, Check, CheckCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
