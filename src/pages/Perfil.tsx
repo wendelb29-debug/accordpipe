@@ -16,6 +16,9 @@ import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { useNotificationManager } from "@/hooks/useNotificationManager";
+import { useOperatorStatus } from "@/hooks/useOperatorStatus";
+import { useTenantWhatsAppIntegration } from "@/hooks/useTenantWhatsAppIntegration";
+import { Link } from "react-router-dom";
 
 const roleLabels: Record<string, string> = {
   admin: "Administrador",
@@ -264,60 +267,10 @@ export default function Perfil() {
         {/* RIGHT COLUMN */}
         <div className="space-y-6">
           {/* WhatsApp */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-primary" /> Meu Canal WhatsApp
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border/50">
-                <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                  <Wifi className="h-4 w-4 text-emerald-500" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">Status da Conexão</p>
-                  <p className="text-xs text-muted-foreground">Verifique na aba ACCORD Stack</p>
-                </div>
-                <Badge variant="outline" className="text-emerald-500 border-emerald-500/30 text-xs">
-                  <CheckCircle2 className="h-3 w-3 mr-1" /> Conectado
-                </Badge>
-              </div>
-
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5" asChild>
-                  <a href="/accord-stack">
-                    <Wifi className="h-3.5 w-3.5" /> Verificar Conexão
-                  </a>
-                </Button>
-                <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5" asChild>
-                  <a href="/accord-stack">
-                    <Hash className="h-3.5 w-3.5" /> Ler QR Code
-                  </a>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <MeuCanalWhatsAppCard />
 
           {/* Status de Atendimento */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Phone className="h-4 w-4 text-primary" /> Status de Atendimento
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border/50">
-                <div>
-                  <p className="text-sm font-medium text-foreground">Disponível para atendimento</p>
-                  <p className="text-xs text-muted-foreground">Novos atendimentos serão direcionados a você</p>
-                </div>
-                <Badge variant="outline" className="text-emerald-500 border-emerald-500/30 text-xs">
-                  Disponível
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
+          <StatusAtendimentoCard />
 
           {/* Notificações Push */}
           <NotificacoesPushCard />
