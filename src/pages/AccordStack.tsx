@@ -286,6 +286,10 @@ export default function AccordStack() {
           console.log("[NewConversation] start", { normalizedPhone, name, integrationId, companyId });
 
           try {
+            // Pega usuário atual para atribuir a conversa automaticamente
+            const { data: { user: authUser } } = await supabase.auth.getUser();
+            const currentUserId = authUser?.id ?? null;
+
             // 1. Localiza ou cria contato em whatsapp_contacts
             const { data: existing } = await supabase
               .from("whatsapp_contacts")
@@ -297,19 +301,17 @@ export default function AccordStack() {
             let contactId: string;
             if (existing) {
               contactId = existing.id;
-              // Atualiza nome se fornecido
-              if (name && name !== existing.name) {
-                await supabase
-                  .from("whatsapp_contacts")
-                  .update({ name })
-                  .eq("id", contactId);
-              }
-              // Reabre se estava encerrado
+              const updates: Record<string, unknown> = {};
+              if (name && name !== existing.name) updates.name = name;
               if ((existing as any).conversation_status === "encerrado") {
-                await supabase
-                  .from("whatsapp_contacts")
-                  .update({ conversation_status: "em_atendimento" } as any)
-                  .eq("id", contactId);
+                updates.conversation_status = "em_atendimento";
+              }
+              // Atribui ao usuário atual se ainda estiver sem dono (garante visibilidade no filtro "Minhas")
+              if (!existing.assigned_to && currentUserId) {
+                updates.assigned_to = currentUserId;
+              }
+              if (Object.keys(updates).length > 0) {
+                await supabase.from("whatsapp_contacts").update(updates as any).eq("id", contactId);
               }
             } else {
               const { data: created, error: createErr } = await supabase
@@ -319,21 +321,23 @@ export default function AccordStack() {
                   phone: normalizedPhone,
                   name: name || normalizedPhone,
                   conversation_status: "em_atendimento",
+                  assigned_to: currentUserId, // garante que aparece no filtro "Minhas"
                 } as any)
                 .select()
                 .single();
               if (createErr || !created) {
                 console.error("[NewConversation] create contact error:", createErr);
-                toast.error("Erro ao criar contato");
+                toast.error(`Erro ao criar contato: ${createErr?.message ?? "desconhecido"}`);
                 return;
               }
               contactId = created.id;
+              console.log("[NewConversation] contato criado:", contactId);
             }
 
-            // 2. Refetch + abre conversa
+            // 2. Fecha modal, refetch e abre conversa
+            setNewConvOpen(false);
             await refetchContacts();
             selectContact(contactId);
-            setNewConvOpen(false);
 
             // 3. Envia mensagem inicial via provider, se houver
             if (initialMessage?.trim()) {
