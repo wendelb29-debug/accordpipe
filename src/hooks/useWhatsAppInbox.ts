@@ -129,29 +129,23 @@ export function useWhatsAppInbox() {
       return;
     }
 
-    // Send via Z-API
+    // Send via active provider (Uazapi or Z-API) — provider-agnostic
     try {
-      const { data, error } = await supabase.functions.invoke("zapi", {
+      const { data, error } = await supabase.functions.invoke("whatsapp-send", {
         body: {
-          action: "send-text",
+          tenant_id: companyId,
           phone: contact.phone,
-          message: text,
-          company_id: companyId,
+          text,
+          message_id: msgData.id,
         },
       });
 
       if (error || !data?.success) {
-        // Update status to failed
         await supabase
           .from("whatsapp_messages")
           .update({ status: "failed" })
           .eq("id", msgData.id);
-        toast.error("Falha ao enviar mensagem via WhatsApp");
-      } else {
-        await supabase
-          .from("whatsapp_messages")
-          .update({ status: "sent" })
-          .eq("id", msgData.id);
+        toast.error(data?.message || "Falha ao enviar mensagem via WhatsApp");
       }
     } catch {
       await supabase
@@ -206,25 +200,22 @@ export function useWhatsAppInbox() {
     fetchContacts();
   }, [fetchContacts]);
 
-  // Check Z-API connection status
+  // Check connection status from active provider integration
   const checkConnection = useCallback(async () => {
     if (!companyId) {
       setConnectionStatus("disconnected");
       return;
     }
     try {
-      const { data, error } = await supabase.functions.invoke("zapi", {
-        body: { action: "status", company_id: companyId },
-      });
-      // If Z-API is not configured or returns any error, silently stay disconnected
-      if (error || !data || data?.error || data?.success === false) {
-        setConnectionStatus("disconnected");
-        return;
-      }
-      const connected = data?.data?.connected;
-      setConnectionStatus(connected === true ? "connected" : "disconnected");
-    } catch (e) {
-      console.log("Z-API check skipped (not configured):", e);
+      const { data: integ } = await supabase
+        .from("tenant_whatsapp_integrations" as any)
+        .select("connection_status")
+        .eq("tenant_id", companyId)
+        .eq("is_active", true)
+        .maybeSingle();
+      const status = (integ as any)?.connection_status;
+      setConnectionStatus(status === "connected" ? "connected" : "disconnected");
+    } catch {
       setConnectionStatus("disconnected");
     }
   }, [companyId]);

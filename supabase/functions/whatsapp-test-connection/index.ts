@@ -12,26 +12,44 @@ interface TestResult {
   success: boolean;
   status: "success" | "error";
   message: string;
+  connection_status?: string; // connected | disconnected | invalid_credentials | pending | unknown
+  connected_phone?: string | null;
   raw?: unknown;
 }
 
 // ============ ADAPTERS ============
 
-async function testZapi(serverUrl: string, instanceId: string | null, token: string): Promise<TestResult> {
+async function testZapi(serverUrl: string, instanceId: string | null, token: string, clientToken?: string | null): Promise<TestResult> {
   if (!instanceId) {
-    return { success: false, status: "error", message: "Z-API requer Instance ID" };
+    return { success: false, status: "error", message: "Z-API requer Instance ID", connection_status: "invalid_credentials" };
   }
   const base = serverUrl.replace(/\/$/, "");
   const url = `${base}/instances/${instanceId}/token/${token}/status`;
   try {
-    const res = await fetch(url, { method: "GET" });
-    const body = await res.json().catch(() => ({}));
+    const headers: Record<string, string> = {};
+    if (clientToken) headers["Client-Token"] = clientToken;
+    const res = await fetch(url, { method: "GET", headers });
+    const body: any = await res.json().catch(() => ({}));
     if (!res.ok) {
-      return { success: false, status: "error", message: `Z-API HTTP ${res.status}`, raw: body };
+      return {
+        success: false,
+        status: "error",
+        message: `Z-API HTTP ${res.status}`,
+        connection_status: res.status === 401 || res.status === 403 ? "invalid_credentials" : "disconnected",
+        raw: body,
+      };
     }
-    return { success: true, status: "success", message: "Z-API conectada", raw: body };
+    const connected = body?.connected === true;
+    return {
+      success: true,
+      status: "success",
+      message: connected ? "Z-API conectada" : "Z-API alcançada mas sem número conectado",
+      connection_status: connected ? "connected" : "disconnected",
+      connected_phone: body?.session ?? null,
+      raw: body,
+    };
   } catch (err) {
-    return { success: false, status: "error", message: `Falha ao conectar: ${(err as Error).message}` };
+    return { success: false, status: "error", message: `Falha ao conectar: ${(err as Error).message}`, connection_status: "disconnected" };
   }
 }
 
@@ -43,13 +61,31 @@ async function testUazapi(serverUrl: string, token: string): Promise<TestResult>
       method: "GET",
       headers: { token, "Content-Type": "application/json" },
     });
-    const body = await res.json().catch(() => ({}));
+    const body: any = await res.json().catch(() => ({}));
     if (!res.ok) {
-      return { success: false, status: "error", message: `Uazapi HTTP ${res.status}`, raw: body };
+      return {
+        success: false,
+        status: "error",
+        message: `Uazapi HTTP ${res.status}`,
+        connection_status: res.status === 401 || res.status === 403 ? "invalid_credentials" : "disconnected",
+        raw: body,
+      };
     }
-    return { success: true, status: "success", message: "Uazapi conectada", raw: body };
+    // Uazapi response shapes vary; try common fields
+    const instance = body?.instance ?? body;
+    const status = (instance?.status ?? instance?.state ?? "").toString().toLowerCase();
+    const connected = ["connected", "online", "open"].some((s) => status.includes(s));
+    const phone = instance?.owner ?? instance?.wid ?? instance?.phone ?? instance?.profileName ?? null;
+    return {
+      success: true,
+      status: "success",
+      message: connected ? "Uazapi conectada" : `Uazapi alcançada (status: ${status || "desconhecido"})`,
+      connection_status: connected ? "connected" : "disconnected",
+      connected_phone: typeof phone === "string" ? phone : null,
+      raw: body,
+    };
   } catch (err) {
-    return { success: false, status: "error", message: `Falha ao conectar: ${(err as Error).message}` };
+    return { success: false, status: "error", message: `Falha ao conectar: ${(err as Error).message}`, connection_status: "disconnected" };
   }
 }
 
@@ -73,8 +109,8 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    const jwt = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(jwt);
     if (claimsError || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -92,7 +128,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // load credentials (RLS will restrict)
     const { data: integ, error: loadErr } = await supabase
       .from("tenant_whatsapp_integrations")
       .select("*")
@@ -116,20 +151,32 @@ Deno.serve(async (req) => {
 
     let result: TestResult;
     if (provider_type === "zapi") {
-      result = await testZapi(integ.server_url, integ.instance_id, integ.instance_token);
+      // Get optional client token from companies (legacy)
+      const { data: comp } = await supabase
+        .from("companies")
+        .select("zapi_client_token")
+        .eq("id", tenant_id)
+        .maybeSingle();
+      result = await testZapi(integ.server_url, integ.instance_id, integ.instance_token, comp?.zapi_client_token ?? null);
     } else if (provider_type === "uazapi") {
       result = await testUazapi(integ.server_url, integ.instance_token);
     } else {
-      result = { success: false, status: "error", message: "Provider não suportado" };
+      result = { success: false, status: "error", message: "Provider não suportado", connection_status: "unknown" };
     }
 
-    // persist test result
+    // persist test result + connection state
+    const now = new Date().toISOString();
     await supabase
       .from("tenant_whatsapp_integrations")
       .update({
-        last_tested_at: new Date().toISOString(),
+        last_tested_at: now,
+        last_sync_at: now,
         last_test_status: result.status,
         last_test_message: result.message,
+        connection_status: result.connection_status ?? "unknown",
+        connected_phone: result.connected_phone ?? null,
+        last_seen_at: result.connection_status === "connected" ? now : (integ as any).last_seen_at ?? null,
+        provider_metadata: result.raw ? { last_status_payload: result.raw } : (integ as any).provider_metadata ?? {},
       })
       .eq("id", integ.id);
 
@@ -140,7 +187,13 @@ Deno.serve(async (req) => {
       target_type: "tenant_whatsapp_integration",
       target_id: integ.id,
       servidor_id: tenant_id,
-      details: { provider_type, status: result.status, message: result.message },
+      details: {
+        provider_type,
+        status: result.status,
+        connection_status: result.connection_status,
+        connected_phone: result.connected_phone,
+        message: result.message,
+      },
     });
 
     return new Response(JSON.stringify(result), {
