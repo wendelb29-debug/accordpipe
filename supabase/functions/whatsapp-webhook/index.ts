@@ -318,6 +318,7 @@ Deno.serve(async (req) => {
       phone: normalized.phone,
       message: normalized.message,
       sender_name: normalized.sender_name ?? undefined,
+      sender_avatar: (normalized as any).sender_avatar ?? undefined,
       message_type: normalized.message_type,
       media_url: normalized.media_url ?? undefined,
       external_id: normalized.external_id ?? undefined,
