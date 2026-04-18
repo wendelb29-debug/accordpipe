@@ -35,8 +35,9 @@ serve(async (req) => {
       });
     }
 
-    const origin = req.headers.get("origin") || "https://accordpipe.lovable.app";
-    const inviteLink = `${origin}/aceitar-convite?token=${invite.token}`;
+    const inviteLink = `https://accordpipe.com.br/aceitar-convite?token=${encodeURIComponent(invite.token)}`;
+    console.log("inviteLink gerado:", inviteLink);
+    console.log("invite.token:", invite.token);
 
     const message = `🎉 *Você foi convidado!*
 
