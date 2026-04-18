@@ -43,6 +43,13 @@ export function useWhatsAppInbox() {
   const [filter, setFilter] = useState<InboxFilter>("mine");
   const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState<"disconnected" | "connecting" | "connected">("disconnected");
+  const [activeIntegration, setActiveIntegration] = useState<{
+    provider_type: string;
+    connected_phone: string | null;
+    connection_status: string;
+    last_sync_at: string | null;
+    is_active: boolean;
+  } | null>(null);
 
   const companyId = activeCompanyId || profile?.company_id;
   const isAdminOrCeo = isMaster || role === "admin" || role === "ceo";
