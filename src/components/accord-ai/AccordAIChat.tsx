@@ -145,6 +145,26 @@ export function AccordAIChat() {
 
   const { pageName, quickActions } = getContextForRoute(location.pathname);
 
+  // Extra clearance on routes that have a bottom send button (inbox / chat)
+  const needsExtraClearance =
+    location.pathname.startsWith("/accord-stack") ||
+    location.pathname.startsWith("/atendimento") ||
+    location.pathname.startsWith("/inbox");
+
+  // Hide on mobile when virtual keyboard is open
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    if (!isMobile || typeof window === "undefined" || !window.visualViewport) return;
+    const vv = window.visualViewport;
+    const onResize = () => {
+      const diff = window.innerHeight - vv.height;
+      setKeyboardOpen(diff > 150);
+    };
+    vv.addEventListener("resize", onResize);
+    onResize();
+    return () => vv.removeEventListener("resize", onResize);
+  }, [isMobile]);
+
   // Detect if a dialog/modal/drawer is open
   const [hasOverlay, setHasOverlay] = useState(false);
   useEffect(() => {
