@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import {
   Search, ArrowLeftRight, Info, X, Paperclip, Image, Mic,
   Square, Send, Bold, Italic, Zap, FileText, Play, Pause,
-  MoreVertical, Users,
+  MoreVertical, Users, Check, CheckCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -171,9 +171,14 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
       )}
       <div className="flex items-center gap-1 mt-1 px-0.5">
         <span className="text-[10px] text-muted-foreground">{time}</span>
-        {isOut && (
-          <span className={cn("text-[11px]", msg.status === "read" ? "text-emerald-500" : "text-muted-foreground/60")}>✓✓</span>
-        )}
+        {isOut && (() => {
+          const s = msg.status;
+          if (s === "read") return <CheckCheck size={12} className="text-emerald-500" />;
+          if (s === "delivered") return <CheckCheck size={12} className="text-muted-foreground/70" />;
+          if (s === "failed") return <span className="text-[10px] text-red-500">!</span>;
+          if (s === "sending") return <span className="text-[10px] text-muted-foreground/50">⋯</span>;
+          return <Check size={12} className="text-muted-foreground/70" />;
+        })()}
       </div>
     </div>
   );

@@ -15,13 +15,34 @@ type NormalizedEvent =
       phone: string;
       message: string;
       sender_name?: string | null;
+      sender_avatar?: string | null;
       message_type?: string;
       media_url?: string | null;
       external_id?: string | null;
     }
-  | { kind: "message_status"; external_id: string; status: string }
+  | { kind: "message_status"; external_id: string; status: "sent" | "delivered" | "read" }
   | { kind: "instance_status"; status: string; phone?: string | null }
   | { kind: "ignore"; reason: string };
+
+function pickAvatar(d: any): string | null {
+  if (!d) return null;
+  const candidates = [
+    d.senderPhoto, d.profilePicture, d.profilePicUrl, d.imagePreview, d.image,
+    d?.contact?.profilePicture, d?.contact?.imagePreview, d?.sender?.profilePicture,
+  ];
+  for (const c of candidates) {
+    if (typeof c === "string" && c.startsWith("http")) return c;
+  }
+  return null;
+}
+
+function mapStatus(raw: string): "sent" | "delivered" | "read" | null {
+  const s = (raw || "").toString().toLowerCase();
+  if (s.includes("read") || s.includes("lida") || s === "4") return "read";
+  if (s.includes("deliver") || s.includes("recebid") || s === "3") return "delivered";
+  if (s.includes("sent") || s.includes("enviad") || s === "2" || s === "1") return "sent";
+  return null;
+}
 
 function pickText(d: any): string {
   if (!d) return "";
@@ -80,8 +101,19 @@ function normalizeUazapi(body: any): NormalizedEvent {
     };
   }
 
-  // Skip outbound echoes
+  // Message status / ack events (delivery/read receipts)
+  const ackRaw = data?.ack ?? data?.status ?? data?.messageStatus ?? body?.ack ?? body?.status;
+  const externalId = data?.id || data?.messageId || data?.key?.id || body?.messageId;
+  if ((ev.includes("status") || ev.includes("ack") || ev.includes("receipt")) && externalId) {
+    const mapped = mapStatus(String(ackRaw ?? ev));
+    if (mapped) {
+      return { kind: "message_status", external_id: String(externalId), status: mapped };
+    }
+  }
+
+  // Skip outbound echoes (only after we ruled out status updates for outbound msgs)
   if (isFromMe(data, body)) {
+    // If it's a status event for a sent message, allow it through above; otherwise ignore
     return { kind: "ignore", reason: "fromMe/wasSentByApi" };
   }
 
@@ -95,9 +127,10 @@ function normalizeUazapi(body: any): NormalizedEvent {
       phone: String(phone).replace(/[^\d]/g, ""),
       message: String(text),
       sender_name: data?.senderName || data?.pushName || data?.notifyName || data?.contact?.name || null,
+      sender_avatar: pickAvatar(data) || pickAvatar(body),
       message_type: data?.type || data?.messageType || "text",
       media_url: data?.mediaUrl || data?.media || data?.message?.imageMessage?.url || null,
-      external_id: data?.id || data?.messageId || data?.key?.id || null,
+      external_id: externalId || null,
     };
   }
 
@@ -105,7 +138,14 @@ function normalizeUazapi(body: any): NormalizedEvent {
 }
 
 function normalizeZapi(body: any): NormalizedEvent {
-  // Z-API legacy payload (already supported via the secret header path below)
+  // Z-API status events
+  const status = body?.status || body?.messageStatus;
+  const messageId = body?.messageId || body?.ids?.[0];
+  if (status && messageId) {
+    const mapped = mapStatus(String(status));
+    if (mapped) return { kind: "message_status", external_id: String(messageId), status: mapped };
+  }
+
   const phone = body?.phone || body?.data?.phone;
   const text = body?.message || body?.data?.message || body?.text;
   if (body?.fromMe === true) return { kind: "ignore", reason: "fromMe" };
@@ -115,9 +155,10 @@ function normalizeZapi(body: any): NormalizedEvent {
       phone: String(phone).replace(/[^\d]/g, ""),
       message: String(text),
       sender_name: body?.senderName || body?.notifyName || null,
+      sender_avatar: pickAvatar(body),
       message_type: body?.type || "text",
       media_url: body?.mediaUrl || null,
-      external_id: body?.messageId || null,
+      external_id: messageId || null,
     };
   }
   return { kind: "ignore", reason: "unknown_zapi_event" };
@@ -253,6 +294,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (normalized.kind === "message_status") {
+      log("STATUS UPDATE", normalized);
+      const ts = new Date().toISOString();
+      const updates: any = { status: normalized.status };
+      if (normalized.status === "sent") updates.sent_at = ts;
+      if (normalized.status === "delivered") updates.delivered_at = ts;
+      if (normalized.status === "read") updates.read_at = ts;
+      await supabase
+        .from("whatsapp_messages")
+        .update(updates)
+        .eq("company_id", companyId!)
+        .eq("external_message_id", normalized.external_id);
+      return new Response(JSON.stringify({ ok: true, reqId }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // message_received → reuse the same routing/lead logic as legacy handler
     log("PERSISTING inbound", { phone: normalized.phone, preview: normalized.message.slice(0, 60) });
     return await handleIncomingMessage(supabase, {
@@ -260,6 +318,7 @@ Deno.serve(async (req) => {
       phone: normalized.phone,
       message: normalized.message,
       sender_name: normalized.sender_name ?? undefined,
+      sender_avatar: (normalized as any).sender_avatar ?? undefined,
       message_type: normalized.message_type,
       media_url: normalized.media_url ?? undefined,
       external_id: normalized.external_id ?? undefined,
@@ -284,13 +343,14 @@ async function handleIncomingMessage(
     phone: string;
     message: string;
     sender_name?: string;
+    sender_avatar?: string;
     message_type?: string;
     media_url?: string;
     external_id?: string;
     provider?: string;
   },
 ) {
-  const { company_id, phone, message, sender_name, message_type = "text", media_url, external_id, provider } = data;
+  const { company_id, phone, message, sender_name, sender_avatar, message_type = "text", media_url, external_id, provider } = data;
 
   // 1. Workspace routing
   let workspace_id: string | null = null;
@@ -337,6 +397,8 @@ async function handleIncomingMessage(
       .insert({
         company_id, phone,
         name: sender_name || phone,
+        avatar_url: sender_avatar || null,
+        avatar_synced_at: sender_avatar ? new Date().toISOString() : null,
         last_message: message,
         last_message_at: new Date().toISOString(),
         workspace_id,
@@ -349,6 +411,10 @@ async function handleIncomingMessage(
   } else {
     const updates: any = { last_message: message, last_message_at: new Date().toISOString() };
     if (contact.conversation_status === "finalizado") updates.conversation_status = "aguardando";
+    if (sender_avatar) {
+      updates.avatar_url = sender_avatar;
+      updates.avatar_synced_at = new Date().toISOString();
+    }
     await supabase.from("whatsapp_contacts").update(updates).eq("id", contact.id);
   }
 
@@ -404,6 +470,8 @@ async function handleIncomingMessage(
     .insert({
       company_id, contact_id: contact!.id, phone, message,
       direction: "inbound", status: "delivered",
+      delivered_at: new Date().toISOString(),
+      external_message_id: external_id ?? null,
       message_type, media_url,
       metadata: { external_id: external_id ?? null, provider: provider ?? null },
     });

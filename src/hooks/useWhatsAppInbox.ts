@@ -33,6 +33,10 @@ export interface InboxMessage {
   media_url: string | null;
   created_at: string;
   company_id: string;
+  external_message_id?: string | null;
+  sent_at?: string | null;
+  delivered_at?: string | null;
+  read_at?: string | null;
 }
 
 export function useWhatsAppInbox() {
@@ -306,8 +310,22 @@ export function useWhatsAppInbox() {
           if (newMsg.contact_id === selectedContactId) {
             setMessages(prev => [...prev, newMsg]);
           }
-          // Refresh contacts to update last_message
           fetchContacts();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "whatsapp_messages",
+          filter: `company_id=eq.${companyId}`,
+        },
+        (payload) => {
+          const updated = payload.new as InboxMessage;
+          if (updated.contact_id === selectedContactId) {
+            setMessages(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated } : m));
+          }
         }
       )
       .subscribe();

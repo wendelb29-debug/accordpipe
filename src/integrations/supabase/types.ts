@@ -5617,6 +5617,7 @@ export type Database = {
       whatsapp_contacts: {
         Row: {
           assigned_to: string | null
+          avatar_synced_at: string | null
           avatar_url: string | null
           company_id: string
           conversation_status: string
@@ -5634,6 +5635,7 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          avatar_synced_at?: string | null
           avatar_url?: string | null
           company_id: string
           conversation_status?: string
@@ -5651,6 +5653,7 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          avatar_synced_at?: string | null
           avatar_url?: string | null
           company_id?: string
           conversation_status?: string
@@ -5727,39 +5730,51 @@ export type Database = {
           company_id: string
           contact_id: string
           created_at: string
+          delivered_at: string | null
           direction: string
+          external_message_id: string | null
           id: string
           media_url: string | null
           message: string
           message_type: string
           metadata: Json | null
           phone: string
+          read_at: string | null
+          sent_at: string | null
           status: string
         }
         Insert: {
           company_id: string
           contact_id: string
           created_at?: string
+          delivered_at?: string | null
           direction?: string
+          external_message_id?: string | null
           id?: string
           media_url?: string | null
           message: string
           message_type?: string
           metadata?: Json | null
           phone: string
+          read_at?: string | null
+          sent_at?: string | null
           status?: string
         }
         Update: {
           company_id?: string
           contact_id?: string
           created_at?: string
+          delivered_at?: string | null
           direction?: string
+          external_message_id?: string | null
           id?: string
           media_url?: string | null
           message?: string
           message_type?: string
           metadata?: Json | null
           phone?: string
+          read_at?: string | null
+          sent_at?: string | null
           status?: string
         }
         Relationships: [
