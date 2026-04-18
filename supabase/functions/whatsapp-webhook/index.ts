@@ -343,13 +343,14 @@ async function handleIncomingMessage(
     phone: string;
     message: string;
     sender_name?: string;
+    sender_avatar?: string;
     message_type?: string;
     media_url?: string;
     external_id?: string;
     provider?: string;
   },
 ) {
-  const { company_id, phone, message, sender_name, message_type = "text", media_url, external_id, provider } = data;
+  const { company_id, phone, message, sender_name, sender_avatar, message_type = "text", media_url, external_id, provider } = data;
 
   // 1. Workspace routing
   let workspace_id: string | null = null;
