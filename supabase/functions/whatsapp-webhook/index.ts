@@ -470,6 +470,8 @@ async function handleIncomingMessage(
     .insert({
       company_id, contact_id: contact!.id, phone, message,
       direction: "inbound", status: "delivered",
+      delivered_at: new Date().toISOString(),
+      external_message_id: external_id ?? null,
       message_type, media_url,
       metadata: { external_id: external_id ?? null, provider: provider ?? null },
     });
