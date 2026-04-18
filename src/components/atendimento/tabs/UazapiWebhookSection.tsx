@@ -29,9 +29,25 @@ export function UazapiWebhookSection({ tenantId }: Props) {
   const current = getByProvider("uazapi");
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const [webhookToken, setWebhookToken] = useState<string | null>(null);
+
+  // Load webhook_token from companies (used to authenticate the webhook)
+  useEffect(() => {
+    if (!tenantId) {
+      setWebhookToken(null);
+      return;
+    }
+    supabase
+      .from("companies")
+      .select("webhook_token")
+      .eq("id", tenantId)
+      .maybeSingle()
+      .then(({ data }) => setWebhookToken((data as any)?.webhook_token ?? null));
+  }, [tenantId]);
+
   const defaultWebhookUrl =
-    tenantId && supabaseUrl
-      ? `${supabaseUrl}/functions/v1/whatsapp-webhook?provider=uazapi&tenant=${tenantId}`
+    tenantId && supabaseUrl && webhookToken
+      ? `${supabaseUrl}/functions/v1/whatsapp-webhook?provider=uazapi&token=${webhookToken}`
       : "";
 
   const [enabled, setEnabled] = useState(DEFAULTS.webhook_enabled);
