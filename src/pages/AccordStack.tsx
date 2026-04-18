@@ -47,7 +47,7 @@ const FILTER_VALUE_TO_LABEL: Record<InboxFilter, string> = {
 export default function AccordStack() {
   const {
     contacts, messages, selectedContactId, selectContact, sendMessage,
-    filter, setFilter, loading, isAdminOrCeo,
+    filter, setFilter, loading, isAdminOrCeo, connectionStatus,
     assignContact, transferContact, companyId,
     updateConversationStatus, activeIntegration,
   } = useWhatsAppInbox();
