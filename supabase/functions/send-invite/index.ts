@@ -97,40 +97,56 @@ _Este convite expira em 7 dias._`;
       console.error("RESEND_API_KEY não configurada!");
     } else {
       try {
-        const resendHtml = `<!DOCTYPE html>
+        const companyName = invite.company_name || "Accord";
+        const resendHtml = `
+<!DOCTYPE html>
 <html lang="pt-BR">
-<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/></head>
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+</head>
 <body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
-  <div style="max-width:600px;margin:32px auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 32px rgba(0,0,0,0.07);">
-    <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:36px 48px;text-align:center;">
-      <h1 style="color:#ffffff;font-size:24px;font-weight:700;margin:0;">Accord</h1>
-      <p style="color:#94a3b8;font-size:13px;margin:6px 0 0;">accordpipe.com.br</p>
+  <div style="max-width:600px;margin:32px auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+    <div style="background:linear-gradient(135deg,#2d1b69 0%,#4338ca 50%,#6366f1 100%);padding:48px 40px;text-align:center;">
+      <div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <img src="https://accordpipe.com.br/logo-bimi.svg" width="36" height="36" style="border-radius:6px;" alt="Accord"/>
+        <span style="color:#ffffff;font-size:26px;font-weight:800;letter-spacing:-0.5px;">ACCORD</span>
+      </div>
+      <div style="margin-top:8px;">
+        <span style="display:inline-block;border:1px solid rgba(255,255,255,0.4);color:rgba(255,255,255,0.9);font-size:11px;font-weight:600;letter-spacing:2px;padding:4px 14px;border-radius:20px;">
+          ENTERPRISE
+        </span>
+      </div>
     </div>
-    <div style="padding:40px 48px;">
-      <div style="text-align:center;font-size:48px;margin-bottom:24px;">🚀</div>
-      <h2 style="color:#0f172a;font-size:20px;font-weight:700;margin:0 0 16px;">Você foi convidado!</h2>
-      <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 20px;">
-        <strong>${invite.inviter_name || "Um administrador"}</strong> convidou você
-        para fazer parte de <strong>${invite.company_name || "nossa equipe"}</strong>
-        na plataforma Accord.
+    <div style="padding:48px 40px;text-align:center;">
+      <div style="width:72px;height:72px;background:#4f46e5;border-radius:18px;margin:0 auto 28px;display:flex;align-items:center;justify-content:center;font-size:36px;line-height:72px;">
+        🚀
+      </div>
+      <h1 style="color:#0f172a;font-size:26px;font-weight:800;margin:0 0 16px;letter-spacing:-0.5px;">
+        Você foi convidado!
+      </h1>
+      <p style="color:#64748b;font-size:15px;line-height:1.7;margin:0 0 8px;">
+        <strong style="color:#0f172a;">${invite.inviter_name || "Um administrador"}</strong>
+        convidou você para acessar o ambiente
       </p>
-      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;margin:0 0 24px;">
-        <span style="color:#64748b;font-size:12px;display:block;margin-bottom:4px;">Ambiente</span>
-        <strong style="color:#0f172a;font-size:17px;">${invite.company_name || "Accord"}</strong>
-      </div>
-      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin:0 0 24px;">
-        <p style="color:#92400e;font-size:13px;margin:0;">⏳ Este convite expira em <strong>7 dias</strong>.</p>
-      </div>
-      <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 24px;">Clique no botão abaixo para criar sua senha e acessar sua conta:</p>
-      <div style="text-align:center;margin:28px 0;">
-        <a href="${inviteLink}" style="display:inline-block;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#ffffff;text-decoration:none;padding:14px 40px;border-radius:10px;font-size:15px;font-weight:700;">✉️ Aceitar Convite</a>
-      </div>
-      <p style="color:#94a3b8;font-size:12px;text-align:center;margin:0;">Se você não esperava este convite, ignore este e-mail com segurança.</p>
+      <p style="color:#4f46e5;font-size:18px;font-weight:700;margin:0 0 32px;">
+        ${companyName}
+      </p>
+      <a href="${inviteLink}" style="display:inline-block;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#ffffff;text-decoration:none;padding:16px 52px;border-radius:12px;font-size:16px;font-weight:700;letter-spacing:0.2px;box-shadow:0 4px 16px rgba(79,70,229,0.4);">
+        Aceitar convite
+      </a>
+      <p style="color:#94a3b8;font-size:13px;margin:28px 0 0;line-height:1.6;">
+        ⏳ Este convite expira em <strong>7 dias</strong>.<br/>
+        Se não esperava este convite, ignore este e-mail.
+      </p>
+      <p style="color:#cbd5e1;font-size:11px;margin:16px 0 0;word-break:break-all;">
+        ${inviteLink}
+      </p>
     </div>
-    <div style="background:#f8fafc;padding:24px 48px;border-top:1px solid #e2e8f0;text-align:center;">
-      <p style="color:#94a3b8;font-size:12px;line-height:1.6;margin:0;">
+    <div style="background:#f8fafc;padding:20px 40px;border-top:1px solid #e2e8f0;text-align:center;">
+      <p style="color:#94a3b8;font-size:12px;line-height:1.8;margin:0;">
         © ${new Date().getFullYear()} <strong>Accord</strong> · accordpipe.com.br<br/>
-        Você está recebendo este e-mail pois foi convidado por um administrador.
+        Você recebeu este e-mail pois foi convidado por um administrador.
       </p>
     </div>
   </div>
