@@ -263,10 +263,131 @@ export default function AccordStack() {
 
       <NewConversationModal
         open={newConvOpen}
-        onOpenChange={setNewConvOpen}
+        onOpenChange={(open) => {
+          setNewConvOpen(open);
+          if (open) refetchContacts();
+        }}
         integrations={integrations}
-        onStart={({ phone, name, integrationId, initialMessage }) => {
-          console.log("Nova conversa:", { phone, name, integrationId, initialMessage });
+        onStart={async ({ phone, name, integrationId, initialMessage }) => {
+          if (!companyId) {
+            toast.error("Tenant não identificado");
+            return;
+          }
+          if (!isIntegrationConnected) {
+            toast.error("Integração WhatsApp não está conectada");
+            return;
+          }
+          // Normaliza telefone (apenas dígitos)
+          const normalizedPhone = phone.replace(/\D/g, "");
+          if (normalizedPhone.length < 10) {
+            toast.error("Número inválido");
+            return;
+          }
+          console.log("[NewConversation] start", { normalizedPhone, name, integrationId, companyId });
+
+          try {
+            // 1. Localiza ou cria contato em whatsapp_contacts
+            const { data: existing } = await supabase
+              .from("whatsapp_contacts")
+              .select("*")
+              .eq("company_id", companyId)
+              .eq("phone", normalizedPhone)
+              .maybeSingle();
+
+            let contactId: string;
+            if (existing) {
+              contactId = existing.id;
+              // Atualiza nome se fornecido
+              if (name && name !== existing.name) {
+                await supabase
+                  .from("whatsapp_contacts")
+                  .update({ name })
+                  .eq("id", contactId);
+              }
+              // Reabre se estava encerrado
+              if ((existing as any).conversation_status === "encerrado") {
+                await supabase
+                  .from("whatsapp_contacts")
+                  .update({ conversation_status: "em_atendimento" } as any)
+                  .eq("id", contactId);
+              }
+            } else {
+              const { data: created, error: createErr } = await supabase
+                .from("whatsapp_contacts")
+                .insert({
+                  company_id: companyId,
+                  phone: normalizedPhone,
+                  name: name || normalizedPhone,
+                  conversation_status: "em_atendimento",
+                } as any)
+                .select()
+                .single();
+              if (createErr || !created) {
+                console.error("[NewConversation] create contact error:", createErr);
+                toast.error("Erro ao criar contato");
+                return;
+              }
+              contactId = created.id;
+            }
+
+            // 2. Refetch + abre conversa
+            await refetchContacts();
+            selectContact(contactId);
+            setNewConvOpen(false);
+
+            // 3. Envia mensagem inicial via provider, se houver
+            if (initialMessage?.trim()) {
+              const { data: msgData, error: msgError } = await supabase
+                .from("whatsapp_messages")
+                .insert({
+                  company_id: companyId,
+                  contact_id: contactId,
+                  phone: normalizedPhone,
+                  message: initialMessage.trim(),
+                  direction: "outbound",
+                  status: "sending",
+                  message_type: "text",
+                })
+                .select()
+                .single();
+
+              if (!msgError && msgData) {
+                const { data: sendRes, error: sendErr } = await supabase.functions.invoke(
+                  "whatsapp-send",
+                  {
+                    body: {
+                      tenant_id: companyId,
+                      phone: normalizedPhone,
+                      text: initialMessage.trim(),
+                      message_id: msgData.id,
+                    },
+                  }
+                );
+                if (sendErr || !sendRes?.success) {
+                  await supabase
+                    .from("whatsapp_messages")
+                    .update({ status: "failed" })
+                    .eq("id", msgData.id);
+                  toast.error(sendRes?.message || "Falha ao enviar mensagem inicial");
+                } else {
+                  toast.success("Conversa iniciada!");
+                }
+              }
+
+              await supabase
+                .from("whatsapp_contacts")
+                .update({
+                  last_message: initialMessage.trim(),
+                  last_message_at: new Date().toISOString(),
+                })
+                .eq("id", contactId);
+            } else {
+              toast.success("Conversa pronta para atendimento");
+            }
+          } catch (err: any) {
+            console.error("[NewConversation] exception:", err);
+            toast.error(err?.message || "Erro ao iniciar conversa");
+          }
         }}
       />
     </div>
