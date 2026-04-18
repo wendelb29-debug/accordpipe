@@ -61,6 +61,7 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
   const [notifyMe, setNotifyMe] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [activeProvider, setActiveProvider] = useState<WhatsAppProvider>("zapi");
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
