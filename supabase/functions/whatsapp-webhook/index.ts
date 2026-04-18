@@ -220,6 +220,16 @@ Deno.serve(async (req) => {
       .eq("provider_type", providerType);
 
     if (normalized.kind === "ignore") {
+      // Persist payload so we can inspect what Uazapi is actually sending
+      log("IGNORED", normalized.reason, "rawKeys=", Object.keys(rawBody || {}));
+      await supabase.from("system_error_logs").insert({
+        tenant_id: companyId,
+        module: "whatsapp-webhook",
+        action: "inbound_ignored",
+        severity: "warning",
+        message: normalized.reason,
+        metadata: { provider: providerType, payload: rawBody, reqId },
+      }).then(() => {}, () => {});
       return new Response(JSON.stringify({ ok: true, ignored: normalized.reason, reqId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -244,6 +254,7 @@ Deno.serve(async (req) => {
     }
 
     // message_received → reuse the same routing/lead logic as legacy handler
+    log("PERSISTING inbound", { phone: normalized.phone, preview: normalized.message.slice(0, 60) });
     return await handleIncomingMessage(supabase, {
       company_id: companyId!,
       phone: normalized.phone,
