@@ -169,6 +169,8 @@ Deno.serve(async (req) => {
         .from("whatsapp_messages")
         .update({
           status: result.success ? "sent" : "failed",
+          sent_at: result.success ? new Date().toISOString() : null,
+          external_message_id: result.external_id ?? null,
           metadata: { external_id: result.external_id ?? null, provider: integ.provider_type },
         })
         .eq("id", message_id);
