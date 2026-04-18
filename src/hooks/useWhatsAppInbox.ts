@@ -336,6 +336,7 @@ export function useWhatsAppInbox() {
     loading,
     isAdminOrCeo,
     connectionStatus,
+    activeIntegration,
     generateQrCode,
     checkConnection,
     assignContact,
