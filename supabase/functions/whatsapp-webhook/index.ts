@@ -15,13 +15,34 @@ type NormalizedEvent =
       phone: string;
       message: string;
       sender_name?: string | null;
+      sender_avatar?: string | null;
       message_type?: string;
       media_url?: string | null;
       external_id?: string | null;
     }
-  | { kind: "message_status"; external_id: string; status: string }
+  | { kind: "message_status"; external_id: string; status: "sent" | "delivered" | "read" }
   | { kind: "instance_status"; status: string; phone?: string | null }
   | { kind: "ignore"; reason: string };
+
+function pickAvatar(d: any): string | null {
+  if (!d) return null;
+  const candidates = [
+    d.senderPhoto, d.profilePicture, d.profilePicUrl, d.imagePreview, d.image,
+    d?.contact?.profilePicture, d?.contact?.imagePreview, d?.sender?.profilePicture,
+  ];
+  for (const c of candidates) {
+    if (typeof c === "string" && c.startsWith("http")) return c;
+  }
+  return null;
+}
+
+function mapStatus(raw: string): "sent" | "delivered" | "read" | null {
+  const s = (raw || "").toString().toLowerCase();
+  if (s.includes("read") || s.includes("lida") || s === "4") return "read";
+  if (s.includes("deliver") || s.includes("recebid") || s === "3") return "delivered";
+  if (s.includes("sent") || s.includes("enviad") || s === "2" || s === "1") return "sent";
+  return null;
+}
 
 function pickText(d: any): string {
   if (!d) return "";
