@@ -334,10 +334,14 @@ export default function AccordStack() {
               console.log("[NewConversation] contato criado:", contactId);
             }
 
-            // 2. Fecha modal, refetch e abre conversa
+            // 2. Fecha modal, ajusta filtros para garantir visibilidade e abre conversa
             setNewConvOpen(false);
+            setSearchTerm("");
+            setStatusFilter("em_atendimento");
+            if (currentUserId) setFilter("mine");
             await refetchContacts();
-            selectContact(contactId);
+            // Pequeno delay para o estado de contatos atualizar antes da seleção
+            setTimeout(() => selectContact(contactId), 50);
 
             // 3. Envia mensagem inicial via provider, se houver
             if (initialMessage?.trim()) {
