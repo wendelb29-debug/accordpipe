@@ -23,52 +23,85 @@ type NormalizedEvent =
   | { kind: "instance_status"; status: string; phone?: string | null }
   | { kind: "ignore"; reason: string };
 
-function normalizeUazapi(body: any): NormalizedEvent {
-  // Uazapi event shapes vary; common: { event: "messages", data: { ... } } or top-level fields
-  const ev = (body?.event || body?.type || "").toString().toLowerCase();
-  const data = body?.data ?? body?.message ?? body;
+function pickText(d: any): string {
+  if (!d) return "";
+  // Uazapi variants: text can be string OR object {message|body|caption}, content is also common
+  const candidates: any[] = [
+    d.text,
+    d.body,
+    d.content,
+    d.caption,
+    d.message,
+    d?.text?.message,
+    d?.text?.body,
+    d?.message?.text,
+    d?.message?.conversation,
+    d?.message?.body,
+    d?.message?.extendedTextMessage?.text,
+    d?.message?.imageMessage?.caption,
+    d?.message?.videoMessage?.caption,
+    d?.msgContent?.conversation,
+    d?.msgContent?.extendedTextMessage?.text,
+  ];
+  for (const c of candidates) {
+    if (typeof c === "string" && c.trim()) return c;
+  }
+  return "";
+}
 
-  // Skip outbound (sent by API) when configured
-  if (data?.fromMe === true || data?.wasSentByApi === true) {
-    return { kind: "ignore", reason: "wasSentByApi" };
+function pickPhone(d: any): string {
+  if (!d) return "";
+  const candidates = [
+    d.sender, d.from, d.chatid, d.chatId, d.number, d.phone, d.remoteJid,
+    d?.key?.remoteJid, d?.message?.from, d?.contact?.phone,
+  ];
+  for (const c of candidates) {
+    if (typeof c === "string" && c.trim()) return c;
+  }
+  return "";
+}
+
+function isFromMe(d: any, body: any): boolean {
+  return d?.fromMe === true || d?.wasSentByApi === true ||
+    d?.key?.fromMe === true || body?.fromMe === true;
+}
+
+function normalizeUazapi(body: any): NormalizedEvent {
+  const ev = (body?.event || body?.type || body?.EventType || "").toString().toLowerCase();
+  // Try multiple data containers
+  const data = body?.data ?? body?.message ?? body?.payload ?? body;
+
+  // Connection/status events
+  if (ev.includes("status") || ev.includes("connection") || ev.includes("presence") || data?.connection || data?.state) {
+    return {
+      kind: "instance_status",
+      status: (data?.status || data?.state || data?.connection || "").toString(),
+      phone: data?.owner || data?.wid || data?.phone || null,
+    };
   }
 
-  if (ev.includes("message") || data?.text || data?.body || data?.message) {
-    const phone =
-      data?.sender ||
-      data?.from ||
-      data?.chatid ||
-      data?.chatId ||
-      data?.number ||
-      data?.phone ||
-      "";
-    const text =
-      data?.text ||
-      data?.body ||
-      data?.message?.text ||
-      data?.message?.conversation ||
-      "";
-    if (!phone || !text) return { kind: "ignore", reason: "missing_phone_or_text" };
+  // Skip outbound echoes
+  if (isFromMe(data, body)) {
+    return { kind: "ignore", reason: "fromMe/wasSentByApi" };
+  }
+
+  // Message event: be permissive — if we can extract phone+text, treat as inbound
+  const phone = pickPhone(data) || pickPhone(body);
+  const text = pickText(data) || pickText(body);
+
+  if (phone && text) {
     return {
       kind: "message_received",
       phone: String(phone).replace(/[^\d]/g, ""),
       message: String(text),
-      sender_name: data?.senderName || data?.pushName || data?.notifyName || null,
-      message_type: data?.type || "text",
-      media_url: data?.mediaUrl || data?.media || null,
-      external_id: data?.id || data?.messageId || null,
+      sender_name: data?.senderName || data?.pushName || data?.notifyName || data?.contact?.name || null,
+      message_type: data?.type || data?.messageType || "text",
+      media_url: data?.mediaUrl || data?.media || data?.message?.imageMessage?.url || null,
+      external_id: data?.id || data?.messageId || data?.key?.id || null,
     };
   }
 
-  if (ev.includes("status") || ev.includes("connection")) {
-    return {
-      kind: "instance_status",
-      status: (data?.status || data?.state || "").toString(),
-      phone: data?.owner || data?.wid || null,
-    };
-  }
-
-  return { kind: "ignore", reason: `unknown_event:${ev}` };
+  return { kind: "ignore", reason: `no_phone_or_text (event=${ev || "none"}, dataKeys=${Object.keys(data || {}).join(",").slice(0,120)})` };
 }
 
 function normalizeZapi(body: any): NormalizedEvent {
@@ -187,6 +220,16 @@ Deno.serve(async (req) => {
       .eq("provider_type", providerType);
 
     if (normalized.kind === "ignore") {
+      // Persist payload so we can inspect what Uazapi is actually sending
+      log("IGNORED", normalized.reason, "rawKeys=", Object.keys(rawBody || {}));
+      await supabase.from("system_error_logs").insert({
+        tenant_id: companyId,
+        module: "whatsapp-webhook",
+        action: "inbound_ignored",
+        severity: "warning",
+        message: normalized.reason,
+        metadata: { provider: providerType, payload: rawBody, reqId },
+      }).then(() => {}, () => {});
       return new Response(JSON.stringify({ ok: true, ignored: normalized.reason, reqId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -211,6 +254,7 @@ Deno.serve(async (req) => {
     }
 
     // message_received → reuse the same routing/lead logic as legacy handler
+    log("PERSISTING inbound", { phone: normalized.phone, preview: normalized.message.slice(0, 60) });
     return await handleIncomingMessage(supabase, {
       company_id: companyId!,
       phone: normalized.phone,
