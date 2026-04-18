@@ -294,6 +294,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (normalized.kind === "message_status") {
+      log("STATUS UPDATE", normalized);
+      const ts = new Date().toISOString();
+      const updates: any = { status: normalized.status };
+      if (normalized.status === "sent") updates.sent_at = ts;
+      if (normalized.status === "delivered") updates.delivered_at = ts;
+      if (normalized.status === "read") updates.read_at = ts;
+      await supabase
+        .from("whatsapp_messages")
+        .update(updates)
+        .eq("company_id", companyId!)
+        .eq("external_message_id", normalized.external_id);
+      return new Response(JSON.stringify({ ok: true, reqId }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // message_received → reuse the same routing/lead logic as legacy handler
     log("PERSISTING inbound", { phone: normalized.phone, preview: normalized.message.slice(0, 60) });
     return await handleIncomingMessage(supabase, {
