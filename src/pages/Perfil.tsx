@@ -407,11 +407,74 @@ function NotificacoesPushCard() {
 
 function MeuCanalWhatsAppCard() {
   const { activeCompany } = useAuth();
-  const { integrations, loading } = useTenantWhatsAppIntegration(activeCompany?.id || null);
+  const { integrations, loading, testConnection, save, reload, testing } = useTenantWhatsAppIntegration(activeCompany?.id || null);
 
   const active = integrations.find((i) => i.is_active) || integrations[0];
   const isConnected = active?.connection_status === "connected";
   const lastSync = active?.last_seen_at || active?.last_sync_at;
+
+  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [countdown, setCountdown] = useState(40);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const normalizeQr = (raw: string) =>
+    raw?.startsWith("data:image") ? raw : `data:image/png;base64,${raw}`;
+
+  const handleGenerateQr = async () => {
+    if (!active?.server_url || !active?.instance_token) {
+      toast.error("Configure as credenciais do canal primeiro");
+      return;
+    }
+    setGenerating(true);
+    try {
+      const url = `${active.server_url.replace(/\/$/, "")}/instance/qr`;
+      const res = await fetch(url, { headers: { token: active.instance_token } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const qr = data.qrcode || data.qr || data.base64;
+      if (!qr) throw new Error("QR não retornado");
+      setQrCode(normalizeQr(qr));
+      setCountdown(40);
+    } catch (err: any) {
+      toast.error("Erro ao gerar QR: " + (err.message || "desconhecido"));
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // countdown + polling enquanto QR visível
+  useEffect(() => {
+    if (!qrCode) {
+      if (pollRef.current) clearInterval(pollRef.current);
+      if (tickRef.current) clearInterval(tickRef.current);
+      return;
+    }
+    tickRef.current = setInterval(() => {
+      setCountdown((c) => {
+        if (c <= 1) {
+          if (tickRef.current) clearInterval(tickRef.current);
+          setQrCode(null);
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
+    pollRef.current = setInterval(async () => {
+      const result: any = await testConnection(active!.provider_type);
+      const status = result?.connection_status || result?.status;
+      if (status === "connected") {
+        toast.success("WhatsApp conectado com sucesso! 🎉");
+        setQrCode(null);
+        await reload();
+      }
+    }, 5000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      if (tickRef.current) clearInterval(tickRef.current);
+    };
+  }, [qrCode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <Card>
@@ -467,19 +530,43 @@ function MeuCanalWhatsAppCard() {
                 )}
               </Badge>
             </div>
+
+            {qrCode && (
+              <div className="flex flex-col items-center gap-2 p-3 rounded-lg bg-muted/30 border border-border/50">
+                <div className="rounded-lg bg-white p-2">
+                  <img src={qrCode} alt="QR Code WhatsApp" className="h-44 w-44 object-contain" />
+                </div>
+                <p className="text-[11px] text-muted-foreground text-center">
+                  WhatsApp → Aparelhos conectados → Conectar
+                </p>
+                <Badge variant="secondary" className="gap-1 text-[11px]">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Expira em {countdown}s
+                </Badge>
+              </div>
+            )}
           </>
         )}
 
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5" asChild>
-            <Link to="/accord-stack">
-              <Wifi className="h-3.5 w-3.5" /> Verificar Conexão
-            </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 text-xs gap-1.5"
+            onClick={() => active && testConnection(active.provider_type)}
+            disabled={!active || testing}
+          >
+            {testing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wifi className="h-3.5 w-3.5" />}
+            Verificar Conexão
           </Button>
-          <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5" asChild>
-            <Link to="/accord-stack">
-              <Hash className="h-3.5 w-3.5" /> Ler QR Code
-            </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 text-xs gap-1.5"
+            onClick={handleGenerateQr}
+            disabled={!active || generating}
+          >
+            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Hash className="h-3.5 w-3.5" />}
+            {qrCode ? "Gerar Novo QR" : "Ler QR Code"}
           </Button>
         </div>
       </CardContent>
