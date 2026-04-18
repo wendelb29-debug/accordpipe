@@ -4997,6 +4997,8 @@ export type Database = {
         Row: {
           add_events_in_url: boolean
           add_message_types_in_url: boolean
+          connected_phone: string | null
+          connection_status: string
           created_at: string
           exclude_events: string
           id: string
@@ -5004,12 +5006,15 @@ export type Database = {
           instance_name: string | null
           instance_token: string | null
           is_active: boolean
+          last_seen_at: string | null
+          last_sync_at: string | null
           last_test_message: string | null
           last_test_status: string | null
           last_tested_at: string | null
           last_webhook_test_at: string | null
           last_webhook_test_status: string | null
           listen_events: string
+          provider_metadata: Json
           provider_type: string
           publish_status: string
           server_url: string | null
@@ -5023,6 +5028,8 @@ export type Database = {
         Insert: {
           add_events_in_url?: boolean
           add_message_types_in_url?: boolean
+          connected_phone?: string | null
+          connection_status?: string
           created_at?: string
           exclude_events?: string
           id?: string
@@ -5030,12 +5037,15 @@ export type Database = {
           instance_name?: string | null
           instance_token?: string | null
           is_active?: boolean
+          last_seen_at?: string | null
+          last_sync_at?: string | null
           last_test_message?: string | null
           last_test_status?: string | null
           last_tested_at?: string | null
           last_webhook_test_at?: string | null
           last_webhook_test_status?: string | null
           listen_events?: string
+          provider_metadata?: Json
           provider_type: string
           publish_status?: string
           server_url?: string | null
@@ -5049,6 +5059,8 @@ export type Database = {
         Update: {
           add_events_in_url?: boolean
           add_message_types_in_url?: boolean
+          connected_phone?: string | null
+          connection_status?: string
           created_at?: string
           exclude_events?: string
           id?: string
@@ -5056,12 +5068,15 @@ export type Database = {
           instance_name?: string | null
           instance_token?: string | null
           is_active?: boolean
+          last_seen_at?: string | null
+          last_sync_at?: string | null
           last_test_message?: string | null
           last_test_status?: string | null
           last_tested_at?: string | null
           last_webhook_test_at?: string | null
           last_webhook_test_status?: string | null
           listen_events?: string
+          provider_metadata?: Json
           provider_type?: string
           publish_status?: string
           server_url?: string | null
