@@ -62,7 +62,7 @@ export default function AceitarConvite() {
         return;
       }
 
-      if (data.status === "accepted") {
+      if (data.status === "accepted" || data.status === "aceito") {
         setAccepted(true);
       } else if (new Date(data.expires_at) < new Date()) {
         setExpired(true);
