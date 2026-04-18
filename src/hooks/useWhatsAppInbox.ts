@@ -44,11 +44,15 @@ export function useWhatsAppInbox() {
   const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState<"disconnected" | "connecting" | "connected">("disconnected");
   const [activeIntegration, setActiveIntegration] = useState<{
+    id?: string;
+    provider: string;
     provider_type: string;
     connected_phone: string | null;
     connection_status: string;
     last_sync_at: string | null;
     is_active: boolean;
+    instance_name: string | null;
+    server_url: string | null;
   } | null>(null);
 
   const companyId = activeCompanyId || profile?.company_id;
@@ -219,7 +223,7 @@ export function useWhatsAppInbox() {
     try {
       const { data: integ, error } = await supabase
         .from("tenant_whatsapp_integrations" as any)
-        .select("provider_type, connected_phone, connection_status, last_sync_at, is_active")
+        .select("id, provider_type, connected_phone, connection_status, last_sync_at, is_active, instance_name, server_url")
         .eq("tenant_id", companyId)
         .eq("is_active", true)
         .maybeSingle();
@@ -228,9 +232,20 @@ export function useWhatsAppInbox() {
       }
       const integData = integ as any;
       console.log("[useWhatsAppInbox] active integration:", integData);
-      setActiveIntegration(integData || null);
-      const status = integData?.connection_status;
-      setConnectionStatus(status === "connected" ? "connected" : "disconnected");
+      // Treat active integration with credentials as connected (MVP)
+      // connection_status pode ser "connected", "unknown" ou null — confiamos em is_active + credenciais
+      const hasCredentials = !!integData && (
+        integData.provider_type === "uazapi"
+          ? !!integData.server_url && !!integData.instance_name
+          : true
+      );
+      const normalized = integData
+        ? { ...integData, provider: integData.provider_type }
+        : null;
+      setActiveIntegration(normalized);
+      const isConnected = !!integData?.is_active && hasCredentials &&
+        integData.connection_status !== "disconnected" && integData.connection_status !== "error";
+      setConnectionStatus(isConnected ? "connected" : "disconnected");
     } catch (err) {
       console.error("[useWhatsAppInbox] checkConnection exception:", err);
       setConnectionStatus("disconnected");

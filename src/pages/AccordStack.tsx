@@ -47,7 +47,7 @@ const FILTER_VALUE_TO_LABEL: Record<InboxFilter, string> = {
 export default function AccordStack() {
   const {
     contacts, messages, selectedContactId, selectContact, sendMessage,
-    filter, setFilter, loading, isAdminOrCeo,
+    filter, setFilter, loading, isAdminOrCeo, connectionStatus,
     assignContact, transferContact, companyId,
     updateConversationStatus, activeIntegration,
   } = useWhatsAppInbox();
@@ -146,7 +146,7 @@ export default function AccordStack() {
             : "cloud") as "zapi" | "uazapi" | "cloud",
           label: activeIntegration.connected_phone || "Instância ativa",
           phone: activeIntegration.connected_phone || undefined,
-          isConnected: activeIntegration.connection_status === "connected",
+          isConnected: connectionStatus === "connected",
         },
       ]
     : [];
