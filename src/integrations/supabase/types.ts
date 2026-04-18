@@ -4993,6 +4993,65 @@ export type Database = {
           },
         ]
       }
+      tenant_whatsapp_integrations: {
+        Row: {
+          created_at: string
+          id: string
+          instance_id: string | null
+          instance_name: string | null
+          instance_token: string | null
+          is_active: boolean
+          last_test_message: string | null
+          last_test_status: string | null
+          last_tested_at: string | null
+          provider_type: string
+          server_url: string | null
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          instance_id?: string | null
+          instance_name?: string | null
+          instance_token?: string | null
+          is_active?: boolean
+          last_test_message?: string | null
+          last_test_status?: string | null
+          last_tested_at?: string | null
+          provider_type: string
+          server_url?: string | null
+          tenant_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          instance_id?: string | null
+          instance_name?: string | null
+          instance_token?: string | null
+          is_active?: boolean
+          last_test_message?: string | null
+          last_test_status?: string | null
+          last_tested_at?: string | null
+          provider_type?: string
+          server_url?: string | null
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_whatsapp_integrations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_custom_permissions: {
         Row: {
           created_at: string

@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { InstanceCredentialsCard } from "./InstanceCredentialsCard";
 
 interface WebhookFieldDef {
   key: string;
@@ -174,6 +175,9 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
 
   return (
     <div className="space-y-6">
+      {/* Credenciais da Instância (por tenant) */}
+      <InstanceCredentialsCard tenantId={companyId} />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
