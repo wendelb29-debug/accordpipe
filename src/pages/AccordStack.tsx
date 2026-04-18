@@ -68,8 +68,9 @@ export default function AccordStack() {
     .map(m => `${m.direction === "inbound" ? "Cliente" : "Atendente"}: ${m.message}`)
     .join("\n");
 
-  // No integration configured at all → block UI and direct user to setup
-  if (!activeIntegration && !loading && contacts.length === 0) {
+  // Block UI only when there is truly no active integration configured for this tenant
+  console.log("[AccordStack] state →", { loading, hasIntegration: !!activeIntegration, contacts: contacts.length, status: activeIntegration?.connection_status });
+  if (!loading && !activeIntegration) {
     return (
       <div className="flex h-[calc(100vh-3rem)] bg-background items-center justify-center">
         <div className="text-center space-y-5 max-w-md px-6">
