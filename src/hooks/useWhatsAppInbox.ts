@@ -33,6 +33,10 @@ export interface InboxMessage {
   media_url: string | null;
   created_at: string;
   company_id: string;
+  external_message_id?: string | null;
+  sent_at?: string | null;
+  delivered_at?: string | null;
+  read_at?: string | null;
 }
 
 export function useWhatsAppInbox() {
