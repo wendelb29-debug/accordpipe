@@ -30,7 +30,12 @@ export function InstanceCredentialsCard({ tenantId, provider: providerProp, onPr
     clearCredentials,
   } = useTenantWhatsAppIntegration(tenantId);
 
-  const [provider, setProvider] = useState<WhatsAppProvider>("zapi");
+  const [providerState, setProviderState] = useState<WhatsAppProvider>("zapi");
+  const provider = providerProp ?? providerState;
+  const setProvider = (p: WhatsAppProvider) => {
+    setProviderState(p);
+    onProviderChange?.(p);
+  };
   const [serverUrl, setServerUrl] = useState("");
   const [instanceToken, setInstanceToken] = useState("");
   const [instanceName, setInstanceName] = useState("");
