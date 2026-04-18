@@ -8,6 +8,8 @@ import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { InstanceCredentialsCard } from "./InstanceCredentialsCard";
+import { UazapiWebhookSection } from "./UazapiWebhookSection";
+import type { WhatsAppProvider } from "@/hooks/useTenantWhatsAppIntegration";
 
 interface WebhookFieldDef {
   key: string;
@@ -59,6 +61,7 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
   const [notifyMe, setNotifyMe] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [activeProvider, setActiveProvider] = useState<WhatsAppProvider>("zapi");
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
@@ -176,62 +179,72 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
   return (
     <div className="space-y-6">
       {/* Credenciais da Instância (por tenant) */}
-      <InstanceCredentialsCard tenantId={companyId} />
+      <InstanceCredentialsCard
+        tenantId={companyId}
+        provider={activeProvider}
+        onProviderChange={setActiveProvider}
+      />
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-xs font-semibold uppercase tracking-widest text-primary mb-1">
-            Webhooks Z-API — URLs por Tenant
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            Cada URL é exclusiva deste tenant. Cole no painel da Z-API.
-          </p>
-        </div>
-        <Button variant="outline" size="sm" className="gap-2 shrink-0" onClick={refreshAllUrls}>
-          <RefreshCw className="h-3.5 w-3.5" />
-          Atualizar Todas
-        </Button>
-      </div>
-
-      {/* Webhook fields grid - 2 columns like the image */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {webhookFields.map((field) => (
-          <div key={field.key} className="space-y-2">
-            <Label className="text-sm font-semibold text-foreground">{field.label}</Label>
-            <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
-              <div className="shrink-0">{field.icon}</div>
-              <code className="text-xs text-foreground truncate flex-1 ml-2">
-                {urls[field.key] || field.label}
-              </code>
-              <CopyButton value={urls[field.key] || ""} />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 shrink-0"
-                onClick={() => refreshUrl(field.key)}
-                title="Gerar nova URL"
-              >
-                <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
-              </Button>
+      {activeProvider === "zapi" && (
+        <>
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-widest text-primary mb-1">
+                Webhooks Z-API — URLs por Tenant
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Cada URL é exclusiva deste tenant. Cole no painel da Z-API.
+              </p>
             </div>
+            <Button variant="outline" size="sm" className="gap-2 shrink-0" onClick={refreshAllUrls}>
+              <RefreshCw className="h-3.5 w-3.5" />
+              Atualizar Todas
+            </Button>
           </div>
-        ))}
-      </div>
 
-      {/* Toggle */}
-      <div className="flex items-center gap-3 pt-2">
-        <Switch checked={notifyMe} onCheckedChange={setNotifyMe} />
-        <Label className="text-sm text-foreground cursor-pointer" onClick={() => setNotifyMe(!notifyMe)}>
-          Notificar as enviadas por mim também
-        </Label>
-      </div>
+          {/* Webhook fields grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {webhookFields.map((field) => (
+              <div key={field.key} className="space-y-2">
+                <Label className="text-sm font-semibold text-foreground">{field.label}</Label>
+                <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+                  <div className="shrink-0">{field.icon}</div>
+                  <code className="text-xs text-foreground truncate flex-1 ml-2">
+                    {urls[field.key] || field.label}
+                  </code>
+                  <CopyButton value={urls[field.key] || ""} />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0"
+                    onClick={() => refreshUrl(field.key)}
+                    title="Gerar nova URL"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
 
-      {/* Save button */}
-      <Button onClick={handleSave} disabled={saving} className="gap-2">
-        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-        Salvar Configurações
-      </Button>
+          {/* Toggle */}
+          <div className="flex items-center gap-3 pt-2">
+            <Switch checked={notifyMe} onCheckedChange={setNotifyMe} />
+            <Label className="text-sm text-foreground cursor-pointer" onClick={() => setNotifyMe(!notifyMe)}>
+              Notificar as enviadas por mim também
+            </Label>
+          </div>
+
+          {/* Save button */}
+          <Button onClick={handleSave} disabled={saving} className="gap-2">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Salvar Configurações
+          </Button>
+        </>
+      )}
+
+      {activeProvider === "uazapi" && <UazapiWebhookSection tenantId={companyId} />}
     </div>
   );
 }

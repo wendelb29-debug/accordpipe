@@ -4995,7 +4995,10 @@ export type Database = {
       }
       tenant_whatsapp_integrations: {
         Row: {
+          add_events_in_url: boolean
+          add_message_types_in_url: boolean
           created_at: string
+          exclude_events: string
           id: string
           instance_id: string | null
           instance_name: string | null
@@ -5004,14 +5007,24 @@ export type Database = {
           last_test_message: string | null
           last_test_status: string | null
           last_tested_at: string | null
+          last_webhook_test_at: string | null
+          last_webhook_test_status: string | null
+          listen_events: string
           provider_type: string
+          publish_status: string
           server_url: string | null
           tenant_id: string
           updated_at: string
           updated_by: string | null
+          webhook_enabled: boolean
+          webhook_url: string | null
+          webhook_url_final: string | null
         }
         Insert: {
+          add_events_in_url?: boolean
+          add_message_types_in_url?: boolean
           created_at?: string
+          exclude_events?: string
           id?: string
           instance_id?: string | null
           instance_name?: string | null
@@ -5020,14 +5033,24 @@ export type Database = {
           last_test_message?: string | null
           last_test_status?: string | null
           last_tested_at?: string | null
+          last_webhook_test_at?: string | null
+          last_webhook_test_status?: string | null
+          listen_events?: string
           provider_type: string
+          publish_status?: string
           server_url?: string | null
           tenant_id: string
           updated_at?: string
           updated_by?: string | null
+          webhook_enabled?: boolean
+          webhook_url?: string | null
+          webhook_url_final?: string | null
         }
         Update: {
+          add_events_in_url?: boolean
+          add_message_types_in_url?: boolean
           created_at?: string
+          exclude_events?: string
           id?: string
           instance_id?: string | null
           instance_name?: string | null
@@ -5036,11 +5059,18 @@ export type Database = {
           last_test_message?: string | null
           last_test_status?: string | null
           last_tested_at?: string | null
+          last_webhook_test_at?: string | null
+          last_webhook_test_status?: string | null
+          listen_events?: string
           provider_type?: string
+          publish_status?: string
           server_url?: string | null
           tenant_id?: string
           updated_at?: string
           updated_by?: string | null
+          webhook_enabled?: boolean
+          webhook_url?: string | null
+          webhook_url_final?: string | null
         }
         Relationships: [
           {

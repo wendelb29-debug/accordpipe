@@ -13,9 +13,11 @@ import { ptBR } from "date-fns/locale";
 
 interface Props {
   tenantId: string | null;
+  provider?: WhatsAppProvider;
+  onProviderChange?: (p: WhatsAppProvider) => void;
 }
 
-export function InstanceCredentialsCard({ tenantId }: Props) {
+export function InstanceCredentialsCard({ tenantId, provider: providerProp, onProviderChange }: Props) {
   const {
     integrations,
     loading,
@@ -28,7 +30,12 @@ export function InstanceCredentialsCard({ tenantId }: Props) {
     clearCredentials,
   } = useTenantWhatsAppIntegration(tenantId);
 
-  const [provider, setProvider] = useState<WhatsAppProvider>("zapi");
+  const [providerState, setProviderState] = useState<WhatsAppProvider>("zapi");
+  const provider = providerProp ?? providerState;
+  const setProvider = (p: WhatsAppProvider) => {
+    setProviderState(p);
+    onProviderChange?.(p);
+  };
   const [serverUrl, setServerUrl] = useState("");
   const [instanceToken, setInstanceToken] = useState("");
   const [instanceName, setInstanceName] = useState("");
