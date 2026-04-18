@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useWhatsAppInbox, InboxFilter } from "@/hooks/useWhatsAppInbox";
 import { InboxSidebar, ConversationStatusFilter } from "@/components/accord-inbox/InboxSidebar";
