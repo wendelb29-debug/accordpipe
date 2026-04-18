@@ -8,6 +8,7 @@ import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { InstanceCredentialsCard } from "./InstanceCredentialsCard";
+import { InstanceStatusCard } from "./InstanceStatusCard";
 import { UazapiWebhookSection } from "./UazapiWebhookSection";
 import type { WhatsAppProvider } from "@/hooks/useTenantWhatsAppIntegration";
 
@@ -178,6 +179,9 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
 
   return (
     <div className="space-y-6">
+      {/* Status real da instância (provider ativo) */}
+      <InstanceStatusCard tenantId={companyId} provider={activeProvider} />
+
       {/* Credenciais da Instância (por tenant) */}
       <InstanceCredentialsCard
         tenantId={companyId}
