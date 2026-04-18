@@ -101,8 +101,19 @@ function normalizeUazapi(body: any): NormalizedEvent {
     };
   }
 
-  // Skip outbound echoes
+  // Message status / ack events (delivery/read receipts)
+  const ackRaw = data?.ack ?? data?.status ?? data?.messageStatus ?? body?.ack ?? body?.status;
+  const externalId = data?.id || data?.messageId || data?.key?.id || body?.messageId;
+  if ((ev.includes("status") || ev.includes("ack") || ev.includes("receipt")) && externalId) {
+    const mapped = mapStatus(String(ackRaw ?? ev));
+    if (mapped) {
+      return { kind: "message_status", external_id: String(externalId), status: mapped };
+    }
+  }
+
+  // Skip outbound echoes (only after we ruled out status updates for outbound msgs)
   if (isFromMe(data, body)) {
+    // If it's a status event for a sent message, allow it through above; otherwise ignore
     return { kind: "ignore", reason: "fromMe/wasSentByApi" };
   }
 
@@ -116,9 +127,10 @@ function normalizeUazapi(body: any): NormalizedEvent {
       phone: String(phone).replace(/[^\d]/g, ""),
       message: String(text),
       sender_name: data?.senderName || data?.pushName || data?.notifyName || data?.contact?.name || null,
+      sender_avatar: pickAvatar(data) || pickAvatar(body),
       message_type: data?.type || data?.messageType || "text",
       media_url: data?.mediaUrl || data?.media || data?.message?.imageMessage?.url || null,
-      external_id: data?.id || data?.messageId || data?.key?.id || null,
+      external_id: externalId || null,
     };
   }
 
@@ -126,7 +138,14 @@ function normalizeUazapi(body: any): NormalizedEvent {
 }
 
 function normalizeZapi(body: any): NormalizedEvent {
-  // Z-API legacy payload (already supported via the secret header path below)
+  // Z-API status events
+  const status = body?.status || body?.messageStatus;
+  const messageId = body?.messageId || body?.ids?.[0];
+  if (status && messageId) {
+    const mapped = mapStatus(String(status));
+    if (mapped) return { kind: "message_status", external_id: String(messageId), status: mapped };
+  }
+
   const phone = body?.phone || body?.data?.phone;
   const text = body?.message || body?.data?.message || body?.text;
   if (body?.fromMe === true) return { kind: "ignore", reason: "fromMe" };
@@ -136,9 +155,10 @@ function normalizeZapi(body: any): NormalizedEvent {
       phone: String(phone).replace(/[^\d]/g, ""),
       message: String(text),
       sender_name: body?.senderName || body?.notifyName || null,
+      sender_avatar: pickAvatar(body),
       message_type: body?.type || "text",
       media_url: body?.mediaUrl || null,
-      external_id: body?.messageId || null,
+      external_id: messageId || null,
     };
   }
   return { kind: "ignore", reason: "unknown_zapi_event" };
