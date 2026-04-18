@@ -360,5 +360,6 @@ export function useWhatsAppInbox() {
     transferContact,
     updateConversationStatus,
     companyId,
+    refetchContacts: fetchContacts,
   };
 }
