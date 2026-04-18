@@ -13,9 +13,11 @@ import { ptBR } from "date-fns/locale";
 
 interface Props {
   tenantId: string | null;
+  provider?: WhatsAppProvider;
+  onProviderChange?: (p: WhatsAppProvider) => void;
 }
 
-export function InstanceCredentialsCard({ tenantId }: Props) {
+export function InstanceCredentialsCard({ tenantId, provider: providerProp, onProviderChange }: Props) {
   const {
     integrations,
     loading,
