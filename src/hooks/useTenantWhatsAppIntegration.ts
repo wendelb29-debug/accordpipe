@@ -16,6 +16,11 @@ export interface TenantWhatsAppIntegration {
   last_tested_at: string | null;
   last_test_status: string | null;
   last_test_message: string | null;
+  connected_phone: string | null;
+  connection_status: string;
+  last_seen_at: string | null;
+  last_sync_at: string | null;
+  provider_metadata: Record<string, any>;
   updated_by: string | null;
   created_at: string;
   updated_at: string;
