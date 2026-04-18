@@ -43,6 +43,13 @@ export function useWhatsAppInbox() {
   const [filter, setFilter] = useState<InboxFilter>("mine");
   const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState<"disconnected" | "connecting" | "connected">("disconnected");
+  const [activeIntegration, setActiveIntegration] = useState<{
+    provider_type: string;
+    connected_phone: string | null;
+    connection_status: string;
+    last_sync_at: string | null;
+    is_active: boolean;
+  } | null>(null);
 
   const companyId = activeCompanyId || profile?.company_id;
   const isAdminOrCeo = isMaster || role === "admin" || role === "ceo";
@@ -204,19 +211,28 @@ export function useWhatsAppInbox() {
   const checkConnection = useCallback(async () => {
     if (!companyId) {
       setConnectionStatus("disconnected");
+      setActiveIntegration(null);
       return;
     }
     try {
-      const { data: integ } = await supabase
+      const { data: integ, error } = await supabase
         .from("tenant_whatsapp_integrations" as any)
-        .select("connection_status")
+        .select("provider_type, connected_phone, connection_status, last_sync_at, is_active")
         .eq("tenant_id", companyId)
         .eq("is_active", true)
         .maybeSingle();
-      const status = (integ as any)?.connection_status;
+      if (error) {
+        console.warn("[useWhatsAppInbox] checkConnection error:", error);
+      }
+      const integData = integ as any;
+      console.log("[useWhatsAppInbox] active integration:", integData);
+      setActiveIntegration(integData || null);
+      const status = integData?.connection_status;
       setConnectionStatus(status === "connected" ? "connected" : "disconnected");
-    } catch {
+    } catch (err) {
+      console.error("[useWhatsAppInbox] checkConnection exception:", err);
       setConnectionStatus("disconnected");
+      setActiveIntegration(null);
     }
   }, [companyId]);
 
@@ -320,6 +336,7 @@ export function useWhatsAppInbox() {
     loading,
     isAdminOrCeo,
     connectionStatus,
+    activeIntegration,
     generateQrCode,
     checkConnection,
     assignContact,

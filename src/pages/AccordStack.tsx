@@ -16,7 +16,7 @@ export default function AccordStack() {
     contacts, messages, selectedContactId, selectContact, sendMessage,
     filter, setFilter, loading, isAdminOrCeo, connectionStatus,
     generateQrCode, assignContact, transferContact, companyId,
-    updateConversationStatus,
+    updateConversationStatus, activeIntegration,
   } = useWhatsAppInbox();
 
   const navigate = useNavigate();
@@ -68,8 +68,8 @@ export default function AccordStack() {
     .map(m => `${m.direction === "inbound" ? "Cliente" : "Atendente"}: ${m.message}`)
     .join("\n");
 
-  // If WhatsApp not connected, show elegant empty state
-  if (connectionStatus === "disconnected" && !loading && contacts.length === 0) {
+  // No integration configured at all → block UI and direct user to setup
+  if (!activeIntegration && !loading && contacts.length === 0) {
     return (
       <div className="flex h-[calc(100vh-3rem)] bg-background items-center justify-center">
         <div className="text-center space-y-5 max-w-md px-6">
@@ -79,7 +79,7 @@ export default function AccordStack() {
           <div className="space-y-2">
             <h2 className="text-lg font-semibold text-foreground">WhatsApp não conectado</h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Conecte seu canal na página de perfil para iniciar os atendimentos.
+              Configure sua integração de WhatsApp (Uazapi ou Z-API) nas configurações do tenant para iniciar os atendimentos.
             </p>
           </div>
           <Button
@@ -87,7 +87,7 @@ export default function AccordStack() {
             className="gap-2 h-10 px-6 rounded-xl"
           >
             <User className="h-4 w-4" />
-            Ir para Meu Perfil
+            Ir para Configurações
           </Button>
         </div>
       </div>
