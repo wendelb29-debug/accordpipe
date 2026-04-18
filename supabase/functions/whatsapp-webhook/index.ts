@@ -130,6 +130,24 @@ Deno.serve(async (req) => {
       companyId = tenant.id;
       providerType = provider === "uazapi" ? "uazapi" : "zapi";
       log("authenticated tenant", { companyId, providerType });
+
+      // ── HEAD/GET = validation ping from provider. Mark as connected and 200.
+      if (req.method === "HEAD" || req.method === "GET") {
+        await supabase
+          .from("tenant_whatsapp_integrations")
+          .update({
+            connection_status: "connected",
+            last_seen_at: new Date().toISOString(),
+            last_sync_at: new Date().toISOString(),
+          })
+          .eq("tenant_id", companyId!)
+          .eq("provider_type", providerType);
+        log("validation ping accepted, marked connected");
+        return new Response(
+          JSON.stringify({ ok: true, ping: true, reqId }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
     } else {
       // ── AUTH PATH 2: legacy header secret + JSON {event, data}
       const webhookSecret = req.headers.get("x-whatsapp-secret");
