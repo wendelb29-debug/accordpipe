@@ -5,6 +5,7 @@ import {
   MoreVertical, Users, Check, CheckCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AiImprovePopover } from "./AiImprovePopover";
 
 interface ChatMessage {
   id: string;
@@ -327,7 +328,16 @@ export function InboxChat({
           <ToolBtn icon={<Bold size={13} />} title="Negrito" />
           <ToolBtn icon={<Italic size={13} />} title="Itálico" />
           <div className="w-px h-4 bg-border/50 mx-1" />
-          <ToolBtn icon={<Zap size={14} />} title="Resposta rápida" />
+          <AiImprovePopover text={text} onApply={(newText) => {
+            setText(newText);
+            requestAnimationFrame(() => {
+              if (taRef.current) {
+                taRef.current.style.height = "38px";
+                taRef.current.style.height = Math.min(taRef.current.scrollHeight, 90) + "px";
+                taRef.current.focus();
+              }
+            });
+          }} />
           <ToolBtn icon={<FileText size={14} />} title="Notas internas" className="ml-auto" />
         </div>
 
