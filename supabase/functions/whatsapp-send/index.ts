@@ -26,25 +26,30 @@ async function sendUazapi(
   text: string,
 ): Promise<SendResult> {
   const base = serverUrl.replace(/\/$/, "");
-  // Uazapi text endpoint
   const url = `${base}/send/text`;
+  const payload = { number: normalizePhone(phone), text };
+  console.log("[sendUazapi] POST", url, "phone:", payload.number, "tokenPrefix:", token?.slice(0, 8));
   try {
     const res = await fetch(url, {
       method: "POST",
       headers: { token, "Content-Type": "application/json" },
-      body: JSON.stringify({ number: normalizePhone(phone), text }),
+      body: JSON.stringify(payload),
     });
-    const body = await res.json().catch(() => ({}));
+    const rawText = await res.text();
+    let body: any = {};
+    try { body = JSON.parse(rawText); } catch { body = { raw: rawText }; }
+    console.log("[sendUazapi] response", res.status, rawText.slice(0, 500));
     if (!res.ok) {
-      return { success: false, message: `Uazapi HTTP ${res.status}: ${JSON.stringify(body).slice(0, 200)}`, raw: body };
+      return {
+        success: false,
+        message: `Uazapi HTTP ${res.status}: ${rawText.slice(0, 250) || "(sem corpo)"}`,
+        raw: body,
+      };
     }
-    const externalId =
-      (body as any)?.id ||
-      (body as any)?.messageId ||
-      (body as any)?.message?.id ||
-      undefined;
+    const externalId = body?.id || body?.messageId || body?.message?.id || undefined;
     return { success: true, message: "Mensagem enviada via Uazapi", external_id: externalId, raw: body };
   } catch (err) {
+    console.error("[sendUazapi] exception", err);
     return { success: false, message: `Falha Uazapi: ${(err as Error).message}` };
   }
 }
