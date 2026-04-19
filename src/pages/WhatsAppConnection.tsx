@@ -104,14 +104,21 @@ export default function WhatsAppConnection() {
       });
     }, 1000);
     pollRef.current = setInterval(async () => {
-      const result = await testConnection("uazapi");
-      const status = result?.connection_status || result?.status;
-      if (status === "connected") {
-        toast.success("WhatsApp conectado com sucesso! 🎉");
-        setQrOpen(false);
-        setQrCode(null);
-        await reload();
-      }
+      try {
+        const sres = await fetch(`${serverUrl.replace(/\/$/, "")}/instance/status`, {
+          headers: { token: instanceToken },
+        });
+        if (!sres.ok) return;
+        const sdata = await sres.json();
+        const status = sdata?.status || sdata?.connection_status;
+        if (status === "connected") {
+          toast.success("WhatsApp conectado com sucesso! 🎉");
+          setQrOpen(false);
+          setQrCode(null);
+          await testConnection("uazapi");
+          await reload();
+        }
+      } catch { /* silencioso */ }
     }, 5000);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
@@ -124,7 +131,7 @@ export default function WhatsAppConnection() {
     setDisconnecting(true);
     try {
       const url = `${serverUrl.replace(/\/$/, "")}/instance/logout`;
-      await fetch(url, { method: "POST", headers: { token: instanceToken } });
+      await fetch(url, { method: "DELETE", headers: { token: instanceToken } });
       await save("uazapi", { connection_status: "disconnected", connected_phone: null });
       toast.success("Desconectado");
       await reload();
