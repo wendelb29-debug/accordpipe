@@ -38,10 +38,25 @@ export function InstanceCredentialsCard({ tenantId, provider: providerProp, onPr
   };
   const [serverUrl, setServerUrl] = useState("");
   const [instanceToken, setInstanceToken] = useState("");
+  const [adminToken, setAdminToken] = useState("");
   const [instanceName, setInstanceName] = useState("");
   const [instanceId, setInstanceId] = useState("");
   const [showToken, setShowToken] = useState(false);
+  const [showAdminToken, setShowAdminToken] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Detect if user typed account name instead of server URL
+  const serverUrlWarning = (() => {
+    const v = serverUrl.trim().toLowerCase();
+    if (!v) return null;
+    // Valid uazapi server patterns: free.uazapi.com, *.uazapi.com, or any host with uazapi
+    const hasUazapiHost = /uazapi\.(com|io|net)/.test(v) || /^https?:\/\/[^/]+\.[^/]+/.test(v);
+    const looksLikeAccountName = /^[a-z0-9-_]+$/i.test(v) && !v.includes(".") && !v.includes("/");
+    if (looksLikeAccountName || !hasUazapiHost) {
+      return "Verifique se a URL está correta. No painel uazapi, copie o campo 'Server URL', não o nome do servidor.";
+    }
+    return null;
+  })();
 
   const current = getByProvider(provider);
 
@@ -49,15 +64,18 @@ export function InstanceCredentialsCard({ tenantId, provider: providerProp, onPr
     if (current) {
       setServerUrl(current.server_url || "");
       setInstanceToken(current.instance_token || "");
+      setAdminToken((current.provider_metadata as any)?.admin_token || "");
       setInstanceName(current.instance_name || "");
       setInstanceId(current.instance_id || "");
     } else {
       setServerUrl("");
       setInstanceToken("");
+      setAdminToken("");
       setInstanceName("");
       setInstanceId("");
     }
     setShowToken(false);
+    setShowAdminToken(false);
   }, [current, provider]);
 
   // initial provider = active one
@@ -94,6 +112,10 @@ export function InstanceCredentialsCard({ tenantId, provider: providerProp, onPr
       instance_token: instanceToken,
       instance_name: instanceName,
       instance_id: instanceId,
+      provider_metadata: {
+        ...(current?.provider_metadata || {}),
+        admin_token: adminToken.trim() || null,
+      } as any,
     });
   };
 
@@ -193,6 +215,20 @@ export function InstanceCredentialsCard({ tenantId, provider: providerProp, onPr
                     value={serverUrl}
                     onChange={(e) => setServerUrl(e.target.value)}
                   />
+                  {p === "uazapi" && (
+                    <>
+                      <p className="text-xs text-amber-600 dark:text-amber-500 flex items-start gap-1">
+                        <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
+                        <span>Use a URL do servidor mostrada no painel uazapi (ex: https://free.uazapi.com), não o nome da sua conta.</span>
+                      </p>
+                      {serverUrlWarning && (
+                        <p className="text-xs text-destructive flex items-start gap-1">
+                          <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
+                          <span>{serverUrlWarning}</span>
+                        </p>
+                      )}
+                    </>
+                  )}
                 </div>
 
                 <div className="space-y-1.5 md:col-span-2">
@@ -231,7 +267,40 @@ export function InstanceCredentialsCard({ tenantId, provider: providerProp, onPr
                       </div>
                     </div>
                   </div>
+                  {p === "uazapi" && (
+                    <p className="text-xs text-muted-foreground">
+                      Token da instância (mostrado na tabela de instâncias do painel uazapi).
+                    </p>
+                  )}
                 </div>
+
+                {p === "uazapi" && (
+                  <div className="space-y-1.5 md:col-span-2">
+                    <Label>Admin Token</Label>
+                    <div className="relative">
+                      <Input
+                        type={showAdminToken ? "text" : "password"}
+                        placeholder="Token admin da conta uazapi"
+                        value={adminToken}
+                        onChange={(e) => setAdminToken(e.target.value)}
+                        className="pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                        onClick={() => setShowAdminToken((s) => !s)}
+                        title={showAdminToken ? "Ocultar" : "Mostrar"}
+                      >
+                        {showAdminToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Token admin (mostrado na página principal do painel uazapi). Necessário para operações administrativas.
+                    </p>
+                  </div>
+                )}
 
                 <div className="space-y-1.5">
                   <Label>Nome da Instância</Label>
