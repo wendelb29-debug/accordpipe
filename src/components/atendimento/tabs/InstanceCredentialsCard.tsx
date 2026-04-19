@@ -217,7 +217,7 @@ export function InstanceCredentialsCard({ tenantId, provider: providerProp, onPr
                   />
                   {p === "uazapi" && (
                     <>
-                      <p className="text-xs text-amber-600 dark:text-amber-500 flex items-start gap-1">
+                      <p className="text-xs text-muted-foreground flex items-start gap-1">
                         <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
                         <span>Use a URL do servidor mostrada no painel uazapi (ex: https://free.uazapi.com), não o nome da sua conta.</span>
                       </p>
