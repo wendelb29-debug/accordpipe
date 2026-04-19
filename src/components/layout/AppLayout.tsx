@@ -76,8 +76,8 @@ export function AppLayout({ children }: AppLayoutProps) {
           )}
           {!hideHeader && <Header />}
           <main className={cn(
-            "w-full flex-1 min-w-0",
-            hideHeader ? "p-0" : "p-3 sm:p-4 lg:p-6"
+            "w-full max-w-none flex-1 min-w-0",
+            hideHeader ? "p-0" : "p-2 sm:p-3 lg:p-4 2xl:p-5"
           )}>
             {children}
           </main>
