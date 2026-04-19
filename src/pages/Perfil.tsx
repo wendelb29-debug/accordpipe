@@ -429,8 +429,8 @@ function MeuCanalWhatsAppCard() {
     }
     setGenerating(true);
     try {
-      const base = active.server_url.replace(/\/$/, "");
-      const headers = { token: active.instance_token };
+      const base = active.server_url.trim().replace(/\/$/, "");
+      const headers = { token: active.instance_token.trim(), "Content-Type": "application/json" };
 
       // 1) Verifica status antes
       try {
@@ -480,9 +480,9 @@ function MeuCanalWhatsAppCard() {
     }, 1000);
     pollRef.current = setInterval(async () => {
       try {
-        const base = active!.server_url!.replace(/\/$/, "");
+        const base = active!.server_url!.trim().replace(/\/$/, "");
         const sres = await fetch(`${base}/instance/status`, {
-          headers: { token: active!.instance_token! },
+          headers: { token: active!.instance_token!.trim(), "Content-Type": "application/json" },
         });
         if (!sres.ok) return;
         const sdata = await sres.json();

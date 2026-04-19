@@ -72,7 +72,7 @@ export function useTenantWhatsAppIntegration(tenantId: string | null | undefined
 
       const cleanPayload = {
         ...payload,
-        server_url: payload.server_url?.trim() || null,
+        server_url: payload.server_url?.trim().replace(/\/$/, "") || null,
         instance_token: payload.instance_token?.trim() || null,
         instance_name: payload.instance_name?.trim() || null,
         instance_id: payload.instance_id?.trim() || null,

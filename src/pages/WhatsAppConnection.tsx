@@ -55,8 +55,8 @@ export default function WhatsAppConnection() {
     }
     setGeneratingQr(true);
     try {
-      const base = serverUrl.replace(/\/$/, "");
-      const headers = { token: instanceToken };
+      const base = serverUrl.trim().replace(/\/$/, "");
+      const headers = { token: instanceToken.trim(), "Content-Type": "application/json" };
 
       try {
         const sres = await fetch(`${base}/instance/status`, { headers });
@@ -105,8 +105,8 @@ export default function WhatsAppConnection() {
     }, 1000);
     pollRef.current = setInterval(async () => {
       try {
-        const sres = await fetch(`${serverUrl.replace(/\/$/, "")}/instance/status`, {
-          headers: { token: instanceToken },
+        const sres = await fetch(`${serverUrl.trim().replace(/\/$/, "")}/instance/status`, {
+          headers: { token: instanceToken.trim(), "Content-Type": "application/json" },
         });
         if (!sres.ok) return;
         const sdata = await sres.json();
@@ -130,8 +130,8 @@ export default function WhatsAppConnection() {
     if (!confirm("Desconectar WhatsApp?")) return;
     setDisconnecting(true);
     try {
-      const url = `${serverUrl.replace(/\/$/, "")}/instance/logout`;
-      await fetch(url, { method: "DELETE", headers: { token: instanceToken } });
+      const url = `${serverUrl.trim().replace(/\/$/, "")}/instance/logout`;
+      await fetch(url, { method: "DELETE", headers: { token: instanceToken.trim(), "Content-Type": "application/json" } });
       await save("uazapi", { connection_status: "disconnected", connected_phone: null });
       toast.success("Desconectado");
       await reload();
