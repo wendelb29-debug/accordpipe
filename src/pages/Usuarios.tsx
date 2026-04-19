@@ -637,6 +637,15 @@ export default function Usuarios() {
                                 {user.is_active ? "Desativar" : "Ativar"}
                               </DropdownMenuItem>
                             )}
+                            {canDeleteUsers && !user.is_master && user.user_id !== profile?.user_id && (
+                              <DropdownMenuItem
+                                className="gap-2 text-destructive focus:text-destructive"
+                                onClick={() => { setDeletingUser(user); setDeleteDialogOpen(true); }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Excluir usuário
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                         </div>
