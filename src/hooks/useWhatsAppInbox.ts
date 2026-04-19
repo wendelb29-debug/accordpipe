@@ -224,12 +224,15 @@ export function useWhatsAppInbox() {
       setActiveIntegration(null);
       return;
     }
+    console.log("[checkConnection] querying for companyId:", companyId);
     try {
       const { data: integ, error } = await supabase
         .from("tenant_whatsapp_integrations" as any)
         .select("id, provider_type, connected_phone, connection_status, last_sync_at, is_active, instance_name, server_url")
         .eq("tenant_id", companyId)
-        .eq("is_active", true)
+        .order("is_active", { ascending: false })
+        .order("updated_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
       if (error) {
         console.warn("[useWhatsAppInbox] checkConnection error:", error);
