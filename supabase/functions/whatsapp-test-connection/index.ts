@@ -196,21 +196,18 @@ Deno.serve(async (req) => {
         .maybeSingle();
       result = await testZapi(integ.server_url, integ.instance_id, integ.instance_token, comp?.zapi_client_token ?? null);
     } else if (provider_type === "uazapi") {
-      // Use admin_token from provider_metadata, fallback to instance_token
-      const adminToken = (integ as any).provider_metadata?.admin_token || integ.instance_token;
-      if (!adminToken) {
+      if (!integ.instance_token) {
         return new Response(
-          JSON.stringify({ success: false, message: "Configure o Instance Token (e opcionalmente o Admin Token) antes de testar." }),
+          JSON.stringify({ success: false, message: "Instance Token obrigatório — configure nas credenciais." }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (!integ.instance_name) {
-        return new Response(
-          JSON.stringify({ success: false, message: "Nome da Instância obrigatório" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      result = await testUazapi(integ.server_url, adminToken, integ.instance_name);
+      result = await testUazapi(
+        integ.server_url,
+        integ.instance_token,
+        integ.instance_name ?? null,
+        (integ as any).provider_metadata?.admin_token ?? null
+      );
     } else {
       result = { success: false, status: "error", message: "Provider não suportado", connection_status: "unknown" };
     }
