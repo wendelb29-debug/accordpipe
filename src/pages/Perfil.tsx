@@ -429,11 +429,28 @@ function MeuCanalWhatsAppCard() {
     }
     setGenerating(true);
     try {
-      const url = `${active.server_url.replace(/\/$/, "")}/instance/qr`;
-      const res = await fetch(url, { headers: { token: active.instance_token } });
+      const base = active.server_url.replace(/\/$/, "");
+      const headers = { token: active.instance_token };
+
+      // 1) Verifica status antes
+      try {
+        const sres = await fetch(`${base}/instance/status`, { headers });
+        if (sres.ok) {
+          const sdata = await sres.json();
+          const st = sdata?.status || sdata?.connection_status;
+          if (st === "connected") {
+            toast.info("Já conectado! Desconecte primeiro para escanear novo QR Code");
+            await reload();
+            return;
+          }
+        }
+      } catch { /* ignora e segue para gerar QR */ }
+
+      // 2) Gera o QR
+      const res = await fetch(`${base}/instance/connect`, { headers });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const qr = data.qrcode || data.qr || data.base64;
+      const qr = data.qrcode || data.base64 || data.qr;
       if (!qr) throw new Error("QR não retornado");
       setQrCode(normalizeQr(qr));
       setCountdown(40);
