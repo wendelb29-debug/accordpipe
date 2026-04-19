@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { PlanUsageCard } from "@/components/usuarios/PlanUsageCard";
-import { Plus, Search, User, MoreHorizontal, Pencil, Power, Shield, Eye, EyeOff, Building2, Server, CheckCircle, XCircle, Clock, FlaskConical, Send, MessageCircle, LayoutGrid } from "lucide-react";
+import { Plus, Search, User, MoreHorizontal, Pencil, Power, Shield, Eye, EyeOff, Building2, Server, CheckCircle, XCircle, Clock, FlaskConical, Send, MessageCircle, LayoutGrid, Trash2, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ServidoresTab from "@/components/servidores/ServidoresTab";
 import ServidoresTesteTab from "@/components/servidores/ServidoresTesteTab";
