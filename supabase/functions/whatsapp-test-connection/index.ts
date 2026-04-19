@@ -53,25 +53,39 @@ async function testZapi(serverUrl: string, instanceId: string | null, token: str
   }
 }
 
-async function testUazapi(serverUrl: string, token: string): Promise<TestResult> {
+async function testUazapi(serverUrl: string, adminToken: string, instanceName: string | null): Promise<TestResult> {
   const base = serverUrl.replace(/\/$/, "");
-  const url = `${base}/instance/status`;
-  try {
-    const res = await fetch(url, {
-      method: "GET",
-      headers: { token, "Content-Type": "application/json" },
-    });
+  const headers = { token: adminToken, "Content-Type": "application/json" };
+
+  const tryFetch = async (url: string) => {
+    const res = await fetch(url, { method: "GET", headers });
     const body: any = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      return {
-        success: false,
-        status: "error",
-        message: `Uazapi HTTP ${res.status}`,
-        connection_status: res.status === 401 || res.status === 403 ? "invalid_credentials" : "disconnected",
-        raw: body,
-      };
+    return { res, body };
+  };
+
+  try {
+    let attempt = instanceName
+      ? await tryFetch(`${base}/instance/${encodeURIComponent(instanceName)}/status`)
+      : await tryFetch(`${base}/instance/status`);
+
+    if (instanceName && attempt.res.status === 404) {
+      attempt = await tryFetch(`${base}/instance/status`);
     }
-    // Uazapi response shapes vary; try common fields
+
+    const { res, body } = attempt;
+
+    if (!res.ok) {
+      let message = `Uazapi HTTP ${res.status}`;
+      let connection_status: TestResult["connection_status"] = "disconnected";
+      if (res.status === 401 || res.status === 403) {
+        message = "Admin Token inválido ou expirado";
+        connection_status = "invalid_credentials";
+      } else if (res.status === 404) {
+        message = "Instância não encontrada — verifique o Nome da Instância";
+      }
+      return { success: false, status: "error", message, connection_status, raw: body };
+    }
+
     const instance = body?.instance ?? body;
     const status = (instance?.status ?? instance?.state ?? "").toString().toLowerCase();
     const connected = ["connected", "online", "open"].some((s) => status.includes(s));
@@ -79,7 +93,7 @@ async function testUazapi(serverUrl: string, token: string): Promise<TestResult>
     return {
       success: true,
       status: "success",
-      message: connected ? "Uazapi conectada" : `Uazapi alcançada (status: ${status || "desconhecido"})`,
+      message: connected ? "Conectado com sucesso ✅" : `Uazapi alcançada (status: ${status || "desconhecido"})`,
       connection_status: connected ? "connected" : "disconnected",
       connected_phone: typeof phone === "string" ? phone : null,
       raw: body,
@@ -142,16 +156,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (!integ.server_url || !integ.instance_token) {
+    if (!integ.server_url) {
       return new Response(
-        JSON.stringify({ success: false, message: "Server URL e Token obrigatórios" }),
+        JSON.stringify({ success: false, message: "Server URL obrigatório" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     let result: TestResult;
     if (provider_type === "zapi") {
-      // Get optional client token from companies (legacy)
+      if (!integ.instance_token) {
+        return new Response(
+          JSON.stringify({ success: false, message: "Instance Token obrigatório" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       const { data: comp } = await supabase
         .from("companies")
         .select("zapi_client_token")
@@ -159,7 +178,20 @@ Deno.serve(async (req) => {
         .maybeSingle();
       result = await testZapi(integ.server_url, integ.instance_id, integ.instance_token, comp?.zapi_client_token ?? null);
     } else if (provider_type === "uazapi") {
-      result = await testUazapi(integ.server_url, integ.instance_token);
+      const adminToken = (integ as any).provider_metadata?.admin_token;
+      if (!adminToken) {
+        return new Response(
+          JSON.stringify({ success: false, message: "Admin Token obrigatório (configure nas credenciais)" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (!integ.instance_name) {
+        return new Response(
+          JSON.stringify({ success: false, message: "Nome da Instância obrigatório" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      result = await testUazapi(integ.server_url, adminToken, integ.instance_name);
     } else {
       result = { success: false, status: "error", message: "Provider não suportado", connection_status: "unknown" };
     }
@@ -176,7 +208,10 @@ Deno.serve(async (req) => {
         connection_status: result.connection_status ?? "unknown",
         connected_phone: result.connected_phone ?? null,
         last_seen_at: result.connection_status === "connected" ? now : (integ as any).last_seen_at ?? null,
-        provider_metadata: result.raw ? { last_status_payload: result.raw } : (integ as any).provider_metadata ?? {},
+        provider_metadata: {
+          ...((integ as any).provider_metadata ?? {}),
+          ...(result.raw ? { last_status_payload: result.raw } : {}),
+        },
       })
       .eq("id", integ.id);
 
