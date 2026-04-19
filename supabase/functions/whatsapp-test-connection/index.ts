@@ -53,53 +53,72 @@ async function testZapi(serverUrl: string, instanceId: string | null, token: str
   }
 }
 
-async function testUazapi(serverUrl: string, adminToken: string, instanceName: string | null): Promise<TestResult> {
+async function testUazapi(
+  serverUrl: string,
+  instanceToken: string,
+  instanceName: string | null,
+  adminToken: string | null
+): Promise<TestResult> {
   const base = serverUrl.replace(/\/$/, "");
-  const headers = { token: adminToken, "Content-Type": "application/json" };
 
-  const tryFetch = async (url: string) => {
-    const res = await fetch(url, { method: "GET", headers });
+  const tryWithToken = async (token: string, url: string) => {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { token, "Content-Type": "application/json" },
+    });
     const body: any = await res.json().catch(() => ({}));
     return { res, body };
   };
 
   try {
-    let attempt = instanceName
-      ? await tryFetch(`${base}/instance/${encodeURIComponent(instanceName)}/status`)
-      : await tryFetch(`${base}/instance/status`);
+    const endpoints = [
+      `${base}/instance/status`,
+      `${base}/instance/${instanceName}/status`,
+      `${base}/instances/${instanceName}`,
+      `${base}/status`,
+    ].filter(Boolean);
 
-    if (instanceName && attempt.res.status === 404) {
-      attempt = await tryFetch(`${base}/instance/status`);
-    }
-
-    const { res, body } = attempt;
-
-    if (!res.ok) {
-      let message = `Uazapi HTTP ${res.status}`;
-      let connection_status: TestResult["connection_status"] = "disconnected";
-      if (res.status === 401 || res.status === 403) {
-        message = "Admin Token inválido ou expirado";
-        connection_status = "invalid_credentials";
-      } else if (res.status === 404) {
-        message = "Instância não encontrada — verifique o Nome da Instância";
+    for (const url of endpoints) {
+      const { res, body } = await tryWithToken(instanceToken, url);
+      if (res.ok) {
+        const status = (body?.instance?.status ?? body?.state ?? body?.status ?? "").toString().toLowerCase();
+        const connected = ["connected", "online", "open"].some((s) => status.includes(s));
+        return {
+          success: true,
+          status: "success",
+          message: connected ? "Conectado com sucesso ✅" : `Alcançado (status: ${status || "desconhecido"})`,
+          connection_status: connected ? "connected" : "disconnected",
+          connected_phone: body?.phone ?? body?.wid ?? body?.owner ?? null,
+          raw: body,
+        };
       }
-      return { success: false, status: "error", message, connection_status, raw: body };
+      if (res.status !== 404) break;
     }
 
-    const instance = body?.instance ?? body;
-    const status = (instance?.status ?? instance?.state ?? "").toString().toLowerCase();
-    const connected = ["connected", "online", "open"].some((s) => status.includes(s));
-    const phone = instance?.owner ?? instance?.wid ?? instance?.phone ?? instance?.profileName ?? null;
+    if (adminToken) {
+      for (const url of endpoints) {
+        const { res, body } = await tryWithToken(adminToken, url);
+        if (res.ok) {
+          return {
+            success: true,
+            status: "success",
+            message: "Conectado via Admin Token ✅",
+            connection_status: "connected",
+            connected_phone: null,
+            raw: body,
+          };
+        }
+      }
+    }
+
     return {
-      success: true,
-      status: "success",
-      message: connected ? "Conectado com sucesso ✅" : `Uazapi alcançada (status: ${status || "desconhecido"})`,
-      connection_status: connected ? "connected" : "disconnected",
-      connected_phone: typeof phone === "string" ? phone : null,
-      raw: body,
+      success: false,
+      status: "error",
+      message: "Não foi possível conectar — verifique o Instance Token e a URL",
+      connection_status: "invalid_credentials",
     };
   } catch (err) {
-    return { success: false, status: "error", message: `Falha ao conectar: ${(err as Error).message}`, connection_status: "disconnected" };
+    return { success: false, status: "error", message: `Erro: ${(err as Error).message}`, connection_status: "disconnected" };
   }
 }
 
