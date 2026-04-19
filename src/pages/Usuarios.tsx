@@ -434,6 +434,30 @@ export default function Usuarios() {
     }
   };
 
+  const handleDeleteUser = async () => {
+    if (!deletingUser) return;
+    if (deletingUser.user_id === profile?.user_id) {
+      toast({ title: "Ação bloqueada", description: "Você não pode excluir seu próprio usuário.", variant: "destructive" });
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("delete-user", {
+        body: { target_user_id: deletingUser.user_id },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "Erro ao excluir");
+      toast({ title: "Usuário excluído", description: `${deletingUser.name} foi removido.` });
+      setDeleteDialogOpen(false);
+      setDeletingUser(null);
+      fetchUsers();
+    } catch (e: any) {
+      toast({ title: "Erro ao excluir", description: e.message || "Não foi possível excluir.", variant: "destructive" });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const filteredUsers = users.filter(
     (user) =>
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
