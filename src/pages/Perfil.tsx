@@ -479,13 +479,21 @@ function MeuCanalWhatsAppCard() {
       });
     }, 1000);
     pollRef.current = setInterval(async () => {
-      const result: any = await testConnection(active!.provider_type);
-      const status = result?.connection_status || result?.status;
-      if (status === "connected") {
-        toast.success("WhatsApp conectado com sucesso! 🎉");
-        setQrCode(null);
-        await reload();
-      }
+      try {
+        const base = active!.server_url!.replace(/\/$/, "");
+        const sres = await fetch(`${base}/instance/status`, {
+          headers: { token: active!.instance_token! },
+        });
+        if (!sres.ok) return;
+        const sdata = await sres.json();
+        const status = sdata?.status || sdata?.connection_status;
+        if (status === "connected") {
+          toast.success("WhatsApp conectado com sucesso! 🎉");
+          setQrCode(null);
+          await testConnection(active!.provider_type); // sincroniza no banco
+          await reload();
+        }
+      } catch { /* silencioso */ }
     }, 5000);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
