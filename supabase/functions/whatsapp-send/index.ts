@@ -1,5 +1,4 @@
 // Provider-agnostic outbound message sender (Uazapi + Z-API)
-// Loads the active integration of the tenant and dispatches via the proper adapter.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -21,24 +20,34 @@ function normalizePhone(p: string): string {
 
 async function sendUazapi(
   serverUrl: string,
-  token: string,
+  instanceName: string,
+  instanceToken: string,
   phone: string,
   text: string,
 ): Promise<SendResult> {
   const base = serverUrl.replace(/\/$/, "");
-  const url = `${base}/send/text`;
+  const url = `${base}/message/sendText/${instanceName}`;
   const payload = { number: normalizePhone(phone), text };
-  console.log("[sendUazapi] POST", url, "phone:", payload.number, "tokenPrefix:", token?.slice(0, 8));
+
+  console.log("[sendUazapi] POST", url);
+  console.log("[sendUazapi] instanceName:", instanceName);
+  console.log("[sendUazapi] tokenPrefix:", instanceToken?.slice(0, 8));
+  console.log("[sendUazapi] phone (normalized):", payload.number);
+
   try {
     const res = await fetch(url, {
       method: "POST",
-      headers: { token, "Content-Type": "application/json" },
+      headers: { "apikey": instanceToken, "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+
     const rawText = await res.text();
     let body: any = {};
     try { body = JSON.parse(rawText); } catch { body = { raw: rawText }; }
-    console.log("[sendUazapi] response", res.status, rawText.slice(0, 500));
+
+    console.log("[sendUazapi] status:", res.status);
+    console.log("[sendUazapi] response:", rawText.slice(0, 500));
+
     if (!res.ok) {
       return {
         success: false,
@@ -46,7 +55,10 @@ async function sendUazapi(
         raw: body,
       };
     }
-    const externalId = body?.id || body?.messageId || body?.message?.id || undefined;
+
+    const externalId =
+      body?.key?.id || body?.id || body?.messageId || body?.message?.id || undefined;
+
     return { success: true, message: "Mensagem enviada via Uazapi", external_id: externalId, raw: body };
   } catch (err) {
     console.error("[sendUazapi] exception", err);
@@ -117,13 +129,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Service-role client for status updates regardless of RLS context
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Load the ACTIVE integration for this tenant (RLS-respected via user client)
     const { data: integ, error: loadErr } = await supabase
       .from("tenant_whatsapp_integrations")
       .select("*")
@@ -140,18 +150,30 @@ Deno.serve(async (req) => {
       );
     }
 
+    console.log("[whatsapp-send] provider_type:", integ.provider_type);
+    console.log("[whatsapp-send] instance_name:", integ.instance_name);
+    console.log("[whatsapp-send] server_url:", integ.server_url);
+    console.log("[whatsapp-send] has token:", !!integ.instance_token);
+
     if (!integ.server_url || !integ.instance_token) {
       return new Response(
-        JSON.stringify({ success: false, message: "Credenciais incompletas" }),
+        JSON.stringify({ success: false, message: "Credenciais incompletas na integração" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
     let result: SendResult;
+
     if (integ.provider_type === "uazapi") {
-      result = await sendUazapi(integ.server_url, integ.instance_token, phone, text);
+      const instanceName = integ.instance_name || integ.instance_id || "";
+      if (!instanceName) {
+        return new Response(
+          JSON.stringify({ success: false, message: "instance_name não configurado para Uazapi" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      result = await sendUazapi(integ.server_url, instanceName, integ.instance_token, phone, text);
     } else if (integ.provider_type === "zapi") {
-      // Z-API also needs client token from companies (legacy field)
       const { data: comp } = await admin
         .from("companies")
         .select("zapi_client_token")
@@ -166,10 +188,9 @@ Deno.serve(async (req) => {
         text,
       );
     } else {
-      result = { success: false, message: `Provider ${integ.provider_type} não suportado` };
+      result = { success: false, message: `Provider '${integ.provider_type}' não suportado.` };
     }
 
-    // Update message status if a message_id was provided
     if (message_id) {
       await admin
         .from("whatsapp_messages")
@@ -182,7 +203,6 @@ Deno.serve(async (req) => {
         .eq("id", message_id);
     }
 
-    // Audit
     await admin.from("audit_logs").insert({
       user_id: userId,
       action: result.success ? "whatsapp_message_sent" : "whatsapp_message_send_failed",
@@ -202,6 +222,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    console.error("[whatsapp-send] unhandled error", err);
     return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
