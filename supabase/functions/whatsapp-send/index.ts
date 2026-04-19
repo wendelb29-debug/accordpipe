@@ -123,7 +123,9 @@ Deno.serve(async (req) => {
       .from("tenant_whatsapp_integrations")
       .select("*")
       .eq("tenant_id", tenant_id)
-      .eq("is_active", true)
+      .order("is_active", { ascending: false })
+      .order("updated_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (loadErr || !integ) {
