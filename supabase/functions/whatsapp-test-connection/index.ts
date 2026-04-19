@@ -180,7 +180,7 @@ Deno.serve(async (req) => {
       const adminToken = (integ as any).provider_metadata?.admin_token;
       if (!adminToken) {
         return new Response(
-          JSON.stringify({ success: false, message: "Admin Token obrigatório (configure nas credenciais)" }),
+          JSON.stringify({ success: false, message: "Preencha o campo 'Admin Token' nas credenciais e clique em Salvar antes de testar." }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
