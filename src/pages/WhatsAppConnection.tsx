@@ -55,11 +55,26 @@ export default function WhatsAppConnection() {
     }
     setGeneratingQr(true);
     try {
-      const url = `${serverUrl.replace(/\/$/, "")}/instance/qr`;
-      const res = await fetch(url, { headers: { token: instanceToken } });
+      const base = serverUrl.replace(/\/$/, "");
+      const headers = { token: instanceToken };
+
+      try {
+        const sres = await fetch(`${base}/instance/status`, { headers });
+        if (sres.ok) {
+          const sdata = await sres.json();
+          const st = sdata?.status || sdata?.connection_status;
+          if (st === "connected") {
+            toast.info("Já conectado! Desconecte primeiro para escanear novo QR Code");
+            await reload();
+            return;
+          }
+        }
+      } catch { /* segue */ }
+
+      const res = await fetch(`${base}/instance/connect`, { headers });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const qr = data.qrcode || data.qr || data.base64;
+      const qr = data.qrcode || data.base64 || data.qr;
       if (!qr) throw new Error("QR não retornado");
       setQrCode(normalizeQr(qr));
       setCountdown(QR_TTL);
