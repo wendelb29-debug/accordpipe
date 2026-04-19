@@ -97,6 +97,10 @@ export default function Usuarios() {
   // Tenant management tabs: Global Master in their own (master) tenant OR a reseller tenant.
   const showTenantTabs = (isGlobalMaster && profile?.company_id === activeCompanyId) || isResellerTenant;
   const canManageUsers = isMaster || isCeo || isAdmin;
+  const canDeleteUsers = isMaster || isCeo;
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<UserWithRole | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [allCompanies, setAllCompanies] = useState<{id: string; nome_fantasia: string | null; razao_social: string; cnpj: string}[]>([]);
   const [inviteOpen, setInviteOpen] = useState(false);
 
