@@ -136,12 +136,8 @@ export default function AccordStack() {
     .map((m) => `${m.direction === "inbound" ? "Cliente" : "Atendente"}: ${m.message}`)
     .join("\n");
 
-  // Deriva isConnected diretamente da integração ativa: is_active + credenciais válidas
-  // e connection_status não explicitamente "disconnected"/"error" (aceita "connected", "unknown", null)
-  const isIntegrationConnected = !!activeIntegration?.is_active &&
-    (activeIntegration.provider_type === "uazapi"
-      ? !!activeIntegration.server_url
-      : true) &&
+  // Aceita "connected", "unknown", null, "" — bloqueia apenas "disconnected"/"error"
+  const isIntegrationConnected = !!activeIntegration?.server_url &&
     activeIntegration?.connection_status !== "disconnected" &&
     activeIntegration?.connection_status !== "error";
 
@@ -165,7 +161,7 @@ export default function AccordStack() {
       ]
     : [];
 
-  if (!loading && !activeIntegration) {
+  if (!loading && !activeIntegration && connectionStatus === "disconnected") {
     return (
       <div className="flex h-[calc(100vh-3rem)] bg-background items-center justify-center">
         <div className="text-center space-y-5 max-w-md px-6">
