@@ -883,6 +883,38 @@ export default function Usuarios() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          {/* Delete User Confirmation Dialog */}
+          <Dialog open={deleteDialogOpen} onOpenChange={(o) => { if (!isDeleting) setDeleteDialogOpen(o); }}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-destructive">
+                  <Trash2 className="h-5 w-5" />
+                  Excluir usuário
+                </DialogTitle>
+                <DialogDescription>
+                  Tem certeza que deseja excluir este usuário? Essa ação remove o acesso ao sistema e não poderá ser desfeita facilmente.
+                </DialogDescription>
+              </DialogHeader>
+              {deletingUser && (
+                <div className="rounded-lg border border-border bg-muted/40 p-3 space-y-1 text-sm">
+                  <div><span className="text-muted-foreground">Nome:</span> <strong>{deletingUser.name}</strong></div>
+                  <div><span className="text-muted-foreground">E-mail:</span> {deletingUser.email}</div>
+                  <div><span className="text-muted-foreground">Perfil:</span> {roleLabels[deletingUser.role]}</div>
+                  <div><span className="text-muted-foreground">Tenant:</span> {allCompanies.find(c => c.id === deletingUser.company_id)?.nome_fantasia || allCompanies.find(c => c.id === deletingUser.company_id)?.razao_social || "—"}</div>
+                </div>
+              )}
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isDeleting}>
+                  Cancelar
+                </Button>
+                <Button variant="destructive" onClick={handleDeleteUser} disabled={isDeleting} className="gap-2">
+                  {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  Excluir usuário
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           {/* Permissions Dialog */}
           <Dialog open={permDialogOpen} onOpenChange={setPermDialogOpen}>
             <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
