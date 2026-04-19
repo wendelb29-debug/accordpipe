@@ -313,9 +313,9 @@ export function InstanceCredentialsCard({ tenantId, provider: providerProp, onPr
                 )}
 
                 <div className="space-y-1.5">
-                  <Label>Nome da Instância</Label>
+                  <Label>Nome da Instância {p === "uazapi" && "*"}</Label>
                   <Input
-                    placeholder="ex: vendas-principal"
+                    placeholder={p === "uazapi" ? "ex: IcnCz2" : "ex: vendas-principal"}
                     value={instanceName}
                     onChange={(e) => setInstanceName(e.target.value)}
                   />
