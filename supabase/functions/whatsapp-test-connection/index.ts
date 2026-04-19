@@ -177,10 +177,11 @@ Deno.serve(async (req) => {
         .maybeSingle();
       result = await testZapi(integ.server_url, integ.instance_id, integ.instance_token, comp?.zapi_client_token ?? null);
     } else if (provider_type === "uazapi") {
-      const adminToken = (integ as any).provider_metadata?.admin_token;
+      // Use admin_token from provider_metadata, fallback to instance_token
+      const adminToken = (integ as any).provider_metadata?.admin_token || integ.instance_token;
       if (!adminToken) {
         return new Response(
-          JSON.stringify({ success: false, message: "Preencha o campo 'Admin Token' nas credenciais e clique em Salvar antes de testar." }),
+          JSON.stringify({ success: false, message: "Configure o Instance Token (e opcionalmente o Admin Token) antes de testar." }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
