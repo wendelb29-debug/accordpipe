@@ -101,6 +101,19 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Resolve initial stage: if a workspace is set, use the first kanban column id
+    let initialStage = "novos";
+    if (resolvedWorkspaceId) {
+      const { data: firstCol } = await supabaseAdmin
+        .from("kanban_columns")
+        .select("id")
+        .eq("workspace_id", resolvedWorkspaceId)
+        .order("position", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (firstCol?.id) initialStage = firstCol.id;
+    }
+
     // Build notes with extra fields
     const noteParts: string[] = [];
     if (colaboradores) noteParts.push(`Colaboradores: ${String(colaboradores).substring(0, 50)}`);
@@ -120,7 +133,7 @@ Deno.serve(async (req) => {
         cidade: cidade ? String(cidade).trim().substring(0, 100) : null,
         notes: fullNotes,
         tags: resolvedFormId ? [...formTags, "formulario"] : ["landing-page"],
-        stage: "novos",
+        stage: initialStage,
         created_by_name: nome.trim().substring(0, 200),
         form_id: resolvedFormId,
         workspace_id: resolvedWorkspaceId,
