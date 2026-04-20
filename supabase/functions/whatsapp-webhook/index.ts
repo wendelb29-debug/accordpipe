@@ -412,8 +412,9 @@ async function handleIncomingMessage(
     provider?: string;
   },
 ) {
-  const { company_id, phone, message, sender_name, sender_avatar: payloadAvatar, message_type = "text", media_url, external_id, provider } = data;
+  const { company_id, phone, message, sender_name: payloadName, sender_avatar: payloadAvatar, message_type = "text", media_url, external_id, provider } = data;
   let sender_avatar = payloadAvatar;
+  let sender_name = payloadName;
   const normalizedPhone = String(phone || "").replace(/\D/g, "");
   const phoneVariants = normalizePhoneVariants(normalizedPhone);
   const primaryPhone = phoneVariants.find((value) => value.startsWith("55")) || normalizedPhone;
