@@ -101,7 +101,7 @@ export default function FormularioContato() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/10 p-4">
       <Card className="max-w-lg w-full shadow-xl border-0 bg-card/95 backdrop-blur">
         <CardHeader className="text-center space-y-4 pb-2">
-          <img src={accordLogo} alt="Accord" className="h-20 mx-auto object-contain" />
+          <img src={accordLogo} alt="Accord" className="h-10 mx-auto" />
           <div>
             <CardTitle className="text-2xl font-bold tracking-tight">Fale com um especialista</CardTitle>
             <CardDescription className="text-base mt-1.5">

@@ -278,7 +278,7 @@ export default function FormPublico() {
       {/* Header fixed */}
       <header className="sticky top-0 z-30 backdrop-blur-xl bg-[#0F172A]/70 border-b border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
-          <img src={logoUrl} alt="Accord" className="h-12 sm:h-16 lg:h-20 w-auto object-contain" />
+          <img src={logoUrl} alt="Accord" className="h-8 sm:h-10 lg:h-12 w-auto object-contain" />
           <Link to="/auth">
             <Button variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10 gap-2">
               <LogIn className="h-4 w-4" />
