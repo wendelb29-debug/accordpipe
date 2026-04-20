@@ -379,7 +379,16 @@ export function InboxChat({
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-background">
-      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-border/60 bg-background flex-shrink-0">
+      <div className="flex items-center gap-2.5 px-3 sm:px-4 py-3 border-b border-border/60 bg-background flex-shrink-0">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="md:hidden -ml-1 mr-1 w-9 h-9 rounded-lg flex items-center justify-center text-foreground/80 hover:bg-muted/60 active:bg-muted transition-colors"
+            aria-label="Voltar para conversas"
+          >
+            <ArrowLeft size={20} />
+          </button>
+        )}
         <div className="relative flex-shrink-0">
           <ContactAvatar contact={contact} size={38} />
           {contact.isOnline && (
