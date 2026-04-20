@@ -159,11 +159,22 @@ export function useWhatsAppInbox() {
     }
   }, [contacts, fetchMessages]);
 
-  const sendMessage = useCallback(async (text: string) => {
+  const sendMessage = useCallback(async (
+    text: string,
+    options?: { messageType?: "text" | "image" | "audio" | "file"; mediaUrl?: string; fileName?: string }
+  ) => {
     if (!selectedContactId || !companyId) return;
 
     const contact = contacts.find(c => c.id === selectedContactId);
     if (!contact) return;
+
+    if (contact.conversation_status === "encerrado") {
+      toast.error("Atendimento encerrado. Reabra para enviar mensagens.");
+      return;
+    }
+
+    const messageType = options?.messageType || "text";
+    const mediaUrl = options?.mediaUrl || null;
 
     const { data: msgData, error: msgError } = await supabase
       .from("whatsapp_messages")
@@ -171,10 +182,11 @@ export function useWhatsAppInbox() {
         company_id: companyId,
         contact_id: selectedContactId,
         phone: normalizePhone(contact.phone),
-        message: text,
+        message: text || options?.fileName || "",
         direction: "outbound",
         status: "sending",
-        message_type: "text",
+        message_type: messageType,
+        media_url: mediaUrl,
       })
       .select()
       .single();
@@ -189,8 +201,11 @@ export function useWhatsAppInbox() {
         body: {
           tenant_id: companyId,
           phone: contact.phone,
-          text,
+          text: text || options?.fileName || "",
           message_id: msgData.id,
+          message_type: messageType,
+          media_url: mediaUrl,
+          file_name: options?.fileName,
         },
       });
 
@@ -208,9 +223,22 @@ export function useWhatsAppInbox() {
         .eq("id", msgData.id);
     }
 
+    // Promove "fila"/"aguardando" → "em_atendimento" no primeiro outbound
+    const updates: any = {
+      last_message: text || options?.fileName || "[mídia]",
+      last_message_at: new Date().toISOString(),
+    };
+    if (
+      contact.conversation_status === "fila" ||
+      contact.conversation_status === "aguardando" ||
+      !contact.conversation_status
+    ) {
+      updates.conversation_status = "em_atendimento";
+    }
+
     await supabase
       .from("whatsapp_contacts")
-      .update({ last_message: text, last_message_at: new Date().toISOString() })
+      .update(updates)
       .eq("id", selectedContactId);
   }, [selectedContactId, companyId, contacts]);
 

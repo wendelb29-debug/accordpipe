@@ -36,7 +36,10 @@ interface ChatContact {
 interface InboxChatProps {
   contact: ChatContact | null;
   messages: ChatMessage[];
-  onSendMessage: (text: string) => void;
+  onSendMessage: (
+    text: string,
+    options?: { messageType?: "text" | "image" | "audio" | "file"; mediaUrl?: string; fileName?: string }
+  ) => void;
   onTransfer?: (contactId: string) => void;
   onAssignToMe?: (contactId: string) => void;
   isAdmin?: boolean;
@@ -206,41 +209,83 @@ function AccordWatermark() {
 }
 
 export function InboxChat({
-  contact, messages, onSendMessage, onTransfer, onToggleInfo, showInfo, onUpdateStatus,
+  contact, messages, onSendMessage, onTransfer, onToggleInfo, showInfo, onUpdateStatus, companyId,
 }: InboxChatProps) {
   const [text, setText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
-  const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
+  const [uploading, setUploading] = useState(false);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const msgsRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
-  const allMessages = messages.length > 0 ? messages : localMessages;
+  const isClosed = contact?.conversationStatus === "encerrado" || contact?.conversationStatus === "finalizado";
 
   useEffect(() => {
     if (msgsRef.current) msgsRef.current.scrollTop = msgsRef.current.scrollHeight;
-  }, [allMessages, localMessages]);
+  }, [messages]);
 
   const send = () => {
-    if (!text.trim()) return;
+    if (!text.trim() || isClosed) return;
     onSendMessage(text.trim());
     setText("");
     if (taRef.current) taRef.current.style.height = "38px";
   };
 
-  const addMedia = (type: "audio" | "image" | "file") => {
-    setLocalMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        message: "",
-        direction: "outbound",
-        created_at: new Date().toISOString(),
-        type,
-        fileName: type === "image" ? "imagem_enviada.jpg" : "arquivo_enviado.pdf",
-        fileSize: "128 KB",
-        status: "sent",
-      },
-    ]);
+  const uploadAndSend = async (file: File, messageType: "image" | "audio" | "file") => {
+    if (!companyId || !contact) return;
+    setUploading(true);
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const ext = file.name.split(".").pop() || "bin";
+      const path = `${companyId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("whatsapp-media")
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("whatsapp-media").getPublicUrl(path);
+      onSendMessage(file.name, { messageType, mediaUrl: pub.publicUrl, fileName: file.name });
+    } catch (err: any) {
+      const { toast } = await import("sonner");
+      toast.error(err?.message || "Falha no upload do arquivo");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: "image" | "audio" | "file") => {
+    const f = e.target.files?.[0];
+    if (f) uploadAndSend(f, type);
+    e.target.value = "";
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      mr.ondataavailable = (e) => audioChunksRef.current.push(e.data);
+      mr.onstop = async () => {
+        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const file = new File([blob], `audio-${Date.now()}.webm`, { type: "audio/webm" });
+        stream.getTracks().forEach((t) => t.stop());
+        await uploadAndSend(file, "audio");
+      };
+      mediaRecorderRef.current = mr;
+      mr.start();
+      setIsRecording(true);
+    } catch {
+      const { toast } = await import("sonner");
+      toast.error("Não foi possível acessar o microfone");
+    }
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setIsRecording(false);
   };
 
   if (!contact) {
@@ -314,64 +359,86 @@ export function InboxChat({
           <div className="flex-1 h-px bg-border/40" />
         </div>
         <div className="relative z-10 flex flex-col gap-1.5">
-          {allMessages.map((msg) => (
+          {messages.map((msg) => (
             <MessageBubble key={msg.id} msg={msg} />
           ))}
         </div>
       </div>
 
       <div className="border-t border-border/60 px-4 py-3 bg-background flex-shrink-0">
-        <div className="flex items-center gap-1 mb-2 pb-2 border-b border-border/40">
-          <ToolBtn icon={<Paperclip size={14} />} title="Arquivo" onClick={() => addMedia("file")} />
-          <ToolBtn icon={<Image size={14} />} title="Imagem" onClick={() => addMedia("image")} />
-          <div className="w-px h-4 bg-border/50 mx-1" />
-          <ToolBtn icon={<Bold size={13} />} title="Negrito" />
-          <ToolBtn icon={<Italic size={13} />} title="Itálico" />
-          <div className="w-px h-4 bg-border/50 mx-1" />
-          <AiImprovePopover text={text} onApply={(newText) => {
-            setText(newText);
-            requestAnimationFrame(() => {
-              if (taRef.current) {
-                taRef.current.style.height = "38px";
-                taRef.current.style.height = Math.min(taRef.current.scrollHeight, 90) + "px";
-                taRef.current.focus();
-              }
-            });
-          }} />
-          <ToolBtn icon={<FileText size={14} />} title="Notas internas" className="ml-auto" />
-        </div>
+        <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => handleFileChange(e, "file")} />
+        <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "image")} />
+        <input ref={audioInputRef} type="file" accept="audio/*" className="hidden" onChange={(e) => handleFileChange(e, "audio")} />
 
-        <div className="flex items-end gap-2">
-          <textarea
-            ref={taRef}
-            value={text}
-            onChange={(e) => {
-              setText(e.target.value);
-              e.target.style.height = "38px";
-              e.target.style.height = Math.min(e.target.scrollHeight, 90) + "px";
-            }}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-            placeholder="Digite uma mensagem..."
-            className="flex-1 resize-none outline-none text-sm bg-muted/50 border border-border/50 rounded-xl px-3 py-2.5 text-foreground placeholder:text-muted-foreground leading-relaxed focus:border-primary/40 transition-all"
-            style={{ height: 38, maxHeight: 90 }}
-          />
-          <button
-            onClick={() => { if (isRecording) { setIsRecording(false); addMedia("audio"); } else setIsRecording(true); }}
-            title={isRecording ? "Parar gravação" : "Gravar áudio"}
-            className={cn(
-              "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border transition-all",
-              isRecording
-                ? "bg-red-50 border-red-200 text-red-500 dark:bg-red-950/30 dark:border-red-900"
-                : "border-border/50 text-muted-foreground hover:bg-muted/50"
+        {isClosed ? (
+          <div className="flex items-center justify-between gap-3 py-2">
+            <p className="text-sm text-muted-foreground">Atendimento encerrado</p>
+            {onUpdateStatus && (
+              <button
+                onClick={() => onUpdateStatus(contact.id, "em_atendimento")}
+                className="px-4 h-9 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-all"
+              >
+                Reabrir atendimento
+              </button>
             )}
-          >
-            {isRecording ? <Square size={14} /> : <Mic size={14} />}
-          </button>
-          <button onClick={send}
-            className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 hover:bg-primary/90 transition-all">
-            <Send size={14} />
-          </button>
-        </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-1 mb-2 pb-2 border-b border-border/40">
+              <ToolBtn icon={<Paperclip size={14} />} title="Arquivo" onClick={() => fileInputRef.current?.click()} />
+              <ToolBtn icon={<Image size={14} />} title="Imagem" onClick={() => imageInputRef.current?.click()} />
+              <ToolBtn icon={<Mic size={14} />} title="Áudio (arquivo)" onClick={() => audioInputRef.current?.click()} />
+              <div className="w-px h-4 bg-border/50 mx-1" />
+              <ToolBtn icon={<Bold size={13} />} title="Negrito" />
+              <ToolBtn icon={<Italic size={13} />} title="Itálico" />
+              <div className="w-px h-4 bg-border/50 mx-1" />
+              <AiImprovePopover text={text} onApply={(newText) => {
+                setText(newText);
+                requestAnimationFrame(() => {
+                  if (taRef.current) {
+                    taRef.current.style.height = "38px";
+                    taRef.current.style.height = Math.min(taRef.current.scrollHeight, 90) + "px";
+                    taRef.current.focus();
+                  }
+                });
+              }} />
+              {uploading && <span className="text-[11px] text-muted-foreground ml-2">Enviando...</span>}
+              <ToolBtn icon={<FileText size={14} />} title="Notas internas" className="ml-auto" />
+            </div>
+
+            <div className="flex items-end gap-2">
+              <textarea
+                ref={taRef}
+                value={text}
+                onChange={(e) => {
+                  setText(e.target.value);
+                  e.target.style.height = "38px";
+                  e.target.style.height = Math.min(e.target.scrollHeight, 90) + "px";
+                }}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+                placeholder="Digite uma mensagem..."
+                className="flex-1 resize-none outline-none text-sm bg-muted/50 border border-border/50 rounded-xl px-3 py-2.5 text-foreground placeholder:text-muted-foreground leading-relaxed focus:border-primary/40 transition-all"
+                style={{ height: 38, maxHeight: 90 }}
+              />
+              <button
+                onClick={() => { if (isRecording) stopRecording(); else startRecording(); }}
+                title={isRecording ? "Parar gravação" : "Gravar áudio"}
+                className={cn(
+                  "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border transition-all",
+                  isRecording
+                    ? "bg-destructive/10 border-destructive/30 text-destructive"
+                    : "border-border/50 text-muted-foreground hover:bg-muted/50"
+                )}
+              >
+                {isRecording ? <Square size={14} /> : <Mic size={14} />}
+              </button>
+              <button onClick={send}
+                className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 hover:bg-primary/90 transition-all">
+                <Send size={14} />
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

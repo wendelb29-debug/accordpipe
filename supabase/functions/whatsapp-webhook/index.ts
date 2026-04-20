@@ -449,7 +449,7 @@ async function handleIncomingMessage(
         last_message: message,
         last_message_at: new Date().toISOString(),
         workspace_id,
-        conversation_status: "aguardando",
+        conversation_status: "fila",
       })
       .select("id, lead_id, conversation_status, assigned_to, phone")
       .single();
@@ -461,7 +461,14 @@ async function handleIncomingMessage(
       last_message: message,
       last_message_at: new Date().toISOString(),
     };
-    if (contact.conversation_status === "finalizado") updates.conversation_status = "aguardando";
+    // Reabrir contatos encerrados/finalizados → volta para "fila"
+    if (
+      contact.conversation_status === "finalizado" ||
+      contact.conversation_status === "encerrado" ||
+      contact.conversation_status === "aguardando"
+    ) {
+      updates.conversation_status = "fila";
+    }
     if (sender_avatar) {
       updates.avatar_url = sender_avatar;
       updates.avatar_synced_at = new Date().toISOString();

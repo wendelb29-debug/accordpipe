@@ -8,31 +8,9 @@ import { TransferDialog } from "@/components/accord-inbox/TransferDialog";
 import { ContactDetailSidebar } from "@/components/accord-inbox/ContactDetailSidebar";
 import { CreateDemandModal } from "@/components/accord-inbox/CreateDemandModal";
 import { NewConversationModal } from "@/components/accord-inbox/NewConversationModal";
-import { WifiOff, User, MessageSquare, Users, Settings } from "lucide-react";
+import { WifiOff, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
-
-function NavIcon({
-  icon, active, title, onClick,
-}: {
-  icon: React.ReactNode; active?: boolean; title?: string; onClick?: () => void;
-}) {
-  return (
-    <button
-      title={title}
-      onClick={onClick}
-      className={cn(
-        "w-9 h-9 rounded-xl flex items-center justify-center transition-all",
-        active
-          ? "bg-primary/15 text-primary"
-          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-      )}
-    >
-      {icon}
-    </button>
-  );
-}
 
 const FILTER_LABEL_TO_VALUE: Record<string, InboxFilter> = {
   Minhas: "mine",
@@ -60,13 +38,22 @@ export default function AccordStack() {
   const [showInfo, setShowInfo] = useState(false);
   const [demandModalOpen, setDemandModalOpen] = useState(false);
   const [newConvOpen, setNewConvOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<ConversationStatusFilter>("em_atendimento");
+  const [statusFilter, setStatusFilter] = useState<ConversationStatusFilter>("fila");
 
   const selectedContact = contacts.find((c) => c.id === selectedContactId) || null;
 
+  const matchesStatus = (status: string | undefined, tab: ConversationStatusFilter) => {
+    const s = status || "fila";
+    if (tab === "fila") return s === "fila" || s === "aguardando";
+    if (tab === "em_atendimento") return s === "em_atendimento";
+    if (tab === "encerrado") return s === "encerrado" || s === "finalizado";
+    return true;
+  };
+
   const filteredContacts = contacts.filter((c) =>
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.phone.includes(searchTerm)
+    matchesStatus(c.conversation_status, statusFilter) &&
+    (c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.phone.includes(searchTerm))
   );
 
   // Map InboxContact -> SidebarContact
@@ -189,23 +176,6 @@ export default function AccordStack() {
 
   return (
     <div className="flex h-[calc(100vh-3rem)] bg-background overflow-hidden">
-      {/* Nav Rail */}
-      <div className="w-14 flex-shrink-0 border-r border-border/60 bg-background flex flex-col items-center py-3 gap-1">
-        <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center mb-4 flex-shrink-0">
-          <MessageSquare className="w-4 h-4 text-primary-foreground" />
-        </div>
-
-        <NavIcon icon={<MessageSquare size={16} />} active title="Atendimentos" />
-        <NavIcon icon={<Users size={16} />} title="Contatos" />
-
-        <div className="mt-auto flex flex-col items-center gap-2">
-          <NavIcon icon={<Settings size={16} />} title="Configurações" onClick={() => navigate("/perfil")} />
-          <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-[11px] font-medium text-primary-foreground cursor-pointer border-2 border-primary/30">
-            A
-          </div>
-        </div>
-      </div>
-
       <InboxSidebar
         contacts={sidebarContacts}
         selectedId={selectedContactId}
