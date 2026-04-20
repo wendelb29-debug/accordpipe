@@ -524,6 +524,18 @@ async function handleIncomingMessage(
       updates.avatar_url = sender_avatar;
       updates.avatar_synced_at = new Date().toISOString();
     }
+    if (sender_name) {
+      // Only overwrite if existing name is just the phone (not yet personalized)
+      const { data: currentContact } = await supabase
+        .from("whatsapp_contacts")
+        .select("name")
+        .eq("id", contact.id)
+        .maybeSingle();
+      const cur = String(currentContact?.name || "").replace(/\D/g, "");
+      if (!currentContact?.name || cur === primaryPhone || cur === normalizedPhone) {
+        updates.name = sender_name;
+      }
+    }
     await supabase.from("whatsapp_contacts").update(updates).eq("id", contact.id);
   }
 
