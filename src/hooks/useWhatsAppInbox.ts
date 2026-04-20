@@ -154,10 +154,18 @@ export function useWhatsAppInbox() {
     if (contactId) {
       const contact = contacts.find((item) => item.id === contactId);
       fetchMessages(contactId, contact?.phone);
+      // Fire-and-forget: sync name + avatar from UazAPI
+      supabase.functions.invoke("whatsapp-sync-contact", { body: { contact_id: contactId } })
+        .then((res: any) => {
+          if (res?.data?.success && (res.data.avatar_url || res.data.name)) {
+            fetchContacts();
+          }
+        })
+        .catch(() => undefined);
     } else {
       setMessages([]);
     }
-  }, [contacts, fetchMessages]);
+  }, [contacts, fetchMessages, fetchContacts]);
 
   const sendMessage = useCallback(async (
     text: string,
