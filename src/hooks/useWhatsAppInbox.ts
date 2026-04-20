@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -294,7 +294,14 @@ export function useWhatsAppInbox() {
     return () => clearInterval(interval);
   }, [fetchContacts, checkConnection]);
 
-  // Realtime for new messages
+  // Keep selected contact id in a ref so the realtime channel
+  // doesn't get torn down/recreated every time the user switches conversation.
+  const selectedContactIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    selectedContactIdRef.current = selectedContactId;
+  }, [selectedContactId]);
+
+  // Realtime for new messages — channel persists for the lifetime of companyId
   useEffect(() => {
     if (!companyId) return;
 
@@ -310,8 +317,11 @@ export function useWhatsAppInbox() {
         },
         (payload) => {
           const newMsg = payload.new as InboxMessage;
-          if (newMsg.contact_id === selectedContactId) {
-            setMessages(prev => [...prev, newMsg]);
+          if (newMsg.contact_id === selectedContactIdRef.current) {
+            setMessages(prev => {
+              if (prev.some(m => m.id === newMsg.id)) return prev;
+              return [...prev, newMsg];
+            });
           }
           fetchContacts();
         }
@@ -326,17 +336,21 @@ export function useWhatsAppInbox() {
         },
         (payload) => {
           const updated = payload.new as InboxMessage;
-          if (updated.contact_id === selectedContactId) {
+          if (updated.contact_id === selectedContactIdRef.current) {
             setMessages(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated } : m));
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          console.warn("[inbox realtime] channel status:", status);
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [companyId, selectedContactId, fetchContacts]);
+  }, [companyId, fetchContacts]);
 
   // Realtime for contact updates
   useEffect(() => {
