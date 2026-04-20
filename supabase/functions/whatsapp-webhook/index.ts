@@ -466,6 +466,14 @@ async function handleIncomingMessage(
     }
   }
 
+  // Fetch avatar via uazapi if not provided in payload, or if existing contact has no avatar
+  if (!sender_avatar && (provider === "uazapi" || !provider)) {
+    if (!contact || !contact.avatar_url) {
+      const fetched = await fetchUazapiAvatar(supabase, company_id, primaryPhone);
+      if (fetched) sender_avatar = fetched;
+    }
+  }
+
   if (!contact) {
     const { data: newContact, error } = await supabase
       .from("whatsapp_contacts")
