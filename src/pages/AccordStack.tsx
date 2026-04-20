@@ -8,31 +8,9 @@ import { TransferDialog } from "@/components/accord-inbox/TransferDialog";
 import { ContactDetailSidebar } from "@/components/accord-inbox/ContactDetailSidebar";
 import { CreateDemandModal } from "@/components/accord-inbox/CreateDemandModal";
 import { NewConversationModal } from "@/components/accord-inbox/NewConversationModal";
-import { WifiOff, User, MessageSquare, Users, Settings } from "lucide-react";
+import { WifiOff, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
-
-function NavIcon({
-  icon, active, title, onClick,
-}: {
-  icon: React.ReactNode; active?: boolean; title?: string; onClick?: () => void;
-}) {
-  return (
-    <button
-      title={title}
-      onClick={onClick}
-      className={cn(
-        "w-9 h-9 rounded-xl flex items-center justify-center transition-all",
-        active
-          ? "bg-primary/15 text-primary"
-          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-      )}
-    >
-      {icon}
-    </button>
-  );
-}
 
 const FILTER_LABEL_TO_VALUE: Record<string, InboxFilter> = {
   Minhas: "mine",
