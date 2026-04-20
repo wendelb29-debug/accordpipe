@@ -379,14 +379,14 @@ export function InboxChat({
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-background">
-      <div className="flex items-center gap-2.5 px-3 sm:px-4 py-3 border-b border-border/60 bg-background flex-shrink-0">
+      <div className="flex items-center gap-2 px-2 sm:px-4 py-2.5 sm:py-3 border-b border-border/60 bg-background flex-shrink-0">
         {onBack && (
           <button
             onClick={onBack}
-            className="md:hidden -ml-1 mr-1 w-9 h-9 rounded-lg flex items-center justify-center text-foreground/80 hover:bg-muted/60 active:bg-muted transition-colors"
+            className="md:hidden -ml-1 w-10 h-10 rounded-lg flex items-center justify-center text-foreground/80 hover:bg-muted/60 active:bg-muted transition-colors flex-shrink-0"
             aria-label="Voltar para conversas"
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft size={22} />
           </button>
         )}
         <div className="relative flex-shrink-0">
@@ -399,20 +399,22 @@ export function InboxChat({
           <p className="text-[14px] font-medium text-foreground truncate">{contact.name}</p>
           <p className="text-[11px] text-muted-foreground truncate">{contact.phone}</p>
         </div>
-        <StatusPill status={contact.conversationStatus} />
-        <div className="flex items-center gap-1 ml-2">
-          <button className="w-8 h-8 rounded-lg border border-border/50 flex items-center justify-center text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all">
+        <div className="hidden sm:block"><StatusPill status={contact.conversationStatus} /></div>
+        <div className="flex items-center gap-1 ml-1 sm:ml-2 flex-shrink-0">
+          <button className="hidden sm:flex w-8 h-8 rounded-lg border border-border/50 items-center justify-center text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all">
             <Search size={14} />
           </button>
           {onTransfer && (
             <button onClick={() => onTransfer(contact.id)}
-              className="w-8 h-8 rounded-lg border border-border/50 flex items-center justify-center text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all">
-              <ArrowLeftRight size={14} />
+              aria-label="Transferir"
+              className="w-9 h-9 sm:w-8 sm:h-8 rounded-lg border border-border/50 flex items-center justify-center text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all">
+              <ArrowLeftRight size={15} />
             </button>
           )}
           {onToggleInfo && (
             <button onClick={onToggleInfo}
-              className={cn("w-8 h-8 rounded-lg border flex items-center justify-center transition-all",
+              aria-label="Informações"
+              className={cn("hidden sm:flex w-8 h-8 rounded-lg border items-center justify-center transition-all",
                 showInfo ? "border-primary/40 bg-primary/10 text-primary" : "border-border/50 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
               )}>
               <Info size={14} />
@@ -420,12 +422,13 @@ export function InboxChat({
           )}
           {onUpdateStatus && (
             <button onClick={() => onUpdateStatus(contact.id, "encerrado")}
-              className="w-8 h-8 rounded-lg border border-border/50 flex items-center justify-center text-muted-foreground hover:bg-red-50 hover:text-red-500 hover:border-red-200 dark:hover:bg-red-950/30 dark:hover:border-red-900 transition-all">
-              <X size={14} />
+              aria-label="Encerrar atendimento"
+              className="w-9 h-9 sm:w-8 sm:h-8 rounded-lg border border-border/50 flex items-center justify-center text-muted-foreground hover:bg-red-50 hover:text-red-500 hover:border-red-200 dark:hover:bg-red-950/30 dark:hover:border-red-900 transition-all">
+              <X size={15} />
             </button>
           )}
-          <button className="w-8 h-8 rounded-lg border border-border/50 flex items-center justify-center text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all">
-            <MoreVertical size={14} />
+          <button aria-label="Mais opções" className="w-9 h-9 sm:w-8 sm:h-8 rounded-lg border border-border/50 flex items-center justify-center text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all">
+            <MoreVertical size={15} />
           </button>
         </div>
       </div>
