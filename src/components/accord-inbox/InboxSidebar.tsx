@@ -200,8 +200,11 @@ export function InboxSidebar({
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
                   <span className="text-[10px] text-muted-foreground">{c.lastMessageTime}</span>
                   {c.unreadCount ? (
-                    <span className="bg-primary text-primary-foreground rounded-full text-[10px] px-1.5 py-0 font-medium">
-                      {c.unreadCount}
+                    <span
+                      className="min-w-[20px] h-[20px] inline-flex items-center justify-center rounded-full bg-emerald-500 text-white text-[11px] font-bold px-1.5 shadow-sm"
+                      aria-label={`${c.unreadCount} mensagens não lidas`}
+                    >
+                      {c.unreadCount > 99 ? "99+" : c.unreadCount}
                     </span>
                   ) : chan ? (
                     <span className={cn("text-[10px] px-1.5 py-0 rounded-full", chan.cls)}>{chan.label}</span>
