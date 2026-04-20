@@ -343,6 +343,21 @@ Deno.serve(async (req) => {
 // ───────────────────────────────────────────────────────────
 // Shared incoming-message handler (used by both auth paths)
 // ───────────────────────────────────────────────────────────
+function normalizePhoneVariants(rawPhone: string): string[] {
+  const digits = String(rawPhone || "").replace(/\D/g, "");
+  if (!digits) return [];
+
+  const variants = new Set<string>([digits]);
+
+  if (digits.startsWith("55") && digits.length > 11) {
+    variants.add(digits.slice(2));
+  } else if (!digits.startsWith("55") && digits.length >= 10) {
+    variants.add(`55${digits}`);
+  }
+
+  return [...variants];
+}
+
 async function handleIncomingMessage(
   supabase: any,
   data: {
@@ -358,6 +373,9 @@ async function handleIncomingMessage(
   },
 ) {
   const { company_id, phone, message, sender_name, sender_avatar, message_type = "text", media_url, external_id, provider } = data;
+  const normalizedPhone = String(phone || "").replace(/\D/g, "");
+  const phoneVariants = normalizePhoneVariants(normalizedPhone);
+  const primaryPhone = phoneVariants.find((value) => value.startsWith("55")) || normalizedPhone;
 
   // 1. Workspace routing
   let workspace_id: string | null = null;
@@ -374,7 +392,7 @@ async function handleIncomingMessage(
         workspace_id = rule.workspace_id; break;
       }
       if (rule.rule_type === "ddd") {
-        const phoneClean = phone.replace(/\D/g, "");
+        const phoneClean = primaryPhone;
         const ddd = phoneClean.length >= 12 ? phoneClean.slice(2, 4) : phoneClean.slice(0, 2);
         if (ddd === rule.rule_value) { workspace_id = rule.workspace_id; break; }
       }
@@ -390,20 +408,42 @@ async function handleIncomingMessage(
     if (defaultWs) workspace_id = defaultWs.workspace_id;
   }
 
-  // 2. Find or create contact
-  let { data: contact } = await supabase
-    .from("whatsapp_contacts")
-    .select("id, lead_id, conversation_status, assigned_to")
-    .eq("company_id", company_id)
-    .eq("phone", phone)
-    .maybeSingle();
+  // 2. Find or create contact using normalized phone variants
+  let contact: any = null;
+  for (const variant of phoneVariants) {
+    const { data: existingContact } = await supabase
+      .from("whatsapp_contacts")
+      .select("id, lead_id, conversation_status, assigned_to, phone")
+      .eq("company_id", company_id)
+      .eq("phone", variant)
+      .maybeSingle();
+
+    if (existingContact) {
+      contact = existingContact;
+      break;
+    }
+  }
+
+  if (!contact && phoneVariants.length > 1) {
+    const localSuffix = phoneVariants.map((value) => value.slice(-11)).find(Boolean);
+    if (localSuffix) {
+      const { data: fallbackContacts } = await supabase
+        .from("whatsapp_contacts")
+        .select("id, lead_id, conversation_status, assigned_to, phone")
+        .eq("company_id", company_id)
+        .like("phone", `%${localSuffix}`)
+        .limit(1);
+      contact = fallbackContacts?.[0] ?? null;
+    }
+  }
 
   if (!contact) {
     const { data: newContact, error } = await supabase
       .from("whatsapp_contacts")
       .insert({
-        company_id, phone,
-        name: sender_name || phone,
+        company_id,
+        phone: primaryPhone,
+        name: sender_name || primaryPhone,
         avatar_url: sender_avatar || null,
         avatar_synced_at: sender_avatar ? new Date().toISOString() : null,
         last_message: message,
@@ -411,12 +451,16 @@ async function handleIncomingMessage(
         workspace_id,
         conversation_status: "aguardando",
       })
-      .select("id, lead_id, conversation_status, assigned_to")
+      .select("id, lead_id, conversation_status, assigned_to, phone")
       .single();
     if (error) throw error;
     contact = newContact;
   } else {
-    const updates: any = { last_message: message, last_message_at: new Date().toISOString() };
+    const updates: any = {
+      phone: primaryPhone,
+      last_message: message,
+      last_message_at: new Date().toISOString(),
+    };
     if (contact.conversation_status === "finalizado") updates.conversation_status = "aguardando";
     if (sender_avatar) {
       updates.avatar_url = sender_avatar;
@@ -425,14 +469,21 @@ async function handleIncomingMessage(
     await supabase.from("whatsapp_contacts").update(updates).eq("id", contact.id);
   }
 
-  // 3. Ensure lead exists (dedup by phone)
-  if (!contact!.lead_id) {
-    const { data: existingLead } = await supabase
-      .from("crm_leads")
-      .select("id")
-      .eq("servidor_id", company_id)
-      .eq("phone", phone)
-      .maybeSingle();
+  // 3. Ensure lead exists (dedup by normalized phone)
+  if (!contact.lead_id) {
+    let existingLead: any = null;
+    for (const variant of phoneVariants) {
+      const { data } = await supabase
+        .from("crm_leads")
+        .select("id")
+        .eq("servidor_id", company_id)
+        .eq("phone", variant)
+        .maybeSingle();
+      if (data) {
+        existingLead = data;
+        break;
+      }
+    }
 
     let leadId: string;
     if (existingLead) {
@@ -440,9 +491,11 @@ async function handleIncomingMessage(
     } else {
       const leadInsert: any = {
         servidor_id: company_id,
-        company_name: sender_name || phone,
+        company_name: sender_name || primaryPhone,
         contact_name: sender_name || null,
-        phone, source: "WhatsApp", stage: "novos",
+        phone: primaryPhone,
+        source: "WhatsApp",
+        stage: "novos",
         tags: ["WhatsApp", "Inbound"],
       };
       if (workspace_id) leadInsert.workspace_id = workspace_id;
@@ -453,21 +506,21 @@ async function handleIncomingMessage(
       await supabase.from("crm_lead_activities").insert({
         lead_id: leadId, servidor_id: company_id, type: "created",
         title: "Lead criado automaticamente via WhatsApp",
-        description: `Contato: ${sender_name || phone}`,
+        description: `Contato: ${sender_name || primaryPhone}`,
       });
     }
-    await supabase.from("whatsapp_contacts").update({ lead_id: leadId }).eq("id", contact!.id);
-    contact!.lead_id = leadId;
+    await supabase.from("whatsapp_contacts").update({ lead_id: leadId }).eq("id", contact.id);
+    contact.lead_id = leadId;
   }
 
   // 4. Auto-move standby → novos
-  if (contact!.lead_id) {
+  if (contact.lead_id) {
     const { data: lead } = await supabase
-      .from("crm_leads").select("stage").eq("id", contact!.lead_id).single();
+      .from("crm_leads").select("stage").eq("id", contact.lead_id).single();
     if (lead && lead.stage === "standby") {
       await supabase.from("crm_leads")
         .update({ stage: "novos", stage_entered_at: new Date().toISOString() })
-        .eq("id", contact!.lead_id);
+        .eq("id", contact.lead_id);
     }
   }
 
@@ -475,27 +528,32 @@ async function handleIncomingMessage(
   const { error: msgError } = await supabase
     .from("whatsapp_messages")
     .insert({
-      company_id, contact_id: contact!.id, phone, message,
-      direction: "inbound", status: "delivered",
+      company_id,
+      contact_id: contact.id,
+      phone: primaryPhone,
+      message,
+      direction: "inbound",
+      status: "delivered",
       delivered_at: new Date().toISOString(),
       external_message_id: external_id ?? null,
-      message_type, media_url,
+      message_type,
+      media_url,
       metadata: { external_id: external_id ?? null, provider: provider ?? null },
     });
   if (msgError) throw msgError;
 
   // 6. Notification
-  if (contact!.assigned_to) {
+  if (contact.assigned_to) {
     await supabase.from("notifications").insert({
-      user_id: contact!.assigned_to,
+      user_id: contact.assigned_to,
       title: "Nova mensagem WhatsApp",
-      message: `${sender_name || phone}: ${(message || "").slice(0, 100)}`,
+      message: `${sender_name || primaryPhone}: ${(message || "").slice(0, 100)}`,
       type: "whatsapp", link: "/atendimento", servidor_id: company_id,
     });
   }
 
   return new Response(
-    JSON.stringify({ success: true, lead_id: contact!.lead_id }),
+    JSON.stringify({ success: true, lead_id: contact.lead_id }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } },
   );
 }
