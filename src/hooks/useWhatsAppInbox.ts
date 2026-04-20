@@ -320,6 +320,14 @@ export function useWhatsAppInbox() {
         },
         (payload) => {
           const newMsg = payload.new as InboxMessage;
+          console.log("[inbox realtime] INSERT received", {
+            msgId: newMsg.id,
+            msgContactId: newMsg.contact_id,
+            msgPhone: newMsg.phone,
+            msgDirection: newMsg.direction,
+            selectedContactId: selectedContactIdRef.current,
+            matches: newMsg.contact_id === selectedContactIdRef.current,
+          });
           if (newMsg.contact_id === selectedContactIdRef.current) {
             setMessages(prev => {
               if (prev.some(m => m.id === newMsg.id)) return prev;
@@ -345,9 +353,7 @@ export function useWhatsAppInbox() {
         }
       )
       .subscribe((status) => {
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          console.warn("[inbox realtime] channel status:", status);
-        }
+        console.log("[inbox realtime] channel status:", status, "companyId:", companyId);
       });
 
     return () => {
