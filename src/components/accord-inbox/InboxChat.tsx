@@ -254,6 +254,8 @@ export function InboxChat({
 }: InboxChatProps) {
   const [text, setText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
+  const [recordSeconds, setRecordSeconds] = useState(0);
+  const [recordStream, setRecordStream] = useState<MediaStream | null>(null);
   const [uploading, setUploading] = useState(false);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const msgsRef = useRef<HTMLDivElement>(null);
@@ -262,6 +264,7 @@ export function InboxChat({
   const audioInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const recordTimerRef = useRef<number | null>(null);
 
   const isClosed = contact?.conversationStatus === "encerrado" || contact?.conversationStatus === "finalizado";
 
@@ -313,11 +316,15 @@ export function InboxChat({
         const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         const file = new File([blob], `audio-${Date.now()}.webm`, { type: "audio/webm" });
         stream.getTracks().forEach((t) => t.stop());
+        setRecordStream(null);
         await uploadAndSend(file, "audio");
       };
       mediaRecorderRef.current = mr;
       mr.start();
+      setRecordStream(stream);
       setIsRecording(true);
+      setRecordSeconds(0);
+      recordTimerRef.current = window.setInterval(() => setRecordSeconds((s) => s + 1), 1000);
     } catch {
       const { toast } = await import("sonner");
       toast.error("Não foi possível acessar o microfone");
@@ -327,6 +334,27 @@ export function InboxChat({
   const stopRecording = () => {
     mediaRecorderRef.current?.stop();
     setIsRecording(false);
+    if (recordTimerRef.current) {
+      clearInterval(recordTimerRef.current);
+      recordTimerRef.current = null;
+    }
+  };
+
+  const cancelRecording = () => {
+    const mr = mediaRecorderRef.current;
+    if (mr) {
+      mr.ondataavailable = null as any;
+      mr.onstop = null as any;
+      try { mr.stop(); } catch { /* noop */ }
+    }
+    recordStream?.getTracks().forEach((t) => t.stop());
+    setRecordStream(null);
+    setIsRecording(false);
+    audioChunksRef.current = [];
+    if (recordTimerRef.current) {
+      clearInterval(recordTimerRef.current);
+      recordTimerRef.current = null;
+    }
   };
 
   if (!contact) {
