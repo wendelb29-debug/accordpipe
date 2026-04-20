@@ -72,11 +72,18 @@ function pickText(d: any): string {
 
 function pickPhone(d: any): string {
   if (!d) return "";
-  const candidates = [
+  // Prefer real phone numbers (sender_pn, @s.whatsapp.net) over LIDs (@lid - WhatsApp internal IDs)
+  const preferred = [
+    d.sender_pn, d.senderPn, d?.key?.senderPn,
     d.sender, d.from, d.chatid, d.chatId, d.number, d.phone, d.remoteJid,
     d?.key?.remoteJid, d?.message?.from, d?.contact?.phone,
   ];
-  for (const c of candidates) {
+  // First pass: skip @lid values
+  for (const c of preferred) {
+    if (typeof c === "string" && c.trim() && !c.includes("@lid")) return c;
+  }
+  // Fallback: accept anything (last resort)
+  for (const c of preferred) {
     if (typeof c === "string" && c.trim()) return c;
   }
   return "";
