@@ -43,6 +43,30 @@ function normalizePhone(rawPhone?: string | null) {
   return String(rawPhone || "").replace(/\D/g, "");
 }
 
+/** Short two-tone beep using Web Audio API (no asset required) */
+function playInboxBeep() {
+  try {
+    const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const playTone = (freq: number, startTime: number, duration: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(0.25, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    };
+    const now = ctx.currentTime;
+    playTone(880, now, 0.12);
+    playTone(1100, now + 0.14, 0.12);
+  } catch { /* noop */ }
+}
+
 function buildPhoneVariants(rawPhone?: string | null) {
   const digits = normalizePhone(rawPhone);
   if (!digits) return [] as string[];
@@ -77,6 +101,8 @@ export function useWhatsAppInbox() {
   const [filter, setFilter] = useState<InboxFilter>("mine");
   const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState<"disconnected" | "connecting" | "connected">("disconnected");
+  const [unreadByContact, setUnreadByContact] = useState<Record<string, number>>({});
+  const originalTitleRef = useRef<string>(typeof document !== "undefined" ? document.title : "Accord Stack");
   const [activeIntegration, setActiveIntegration] = useState<{
     id?: string;
     provider: string;
@@ -152,6 +178,13 @@ export function useWhatsAppInbox() {
   const selectContact = useCallback((contactId: string | null) => {
     setSelectedContactId(contactId);
     if (contactId) {
+      // Clear unread badge for this conversation
+      setUnreadByContact(prev => {
+        if (!prev[contactId]) return prev;
+        const next = { ...prev };
+        delete next[contactId];
+        return next;
+      });
       const contact = contacts.find((item) => item.id === contactId);
       fetchMessages(contactId, contact?.phone);
       // Fire-and-forget: sync name + avatar from UazAPI
@@ -400,21 +433,53 @@ export function useWhatsAppInbox() {
             selectedContactPhoneRef.current,
           );
 
-          console.log("[inbox realtime] INSERT received", {
-            msgId: newMsg.id,
-            msgContactId: newMsg.contact_id,
-            msgPhone: newMsg.phone,
-            msgDirection: newMsg.direction,
-            selectedContactId: selectedContactIdRef.current,
-            selectedContactPhone: selectedContactPhoneRef.current,
-            matches,
-          });
+          const isOpen = matches && document.visibilityState === "visible" && document.hasFocus();
+          const isInbound = newMsg.direction === "inbound";
 
           if (matches) {
             setMessages(prev => {
               if (prev.some(m => m.id === newMsg.id)) return prev;
               return [...prev, newMsg];
             });
+          }
+
+          // Inbound notifications: only when conversation isn't actively open
+          if (isInbound && !isOpen) {
+            // Increment unread badge
+            setUnreadByContact(prev => ({
+              ...prev,
+              [newMsg.contact_id]: (prev[newMsg.contact_id] || 0) + 1,
+            }));
+
+            // Sound
+            playInboxBeep();
+
+            // Browser notification (uses existing permission)
+            const contact = contacts.find(c => c.id === newMsg.contact_id);
+            const title = contact?.name || newMsg.phone || "Nova mensagem";
+            const previewByType: Record<string, string> = {
+              audio: "🎵 Áudio",
+              image: "📷 Imagem",
+              file: "📄 Arquivo",
+              document: "📄 Arquivo",
+              video: "🎥 Vídeo",
+            };
+            const body = previewByType[newMsg.message_type] || newMsg.message || "Nova mensagem";
+            try {
+              if ("Notification" in window && Notification.permission === "granted") {
+                const n = new Notification(title, {
+                  body,
+                  icon: contact?.avatar_url || "/favicon.ico",
+                  badge: "/favicon.ico",
+                  tag: `inbox-${newMsg.contact_id}`,
+                });
+                n.onclick = () => {
+                  window.focus();
+                  setSelectedContactId(newMsg.contact_id);
+                  n.close();
+                };
+              }
+            } catch { /* noop */ }
           }
 
           fetchContacts();
@@ -468,6 +533,14 @@ export function useWhatsAppInbox() {
     };
   }, [companyId, fetchContacts]);
 
+  // Update browser tab title with total unread count
+  const totalUnread = Object.values(unreadByContact).reduce((sum, n) => sum + n, 0);
+  useEffect(() => {
+    const original = originalTitleRef.current;
+    document.title = totalUnread > 0 ? `(${totalUnread > 99 ? "99+" : totalUnread}) ${original}` : original;
+    return () => { document.title = original; };
+  }, [totalUnread]);
+
   return {
     contacts,
     messages,
@@ -487,5 +560,6 @@ export function useWhatsAppInbox() {
     updateConversationStatus,
     companyId,
     refetchContacts: fetchContacts,
+    unreadByContact,
   };
 }
