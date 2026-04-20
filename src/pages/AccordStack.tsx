@@ -136,10 +136,14 @@ export default function AccordStack() {
     .map((m) => `${m.direction === "inbound" ? "Cliente" : "Atendente"}: ${m.message}`)
     .join("\n");
 
-  // Aceita "connected", "unknown", null, "" — bloqueia apenas "disconnected"/"error"
-  const isIntegrationConnected = !!activeIntegration?.server_url &&
-    activeIntegration?.connection_status !== "disconnected" &&
-    activeIntegration?.connection_status !== "error";
+  // Considera conectado se a integração está ativa OU explicitamente "connected".
+  // Só bloqueia se status for explicitamente "disconnected"/"error".
+  const isIntegrationConnected = !!activeIntegration && (
+    activeIntegration.connection_status === "connected" ||
+    (!!activeIntegration.is_active &&
+      activeIntegration.connection_status !== "disconnected" &&
+      activeIntegration.connection_status !== "error")
+  );
 
   console.log("[AccordStack] activeIntegration:", activeIntegration, "→ isConnected:", isIntegrationConnected);
 
