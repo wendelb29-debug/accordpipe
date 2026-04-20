@@ -95,6 +95,8 @@ export function useWhatsAppInbox() {
   const fetchMessages = useCallback(async (contactId: string) => {
     if (!companyId) return;
 
+    console.log("[inbox] fetchMessages", { contactId, companyId });
+
     const { data, error } = await supabase
       .from("whatsapp_messages")
       .select("*")
@@ -103,9 +105,10 @@ export function useWhatsAppInbox() {
       .order("created_at", { ascending: true });
 
     if (error) {
-      console.error("Error fetching messages:", error);
+      console.error("[inbox] Error fetching messages:", error);
       return;
     }
+    console.log("[inbox] fetched", data?.length, "messages for contact", contactId);
     setMessages((data || []) as InboxMessage[]);
   }, [companyId]);
 
@@ -317,6 +320,14 @@ export function useWhatsAppInbox() {
         },
         (payload) => {
           const newMsg = payload.new as InboxMessage;
+          console.log("[inbox realtime] INSERT received", {
+            msgId: newMsg.id,
+            msgContactId: newMsg.contact_id,
+            msgPhone: newMsg.phone,
+            msgDirection: newMsg.direction,
+            selectedContactId: selectedContactIdRef.current,
+            matches: newMsg.contact_id === selectedContactIdRef.current,
+          });
           if (newMsg.contact_id === selectedContactIdRef.current) {
             setMessages(prev => {
               if (prev.some(m => m.id === newMsg.id)) return prev;
@@ -342,9 +353,7 @@ export function useWhatsAppInbox() {
         }
       )
       .subscribe((status) => {
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          console.warn("[inbox realtime] channel status:", status);
-        }
+        console.log("[inbox realtime] channel status:", status, "companyId:", companyId);
       });
 
     return () => {
