@@ -191,36 +191,44 @@ export default function AccordStack() {
 
   return (
     <div className="flex h-[calc(100vh-3rem)] bg-background overflow-hidden">
-      <InboxSidebar
-        contacts={sidebarContacts}
-        selectedId={selectedContactId}
-        onSelect={selectContact}
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        filter={FILTER_VALUE_TO_LABEL[filter]}
-        onFilterChange={(label) => setFilter(FILTER_LABEL_TO_VALUE[label] || "mine")}
-        isAdmin={isAdminOrCeo}
-        loading={loading}
-        statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
-        onNewConversation={() => setNewConvOpen(true)}
-      />
+      <div className={cn(
+        "flex-shrink-0 w-full md:w-auto",
+        showChatOnly && "hidden md:block",
+      )}>
+        <InboxSidebar
+          contacts={sidebarContacts}
+          selectedId={selectedContactId}
+          onSelect={selectContact}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          filter={FILTER_VALUE_TO_LABEL[filter]}
+          onFilterChange={(label) => setFilter(FILTER_LABEL_TO_VALUE[label] || "mine")}
+          isAdmin={isAdminOrCeo}
+          loading={loading}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          onNewConversation={() => setNewConvOpen(true)}
+        />
+      </div>
 
-      <InboxChat
-        contact={chatContact}
-        messages={chatMessages}
-        onSendMessage={sendMessage}
-        onTransfer={handleTransfer}
-        onAssignToMe={handleAssignToMe}
-        isAdmin={isAdminOrCeo}
-        companyId={companyId}
-        onToggleInfo={() => setShowInfo(!showInfo)}
-        showInfo={showInfo}
-        onCreateDemand={() => setDemandModalOpen(true)}
-        onUpdateStatus={handleUpdateStatus}
-      />
+      <div className={cn("flex-1 min-w-0", showListOnly && "hidden md:flex")}>
+        <InboxChat
+          contact={chatContact}
+          messages={chatMessages}
+          onSendMessage={sendMessage}
+          onTransfer={handleTransfer}
+          onAssignToMe={handleAssignToMe}
+          isAdmin={isAdminOrCeo}
+          companyId={companyId}
+          onToggleInfo={() => setShowInfo(!showInfo)}
+          showInfo={showInfo}
+          onCreateDemand={() => setDemandModalOpen(true)}
+          onUpdateStatus={handleUpdateStatus}
+          onBack={isMobile ? () => selectContact(null) : undefined}
+        />
+      </div>
 
-      {showInfo && selectedContact && (
+      {showInfo && selectedContact && !isMobile && (
         <ContactDetailSidebar
           contact={selectedContact}
           onClose={() => setShowInfo(false)}
