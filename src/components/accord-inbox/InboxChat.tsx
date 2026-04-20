@@ -317,7 +317,7 @@ export function InboxChat({
           <div className="flex-1 h-px bg-border/40" />
         </div>
         <div className="relative z-10 flex flex-col gap-1.5">
-          {allMessages.map((msg) => (
+          {messages.map((msg) => (
             <MessageBubble key={msg.id} msg={msg} />
           ))}
         </div>
@@ -397,7 +397,6 @@ export function InboxChat({
             </div>
           </>
         )}
-      </div>
       </div>
     </div>
   );
