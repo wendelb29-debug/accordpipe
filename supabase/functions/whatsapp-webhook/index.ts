@@ -386,8 +386,12 @@ async function fetchUazapiAvatar(
     }
     const json: any = await res.json().catch(() => null);
     const pic = json?.image || json?.imgUrl || json?.profilePicture || json?.url || json?.profile_picture;
-    console.log("[fetchUazapiAvatar] result for", phone, "=>", pic ? "found" : "none");
-    return typeof pic === "string" && pic.startsWith("http") ? pic : null;
+    const name = json?.name || json?.pushname || json?.verifiedName || json?.shortName || null;
+    console.log("[fetchUazapiAvatar] result for", phone, "=>", pic ? "img" : "no-img", name ? "name" : "no-name");
+    return {
+      image: typeof pic === "string" && pic.startsWith("http") ? pic : null,
+      name: typeof name === "string" && name.trim() ? name.trim() : null,
+    };
   } catch (e) {
     console.warn("[fetchUazapiAvatar] failed:", (e as Error).message);
     return null;
@@ -408,8 +412,9 @@ async function handleIncomingMessage(
     provider?: string;
   },
 ) {
-  const { company_id, phone, message, sender_name, sender_avatar: payloadAvatar, message_type = "text", media_url, external_id, provider } = data;
+  const { company_id, phone, message, sender_name: payloadName, sender_avatar: payloadAvatar, message_type = "text", media_url, external_id, provider } = data;
   let sender_avatar = payloadAvatar;
+  let sender_name = payloadName;
   const normalizedPhone = String(phone || "").replace(/\D/g, "");
   const phoneVariants = normalizePhoneVariants(normalizedPhone);
   const primaryPhone = phoneVariants.find((value) => value.startsWith("55")) || normalizedPhone;
@@ -474,11 +479,12 @@ async function handleIncomingMessage(
     }
   }
 
-  // Fetch avatar via uazapi if not provided in payload, or if existing contact has no avatar
-  if (!sender_avatar && (provider === "uazapi" || !provider)) {
+  // Fetch avatar+name via uazapi if not provided in payload, or if existing contact has no avatar
+  if ((provider === "uazapi" || !provider) && (!sender_avatar || !sender_name)) {
     if (!contact || !contact.avatar_url) {
       const fetched = await fetchUazapiAvatar(supabase, company_id, primaryPhone);
-      if (fetched) sender_avatar = fetched;
+      if (fetched?.image && !sender_avatar) sender_avatar = fetched.image;
+      if (fetched?.name && !sender_name) sender_name = fetched.name;
     }
   }
 
@@ -517,6 +523,18 @@ async function handleIncomingMessage(
     if (sender_avatar) {
       updates.avatar_url = sender_avatar;
       updates.avatar_synced_at = new Date().toISOString();
+    }
+    if (sender_name) {
+      // Only overwrite if existing name is just the phone (not yet personalized)
+      const { data: currentContact } = await supabase
+        .from("whatsapp_contacts")
+        .select("name")
+        .eq("id", contact.id)
+        .maybeSingle();
+      const cur = String(currentContact?.name || "").replace(/\D/g, "");
+      if (!currentContact?.name || cur === primaryPhone || cur === normalizedPhone) {
+        updates.name = sender_name;
+      }
     }
     await supabase.from("whatsapp_contacts").update(updates).eq("id", contact.id);
   }
