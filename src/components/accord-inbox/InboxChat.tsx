@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import {
-  Search, ArrowLeftRight, Info, X, Paperclip, Image, Mic,
+  Search, ArrowLeftRight, Info, X, Paperclip, Image, Mic, Trash2,
   Square, Send, Bold, Italic, Zap, FileText, Play, Pause,
   MoreVertical, Users, Check, CheckCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AiImprovePopover } from "./AiImprovePopover";
+import { AudioVisualizer } from "./AudioVisualizer";
 
 interface ChatMessage {
   id: string;
@@ -254,6 +255,8 @@ export function InboxChat({
 }: InboxChatProps) {
   const [text, setText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
+  const [recordSeconds, setRecordSeconds] = useState(0);
+  const [recordStream, setRecordStream] = useState<MediaStream | null>(null);
   const [uploading, setUploading] = useState(false);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const msgsRef = useRef<HTMLDivElement>(null);
@@ -262,6 +265,7 @@ export function InboxChat({
   const audioInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const recordTimerRef = useRef<number | null>(null);
 
   const isClosed = contact?.conversationStatus === "encerrado" || contact?.conversationStatus === "finalizado";
 
@@ -313,11 +317,15 @@ export function InboxChat({
         const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         const file = new File([blob], `audio-${Date.now()}.webm`, { type: "audio/webm" });
         stream.getTracks().forEach((t) => t.stop());
+        setRecordStream(null);
         await uploadAndSend(file, "audio");
       };
       mediaRecorderRef.current = mr;
       mr.start();
+      setRecordStream(stream);
       setIsRecording(true);
+      setRecordSeconds(0);
+      recordTimerRef.current = window.setInterval(() => setRecordSeconds((s) => s + 1), 1000);
     } catch {
       const { toast } = await import("sonner");
       toast.error("Não foi possível acessar o microfone");
@@ -327,6 +335,27 @@ export function InboxChat({
   const stopRecording = () => {
     mediaRecorderRef.current?.stop();
     setIsRecording(false);
+    if (recordTimerRef.current) {
+      clearInterval(recordTimerRef.current);
+      recordTimerRef.current = null;
+    }
+  };
+
+  const cancelRecording = () => {
+    const mr = mediaRecorderRef.current;
+    if (mr) {
+      mr.ondataavailable = null as any;
+      mr.onstop = null as any;
+      try { mr.stop(); } catch { /* noop */ }
+    }
+    recordStream?.getTracks().forEach((t) => t.stop());
+    setRecordStream(null);
+    setIsRecording(false);
+    audioChunksRef.current = [];
+    if (recordTimerRef.current) {
+      clearInterval(recordTimerRef.current);
+      recordTimerRef.current = null;
+    }
   };
 
   if (!contact) {
@@ -448,35 +477,55 @@ export function InboxChat({
             </div>
 
             <div className="flex items-end gap-2">
-              <textarea
-                ref={taRef}
-                value={text}
-                onChange={(e) => {
-                  setText(e.target.value);
-                  e.target.style.height = "38px";
-                  e.target.style.height = Math.min(e.target.scrollHeight, 90) + "px";
-                }}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-                placeholder="Digite uma mensagem..."
-                className="flex-1 resize-none outline-none text-sm bg-muted/50 border border-border/50 rounded-xl px-3 py-2.5 text-foreground placeholder:text-muted-foreground leading-relaxed focus:border-primary/40 transition-all"
-                style={{ height: 38, maxHeight: 90 }}
-              />
+              {isRecording ? (
+                <div className="flex-1 h-10 rounded-xl bg-muted/50 border border-destructive/30 flex items-center gap-2 px-3">
+                  <button
+                    onClick={cancelRecording}
+                    title="Cancelar gravação"
+                    className="text-destructive hover:opacity-80 flex-shrink-0"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                  <span className="inline-block w-2 h-2 rounded-full bg-destructive animate-pulse flex-shrink-0" />
+                  <span className="text-xs font-mono text-foreground/80 tabular-nums flex-shrink-0">
+                    {String(Math.floor(recordSeconds / 60)).padStart(2, "0")}:
+                    {String(recordSeconds % 60).padStart(2, "0")}
+                  </span>
+                  <AudioVisualizer stream={recordStream} className="flex-1 h-7" />
+                </div>
+              ) : (
+                <textarea
+                  ref={taRef}
+                  value={text}
+                  onChange={(e) => {
+                    setText(e.target.value);
+                    e.target.style.height = "38px";
+                    e.target.style.height = Math.min(e.target.scrollHeight, 90) + "px";
+                  }}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+                  placeholder="Digite uma mensagem..."
+                  className="flex-1 resize-none outline-none text-sm bg-muted/50 border border-border/50 rounded-xl px-3 py-2.5 text-foreground placeholder:text-muted-foreground leading-relaxed focus:border-primary/40 transition-all"
+                  style={{ height: 38, maxHeight: 90 }}
+                />
+              )}
               <button
                 onClick={() => { if (isRecording) stopRecording(); else startRecording(); }}
-                title={isRecording ? "Parar gravação" : "Gravar áudio"}
+                title={isRecording ? "Enviar gravação" : "Gravar áudio"}
                 className={cn(
                   "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border transition-all",
                   isRecording
-                    ? "bg-destructive/10 border-destructive/30 text-destructive"
+                    ? "bg-primary border-primary text-primary-foreground hover:bg-primary/90"
                     : "border-border/50 text-muted-foreground hover:bg-muted/50"
                 )}
               >
-                {isRecording ? <Square size={14} /> : <Mic size={14} />}
+                {isRecording ? <Send size={14} /> : <Mic size={14} />}
               </button>
-              <button onClick={send}
-                className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 hover:bg-primary/90 transition-all">
-                <Send size={14} />
-              </button>
+              {!isRecording && (
+                <button onClick={send}
+                  className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 hover:bg-primary/90 transition-all">
+                  <Send size={14} />
+                </button>
+              )}
             </div>
           </>
         )}
