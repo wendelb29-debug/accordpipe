@@ -11,6 +11,8 @@ import { NewConversationModal } from "@/components/accord-inbox/NewConversationM
 import { WifiOff, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 const FILTER_LABEL_TO_VALUE: Record<string, InboxFilter> = {
   Minhas: "mine",
