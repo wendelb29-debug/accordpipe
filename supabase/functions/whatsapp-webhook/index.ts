@@ -479,11 +479,12 @@ async function handleIncomingMessage(
     }
   }
 
-  // Fetch avatar via uazapi if not provided in payload, or if existing contact has no avatar
-  if (!sender_avatar && (provider === "uazapi" || !provider)) {
+  // Fetch avatar+name via uazapi if not provided in payload, or if existing contact has no avatar
+  if ((provider === "uazapi" || !provider) && (!sender_avatar || !sender_name)) {
     if (!contact || !contact.avatar_url) {
       const fetched = await fetchUazapiAvatar(supabase, company_id, primaryPhone);
-      if (fetched) sender_avatar = fetched;
+      if (fetched?.image && !sender_avatar) sender_avatar = fetched.image;
+      if (fetched?.name && !sender_name) sender_name = fetched.name;
     }
   }
 
