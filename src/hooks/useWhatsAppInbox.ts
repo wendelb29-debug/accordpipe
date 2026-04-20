@@ -39,6 +39,36 @@ export interface InboxMessage {
   read_at?: string | null;
 }
 
+function normalizePhone(rawPhone?: string | null) {
+  return String(rawPhone || "").replace(/\D/g, "");
+}
+
+function buildPhoneVariants(rawPhone?: string | null) {
+  const digits = normalizePhone(rawPhone);
+  if (!digits) return [] as string[];
+
+  const variants = new Set<string>([digits]);
+  if (digits.startsWith("55") && digits.length > 11) {
+    variants.add(digits.slice(2));
+  } else if (!digits.startsWith("55") && digits.length >= 10) {
+    variants.add(`55${digits}`);
+  }
+
+  return [...variants];
+}
+
+function matchesSelectedConversation(
+  message: Pick<InboxMessage, "contact_id" | "phone">,
+  selectedContactId: string | null,
+  selectedContactPhone: string | null,
+) {
+  if (selectedContactId && message.contact_id === selectedContactId) return true;
+  if (!selectedContactPhone) return false;
+
+  const selectedVariants = new Set(buildPhoneVariants(selectedContactPhone));
+  return buildPhoneVariants(message.phone).some((variant) => selectedVariants.has(variant));
+}
+
 export function useWhatsAppInbox() {
   const { user, profile, role, isMaster, activeCompanyId } = useAuth();
   const [contacts, setContacts] = useState<InboxContact[]>([]);
@@ -62,7 +92,6 @@ export function useWhatsAppInbox() {
   const companyId = activeCompanyId || profile?.company_id;
   const isAdminOrCeo = isMaster || role === "admin" || role === "ceo";
 
-  // Fetch contacts
   const fetchContacts = useCallback(async () => {
     if (!companyId) return;
 
@@ -72,13 +101,11 @@ export function useWhatsAppInbox() {
       .eq("company_id", companyId)
       .order("last_message_at", { ascending: false, nullsFirst: false });
 
-    // Apply filter based on role
     if (filter === "mine" && user?.id) {
       query = query.eq("assigned_to", user.id);
     } else if (filter === "unassigned") {
       query = query.is("assigned_to", null);
     }
-    // "all" - no additional filter (RLS handles visibility)
 
     const { data, error } = await query;
     if (error) {
@@ -86,56 +113,64 @@ export function useWhatsAppInbox() {
       setLoading(false);
       return;
     }
+
     console.log("[useWhatsAppInbox] fetched contacts:", data?.length ?? 0, "for tenant:", companyId);
     setContacts((data || []) as InboxContact[]);
     setLoading(false);
   }, [companyId, filter, user?.id]);
 
-  // Fetch messages for selected contact
-  const fetchMessages = useCallback(async (contactId: string) => {
+  const fetchMessages = useCallback(async (contactId: string, contactPhone?: string | null) => {
     if (!companyId) return;
 
-    console.log("[inbox] fetchMessages", { contactId, companyId });
+    const phoneVariants = buildPhoneVariants(contactPhone);
+    const phoneFilters = phoneVariants.map((phone) => `phone.eq.${phone}`);
+    const orFilter = [`contact_id.eq.${contactId}`, ...phoneFilters].join(",");
+
+    console.log("[inbox] fetchMessages", { contactId, contactPhone, phoneVariants, companyId, orFilter });
 
     const { data, error } = await supabase
       .from("whatsapp_messages")
       .select("*")
-      .eq("contact_id", contactId)
       .eq("company_id", companyId)
+      .or(orFilter)
       .order("created_at", { ascending: true });
 
     if (error) {
       console.error("[inbox] Error fetching messages:", error);
       return;
     }
-    console.log("[inbox] fetched", data?.length, "messages for contact", contactId);
-    setMessages((data || []) as InboxMessage[]);
+
+    const deduped = (data || []).reduce<InboxMessage[]>((acc, item) => {
+      if (!acc.some((msg) => msg.id === item.id)) acc.push(item as InboxMessage);
+      return acc;
+    }, []);
+
+    console.log("[inbox] fetched", deduped.length, "messages for contact", contactId);
+    setMessages(deduped);
   }, [companyId]);
 
-  // Select contact
   const selectContact = useCallback((contactId: string | null) => {
     setSelectedContactId(contactId);
     if (contactId) {
-      fetchMessages(contactId);
+      const contact = contacts.find((item) => item.id === contactId);
+      fetchMessages(contactId, contact?.phone);
     } else {
       setMessages([]);
     }
-  }, [fetchMessages]);
+  }, [contacts, fetchMessages]);
 
-  // Send message
   const sendMessage = useCallback(async (text: string) => {
     if (!selectedContactId || !companyId) return;
 
     const contact = contacts.find(c => c.id === selectedContactId);
     if (!contact) return;
 
-    // Insert message locally first
     const { data: msgData, error: msgError } = await supabase
       .from("whatsapp_messages")
       .insert({
         company_id: companyId,
         contact_id: selectedContactId,
-        phone: contact.phone,
+        phone: normalizePhone(contact.phone),
         message: text,
         direction: "outbound",
         status: "sending",
@@ -149,7 +184,6 @@ export function useWhatsAppInbox() {
       return;
     }
 
-    // Send via active provider (Uazapi or Z-API) — provider-agnostic
     try {
       const { data, error } = await supabase.functions.invoke("whatsapp-send", {
         body: {
@@ -174,14 +208,12 @@ export function useWhatsAppInbox() {
         .eq("id", msgData.id);
     }
 
-    // Update contact last message
     await supabase
       .from("whatsapp_contacts")
       .update({ last_message: text, last_message_at: new Date().toISOString() })
       .eq("id", selectedContactId);
   }, [selectedContactId, companyId, contacts]);
 
-  // Assign contact to user
   const assignContact = useCallback(async (contactId: string, userId: string | null) => {
     const { error } = await supabase
       .from("whatsapp_contacts")
@@ -196,12 +228,10 @@ export function useWhatsAppInbox() {
     fetchContacts();
   }, [fetchContacts]);
 
-  // Transfer contact
   const transferContact = useCallback(async (contactId: string, newUserId: string) => {
     await assignContact(contactId, newUserId);
   }, [assignContact]);
 
-  // Update conversation status
   const updateConversationStatus = useCallback(async (contactId: string, status: string) => {
     const { error } = await supabase
       .from("whatsapp_contacts")
@@ -220,14 +250,15 @@ export function useWhatsAppInbox() {
     fetchContacts();
   }, [fetchContacts]);
 
-  // Check connection status from active provider integration
   const checkConnection = useCallback(async () => {
     if (!companyId) {
       setConnectionStatus("disconnected");
       setActiveIntegration(null);
       return;
     }
+
     console.log("[checkConnection] querying for companyId:", companyId);
+
     try {
       const { data: integ, error } = await supabase
         .from("tenant_whatsapp_integrations" as any)
@@ -237,24 +268,29 @@ export function useWhatsAppInbox() {
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+
       if (error) {
         console.warn("[useWhatsAppInbox] checkConnection error:", error);
       }
+
       const integData = integ as any;
       console.log("[useWhatsAppInbox] active integration:", integData);
-      // Treat active integration with credentials as connected (MVP)
-      // connection_status pode ser "connected", "unknown" ou null — confiamos em is_active + credenciais
+
       const hasCredentials = !!integData && (
         integData.provider_type === "uazapi"
           ? !!integData.server_url
           : true
       );
+
       const normalized = integData
         ? { ...integData, provider: integData.provider_type }
         : null;
+
       setActiveIntegration(normalized);
+
       const isConnected = !!integData?.is_active && hasCredentials &&
         integData.connection_status !== "disconnected" && integData.connection_status !== "error";
+
       setConnectionStatus(isConnected ? "connected" : "disconnected");
     } catch (err) {
       console.error("[useWhatsAppInbox] checkConnection exception:", err);
@@ -263,15 +299,17 @@ export function useWhatsAppInbox() {
     }
   }, [companyId]);
 
-  // Generate QR code
   const generateQrCode = useCallback(async () => {
     if (!companyId) return null;
     setConnectionStatus("connecting");
+
     try {
       const { data, error } = await supabase.functions.invoke("zapi", {
         body: { action: "get-qrcode", company_id: companyId },
       });
+
       if (error) throw error;
+
       const qr = data?.data?.value;
       if (qr) {
         return qr.startsWith("data:") ? qr : `data:image/png;base64,${qr}`;
@@ -279,6 +317,7 @@ export function useWhatsAppInbox() {
         setConnectionStatus("connected");
         return null;
       }
+
       setConnectionStatus("disconnected");
       return null;
     } catch (err: any) {
@@ -288,7 +327,6 @@ export function useWhatsAppInbox() {
     }
   }, [companyId]);
 
-  // Initial fetch + realtime subscriptions
   useEffect(() => {
     fetchContacts();
     checkConnection();
@@ -297,14 +335,14 @@ export function useWhatsAppInbox() {
     return () => clearInterval(interval);
   }, [fetchContacts, checkConnection]);
 
-  // Keep selected contact id in a ref so the realtime channel
-  // doesn't get torn down/recreated every time the user switches conversation.
   const selectedContactIdRef = useRef<string | null>(null);
+  const selectedContactPhoneRef = useRef<string | null>(null);
+
   useEffect(() => {
     selectedContactIdRef.current = selectedContactId;
-  }, [selectedContactId]);
+    selectedContactPhoneRef.current = contacts.find((item) => item.id === selectedContactId)?.phone ?? null;
+  }, [contacts, selectedContactId]);
 
-  // Realtime for new messages — channel persists for the lifetime of companyId
   useEffect(() => {
     if (!companyId) return;
 
@@ -320,20 +358,29 @@ export function useWhatsAppInbox() {
         },
         (payload) => {
           const newMsg = payload.new as InboxMessage;
+          const matches = matchesSelectedConversation(
+            newMsg,
+            selectedContactIdRef.current,
+            selectedContactPhoneRef.current,
+          );
+
           console.log("[inbox realtime] INSERT received", {
             msgId: newMsg.id,
             msgContactId: newMsg.contact_id,
             msgPhone: newMsg.phone,
             msgDirection: newMsg.direction,
             selectedContactId: selectedContactIdRef.current,
-            matches: newMsg.contact_id === selectedContactIdRef.current,
+            selectedContactPhone: selectedContactPhoneRef.current,
+            matches,
           });
-          if (newMsg.contact_id === selectedContactIdRef.current) {
+
+          if (matches) {
             setMessages(prev => {
               if (prev.some(m => m.id === newMsg.id)) return prev;
               return [...prev, newMsg];
             });
           }
+
           fetchContacts();
         }
       )
@@ -347,7 +394,7 @@ export function useWhatsAppInbox() {
         },
         (payload) => {
           const updated = payload.new as InboxMessage;
-          if (updated.contact_id === selectedContactIdRef.current) {
+          if (matchesSelectedConversation(updated, selectedContactIdRef.current, selectedContactPhoneRef.current)) {
             setMessages(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated } : m));
           }
         }
@@ -361,7 +408,6 @@ export function useWhatsAppInbox() {
     };
   }, [companyId, fetchContacts]);
 
-  // Realtime for contact updates
   useEffect(() => {
     if (!companyId) return;
 
