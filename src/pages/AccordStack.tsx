@@ -11,6 +11,8 @@ import { NewConversationModal } from "@/components/accord-inbox/NewConversationM
 import { WifiOff, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 const FILTER_LABEL_TO_VALUE: Record<string, InboxFilter> = {
   Minhas: "mine",
@@ -32,6 +34,7 @@ export default function AccordStack() {
   } = useWhatsAppInbox();
 
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState("");
   const [transferOpen, setTransferOpen] = useState(false);
   const [transferContactId, setTransferContactId] = useState<string | null>(null);
@@ -41,6 +44,9 @@ export default function AccordStack() {
   const [statusFilter, setStatusFilter] = useState<ConversationStatusFilter>("fila");
 
   const selectedContact = contacts.find((c) => c.id === selectedContactId) || null;
+  // On mobile, show chat full-screen when a conversation is selected (hide list)
+  const showChatOnly = isMobile && !!selectedContactId;
+  const showListOnly = isMobile && !selectedContactId;
 
   const matchesStatus = (status: string | undefined, tab: ConversationStatusFilter) => {
     const s = status || "fila";
@@ -185,36 +191,44 @@ export default function AccordStack() {
 
   return (
     <div className="flex h-[calc(100vh-3rem)] bg-background overflow-hidden">
-      <InboxSidebar
-        contacts={sidebarContacts}
-        selectedId={selectedContactId}
-        onSelect={selectContact}
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        filter={FILTER_VALUE_TO_LABEL[filter]}
-        onFilterChange={(label) => setFilter(FILTER_LABEL_TO_VALUE[label] || "mine")}
-        isAdmin={isAdminOrCeo}
-        loading={loading}
-        statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
-        onNewConversation={() => setNewConvOpen(true)}
-      />
+      <div className={cn(
+        "flex-shrink-0 w-full md:w-auto",
+        showChatOnly && "hidden md:block",
+      )}>
+        <InboxSidebar
+          contacts={sidebarContacts}
+          selectedId={selectedContactId}
+          onSelect={selectContact}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          filter={FILTER_VALUE_TO_LABEL[filter]}
+          onFilterChange={(label) => setFilter(FILTER_LABEL_TO_VALUE[label] || "mine")}
+          isAdmin={isAdminOrCeo}
+          loading={loading}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          onNewConversation={() => setNewConvOpen(true)}
+        />
+      </div>
 
-      <InboxChat
-        contact={chatContact}
-        messages={chatMessages}
-        onSendMessage={sendMessage}
-        onTransfer={handleTransfer}
-        onAssignToMe={handleAssignToMe}
-        isAdmin={isAdminOrCeo}
-        companyId={companyId}
-        onToggleInfo={() => setShowInfo(!showInfo)}
-        showInfo={showInfo}
-        onCreateDemand={() => setDemandModalOpen(true)}
-        onUpdateStatus={handleUpdateStatus}
-      />
+      <div className={cn("flex-1 min-w-0", showListOnly && "hidden md:flex")}>
+        <InboxChat
+          contact={chatContact}
+          messages={chatMessages}
+          onSendMessage={sendMessage}
+          onTransfer={handleTransfer}
+          onAssignToMe={handleAssignToMe}
+          isAdmin={isAdminOrCeo}
+          companyId={companyId}
+          onToggleInfo={() => setShowInfo(!showInfo)}
+          showInfo={showInfo}
+          onCreateDemand={() => setDemandModalOpen(true)}
+          onUpdateStatus={handleUpdateStatus}
+          onBack={isMobile ? () => selectContact(null) : undefined}
+        />
+      </div>
 
-      {showInfo && selectedContact && (
+      {showInfo && selectedContact && !isMobile && (
         <ContactDetailSidebar
           contact={selectedContact}
           onClose={() => setShowInfo(false)}
