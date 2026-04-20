@@ -253,6 +253,7 @@ function AccordWatermark() {
 
 export function InboxChat({
   contact, messages, onSendMessage, onTransfer, onToggleInfo, showInfo, onUpdateStatus, companyId,
+  onBack,
 }: InboxChatProps) {
   const [text, setText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
