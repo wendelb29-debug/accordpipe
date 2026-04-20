@@ -358,6 +358,34 @@ function normalizePhoneVariants(rawPhone: string): string[] {
   return [...variants];
 }
 
+async function fetchUazapiAvatar(
+  supabase: any,
+  company_id: string,
+  phone: string,
+): Promise<string | null> {
+  try {
+    const { data: integ } = await supabase
+      .from("tenant_whatsapp_integrations")
+      .select("server_url, instance_token, provider_type")
+      .eq("tenant_id", company_id)
+      .eq("provider_type", "uazapi")
+      .maybeSingle();
+    if (!integ?.server_url || !integ?.instance_token) return null;
+    const url = `${integ.server_url.replace(/\/$/, "")}/profile-picture?phone=${encodeURIComponent(phone)}`;
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { token: integ.instance_token, "Content-Type": "application/json" },
+    });
+    if (!res.ok) return null;
+    const json: any = await res.json().catch(() => null);
+    const pic = json?.profilePicture || json?.imgUrl || json?.url || json?.image || json?.profile_picture;
+    return typeof pic === "string" && pic.startsWith("http") ? pic : null;
+  } catch (e) {
+    console.warn("[fetchUazapiAvatar] failed:", (e as Error).message);
+    return null;
+  }
+}
+
 async function handleIncomingMessage(
   supabase: any,
   data: {
@@ -372,7 +400,8 @@ async function handleIncomingMessage(
     provider?: string;
   },
 ) {
-  const { company_id, phone, message, sender_name, sender_avatar, message_type = "text", media_url, external_id, provider } = data;
+  const { company_id, phone, message, sender_name, sender_avatar: payloadAvatar, message_type = "text", media_url, external_id, provider } = data;
+  let sender_avatar = payloadAvatar;
   const normalizedPhone = String(phone || "").replace(/\D/g, "");
   const phoneVariants = normalizePhoneVariants(normalizedPhone);
   const primaryPhone = phoneVariants.find((value) => value.startsWith("55")) || normalizedPhone;
@@ -413,7 +442,7 @@ async function handleIncomingMessage(
   for (const variant of phoneVariants) {
     const { data: existingContact } = await supabase
       .from("whatsapp_contacts")
-      .select("id, lead_id, conversation_status, assigned_to, phone")
+      .select("id, lead_id, conversation_status, assigned_to, phone, avatar_url")
       .eq("company_id", company_id)
       .eq("phone", variant)
       .maybeSingle();
@@ -429,11 +458,19 @@ async function handleIncomingMessage(
     if (localSuffix) {
       const { data: fallbackContacts } = await supabase
         .from("whatsapp_contacts")
-        .select("id, lead_id, conversation_status, assigned_to, phone")
+        .select("id, lead_id, conversation_status, assigned_to, phone, avatar_url")
         .eq("company_id", company_id)
         .like("phone", `%${localSuffix}`)
         .limit(1);
       contact = fallbackContacts?.[0] ?? null;
+    }
+  }
+
+  // Fetch avatar via uazapi if not provided in payload, or if existing contact has no avatar
+  if (!sender_avatar && (provider === "uazapi" || !provider)) {
+    if (!contact || !contact.avatar_url) {
+      const fetched = await fetchUazapiAvatar(supabase, company_id, primaryPhone);
+      if (fetched) sender_avatar = fetched;
     }
   }
 
@@ -451,7 +488,7 @@ async function handleIncomingMessage(
         workspace_id,
         conversation_status: "fila",
       })
-      .select("id, lead_id, conversation_status, assigned_to, phone")
+      .select("id, lead_id, conversation_status, assigned_to, phone, avatar_url")
       .single();
     if (error) throw error;
     contact = newContact;
