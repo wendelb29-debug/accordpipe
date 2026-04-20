@@ -43,6 +43,30 @@ function normalizePhone(rawPhone?: string | null) {
   return String(rawPhone || "").replace(/\D/g, "");
 }
 
+/** Short two-tone beep using Web Audio API (no asset required) */
+function playInboxBeep() {
+  try {
+    const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const playTone = (freq: number, startTime: number, duration: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(0.25, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    };
+    const now = ctx.currentTime;
+    playTone(880, now, 0.12);
+    playTone(1100, now + 0.14, 0.12);
+  } catch { /* noop */ }
+}
+
 function buildPhoneVariants(rawPhone?: string | null) {
   const digits = normalizePhone(rawPhone);
   if (!digits) return [] as string[];
