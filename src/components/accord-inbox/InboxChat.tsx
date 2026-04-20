@@ -49,6 +49,7 @@ interface InboxChatProps {
   showInfo?: boolean;
   onCreateDemand?: () => void;
   onUpdateStatus?: (contactId: string, status: string) => void;
+  onBack?: () => void;
 }
 
 function ContactAvatar({ contact, size = 36 }: { contact: ChatContact; size?: number }) {
