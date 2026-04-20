@@ -370,15 +370,23 @@ async function fetchUazapiAvatar(
       .eq("tenant_id", company_id)
       .eq("provider_type", "uazapi")
       .maybeSingle();
-    if (!integ?.server_url || !integ?.instance_token) return null;
-    const url = `${integ.server_url.replace(/\/$/, "")}/profile-picture?phone=${encodeURIComponent(phone)}`;
+    if (!integ?.server_url || !integ?.instance_token) {
+      console.log("[fetchUazapiAvatar] missing integration config");
+      return null;
+    }
+    const url = `${integ.server_url.replace(/\/$/, "")}/chat/GetNameAndImageURL`;
     const res = await fetch(url, {
-      method: "GET",
+      method: "POST",
       headers: { token: integ.instance_token, "Content-Type": "application/json" },
+      body: JSON.stringify({ number: phone, preview: false }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn("[fetchUazapiAvatar] non-ok response", res.status, await res.text().catch(() => ""));
+      return null;
+    }
     const json: any = await res.json().catch(() => null);
-    const pic = json?.profilePicture || json?.imgUrl || json?.url || json?.image || json?.profile_picture;
+    const pic = json?.image || json?.imgUrl || json?.profilePicture || json?.url || json?.profile_picture;
+    console.log("[fetchUazapiAvatar] result for", phone, "=>", pic ? "found" : "none");
     return typeof pic === "string" && pic.startsWith("http") ? pic : null;
   } catch (e) {
     console.warn("[fetchUazapiAvatar] failed:", (e as Error).message);
