@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
         cidade: cidade ? String(cidade).trim().substring(0, 100) : null,
         notes: fullNotes,
         tags: resolvedFormId ? [...formTags, "formulario"] : ["landing-page"],
-        stage: "novos",
+        stage: initialStage,
         created_by_name: nome.trim().substring(0, 200),
         form_id: resolvedFormId,
         workspace_id: resolvedWorkspaceId,
