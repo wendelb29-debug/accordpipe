@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import {
-  Search, ArrowLeftRight, Info, X, Paperclip, Image, Mic,
+  Search, ArrowLeftRight, Info, X, Paperclip, Image, Mic, Trash2,
   Square, Send, Bold, Italic, Zap, FileText, Play, Pause,
   MoreVertical, Users, Check, CheckCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AiImprovePopover } from "./AiImprovePopover";
+import { AudioVisualizer } from "./AudioVisualizer";
 
 interface ChatMessage {
   id: string;
