@@ -86,31 +86,55 @@ function StatusPill({ status }: { status?: string }) {
   );
 }
 
-function AudioPlayer({ direction }: { direction: string }) {
+// Single global audio ref so only one plays at a time
+let CURRENT_AUDIO: HTMLAudioElement | null = null;
+
+function AudioPlayer({ direction, src }: { direction: string; src?: string }) {
+  const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [duration, setDuration] = useState(0);
+
+  const fmt = (s: number) => {
+    if (!isFinite(s)) return "0:00";
+    const m = Math.floor(s / 60);
+    const r = Math.floor(s % 60);
+    return `${m}:${r.toString().padStart(2, "0")}`;
+  };
+
   const toggle = () => {
+    const el = audioRef.current;
+    if (!el) return;
     if (playing) {
-      setPlaying(false);
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      el.pause();
     } else {
-      setPlaying(true);
-      intervalRef.current = setInterval(() => {
-        setProgress((p) => {
-          if (p >= 100) { setPlaying(false); if (intervalRef.current) clearInterval(intervalRef.current); return 0; }
-          return p + 2;
-        });
-      }, 120);
+      if (CURRENT_AUDIO && CURRENT_AUDIO !== el) CURRENT_AUDIO.pause();
+      CURRENT_AUDIO = el;
+      el.play().catch(() => {});
     }
   };
-  useEffect(() => () => { if (intervalRef.current) clearInterval(intervalRef.current); }, []);
+
   const isOut = direction === "outbound";
   return (
-    <div className={cn("flex items-center gap-2.5 px-3 py-2.5 rounded-2xl min-w-[190px]",
+    <div className={cn("flex items-center gap-2.5 px-3 py-2.5 rounded-2xl min-w-[220px]",
       isOut ? "bg-primary rounded-br-sm" : "bg-muted/80 dark:bg-muted/50 rounded-bl-sm border border-border/40"
     )}>
-      <button onClick={toggle}
+      {src && (
+        <audio
+          ref={audioRef}
+          src={src}
+          preload="metadata"
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+          onEnded={() => { setPlaying(false); setProgress(0); }}
+          onLoadedMetadata={(e) => setDuration((e.target as HTMLAudioElement).duration)}
+          onTimeUpdate={(e) => {
+            const a = e.target as HTMLAudioElement;
+            setProgress(a.duration ? (a.currentTime / a.duration) * 100 : 0);
+          }}
+        />
+      )}
+      <button onClick={toggle} disabled={!src}
         className={cn("w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all",
           isOut ? "bg-white/20 hover:bg-white/30" : "bg-primary hover:bg-primary/90"
         )}>
@@ -121,14 +145,16 @@ function AudioPlayer({ direction }: { direction: string }) {
       <div className={cn("flex-1 h-1 rounded-full overflow-hidden", isOut ? "bg-white/25" : "bg-primary/20")}>
         <div className={cn("h-full rounded-full transition-all", isOut ? "bg-white" : "bg-primary")} style={{ width: `${progress}%` }} />
       </div>
-      <span className={cn("text-[11px] flex-shrink-0", isOut ? "text-white/70" : "text-muted-foreground")}>0:24</span>
+      <span className={cn("text-[11px] flex-shrink-0", isOut ? "text-white/70" : "text-muted-foreground")}>
+        {fmt(duration)}
+      </span>
     </div>
   );
 }
 
-function FileBubble({ direction, fileName, fileSize }: { direction: string; fileName?: string; fileSize?: string }) {
+function FileBubble({ direction, fileName, fileSize, src }: { direction: string; fileName?: string; fileSize?: string; src?: string }) {
   const isOut = direction === "outbound";
-  return (
+  const content = (
     <div className={cn("flex items-center gap-2.5 px-3 py-2.5 rounded-2xl",
       isOut ? "bg-primary rounded-br-sm" : "bg-muted/80 dark:bg-muted/50 rounded-bl-sm border border-border/40"
     )}>
@@ -137,11 +163,17 @@ function FileBubble({ direction, fileName, fileSize }: { direction: string; file
       )}>
         <FileText size={16} className={isOut ? "text-white" : "text-primary"} />
       </div>
-      <div>
-        <p className={cn("text-[12px] font-medium", isOut ? "text-white" : "text-foreground")}>{fileName || "arquivo.pdf"}</p>
-        <p className={cn("text-[11px]", isOut ? "text-white/60" : "text-muted-foreground")}>{fileSize || "–"}</p>
+      <div className="min-w-0">
+        <p className={cn("text-[12px] font-medium truncate max-w-[180px]", isOut ? "text-white" : "text-foreground")}>{fileName || "arquivo"}</p>
+        <p className={cn("text-[11px]", isOut ? "text-white/60" : "text-muted-foreground")}>{fileSize || (src ? "Baixar" : "–")}</p>
       </div>
     </div>
+  );
+  if (!src) return content;
+  return (
+    <a href={src} target="_blank" rel="noopener noreferrer" download={fileName} className="block hover:opacity-90 transition">
+      {content}
+    </a>
   );
 }
 
@@ -153,16 +185,25 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
   return (
     <div className={cn("flex flex-col max-w-[68%]", isOut ? "self-end items-end" : "self-start items-start")}>
       {msg.type === "audio" ? (
-        <AudioPlayer direction={msg.direction} />
-      ) : msg.type === "file" ? (
-        <FileBubble direction={msg.direction} fileName={msg.fileName} fileSize={msg.fileSize} />
+        <AudioPlayer direction={msg.direction} src={msg.mediaUrl} />
+      ) : msg.type === "file" || msg.type === "document" ? (
+        <FileBubble direction={msg.direction} fileName={msg.fileName || msg.message} fileSize={msg.fileSize} src={msg.mediaUrl} />
       ) : msg.type === "image" ? (
-        <div className={cn("rounded-2xl overflow-hidden", isOut ? "rounded-br-sm" : "rounded-bl-sm border border-border/40")}>
-          <div className="w-52 h-36 bg-muted/60 flex items-center justify-center text-muted-foreground text-xs gap-2">
-            <Image size={16} />
-            {msg.fileName || "imagem.jpg"}
-          </div>
-        </div>
+        <a
+          href={msg.mediaUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={cn("rounded-2xl overflow-hidden block", isOut ? "rounded-br-sm" : "rounded-bl-sm border border-border/40")}
+        >
+          {msg.mediaUrl ? (
+            <img src={msg.mediaUrl} alt={msg.fileName || "imagem"} className="w-64 max-h-72 object-cover" />
+          ) : (
+            <div className="w-52 h-36 bg-muted/60 flex items-center justify-center text-muted-foreground text-xs gap-2">
+              <Image size={16} />
+              {msg.fileName || "imagem.jpg"}
+            </div>
+          )}
+        </a>
       ) : (
         <div className={cn(
           "px-3.5 py-2 rounded-2xl text-[13px] leading-relaxed break-words",
