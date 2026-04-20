@@ -28,7 +28,7 @@ export default function AccordStack() {
     contacts, messages, selectedContactId, selectContact, sendMessage,
     filter, setFilter, loading, isAdminOrCeo, connectionStatus,
     assignContact, transferContact, companyId, refetchContacts,
-    updateConversationStatus, activeIntegration,
+    updateConversationStatus, activeIntegration, unreadByContact,
   } = useWhatsAppInbox();
 
   const navigate = useNavigate();
