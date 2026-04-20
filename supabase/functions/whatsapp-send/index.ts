@@ -38,7 +38,7 @@ async function sendUazapi(
   try {
     const res = await fetch(url, {
       method: "POST",
-      headers: { "apikey": instanceToken, "Content-Type": "application/json" },
+      headers: { "token": instanceToken, "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
