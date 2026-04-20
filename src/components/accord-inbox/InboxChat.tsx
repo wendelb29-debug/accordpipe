@@ -324,57 +324,80 @@ export function InboxChat({
       </div>
 
       <div className="border-t border-border/60 px-4 py-3 bg-background flex-shrink-0">
-        <div className="flex items-center gap-1 mb-2 pb-2 border-b border-border/40">
-          <ToolBtn icon={<Paperclip size={14} />} title="Arquivo" onClick={() => addMedia("file")} />
-          <ToolBtn icon={<Image size={14} />} title="Imagem" onClick={() => addMedia("image")} />
-          <div className="w-px h-4 bg-border/50 mx-1" />
-          <ToolBtn icon={<Bold size={13} />} title="Negrito" />
-          <ToolBtn icon={<Italic size={13} />} title="Itálico" />
-          <div className="w-px h-4 bg-border/50 mx-1" />
-          <AiImprovePopover text={text} onApply={(newText) => {
-            setText(newText);
-            requestAnimationFrame(() => {
-              if (taRef.current) {
-                taRef.current.style.height = "38px";
-                taRef.current.style.height = Math.min(taRef.current.scrollHeight, 90) + "px";
-                taRef.current.focus();
-              }
-            });
-          }} />
-          <ToolBtn icon={<FileText size={14} />} title="Notas internas" className="ml-auto" />
-        </div>
+        <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => handleFileChange(e, "file")} />
+        <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "image")} />
+        <input ref={audioInputRef} type="file" accept="audio/*" className="hidden" onChange={(e) => handleFileChange(e, "audio")} />
 
-        <div className="flex items-end gap-2">
-          <textarea
-            ref={taRef}
-            value={text}
-            onChange={(e) => {
-              setText(e.target.value);
-              e.target.style.height = "38px";
-              e.target.style.height = Math.min(e.target.scrollHeight, 90) + "px";
-            }}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-            placeholder="Digite uma mensagem..."
-            className="flex-1 resize-none outline-none text-sm bg-muted/50 border border-border/50 rounded-xl px-3 py-2.5 text-foreground placeholder:text-muted-foreground leading-relaxed focus:border-primary/40 transition-all"
-            style={{ height: 38, maxHeight: 90 }}
-          />
-          <button
-            onClick={() => { if (isRecording) { setIsRecording(false); addMedia("audio"); } else setIsRecording(true); }}
-            title={isRecording ? "Parar gravação" : "Gravar áudio"}
-            className={cn(
-              "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border transition-all",
-              isRecording
-                ? "bg-red-50 border-red-200 text-red-500 dark:bg-red-950/30 dark:border-red-900"
-                : "border-border/50 text-muted-foreground hover:bg-muted/50"
+        {isClosed ? (
+          <div className="flex items-center justify-between gap-3 py-2">
+            <p className="text-sm text-muted-foreground">Atendimento encerrado</p>
+            {onUpdateStatus && (
+              <button
+                onClick={() => onUpdateStatus(contact.id, "em_atendimento")}
+                className="px-4 h-9 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-all"
+              >
+                Reabrir atendimento
+              </button>
             )}
-          >
-            {isRecording ? <Square size={14} /> : <Mic size={14} />}
-          </button>
-          <button onClick={send}
-            className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 hover:bg-primary/90 transition-all">
-            <Send size={14} />
-          </button>
-        </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-1 mb-2 pb-2 border-b border-border/40">
+              <ToolBtn icon={<Paperclip size={14} />} title="Arquivo" onClick={() => fileInputRef.current?.click()} />
+              <ToolBtn icon={<Image size={14} />} title="Imagem" onClick={() => imageInputRef.current?.click()} />
+              <ToolBtn icon={<Mic size={14} />} title="Áudio (arquivo)" onClick={() => audioInputRef.current?.click()} />
+              <div className="w-px h-4 bg-border/50 mx-1" />
+              <ToolBtn icon={<Bold size={13} />} title="Negrito" />
+              <ToolBtn icon={<Italic size={13} />} title="Itálico" />
+              <div className="w-px h-4 bg-border/50 mx-1" />
+              <AiImprovePopover text={text} onApply={(newText) => {
+                setText(newText);
+                requestAnimationFrame(() => {
+                  if (taRef.current) {
+                    taRef.current.style.height = "38px";
+                    taRef.current.style.height = Math.min(taRef.current.scrollHeight, 90) + "px";
+                    taRef.current.focus();
+                  }
+                });
+              }} />
+              {uploading && <span className="text-[11px] text-muted-foreground ml-2">Enviando...</span>}
+              <ToolBtn icon={<FileText size={14} />} title="Notas internas" className="ml-auto" />
+            </div>
+
+            <div className="flex items-end gap-2">
+              <textarea
+                ref={taRef}
+                value={text}
+                onChange={(e) => {
+                  setText(e.target.value);
+                  e.target.style.height = "38px";
+                  e.target.style.height = Math.min(e.target.scrollHeight, 90) + "px";
+                }}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+                placeholder="Digite uma mensagem..."
+                className="flex-1 resize-none outline-none text-sm bg-muted/50 border border-border/50 rounded-xl px-3 py-2.5 text-foreground placeholder:text-muted-foreground leading-relaxed focus:border-primary/40 transition-all"
+                style={{ height: 38, maxHeight: 90 }}
+              />
+              <button
+                onClick={() => { if (isRecording) stopRecording(); else startRecording(); }}
+                title={isRecording ? "Parar gravação" : "Gravar áudio"}
+                className={cn(
+                  "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border transition-all",
+                  isRecording
+                    ? "bg-destructive/10 border-destructive/30 text-destructive"
+                    : "border-border/50 text-muted-foreground hover:bg-muted/50"
+                )}
+              >
+                {isRecording ? <Square size={14} /> : <Mic size={14} />}
+              </button>
+              <button onClick={send}
+                className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 hover:bg-primary/90 transition-all">
+                <Send size={14} />
+              </button>
+            </div>
+          </>
+        )}
+      </div>
       </div>
     </div>
   );
