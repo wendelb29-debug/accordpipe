@@ -209,41 +209,83 @@ function AccordWatermark() {
 }
 
 export function InboxChat({
-  contact, messages, onSendMessage, onTransfer, onToggleInfo, showInfo, onUpdateStatus,
+  contact, messages, onSendMessage, onTransfer, onToggleInfo, showInfo, onUpdateStatus, companyId,
 }: InboxChatProps) {
   const [text, setText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
-  const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
+  const [uploading, setUploading] = useState(false);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const msgsRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
-  const allMessages = messages.length > 0 ? messages : localMessages;
+  const isClosed = contact?.conversationStatus === "encerrado" || contact?.conversationStatus === "finalizado";
 
   useEffect(() => {
     if (msgsRef.current) msgsRef.current.scrollTop = msgsRef.current.scrollHeight;
-  }, [allMessages, localMessages]);
+  }, [messages]);
 
   const send = () => {
-    if (!text.trim()) return;
+    if (!text.trim() || isClosed) return;
     onSendMessage(text.trim());
     setText("");
     if (taRef.current) taRef.current.style.height = "38px";
   };
 
-  const addMedia = (type: "audio" | "image" | "file") => {
-    setLocalMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        message: "",
-        direction: "outbound",
-        created_at: new Date().toISOString(),
-        type,
-        fileName: type === "image" ? "imagem_enviada.jpg" : "arquivo_enviado.pdf",
-        fileSize: "128 KB",
-        status: "sent",
-      },
-    ]);
+  const uploadAndSend = async (file: File, messageType: "image" | "audio" | "file") => {
+    if (!companyId || !contact) return;
+    setUploading(true);
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const ext = file.name.split(".").pop() || "bin";
+      const path = `${companyId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("whatsapp-media")
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("whatsapp-media").getPublicUrl(path);
+      onSendMessage(file.name, { messageType, mediaUrl: pub.publicUrl, fileName: file.name });
+    } catch (err: any) {
+      const { toast } = await import("sonner");
+      toast.error(err?.message || "Falha no upload do arquivo");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: "image" | "audio" | "file") => {
+    const f = e.target.files?.[0];
+    if (f) uploadAndSend(f, type);
+    e.target.value = "";
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      mr.ondataavailable = (e) => audioChunksRef.current.push(e.data);
+      mr.onstop = async () => {
+        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const file = new File([blob], `audio-${Date.now()}.webm`, { type: "audio/webm" });
+        stream.getTracks().forEach((t) => t.stop());
+        await uploadAndSend(file, "audio");
+      };
+      mediaRecorderRef.current = mr;
+      mr.start();
+      setIsRecording(true);
+    } catch {
+      const { toast } = await import("sonner");
+      toast.error("Não foi possível acessar o microfone");
+    }
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setIsRecording(false);
   };
 
   if (!contact) {
