@@ -449,7 +449,7 @@ export function InboxChat({
         </div>
       </div>
 
-      <div className="border-t border-border/60 px-4 py-3 bg-background flex-shrink-0">
+      <div className="border-t border-border/60 px-2 sm:px-4 py-2 sm:py-3 bg-background flex-shrink-0 pb-[max(env(safe-area-inset-bottom),0.5rem)]">
         <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => handleFileChange(e, "file")} />
         <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "image")} />
         <input ref={audioInputRef} type="file" accept="audio/*" className="hidden" onChange={(e) => handleFileChange(e, "audio")} />
@@ -460,7 +460,7 @@ export function InboxChat({
             {onUpdateStatus && (
               <button
                 onClick={() => onUpdateStatus(contact.id, "em_atendimento")}
-                className="px-4 h-9 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-all"
+                className="px-4 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-all"
               >
                 Reabrir atendimento
               </button>
@@ -468,7 +468,7 @@ export function InboxChat({
           </div>
         ) : (
           <>
-            <div className="flex items-center gap-1 mb-2 pb-2 border-b border-border/40">
+            <div className="hidden sm:flex items-center gap-1 mb-2 pb-2 border-b border-border/40">
               <ToolBtn icon={<Paperclip size={14} />} title="Arquivo" onClick={() => fileInputRef.current?.click()} />
               <ToolBtn icon={<Image size={14} />} title="Imagem" onClick={() => imageInputRef.current?.click()} />
               <ToolBtn icon={<Mic size={14} />} title="Áudio (arquivo)" onClick={() => audioInputRef.current?.click()} />
@@ -488,6 +488,17 @@ export function InboxChat({
               }} />
               {uploading && <span className="text-[11px] text-muted-foreground ml-2">Enviando...</span>}
               <ToolBtn icon={<FileText size={14} />} title="Notas internas" className="ml-auto" />
+            </div>
+
+            {/* Mobile: compact attachments row */}
+            <div className="sm:hidden flex items-center gap-1 mb-1.5">
+              <ToolBtn icon={<Paperclip size={16} />} title="Arquivo" onClick={() => fileInputRef.current?.click()} className="w-9 h-9" />
+              <ToolBtn icon={<Image size={16} />} title="Imagem" onClick={() => imageInputRef.current?.click()} className="w-9 h-9" />
+              <AiImprovePopover text={text} onApply={(newText) => {
+                setText(newText);
+                requestAnimationFrame(() => taRef.current?.focus());
+              }} />
+              {uploading && <span className="text-[11px] text-muted-foreground ml-1">Enviando...</span>}
             </div>
 
             <div className="flex items-end gap-2">
