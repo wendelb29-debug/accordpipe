@@ -36,7 +36,10 @@ interface ChatContact {
 interface InboxChatProps {
   contact: ChatContact | null;
   messages: ChatMessage[];
-  onSendMessage: (text: string) => void;
+  onSendMessage: (
+    text: string,
+    options?: { messageType?: "text" | "image" | "audio" | "file"; mediaUrl?: string; fileName?: string }
+  ) => void;
   onTransfer?: (contactId: string) => void;
   onAssignToMe?: (contactId: string) => void;
   isAdmin?: boolean;
