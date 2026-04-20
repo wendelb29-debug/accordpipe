@@ -442,7 +442,7 @@ async function handleIncomingMessage(
   for (const variant of phoneVariants) {
     const { data: existingContact } = await supabase
       .from("whatsapp_contacts")
-      .select("id, lead_id, conversation_status, assigned_to, phone")
+      .select("id, lead_id, conversation_status, assigned_to, phone, avatar_url")
       .eq("company_id", company_id)
       .eq("phone", variant)
       .maybeSingle();
@@ -458,7 +458,7 @@ async function handleIncomingMessage(
     if (localSuffix) {
       const { data: fallbackContacts } = await supabase
         .from("whatsapp_contacts")
-        .select("id, lead_id, conversation_status, assigned_to, phone")
+        .select("id, lead_id, conversation_status, assigned_to, phone, avatar_url")
         .eq("company_id", company_id)
         .like("phone", `%${localSuffix}`)
         .limit(1);
@@ -488,7 +488,7 @@ async function handleIncomingMessage(
         workspace_id,
         conversation_status: "fila",
       })
-      .select("id, lead_id, conversation_status, assigned_to, phone")
+      .select("id, lead_id, conversation_status, assigned_to, phone, avatar_url")
       .single();
     if (error) throw error;
     contact = newContact;
