@@ -181,8 +181,12 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     const provider = (url.searchParams.get("provider") || "").toLowerCase();
-    const queryToken = url.searchParams.get("token");
-    log("incoming", { method: req.method, provider, hasToken: !!queryToken, tokenPrefix: queryToken?.slice(0, 6) });
+    const rawToken = url.searchParams.get("token");
+    // UazAPI sometimes appends the event subpath (e.g. "/messages_update", "/chats") to the
+    // configured webhook URL, which lands inside the token query param. Strip anything after "/"
+    // and trim whitespace so the tenant lookup matches the stored webhook_token.
+    const queryToken = rawToken ? rawToken.split("/")[0].trim() : null;
+    log("incoming", { method: req.method, provider, hasToken: !!queryToken, tokenPrefix: queryToken?.slice(0, 6), rawHadSuffix: rawToken !== queryToken });
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
