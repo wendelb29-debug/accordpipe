@@ -409,21 +409,53 @@ export function useWhatsAppInbox() {
             selectedContactPhoneRef.current,
           );
 
-          console.log("[inbox realtime] INSERT received", {
-            msgId: newMsg.id,
-            msgContactId: newMsg.contact_id,
-            msgPhone: newMsg.phone,
-            msgDirection: newMsg.direction,
-            selectedContactId: selectedContactIdRef.current,
-            selectedContactPhone: selectedContactPhoneRef.current,
-            matches,
-          });
+          const isOpen = matches && document.visibilityState === "visible" && document.hasFocus();
+          const isInbound = newMsg.direction === "inbound";
 
           if (matches) {
             setMessages(prev => {
               if (prev.some(m => m.id === newMsg.id)) return prev;
               return [...prev, newMsg];
             });
+          }
+
+          // Inbound notifications: only when conversation isn't actively open
+          if (isInbound && !isOpen) {
+            // Increment unread badge
+            setUnreadByContact(prev => ({
+              ...prev,
+              [newMsg.contact_id]: (prev[newMsg.contact_id] || 0) + 1,
+            }));
+
+            // Sound
+            playInboxBeep();
+
+            // Browser notification (uses existing permission)
+            const contact = contacts.find(c => c.id === newMsg.contact_id);
+            const title = contact?.name || newMsg.phone || "Nova mensagem";
+            const previewByType: Record<string, string> = {
+              audio: "🎵 Áudio",
+              image: "📷 Imagem",
+              file: "📄 Arquivo",
+              document: "📄 Arquivo",
+              video: "🎥 Vídeo",
+            };
+            const body = previewByType[newMsg.message_type] || newMsg.message || "Nova mensagem";
+            try {
+              if ("Notification" in window && Notification.permission === "granted") {
+                const n = new Notification(title, {
+                  body,
+                  icon: contact?.avatar_url || "/favicon.ico",
+                  badge: "/favicon.ico",
+                  tag: `inbox-${newMsg.contact_id}`,
+                });
+                n.onclick = () => {
+                  window.focus();
+                  setSelectedContactId(newMsg.contact_id);
+                  n.close();
+                };
+              }
+            } catch { /* noop */ }
           }
 
           fetchContacts();
