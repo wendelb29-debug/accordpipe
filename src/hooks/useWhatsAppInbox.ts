@@ -533,6 +533,14 @@ export function useWhatsAppInbox() {
     };
   }, [companyId, fetchContacts]);
 
+  // Update browser tab title with total unread count
+  const totalUnread = Object.values(unreadByContact).reduce((sum, n) => sum + n, 0);
+  useEffect(() => {
+    const original = originalTitleRef.current;
+    document.title = totalUnread > 0 ? `(${totalUnread > 99 ? "99+" : totalUnread}) ${original}` : original;
+    return () => { document.title = original; };
+  }, [totalUnread]);
+
   return {
     contacts,
     messages,
@@ -552,5 +560,6 @@ export function useWhatsAppInbox() {
     updateConversationStatus,
     companyId,
     refetchContacts: fetchContacts,
+    unreadByContact,
   };
 }
