@@ -95,6 +95,8 @@ export function useWhatsAppInbox() {
   const fetchMessages = useCallback(async (contactId: string) => {
     if (!companyId) return;
 
+    console.log("[inbox] fetchMessages", { contactId, companyId });
+
     const { data, error } = await supabase
       .from("whatsapp_messages")
       .select("*")
@@ -103,9 +105,10 @@ export function useWhatsAppInbox() {
       .order("created_at", { ascending: true });
 
     if (error) {
-      console.error("Error fetching messages:", error);
+      console.error("[inbox] Error fetching messages:", error);
       return;
     }
+    console.log("[inbox] fetched", data?.length, "messages for contact", contactId);
     setMessages((data || []) as InboxMessage[]);
   }, [companyId]);
 
