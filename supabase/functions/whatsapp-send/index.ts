@@ -26,7 +26,8 @@ async function sendUazapi(
   text: string,
 ): Promise<SendResult> {
   const base = serverUrl.replace(/\/$/, "");
-  const url = `${base}/message/sendText/${instanceName}`;
+  // uazapi endpoint: POST /send/text with header `token` (instance token)
+  const url = `${base}/send/text`;
   const payload = { number: normalizePhone(phone), text };
 
   console.log("[sendUazapi] POST", url);
@@ -37,7 +38,7 @@ async function sendUazapi(
   try {
     const res = await fetch(url, {
       method: "POST",
-      headers: { "apikey": instanceToken, "Content-Type": "application/json" },
+      headers: { "token": instanceToken, "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
