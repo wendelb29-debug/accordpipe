@@ -386,8 +386,12 @@ async function fetchUazapiAvatar(
     }
     const json: any = await res.json().catch(() => null);
     const pic = json?.image || json?.imgUrl || json?.profilePicture || json?.url || json?.profile_picture;
-    console.log("[fetchUazapiAvatar] result for", phone, "=>", pic ? "found" : "none");
-    return typeof pic === "string" && pic.startsWith("http") ? pic : null;
+    const name = json?.name || json?.pushname || json?.verifiedName || json?.shortName || null;
+    console.log("[fetchUazapiAvatar] result for", phone, "=>", pic ? "img" : "no-img", name ? "name" : "no-name");
+    return {
+      image: typeof pic === "string" && pic.startsWith("http") ? pic : null,
+      name: typeof name === "string" && name.trim() ? name.trim() : null,
+    };
   } catch (e) {
     console.warn("[fetchUazapiAvatar] failed:", (e as Error).message);
     return null;
