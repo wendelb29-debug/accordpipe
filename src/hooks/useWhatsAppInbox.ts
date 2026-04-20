@@ -77,6 +77,8 @@ export function useWhatsAppInbox() {
   const [filter, setFilter] = useState<InboxFilter>("mine");
   const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState<"disconnected" | "connecting" | "connected">("disconnected");
+  const [unreadByContact, setUnreadByContact] = useState<Record<string, number>>({});
+  const originalTitleRef = useRef<string>(typeof document !== "undefined" ? document.title : "Accord Stack");
   const [activeIntegration, setActiveIntegration] = useState<{
     id?: string;
     provider: string;
