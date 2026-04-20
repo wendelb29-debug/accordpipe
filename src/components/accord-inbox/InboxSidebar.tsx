@@ -201,7 +201,7 @@ export function InboxSidebar({
                   <span className="text-[10px] text-muted-foreground">{c.lastMessageTime}</span>
                   {c.unreadCount ? (
                     <span
-                      className="min-w-[20px] h-[20px] inline-flex items-center justify-center rounded-full bg-emerald-500 text-white text-[11px] font-bold px-1.5 shadow-sm"
+                      className="min-w-[20px] h-[20px] inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[11px] font-bold px-1.5 shadow-sm"
                       aria-label={`${c.unreadCount} mensagens não lidas`}
                     >
                       {c.unreadCount > 99 ? "99+" : c.unreadCount}
