@@ -18,6 +18,49 @@ function normalizePhone(p: string): string {
   return p.replace(/\D/g, "");
 }
 
+async function sendUazapiMedia(
+  serverUrl: string,
+  instanceToken: string,
+  phone: string,
+  mediaUrl: string,
+  mediaType: "image" | "audio" | "video" | "document",
+  caption: string,
+  fileName?: string,
+): Promise<SendResult> {
+  const base = serverUrl.replace(/\/$/, "");
+  const url = `${base}/send/media`;
+  const payload: Record<string, unknown> = {
+    number: normalizePhone(phone),
+    type: mediaType,
+    file: mediaUrl,
+    text: caption || "",
+  };
+  if (fileName) payload.docName = fileName;
+
+  console.log("[sendUazapiMedia] POST", url, "type:", mediaType);
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { token: instanceToken, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const rawText = await res.text();
+    let body: any = {};
+    try { body = JSON.parse(rawText); } catch { body = { raw: rawText }; }
+
+    console.log("[sendUazapiMedia] status:", res.status, "resp:", rawText.slice(0, 400));
+
+    if (!res.ok) {
+      return { success: false, message: `Uazapi /send/media HTTP ${res.status}: ${rawText.slice(0, 250)}`, raw: body };
+    }
+    const externalId = body?.key?.id || body?.id || body?.messageId || body?.message?.id || undefined;
+    return { success: true, message: "Mídia enviada via Uazapi", external_id: externalId, raw: body };
+  } catch (err) {
+    return { success: false, message: `Falha Uazapi media: ${(err as Error).message}` };
+  }
+}
+
 async function sendUazapi(
   serverUrl: string,
   instanceName: string,
@@ -122,10 +165,12 @@ Deno.serve(async (req) => {
     }
     const userId = userData.user.id;
 
-    const { tenant_id, phone, text, message_id } = await req.json();
-    if (!tenant_id || !phone || !text) {
+    const { tenant_id, phone, text, message_id, message_type, media_url, file_name } = await req.json();
+    const msgType: string = message_type || "text";
+    const isMedia = msgType !== "text" && !!media_url;
+    if (!tenant_id || !phone || (!isMedia && !text)) {
       return new Response(
-        JSON.stringify({ error: "tenant_id, phone and text are required" }),
+        JSON.stringify({ error: "tenant_id, phone and text/media are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -173,7 +218,23 @@ Deno.serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-      result = await sendUazapi(integ.server_url, instanceName, integ.instance_token, phone, text);
+      if (isMedia) {
+        const uazType =
+          msgType === "image" ? "image" :
+          msgType === "audio" ? "audio" :
+          msgType === "video" ? "video" : "document";
+        result = await sendUazapiMedia(
+          integ.server_url,
+          integ.instance_token,
+          phone,
+          media_url,
+          uazType as "image" | "audio" | "video" | "document",
+          text || "",
+          file_name,
+        );
+      } else {
+        result = await sendUazapi(integ.server_url, instanceName, integ.instance_token, phone, text);
+      }
     } else if (integ.provider_type === "zapi") {
       const { data: comp } = await admin
         .from("companies")
