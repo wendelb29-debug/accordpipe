@@ -154,6 +154,13 @@ export function useWhatsAppInbox() {
   const selectContact = useCallback((contactId: string | null) => {
     setSelectedContactId(contactId);
     if (contactId) {
+      // Clear unread badge for this conversation
+      setUnreadByContact(prev => {
+        if (!prev[contactId]) return prev;
+        const next = { ...prev };
+        delete next[contactId];
+        return next;
+      });
       const contact = contacts.find((item) => item.id === contactId);
       fetchMessages(contactId, contact?.phone);
       // Fire-and-forget: sync name + avatar from UazAPI
