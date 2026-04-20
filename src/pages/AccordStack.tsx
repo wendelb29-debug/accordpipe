@@ -56,19 +56,28 @@ export default function AccordStack() {
       c.phone.includes(searchTerm))
   );
 
-  // Map InboxContact -> SidebarContact
-  const sidebarContacts = filteredContacts.map((c) => ({
-    id: c.id,
-    name: c.name,
-    phone: c.phone,
-    lastMessage: c.last_message || undefined,
-    lastMessageTime: c.last_message_at
-      ? new Date(c.last_message_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-      : undefined,
-    profilePicUrl: c.avatar_url || undefined,
-    conversationStatus: c.conversation_status,
-    assignedTo: c.assigned_to || undefined,
-  }));
+  // Map InboxContact -> SidebarContact (with unread badge + unread-first ordering)
+  const sidebarContacts = filteredContacts
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      phone: c.phone,
+      lastMessage: c.last_message || undefined,
+      lastMessageTime: c.last_message_at
+        ? new Date(c.last_message_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+        : undefined,
+      profilePicUrl: c.avatar_url || undefined,
+      conversationStatus: c.conversation_status,
+      assignedTo: c.assigned_to || undefined,
+      unreadCount: unreadByContact[c.id] || 0,
+      _lastAt: c.last_message_at ? new Date(c.last_message_at).getTime() : 0,
+    }))
+    .sort((a, b) => {
+      // Unread conversations first, then most-recent
+      if ((a.unreadCount > 0) !== (b.unreadCount > 0)) return a.unreadCount > 0 ? -1 : 1;
+      return b._lastAt - a._lastAt;
+    })
+    .map(({ _lastAt, ...rest }) => rest);
 
   // Map InboxContact -> ChatContact
   const chatContact = selectedContact
