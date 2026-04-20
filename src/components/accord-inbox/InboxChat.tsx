@@ -515,8 +515,8 @@ export function InboxChat({
                   }}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
                   placeholder="Digite uma mensagem..."
-                  className="flex-1 resize-none outline-none text-sm bg-muted/50 border border-border/50 rounded-xl px-3 py-2.5 text-foreground placeholder:text-muted-foreground leading-relaxed focus:border-primary/40 transition-all"
-                  style={{ height: 38, maxHeight: 90 }}
+                  className="flex-1 resize-none outline-none text-sm md:text-sm bg-muted/50 border border-border/50 rounded-xl px-3 py-2.5 text-foreground placeholder:text-muted-foreground leading-relaxed focus:border-primary/40 transition-all"
+                  style={{ height: 38, maxHeight: 90, fontSize: typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches ? 16 : undefined }}
                 />
               )}
               <button
