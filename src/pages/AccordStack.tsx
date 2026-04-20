@@ -34,6 +34,7 @@ export default function AccordStack() {
   } = useWhatsAppInbox();
 
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState("");
   const [transferOpen, setTransferOpen] = useState(false);
   const [transferContactId, setTransferContactId] = useState<string | null>(null);
@@ -43,6 +44,9 @@ export default function AccordStack() {
   const [statusFilter, setStatusFilter] = useState<ConversationStatusFilter>("fila");
 
   const selectedContact = contacts.find((c) => c.id === selectedContactId) || null;
+  // On mobile, show chat full-screen when a conversation is selected (hide list)
+  const showChatOnly = isMobile && !!selectedContactId;
+  const showListOnly = isMobile && !selectedContactId;
 
   const matchesStatus = (status: string | undefined, tab: ConversationStatusFilter) => {
     const s = status || "fila";
