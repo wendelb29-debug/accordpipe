@@ -120,12 +120,17 @@ Deno.serve(async (req) => {
     if (resolvedWorkspaceId) {
       const { data: firstCol } = await supabaseAdmin
         .from("kanban_columns")
-        .select("id")
+        .select("id, position, name")
         .eq("workspace_id", resolvedWorkspaceId)
         .order("position", { ascending: true })
         .limit(1)
         .maybeSingle();
-      if (firstCol?.id) initialStage = firstCol.id;
+      if (firstCol?.id) {
+        initialStage = firstCol.id;
+        console.log("[lead-form-webhook] first column resolved", { col: firstCol });
+      } else {
+        console.warn("[lead-form-webhook] no kanban columns found for workspace", { resolvedWorkspaceId });
+      }
     }
 
     // Build notes with extra fields
