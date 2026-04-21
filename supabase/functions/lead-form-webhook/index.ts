@@ -66,18 +66,32 @@ Deno.serve(async (req) => {
     let resolvedWorkspaceId: string | null = null;
     let formTags: string[] = [];
 
-    if (!resolvedServidorId && resolvedFormId) {
+    if (resolvedFormId) {
       const { data: formData } = await supabaseAdmin
         .from("crm_forms")
-        .select("servidor_id, is_active, workspace_id, tags")
+        .select("servidor_id, workspace_id, tags")
         .eq("id", resolvedFormId)
         .maybeSingle();
-      if (formData?.is_active) {
+      if (formData) {
         resolvedServidorId = formData.servidor_id;
         resolvedWorkspaceId = formData.workspace_id || null;
         formTags = (formData.tags as string[]) || [];
+        console.log("[lead-form-webhook] form resolved", { resolvedFormId, resolvedServidorId, resolvedWorkspaceId });
       } else {
-        resolvedFormId = null; // form inactive or not found
+        resolvedFormId = null;
+      }
+    }
+
+    // Multi-tenant guard: workspace must belong to the same tenant
+    if (resolvedWorkspaceId && resolvedServidorId) {
+      const { data: ws } = await supabaseAdmin
+        .from("workspaces")
+        .select("id, servidor_id")
+        .eq("id", resolvedWorkspaceId)
+        .maybeSingle();
+      if (!ws || ws.servidor_id !== resolvedServidorId) {
+        console.warn("[lead-form-webhook] workspace/tenant mismatch — clearing workspace", { resolvedWorkspaceId, resolvedServidorId, wsTenant: ws?.servidor_id });
+        resolvedWorkspaceId = null;
       }
     }
 
