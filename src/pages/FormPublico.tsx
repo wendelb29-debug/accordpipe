@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import accordLogo from "@/assets/accord-logo-full.png";
+import accordLogo from "@/assets/accord-logo.png";
 
 interface PublicForm {
   id: string;
@@ -277,7 +277,7 @@ export default function FormPublico() {
       {/* Header fixed */}
       <header className="sticky top-0 z-30 backdrop-blur-xl bg-[#0F172A]/70 border-b border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
-          <img src={logoUrl} alt="Accord" className="h-8 sm:h-10 lg:h-12 w-auto object-contain" />
+          <img src={logoUrl} alt="Accord" className="h-9 sm:h-10 w-auto object-contain [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.3))] mix-blend-screen" />
           <Link to="/auth">
             <Button variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10 gap-2">
               <LogIn className="h-4 w-4" />
@@ -417,7 +417,7 @@ export default function FormPublico() {
               <Card className="border-white/10 bg-[#1E293B]/90 backdrop-blur-xl shadow-[0_25px_80px_-20px_rgba(59,91,219,0.4)]">
                 <CardContent className="p-5 sm:p-7">
                   <div className="mb-5">
-                    <h2 className="text-xl sm:text-2xl font-bold text-white">Comece agora — é grátis</h2>
+                    <h2 className="text-xl sm:text-2xl font-bold text-white">Comece agora</h2>
                     <p className="text-sm text-white/60 mt-1">Preencha e nossa equipe entra em contato em até 2h</p>
                   </div>
 
