@@ -192,10 +192,10 @@ export default function AccordStack() {
   }
 
   return (
-    <div className="flex h-full min-h-0 bg-background overflow-hidden">
+    <div className="flex h-full min-h-0 max-h-full bg-background overflow-hidden">
       <div className={cn(
-        "flex-shrink-0 w-full md:w-auto h-full",
-        showChatOnly && "hidden md:block",
+        "flex-shrink-0 w-full md:w-auto h-full min-h-0 flex flex-col overflow-hidden",
+        showChatOnly && "hidden md:flex",
       )}>
         <InboxSidebar
           contacts={sidebarContacts}
@@ -213,7 +213,7 @@ export default function AccordStack() {
         />
       </div>
 
-      <div className={cn("flex-1 min-w-0", showListOnly && "hidden md:flex")}>
+      <div className={cn("flex-1 min-w-0 min-h-0 h-full flex overflow-hidden", showListOnly && "hidden md:flex")}>
         <InboxChat
           contact={chatContact}
           messages={chatMessages}

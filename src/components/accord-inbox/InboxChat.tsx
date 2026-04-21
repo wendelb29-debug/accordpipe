@@ -378,7 +378,7 @@ export function InboxChat({
   }
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-background">
+    <div className="flex-1 flex flex-col min-w-0 min-h-0 h-full overflow-hidden bg-background">
       <div className="flex items-center gap-2 px-2 sm:px-4 py-2.5 sm:py-3 border-b border-border/60 bg-background flex-shrink-0">
         {onBack && (
           <button
@@ -433,7 +433,7 @@ export function InboxChat({
         </div>
       </div>
 
-      <div ref={msgsRef} className="flex-1 overflow-y-auto flex flex-col gap-1.5 py-4 px-5 relative">
+      <div ref={msgsRef} className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-1.5 py-4 px-5 relative">
         <AccordWatermark />
         <div className="relative z-10 flex items-center gap-3 my-2">
           <div className="flex-1 h-px bg-border/40" />
