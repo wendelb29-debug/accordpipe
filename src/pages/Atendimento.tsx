@@ -62,8 +62,17 @@ function AtendimentoContent() {
   
 
   const backButton = (
-    <div className="flex items-center gap-2 px-3 pt-1 pb-0.5">
-      <h2 className="text-xs font-bold text-foreground">{activeWorkspace?.name || "Workspace"}</h2>
+    <div className="flex items-center gap-1.5 px-3 pt-2 pb-1 text-xs">
+      <button
+        onClick={() => setSelectedWsId(null)}
+        className="text-muted-foreground hover:text-foreground transition-colors"
+      >
+        Workspaces
+      </button>
+      <span className="text-muted-foreground/50">/</span>
+      <span className="font-semibold text-foreground truncate">
+        {activeWorkspace?.name || "Workspace"}
+      </span>
     </div>
   );
 
