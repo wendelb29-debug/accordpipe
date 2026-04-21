@@ -279,7 +279,7 @@ export function InboxChat({
     if (!text.trim() || isClosed) return;
     onSendMessage(text.trim());
     setText("");
-    if (taRef.current) taRef.current.style.height = "38px";
+    if (taRef.current) taRef.current.style.height = "40px";
   };
 
   const uploadAndSend = async (file: File, messageType: "image" | "audio" | "file") => {
