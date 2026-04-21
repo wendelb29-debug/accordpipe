@@ -27,7 +27,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
   const hideHeader = false;
   const isMobile = useIsMobile();
-  const isAccordStack = location.pathname.startsWith("/accord-stack");
+  const isAccordStack = false;
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
 
