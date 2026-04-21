@@ -126,7 +126,6 @@ export default function FormPublico() {
           .from("crm_forms")
           .select("id, name, description, fields, servidor_id, slug, is_active, landing_page_enabled, headline, subheadline, cta_text, thank_you_message, redirect_url_after_submit, seo_title, seo_description, workspace_id, tags")
           .eq("id", formId)
-          .eq("is_active", true)
           .maybeSingle();
         if (legacy) {
           const { data: tenant } = await supabase
