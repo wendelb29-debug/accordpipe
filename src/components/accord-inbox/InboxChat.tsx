@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import {
   Search, ArrowLeftRight, Info, X, Paperclip, Image, Mic, Trash2,
-  Square, Send, Bold, Italic, Zap, FileText, Play, Pause,
+  Send, Play, Pause, FileText,
   MoreVertical, Users, Check, CheckCheck, ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -279,7 +279,7 @@ export function InboxChat({
     if (!text.trim() || isClosed) return;
     onSendMessage(text.trim());
     setText("");
-    if (taRef.current) taRef.current.style.height = "38px";
+    if (taRef.current) taRef.current.style.height = "40px";
   };
 
   const uploadAndSend = async (file: File, messageType: "image" | "audio" | "file") => {
@@ -467,92 +467,93 @@ export function InboxChat({
             )}
           </div>
         ) : (
-          <>
-            <div className="hidden sm:flex items-center gap-1 mb-2 pb-2 border-b border-border/40">
-              <ToolBtn icon={<Paperclip size={14} />} title="Arquivo" onClick={() => fileInputRef.current?.click()} />
-              <ToolBtn icon={<Image size={14} />} title="Imagem" onClick={() => imageInputRef.current?.click()} />
-              <ToolBtn icon={<Mic size={14} />} title="Áudio (arquivo)" onClick={() => audioInputRef.current?.click()} />
-              <div className="w-px h-4 bg-border/50 mx-1" />
-              <ToolBtn icon={<Bold size={13} />} title="Negrito" />
-              <ToolBtn icon={<Italic size={13} />} title="Itálico" />
-              <div className="w-px h-4 bg-border/50 mx-1" />
-              <AiImprovePopover text={text} onApply={(newText) => {
-                setText(newText);
-                requestAnimationFrame(() => {
-                  if (taRef.current) {
-                    taRef.current.style.height = "38px";
-                    taRef.current.style.height = Math.min(taRef.current.scrollHeight, 90) + "px";
-                    taRef.current.focus();
-                  }
-                });
-              }} />
-              {uploading && <span className="text-[11px] text-muted-foreground ml-2">Enviando...</span>}
-              <ToolBtn icon={<FileText size={14} />} title="Notas internas" className="ml-auto" />
-            </div>
+          <div className="space-y-1.5">
+            {uploading && (
+              <div className="text-[11px] text-muted-foreground px-1 animate-fade-in">Enviando arquivo…</div>
+            )}
 
-            {/* Mobile: compact attachments row */}
-            <div className="sm:hidden flex items-center gap-1 mb-1.5">
-              <ToolBtn icon={<Paperclip size={16} />} title="Arquivo" onClick={() => fileInputRef.current?.click()} className="w-9 h-9" />
-              <ToolBtn icon={<Image size={16} />} title="Imagem" onClick={() => imageInputRef.current?.click()} className="w-9 h-9" />
-              <AiImprovePopover text={text} onApply={(newText) => {
-                setText(newText);
-                requestAnimationFrame(() => taRef.current?.focus());
-              }} />
-              {uploading && <span className="text-[11px] text-muted-foreground ml-1">Enviando...</span>}
-            </div>
-
-            <div className="flex items-end gap-2">
-              {isRecording ? (
-                <div className="flex-1 h-10 rounded-xl bg-muted/50 border border-destructive/30 flex items-center gap-2 px-3">
-                  <button
-                    onClick={cancelRecording}
-                    title="Cancelar gravação"
-                    className="text-destructive hover:opacity-80 flex-shrink-0"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                  <span className="inline-block w-2 h-2 rounded-full bg-destructive animate-pulse flex-shrink-0" />
-                  <span className="text-xs font-mono text-foreground/80 tabular-nums flex-shrink-0">
-                    {String(Math.floor(recordSeconds / 60)).padStart(2, "0")}:
-                    {String(recordSeconds % 60).padStart(2, "0")}
-                  </span>
-                  <AudioVisualizer stream={recordStream} className="flex-1 h-7" />
+            {isRecording ? (
+              <div className="flex items-center gap-2 h-12 rounded-2xl bg-muted/60 border border-destructive/40 px-3 animate-fade-in">
+                <button
+                  onClick={cancelRecording}
+                  title="Cancelar gravação"
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-destructive hover:bg-destructive/10 transition-colors flex-shrink-0"
+                >
+                  <Trash2 size={16} />
+                </button>
+                <span className="inline-block w-2 h-2 rounded-full bg-destructive animate-pulse flex-shrink-0" />
+                <span className="text-xs font-mono text-foreground/80 tabular-nums flex-shrink-0">
+                  {String(Math.floor(recordSeconds / 60)).padStart(2, "0")}:
+                  {String(recordSeconds % 60).padStart(2, "0")}
+                </span>
+                <AudioVisualizer stream={recordStream} className="flex-1 h-7" />
+                <button
+                  onClick={stopRecording}
+                  title="Enviar gravação"
+                  className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 hover:bg-primary/90 transition-all active:scale-95"
+                >
+                  <Send size={15} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-end gap-1 bg-muted/50 border border-border/50 rounded-2xl px-1.5 py-1 focus-within:border-primary/50 focus-within:bg-muted/30 transition-colors">
+                {/* Left actions: attachments + AI */}
+                <div className="flex items-center gap-0.5 pb-0.5 flex-shrink-0">
+                  <ToolBtn icon={<Paperclip size={16} />} title="Anexar arquivo" onClick={() => fileInputRef.current?.click()} className="w-9 h-9 rounded-full" />
+                  <ToolBtn icon={<Image size={16} />} title="Enviar imagem" onClick={() => imageInputRef.current?.click()} className="w-9 h-9 rounded-full" />
+                  <AiImprovePopover text={text} onApply={(newText) => {
+                    setText(newText);
+                    requestAnimationFrame(() => {
+                      if (taRef.current) {
+                        taRef.current.style.height = "40px";
+                        taRef.current.style.height = Math.min(taRef.current.scrollHeight, 120) + "px";
+                        taRef.current.focus();
+                      }
+                    });
+                  }} />
                 </div>
-              ) : (
+
+                {/* Textarea */}
                 <textarea
                   ref={taRef}
                   value={text}
                   onChange={(e) => {
                     setText(e.target.value);
-                    e.target.style.height = "38px";
-                    e.target.style.height = Math.min(e.target.scrollHeight, 90) + "px";
+                    e.target.style.height = "40px";
+                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
                   }}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
                   placeholder="Digite uma mensagem..."
-                  className="flex-1 resize-none outline-none text-base sm:text-sm bg-muted/50 border border-border/50 rounded-xl px-3 py-2.5 text-foreground placeholder:text-muted-foreground leading-relaxed focus:border-primary/40 transition-all"
+                  rows={1}
+                  className="flex-1 min-w-0 resize-none outline-none text-base sm:text-sm bg-transparent border-0 px-1 py-2.5 text-foreground placeholder:text-muted-foreground leading-relaxed self-center"
                   style={{ height: 40, maxHeight: 120 }}
                 />
-              )}
-              <button
-                onClick={() => { if (isRecording) stopRecording(); else startRecording(); }}
-                title={isRecording ? "Enviar gravação" : "Gravar áudio"}
-                className={cn(
-                  "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border transition-all",
-                  isRecording
-                    ? "bg-primary border-primary text-primary-foreground hover:bg-primary/90"
-                    : "border-border/50 text-muted-foreground hover:bg-muted/50"
-                )}
-              >
-                {isRecording ? <Send size={14} /> : <Mic size={14} />}
-              </button>
-              {!isRecording && (
-                <button onClick={send}
-                  className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 hover:bg-primary/90 transition-all">
-                  <Send size={14} />
-                </button>
-              )}
-            </div>
-          </>
+
+                {/* Right action: send when typing, mic when empty */}
+                <div className="flex items-center pb-0.5 flex-shrink-0">
+                  {text.trim() ? (
+                    <button
+                      onClick={send}
+                      title="Enviar mensagem (Enter)"
+                      aria-label="Enviar mensagem"
+                      className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all active:scale-95 animate-scale-in"
+                    >
+                      <Send size={15} />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={startRecording}
+                      title="Gravar áudio"
+                      aria-label="Gravar áudio"
+                      className="w-10 h-10 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-center transition-all active:scale-95"
+                    >
+                      <Mic size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>
