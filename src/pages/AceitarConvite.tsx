@@ -11,8 +11,7 @@ import { Eye, EyeOff, PartyPopper } from "lucide-react";
 export default function AceitarConvite() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const rawToken = searchParams.get("token");
-  const token = rawToken ? decodeURIComponent(rawToken).trim() : null;
+  const token = searchParams.get("token");
   const [invitation, setInvitation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [password, setPassword] = useState("");
@@ -22,11 +21,6 @@ export default function AceitarConvite() {
   const [accepted, setAccepted] = useState(false);
 
   useEffect(() => {
-    console.log("=== DEBUG CONVITE ===");
-    console.log("URL completa:", window.location.href);
-    console.log("Token raw:", rawToken);
-    console.log("Token decoded:", token);
-    console.log("Token length:", token?.length);
     if (!token) {
       setLoading(false);
       return;
@@ -40,37 +34,22 @@ export default function AceitarConvite() {
         .from("user_invitations")
         .select("*")
         .eq("token", token)
-        .maybeSingle();
+        .single();
 
-      console.log("Data retornada:", data);
-      console.log("Erro retornado:", error);
-      console.log("Hora atual UTC:", new Date().toISOString());
-      if (data) {
-        console.log("expires_at:", data.expires_at);
-        console.log("status:", data.status);
-        console.log("Expirou?", new Date(data.expires_at) < new Date());
-      }
-
-      if (error) {
-        console.error("[AceitarConvite] erro ao buscar convite:", error);
+      if (error || !data) {
         setLoading(false);
         return;
       }
 
-      if (!data) {
-        setLoading(false);
-        return;
-      }
-
-      if (data.status === "accepted" || data.status === "aceito") {
+      if (data.status === "accepted") {
         setAccepted(true);
       } else if (new Date(data.expires_at) < new Date()) {
         setExpired(true);
       }
 
       setInvitation(data);
-    } catch (err) {
-      console.error("[AceitarConvite] exceção:", err);
+    } catch {
+      // ignore
     } finally {
       setLoading(false);
     }
@@ -158,9 +137,7 @@ export default function AceitarConvite() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="text-destructive">Convite inválido</CardTitle>
-            <CardDescription>
-              Este link de convite é inválido ou já foi utilizado. Solicite um novo convite ao administrador.
-            </CardDescription>
+            <CardDescription>Este link de convite não é válido ou já foi utilizado.</CardDescription>
           </CardHeader>
         </Card>
       </div>

@@ -43,15 +43,14 @@ import Servidores from "./pages/Servidores";
 import NovoServidor from "./pages/NovoServidor";
 import AceitarConvite from "./pages/AceitarConvite";
 import AssinarDocumento from "./pages/AssinarDocumento";
-
+import AuditLogs from "./pages/AuditLogs";
 import Performance from "./pages/Performance";
 import TenantSetupPublico from "./pages/TenantSetupPublico";
-
+import Planos from "./pages/Planos";
 import Eventos from "./pages/Eventos";
 import MeusTenants from "./pages/MeusTenants";
 import Academy from "./pages/Academy";
 import GestaoTenants from "./pages/GestaoTenants";
-import WhatsAppConnection from "./pages/WhatsAppConnection";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1 } },
@@ -304,6 +303,16 @@ const App = () => (
               }
             />
             <Route
+              path="/configuracoes/auditoria"
+              element={
+                <ProtectedRoute requiredPermission="view_audit_logs">
+                  <AppLayout>
+                    <AuditLogs />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/performance"
               element={
                 <ProtectedRoute requiredPermission="view_performance_module">
@@ -314,6 +323,16 @@ const App = () => (
               }
             />
             <Route path="/setup-tenant/:token" element={<TenantSetupPublico />} />
+            <Route
+              path="/planos"
+              element={
+                <ProtectedRoute requiredPermission="view_billing_plans">
+                  <AppLayout>
+                    <Planos />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/eventos"
               element={
@@ -350,16 +369,6 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <Academy />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/configuracoes/whatsapp"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <WhatsAppConnection />
                   </AppLayout>
                 </ProtectedRoute>
               }

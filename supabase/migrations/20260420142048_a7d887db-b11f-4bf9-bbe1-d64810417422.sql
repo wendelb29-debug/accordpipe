@@ -1,1 +1,0 @@
-ALTER TABLE public.whatsapp_messages REPLICA IDENTITY FULL;

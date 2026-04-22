@@ -48,7 +48,7 @@ export default function LandingPage() {
               onClick={() => setTrialOpen(true)}
             >
               <Rocket className="h-3.5 w-3.5 shrink-0" />
-              <span className="hidden sm:inline">Teste 7 dias</span>
+              <span className="hidden sm:inline">Teste 7 dias grátis</span>
               <span className="sm:hidden">Testar</span>
             </Button>
             <Link to="/auth">

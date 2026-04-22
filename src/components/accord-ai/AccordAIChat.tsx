@@ -6,7 +6,6 @@ import ReactMarkdown from "react-markdown";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { supabase } from "@/integrations/supabase/client";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -146,26 +145,6 @@ export function AccordAIChat() {
 
   const { pageName, quickActions } = getContextForRoute(location.pathname);
 
-  // Extra clearance on routes that have a bottom send button (inbox / chat)
-  const needsExtraClearance =
-    location.pathname.startsWith("/accord-stack") ||
-    location.pathname.startsWith("/atendimento") ||
-    location.pathname.startsWith("/inbox");
-
-  // Hide on mobile when virtual keyboard is open
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
-  useEffect(() => {
-    if (!isMobile || typeof window === "undefined" || !window.visualViewport) return;
-    const vv = window.visualViewport;
-    const onResize = () => {
-      const diff = window.innerHeight - vv.height;
-      setKeyboardOpen(diff > 150);
-    };
-    vv.addEventListener("resize", onResize);
-    onResize();
-    return () => vv.removeEventListener("resize", onResize);
-  }, [isMobile]);
-
   // Detect if a dialog/modal/drawer is open
   const [hasOverlay, setHasOverlay] = useState(false);
   useEffect(() => {
@@ -214,16 +193,11 @@ export function AccordAIChat() {
     const allMessages = [...messages, userMsg];
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error("Sessão expirada. Faça login novamente.");
-      }
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({
           messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
@@ -290,14 +264,13 @@ export function AccordAIChat() {
 
   const send = () => sendMessage(input);
 
-  // Hide completely when overlay is open on mobile, or when mobile keyboard is up
-  const shouldHide = (isMobile && hasOverlay) || (isMobile && keyboardOpen);
+  // Hide completely when overlay is open on mobile
+  const shouldHide = isMobile && hasOverlay;
   if (shouldHide) return null;
 
-  // Calculate safe bottom position (extra clearance on chat routes to avoid send button)
+  // Calculate safe bottom position
   const baseBottom = isMobile ? 20 : 24;
-  const extraClearance = needsExtraClearance ? (isMobile ? 80 : 90) : 0;
-  const safeBottom = baseBottom + bottomOffset + extraClearance;
+  const safeBottom = baseBottom + bottomOffset;
 
   // ── Minimized state: show a tiny pill ──
   if (assistantState === "minimized") {

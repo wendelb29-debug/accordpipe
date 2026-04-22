@@ -60,7 +60,9 @@ const navigation = [
 const configNavigation = [
   { nameKey: "nav.users", href: "/configuracoes/usuarios", icon: Users, roles: ["admin", "ceo", "administrativo"] },
   { nameKey: "nav.tenantManagement", href: "/gestao-tenants", icon: Crown, roles: ["ceo", "master"], tenantAdminOnly: true },
-  
+  { nameKey: "nav.myTenants", href: "/meus-tenants", icon: Building2, roles: ["ceo", "master", "admin"], resellerOnly: true },
+  { nameKey: "nav.plans", href: "/planos", icon: Crown, roles: ["ceo", "master"] },
+  { nameKey: "nav.audit", href: "/configuracoes/auditoria", icon: Settings, roles: ["ceo", "master"] },
 ];
 
 const LANGUAGES = [

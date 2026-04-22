@@ -111,10 +111,6 @@ export const PERMISSION_MODULES: PermissionModule[] = [
       { key: "configure_pipeline", label: "Configurar Pipeline", description: "Configurar pipeline de vendas" },
       { key: "edit_columns", label: "Editar Colunas", description: "Editar colunas do kanban" },
       { key: "define_sla", label: "Definir SLA", description: "Definir tempos de SLA das etapas" },
-      { key: "workspace_view_specific", label: "Acesso a Workspaces Específicos", description: "Restringir visualização apenas aos workspaces atribuídos individualmente (configurado em Permissões por Workspace)" },
-      { key: "workspace_move_cards", label: "Mover Cards entre Etapas", description: "Permitir arrastar cards entre estágios do Kanban" },
-      { key: "workspace_skip_required_stages", label: "Pular Etapas Obrigatórias", description: "Avançar cards pulando etapas marcadas como obrigatórias (ex: pular Cadastro)" },
-      { key: "workspace_return_card", label: "Devolver Card para Origem", description: "Usar a função 'Devolver' para retornar cards ao vendedor e estágio anteriores" },
     ],
   },
 
@@ -218,9 +214,6 @@ export const PERMISSION_MODULES: PermissionModule[] = [
       { key: "view_clients", label: "Visualizar Clientes", description: "Ver base de clientes", scopable: true },
       { key: "edit_clients", label: "Editar Clientes", description: "Editar dados de clientes" },
       { key: "view_post_sale", label: "Ver Pós-Venda", description: "Acessar aba pós-venda" },
-      { key: "view_full_cpf", label: "Ver CPF Completo (LGPD)", description: "Visualizar CPF sem máscara. Sem esta permissão, o CPF é exibido parcialmente oculto." },
-      { key: "view_client_documents", label: "Ver Documentos Sensíveis", description: "Acessar RG, comprovantes e documentos pessoais enviados pelo cliente" },
-      { key: "export_personal_data", label: "Exportar Dados Pessoais", description: "Exportar planilhas contendo informações pessoais identificáveis (PII)" },
     ],
   },
 
@@ -278,9 +271,6 @@ export const PERMISSION_MODULES: PermissionModule[] = [
       { key: "assign_conversation", label: "Atribuir Conversa", description: "Atribuir conversas a usuários" },
       { key: "transfer_conversation", label: "Transferir Conversa", description: "Transferir conversas entre usuários" },
       { key: "send_broadcast", label: "Enviar Broadcast", description: "Disparar mensagens em massa" },
-      { key: "view_other_operators_chats", label: "Ver Conversas de Outros Operadores", description: "Visualizar conversas atribuídas a outros atendentes (supervisão)" },
-      { key: "delete_whatsapp_messages", label: "Apagar Mensagens", description: "Excluir mensagens enviadas no WhatsApp" },
-      { key: "export_chat_history", label: "Exportar Histórico", description: "Exportar histórico de conversas em arquivo" },
     ],
   },
 

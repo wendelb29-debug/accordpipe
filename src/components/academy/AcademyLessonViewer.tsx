@@ -6,7 +6,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ArrowRight, CheckCircle2, Clock, Download, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
-import DOMPurify from "dompurify";
 
 interface Props {
   courseId: string;
@@ -127,7 +126,7 @@ export function AcademyLessonViewer({ courseId, lessonId, onBack, onSelectLesson
         {lesson.content_html && (
           <Card>
             <CardContent className="p-6 prose prose-sm dark:prose-invert max-w-none">
-              <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(lesson.content_html) }} />
+              <div dangerouslySetInnerHTML={{ __html: lesson.content_html }} />
             </CardContent>
           </Card>
         )}

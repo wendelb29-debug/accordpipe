@@ -45,15 +45,6 @@ function AtendimentoContent() {
     return unregister;
   }, [selectedWsId, pushBackHandler]);
 
-  // Sync the active workspace name into the global header title
-  useEffect(() => {
-    const name = selectedWsId ? (activeWorkspace?.name || "") : "";
-    window.dispatchEvent(new CustomEvent("header:title-suffix", { detail: name }));
-    return () => {
-      window.dispatchEvent(new CustomEvent("header:title-suffix", { detail: "" }));
-    };
-  }, [selectedWsId, activeWorkspace?.name]);
-
   // Show hub if no workspace selected yet
   if (!selectedWsId) {
     return (
@@ -68,7 +59,13 @@ function AtendimentoContent() {
     );
   }
 
-  const backButton = null;
+  
+
+  const backButton = (
+    <div className="flex items-center gap-2 px-3 pt-1 pb-0.5">
+      <h2 className="text-xs font-bold text-foreground">{activeWorkspace?.name || "Workspace"}</h2>
+    </div>
+  );
 
   // If user only has access to admin pipeline
   if (canSeeAdmin && !canSeeCommercial) {
@@ -105,7 +102,7 @@ function AtendimentoContent() {
     <div className="-m-3 md:-m-6 lg:-m-8 h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
       {backButton}
       <Tabs defaultValue="comercial" className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="mx-3 mt-3 mb-2 w-fit h-8">
+        <TabsList className="mx-3 mt-0.5 mb-0 w-fit h-8">
           <TabsTrigger value="comercial" className="gap-1 text-[11px] h-7 px-3">
             <MessageSquare className="h-3 w-3" /> Pipeline Comercial
           </TabsTrigger>

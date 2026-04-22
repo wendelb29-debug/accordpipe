@@ -1,225 +1,218 @@
-import { Search, Plus, Users, MessageSquare } from "lucide-react";
+import { Search, Inbox, Users, UserX, Archive, Clock, MessageCircle, CheckCircle2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { InboxFilter, InboxContact } from "@/hooks/useWhatsAppInbox";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
-export type ConversationStatusFilter = "fila" | "em_atendimento" | "encerrado";
-
-export interface SidebarContact {
-  id: string;
-  name: string;
-  phone: string;
-  avatarColor?: string;
-  avatarFg?: string;
-  lastMessage?: string;
-  lastMessageTime?: string;
-  unreadCount?: number;
-  isOnline?: boolean;
-  isGroup?: boolean;
-  channel?: "zapi" | "uazapi" | "cloud";
-  channelLabel?: string;
-  assignedTo?: string;
-  profilePicUrl?: string;
-  conversationStatus?: string;
-}
+export type ConversationStatusFilter = "all" | "aguardando" | "em_atendimento" | "encerrado";
 
 interface InboxSidebarProps {
-  contacts: SidebarContact[];
+  contacts: InboxContact[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   searchTerm: string;
-  onSearchChange: (v: string) => void;
-  filter: string;
-  onFilterChange: (v: string) => void;
+  onSearchChange: (value: string) => void;
+  filter: InboxFilter;
+  onFilterChange: (f: InboxFilter) => void;
   isAdmin: boolean;
   loading: boolean;
   statusFilter: ConversationStatusFilter;
-  onStatusFilterChange: (v: ConversationStatusFilter) => void;
-  onNewConversation?: () => void;
+  onStatusFilterChange: (s: ConversationStatusFilter) => void;
 }
 
-const CHANNEL_STYLES = {
-  zapi: { label: "Z-API", cls: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300" },
-  uazapi: { label: "Uazapi", cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" },
-  cloud: { label: "Cloud", cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
-};
+const filterOptions: { value: InboxFilter; label: string; icon: any }[] = [
+  { value: "mine", label: "Minhas", icon: Inbox },
+  { value: "all", label: "Todas", icon: Users },
+  { value: "unassigned", label: "Não atribuídas", icon: UserX },
+];
 
-function Avatar({ contact, size = 40 }: { contact: SidebarContact; size?: number }) {
-  const initials = contact.name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .substring(0, 2)
-    .toUpperCase();
-
-  if (contact.profilePicUrl) {
-    return (
-      <img
-        src={contact.profilePicUrl}
-        alt={contact.name}
-        className="rounded-full object-cover flex-shrink-0"
-        style={{ width: size, height: size }}
-        onError={(e) => { e.currentTarget.style.display = "none"; }}
-      />
-    );
-  }
-
-  return (
-    <div
-      className="rounded-full flex items-center justify-center flex-shrink-0 font-medium text-sm"
-      style={{
-        width: size,
-        height: size,
-        background: contact.avatarColor || "#EEEDFE",
-        color: contact.avatarFg || "#534AB7",
-      }}
-    >
-      {contact.isGroup ? <Users size={16} style={{ color: contact.avatarFg || "#534AB7" }} /> : initials}
-    </div>
-  );
-}
-
-const STATUS_TABS: { key: ConversationStatusFilter; label: string; colorClass: string }[] = [
-  { key: "fila", label: "Fila", colorClass: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
-  { key: "em_atendimento", label: "Atend.", colorClass: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" },
-  { key: "encerrado", label: "Enc.", colorClass: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+const statusTabs: { value: ConversationStatusFilter; label: string; icon: any }[] = [
+  { value: "aguardando", label: "Fila", icon: Clock },
+  { value: "em_atendimento", label: "Atend.", icon: MessageCircle },
+  { value: "encerrado", label: "Enc.", icon: CheckCircle2 },
 ];
 
 export function InboxSidebar({
   contacts, selectedId, onSelect, searchTerm, onSearchChange,
   filter, onFilterChange, isAdmin, loading, statusFilter, onStatusFilterChange,
-  onNewConversation,
 }: InboxSidebarProps) {
-  const filterOpts = ["Minhas", "Todas", ...(isAdmin ? ["Não atrib."] : [])];
+  const getInitials = (name: string) =>
+    name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
 
-  const counts = {
-    fila: contacts.filter((c) => c.conversationStatus === "fila" || c.conversationStatus === "aguardando").length,
-    em_atendimento: contacts.filter((c) => c.conversationStatus === "em_atendimento").length,
-    encerrado: contacts.filter((c) => c.conversationStatus === "encerrado").length,
+  const formatTime = (dateStr: string | null) => {
+    if (!dateStr) return "";
+    try {
+      return formatDistanceToNow(new Date(dateStr), { addSuffix: false, locale: ptBR });
+    } catch {
+      return "";
+    }
+  };
+
+  // Count by status
+  const countByStatus = (status: string) =>
+    contacts.filter(c => c.conversation_status === status).length;
+
+  // Filter contacts by status
+  const filteredByStatus = statusFilter === "all"
+    ? contacts
+    : contacts.filter(c => c.conversation_status === statusFilter);
+
+  const statusBadgeColor = (status: string) => {
+    if (status === "aguardando") return "bg-amber-500/10 text-amber-600 border-amber-500/30";
+    if (status === "em_atendimento") return "bg-blue-500/10 text-blue-600 border-blue-500/30";
+    return "bg-muted text-muted-foreground border-border";
   };
 
   return (
-    <div className="flex flex-col w-full md:w-[300px] md:min-w-[300px] md:border-r border-border/60 bg-background h-full">
-      {/* Top bar — search + new */}
-      <div className="h-14 flex items-center gap-2 px-3 border-b border-border/60 flex-shrink-0">
-        <div className="flex items-center gap-2 bg-muted/60 border border-border/50 rounded-lg px-2.5 h-9 flex-1 focus-within:border-primary/50 focus-within:bg-background transition-colors">
-          <Search size={14} className="text-muted-foreground flex-shrink-0" />
-          <input
-            className="bg-transparent outline-none text-[13px] text-foreground placeholder:text-muted-foreground w-full"
+    <div className="w-[320px] lg:w-[340px] shrink-0 border-r border-border flex flex-col bg-card">
+      {/* Search */}
+      <div className="px-3 pt-3 pb-2">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
             placeholder="Buscar conversa..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-9 h-8 text-xs rounded-lg bg-muted/50 border-transparent focus:border-border"
           />
         </div>
-        {onNewConversation && (
-          <button
-            onClick={onNewConversation}
-            title="Nova conversa"
-            aria-label="Nova conversa"
-            className="w-9 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all flex-shrink-0 shadow-sm"
-          >
-            <Plus size={16} />
-          </button>
-        )}
       </div>
 
-      {/* Ownership filter */}
-      <div className="flex items-center gap-1 px-3 pt-2.5 pb-1.5">
-        {filterOpts.map((f) => (
-          <button
-            key={f}
-            onClick={() => onFilterChange(f)}
-            className={cn(
-              "px-2.5 h-7 rounded-full text-[11px] font-medium transition-all",
-              filter === f ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/60"
-            )}
-          >
-            {f}
-          </button>
-        ))}
+      {/* Owner filter */}
+      <div className="flex items-center gap-0.5 px-3 pb-1">
+        {filterOptions
+          .filter(f => f.value !== "all" || isAdmin)
+          .map(f => (
+            <Button
+              key={f.value}
+              size="sm"
+              variant="ghost"
+              className={cn(
+                "h-6 text-[10px] gap-1 px-2 rounded-md font-medium transition-all",
+                filter === f.value
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              )}
+              onClick={() => onFilterChange(f.value)}
+            >
+              <f.icon className="h-2.5 w-2.5" />
+              {f.label}
+            </Button>
+          ))}
       </div>
 
       {/* Status tabs */}
-      <div className="flex border-b border-border/60 px-2">
-        {STATUS_TABS.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => onStatusFilterChange(tab.key)}
-            className={cn(
-              "flex-1 py-2.5 text-[11px] flex items-center justify-center gap-1.5 border-b-2 transition-all -mb-px",
-              statusFilter === tab.key ? "border-primary text-primary font-semibold" : "border-transparent text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {tab.label}
-            <span className={cn("rounded-full px-1.5 min-w-[18px] text-center text-[10px] font-medium leading-4", tab.colorClass)}>
-              {counts[tab.key] || 0}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      <div className="flex-1 overflow-y-auto py-1 px-1.5">
-        {loading ? (
-          <div className="flex items-center justify-center h-20">
-            <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-          </div>
-        ) : contacts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 gap-2 text-muted-foreground">
-            <MessageSquare size={24} className="opacity-40" />
-            <p className="text-xs">Nenhuma conversa</p>
-          </div>
-        ) : (
-          contacts.map((c) => {
-            const isSelected = c.id === selectedId;
-            const chan = c.channel ? CHANNEL_STYLES[c.channel] : null;
-            return (
-              <div
-                key={c.id}
-                onClick={() => onSelect(c.id)}
+      <div className="flex items-center px-3 pb-2 pt-1">
+        <div className="flex items-center bg-muted/50 rounded-lg p-0.5 w-full">
+          {statusTabs.map(st => (
+            <button
+              key={st.value}
+              onClick={() => onStatusFilterChange(st.value)}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1 h-7 rounded-md text-[11px] font-medium transition-all",
+                statusFilter === st.value
+                  ? "bg-card shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {st.label}
+              <Badge
+                variant="outline"
                 className={cn(
-                  "flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer mb-0.5 transition-colors relative",
-                  isSelected
-                    ? "bg-primary/10 before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:bg-primary before:rounded-r"
-                    : "hover:bg-muted/50"
+                  "h-4 min-w-[18px] px-1 text-[9px] font-semibold",
+                  statusFilter === st.value ? "border-primary/30 text-primary" : "border-transparent text-muted-foreground"
                 )}
               >
-                <div className="relative flex-shrink-0">
-                  <Avatar contact={c} size={40} />
-                  {c.isOnline && (
-                    <span className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-background" />
-                  )}
+                {countByStatus(st.value)}
+              </Badge>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Contact list */}
+      <ScrollArea className="flex-1">
+        {loading ? (
+          <div className="p-3 space-y-2">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="flex gap-3 items-center p-2">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="flex-1 space-y-1.5">
+                  <Skeleton className="h-3.5 w-24" />
+                  <Skeleton className="h-3 w-36" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredByStatus.length === 0 ? (
+          <div className="text-center py-16 text-muted-foreground">
+            <Inbox className="h-10 w-10 mx-auto mb-3 opacity-30" />
+            <p className="text-xs">Nenhuma conversa encontrada</p>
+          </div>
+        ) : (
+          <div className="px-1.5 py-1">
+            {filteredByStatus.map(contact => (
+              <button
+                key={contact.id}
+                onClick={() => onSelect(contact.id)}
+                className={cn(
+                  "group w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-left transition-all duration-150",
+                  selectedId === contact.id
+                    ? "bg-primary/10 border border-primary/20"
+                    : "hover:bg-muted/50 border border-transparent"
+                )}
+              >
+                <div className="relative">
+                  <Avatar className="h-10 w-10 shrink-0">
+                    {contact.avatar_url && <AvatarImage src={contact.avatar_url} />}
+                    <AvatarFallback className="bg-primary/80 text-primary-foreground text-xs font-medium">
+                      {getInitials(contact.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  {/* Status dot */}
+                  <span className={cn(
+                    "absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card",
+                    contact.conversation_status === "em_atendimento" ? "bg-blue-500" :
+                    contact.conversation_status === "encerrado" ? "bg-muted-foreground" : "bg-amber-500"
+                  )} />
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className={cn("text-[13px] font-medium truncate", isSelected ? "text-primary" : "text-foreground")}>
-                      {c.name}
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-sm font-medium text-foreground truncate">
+                      {contact.name}
                     </span>
-                    {c.isGroup && (
-                      <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0 rounded-full flex-shrink-0">grupo</span>
-                    )}
+                    <span className="text-[10px] text-muted-foreground shrink-0">
+                      {formatTime(contact.last_message_at)}
+                    </span>
                   </div>
-                  <p className={cn("text-[11px] truncate mt-0.5", isSelected ? "text-primary/70" : "text-muted-foreground")}>
-                    {c.lastMessage || c.phone}
+                  <p className="text-xs text-muted-foreground truncate mt-0.5 leading-4">
+                    {contact.last_message || contact.phone}
                   </p>
+                  {contact.workspace_id && (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <Badge variant="outline" className="h-3.5 text-[8px] px-1 border-primary/20 text-primary">
+                        Kanban
+                      </Badge>
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                  <span className="text-[10px] text-muted-foreground">{c.lastMessageTime}</span>
-                  {c.unreadCount ? (
-                    <span
-                      className="min-w-[20px] h-[20px] inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[11px] font-bold px-1.5 shadow-sm"
-                      aria-label={`${c.unreadCount} mensagens não lidas`}
-                    >
-                      {c.unreadCount > 99 ? "99+" : c.unreadCount}
-                    </span>
-                  ) : chan ? (
-                    <span className={cn("text-[10px] px-1.5 py-0 rounded-full", chan.cls)}>{chan.label}</span>
-                  ) : null}
+                {/* Hover actions */}
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center shrink-0">
+                  <Archive className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground cursor-pointer" />
                 </div>
-              </div>
-            );
-          })
+              </button>
+            ))}
+          </div>
         )}
-      </div>
+      </ScrollArea>
     </div>
   );
 }

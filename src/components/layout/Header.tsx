@@ -42,11 +42,7 @@ const ROUTE_TITLE_KEYS: Record<string, string> = {
   "/eventos": "nav.events",
 };
 
-const ROUTE_SUBTITLES: Record<string, string> = {
-  "/dashboard": "Visão geral da sua operação",
-  "/formularios": "Crie formulários personalizados para capturar leads automaticamente no CRM",
-  "/atendimento": "Selecione um kanban para gerenciar",
-};
+const ROUTE_SUBTITLES: Record<string, string> = {};
 
 export function Header() {
   const { t } = useTranslation();
@@ -59,24 +55,8 @@ export function Header() {
   const isMobile = useIsMobile();
 
   const titleKey = ROUTE_TITLE_KEYS[location.pathname];
-  const baseTitle = titleKey ? (titleKey.startsWith("ACCORD") ? titleKey : t(titleKey)) : "";
-  const [titleSuffix, setTitleSuffix] = useState<string>("");
-  const pageTitle = baseTitle + (titleSuffix ? ` / ${titleSuffix}` : "");
+  const pageTitle = titleKey ? (titleKey.startsWith("ACCORD") ? titleKey : t(titleKey)) : "";
   const pageSubtitle = ROUTE_SUBTITLES[location.pathname] || "";
-
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent<string>).detail || "";
-      setTitleSuffix(detail);
-    };
-    window.addEventListener("header:title-suffix", handler);
-    return () => window.removeEventListener("header:title-suffix", handler);
-  }, []);
-
-  // Reset suffix on route change
-  useEffect(() => {
-    setTitleSuffix("");
-  }, [location.pathname]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
