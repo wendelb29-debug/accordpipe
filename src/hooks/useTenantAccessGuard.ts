@@ -45,6 +45,29 @@ export function useTenantAccessGuard(): TenantAccessStatus {
     }
 
     const check = async () => {
+      // 1) Check Paddle subscription first — if active, full access regardless of Asaas state
+      const env = (import.meta.env.VITE_PAYMENTS_CLIENT_TOKEN as string | undefined)?.startsWith("test_")
+        ? "sandbox"
+        : "live";
+      const { data: paddleSub } = await supabase
+        .from("paddle_subscriptions")
+        .select("status, current_period_end")
+        .eq("tenant_id", profile.company_id)
+        .eq("environment", env)
+        .maybeSingle();
+
+      const paddleActive =
+        paddleSub &&
+        ["active", "trialing"].includes((paddleSub as any).status) &&
+        (!(paddleSub as any).current_period_end ||
+          new Date((paddleSub as any).current_period_end) > new Date());
+
+      if (paddleActive) {
+        setData({ ...DEFAULT, loading: false });
+        return;
+      }
+
+      // 2) Fall back to legacy Asaas-based status (master_tenant_clients)
       const { data: client } = await supabase
         .from("master_tenant_clients")
         .select("subscription_status, payment_status, next_due_date, grace_until, blocked_at")
