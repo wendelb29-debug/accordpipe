@@ -214,6 +214,9 @@ export const PERMISSION_MODULES: PermissionModule[] = [
       { key: "view_clients", label: "Visualizar Clientes", description: "Ver base de clientes", scopable: true },
       { key: "edit_clients", label: "Editar Clientes", description: "Editar dados de clientes" },
       { key: "view_post_sale", label: "Ver Pós-Venda", description: "Acessar aba pós-venda" },
+      { key: "view_full_cpf", label: "Ver CPF Completo (LGPD)", description: "Visualizar CPF sem máscara. Sem esta permissão, o CPF é exibido parcialmente oculto." },
+      { key: "view_client_documents", label: "Ver Documentos Sensíveis", description: "Acessar RG, comprovantes e documentos pessoais enviados pelo cliente" },
+      { key: "export_personal_data", label: "Exportar Dados Pessoais", description: "Exportar planilhas contendo informações pessoais identificáveis (PII)" },
     ],
   },
 
