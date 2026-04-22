@@ -128,15 +128,42 @@ function normalizeUazapi(body: any): NormalizedEvent {
   const phone = pickPhone(data) || pickPhone(body);
   const text = pickText(data) || pickText(body);
 
-  if (phone && text) {
+  const mediaUrl =
+    data?.mediaUrl ||
+    data?.media ||
+    data?.message?.audioMessage?.url ||
+    data?.message?.pttMessage?.url ||
+    data?.message?.imageMessage?.url ||
+    data?.message?.videoMessage?.url ||
+    data?.message?.documentMessage?.url ||
+    null;
+
+  const messageType =
+    data?.type ||
+    data?.messageType ||
+    (data?.message?.audioMessage
+      ? "audio"
+      : data?.message?.pttMessage
+      ? "audio"
+      : data?.message?.imageMessage
+      ? "image"
+      : data?.message?.videoMessage
+      ? "video"
+      : data?.message?.documentMessage
+      ? "file"
+      : "text");
+
+  const finalText = text || (mediaUrl ? `[${messageType}]` : "");
+
+  if (phone && finalText) {
     return {
       kind: "message_received",
       phone: String(phone).replace(/[^\d]/g, ""),
-      message: String(text),
+      message: String(finalText),
       sender_name: data?.senderName || data?.pushName || data?.notifyName || data?.contact?.name || null,
       sender_avatar: pickAvatar(data) || pickAvatar(body),
-      message_type: data?.type || data?.messageType || "text",
-      media_url: data?.mediaUrl || data?.media || data?.message?.imageMessage?.url || null,
+      message_type: messageType,
+      media_url: mediaUrl,
       external_id: externalId || null,
     };
   }
