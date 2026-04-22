@@ -278,6 +278,9 @@ export const PERMISSION_MODULES: PermissionModule[] = [
       { key: "assign_conversation", label: "Atribuir Conversa", description: "Atribuir conversas a usuários" },
       { key: "transfer_conversation", label: "Transferir Conversa", description: "Transferir conversas entre usuários" },
       { key: "send_broadcast", label: "Enviar Broadcast", description: "Disparar mensagens em massa" },
+      { key: "view_other_operators_chats", label: "Ver Conversas de Outros Operadores", description: "Visualizar conversas atribuídas a outros atendentes (supervisão)" },
+      { key: "delete_whatsapp_messages", label: "Apagar Mensagens", description: "Excluir mensagens enviadas no WhatsApp" },
+      { key: "export_chat_history", label: "Exportar Histórico", description: "Exportar histórico de conversas em arquivo" },
     ],
   },
 
