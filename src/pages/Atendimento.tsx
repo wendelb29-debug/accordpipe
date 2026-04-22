@@ -45,6 +45,15 @@ function AtendimentoContent() {
     return unregister;
   }, [selectedWsId, pushBackHandler]);
 
+  // Sync the active workspace name into the global header title
+  useEffect(() => {
+    const name = selectedWsId ? (activeWorkspace?.name || "") : "";
+    window.dispatchEvent(new CustomEvent("header:title-suffix", { detail: name }));
+    return () => {
+      window.dispatchEvent(new CustomEvent("header:title-suffix", { detail: "" }));
+    };
+  }, [selectedWsId, activeWorkspace?.name]);
+
   // Show hub if no workspace selected yet
   if (!selectedWsId) {
     return (
@@ -59,8 +68,6 @@ function AtendimentoContent() {
     );
   }
 
-  
-
   const backButton = (
     <div className="flex items-center gap-1.5 px-3 pt-2 pb-1 text-xs">
       <button
@@ -69,10 +76,6 @@ function AtendimentoContent() {
       >
         Workspaces
       </button>
-      <span className="text-muted-foreground/50">/</span>
-      <span className="font-semibold text-foreground truncate">
-        {activeWorkspace?.name || "Workspace"}
-      </span>
     </div>
   );
 
