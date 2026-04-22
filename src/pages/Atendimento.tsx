@@ -68,16 +68,7 @@ function AtendimentoContent() {
     );
   }
 
-  const backButton = (
-    <div className="flex items-center gap-1.5 px-3 pt-2 pb-1 text-xs">
-      <button
-        onClick={() => setSelectedWsId(null)}
-        className="text-muted-foreground hover:text-foreground transition-colors"
-      >
-        Workspaces
-      </button>
-    </div>
-  );
+  const backButton = null;
 
   // If user only has access to admin pipeline
   if (canSeeAdmin && !canSeeCommercial) {
