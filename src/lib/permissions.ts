@@ -111,6 +111,10 @@ export const PERMISSION_MODULES: PermissionModule[] = [
       { key: "configure_pipeline", label: "Configurar Pipeline", description: "Configurar pipeline de vendas" },
       { key: "edit_columns", label: "Editar Colunas", description: "Editar colunas do kanban" },
       { key: "define_sla", label: "Definir SLA", description: "Definir tempos de SLA das etapas" },
+      { key: "workspace_view_specific", label: "Acesso a Workspaces Específicos", description: "Restringir visualização apenas aos workspaces atribuídos individualmente (configurado em Permissões por Workspace)" },
+      { key: "workspace_move_cards", label: "Mover Cards entre Etapas", description: "Permitir arrastar cards entre estágios do Kanban" },
+      { key: "workspace_skip_required_stages", label: "Pular Etapas Obrigatórias", description: "Avançar cards pulando etapas marcadas como obrigatórias (ex: pular Cadastro)" },
+      { key: "workspace_return_card", label: "Devolver Card para Origem", description: "Usar a função 'Devolver' para retornar cards ao vendedor e estágio anteriores" },
     ],
   },
 
