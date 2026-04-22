@@ -29,10 +29,11 @@ export default function Assinatura() {
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
 
   const handleSubscribe = (slug: string) => {
+    const plan = visiblePlans.find(p => p.slug === slug);
     openCheckout({
       priceId: `${slug}_${cycle}`,
       seatPriceId: `${slug}_seat_monthly`,
-      seats: 0,
+      baseUserLimit: plan?.base_user_limit ?? 3,
     });
   };
 

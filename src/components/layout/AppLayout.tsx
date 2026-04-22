@@ -9,7 +9,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useActivityReminders } from "@/hooks/useActivityReminders";
 import { useNotificationManager } from "@/hooks/useNotificationManager";
 import { AccordAIChat } from "@/components/accord-ai/AccordAIChat";
-import { TenantBillingBanner } from "./TenantBillingBanner";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
@@ -49,9 +48,6 @@ export function AppLayout({ children }: AppLayoutProps) {
         )}>
           {/* Payments test-mode banner (only when using test client token) */}
           <PaymentTestModeBanner />
-
-          {/* Tenant billing alert banner */}
-          <TenantBillingBanner />
 
           {/* Notification activation banner */}
           {bannerVisible && (
