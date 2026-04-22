@@ -4,13 +4,13 @@ export function PaymentTestModeBanner() {
   if (!clientToken?.startsWith("test_")) return null;
 
   return (
-    <div className="w-full bg-orange-100 border-b border-orange-300 px-4 py-2 text-center text-sm text-orange-800">
+    <div className="w-full border-b border-warning/40 bg-warning/15 px-4 py-2 text-center text-sm text-warning-foreground">
       Pagamentos em modo de teste — nenhum valor real é cobrado.{" "}
       <a
         href="https://docs.lovable.dev/features/payments#test-and-live-environments"
         target="_blank"
         rel="noopener noreferrer"
-        className="underline font-medium"
+        className="font-medium underline"
       >
         Saiba mais
       </a>
