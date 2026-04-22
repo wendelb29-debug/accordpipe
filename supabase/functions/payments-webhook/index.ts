@@ -20,15 +20,21 @@ Deno.serve(async (req) => {
       case EventName.SubscriptionCreated:
       case EventName.SubscriptionUpdated:
         await upsertSubscription(event.data, env);
+        // past_due indica falha de cobrança recorrente
+        if (event.data.status === 'past_due') {
+          await notifyPastDue(event.data);
+        }
         break;
       case EventName.SubscriptionCanceled:
         await markCanceled(event.data, env);
+        await notifyCanceled(event.data);
         break;
       case EventName.TransactionCompleted:
         console.log('Transaction completed:', event.data.id);
         break;
       case EventName.TransactionPaymentFailed:
         console.log('Payment failed:', event.data.id);
+        await notifyPaymentFailed(event.data, env);
         break;
       default:
         console.log('Unhandled event:', event.eventType);
@@ -57,7 +63,6 @@ async function upsertSubscription(data: any, env: PaddleEnv) {
     return;
   }
 
-  // Identify base price (qty 1) vs seat price (qty > 1 typically; matches *_seat_*)
   const seatItem = findItem(items, (i: any) =>
     (i.price?.importMeta?.externalId || '').includes('_seat_')
   );
@@ -98,4 +103,75 @@ async function markCanceled(data: any, env: PaddleEnv) {
     .update({ status: 'canceled', updated_at: new Date().toISOString() })
     .eq('paddle_subscription_id', data.id)
     .eq('environment', env);
+}
+
+async function notifyTenantAdmins(tenantId: string, title: string, message: string, type: string) {
+  // Notifica todos os usuários CEO/admin/master do tenant
+  const { data: admins } = await supabase
+    .from('profiles')
+    .select('user_id')
+    .eq('company_id', tenantId)
+    .eq('is_active', true);
+
+  if (!admins?.length) return;
+
+  for (const a of admins) {
+    await supabase.rpc('create_notification', {
+      _user_id: a.user_id,
+      _title: title,
+      _message: message,
+      _type: type,
+      _link: '/assinatura',
+    });
+  }
+
+  await supabase.from('audit_logs').insert({
+    user_id: admins[0].user_id,
+    action: type === 'error' ? 'paddle_payment_failed' : 'paddle_subscription_event',
+    target_type: 'subscription',
+    details: { title, message },
+    servidor_id: tenantId,
+  });
+}
+
+async function notifyPastDue(data: any) {
+  const tenantId = data.customData?.tenantId;
+  if (!tenantId) return;
+  await notifyTenantAdmins(
+    tenantId,
+    'Pagamento com falha',
+    'Não conseguimos processar a renovação da sua assinatura. Atualize seu cartão em Assinatura → Gerenciar.',
+    'error',
+  );
+}
+
+async function notifyCanceled(data: any) {
+  const tenantId = data.customData?.tenantId;
+  if (!tenantId) return;
+  await notifyTenantAdmins(
+    tenantId,
+    'Assinatura cancelada',
+    'Sua assinatura foi cancelada. Você pode reativar a qualquer momento em Assinatura.',
+    'warning',
+  );
+}
+
+async function notifyPaymentFailed(data: any, env: PaddleEnv) {
+  // Buscar tenant pelo customer_id
+  const customerId = data.customerId;
+  if (!customerId) return;
+  const { data: sub } = await supabase
+    .from('paddle_subscriptions')
+    .select('tenant_id')
+    .eq('paddle_customer_id', customerId)
+    .eq('environment', env)
+    .maybeSingle();
+  if (!sub?.tenant_id) return;
+
+  await notifyTenantAdmins(
+    sub.tenant_id,
+    'Tentativa de cobrança recusada',
+    'Uma tentativa de cobrança foi recusada pelo banco. Atualize seus dados de pagamento para evitar suspensão.',
+    'error',
+  );
 }
