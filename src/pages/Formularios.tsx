@@ -159,11 +159,7 @@ export default function Formularios() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Formulários de Captura</h1>
-          <p className="text-sm text-muted-foreground">Crie formulários personalizados para capturar leads automaticamente no CRM.</p>
-        </div>
+      <div className="flex items-center justify-end">
         <Button onClick={openNew} className="gap-2">
           <Plus className="h-4 w-4" /> Novo Formulário
         </Button>
