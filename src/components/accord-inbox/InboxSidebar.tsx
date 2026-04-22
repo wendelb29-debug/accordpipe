@@ -97,63 +97,66 @@ export function InboxSidebar({
   };
 
   return (
-    <div className="flex flex-col w-full md:w-[272px] md:min-w-[272px] md:border-r border-border/60 bg-background h-full">
-      <div className="px-3 pt-3 pb-2 space-y-2">
-        <div className="flex items-center gap-2 bg-muted/60 border border-border/50 rounded-xl px-3 py-2">
+    <div className="flex flex-col w-full md:w-[300px] md:min-w-[300px] md:border-r border-border/60 bg-background h-full">
+      {/* Top bar — search + new */}
+      <div className="h-14 flex items-center gap-2 px-3 border-b border-border/60 flex-shrink-0">
+        <div className="flex items-center gap-2 bg-muted/60 border border-border/50 rounded-lg px-2.5 h-9 flex-1 focus-within:border-primary/50 focus-within:bg-background transition-colors">
           <Search size={14} className="text-muted-foreground flex-shrink-0" />
           <input
-            className="bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground w-full"
-            placeholder="Buscar conversa, número..."
+            className="bg-transparent outline-none text-[13px] text-foreground placeholder:text-muted-foreground w-full"
+            placeholder="Buscar conversa..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
-
-        <div className="flex gap-1">
-          {filterOpts.map((f) => (
-            <button
-              key={f}
-              onClick={() => onFilterChange(f)}
-              className={cn(
-                "px-3 py-1 rounded-full text-xs transition-all",
-                filter === f ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/60"
-              )}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
+        {onNewConversation && (
+          <button
+            onClick={onNewConversation}
+            title="Nova conversa"
+            aria-label="Nova conversa"
+            className="w-9 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all flex-shrink-0 shadow-sm"
+          >
+            <Plus size={16} />
+          </button>
+        )}
       </div>
 
-      <div className="flex border-b border-border/60 px-1">
+      {/* Ownership filter */}
+      <div className="flex items-center gap-1 px-3 pt-2.5 pb-1.5">
+        {filterOpts.map((f) => (
+          <button
+            key={f}
+            onClick={() => onFilterChange(f)}
+            className={cn(
+              "px-2.5 h-7 rounded-full text-[11px] font-medium transition-all",
+              filter === f ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/60"
+            )}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+
+      {/* Status tabs */}
+      <div className="flex border-b border-border/60 px-2">
         {STATUS_TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => onStatusFilterChange(tab.key)}
             className={cn(
-              "flex-1 py-2.5 text-xs flex items-center justify-center gap-1.5 border-b-2 transition-all",
-              statusFilter === tab.key ? "border-primary text-primary font-medium" : "border-transparent text-muted-foreground hover:text-foreground"
+              "flex-1 py-2.5 text-[11px] flex items-center justify-center gap-1.5 border-b-2 transition-all -mb-px",
+              statusFilter === tab.key ? "border-primary text-primary font-semibold" : "border-transparent text-muted-foreground hover:text-foreground"
             )}
           >
             {tab.label}
-            <span className={cn("rounded-full px-1.5 text-[10px] font-medium", tab.colorClass)}>
+            <span className={cn("rounded-full px-1.5 min-w-[18px] text-center text-[10px] font-medium leading-4", tab.colorClass)}>
               {counts[tab.key] || 0}
             </span>
           </button>
         ))}
       </div>
 
-      {onNewConversation && (
-        <button
-          onClick={onNewConversation}
-          className="mx-3 mt-2.5 mb-1 flex items-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 transition-all"
-        >
-          <Plus size={15} />
-          Nova conversa
-        </button>
-      )}
-
-      <div className="flex-1 overflow-y-auto py-1.5 px-2">
+      <div className="flex-1 overflow-y-auto py-1 px-1.5">
         {loading ? (
           <div className="flex items-center justify-center h-20">
             <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -172,8 +175,10 @@ export function InboxSidebar({
                 key={c.id}
                 onClick={() => onSelect(c.id)}
                 className={cn(
-                  "flex items-center gap-2.5 px-2.5 py-2.5 rounded-xl cursor-pointer mb-0.5 transition-all",
-                  isSelected ? "bg-primary/10" : "hover:bg-muted/50"
+                  "flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer mb-0.5 transition-colors relative",
+                  isSelected
+                    ? "bg-primary/10 before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:bg-primary before:rounded-r"
+                    : "hover:bg-muted/50"
                 )}
               >
                 <div className="relative flex-shrink-0">
