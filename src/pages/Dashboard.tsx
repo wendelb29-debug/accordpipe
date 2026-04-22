@@ -184,11 +184,6 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-foreground">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">Visão geral da sua operação</p>
-      </div>
-
       {/* Filters */}
       <Card>
         <CardContent className="p-4">

@@ -42,7 +42,11 @@ const ROUTE_TITLE_KEYS: Record<string, string> = {
   "/eventos": "nav.events",
 };
 
-const ROUTE_SUBTITLES: Record<string, string> = {};
+const ROUTE_SUBTITLES: Record<string, string> = {
+  "/dashboard": "Visão geral da sua operação",
+  "/formularios": "Crie formulários personalizados para capturar leads automaticamente no CRM",
+  "/atendimento": "Selecione um kanban para gerenciar",
+};
 
 export function Header() {
   const { t } = useTranslation();
