@@ -52,6 +52,10 @@ import MeusTenants from "./pages/MeusTenants";
 import Academy from "./pages/Academy";
 import GestaoTenants from "./pages/GestaoTenants";
 import Assinatura from "./pages/Assinatura";
+import CheckoutSuccess from "./pages/CheckoutSuccess";
+import Termos from "./pages/legal/Termos";
+import Privacidade from "./pages/legal/Privacidade";
+import Reembolso from "./pages/legal/Reembolso";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1 } },
@@ -384,6 +388,10 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route path="/checkout/success" element={<CheckoutSuccess />} />
+            <Route path="/legal/termos" element={<Termos />} />
+            <Route path="/legal/privacidade" element={<Privacidade />} />
+            <Route path="/legal/reembolso" element={<Reembolso />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
