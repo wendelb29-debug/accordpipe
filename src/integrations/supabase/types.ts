@@ -2020,6 +2020,93 @@ export type Database = {
           },
         ]
       }
+      email_send_log: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          message_id: string | null
+          metadata: Json | null
+          recipient_email: string
+          status: string
+          template_name: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          metadata?: Json | null
+          recipient_email: string
+          status: string
+          template_name: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          metadata?: Json | null
+          recipient_email?: string
+          status?: string
+          template_name?: string
+        }
+        Relationships: []
+      }
+      email_send_state: {
+        Row: {
+          auth_email_ttl_minutes: number
+          batch_size: number
+          id: number
+          retry_after_until: string | null
+          send_delay_ms: number
+          transactional_email_ttl_minutes: number
+          updated_at: string
+        }
+        Insert: {
+          auth_email_ttl_minutes?: number
+          batch_size?: number
+          id?: number
+          retry_after_until?: string | null
+          send_delay_ms?: number
+          transactional_email_ttl_minutes?: number
+          updated_at?: string
+        }
+        Update: {
+          auth_email_ttl_minutes?: number
+          batch_size?: number
+          id?: number
+          retry_after_until?: string | null
+          send_delay_ms?: number
+          transactional_email_ttl_minutes?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      email_unsubscribe_tokens: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          token: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          token?: string
+          used_at?: string | null
+        }
+        Relationships: []
+      }
       financial_transactions: {
         Row: {
           amount: number
@@ -2802,6 +2889,47 @@ export type Database = {
           {
             foreignKeyName: "notifications_servidor_id_fkey"
             columns: ["servidor_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      operator_status: {
+        Row: {
+          created_at: string
+          id: string
+          last_changed_at: string
+          reason: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_changed_at?: string
+          reason?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_changed_at?: string
+          reason?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operator_status_tenant_id_fkey"
+            columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
@@ -3798,6 +3926,56 @@ export type Database = {
           },
         ]
       }
+      push_subscriptions: {
+        Row: {
+          auth_key: string
+          created_at: string
+          endpoint: string
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          p256dh_key: string
+          tenant_id: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth_key: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          p256dh_key: string
+          tenant_id: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth_key?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          p256dh_key?: string
+          tenant_id?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_default_permissions: {
         Row: {
           created_at: string
@@ -3909,6 +4087,30 @@ export type Database = {
           subject?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      suppressed_emails: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          metadata: Json | null
+          reason: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          metadata?: Json | null
+          reason: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          metadata?: Json | null
+          reason?: string
         }
         Relationships: []
       }
@@ -4882,6 +5084,110 @@ export type Database = {
           },
         ]
       }
+      tenant_whatsapp_integrations: {
+        Row: {
+          add_events_in_url: boolean
+          add_message_types_in_url: boolean
+          connected_phone: string | null
+          connection_status: string
+          created_at: string
+          exclude_events: string
+          id: string
+          instance_id: string | null
+          instance_name: string | null
+          instance_token: string | null
+          is_active: boolean
+          last_seen_at: string | null
+          last_sync_at: string | null
+          last_test_message: string | null
+          last_test_status: string | null
+          last_tested_at: string | null
+          last_webhook_test_at: string | null
+          last_webhook_test_status: string | null
+          listen_events: string
+          provider_metadata: Json
+          provider_type: string
+          publish_status: string
+          server_url: string | null
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+          webhook_enabled: boolean
+          webhook_url: string | null
+          webhook_url_final: string | null
+        }
+        Insert: {
+          add_events_in_url?: boolean
+          add_message_types_in_url?: boolean
+          connected_phone?: string | null
+          connection_status?: string
+          created_at?: string
+          exclude_events?: string
+          id?: string
+          instance_id?: string | null
+          instance_name?: string | null
+          instance_token?: string | null
+          is_active?: boolean
+          last_seen_at?: string | null
+          last_sync_at?: string | null
+          last_test_message?: string | null
+          last_test_status?: string | null
+          last_tested_at?: string | null
+          last_webhook_test_at?: string | null
+          last_webhook_test_status?: string | null
+          listen_events?: string
+          provider_metadata?: Json
+          provider_type: string
+          publish_status?: string
+          server_url?: string | null
+          tenant_id: string
+          updated_at?: string
+          updated_by?: string | null
+          webhook_enabled?: boolean
+          webhook_url?: string | null
+          webhook_url_final?: string | null
+        }
+        Update: {
+          add_events_in_url?: boolean
+          add_message_types_in_url?: boolean
+          connected_phone?: string | null
+          connection_status?: string
+          created_at?: string
+          exclude_events?: string
+          id?: string
+          instance_id?: string | null
+          instance_name?: string | null
+          instance_token?: string | null
+          is_active?: boolean
+          last_seen_at?: string | null
+          last_sync_at?: string | null
+          last_test_message?: string | null
+          last_test_status?: string | null
+          last_tested_at?: string | null
+          last_webhook_test_at?: string | null
+          last_webhook_test_status?: string | null
+          listen_events?: string
+          provider_metadata?: Json
+          provider_type?: string
+          publish_status?: string
+          server_url?: string | null
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          webhook_enabled?: boolean
+          webhook_url?: string | null
+          webhook_url_final?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_whatsapp_integrations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_custom_permissions: {
         Row: {
           created_at: string
@@ -5311,6 +5617,7 @@ export type Database = {
       whatsapp_contacts: {
         Row: {
           assigned_to: string | null
+          avatar_synced_at: string | null
           avatar_url: string | null
           company_id: string
           conversation_status: string
@@ -5328,6 +5635,7 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          avatar_synced_at?: string | null
           avatar_url?: string | null
           company_id: string
           conversation_status?: string
@@ -5345,6 +5653,7 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          avatar_synced_at?: string | null
           avatar_url?: string | null
           company_id?: string
           conversation_status?: string
@@ -5421,39 +5730,51 @@ export type Database = {
           company_id: string
           contact_id: string
           created_at: string
+          delivered_at: string | null
           direction: string
+          external_message_id: string | null
           id: string
           media_url: string | null
           message: string
           message_type: string
           metadata: Json | null
           phone: string
+          read_at: string | null
+          sent_at: string | null
           status: string
         }
         Insert: {
           company_id: string
           contact_id: string
           created_at?: string
+          delivered_at?: string | null
           direction?: string
+          external_message_id?: string | null
           id?: string
           media_url?: string | null
           message: string
           message_type?: string
           metadata?: Json | null
           phone: string
+          read_at?: string | null
+          sent_at?: string | null
           status?: string
         }
         Update: {
           company_id?: string
           contact_id?: string
           created_at?: string
+          delivered_at?: string | null
           direction?: string
+          external_message_id?: string | null
           id?: string
           media_url?: string | null
           message?: string
           message_type?: string
           metadata?: Json | null
           phone?: string
+          read_at?: string | null
+          sent_at?: string | null
           status?: string
         }
         Relationships: [
@@ -5991,6 +6312,14 @@ export type Database = {
       }
       current_user_can_suspend_child_tenants: { Args: never; Returns: boolean }
       current_user_is_enabled_reseller: { Args: never; Returns: boolean }
+      delete_email: {
+        Args: { message_id: number; queue_name: string }
+        Returns: boolean
+      }
+      enqueue_email: {
+        Args: { payload: Json; queue_name: string }
+        Returns: number
+      }
       get_client_contract_signers_by_token: {
         Args: { p_token: string }
         Returns: {
@@ -6210,6 +6539,15 @@ export type Database = {
           status: string
         }[]
       }
+      move_to_dlq: {
+        Args: {
+          dlq_name: string
+          message_id: number
+          payload: Json
+          source_queue: string
+        }
+        Returns: number
+      }
       next_tenant_contract_code: {
         Args: { _servidor_id: string }
         Returns: string
@@ -6217,6 +6555,14 @@ export type Database = {
       pdf_contract_has_signer_token: {
         Args: { _contract_id: string }
         Returns: boolean
+      }
+      read_email_batch: {
+        Args: { batch_size: number; queue_name: string; vt: number }
+        Returns: {
+          message: Json
+          msg_id: number
+          read_ct: number
+        }[]
       }
       recalc_subscription_totals: {
         Args: { _tenant_id: string }
