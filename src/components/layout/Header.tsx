@@ -55,8 +55,24 @@ export function Header() {
   const isMobile = useIsMobile();
 
   const titleKey = ROUTE_TITLE_KEYS[location.pathname];
-  const pageTitle = titleKey ? (titleKey.startsWith("ACCORD") ? titleKey : t(titleKey)) : "";
+  const baseTitle = titleKey ? (titleKey.startsWith("ACCORD") ? titleKey : t(titleKey)) : "";
+  const [titleSuffix, setTitleSuffix] = useState<string>("");
+  const pageTitle = baseTitle + (titleSuffix ? ` / ${titleSuffix}` : "");
   const pageSubtitle = ROUTE_SUBTITLES[location.pathname] || "";
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<string>).detail || "";
+      setTitleSuffix(detail);
+    };
+    window.addEventListener("header:title-suffix", handler);
+    return () => window.removeEventListener("header:title-suffix", handler);
+  }, []);
+
+  // Reset suffix on route change
+  useEffect(() => {
+    setTitleSuffix("");
+  }, [location.pathname]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
