@@ -51,6 +51,7 @@ import Eventos from "./pages/Eventos";
 import MeusTenants from "./pages/MeusTenants";
 import Academy from "./pages/Academy";
 import GestaoTenants from "./pages/GestaoTenants";
+import Assinatura from "./pages/Assinatura";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1 } },
@@ -369,6 +370,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <Academy />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/assinatura"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Assinatura />
                   </AppLayout>
                 </ProtectedRoute>
               }
