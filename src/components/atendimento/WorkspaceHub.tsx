@@ -209,11 +209,9 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
       <div className="absolute top-1/4 left-1/3 w-[400px] h-[400px] rounded-full bg-primary/[0.04] blur-[100px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] rounded-full bg-primary/[0.03] blur-[80px] pointer-events-none" />
       {/* Header */}
-      <div className="relative z-10 flex items-center gap-3 px-4 sm:px-6 py-4 border-b border-border/50">
-        <div>
-          <h1 className="text-lg font-bold text-foreground">Workspaces</h1>
-          <p className="text-xs text-muted-foreground">Selecione um kanban para gerenciar</p>
-        </div>
+      <div className="relative z-10 flex flex-col items-center justify-center text-center px-4 sm:px-6 py-4 border-b border-border/50">
+        <h1 className="text-lg font-bold text-foreground leading-tight">Workspaces</h1>
+        <p className="text-xs text-muted-foreground mt-0.5">Selecione um kanban para gerenciar</p>
       </div>
 
       {/* Search & Filter */}
