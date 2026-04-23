@@ -81,12 +81,23 @@ export function AppLayout({ children }: AppLayoutProps) {
             </Link>
           )}
           {!hideHeader && !isAccordStackRoute && <Header />}
-          <main className={cn(
-            "w-full max-w-none flex-1 min-w-0 min-h-0",
-            isAccordStackRoute
-              ? "p-0 overflow-hidden flex flex-col flex-1 min-h-0"
-              : (hideHeader ? "p-0" : "p-2 sm:p-3 lg:p-4")
-          )}>
+          <main
+            className={cn(
+              "w-full max-w-none flex-1 min-w-0 min-h-0",
+              isAccordStackRoute
+                ? "p-0 overflow-hidden flex flex-col flex-1 min-h-0"
+                : (hideHeader ? "p-0" : "p-3 sm:p-3 lg:p-4")
+            )}
+            style={
+              isAccordStackRoute
+                ? undefined
+                : {
+                    paddingLeft: 'max(0.75rem, env(safe-area-inset-left, 0px))',
+                    paddingRight: 'max(0.75rem, env(safe-area-inset-right, 0px))',
+                    paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))',
+                  }
+            }
+          >
             {children}
           </main>
         </div>
