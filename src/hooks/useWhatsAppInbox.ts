@@ -23,6 +23,13 @@ export interface InboxContact {
   notes: string | null;
 }
 
+export interface MessageReaction {
+  emoji: string;
+  user_id: string;
+  user_name?: string | null;
+  at: string;
+}
+
 export interface InboxMessage {
   id: string;
   contact_id: string;
@@ -39,6 +46,8 @@ export interface InboxMessage {
   sent_at?: string | null;
   delivered_at?: string | null;
   read_at?: string | null;
+  reply_to_message_id?: string | null;
+  reactions?: MessageReaction[];
 }
 
 function normalizePhone(rawPhone?: string | null) {
