@@ -637,10 +637,31 @@ export function InboxChat({
 
   const send = () => {
     if (!text.trim() || isClosed) return;
-    onSendMessage(text.trim());
+    onSendMessage(text.trim(), replyTo ? { replyToMessageId: replyTo.id } : undefined);
     setText("");
+    setReplyTo(null);
     if (taRef.current) taRef.current.style.height = "40px";
   };
+
+  const insertEmoji = (emoji: string) => {
+    const ta = taRef.current;
+    if (!ta) {
+      setText((prev) => prev + emoji);
+      return;
+    }
+    const start = ta.selectionStart ?? text.length;
+    const end = ta.selectionEnd ?? text.length;
+    const next = text.slice(0, start) + emoji + text.slice(end);
+    setText(next);
+    requestAnimationFrame(() => {
+      ta.focus();
+      const pos = start + emoji.length;
+      try { ta.setSelectionRange(pos, pos); } catch {}
+      ta.style.height = "40px";
+      ta.style.height = Math.min(ta.scrollHeight, 120) + "px";
+    });
+  };
+  const [emojiOpen, setEmojiOpen] = useState(false);
 
   const MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // 25MB
 
