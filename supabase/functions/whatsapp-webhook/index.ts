@@ -145,6 +145,45 @@ function pickMedia(d: any, body: any): {
     }
   }
 
+  // Uazapi (whatsmeow-based) shape: data.content is an OBJECT with URL/directPath/mimetype/fileLength
+  // and data.mediaType / data.messageType describe the kind. Handle this BEFORE flat fallbacks.
+  const contentObj = (d?.content && typeof d.content === "object" && !Array.isArray(d.content)) ? d.content : null;
+  const uazMediaType = (d?.mediaType || "").toString().toLowerCase();
+  const uazMessageType = (d?.messageType || "").toString().toLowerCase(); // e.g. "imagemessage"
+  if (contentObj || uazMediaType || uazMessageType.endsWith("message")) {
+    const url = contentObj?.URL || contentObj?.url || contentObj?.directPath || null;
+    const mime = contentObj?.mimetype || contentObj?.mimeType || null;
+    const fileName = contentObj?.fileName || contentObj?.title || contentObj?.name || null;
+    const sz = contentObj?.fileLength || contentObj?.fileSize || contentObj?.size || null;
+    const caption = contentObj?.caption || d?.text || null;
+
+    let kind = "file";
+    const t = uazMediaType ||
+      (uazMessageType.includes("image") ? "image"
+       : uazMessageType.includes("video") ? "video"
+       : uazMessageType.includes("audio") || uazMessageType.includes("ptt") ? "audio"
+       : uazMessageType.includes("document") ? "document"
+       : uazMessageType.includes("sticker") ? "image"
+       : "");
+
+    if (t === "image" || mime?.startsWith?.("image/")) kind = "image";
+    else if (t === "video" || mime?.startsWith?.("video/")) kind = "video";
+    else if (t === "audio" || t === "ptt" || t === "voice" || mime?.startsWith?.("audio/") || contentObj?.ptt === true) kind = "audio";
+    else if (mime === "application/pdf" || /\.pdf($|\?)/i.test(String(url || fileName || ""))) kind = "pdf";
+    else if (t === "document" || t === "file") kind = "document";
+
+    if (url || kind !== "file" || mime || fileName) {
+      return {
+        message_type: kind,
+        media_url: typeof url === "string" ? url : null,
+        file_name: typeof fileName === "string" ? fileName : null,
+        mime_type: typeof mime === "string" ? mime : null,
+        file_size: sz != null ? Number(sz) || null : null,
+        caption: typeof caption === "string" ? caption : null,
+      };
+    }
+  }
+
   // flat fields used by Z-API / Uazapi simple events
   const flatType = (d?.type || d?.messageType || body?.type || body?.messageType || "")
     .toString().toLowerCase();
@@ -160,7 +199,7 @@ function pickMedia(d: any, body: any): {
   const flatCaption =
     d?.caption || d?.image?.caption || d?.video?.caption || d?.document?.caption || null;
 
-  if (flatUrl || ["image","audio","ptt","voice","video","document","pdf","file","sticker"].includes(flatType)) {
+  if (flatUrl || ["image","audio","ptt","voice","video","document","pdf","file","sticker","media"].includes(flatType)) {
     let kind: string = "file";
     if (flatType === "image" || flatMime?.startsWith?.("image/")) kind = "image";
     else if (flatType === "video" || flatMime?.startsWith?.("video/")) kind = "video";
