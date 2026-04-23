@@ -824,6 +824,52 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     fetchDocuments();
     addActivity?.({ type: "signature", title: `Documento "${signDoc.nome}" enviado para assinatura` });
     toast.success("Envelope configurado!");
+
+    // === AUTO WhatsApp signature link delivery (multi-tenant strict) ===
+    // Only client-role signers, only inside the current tenant.
+    try {
+      const tenantId = lead.servidor_id;
+      if (tenantId) {
+        const { data: tenantRow } = await supabase
+          .from("companies")
+          .select("nome_fantasia, razao_social")
+          .eq("id", tenantId)
+          .maybeSingle();
+        const tenantName =
+          tenantRow?.nome_fantasia || tenantRow?.razao_social || null;
+
+        const clientSigners = (insertedSigners || []).filter(
+          (s: any) => s.papel === "cliente" && s.telefone,
+        );
+
+        for (const signer of clientSigners) {
+          const result = await sendSignatureLinkViaWhatsApp({
+            tenantId,
+            tenantName,
+            signerName: (signer as any).nome_completo,
+            signerPhone: (signer as any).telefone,
+            signerToken: (signer as any).auth_token,
+            documentName: signDoc.nome,
+            leadId: lead.id,
+            workspaceId: (lead as any).workspace_id ?? null,
+            ownerName: profile?.name ?? null,
+          });
+          if (result.success) {
+            toast.success(`Link enviado por WhatsApp para ${(signer as any).nome_completo}`);
+            await supabase.from("document_events").insert({
+              document_id: signDoc.id,
+              signer_id: (signer as any).id,
+              evento: "link_enviado_whatsapp",
+              descricao: `Link enviado automaticamente por WhatsApp para ${(signer as any).nome_completo}`,
+            });
+          } else {
+            toast.warning(`WhatsApp não enviado para ${(signer as any).nome_completo}: ${result.message}`);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[signature whatsapp auto-send] error", err);
+    }
   };
 
   const copySignerLink = (token: string) => {
