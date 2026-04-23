@@ -119,6 +119,8 @@ export function useWhatsAppInbox() {
   // Enables stale-while-revalidate: instant render of previously-loaded conversations.
   const messagesCacheRef = useRef<Map<string, InboxMessage[]>>(new Map());
   const cacheTenantRef = useRef<string | null>(null);
+  const selectedContactIdRef = useRef<string | null>(null);
+  const selectedContactPhoneRef = useRef<string | null>(null);
   const originalTitleRef = useRef<string>(typeof document !== "undefined" ? document.title : "Accord Stack");
   const [activeIntegration, setActiveIntegration] = useState<{
     id?: string;
