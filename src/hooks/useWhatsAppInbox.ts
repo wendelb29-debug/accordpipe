@@ -111,8 +111,16 @@ export function useWhatsAppInbox() {
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [filter, setFilter] = useState<InboxFilter>("all");
   const [loading, setLoading] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<"disconnected" | "connecting" | "connected">("disconnected");
   const [unreadByContact, setUnreadByContact] = useState<Record<string, number>>({});
+
+  // In-memory message cache, isolated per tenant (cleared on tenant switch).
+  // Enables stale-while-revalidate: instant render of previously-loaded conversations.
+  const messagesCacheRef = useRef<Map<string, InboxMessage[]>>(new Map());
+  const cacheTenantRef = useRef<string | null>(null);
+  const selectedContactIdRef = useRef<string | null>(null);
+  const selectedContactPhoneRef = useRef<string | null>(null);
   const originalTitleRef = useRef<string>(typeof document !== "undefined" ? document.title : "Accord Stack");
   const [activeIntegration, setActiveIntegration] = useState<{
     id?: string;
@@ -156,14 +164,24 @@ export function useWhatsAppInbox() {
     setLoading(false);
   }, [companyId, filter, user?.id]);
 
-  const fetchMessages = useCallback(async (contactId: string, contactPhone?: string | null) => {
+  // Invalidate cache when tenant changes (multi-tenant isolation)
+  useEffect(() => {
+    if (cacheTenantRef.current !== companyId) {
+      messagesCacheRef.current.clear();
+      cacheTenantRef.current = companyId ?? null;
+    }
+  }, [companyId]);
+
+  const fetchMessages = useCallback(async (
+    contactId: string,
+    contactPhone?: string | null,
+    opts?: { background?: boolean },
+  ) => {
     if (!companyId) return;
 
     const phoneVariants = buildPhoneVariants(contactPhone);
     const phoneFilters = phoneVariants.map((phone) => `phone.eq.${phone}`);
     const orFilter = [`contact_id.eq.${contactId}`, ...phoneFilters].join(",");
-
-    console.log("[inbox] fetchMessages", { contactId, contactPhone, phoneVariants, companyId, orFilter });
 
     const { data, error } = await supabase
       .from("whatsapp_messages")
@@ -174,13 +192,20 @@ export function useWhatsAppInbox() {
 
     if (error) {
       console.error("[inbox] Error fetching messages:", error);
+      if (!opts?.background) setLoadingMessages(false);
       return;
     }
 
     const deduped = dedupMessages((data || []) as unknown as InboxMessage[]);
 
-    console.log("[inbox] fetched", deduped.length, "messages for contact", contactId, "(source: fetch)");
-    setMessages(deduped);
+    // Cache results for instant re-open
+    messagesCacheRef.current.set(contactId, deduped);
+
+    // Only apply to UI if user is still on this contact (avoid race when switching fast)
+    if (selectedContactIdRef.current === contactId) {
+      setMessages(deduped);
+    }
+    if (!opts?.background) setLoadingMessages(false);
   }, [companyId]);
 
   const selectContact = useCallback((contactId: string | null) => {
@@ -193,9 +218,22 @@ export function useWhatsAppInbox() {
         delete next[contactId];
         return next;
       });
+
       const contact = contacts.find((item) => item.id === contactId);
-      fetchMessages(contactId, contact?.phone);
-      // Fire-and-forget: sync name + avatar from UazAPI
+      const cached = messagesCacheRef.current.get(contactId);
+
+      if (cached && cached.length > 0) {
+        // Stale-while-revalidate: paint cached messages instantly, refresh in background
+        setMessages(cached);
+        setLoadingMessages(false);
+        fetchMessages(contactId, contact?.phone, { background: true });
+      } else {
+        setMessages([]);
+        setLoadingMessages(true);
+        fetchMessages(contactId, contact?.phone);
+      }
+
+      // Fire-and-forget: sync name + avatar from provider
       supabase.functions.invoke("whatsapp-sync-contact", { body: { contact_id: contactId } })
         .then((res: any) => {
           if (res?.data?.success && (res.data.avatar_url || res.data.name)) {
@@ -205,6 +243,7 @@ export function useWhatsAppInbox() {
         .catch(() => undefined);
     } else {
       setMessages([]);
+      setLoadingMessages(false);
     }
   }, [contacts, fetchMessages, fetchContacts]);
 
@@ -488,9 +527,6 @@ export function useWhatsAppInbox() {
     return () => clearInterval(interval);
   }, [fetchContacts, checkConnection]);
 
-  const selectedContactIdRef = useRef<string | null>(null);
-  const selectedContactPhoneRef = useRef<string | null>(null);
-
   useEffect(() => {
     selectedContactIdRef.current = selectedContactId;
     selectedContactPhoneRef.current = contacts.find((item) => item.id === selectedContactId)?.phone ?? null;
@@ -522,7 +558,17 @@ export function useWhatsAppInbox() {
 
           if (matches) {
             console.log("[messages:incoming] source=realtime-INSERT key=", getMessageUniqueKey(newMsg));
-            setMessages(prev => mergeMessagesDedup(prev, [newMsg]));
+            setMessages(prev => {
+              const merged = mergeMessagesDedup(prev, [newMsg]);
+              messagesCacheRef.current.set(newMsg.contact_id, merged);
+              return merged;
+            });
+          } else {
+            // Update cache silently for non-active conversation
+            const cached = messagesCacheRef.current.get(newMsg.contact_id);
+            if (cached) {
+              messagesCacheRef.current.set(newMsg.contact_id, mergeMessagesDedup(cached, [newMsg]));
+            }
           }
 
           // Inbound notifications: only when conversation isn't actively open
@@ -579,7 +625,16 @@ export function useWhatsAppInbox() {
           const updated = payload.new as InboxMessage;
           if (matchesSelectedConversation(updated, selectedContactIdRef.current, selectedContactPhoneRef.current)) {
             console.log("[messages:incoming] source=realtime-UPDATE key=", getMessageUniqueKey(updated));
-            setMessages(prev => mergeMessagesDedup(prev, [updated]));
+            setMessages(prev => {
+              const merged = mergeMessagesDedup(prev, [updated]);
+              messagesCacheRef.current.set(updated.contact_id, merged);
+              return merged;
+            });
+          } else {
+            const cached = messagesCacheRef.current.get(updated.contact_id);
+            if (cached) {
+              messagesCacheRef.current.set(updated.contact_id, mergeMessagesDedup(cached, [updated]));
+            }
           }
         }
       )
@@ -634,6 +689,7 @@ export function useWhatsAppInbox() {
     filter,
     setFilter,
     loading,
+    loadingMessages,
     isAdminOrCeo,
     connectionStatus,
     activeIntegration,
