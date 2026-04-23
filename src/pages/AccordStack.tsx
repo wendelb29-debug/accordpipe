@@ -205,6 +205,8 @@ export default function AccordStack() {
           statusFilter={statusFilter}
           onStatusFilterChange={setStatusFilter}
           onNewConversation={() => setNewConvOpen(true)}
+          tenantId={companyId}
+          onAvatarsSynced={refetchContacts}
         />
       </div>
 

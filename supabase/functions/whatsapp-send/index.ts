@@ -36,6 +36,8 @@ async function sendUazapiMedia(
     text: caption || "",
   };
   if (fileName) payload.docName = fileName;
+  // Send as voice note (PTT) when audio — appears as recorded-on-the-fly in WhatsApp
+  if (mediaType === "audio") payload.ptt = true;
 
   console.log("[sendUazapiMedia] POST", url, "type:", mediaType);
 
