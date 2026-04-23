@@ -941,7 +941,13 @@ export function InboxChat({
         )}
       </div>
 
-      <div className="flex-shrink-0 border-t border-border/60 bg-background p-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
+      <div
+        className="flex-shrink-0 p-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] border-t"
+        style={{
+          background: "linear-gradient(to bottom, hsl(var(--primary) / 0.06), hsl(var(--primary) / 0.10))",
+          borderTopColor: "hsl(var(--primary) / 0.18)",
+        }}
+      >
         <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => handleFileChange(e, "file")} />
         <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "image")} />
         <input ref={audioInputRef} type="file" accept="audio/*" className="hidden" onChange={(e) => handleFileChange(e, "audio")} />
