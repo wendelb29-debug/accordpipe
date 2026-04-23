@@ -18,7 +18,7 @@ type UiFilter = "Todas" | "Não lidas";
 
 export default function AccordStack() {
   const {
-    contacts, messages, selectedContactId, selectContact, sendMessage,
+    contacts, messages, selectedContactId, selectContact, sendMessage, toggleReaction,
     filter, setFilter, loading, isAdminOrCeo, connectionStatus,
     assignContact, transferContact, companyId, refetchContacts,
     updateConversationStatus, activeIntegration, unreadByContact,
@@ -228,6 +228,7 @@ export default function AccordStack() {
           contact={chatContact}
           messages={chatMessages}
           onSendMessage={sendMessage}
+          onReactToMessage={toggleReaction}
           onTransfer={handleTransfer}
           onAssignToMe={handleAssignToMe}
           isAdmin={isAdminOrCeo}
