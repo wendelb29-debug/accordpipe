@@ -32,6 +32,7 @@ export interface InboxMessage {
   status: string;
   message_type: string;
   media_url: string | null;
+  metadata: Record<string, any> | null;
   created_at: string;
   company_id: string;
   external_message_id?: string | null;

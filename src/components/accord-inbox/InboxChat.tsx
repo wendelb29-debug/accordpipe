@@ -1,22 +1,27 @@
 import { useState, useRef, useEffect } from "react";
 import {
   Search, ArrowLeftRight, Info, X, Paperclip, Image, Mic, Trash2,
-  Send, Play, Pause, FileText,
+  Send, Play, Pause, FileText, FileSpreadsheet, FileArchive, FileImage, FileVideo, FileAudio, File as FileIcon, Download,
   MoreVertical, Users, Check, CheckCheck, ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AiImprovePopover } from "./AiImprovePopover";
 import { AudioVisualizer } from "./AudioVisualizer";
+import {
+  linkifyText, classifyAttachment, formatFileSize, extensionLabel,
+  type AttachmentKind,
+} from "@/lib/messageContent";
 
 interface ChatMessage {
   id: string;
   message: string;
   direction: "inbound" | "outbound" | string;
   created_at: string;
-  type?: "text" | "audio" | "image" | "file" | string;
+  type?: "text" | "audio" | "image" | "file" | "document" | "pdf" | "video" | string;
   mediaUrl?: string;
   fileName?: string;
-  fileSize?: string;
+  fileSize?: string | number;
+  mimeType?: string;
   status?: string;
 }
 
@@ -154,26 +159,76 @@ function AudioPlayer({ direction, src }: { direction: string; src?: string }) {
   );
 }
 
-function FileBubble({ direction, fileName, fileSize, src }: { direction: string; fileName?: string; fileSize?: string; src?: string }) {
+function AttachmentIcon({ kind, className }: { kind: AttachmentKind; className?: string }) {
+  const props = { size: 18, className };
+  switch (kind) {
+    case "pdf": return <FileText {...props} />;
+    case "doc": return <FileText {...props} />;
+    case "sheet": return <FileSpreadsheet {...props} />;
+    case "archive": return <FileArchive {...props} />;
+    case "image": return <FileImage {...props} />;
+    case "video": return <FileVideo {...props} />;
+    case "audio": return <FileAudio {...props} />;
+    case "text": return <FileText {...props} />;
+    default: return <FileIcon {...props} />;
+  }
+}
+
+function AttachmentCard({
+  direction, fileName, fileSize, src, mimeType,
+}: {
+  direction: string;
+  fileName?: string;
+  fileSize?: string | number;
+  src?: string;
+  mimeType?: string;
+}) {
   const isOut = direction === "outbound";
+  const kind = classifyAttachment({ mime: mimeType, fileName, url: src });
+  const ext = extensionLabel(fileName, src);
+  const sizeLabel = typeof fileSize === "number"
+    ? formatFileSize(fileSize)
+    : (fileSize || formatFileSize(undefined));
+  const safeName = fileName || `arquivo.${ext.toLowerCase()}`;
+
   const content = (
-    <div className={cn("flex items-center gap-2.5 px-3 py-2.5 rounded-2xl",
-      isOut ? "bg-primary rounded-br-sm" : "bg-muted/80 dark:bg-muted/50 rounded-bl-sm border border-border/40"
+    <div className={cn(
+      "flex items-center gap-3 px-3 py-2.5 rounded-2xl min-w-[240px] max-w-[320px]",
+      isOut ? "bg-primary rounded-br-sm" : "bg-muted/80 dark:bg-muted/50 rounded-bl-sm border border-border/40",
     )}>
-      <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0",
-        isOut ? "bg-white/15" : "bg-primary/10"
+      <div className={cn(
+        "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
+        isOut ? "bg-white/15" : "bg-primary/10",
       )}>
-        <FileText size={16} className={isOut ? "text-white" : "text-primary"} />
+        <AttachmentIcon kind={kind} className={isOut ? "text-white" : "text-primary"} />
       </div>
-      <div className="min-w-0">
-        <p className={cn("text-[12px] font-medium truncate max-w-[180px]", isOut ? "text-white" : "text-foreground")}>{fileName || "arquivo"}</p>
-        <p className={cn("text-[11px]", isOut ? "text-white/60" : "text-muted-foreground")}>{fileSize || (src ? "Baixar" : "–")}</p>
+      <div className="min-w-0 flex-1">
+        <p className={cn("text-[12.5px] font-medium truncate", isOut ? "text-white" : "text-foreground")}>
+          {safeName}
+        </p>
+        <p className={cn("text-[11px] truncate", isOut ? "text-white/70" : "text-muted-foreground")}>
+          {ext}{sizeLabel ? ` · ${sizeLabel}` : ""}
+        </p>
       </div>
+      {src && (
+        <Download
+          size={15}
+          className={cn("flex-shrink-0", isOut ? "text-white/80" : "text-muted-foreground")}
+        />
+      )}
     </div>
   );
+
   if (!src) return content;
   return (
-    <a href={src} target="_blank" rel="noopener noreferrer" download={fileName} className="block hover:opacity-90 transition">
+    <a
+      href={src}
+      target="_blank"
+      rel="noopener noreferrer"
+      download={safeName}
+      title={safeName}
+      className="block hover:opacity-90 transition"
+    >
       {content}
     </a>
   );
@@ -184,13 +239,28 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
   const time = msg.created_at
     ? new Date(msg.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
     : "";
+
+  // Decide presentation: prioritize message_type, but fall back to mime/url sniffing
+  const kind = (() => {
+    if (msg.type === "audio") return "audio" as const;
+    if (msg.type === "image") return "image" as const;
+    if (msg.type === "video") return "video" as const;
+    if (msg.mediaUrl || msg.type === "file" || msg.type === "document" || msg.type === "pdf") {
+      const k = classifyAttachment({ mime: msg.mimeType, fileName: msg.fileName, url: msg.mediaUrl });
+      if (k === "image") return "image" as const;
+      if (k === "audio") return "audio" as const;
+      return "attachment" as const;
+    }
+    return "text" as const;
+  })();
+
+  const hasCaption = !!msg.message && msg.message !== msg.fileName;
+
   return (
     <div className={cn("flex flex-col max-w-[68%]", isOut ? "self-end items-end" : "self-start items-start")}>
-      {msg.type === "audio" ? (
+      {kind === "audio" ? (
         <AudioPlayer direction={msg.direction} src={msg.mediaUrl} />
-      ) : msg.type === "file" || msg.type === "document" ? (
-        <FileBubble direction={msg.direction} fileName={msg.fileName || msg.message} fileSize={msg.fileSize} src={msg.mediaUrl} />
-      ) : msg.type === "image" ? (
+      ) : kind === "image" ? (
         <a
           href={msg.mediaUrl}
           target="_blank"
@@ -198,7 +268,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
           className={cn("rounded-2xl overflow-hidden block", isOut ? "rounded-br-sm" : "rounded-bl-sm border border-border/40")}
         >
           {msg.mediaUrl ? (
-            <img src={msg.mediaUrl} alt={msg.fileName || "imagem"} className="w-64 max-h-72 object-cover" />
+            <img src={msg.mediaUrl} alt={msg.fileName || "imagem"} className="w-64 max-h-72 object-cover" loading="lazy" />
           ) : (
             <div className="w-52 h-36 bg-muted/60 flex items-center justify-center text-muted-foreground text-xs gap-2">
               <Image size={16} />
@@ -206,16 +276,36 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
             </div>
           )}
         </a>
+      ) : kind === "attachment" ? (
+        <AttachmentCard
+          direction={msg.direction}
+          fileName={msg.fileName || msg.message}
+          fileSize={msg.fileSize}
+          src={msg.mediaUrl}
+          mimeType={msg.mimeType}
+        />
       ) : (
         <div className={cn(
-          "px-3.5 py-2 rounded-2xl text-[13px] leading-relaxed break-words",
+          "px-3.5 py-2 rounded-2xl text-[13px] leading-relaxed break-words whitespace-pre-wrap",
           isOut
             ? "bg-primary text-primary-foreground rounded-br-sm"
-            : "bg-background dark:bg-muted/50 text-foreground rounded-bl-sm border border-border/40"
+            : "bg-background dark:bg-muted/50 text-foreground rounded-bl-sm border border-border/40",
         )}>
-          {msg.message}
+          {linkifyText(msg.message)}
         </div>
       )}
+
+      {(kind === "image" || kind === "attachment") && hasCaption && (
+        <div className={cn(
+          "mt-1 px-3 py-1.5 rounded-xl text-[12.5px] leading-relaxed break-words whitespace-pre-wrap max-w-full",
+          isOut
+            ? "bg-primary/90 text-primary-foreground"
+            : "bg-background dark:bg-muted/40 text-foreground border border-border/40",
+        )}>
+          {linkifyText(msg.message)}
+        </div>
+      )}
+
       <div className="flex items-center gap-1 mt-1 px-0.5">
         <span className="text-[10px] text-muted-foreground">{time}</span>
         {isOut && (() => {
@@ -336,8 +426,27 @@ export function InboxChat({
     if (taRef.current) taRef.current.style.height = "40px";
   };
 
-  const uploadAndSend = async (file: File, messageType: "image" | "audio" | "file") => {
+  const MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // 25MB
+
+  const detectMessageType = (file: File): "image" | "audio" | "video" | "file" => {
+    const mime = (file.type || "").toLowerCase();
+    if (mime.startsWith("image/")) return "image";
+    if (mime.startsWith("audio/")) return "audio";
+    if (mime.startsWith("video/")) return "video";
+    return "file";
+  };
+
+  const uploadAndSend = async (
+    file: File,
+    forcedType?: "image" | "audio" | "file",
+  ) => {
     if (!companyId || !contact) return;
+    if (file.size > MAX_UPLOAD_BYTES) {
+      const { toast } = await import("sonner");
+      toast.error(`Arquivo muito grande (máx. ${Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB).`);
+      return;
+    }
+    const messageType = forcedType || detectMessageType(file);
     setUploading(true);
     try {
       const { supabase } = await import("@/integrations/supabase/client");
@@ -348,7 +457,9 @@ export function InboxChat({
         .upload(path, file, { contentType: file.type, upsert: false });
       if (upErr) throw upErr;
       const { data: pub } = supabase.storage.from("whatsapp-media").getPublicUrl(path);
-      onSendMessage(file.name, { messageType, mediaUrl: pub.publicUrl, fileName: file.name });
+      // For non-image/audio types, we send 'file' to backend (uazapi treats document/audio/image distinctly)
+      const sendType = messageType === "video" ? "file" : messageType;
+      onSendMessage(file.name, { messageType: sendType, mediaUrl: pub.publicUrl, fileName: file.name });
     } catch (err: any) {
       const { toast } = await import("sonner");
       toast.error(err?.message || "Falha no upload do arquivo");
@@ -357,10 +468,44 @@ export function InboxChat({
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: "image" | "audio" | "file") => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type?: "image" | "audio" | "file") => {
     const f = e.target.files?.[0];
     if (f) uploadAndSend(f, type);
     e.target.value = "";
+  };
+
+  // ===== Drag & drop on the messages area =====
+  const [isDragging, setIsDragging] = useState(false);
+  const dragDepthRef = useRef(0);
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    if (!e.dataTransfer?.types?.includes("Files")) return;
+    e.preventDefault();
+    dragDepthRef.current += 1;
+    setIsDragging(true);
+  };
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!e.dataTransfer?.types?.includes("Files")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  };
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setIsDragging(false);
+  };
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragDepthRef.current = 0;
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer?.files || []);
+    if (!files.length || isClosed) return;
+    // Upload files sequentially to avoid hammering the API
+    (async () => {
+      for (const f of files) {
+        await uploadAndSend(f);
+      }
+    })();
   };
 
   const startRecording = async () => {
@@ -487,7 +632,14 @@ export function InboxChat({
         </div>
       </div>
 
-      <div ref={msgsRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col gap-2 px-4 py-3 relative scroll-smooth bg-muted/20 dark:bg-background/60 overscroll-contain">
+      <div
+        ref={msgsRef}
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col gap-2 px-4 py-3 relative scroll-smooth bg-muted/20 dark:bg-background/60 overscroll-contain"
+      >
         <AccordWatermark />
         <div className="relative z-10 max-w-4xl mx-auto w-full flex flex-col gap-2">
           <div className="flex items-center gap-3 my-2">
@@ -511,6 +663,15 @@ export function InboxChat({
           >
             Novas mensagens ↓
           </button>
+        )}
+        {isDragging && !isClosed && (
+          <div className="absolute inset-2 z-30 rounded-2xl border-2 border-dashed border-primary/60 bg-primary/10 backdrop-blur-sm flex items-center justify-center pointer-events-none animate-fade-in">
+            <div className="flex flex-col items-center gap-2 text-primary">
+              <Paperclip size={28} />
+              <p className="text-sm font-medium">Solte para anexar</p>
+              <p className="text-[11px] text-muted-foreground">Imagens, PDFs e documentos · até 25 MB</p>
+            </div>
+          </div>
         )}
       </div>
 
