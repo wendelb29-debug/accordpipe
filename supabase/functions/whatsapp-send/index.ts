@@ -14,6 +14,121 @@ interface SendResult {
   raw?: unknown;
 }
 
+async function sendUazapiReaction(
+  serverUrl: string,
+  instanceToken: string,
+  phone: string,
+  targetMessageId: string,
+  reaction: string,
+): Promise<SendResult> {
+  const base = serverUrl.replace(/\/$/, "");
+  const url = `${base}/message/react`;
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { token: instanceToken, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        number: normalizePhone(phone),
+        messageId: targetMessageId,
+        emoji: reaction,
+      }),
+    });
+    const rawText = await res.text();
+    let body: any = {};
+    try { body = JSON.parse(rawText); } catch { body = { raw: rawText }; }
+
+    if (!res.ok) {
+      return { success: false, message: `Uazapi reaction HTTP ${res.status}: ${rawText.slice(0, 250)}`, raw: body };
+    }
+
+    return {
+      success: true,
+      message: "Reação enviada via Uazapi",
+      external_id: body?.id || body?.messageId || body?.data?.messageId || undefined,
+      raw: body,
+    };
+  } catch (err) {
+    return { success: false, message: `Falha Uazapi reaction: ${(err as Error).message}` };
+  }
+}
+
+async function sendZapiReaction(
+  serverUrl: string,
+  instanceId: string,
+  token: string,
+  clientToken: string | null,
+  phone: string,
+  targetMessageId: string,
+  reaction: string,
+): Promise<SendResult> {
+  const base = serverUrl.replace(/\/$/, "");
+  const url = `${base}/instances/${instanceId}/token/${token}/send-reaction`;
+
+  try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (clientToken) headers["Client-Token"] = clientToken;
+    const res = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        phone: normalizePhone(phone),
+        reaction,
+        messageId: targetMessageId,
+      }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return { success: false, message: `Z-API reaction HTTP ${res.status}`, raw: body };
+    }
+    return {
+      success: true,
+      message: "Reação enviada via Z-API",
+      external_id: (body as any)?.messageId || (body as any)?.zaapId || undefined,
+      raw: body,
+    };
+  } catch (err) {
+    return { success: false, message: `Falha Z-API reaction: ${(err as Error).message}` };
+  }
+}
+
+async function removeZapiReaction(
+  serverUrl: string,
+  instanceId: string,
+  token: string,
+  clientToken: string | null,
+  phone: string,
+  targetMessageId: string,
+): Promise<SendResult> {
+  const base = serverUrl.replace(/\/$/, "");
+  const url = `${base}/instances/${instanceId}/token/${token}/send-remove-reaction`;
+
+  try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (clientToken) headers["Client-Token"] = clientToken;
+    const res = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        phone: normalizePhone(phone),
+        messageId: targetMessageId,
+      }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return { success: false, message: `Z-API remove reaction HTTP ${res.status}`, raw: body };
+    }
+    return {
+      success: true,
+      message: "Reação removida via Z-API",
+      external_id: (body as any)?.messageId || (body as any)?.zaapId || undefined,
+      raw: body,
+    };
+  } catch (err) {
+    return { success: false, message: `Falha Z-API remove reaction: ${(err as Error).message}` };
+  }
+}
+
 function normalizePhone(p: string): string {
   return p.replace(/\D/g, "");
 }
@@ -167,12 +282,30 @@ Deno.serve(async (req) => {
     }
     const userId = userData.user.id;
 
-    const { tenant_id, phone, text, message_id, message_type, media_url, file_name } = await req.json();
+    const {
+      tenant_id,
+      phone,
+      text,
+      message_id,
+      message_type,
+      media_url,
+      file_name,
+      target_message_id,
+      reaction_emoji,
+      reaction_mode,
+    } = await req.json();
     const msgType: string = message_type || "text";
     const isMedia = msgType !== "text" && !!media_url;
-    if (!tenant_id || !phone || (!isMedia && !text)) {
+    const isReaction = msgType === "reaction";
+    if (!tenant_id || !phone || (!isReaction && !isMedia && !text)) {
       return new Response(
         JSON.stringify({ error: "tenant_id, phone and text/media are required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    if (isReaction && !target_message_id) {
+      return new Response(
+        JSON.stringify({ error: "target_message_id is required for reactions" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -220,7 +353,19 @@ Deno.serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-      if (isMedia) {
+      if (isReaction) {
+        if (reaction_mode === "remove") {
+          result = { success: false, message: "Remover reação não é suportado para esta integração." };
+        } else {
+          result = await sendUazapiReaction(
+            integ.server_url,
+            integ.instance_token,
+            phone,
+            target_message_id,
+            reaction_emoji,
+          );
+        }
+      } else if (isMedia) {
         const uazType =
           msgType === "image" ? "image" :
           msgType === "audio" ? "audio" :
@@ -243,19 +388,40 @@ Deno.serve(async (req) => {
         .select("zapi_client_token")
         .eq("id", tenant_id)
         .maybeSingle();
-      result = await sendZapi(
-        integ.server_url,
-        integ.instance_id || "",
-        integ.instance_token,
-        comp?.zapi_client_token ?? null,
-        phone,
-        text,
-      );
+      if (isReaction) {
+        result = reaction_mode === "remove"
+          ? await removeZapiReaction(
+              integ.server_url,
+              integ.instance_id || "",
+              integ.instance_token,
+              comp?.zapi_client_token ?? null,
+              phone,
+              target_message_id,
+            )
+          : await sendZapiReaction(
+              integ.server_url,
+              integ.instance_id || "",
+              integ.instance_token,
+              comp?.zapi_client_token ?? null,
+              phone,
+              target_message_id,
+              reaction_emoji,
+            );
+      } else {
+        result = await sendZapi(
+          integ.server_url,
+          integ.instance_id || "",
+          integ.instance_token,
+          comp?.zapi_client_token ?? null,
+          phone,
+          text,
+        );
+      }
     } else {
       result = { success: false, message: `Provider '${integ.provider_type}' não suportado.` };
     }
 
-    if (message_id) {
+    if (message_id && !isReaction) {
       await admin
         .from("whatsapp_messages")
         .update({
@@ -276,6 +442,9 @@ Deno.serve(async (req) => {
       details: {
         provider_type: integ.provider_type,
         phone: normalizePhone(phone),
+          message_type: msgType,
+          reaction_mode: reaction_mode ?? null,
+          target_message_id: target_message_id ?? null,
         success: result.success,
         message: result.message,
       },
