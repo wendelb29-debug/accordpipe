@@ -80,14 +80,18 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b border-border/50 bg-card/95 backdrop-blur-xl px-3 sm:px-4 lg:px-6 shadow-sm gap-2" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+    <header
+      className="sticky top-0 z-30 flex items-center justify-between border-b border-border/50 bg-card/95 backdrop-blur-xl px-2 sm:px-4 lg:px-6 shadow-sm gap-1 sm:gap-2 h-14 sm:h-12"
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingLeft: 'max(0.5rem, env(safe-area-inset-left, 0px))', paddingRight: 'max(0.5rem, env(safe-area-inset-right, 0px))' }}
+    >
       {isMobile && <MobileSidebar />}
 
       {/* Back arrow + Page title */}
-      <div className="flex items-center gap-2 min-w-0 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1 sm:flex-initial sm:shrink-0">
         <button
           onClick={handleBack}
           title={t("header.back")}
+          aria-label={t("header.back")}
           className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/60 hover:bg-primary/10 hover:text-primary text-muted-foreground transition-all duration-200 shrink-0 active:scale-95"
         >
           <ChevronLeft className="h-5 w-5" />
@@ -101,16 +105,17 @@ export function Header() {
       </div>
 
       {/* Right: Clock + Theme + Search + Notifications + User */}
-      <div className="flex items-center gap-1 shrink-0">
+      <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
         {/* Theme toggle - always visible */}
         <button
           onClick={handleThemeToggle}
-          className="h-8 w-8 flex items-center justify-center rounded-full bg-muted/50 hover:bg-muted transition-all text-muted-foreground hover:text-foreground"
+          aria-label="Toggle theme"
+          className="h-10 w-10 sm:h-8 sm:w-8 flex items-center justify-center rounded-full bg-muted/50 hover:bg-muted transition-all text-muted-foreground hover:text-foreground active:scale-95"
         >
-          {currentTheme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+          {currentTheme === "dark" ? <Sun className="h-4 w-4 sm:h-3.5 sm:w-3.5" /> : <Moon className="h-4 w-4 sm:h-3.5 sm:w-3.5" />}
         </button>
 
-        <div className="hidden sm:flex items-center gap-2 mr-1">
+        <div className="hidden lg:flex items-center gap-2 mr-1">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Clock className="h-3.5 w-3.5" />
             <span className="tabular-nums">
