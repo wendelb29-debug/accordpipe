@@ -305,16 +305,16 @@ export function AccordAIChat() {
   const hasPending = pending.length > 0;
   const showWhatsAppLook = launcherMode !== "ai" || hasPending;
 
-  const openQuickChat = useCallback((notif: InboxNotification) => {
+  const openQuickChat = (notif: InboxNotification) => {
     setActiveQuickChat(notif);
     setOpen(false);
     clearPreview();
-  }, [clearPreview]);
+  };
 
-  const closeQuickChat = useCallback(() => {
+  const closeQuickChat = () => {
     if (activeQuickChat) dismissContact(activeQuickChat.contact_id);
     setActiveQuickChat(null);
-  }, [activeQuickChat, dismissContact]);
+  };
 
   // Quick chat takes over the floating slot
   if (activeQuickChat && activeCompanyId) {
