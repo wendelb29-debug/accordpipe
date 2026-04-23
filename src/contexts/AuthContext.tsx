@@ -102,7 +102,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Computed from companies array — defined once, used below and in value
   const activeCompany = companies.find(c => c.id === activeCompanyId) || null;
-  const isGlobalMaster = isMasterTenantAdmin && activeCompany?.servidor_id === null;
+  // Home company = user's original tenant (from profile). Used for role flags
+  // so they don't flip when a Master switches into a child tenant.
+  const homeCompany = companies.find(c => c.id === profile?.company_id) || null;
+  const isGlobalMaster = isMasterTenantAdmin && (homeCompany ? homeCompany.servidor_id === null : true);
+  // Reseller flag is based on the ACTIVE company so a tenant that is enabled
+  // as reseller sees the reseller management UI in its own context.
   const isResellerTenant = !!(activeCompany?.is_reseller && activeCompany?.reseller_panel_enabled);
 
   const setActiveCompanyId = (id: string | null) => {

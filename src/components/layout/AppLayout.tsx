@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useActivityReminders } from "@/hooks/useActivityReminders";
 import { useNotificationManager } from "@/hooks/useNotificationManager";
 import { AccordAIChat } from "@/components/accord-ai/AccordAIChat";
-import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
+import { TenantBillingBanner } from "./TenantBillingBanner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { BackNavigationProvider } from "@/contexts/BackNavigationContext";
@@ -27,6 +27,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
   const hideHeader = false;
   const isMobile = useIsMobile();
+  const isAccordStack = false;
+  const isAccordStackRoute = location.pathname.startsWith("/accord-stack");
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
 
@@ -39,15 +41,15 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <BackNavigationProvider>
       <div className="min-h-screen bg-background safe-area-top overflow-x-hidden">
-        {/* Desktop sidebar */}
-        {!isMobile && <Sidebar />}
+        {/* Desktop sidebar (hidden on Accord Stack for full-width chat) */}
+        {!isMobile && !isAccordStack && <Sidebar />}
 
         <div className={cn(
           "transition-all duration-300 min-w-0 flex flex-col min-h-screen",
-          isMobile ? "pl-0" : (sidebarCollapsed ? "pl-[60px]" : "pl-[232px]")
+          isMobile || isAccordStack ? "pl-0" : (sidebarCollapsed ? "pl-[60px]" : "pl-[232px]")
         )}>
-          {/* Payments test-mode banner (only when using test client token) */}
-          <PaymentTestModeBanner />
+          {/* Tenant billing alert banner */}
+          <TenantBillingBanner />
 
           {/* Notification activation banner */}
           {bannerVisible && (
@@ -76,8 +78,8 @@ export function AppLayout({ children }: AppLayoutProps) {
           )}
           {!hideHeader && <Header />}
           <main className={cn(
-            "w-full flex-1 min-w-0",
-            hideHeader ? "p-0" : "p-3 sm:p-4 lg:p-6"
+            "w-full max-w-none flex-1 min-w-0 min-h-0",
+            isAccordStackRoute ? "p-0 overflow-hidden" : (hideHeader ? "p-0" : "p-2 sm:p-3 lg:p-4 2xl:p-5")
           )}>
             {children}
           </main>

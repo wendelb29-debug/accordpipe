@@ -16,6 +16,9 @@ import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { useNotificationManager } from "@/hooks/useNotificationManager";
+import { useOperatorStatus } from "@/hooks/useOperatorStatus";
+import { useTenantWhatsAppIntegration } from "@/hooks/useTenantWhatsAppIntegration";
+import { Link } from "react-router-dom";
 
 const roleLabels: Record<string, string> = {
   admin: "Administrador",
@@ -264,60 +267,10 @@ export default function Perfil() {
         {/* RIGHT COLUMN */}
         <div className="space-y-6">
           {/* WhatsApp */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-primary" /> Meu Canal WhatsApp
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border/50">
-                <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                  <Wifi className="h-4 w-4 text-emerald-500" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">Status da Conexão</p>
-                  <p className="text-xs text-muted-foreground">Verifique na aba ACCORD Stack</p>
-                </div>
-                <Badge variant="outline" className="text-emerald-500 border-emerald-500/30 text-xs">
-                  <CheckCircle2 className="h-3 w-3 mr-1" /> Conectado
-                </Badge>
-              </div>
-
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5" asChild>
-                  <a href="/accord-stack">
-                    <Wifi className="h-3.5 w-3.5" /> Verificar Conexão
-                  </a>
-                </Button>
-                <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5" asChild>
-                  <a href="/accord-stack">
-                    <Hash className="h-3.5 w-3.5" /> Ler QR Code
-                  </a>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <MeuCanalWhatsAppCard />
 
           {/* Status de Atendimento */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Phone className="h-4 w-4 text-primary" /> Status de Atendimento
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border/50">
-                <div>
-                  <p className="text-sm font-medium text-foreground">Disponível para atendimento</p>
-                  <p className="text-xs text-muted-foreground">Novos atendimentos serão direcionados a você</p>
-                </div>
-                <Badge variant="outline" className="text-emerald-500 border-emerald-500/30 text-xs">
-                  Disponível
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
+          <StatusAtendimentoCard />
 
           {/* Notificações Push */}
           <NotificacoesPushCard />
@@ -446,6 +399,259 @@ function NotificacoesPushCard() {
           >
             <TestTube className="h-3.5 w-3.5" /> Testar Notificação
           </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MeuCanalWhatsAppCard() {
+  const { activeCompany } = useAuth();
+  const { integrations, loading, testConnection, save, reload, testing } = useTenantWhatsAppIntegration(activeCompany?.id || null);
+
+  const active = integrations.find((i) => i.is_active) || integrations[0];
+  const isConnected = active?.connection_status === "connected";
+  const lastSync = active?.last_seen_at || active?.last_sync_at;
+
+  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [countdown, setCountdown] = useState(40);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const normalizeQr = (raw: string) =>
+    raw?.startsWith("data:image") ? raw : `data:image/png;base64,${raw}`;
+
+  const handleGenerateQr = async () => {
+    if (!active?.server_url || !active?.instance_token) {
+      toast.error("Configure as credenciais do canal primeiro");
+      return;
+    }
+    setGenerating(true);
+    try {
+      const base = active.server_url.trim().replace(/\/$/, "");
+      const headers = { token: active.instance_token.trim(), "Content-Type": "application/json" };
+
+      // 1) Verifica status antes
+      try {
+        const sres = await fetch(`${base}/instance/status`, { headers });
+        if (sres.ok) {
+          const sdata = await sres.json();
+          const st = sdata?.status || sdata?.connection_status;
+          if (st === "connected") {
+            toast.info("Já conectado! Desconecte primeiro para escanear novo QR Code");
+            await reload();
+            return;
+          }
+        }
+      } catch { /* ignora e segue para gerar QR */ }
+
+      // 2) Gera o QR
+      const res = await fetch(`${base}/instance/connect`, { headers });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const qr = data.qrcode || data.base64 || data.qr;
+      if (!qr) throw new Error("QR não retornado");
+      setQrCode(normalizeQr(qr));
+      setCountdown(40);
+    } catch (err: any) {
+      toast.error("Erro ao gerar QR: " + (err.message || "desconhecido"));
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // countdown + polling enquanto QR visível
+  useEffect(() => {
+    if (!qrCode) {
+      if (pollRef.current) clearInterval(pollRef.current);
+      if (tickRef.current) clearInterval(tickRef.current);
+      return;
+    }
+    tickRef.current = setInterval(() => {
+      setCountdown((c) => {
+        if (c <= 1) {
+          if (tickRef.current) clearInterval(tickRef.current);
+          setQrCode(null);
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
+    pollRef.current = setInterval(async () => {
+      try {
+        const base = active!.server_url!.trim().replace(/\/$/, "");
+        const sres = await fetch(`${base}/instance/status`, {
+          headers: { token: active!.instance_token!.trim(), "Content-Type": "application/json" },
+        });
+        if (!sres.ok) return;
+        const sdata = await sres.json();
+        const status = sdata?.status || sdata?.connection_status;
+        if (status === "connected") {
+          toast.success("WhatsApp conectado com sucesso! 🎉");
+          setQrCode(null);
+          await testConnection(active!.provider_type); // sincroniza no banco
+          await reload();
+        }
+      } catch { /* silencioso */ }
+    }, 5000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      if (tickRef.current) clearInterval(tickRef.current);
+    };
+  }, [qrCode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <MessageSquare className="h-4 w-4 text-primary" /> Meu Canal WhatsApp
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {loading ? (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground p-3">
+            <Loader2 className="h-3 w-3 animate-spin" /> Carregando canal...
+          </div>
+        ) : !active ? (
+          <div className="p-3 rounded-lg bg-muted/50 border border-border/50 text-xs text-muted-foreground">
+            Nenhum canal configurado neste tenant.
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border/50">
+              <div className={cn(
+                "h-8 w-8 rounded-full flex items-center justify-center",
+                isConnected ? "bg-emerald-500/10" : "bg-destructive/10"
+              )}>
+                {isConnected ? (
+                  <Wifi className="h-4 w-4 text-emerald-500" />
+                ) : (
+                  <WifiOff className="h-4 w-4 text-destructive" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {active.instance_name || active.provider_type.toUpperCase()}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {active.connected_phone || active.provider_type}
+                  {lastSync && ` · ${new Date(lastSync).toLocaleString("pt-BR")}`}
+                </p>
+              </div>
+              <Badge
+                variant="outline"
+                className={cn(
+                  "text-xs",
+                  isConnected
+                    ? "text-emerald-500 border-emerald-500/30"
+                    : "text-destructive border-destructive/30"
+                )}
+              >
+                {isConnected ? (
+                  <><CheckCircle2 className="h-3 w-3 mr-1" /> Conectado</>
+                ) : (
+                  <><XCircle className="h-3 w-3 mr-1" /> Desconectado</>
+                )}
+              </Badge>
+            </div>
+
+            {qrCode && (
+              <div className="flex flex-col items-center gap-2 p-3 rounded-lg bg-muted/30 border border-border/50">
+                <div className="rounded-lg bg-white p-2">
+                  <img src={qrCode} alt="QR Code WhatsApp" className="h-44 w-44 object-contain" />
+                </div>
+                <p className="text-[11px] text-muted-foreground text-center">
+                  WhatsApp → Aparelhos conectados → Conectar
+                </p>
+                <Badge variant="secondary" className="gap-1 text-[11px]">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Expira em {countdown}s
+                </Badge>
+              </div>
+            )}
+          </>
+        )}
+
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 text-xs gap-1.5"
+            onClick={() => active && testConnection(active.provider_type)}
+            disabled={!active || testing}
+          >
+            {testing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wifi className="h-3.5 w-3.5" />}
+            Verificar Conexão
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 text-xs gap-1.5"
+            onClick={handleGenerateQr}
+            disabled={!active || generating}
+          >
+            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Hash className="h-3.5 w-3.5" />}
+            {qrCode ? "Gerar Novo QR" : "Ler QR Code"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function StatusAtendimentoCard() {
+  const { status, loading, updating, setOperatorStatus, isAvailable } = useOperatorStatus();
+
+  const handleToggle = async (checked: boolean) => {
+    const ok = await setOperatorStatus(checked ? "available" : "unavailable");
+    if (ok) {
+      toast.success(checked ? "Você está disponível" : "Você está indisponível");
+    } else {
+      toast.error("Erro ao atualizar status");
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Phone className="h-4 w-4 text-primary" /> Status de Atendimento
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border/50">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground">
+              {isAvailable ? "Disponível para atendimento" : "Indisponível"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {isAvailable
+                ? "Novos atendimentos serão direcionados a você"
+                : "Você não receberá novas conversas automaticamente"}
+            </p>
+          </div>
+          <Switch
+            checked={isAvailable}
+            onCheckedChange={handleToggle}
+            disabled={loading || updating}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge
+            variant="outline"
+            className={cn(
+              "text-xs",
+              isAvailable
+                ? "text-emerald-500 border-emerald-500/30"
+                : "text-muted-foreground border-border"
+            )}
+          >
+            {isAvailable ? (
+              <><CheckCircle2 className="h-3 w-3 mr-1" /> {status === "available" ? "Disponível" : status}</>
+            ) : (
+              <><XCircle className="h-3 w-3 mr-1" /> Indisponível</>
+            )}
+          </Badge>
         </div>
       </CardContent>
     </Card>

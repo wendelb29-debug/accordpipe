@@ -21,9 +21,6 @@ export function FooterSection() {
               <li><a href="#features" className="hover:text-[#D1D5DB] transition-colors duration-150">Funcionalidades</a></li>
               <li><a href="#faq" className="hover:text-[#D1D5DB] transition-colors duration-150">Perguntas Frequentes</a></li>
               <li><a href="#planos" className="hover:text-[#D1D5DB] transition-colors duration-150">Planos</a></li>
-              <li><a href="/legal/termos" className="hover:text-[#D1D5DB] transition-colors duration-150">Termos de Uso</a></li>
-              <li><a href="/legal/privacidade" className="hover:text-[#D1D5DB] transition-colors duration-150">Política de Privacidade</a></li>
-              <li><a href="/legal/reembolso" className="hover:text-[#D1D5DB] transition-colors duration-150">Política de Reembolso</a></li>
             </ul>
           </div>
           <div>

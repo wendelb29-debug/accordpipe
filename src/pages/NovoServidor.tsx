@@ -178,7 +178,7 @@ export default function NovoServidor() {
   const { toast } = useToast();
   // Pre-generate ID for new tenants so child components can use it
   const [pendingNewId] = useState(() => editId ? null : crypto.randomUUID());
-  const { isMaster, isMasterTenantAdmin, isGlobalMaster } = useAuth();
+  const { isMaster, isMasterTenantAdmin, isGlobalMaster, isResellerTenant, activeCompanyId } = useAuth();
 
   const [activeTab, setActiveTab] = useState("cadastro");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -200,11 +200,17 @@ export default function NovoServidor() {
       return false;
     }
     try {
+      // When a reseller (non-master) creates a tenant, the governance trigger
+      // requires parent_tenant_id and created_by_tenant_id to equal the actor's tenant.
+      const resellerLink = (isResellerTenant && !isGlobalMaster && activeCompanyId)
+        ? { parent_tenant_id: activeCompanyId, created_by_tenant_id: activeCompanyId }
+        : {};
       const { error } = await supabase.from("companies").insert({
         id: pendingNewId,
         cnpj: formData.cnpj,
         razao_social: formData.razao_social,
         nome_fantasia: formData.nome_fantasia || null,
+        ...resellerLink,
       } as any);
       if (error) throw error;
       setCompanyPreCreated(true);
@@ -481,47 +487,69 @@ export default function NovoServidor() {
     );
   }
 
+  const navItems = [
+    { value: "cadastro", icon: Building2, label: "Dados Cadastrais", short: "Dados" },
+    { value: "identidade", icon: Palette, label: "Identidade Visual", short: "Marca" },
+    { value: "workspaces", icon: LayoutGrid, label: "Workspaces", short: "Workspaces" },
+    { value: "contrato", icon: FileSignature, label: "Contrato", short: "Contrato" },
+    { value: "vendas", icon: Webhook, label: "Webhooks Z-API", short: "Z-API" },
+    { value: "fintech", icon: CreditCard, label: "Webhooks Fintech", short: "Fintech" },
+    { value: "usuarios", icon: Users, label: "Usuários", short: "Usuários" },
+    { value: "catalogo", icon: Package, label: "Catálogo", short: "Catálogo" },
+    { value: "plano", icon: Crown, label: "Plano & Usuários", short: "Plano" },
+    { value: "revenda", icon: Network, label: "Revenda", short: "Revenda" },
+  ];
+
   return (
-    <div className="min-h-[calc(100vh-3.5rem)]">
+    <div className="min-h-[calc(100dvh-3.5rem)]">
       {/* Top bar */}
-      <div className="border-b border-border bg-card px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-foreground">
+      <div className="border-b border-border bg-card px-3 sm:px-6 py-3 sm:py-4 sticky top-0 z-20">
+        <div className="flex items-start sm:items-center justify-between gap-3 flex-col sm:flex-row">
+          <div className="min-w-0 w-full sm:w-auto">
+            <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">
               {editId ? "Editar Tenant" : "Novo Tenant"}
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
               {editId ? "Atualize os dados do ambiente." : "Configure um novo ambiente independente para uma empresa."}
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={() => navigate(-1)} disabled={isSubmitting}>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Button variant="outline" onClick={() => navigate(-1)} disabled={isSubmitting} className="flex-1 sm:flex-none h-10">
               Cancelar
             </Button>
-            <Button onClick={handleSave} disabled={isSubmitting} className="gap-2">
+            <Button onClick={handleSave} disabled={isSubmitting} className="flex-1 sm:flex-none gap-2 h-10">
               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              {isSubmitting ? "Salvando..." : editId ? "Salvar Alterações" : "Criar Tenant"}
+              <span className="truncate">{isSubmitting ? "Salvando..." : editId ? "Salvar" : "Criar Tenant"}</span>
             </Button>
           </div>
         </div>
       </div>
 
+      {/* Mobile horizontal tabs (md:hidden) */}
+      <div className="md:hidden border-b border-border bg-card sticky top-[88px] sm:top-[73px] z-10 overflow-x-auto scrollbar-hide">
+        <div className="flex gap-1 px-2 py-2 min-w-max">
+          {navItems.map((item) => (
+            <button
+              key={item.value}
+              onClick={() => setActiveTab(item.value)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+                activeTab === item.value
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <item.icon className="h-3.5 w-3.5 shrink-0" />
+              {item.short}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Content */}
-      <div className="flex gap-0 h-[calc(100vh-3.5rem-73px)]">
-        {/* Vertical sidebar navigation */}
-        <div className="w-56 shrink-0 border-r border-border bg-card p-4 space-y-1 overflow-y-auto">
-          {[
-            { value: "cadastro", icon: Building2, label: "Dados Cadastrais" },
-            { value: "identidade", icon: Palette, label: "Identidade Visual" },
-            { value: "workspaces", icon: LayoutGrid, label: "Workspaces" },
-            { value: "contrato", icon: FileSignature, label: "Contrato" },
-            { value: "vendas", icon: Webhook, label: "Webhooks Z-API" },
-            { value: "fintech", icon: CreditCard, label: "Webhooks Fintech" },
-            { value: "usuarios", icon: Users, label: "Usuários" },
-            { value: "catalogo", icon: Package, label: "Catálogo" },
-            { value: "plano", icon: Crown, label: "Plano & Usuários" },
-            { value: "revenda", icon: Network, label: "Revenda" },
-          ].map((item) => (
+      <div className="flex gap-0 md:h-[calc(100dvh-3.5rem-73px)]">
+        {/* Desktop vertical sidebar navigation */}
+        <div className="hidden md:block w-56 shrink-0 border-r border-border bg-card p-4 space-y-1 overflow-y-auto">
+          {navItems.map((item) => (
             <button
               key={item.value}
               onClick={() => setActiveTab(item.value)}
@@ -538,7 +566,7 @@ export default function NovoServidor() {
         </div>
 
         {/* Content area */}
-        <div className="flex-1 min-w-0 overflow-y-auto p-6">
+        <div className="flex-1 min-w-0 overflow-y-auto p-3 sm:p-6 pb-24 md:pb-6">
           {activeTab === "cadastro" && (
             <Card>
               <CardContent className="pt-6 space-y-6">

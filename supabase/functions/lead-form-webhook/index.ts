@@ -66,18 +66,32 @@ Deno.serve(async (req) => {
     let resolvedWorkspaceId: string | null = null;
     let formTags: string[] = [];
 
-    if (!resolvedServidorId && resolvedFormId) {
+    if (resolvedFormId) {
       const { data: formData } = await supabaseAdmin
         .from("crm_forms")
-        .select("servidor_id, is_active, workspace_id, tags")
+        .select("servidor_id, workspace_id, tags")
         .eq("id", resolvedFormId)
         .maybeSingle();
-      if (formData?.is_active) {
+      if (formData) {
         resolvedServidorId = formData.servidor_id;
         resolvedWorkspaceId = formData.workspace_id || null;
         formTags = (formData.tags as string[]) || [];
+        console.log("[lead-form-webhook] form resolved", { resolvedFormId, resolvedServidorId, resolvedWorkspaceId });
       } else {
-        resolvedFormId = null; // form inactive or not found
+        resolvedFormId = null;
+      }
+    }
+
+    // Multi-tenant guard: workspace must belong to the same tenant
+    if (resolvedWorkspaceId && resolvedServidorId) {
+      const { data: ws } = await supabaseAdmin
+        .from("workspaces")
+        .select("id, servidor_id")
+        .eq("id", resolvedWorkspaceId)
+        .maybeSingle();
+      if (!ws || ws.servidor_id !== resolvedServidorId) {
+        console.warn("[lead-form-webhook] workspace/tenant mismatch — clearing workspace", { resolvedWorkspaceId, resolvedServidorId, wsTenant: ws?.servidor_id });
+        resolvedWorkspaceId = null;
       }
     }
 
@@ -101,6 +115,24 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Resolve initial stage: if a workspace is set, use the first kanban column id
+    let initialStage = "novos";
+    if (resolvedWorkspaceId) {
+      const { data: firstCol } = await supabaseAdmin
+        .from("kanban_columns")
+        .select("id, position, name")
+        .eq("workspace_id", resolvedWorkspaceId)
+        .order("position", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (firstCol?.id) {
+        initialStage = firstCol.id;
+        console.log("[lead-form-webhook] first column resolved", { col: firstCol });
+      } else {
+        console.warn("[lead-form-webhook] no kanban columns found for workspace", { resolvedWorkspaceId });
+      }
+    }
+
     // Build notes with extra fields
     const noteParts: string[] = [];
     if (colaboradores) noteParts.push(`Colaboradores: ${String(colaboradores).substring(0, 50)}`);
@@ -120,7 +152,7 @@ Deno.serve(async (req) => {
         cidade: cidade ? String(cidade).trim().substring(0, 100) : null,
         notes: fullNotes,
         tags: resolvedFormId ? [...formTags, "formulario"] : ["landing-page"],
-        stage: "novos",
+        stage: initialStage,
         created_by_name: nome.trim().substring(0, 200),
         form_id: resolvedFormId,
         workspace_id: resolvedWorkspaceId,

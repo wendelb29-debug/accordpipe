@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { Search, User, Moon, Sun, Clock, ChevronLeft, Building2 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { MobileSidebar } from "./MobileSidebar";
-import { TenantSwitcher } from "./TenantSwitcher";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -101,13 +100,8 @@ export function Header() {
         )}
       </div>
 
-      {/* Right: Tenant switcher + Clock + Theme + Search + Notifications + User */}
+      {/* Right: Clock + Theme + Search + Notifications + User */}
       <div className="flex items-center gap-1 shrink-0">
-        {/* Tenant switcher — single place to change active tenant context */}
-        <div className="hidden md:block mr-1">
-          <TenantSwitcher />
-        </div>
-
         {/* Theme toggle - always visible */}
         <button
           onClick={handleThemeToggle}

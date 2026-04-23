@@ -1,0 +1,24 @@
+/// <reference types="npm:@types/react@18.3.1" />
+
+import * as React from 'npm:react@18.3.1'
+import { AccordEmailLayout } from './_layout.tsx'
+
+interface SignupEmailProps {
+  siteName: string
+  siteUrl: string
+  recipient: string
+  confirmationUrl: string
+}
+
+export const SignupEmail = ({ confirmationUrl }: SignupEmailProps) => (
+  <AccordEmailLayout
+    preview="ACCORD — Confirme seu cadastro"
+    emoji="🎉"
+    title="Confirme seu cadastro"
+    body="Bem-vindo à Accord! Ative sua conta para começar."
+    buttonText="Ativar minha conta"
+    confirmationUrl={confirmationUrl}
+  />
+)
+
+export default SignupEmail

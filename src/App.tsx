@@ -41,22 +41,17 @@ import AssinarPdf from "./pages/AssinarPdf";
 import ValidarDocumento from "./pages/ValidarDocumento";
 import Servidores from "./pages/Servidores";
 import NovoServidor from "./pages/NovoServidor";
-import EditarTenant from "./pages/EditarTenant";
 import AceitarConvite from "./pages/AceitarConvite";
 import AssinarDocumento from "./pages/AssinarDocumento";
-import AuditLogs from "./pages/AuditLogs";
+
 import Performance from "./pages/Performance";
 import TenantSetupPublico from "./pages/TenantSetupPublico";
-import Planos from "./pages/Planos";
+
 import Eventos from "./pages/Eventos";
 import MeusTenants from "./pages/MeusTenants";
 import Academy from "./pages/Academy";
 import GestaoTenants from "./pages/GestaoTenants";
-import Assinatura from "./pages/Assinatura";
-import CheckoutSuccess from "./pages/CheckoutSuccess";
-import Termos from "./pages/legal/Termos";
-import Privacidade from "./pages/legal/Privacidade";
-import Reembolso from "./pages/legal/Reembolso";
+import WhatsAppConnection from "./pages/WhatsAppConnection";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1 } },
@@ -308,29 +303,6 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            {/* Dedicated edit route — never creates a tenant, only edits */}
-            <Route
-              path="/tenant/:id/editar"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <EditarTenant />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            {/* Legacy redirect: /servidores/novo?id=... still works, but new
-                links from the UI go through /tenant/:id/editar */}
-            <Route
-              path="/configuracoes/auditoria"
-              element={
-                <ProtectedRoute requiredPermission="view_audit_logs">
-                  <AppLayout>
-                    <AuditLogs />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
             <Route
               path="/performance"
               element={
@@ -342,16 +314,6 @@ const App = () => (
               }
             />
             <Route path="/setup-tenant/:token" element={<TenantSetupPublico />} />
-            <Route
-              path="/planos"
-              element={
-                <ProtectedRoute requiredPermission="view_billing_plans">
-                  <AppLayout>
-                    <Planos />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
             <Route
               path="/eventos"
               element={
@@ -393,19 +355,15 @@ const App = () => (
               }
             />
             <Route
-              path="/assinatura"
+              path="/configuracoes/whatsapp"
               element={
                 <ProtectedRoute>
                   <AppLayout>
-                    <Assinatura />
+                    <WhatsAppConnection />
                   </AppLayout>
                 </ProtectedRoute>
               }
             />
-            <Route path="/checkout/success" element={<CheckoutSuccess />} />
-            <Route path="/legal/termos" element={<Termos />} />
-            <Route path="/legal/privacidade" element={<Privacidade />} />
-            <Route path="/legal/reembolso" element={<Reembolso />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

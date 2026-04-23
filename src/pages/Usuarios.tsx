@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { PlanUsageCard } from "@/components/usuarios/PlanUsageCard";
-import { Plus, Search, User, MoreHorizontal, Pencil, Power, Shield, Eye, EyeOff, Building2, Server, CheckCircle, XCircle, Clock, FlaskConical, Send, MessageCircle, LayoutGrid } from "lucide-react";
+import { Plus, Search, User, MoreHorizontal, Pencil, Power, Shield, Eye, EyeOff, Building2, Server, CheckCircle, XCircle, Clock, FlaskConical, Send, MessageCircle, LayoutGrid, Trash2, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ServidoresTab from "@/components/servidores/ServidoresTab";
 import ServidoresTesteTab from "@/components/servidores/ServidoresTesteTab";
@@ -42,6 +42,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppRole, useAuth } from "@/contexts/AuthContext";
 import { PermissionsEditor } from "@/components/usuarios/PermissionsEditor";
 import { WorkspacePermissionsEditor } from "@/components/usuarios/WorkspacePermissionsEditor";
+import { InviteUserDialog } from "@/components/usuarios/InviteUserDialog";
 
 interface UserWithRole {
   id: string;
@@ -92,9 +93,16 @@ export default function Usuarios() {
   const [permUserIsCeo, setPermUserIsCeo] = useState(false);
   const [permUserRole, setPermUserRole] = useState<string>("");
   const { toast } = useToast();
-  const { isMaster, isCeo, isAdmin, activeCompanyId, profile, role, isMasterTenantAdmin, isGlobalMaster } = useAuth();
+  const { isMaster, isCeo, isAdmin, activeCompanyId, profile, role, isMasterTenantAdmin, isGlobalMaster, isResellerTenant } = useAuth();
+  // Tenant management tabs: Global Master in their own (master) tenant OR a reseller tenant.
+  const showTenantTabs = (isGlobalMaster && profile?.company_id === activeCompanyId) || isResellerTenant;
   const canManageUsers = isMaster || isCeo || isAdmin;
+  const canDeleteUsers = isMaster || isCeo;
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<UserWithRole | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [allCompanies, setAllCompanies] = useState<{id: string; nome_fantasia: string | null; razao_social: string; cnpj: string}[]>([]);
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -426,6 +434,30 @@ export default function Usuarios() {
     }
   };
 
+  const handleDeleteUser = async () => {
+    if (!deletingUser) return;
+    if (deletingUser.user_id === profile?.user_id) {
+      toast({ title: "Ação bloqueada", description: "Você não pode excluir seu próprio usuário.", variant: "destructive" });
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("delete-user", {
+        body: { target_user_id: deletingUser.user_id },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "Erro ao excluir");
+      toast({ title: "Usuário excluído", description: `${deletingUser.name} foi removido.` });
+      setDeleteDialogOpen(false);
+      setDeletingUser(null);
+      fetchUsers();
+    } catch (e: any) {
+      toast({ title: "Erro ao excluir", description: e.message || "Não foi possível excluir.", variant: "destructive" });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const filteredUsers = users.filter(
     (user) =>
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -455,13 +487,13 @@ export default function Usuarios() {
             <User className="h-4 w-4" />
             Usuários
           </TabsTrigger>
-          {isGlobalMaster && (
+          {isGlobalMaster && profile?.company_id === activeCompanyId && (
             <TabsTrigger value="servidores" className="gap-2">
               <Server className="h-4 w-4" />
               Tenants
             </TabsTrigger>
           )}
-          {isGlobalMaster && (
+          {isGlobalMaster && profile?.company_id === activeCompanyId && (
             <TabsTrigger value="servidores-teste" className="gap-2">
               <FlaskConical className="h-4 w-4" />
               Tenants Teste
@@ -477,10 +509,16 @@ export default function Usuarios() {
                 <h2 className="text-lg font-semibold text-foreground">Usuários</h2>
                 <p className="text-sm text-muted-foreground">Gerencie os usuários do sistema</p>
               </div>
-              <Button className="gap-2" onClick={() => handleOpenDialog()}>
-                <Plus className="h-4 w-4" />
-                Novo Usuário
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" className="gap-2" onClick={() => setInviteOpen(true)}>
+                  <Send className="h-4 w-4" />
+                  Convidar
+                </Button>
+                <Button className="gap-2" onClick={() => handleOpenDialog()}>
+                  <Plus className="h-4 w-4" />
+                  Novo Usuário
+                </Button>
+              </div>
             </div>
 
             {/* Search */}
@@ -621,6 +659,15 @@ export default function Usuarios() {
                               <DropdownMenuItem className="gap-2" onClick={() => handleToggleActive(user)}>
                                 <Power className="h-4 w-4" />
                                 {user.is_active ? "Desativar" : "Ativar"}
+                              </DropdownMenuItem>
+                            )}
+                            {canDeleteUsers && !user.is_master && user.user_id !== profile?.user_id && (
+                              <DropdownMenuItem
+                                className="gap-2 text-destructive focus:text-destructive"
+                                onClick={() => { setDeletingUser(user); setDeleteDialogOpen(true); }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Excluir usuário
                               </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>
@@ -836,6 +883,38 @@ export default function Usuarios() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          {/* Delete User Confirmation Dialog */}
+          <Dialog open={deleteDialogOpen} onOpenChange={(o) => { if (!isDeleting) setDeleteDialogOpen(o); }}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-destructive">
+                  <Trash2 className="h-5 w-5" />
+                  Excluir usuário
+                </DialogTitle>
+                <DialogDescription>
+                  Tem certeza que deseja excluir este usuário? Essa ação remove o acesso ao sistema e não poderá ser desfeita facilmente.
+                </DialogDescription>
+              </DialogHeader>
+              {deletingUser && (
+                <div className="rounded-lg border border-border bg-muted/40 p-3 space-y-1 text-sm">
+                  <div><span className="text-muted-foreground">Nome:</span> <strong>{deletingUser.name}</strong></div>
+                  <div><span className="text-muted-foreground">E-mail:</span> {deletingUser.email}</div>
+                  <div><span className="text-muted-foreground">Perfil:</span> {roleLabels[deletingUser.role]}</div>
+                  <div><span className="text-muted-foreground">Tenant:</span> {allCompanies.find(c => c.id === deletingUser.company_id)?.nome_fantasia || allCompanies.find(c => c.id === deletingUser.company_id)?.razao_social || "—"}</div>
+                </div>
+              )}
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isDeleting}>
+                  Cancelar
+                </Button>
+                <Button variant="destructive" onClick={handleDeleteUser} disabled={isDeleting} className="gap-2">
+                  {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  Excluir usuário
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           {/* Permissions Dialog */}
           <Dialog open={permDialogOpen} onOpenChange={setPermDialogOpen}>
             <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
@@ -881,17 +960,24 @@ export default function Usuarios() {
           </Dialog>
         </TabsContent>
 
-        {isMaster && (
+        {showTenantTabs && (
           <TabsContent value="servidores">
             <ServidoresTab />
           </TabsContent>
         )}
-        {isMaster && (
+        {showTenantTabs && (
           <TabsContent value="servidores-teste">
             <ServidoresTesteTab />
           </TabsContent>
         )}
       </Tabs>
+
+      <InviteUserDialog
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+        tenantId={isMaster ? activeCompanyId : profile?.company_id ?? null}
+        onSuccess={fetchUsers}
+      />
     </div>
   );
 }

@@ -2936,71 +2936,6 @@ export type Database = {
           },
         ]
       }
-      paddle_subscriptions: {
-        Row: {
-          billing_cycle: string
-          cancel_at_period_end: boolean
-          created_at: string
-          current_period_end: string | null
-          current_period_start: string | null
-          environment: string
-          id: string
-          paddle_customer_id: string
-          paddle_subscription_id: string
-          price_id: string
-          product_id: string
-          seat_price_id: string | null
-          seats_quantity: number
-          status: string
-          tenant_id: string
-          updated_at: string
-        }
-        Insert: {
-          billing_cycle?: string
-          cancel_at_period_end?: boolean
-          created_at?: string
-          current_period_end?: string | null
-          current_period_start?: string | null
-          environment?: string
-          id?: string
-          paddle_customer_id: string
-          paddle_subscription_id: string
-          price_id: string
-          product_id: string
-          seat_price_id?: string | null
-          seats_quantity?: number
-          status?: string
-          tenant_id: string
-          updated_at?: string
-        }
-        Update: {
-          billing_cycle?: string
-          cancel_at_period_end?: boolean
-          created_at?: string
-          current_period_end?: string | null
-          current_period_start?: string | null
-          environment?: string
-          id?: string
-          paddle_customer_id?: string
-          paddle_subscription_id?: string
-          price_id?: string
-          product_id?: string
-          seat_price_id?: string | null
-          seats_quantity?: number
-          status?: string
-          tenant_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "paddle_subscriptions_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       payments: {
         Row: {
           company_id: string | null
@@ -6545,10 +6480,6 @@ export type Database = {
         }[]
       }
       get_user_company_id: { Args: { _user_id: string }; Returns: string }
-      has_active_paddle_subscription: {
-        Args: { check_env?: string; tenant_uuid: string }
-        Returns: boolean
-      }
       has_permission: {
         Args: { _permission: string; _user_id: string }
         Returns: boolean
