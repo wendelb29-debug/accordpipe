@@ -140,10 +140,14 @@ export function AccordAIChat() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const { profile, activeCompany } = useAuth();
+  const { profile, activeCompany, activeCompanyId } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
   const bottomOffset = useBottomOffset(isMobile);
+
+  // Smart launcher — inbox notifications
+  const { preview, pending, totalUnread, clearPreview, dismissContact } = useInboxNotifications();
+  const [activeQuickChat, setActiveQuickChat] = useState<InboxNotification | null>(null);
 
   const { pageName, quickActions } = getContextForRoute(location.pathname);
 
