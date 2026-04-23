@@ -41,17 +41,15 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <BackNavigationProvider>
       <div className={cn(
-        "bg-background",
-        isAccordStackRoute
-          ? "h-[100dvh] overflow-hidden flex flex-col"
-          : "min-h-screen safe-area-top overflow-x-hidden"
+        "bg-background flex flex-col",
+        isAccordStackRoute ? "h-[100dvh] overflow-hidden" : "min-h-screen"
       )}>
         {/* Desktop sidebar (hidden on Accord Stack for full-width chat) */}
         {!isMobile && !isAccordStack && <Sidebar />}
 
         <div className={cn(
-          "transition-all duration-300 min-w-0 flex flex-col",
-          isAccordStackRoute ? "h-full" : "min-h-screen",
+          "transition-all duration-300 min-w-0 flex flex-col min-h-0",
+          isAccordStackRoute ? "h-full overflow-hidden" : "min-h-screen",
           isMobile || isAccordStack ? "pl-0" : (sidebarCollapsed ? "pl-[60px]" : "pl-[232px]")
         )}>
           {/* Tenant billing alert banner */}
@@ -84,8 +82,10 @@ export function AppLayout({ children }: AppLayoutProps) {
           )}
           {!hideHeader && !isAccordStackRoute && <Header />}
           <main className={cn(
-            "w-full max-w-none min-w-0 min-h-0",
-            isAccordStackRoute ? "p-0 overflow-hidden flex flex-col flex-1" : cn("flex-1", hideHeader ? "p-0" : "p-2 sm:p-3 lg:p-4 2xl:p-5")
+            "w-full max-w-none flex-1 min-w-0 min-h-0",
+            isAccordStackRoute
+              ? "p-0 overflow-hidden flex flex-col flex-1 min-h-0"
+              : (hideHeader ? "p-0" : "p-2 sm:p-3 lg:p-4")
           )}>
             {children}
           </main>

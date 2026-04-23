@@ -302,11 +302,10 @@ button, a, input, select, textarea {
 /* Full-height chain for flex layouts (chat etc.) */
 html, body, #root {
   height: 100%;
+  overflow: hidden;
 }
 
-/* Prevent body overflow on mobile */
 html, body {
-  overflow-x: hidden;
   box-sizing: border-box;
 }
 

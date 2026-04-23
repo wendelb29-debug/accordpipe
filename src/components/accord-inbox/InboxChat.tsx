@@ -263,6 +263,7 @@ export function InboxChat({
   const [hasNewBelow, setHasNewBelow] = useState(false);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const msgsRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -277,9 +278,13 @@ export function InboxChat({
 
   // Scroll only inside the message container (never scrolls the page).
   const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
-    const el = msgsRef.current;
-    if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior, block: "end" });
+    } else {
+      const el = msgsRef.current;
+      if (!el) return;
+      el.scrollTo({ top: el.scrollHeight, behavior });
+    }
     setHasNewBelow(false);
   };
 
@@ -427,7 +432,7 @@ export function InboxChat({
   }
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-background overflow-hidden min-h-0">
+    <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-background">
       <div className="flex items-center gap-2 px-2 sm:px-4 py-2.5 sm:py-3 border-b border-border/60 bg-background flex-shrink-0">
         {onBack && (
           <button
@@ -482,7 +487,7 @@ export function InboxChat({
         </div>
       </div>
 
-      <div ref={msgsRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col gap-1.5 py-4 px-5 relative scroll-smooth bg-muted/20 dark:bg-background/60 overscroll-contain">
+      <div ref={msgsRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col gap-2 px-4 py-3 relative scroll-smooth bg-muted/20 dark:bg-background/60 overscroll-contain">
         <AccordWatermark />
         <div className="relative z-10 max-w-4xl mx-auto w-full flex flex-col gap-2">
           <div className="flex items-center gap-3 my-2">
@@ -498,6 +503,7 @@ export function InboxChat({
             ))}
           </div>
         </div>
+        <div ref={messagesEndRef} />
         {hasNewBelow && (
           <button
             onClick={() => scrollToBottom("smooth")}
@@ -508,7 +514,7 @@ export function InboxChat({
         )}
       </div>
 
-      <div className="border-t border-border/60 px-2 sm:px-4 py-2 sm:py-3 bg-background flex-shrink-0 pb-[max(env(safe-area-inset-bottom),0.5rem)]">
+      <div className="flex-shrink-0 border-t border-border/60 bg-background p-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
         <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => handleFileChange(e, "file")} />
         <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "image")} />
         <input ref={audioInputRef} type="file" accept="audio/*" className="hidden" onChange={(e) => handleFileChange(e, "audio")} />
