@@ -1018,7 +1018,13 @@ export function InboxChat({
                 </button>
               </div>
             ) : (
-              <div className="flex items-end gap-1 bg-muted/50 border border-border/50 rounded-2xl px-1.5 py-1 focus-within:border-primary/50 focus-within:bg-muted/30 transition-colors">
+              <div
+                className="flex items-end gap-1 rounded-2xl px-1.5 py-1 transition-colors focus-within:ring-2 focus-within:ring-primary/30"
+                style={{
+                  background: "hsl(var(--background) / 0.85)",
+                  border: "1px solid hsl(var(--primary) / 0.20)",
+                }}
+              >
                 {/* Left actions: attachments + emoji + AI */}
                 <div className="flex items-center gap-0.5 pb-0.5 flex-shrink-0">
                   <ToolBtn icon={<Paperclip size={16} />} title="Anexar arquivo" onClick={() => fileInputRef.current?.click()} className="w-9 h-9 rounded-full" />
