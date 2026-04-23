@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { mergeMessagesDedup, dedupMessages, getMessageUniqueKey } from "@/lib/messageDedup";
 
 export type InboxFilter = "mine" | "all" | "unassigned";
 
@@ -166,12 +167,9 @@ export function useWhatsAppInbox() {
       return;
     }
 
-    const deduped = (data || []).reduce<InboxMessage[]>((acc, item) => {
-      if (!acc.some((msg) => msg.id === item.id)) acc.push(item as InboxMessage);
-      return acc;
-    }, []);
+    const deduped = dedupMessages((data || []) as InboxMessage[]);
 
-    console.log("[inbox] fetched", deduped.length, "messages for contact", contactId);
+    console.log("[inbox] fetched", deduped.length, "messages for contact", contactId, "(source: fetch)");
     setMessages(deduped);
   }, [companyId]);
 
@@ -437,10 +435,8 @@ export function useWhatsAppInbox() {
           const isInbound = newMsg.direction === "inbound";
 
           if (matches) {
-            setMessages(prev => {
-              if (prev.some(m => m.id === newMsg.id)) return prev;
-              return [...prev, newMsg];
-            });
+            console.log("[messages:incoming] source=realtime-INSERT key=", getMessageUniqueKey(newMsg));
+            setMessages(prev => mergeMessagesDedup(prev, [newMsg]));
           }
 
           // Inbound notifications: only when conversation isn't actively open
@@ -496,7 +492,8 @@ export function useWhatsAppInbox() {
         (payload) => {
           const updated = payload.new as InboxMessage;
           if (matchesSelectedConversation(updated, selectedContactIdRef.current, selectedContactPhoneRef.current)) {
-            setMessages(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated } : m));
+            console.log("[messages:incoming] source=realtime-UPDATE key=", getMessageUniqueKey(updated));
+            setMessages(prev => mergeMessagesDedup(prev, [updated]));
           }
         }
       )
