@@ -46,6 +46,10 @@ export function useInboxNotifications() {
   const [preview, setPreview] = useState<InboxNotification | null>(null);
   const [pending, setPending] = useState<InboxNotification[]>([]);
   const previewTimerRef = useRef<number | null>(null);
+  const isOnInboxPageRef = useRef(isOnInboxPage);
+  useEffect(() => {
+    isOnInboxPageRef.current = isOnInboxPage;
+  }, [isOnInboxPage]);
 
   const clearPreview = useCallback(() => {
     if (previewTimerRef.current) {
