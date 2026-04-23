@@ -28,6 +28,9 @@ interface LeadInfo {
   value_mrr: number;
   contact_name: string | null;
   created_at: string;
+  workspace_id?: string | null;
+  workspace_name?: string | null;
+  column_name?: string | null;
 }
 
 interface RegistrationInfo {
