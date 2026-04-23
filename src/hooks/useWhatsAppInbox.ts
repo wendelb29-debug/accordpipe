@@ -689,6 +689,7 @@ export function useWhatsAppInbox() {
     filter,
     setFilter,
     loading,
+    loadingMessages,
     isAdminOrCeo,
     connectionStatus,
     activeIntegration,
