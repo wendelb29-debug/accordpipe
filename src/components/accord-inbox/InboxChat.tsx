@@ -4,8 +4,22 @@ import {
   Send, Play, Pause, FileText, FileSpreadsheet, FileArchive, FileImage, FileVideo, FileAudio, File as FileIcon, Download,
   MoreVertical, Users, Check, CheckCheck, ArrowLeft, Reply, Smile,
 } from "lucide-react";
-import EmojiPicker, { EmojiStyle, Theme } from "emoji-picker-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+const EMOJI_LIST = [
+  "😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰",
+  "😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🥸","🤩","🥳",
+  "😏","😒","😞","😔","😟","😕","🙁","☹️","😣","😖","😫","😩","🥺","😢","😭","😤",
+  "😠","😡","🤬","🤯","😳","🥵","🥶","😱","😨","😰","😥","😓","🤗","🤔","🤭","🤫",
+  "🤥","😶","😐","😑","😬","🙄","😯","😦","😧","😮","😲","🥱","😴","🤤","😪","😵",
+  "🤐","🥴","🤢","🤮","🤧","😷","🤒","🤕","🤑","🤠","👍","👎","👌","🤌","🤏","✌️",
+  "🤞","🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝️","👋","🤚","🖐️","✋","🖖","👏",
+  "🙌","🤲","🙏","✍️","💪","🦾","🦿","🦵","🦶","👂","🦻","👃","🧠","🫀","🫁","🦷",
+  "❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","❣️","💕","💞","💓","💗","💖",
+  "💘","💝","💟","☮️","✝️","☪️","🕉️","☸️","✡️","🔯","🕎","☯️","☦️","🛐","⛎","♈",
+  "🔥","✨","🎉","🎊","🎈","🎁","🏆","🥇","🥈","🥉","⚽","🏀","🏈","⚾","🎾","🏐",
+  "✅","☑️","✔️","❌","❎","➕","➖","➗","✖️","♾️","‼️","⁉️","❓","❔","❕","❗",
+];
 import { cn } from "@/lib/utils";
 import { AiImprovePopover } from "./AiImprovePopover";
 import { AudioVisualizer } from "./AudioVisualizer";
@@ -927,7 +941,13 @@ export function InboxChat({
         )}
       </div>
 
-      <div className="flex-shrink-0 border-t border-border/60 bg-background p-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
+      <div
+        className="flex-shrink-0 p-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] border-t"
+        style={{
+          background: "linear-gradient(to bottom, hsl(var(--primary) / 0.06), hsl(var(--primary) / 0.10))",
+          borderTopColor: "hsl(var(--primary) / 0.18)",
+        }}
+      >
         <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => handleFileChange(e, "file")} />
         <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "image")} />
         <input ref={audioInputRef} type="file" accept="audio/*" className="hidden" onChange={(e) => handleFileChange(e, "audio")} />
@@ -998,7 +1018,13 @@ export function InboxChat({
                 </button>
               </div>
             ) : (
-              <div className="flex items-end gap-1 bg-muted/50 border border-border/50 rounded-2xl px-1.5 py-1 focus-within:border-primary/50 focus-within:bg-muted/30 transition-colors">
+              <div
+                className="flex items-end gap-1 rounded-2xl px-1.5 py-1 transition-colors focus-within:ring-2 focus-within:ring-primary/30"
+                style={{
+                  background: "hsl(var(--background) / 0.85)",
+                  border: "1px solid hsl(var(--primary) / 0.20)",
+                }}
+              >
                 {/* Left actions: attachments + emoji + AI */}
                 <div className="flex items-center gap-0.5 pb-0.5 flex-shrink-0">
                   <ToolBtn icon={<Paperclip size={16} />} title="Anexar arquivo" onClick={() => fileInputRef.current?.click()} className="w-9 h-9 rounded-full" />
@@ -1018,19 +1044,20 @@ export function InboxChat({
                       side="top"
                       align="start"
                       sideOffset={8}
-                      className="p-0 border-0 bg-transparent shadow-2xl w-auto z-50"
+                      className="p-2 w-72 z-50 bg-popover border border-border shadow-2xl"
                     >
-                      <EmojiPicker
-                        onEmojiClick={(data) => insertEmoji(data.emoji)}
-                        theme={Theme.AUTO}
-                        emojiStyle={EmojiStyle.NATIVE}
-                        searchPlaceHolder="Buscar emoji..."
-                        skinTonesDisabled
-                        previewConfig={{ showPreview: false }}
-                        height={380}
-                        width={320}
-                        lazyLoadEmojis
-                      />
+                      <div className="grid grid-cols-8 gap-1 max-h-64 overflow-y-auto">
+                        {EMOJI_LIST.map((e) => (
+                          <button
+                            key={e}
+                            type="button"
+                            onClick={() => { insertEmoji(e); }}
+                            className="w-8 h-8 rounded-md flex items-center justify-center text-xl hover:bg-muted transition-colors"
+                          >
+                            {e}
+                          </button>
+                        ))}
+                      </div>
                     </PopoverContent>
                   </Popover>
                   <AiImprovePopover text={text} onApply={(newText) => {
