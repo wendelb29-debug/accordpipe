@@ -492,7 +492,8 @@ export function useWhatsAppInbox() {
         (payload) => {
           const updated = payload.new as InboxMessage;
           if (matchesSelectedConversation(updated, selectedContactIdRef.current, selectedContactPhoneRef.current)) {
-            setMessages(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated } : m));
+            console.log("[messages:incoming] source=realtime-UPDATE key=", getMessageUniqueKey(updated));
+            setMessages(prev => mergeMessagesDedup(prev, [updated]));
           }
         }
       )
