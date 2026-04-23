@@ -6,6 +6,8 @@ import ReactMarkdown from "react-markdown";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useInboxNotifications, type InboxNotification } from "@/hooks/useInboxNotifications";
+import { QuickWhatsAppChat } from "./QuickWhatsAppChat";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
