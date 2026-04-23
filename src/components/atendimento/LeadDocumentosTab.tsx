@@ -34,6 +34,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { CrmLead } from "@/hooks/useCrmLeads";
 import { toast } from "sonner";
+import { sendSignatureLinkViaWhatsApp } from "@/lib/sendSignatureWhatsApp";
 
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
