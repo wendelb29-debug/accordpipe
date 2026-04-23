@@ -420,7 +420,7 @@ Deno.serve(async (req) => {
     }
 
     // message_received → reuse the same routing/lead logic as legacy handler
-    log("PERSISTING inbound", { phone: normalized.phone, preview: normalized.message.slice(0, 60) });
+    log("PERSISTING inbound", { phone: normalized.phone, type: normalized.message_type, hasMedia: !!normalized.media_url, preview: normalized.message.slice(0, 60) });
     return await handleIncomingMessage(supabase, {
       company_id: companyId!,
       phone: normalized.phone,
@@ -430,6 +430,10 @@ Deno.serve(async (req) => {
       message_type: normalized.message_type,
       media_url: normalized.media_url ?? undefined,
       external_id: normalized.external_id ?? undefined,
+      file_name: (normalized as any).file_name ?? undefined,
+      mime_type: (normalized as any).mime_type ?? undefined,
+      file_size: (normalized as any).file_size ?? undefined,
+      caption: (normalized as any).caption ?? undefined,
       provider: providerType,
     });
   } catch (err) {
