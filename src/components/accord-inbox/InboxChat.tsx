@@ -958,10 +958,10 @@ export function InboxChat({
                     Respondendo {replyTo.direction === "outbound" ? "à sua mensagem" : (contact?.name || "contato")}
                   </p>
                   <p className="text-xs text-muted-foreground truncate leading-tight mt-0.5">
-                    {replyTo.attachmentType === "image" ? "📷 Imagem"
-                      : replyTo.attachmentType === "audio" ? "🎤 Áudio"
-                      : replyTo.attachmentType === "file" ? `📎 ${replyTo.attachmentName || "Arquivo"}`
-                      : (replyTo.content || "")}
+                    {replyTo.type === "image" ? "📷 Imagem"
+                      : replyTo.type === "audio" ? "🎤 Áudio"
+                      : (replyTo.type === "file" || replyTo.type === "document" || replyTo.type === "pdf" || replyTo.type === "video") ? `📎 ${replyTo.fileName || "Arquivo"}`
+                      : (replyTo.message || "")}
                   </p>
                 </div>
                 <button
