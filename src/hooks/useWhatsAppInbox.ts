@@ -527,9 +527,6 @@ export function useWhatsAppInbox() {
     return () => clearInterval(interval);
   }, [fetchContacts, checkConnection]);
 
-  const selectedContactIdRef = useRef<string | null>(null);
-  const selectedContactPhoneRef = useRef<string | null>(null);
-
   useEffect(() => {
     selectedContactIdRef.current = selectedContactId;
     selectedContactPhoneRef.current = contacts.find((item) => item.id === selectedContactId)?.phone ?? null;
