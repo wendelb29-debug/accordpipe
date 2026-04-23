@@ -524,10 +524,42 @@ function AccordWatermark() {
 }
 
 export function InboxChat({
-  contact, messages, onSendMessage, onTransfer, onToggleInfo, showInfo, onUpdateStatus, companyId,
+  contact, messages, onSendMessage, onReactToMessage, onTransfer, onToggleInfo, showInfo, onUpdateStatus, companyId,
   onBack,
 }: InboxChatProps) {
   const [text, setText] = useState("");
+  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const [lightboxMsg, setLightboxMsg] = useState<ChatMessage | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Resolve current user id once for reaction ownership detection
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data } = await supabase.auth.getUser();
+      if (mounted) setCurrentUserId(data.user?.id || null);
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const messagesById = (() => {
+    const map: Record<string, ChatMessage> = {};
+    for (const m of messages) map[m.id] = m;
+    return map;
+  })();
+
+  const handleJumpToMessage = useCallback((id: string) => {
+    const el = document.getElementById(`msg-${id}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.add("ring-2", "ring-primary/60", "rounded-2xl");
+    setTimeout(() => el.classList.remove("ring-2", "ring-primary/60", "rounded-2xl"), 1400);
+  }, []);
+
+  const handleReact = useCallback((messageId: string, emoji: string) => {
+    onReactToMessage?.(messageId, emoji);
+  }, [onReactToMessage]);
   const [isRecording, setIsRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
   const [recordStream, setRecordStream] = useState<MediaStream | null>(null);
