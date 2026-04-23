@@ -40,12 +40,16 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <BackNavigationProvider>
-      <div className="min-h-screen bg-background safe-area-top overflow-x-hidden">
+      <div className={cn(
+        "bg-background safe-area-top overflow-x-hidden",
+        isAccordStackRoute ? "h-[100dvh] overflow-hidden" : "min-h-screen"
+      )}>
         {/* Desktop sidebar (hidden on Accord Stack for full-width chat) */}
         {!isMobile && !isAccordStack && <Sidebar />}
 
         <div className={cn(
-          "transition-all duration-300 min-w-0 flex flex-col min-h-screen",
+          "transition-all duration-300 min-w-0 flex flex-col",
+          isAccordStackRoute ? "h-full" : "min-h-screen",
           isMobile || isAccordStack ? "pl-0" : (sidebarCollapsed ? "pl-[60px]" : "pl-[232px]")
         )}>
           {/* Tenant billing alert banner */}
