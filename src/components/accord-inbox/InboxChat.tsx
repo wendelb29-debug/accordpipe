@@ -1,16 +1,25 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Search, ArrowLeftRight, Info, X, Paperclip, Image, Mic, Trash2,
   Send, Play, Pause, FileText, FileSpreadsheet, FileArchive, FileImage, FileVideo, FileAudio, File as FileIcon, Download,
-  MoreVertical, Users, Check, CheckCheck, ArrowLeft,
+  MoreVertical, Users, Check, CheckCheck, ArrowLeft, Reply,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AiImprovePopover } from "./AiImprovePopover";
 import { AudioVisualizer } from "./AudioVisualizer";
+import { ImageLightbox } from "./ImageLightbox";
+import { MessageActions } from "./MessageActions";
 import {
   linkifyText, classifyAttachment, formatFileSize, extensionLabel,
   type AttachmentKind,
 } from "@/lib/messageContent";
+
+interface MessageReaction {
+  emoji: string;
+  user_id: string;
+  user_name?: string | null;
+  at: string;
+}
 
 interface ChatMessage {
   id: string;
@@ -23,6 +32,8 @@ interface ChatMessage {
   fileSize?: string | number;
   mimeType?: string;
   status?: string;
+  replyToMessageId?: string | null;
+  reactions?: MessageReaction[];
 }
 
 interface ChatContact {
@@ -44,8 +55,9 @@ interface InboxChatProps {
   messages: ChatMessage[];
   onSendMessage: (
     text: string,
-    options?: { messageType?: "text" | "image" | "audio" | "file"; mediaUrl?: string; fileName?: string }
+    options?: { messageType?: "text" | "image" | "audio" | "file"; mediaUrl?: string; fileName?: string; replyToMessageId?: string | null }
   ) => void;
+  onReactToMessage?: (messageId: string, emoji: string) => void;
   onTransfer?: (contactId: string) => void;
   onAssignToMe?: (contactId: string) => void;
   isAdmin?: boolean;
