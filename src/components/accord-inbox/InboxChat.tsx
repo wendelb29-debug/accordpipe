@@ -278,21 +278,93 @@ function AttachmentCard({
   );
 }
 
-function MessageBubble({ msg }: { msg: ChatMessage }) {
+function ReplyPreviewBlock({
+  original, isOutContext, onClick,
+}: { original: ChatMessage; isOutContext: boolean; onClick?: () => void }) {
+  const label = (() => {
+    if (original.type === "image" || (original.mediaUrl && classifyAttachment({ mime: original.mimeType, fileName: original.fileName, url: original.mediaUrl }) === "image")) return "📷 Imagem";
+    if (original.type === "audio" || original.type === "voice" || original.type === "ptt") return "🎵 Áudio";
+    if (original.mediaUrl) return `📎 ${original.fileName || "Arquivo"}`;
+    return original.message || "Mensagem";
+  })();
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "block w-full text-left mb-1 pl-2 pr-2.5 py-1 rounded-md border-l-2 hover:opacity-90 transition",
+        isOutContext
+          ? "bg-white/10 border-white/60 text-white/90"
+          : "bg-muted/60 border-primary/60 text-foreground/80",
+      )}
+    >
+      <p className="text-[10.5px] font-medium opacity-80 mb-0.5">
+        {original.direction === "outbound" ? "Você" : "Contato"}
+      </p>
+      <p className="text-[12px] leading-snug truncate">{label}</p>
+    </button>
+  );
+}
+
+function ReactionsBar({
+  reactions, onToggle, currentUserId,
+}: { reactions: MessageReaction[]; onToggle?: (emoji: string) => void; currentUserId?: string | null }) {
+  if (!reactions?.length) return null;
+  // Group by emoji
+  const groups = reactions.reduce<Record<string, MessageReaction[]>>((acc, r) => {
+    (acc[r.emoji] ||= []).push(r);
+    return acc;
+  }, {});
+  return (
+    <div className="flex flex-wrap gap-1 mt-1">
+      {Object.entries(groups).map(([emoji, list]) => {
+        const mine = !!currentUserId && list.some(r => r.user_id === currentUserId);
+        return (
+          <button
+            key={emoji}
+            type="button"
+            onClick={() => onToggle?.(emoji)}
+            title={list.map(r => r.user_name || "Alguém").join(", ")}
+            className={cn(
+              "inline-flex items-center gap-1 h-6 px-2 rounded-full text-[11px] border transition-all hover:scale-105",
+              mine
+                ? "bg-primary/15 border-primary/40 text-foreground"
+                : "bg-muted/70 border-border/50 text-foreground/80",
+            )}
+          >
+            <span className="text-sm leading-none">{emoji}</span>
+            {list.length > 1 && <span className="font-medium">{list.length}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function MessageBubble({
+  msg, originalForReply, currentUserId,
+  onReply, onReact, onOpenImage, onJumpToOriginal,
+}: {
+  msg: ChatMessage;
+  originalForReply?: ChatMessage | null;
+  currentUserId?: string | null;
+  onReply: (m: ChatMessage) => void;
+  onReact: (messageId: string, emoji: string) => void;
+  onOpenImage: (m: ChatMessage) => void;
+  onJumpToOriginal: (id: string) => void;
+}) {
   const isOut = msg.direction === "outbound";
   const time = msg.created_at
     ? new Date(msg.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
     : "";
+  const bubbleRef = useRef<HTMLDivElement>(null);
+  const [actionsRect, setActionsRect] = useState<DOMRect | null>(null);
 
-  // Decide presentation: prioritize message_type, but fall back to mime/url sniffing.
-  // IMPORTANT: if there's no mediaUrl, fall through to text rendering so links/text still render
-  // (avoids "Mídia indisponível" cards for plain text that was tagged with a generic type).
   const kind = (() => {
     if ((msg.type === "audio" || msg.type === "voice" || msg.type === "ptt") && msg.mediaUrl) return "audio" as const;
     if (msg.type === "image" && msg.mediaUrl) return "image" as const;
     if (msg.type === "video" && msg.mediaUrl) return "video" as const;
-    const isMediaType =
-      msg.type === "file" || msg.type === "document" || msg.type === "pdf";
+    const isMediaType = msg.type === "file" || msg.type === "document" || msg.type === "pdf";
     if (msg.mediaUrl) {
       const k = classifyAttachment({ mime: msg.mimeType, fileName: msg.fileName, url: msg.mediaUrl });
       if (k === "image") return "image" as const;
@@ -305,17 +377,45 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
 
   const hasCaption = !!msg.message && msg.message !== msg.fileName;
 
+  const openActions = (e: React.MouseEvent) => {
+    // Don't trigger when clicking interactive children (links, audio buttons, etc.)
+    const target = e.target as HTMLElement;
+    if (target.closest("a, button, audio, input, textarea")) return;
+    const rect = bubbleRef.current?.getBoundingClientRect();
+    if (rect) setActionsRect(rect);
+  };
+
   return (
-    <div className={cn("flex flex-col max-w-[68%]", isOut ? "self-end items-end" : "self-start items-start")}>
+    <div
+      id={`msg-${msg.id}`}
+      ref={bubbleRef}
+      className={cn(
+        "flex flex-col max-w-[68%] group cursor-pointer",
+        isOut ? "self-end items-end" : "self-start items-start",
+      )}
+      onClick={openActions}
+    >
       {kind === "audio" ? (
         <AudioPlayer direction={msg.direction} src={msg.mediaUrl} />
       ) : kind === "image" ? (
-        <a
-          href={msg.mediaUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={cn("rounded-2xl overflow-hidden block", isOut ? "rounded-br-sm" : "rounded-bl-sm border border-border/40")}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={(e) => { e.stopPropagation(); if (msg.mediaUrl) onOpenImage(msg); }}
+          className={cn(
+            "rounded-2xl overflow-hidden block cursor-zoom-in",
+            isOut ? "rounded-br-sm" : "rounded-bl-sm border border-border/40",
+          )}
         >
+          {originalForReply && (
+            <div className="px-2 pt-2">
+              <ReplyPreviewBlock
+                original={originalForReply}
+                isOutContext={isOut}
+                onClick={() => onJumpToOriginal(originalForReply.id)}
+              />
+            </div>
+          )}
           {msg.mediaUrl ? (
             <img src={msg.mediaUrl} alt={msg.fileName || "imagem"} className="w-64 max-h-72 object-cover" loading="lazy" />
           ) : (
@@ -324,15 +424,24 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
               {msg.fileName || "imagem.jpg"}
             </div>
           )}
-        </a>
+        </div>
       ) : kind === "attachment" ? (
-        <AttachmentCard
-          direction={msg.direction}
-          fileName={msg.fileName || msg.message}
-          fileSize={msg.fileSize}
-          src={msg.mediaUrl}
-          mimeType={msg.mimeType}
-        />
+        <div className="flex flex-col gap-1">
+          {originalForReply && (
+            <ReplyPreviewBlock
+              original={originalForReply}
+              isOutContext={isOut}
+              onClick={() => onJumpToOriginal(originalForReply.id)}
+            />
+          )}
+          <AttachmentCard
+            direction={msg.direction}
+            fileName={msg.fileName || msg.message}
+            fileSize={msg.fileSize}
+            src={msg.mediaUrl}
+            mimeType={msg.mimeType}
+          />
+        </div>
       ) : (
         <div className={cn(
           "px-3.5 py-2 rounded-2xl text-[13px] leading-relaxed break-words whitespace-pre-wrap",
@@ -340,6 +449,13 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
             ? "bg-primary text-primary-foreground rounded-br-sm"
             : "bg-background dark:bg-muted/50 text-foreground rounded-bl-sm border border-border/40",
         )}>
+          {originalForReply && (
+            <ReplyPreviewBlock
+              original={originalForReply}
+              isOutContext={isOut}
+              onClick={() => onJumpToOriginal(originalForReply.id)}
+            />
+          )}
           {linkifyText(msg.message)}
         </div>
       )}
@@ -355,6 +471,12 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
         </div>
       )}
 
+      <ReactionsBar
+        reactions={msg.reactions || []}
+        currentUserId={currentUserId}
+        onToggle={(e) => onReact(msg.id, e)}
+      />
+
       <div className="flex items-center gap-1 mt-1 px-0.5">
         <span className="text-[10px] text-muted-foreground">{time}</span>
         {isOut && (() => {
@@ -366,6 +488,17 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
           return <Check size={12} className="text-muted-foreground/70" />;
         })()}
       </div>
+
+      {actionsRect && (
+        <MessageActions
+          isOut={isOut}
+          anchorRect={actionsRect}
+          copyText={kind === "text" ? msg.message : undefined}
+          onReply={() => onReply(msg)}
+          onReact={(emoji) => onReact(msg.id, emoji)}
+          onClose={() => setActionsRect(null)}
+        />
+      )}
     </div>
   );
 }
