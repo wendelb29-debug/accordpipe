@@ -159,26 +159,76 @@ function AudioPlayer({ direction, src }: { direction: string; src?: string }) {
   );
 }
 
-function FileBubble({ direction, fileName, fileSize, src }: { direction: string; fileName?: string; fileSize?: string; src?: string }) {
+function AttachmentIcon({ kind, className }: { kind: AttachmentKind; className?: string }) {
+  const props = { size: 18, className };
+  switch (kind) {
+    case "pdf": return <FileText {...props} />;
+    case "doc": return <FileText {...props} />;
+    case "sheet": return <FileSpreadsheet {...props} />;
+    case "archive": return <FileArchive {...props} />;
+    case "image": return <FileImage {...props} />;
+    case "video": return <FileVideo {...props} />;
+    case "audio": return <FileAudio {...props} />;
+    case "text": return <FileText {...props} />;
+    default: return <FileIcon {...props} />;
+  }
+}
+
+function AttachmentCard({
+  direction, fileName, fileSize, src, mimeType,
+}: {
+  direction: string;
+  fileName?: string;
+  fileSize?: string | number;
+  src?: string;
+  mimeType?: string;
+}) {
   const isOut = direction === "outbound";
+  const kind = classifyAttachment({ mime: mimeType, fileName, url: src });
+  const ext = extensionLabel(fileName, src);
+  const sizeLabel = typeof fileSize === "number"
+    ? formatFileSize(fileSize)
+    : (fileSize || formatFileSize(undefined));
+  const safeName = fileName || `arquivo.${ext.toLowerCase()}`;
+
   const content = (
-    <div className={cn("flex items-center gap-2.5 px-3 py-2.5 rounded-2xl",
-      isOut ? "bg-primary rounded-br-sm" : "bg-muted/80 dark:bg-muted/50 rounded-bl-sm border border-border/40"
+    <div className={cn(
+      "flex items-center gap-3 px-3 py-2.5 rounded-2xl min-w-[240px] max-w-[320px]",
+      isOut ? "bg-primary rounded-br-sm" : "bg-muted/80 dark:bg-muted/50 rounded-bl-sm border border-border/40",
     )}>
-      <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0",
-        isOut ? "bg-white/15" : "bg-primary/10"
+      <div className={cn(
+        "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
+        isOut ? "bg-white/15" : "bg-primary/10",
       )}>
-        <FileText size={16} className={isOut ? "text-white" : "text-primary"} />
+        <AttachmentIcon kind={kind} className={isOut ? "text-white" : "text-primary"} />
       </div>
-      <div className="min-w-0">
-        <p className={cn("text-[12px] font-medium truncate max-w-[180px]", isOut ? "text-white" : "text-foreground")}>{fileName || "arquivo"}</p>
-        <p className={cn("text-[11px]", isOut ? "text-white/60" : "text-muted-foreground")}>{fileSize || (src ? "Baixar" : "–")}</p>
+      <div className="min-w-0 flex-1">
+        <p className={cn("text-[12.5px] font-medium truncate", isOut ? "text-white" : "text-foreground")}>
+          {safeName}
+        </p>
+        <p className={cn("text-[11px] truncate", isOut ? "text-white/70" : "text-muted-foreground")}>
+          {ext}{sizeLabel ? ` · ${sizeLabel}` : ""}
+        </p>
       </div>
+      {src && (
+        <Download
+          size={15}
+          className={cn("flex-shrink-0", isOut ? "text-white/80" : "text-muted-foreground")}
+        />
+      )}
     </div>
   );
+
   if (!src) return content;
   return (
-    <a href={src} target="_blank" rel="noopener noreferrer" download={fileName} className="block hover:opacity-90 transition">
+    <a
+      href={src}
+      target="_blank"
+      rel="noopener noreferrer"
+      download={safeName}
+      title={safeName}
+      className="block hover:opacity-90 transition"
+    >
       {content}
     </a>
   );
@@ -189,13 +239,28 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
   const time = msg.created_at
     ? new Date(msg.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
     : "";
+
+  // Decide presentation: prioritize message_type, but fall back to mime/url sniffing
+  const kind = (() => {
+    if (msg.type === "audio") return "audio" as const;
+    if (msg.type === "image") return "image" as const;
+    if (msg.type === "video") return "video" as const;
+    if (msg.mediaUrl || msg.type === "file" || msg.type === "document" || msg.type === "pdf") {
+      const k = classifyAttachment({ mime: msg.mimeType, fileName: msg.fileName, url: msg.mediaUrl });
+      if (k === "image") return "image" as const;
+      if (k === "audio") return "audio" as const;
+      return "attachment" as const;
+    }
+    return "text" as const;
+  })();
+
+  const hasCaption = !!msg.message && msg.message !== msg.fileName;
+
   return (
     <div className={cn("flex flex-col max-w-[68%]", isOut ? "self-end items-end" : "self-start items-start")}>
-      {msg.type === "audio" ? (
+      {kind === "audio" ? (
         <AudioPlayer direction={msg.direction} src={msg.mediaUrl} />
-      ) : msg.type === "file" || msg.type === "document" ? (
-        <FileBubble direction={msg.direction} fileName={msg.fileName || msg.message} fileSize={msg.fileSize} src={msg.mediaUrl} />
-      ) : msg.type === "image" ? (
+      ) : kind === "image" ? (
         <a
           href={msg.mediaUrl}
           target="_blank"
@@ -203,7 +268,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
           className={cn("rounded-2xl overflow-hidden block", isOut ? "rounded-br-sm" : "rounded-bl-sm border border-border/40")}
         >
           {msg.mediaUrl ? (
-            <img src={msg.mediaUrl} alt={msg.fileName || "imagem"} className="w-64 max-h-72 object-cover" />
+            <img src={msg.mediaUrl} alt={msg.fileName || "imagem"} className="w-64 max-h-72 object-cover" loading="lazy" />
           ) : (
             <div className="w-52 h-36 bg-muted/60 flex items-center justify-center text-muted-foreground text-xs gap-2">
               <Image size={16} />
@@ -211,16 +276,36 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
             </div>
           )}
         </a>
+      ) : kind === "attachment" ? (
+        <AttachmentCard
+          direction={msg.direction}
+          fileName={msg.fileName || msg.message}
+          fileSize={msg.fileSize}
+          src={msg.mediaUrl}
+          mimeType={msg.mimeType}
+        />
       ) : (
         <div className={cn(
-          "px-3.5 py-2 rounded-2xl text-[13px] leading-relaxed break-words",
+          "px-3.5 py-2 rounded-2xl text-[13px] leading-relaxed break-words whitespace-pre-wrap",
           isOut
             ? "bg-primary text-primary-foreground rounded-br-sm"
-            : "bg-background dark:bg-muted/50 text-foreground rounded-bl-sm border border-border/40"
+            : "bg-background dark:bg-muted/50 text-foreground rounded-bl-sm border border-border/40",
         )}>
-          {msg.message}
+          {linkifyText(msg.message)}
         </div>
       )}
+
+      {(kind === "image" || kind === "attachment") && hasCaption && (
+        <div className={cn(
+          "mt-1 px-3 py-1.5 rounded-xl text-[12.5px] leading-relaxed break-words whitespace-pre-wrap max-w-full",
+          isOut
+            ? "bg-primary/90 text-primary-foreground"
+            : "bg-background dark:bg-muted/40 text-foreground border border-border/40",
+        )}>
+          {linkifyText(msg.message)}
+        </div>
+      )}
+
       <div className="flex items-center gap-1 mt-1 px-0.5">
         <span className="text-[10px] text-muted-foreground">{time}</span>
         {isOut && (() => {
