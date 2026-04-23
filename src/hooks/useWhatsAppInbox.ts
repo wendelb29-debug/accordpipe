@@ -598,6 +598,7 @@ export function useWhatsAppInbox() {
     selectedContactId,
     selectContact,
     sendMessage,
+    toggleReaction,
     filter,
     setFilter,
     loading,
