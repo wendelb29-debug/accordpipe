@@ -23,6 +23,13 @@ export interface InboxContact {
   notes: string | null;
 }
 
+export interface MessageReaction {
+  emoji: string;
+  user_id: string;
+  user_name?: string | null;
+  at: string;
+}
+
 export interface InboxMessage {
   id: string;
   contact_id: string;
@@ -39,6 +46,8 @@ export interface InboxMessage {
   sent_at?: string | null;
   delivered_at?: string | null;
   read_at?: string | null;
+  reply_to_message_id?: string | null;
+  reactions?: MessageReaction[];
 }
 
 function normalizePhone(rawPhone?: string | null) {
@@ -168,7 +177,7 @@ export function useWhatsAppInbox() {
       return;
     }
 
-    const deduped = dedupMessages((data || []) as InboxMessage[]);
+    const deduped = dedupMessages((data || []) as unknown as InboxMessage[]);
 
     console.log("[inbox] fetched", deduped.length, "messages for contact", contactId, "(source: fetch)");
     setMessages(deduped);
@@ -201,7 +210,12 @@ export function useWhatsAppInbox() {
 
   const sendMessage = useCallback(async (
     text: string,
-    options?: { messageType?: "text" | "image" | "audio" | "file"; mediaUrl?: string; fileName?: string }
+    options?: {
+      messageType?: "text" | "image" | "audio" | "file";
+      mediaUrl?: string;
+      fileName?: string;
+      replyToMessageId?: string | null;
+    }
   ) => {
     if (!selectedContactId || !companyId) return;
 
@@ -227,7 +241,8 @@ export function useWhatsAppInbox() {
         status: "sending",
         message_type: messageType,
         media_url: mediaUrl,
-      })
+        reply_to_message_id: options?.replyToMessageId || null,
+      } as any)
       .select()
       .single();
 
@@ -281,6 +296,44 @@ export function useWhatsAppInbox() {
       .update(updates)
       .eq("id", selectedContactId);
   }, [selectedContactId, companyId, contacts]);
+
+  /**
+   * Toggle a reaction on a message. If the current user already reacted with the
+   * same emoji, the reaction is removed; otherwise their existing reaction is
+   * replaced (one reaction per user per message).
+   */
+  const toggleReaction = useCallback(async (messageId: string, emoji: string) => {
+    if (!user?.id) return;
+    const current = messages.find(m => m.id === messageId);
+    const existing: MessageReaction[] = Array.isArray(current?.reactions)
+      ? (current!.reactions as MessageReaction[])
+      : [];
+
+    const mine = existing.find(r => r.user_id === user.id);
+    let next: MessageReaction[];
+    if (mine && mine.emoji === emoji) {
+      next = existing.filter(r => r.user_id !== user.id);
+    } else {
+      next = [
+        ...existing.filter(r => r.user_id !== user.id),
+        { emoji, user_id: user.id, user_name: profile?.name || null, at: new Date().toISOString() },
+      ];
+    }
+
+    // Optimistic update
+    setMessages(prev => prev.map(m => m.id === messageId ? { ...m, reactions: next } : m));
+
+    const { error } = await supabase
+      .from("whatsapp_messages")
+      .update({ reactions: next as any } as any)
+      .eq("id", messageId);
+
+    if (error) {
+      toast.error("Não foi possível salvar a reação");
+      // Revert
+      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, reactions: existing } : m));
+    }
+  }, [messages, user?.id, profile?.name]);
 
   const assignContact = useCallback(async (contactId: string, userId: string | null) => {
     const { error } = await supabase
@@ -545,6 +598,7 @@ export function useWhatsAppInbox() {
     selectedContactId,
     selectContact,
     sendMessage,
+    toggleReaction,
     filter,
     setFilter,
     loading,

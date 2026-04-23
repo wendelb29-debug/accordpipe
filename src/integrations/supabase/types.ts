@@ -5804,7 +5804,9 @@ export type Database = {
           message_type: string
           metadata: Json | null
           phone: string
+          reactions: Json
           read_at: string | null
+          reply_to_message_id: string | null
           sent_at: string | null
           status: string
         }
@@ -5821,7 +5823,9 @@ export type Database = {
           message_type?: string
           metadata?: Json | null
           phone: string
+          reactions?: Json
           read_at?: string | null
+          reply_to_message_id?: string | null
           sent_at?: string | null
           status?: string
         }
@@ -5838,7 +5842,9 @@ export type Database = {
           message_type?: string
           metadata?: Json | null
           phone?: string
+          reactions?: Json
           read_at?: string | null
+          reply_to_message_id?: string | null
           sent_at?: string | null
           status?: string
         }
@@ -5855,6 +5861,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "whatsapp_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_messages_reply_to_message_id_fkey"
+            columns: ["reply_to_message_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_messages"
             referencedColumns: ["id"]
           },
         ]
