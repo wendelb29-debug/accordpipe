@@ -88,7 +88,7 @@ export function InboxSidebar({
   filter, onFilterChange, isAdmin, loading, statusFilter, onStatusFilterChange,
   onNewConversation,
 }: InboxSidebarProps) {
-  const filterOpts = ["Minhas", "Todas", ...(isAdmin ? ["Não atrib."] : [])];
+  const filterOpts = ["Todas", "Não lidas"];
 
   const counts = {
     fila: contacts.filter((c) => c.conversationStatus === "fila" || c.conversationStatus === "aguardando").length,

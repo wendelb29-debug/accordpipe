@@ -14,16 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
-const FILTER_LABEL_TO_VALUE: Record<string, InboxFilter> = {
-  Minhas: "mine",
-  Todas: "all",
-  "Não atrib.": "unassigned",
-};
-const FILTER_VALUE_TO_LABEL: Record<InboxFilter, string> = {
-  mine: "Minhas",
-  all: "Todas",
-  unassigned: "Não atrib.",
-};
+type UiFilter = "Todas" | "Não lidas";
 
 export default function AccordStack() {
   const {
