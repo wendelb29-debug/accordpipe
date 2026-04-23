@@ -2,8 +2,10 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Search, ArrowLeftRight, Info, X, Paperclip, Image, Mic, Trash2,
   Send, Play, Pause, FileText, FileSpreadsheet, FileArchive, FileImage, FileVideo, FileAudio, File as FileIcon, Download,
-  MoreVertical, Users, Check, CheckCheck, ArrowLeft, Reply,
+  MoreVertical, Users, Check, CheckCheck, ArrowLeft, Reply, Smile,
 } from "lucide-react";
+import EmojiPicker, { EmojiStyle, Theme } from "emoji-picker-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { AiImprovePopover } from "./AiImprovePopover";
 import { AudioVisualizer } from "./AudioVisualizer";
@@ -635,10 +637,31 @@ export function InboxChat({
 
   const send = () => {
     if (!text.trim() || isClosed) return;
-    onSendMessage(text.trim());
+    onSendMessage(text.trim(), replyTo ? { replyToMessageId: replyTo.id } : undefined);
     setText("");
+    setReplyTo(null);
     if (taRef.current) taRef.current.style.height = "40px";
   };
+
+  const insertEmoji = (emoji: string) => {
+    const ta = taRef.current;
+    if (!ta) {
+      setText((prev) => prev + emoji);
+      return;
+    }
+    const start = ta.selectionStart ?? text.length;
+    const end = ta.selectionEnd ?? text.length;
+    const next = text.slice(0, start) + emoji + text.slice(end);
+    setText(next);
+    requestAnimationFrame(() => {
+      ta.focus();
+      const pos = start + emoji.length;
+      try { ta.setSelectionRange(pos, pos); } catch {}
+      ta.style.height = "40px";
+      ta.style.height = Math.min(ta.scrollHeight, 120) + "px";
+    });
+  };
+  const [emojiOpen, setEmojiOpen] = useState(false);
 
   const MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // 25MB
 
@@ -864,9 +887,24 @@ export function InboxChat({
             <div className="flex-1 h-px bg-border/40" />
           </div>
           <div className="flex flex-col gap-2">
-            {messages.map((msg) => (
-              <MessageBubble key={msg.id} msg={msg} />
-            ))}
+            {messages.map((msg) => {
+              const originalForReply = msg.replyToMessageId ? messagesById[msg.replyToMessageId] : undefined;
+              return (
+                <MessageBubble
+                  key={msg.id}
+                  msg={msg}
+                  originalForReply={originalForReply}
+                  currentUserId={currentUserId || undefined}
+                  onReply={(m) => {
+                    setReplyTo(m);
+                    requestAnimationFrame(() => taRef.current?.focus());
+                  }}
+                  onReact={handleReact}
+                  onOpenImage={(m) => setLightboxMsg(m)}
+                  onJumpToOriginal={handleJumpToMessage}
+                />
+              );
+            })}
           </div>
         </div>
         <div ref={messagesEndRef} />
@@ -912,6 +950,30 @@ export function InboxChat({
               <div className="text-[11px] text-muted-foreground px-1 animate-fade-in">Enviando arquivo…</div>
             )}
 
+            {replyTo && !isRecording && (
+              <div className="flex items-start gap-2 px-3 py-2 rounded-xl bg-muted/60 border-l-2 border-primary animate-fade-in">
+                <Reply size={14} className="text-primary mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-medium text-primary leading-tight">
+                    Respondendo {replyTo.direction === "outbound" ? "à sua mensagem" : (contact?.name || "contato")}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate leading-tight mt-0.5">
+                    {replyTo.type === "image" ? "📷 Imagem"
+                      : replyTo.type === "audio" ? "🎤 Áudio"
+                      : (replyTo.type === "file" || replyTo.type === "document" || replyTo.type === "pdf" || replyTo.type === "video") ? `📎 ${replyTo.fileName || "Arquivo"}`
+                      : (replyTo.message || "")}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setReplyTo(null)}
+                  aria-label="Cancelar resposta"
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors flex-shrink-0"
+                >
+                  <X size={13} />
+                </button>
+              </div>
+            )}
+
             {isRecording ? (
               <div className="flex items-center gap-2 h-12 rounded-2xl bg-muted/60 border border-destructive/40 px-3 animate-fade-in">
                 <button
@@ -937,10 +999,40 @@ export function InboxChat({
               </div>
             ) : (
               <div className="flex items-end gap-1 bg-muted/50 border border-border/50 rounded-2xl px-1.5 py-1 focus-within:border-primary/50 focus-within:bg-muted/30 transition-colors">
-                {/* Left actions: attachments + AI */}
+                {/* Left actions: attachments + emoji + AI */}
                 <div className="flex items-center gap-0.5 pb-0.5 flex-shrink-0">
                   <ToolBtn icon={<Paperclip size={16} />} title="Anexar arquivo" onClick={() => fileInputRef.current?.click()} className="w-9 h-9 rounded-full" />
                   <ToolBtn icon={<Image size={16} />} title="Enviar imagem" onClick={() => imageInputRef.current?.click()} className="w-9 h-9 rounded-full" />
+                  <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        title="Inserir emoji"
+                        aria-label="Inserir emoji"
+                        className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                      >
+                        <Smile size={16} />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      side="top"
+                      align="start"
+                      sideOffset={8}
+                      className="p-0 border-0 bg-transparent shadow-2xl w-auto z-50"
+                    >
+                      <EmojiPicker
+                        onEmojiClick={(data) => insertEmoji(data.emoji)}
+                        theme={Theme.AUTO}
+                        emojiStyle={EmojiStyle.NATIVE}
+                        searchPlaceHolder="Buscar emoji..."
+                        skinTonesDisabled
+                        previewConfig={{ showPreview: false }}
+                        height={380}
+                        width={320}
+                        lazyLoadEmojis
+                      />
+                    </PopoverContent>
+                  </Popover>
                   <AiImprovePopover text={text} onApply={(newText) => {
                     setText(newText);
                     requestAnimationFrame(() => {
@@ -996,6 +1088,14 @@ export function InboxChat({
           </div>
         )}
       </div>
+      {lightboxMsg && lightboxMsg.mediaUrl && (
+        <ImageLightbox
+          src={lightboxMsg.mediaUrl}
+          fileName={lightboxMsg.fileName}
+          createdAt={lightboxMsg.created_at}
+          onClose={() => setLightboxMsg(null)}
+        />
+      )}
     </div>
   );
 }
