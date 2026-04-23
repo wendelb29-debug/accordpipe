@@ -298,30 +298,64 @@ export function useWhatsAppInbox() {
   }, [selectedContactId, companyId, contacts]);
 
   /**
-   * Toggle a reaction on a message. If the current user already reacted with the
-   * same emoji, the reaction is removed; otherwise their existing reaction is
-   * replaced (one reaction per user per message).
+   * Toggle a reaction on a message and forward it to the connected WhatsApp
+   * provider so the contact receives the reaction in the real chat as well.
    */
   const toggleReaction = useCallback(async (messageId: string, emoji: string) => {
-    if (!user?.id) return;
-    const current = messages.find(m => m.id === messageId);
-    const existing: MessageReaction[] = Array.isArray(current?.reactions)
-      ? (current!.reactions as MessageReaction[])
+    if (!user?.id || !companyId) return;
+
+    const current = messages.find((m) => m.id === messageId);
+    if (!current) return;
+
+    const existing: MessageReaction[] = Array.isArray(current.reactions)
+      ? (current.reactions as MessageReaction[])
       : [];
 
-    const mine = existing.find(r => r.user_id === user.id);
-    let next: MessageReaction[];
-    if (mine && mine.emoji === emoji) {
-      next = existing.filter(r => r.user_id !== user.id);
-    } else {
-      next = [
-        ...existing.filter(r => r.user_id !== user.id),
-        { emoji, user_id: user.id, user_name: profile?.name || null, at: new Date().toISOString() },
-      ];
+    const mine = existing.find((r) => r.user_id === user.id);
+    const reactionMode = mine?.emoji === emoji ? "remove" : "add";
+
+    if (reactionMode === "remove" && activeIntegration?.provider_type === "uazapi") {
+      toast.error("Remover reação ainda não é suportado nesta integração.");
+      return;
     }
 
-    // Optimistic update
-    setMessages(prev => prev.map(m => m.id === messageId ? { ...m, reactions: next } : m));
+    const targetMessageId =
+      current.external_message_id ||
+      current.metadata?.external_id ||
+      current.metadata?.zapi_message_id ||
+      current.metadata?.messageId ||
+      null;
+
+    if (!targetMessageId) {
+      toast.error("Esta mensagem ainda não pode receber reação no WhatsApp.");
+      return;
+    }
+
+    const next: MessageReaction[] = reactionMode === "remove"
+      ? existing.filter((r) => r.user_id !== user.id)
+      : [
+          ...existing.filter((r) => r.user_id !== user.id),
+          { emoji, user_id: user.id, user_name: profile?.name || null, at: new Date().toISOString() },
+        ];
+
+    setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, reactions: next } : m)));
+
+    const { data: sendData, error: sendError } = await supabase.functions.invoke("whatsapp-send", {
+      body: {
+        tenant_id: companyId,
+        phone: current.phone,
+        message_type: "reaction",
+        target_message_id: targetMessageId,
+        reaction_mode: reactionMode,
+        reaction_emoji: reactionMode === "add" ? emoji : null,
+      },
+    });
+
+    if (sendError || !sendData?.success) {
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, reactions: existing } : m)));
+      toast.error(sendData?.message || "Não foi possível enviar a reação para o contato.");
+      return;
+    }
 
     const { error } = await supabase
       .from("whatsapp_messages")
@@ -329,11 +363,9 @@ export function useWhatsAppInbox() {
       .eq("id", messageId);
 
     if (error) {
-      toast.error("Não foi possível salvar a reação");
-      // Revert
-      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, reactions: existing } : m));
+      toast.error("A reação foi enviada, mas não foi possível salvar no histórico.");
     }
-  }, [messages, user?.id, profile?.name]);
+  }, [messages, user?.id, companyId, profile?.name, activeIntegration?.provider_type]);
 
   const assignContact = useCallback(async (contactId: string, userId: string | null) => {
     const { error } = await supabase
