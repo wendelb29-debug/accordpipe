@@ -558,7 +558,17 @@ export function useWhatsAppInbox() {
 
           if (matches) {
             console.log("[messages:incoming] source=realtime-INSERT key=", getMessageUniqueKey(newMsg));
-            setMessages(prev => mergeMessagesDedup(prev, [newMsg]));
+            setMessages(prev => {
+              const merged = mergeMessagesDedup(prev, [newMsg]);
+              messagesCacheRef.current.set(newMsg.contact_id, merged);
+              return merged;
+            });
+          } else {
+            // Update cache silently for non-active conversation
+            const cached = messagesCacheRef.current.get(newMsg.contact_id);
+            if (cached) {
+              messagesCacheRef.current.set(newMsg.contact_id, mergeMessagesDedup(cached, [newMsg]));
+            }
           }
 
           // Inbound notifications: only when conversation isn't actively open
