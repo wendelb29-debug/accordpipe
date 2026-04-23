@@ -950,6 +950,30 @@ export function InboxChat({
               <div className="text-[11px] text-muted-foreground px-1 animate-fade-in">Enviando arquivo…</div>
             )}
 
+            {replyTo && !isRecording && (
+              <div className="flex items-start gap-2 px-3 py-2 rounded-xl bg-muted/60 border-l-2 border-primary animate-fade-in">
+                <Reply size={14} className="text-primary mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-medium text-primary leading-tight">
+                    Respondendo {replyTo.direction === "outbound" ? "à sua mensagem" : (contact?.name || "contato")}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate leading-tight mt-0.5">
+                    {replyTo.attachmentType === "image" ? "📷 Imagem"
+                      : replyTo.attachmentType === "audio" ? "🎤 Áudio"
+                      : replyTo.attachmentType === "file" ? `📎 ${replyTo.attachmentName || "Arquivo"}`
+                      : (replyTo.content || "")}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setReplyTo(null)}
+                  aria-label="Cancelar resposta"
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors flex-shrink-0"
+                >
+                  <X size={13} />
+                </button>
+              </div>
+            )}
+
             {isRecording ? (
               <div className="flex items-center gap-2 h-12 rounded-2xl bg-muted/60 border border-destructive/40 px-3 animate-fade-in">
                 <button
