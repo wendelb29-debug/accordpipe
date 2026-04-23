@@ -433,19 +433,21 @@ export function InboxChat({
         </div>
       </div>
 
-      <div ref={msgsRef} className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-1.5 py-4 px-5 relative">
+      <div ref={msgsRef} className="flex-1 min-h-0 overflow-y-auto relative bg-muted/20 dark:bg-background/60">
         <AccordWatermark />
-        <div className="relative z-10 flex items-center gap-3 my-2">
-          <div className="flex-1 h-px bg-border/40" />
-          <span className="text-[11px] text-muted-foreground/70 px-2 bg-background rounded-full border border-border/30 py-0.5">
-            Hoje, {new Date().toLocaleDateString("pt-BR", { day: "numeric", month: "long" })}
-          </span>
-          <div className="flex-1 h-px bg-border/40" />
-        </div>
-        <div className="relative z-10 flex flex-col gap-1.5">
-          {messages.map((msg) => (
-            <MessageBubble key={msg.id} msg={msg} />
-          ))}
+        <div className="relative z-10 max-w-4xl mx-auto w-full flex flex-col gap-2 py-5 px-4 sm:px-6">
+          <div className="flex items-center gap-3 my-2">
+            <div className="flex-1 h-px bg-border/40" />
+            <span className="text-[11px] text-muted-foreground/70 px-2 bg-background rounded-full border border-border/30 py-0.5">
+              Hoje, {new Date().toLocaleDateString("pt-BR", { day: "numeric", month: "long" })}
+            </span>
+            <div className="flex-1 h-px bg-border/40" />
+          </div>
+          <div className="flex flex-col gap-2">
+            {messages.map((msg) => (
+              <MessageBubble key={msg.id} msg={msg} />
+            ))}
+          </div>
         </div>
       </div>
 
