@@ -171,7 +171,7 @@ export default function AccordStack() {
 
   if (!loading && !activeIntegration && connectionStatus === "disconnected") {
     return (
-      <div className="flex h-[calc(100vh-3rem)] bg-background items-center justify-center">
+      <div className="flex h-full min-h-0 bg-background items-center justify-center">
         <div className="text-center space-y-5 max-w-md px-6">
           <div className="h-20 w-20 mx-auto rounded-2xl bg-muted/50 flex items-center justify-center">
             <WifiOff className="h-9 w-9 text-muted-foreground/50" />
