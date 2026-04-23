@@ -84,7 +84,7 @@ export function TenantSwitcher() {
                 </Badge>
               )}
               {c.is_reseller && (
-                <Badge variant="outline" className="text-[9px] border-purple-500/30 text-purple-600">
+                <Badge variant="outline" className="text-[9px] border-accent/40 text-accent">
                   Revenda
                 </Badge>
               )}
