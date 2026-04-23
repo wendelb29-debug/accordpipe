@@ -299,6 +299,11 @@ button, a, input, select, textarea {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* Full-height chain for flex layouts (chat etc.) */
+html, body, #root {
+  height: 100%;
+}
+
 /* Prevent body overflow on mobile */
 html, body {
   overflow-x: hidden;
