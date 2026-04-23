@@ -829,7 +829,14 @@ export function InboxChat({
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-background">
-      <div className="flex items-center gap-2 px-2 sm:px-4 py-2.5 sm:py-3 border-b border-border/60 bg-background flex-shrink-0">
+      <div
+        className="flex items-center gap-2 px-2 sm:px-4 py-2.5 sm:py-3 border-b border-border/60 bg-background flex-shrink-0"
+        style={{
+          paddingTop: 'max(0.625rem, env(safe-area-inset-top, 0px))',
+          paddingLeft: 'max(0.5rem, env(safe-area-inset-left, 0px))',
+          paddingRight: 'max(0.5rem, env(safe-area-inset-right, 0px))',
+        }}
+      >
         {onBack && (
           <button
             onClick={onBack}
@@ -857,7 +864,7 @@ export function InboxChat({
           {onTransfer && (
             <button onClick={() => onTransfer(contact.id)}
               aria-label="Transferir"
-              className="w-9 h-9 sm:w-8 sm:h-8 rounded-lg border border-border/50 flex items-center justify-center text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all">
+              className="hidden sm:flex w-9 h-9 sm:w-8 sm:h-8 rounded-lg border border-border/50 items-center justify-center text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all">
               <ArrowLeftRight size={15} />
             </button>
           )}
@@ -873,12 +880,12 @@ export function InboxChat({
           {onUpdateStatus && (
             <button onClick={() => onUpdateStatus(contact.id, "encerrado")}
               aria-label="Encerrar atendimento"
-              className="w-9 h-9 sm:w-8 sm:h-8 rounded-lg border border-border/50 flex items-center justify-center text-muted-foreground hover:bg-red-50 hover:text-red-500 hover:border-red-200 dark:hover:bg-red-950/30 dark:hover:border-red-900 transition-all">
-              <X size={15} />
+              className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg border border-border/50 flex items-center justify-center text-muted-foreground hover:bg-red-50 hover:text-red-500 hover:border-red-200 dark:hover:bg-red-950/30 dark:hover:border-red-900 transition-all">
+              <X size={16} />
             </button>
           )}
-          <button aria-label="Mais opções" className="w-9 h-9 sm:w-8 sm:h-8 rounded-lg border border-border/50 flex items-center justify-center text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all">
-            <MoreVertical size={15} />
+          <button aria-label="Mais opções" className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg border border-border/50 flex items-center justify-center text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all">
+            <MoreVertical size={16} />
           </button>
         </div>
       </div>
@@ -942,10 +949,13 @@ export function InboxChat({
       </div>
 
       <div
-        className="flex-shrink-0 p-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] border-t"
+        className="flex-shrink-0 p-3 border-t"
         style={{
           background: "linear-gradient(to bottom, hsl(var(--primary) / 0.06), hsl(var(--primary) / 0.10))",
           borderTopColor: "hsl(var(--primary) / 0.18)",
+          paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))',
+          paddingLeft: 'max(0.75rem, env(safe-area-inset-left, 0px))',
+          paddingRight: 'max(0.75rem, env(safe-area-inset-right, 0px))',
         }}
       >
         <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => handleFileChange(e, "file")} />

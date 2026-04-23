@@ -122,7 +122,13 @@ export function InboxSidebar({
 
   return (
     <div className="flex flex-col w-full md:w-[272px] md:min-w-[272px] md:border-r border-border/60 bg-muted/30 dark:bg-white/[0.03] h-full">
-      <div className="px-3 pt-3 pb-2 space-y-2">
+      <div
+        className="px-3 pb-2 space-y-2"
+        style={{
+          paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))',
+          paddingLeft: 'max(0.75rem, env(safe-area-inset-left, 0px))',
+        }}
+      >
         <div className="flex items-center gap-2">
           <div className="flex-1 flex items-center gap-2 bg-muted/60 border border-border/50 rounded-xl px-3 py-2">
             <Search size={14} className="text-muted-foreground flex-shrink-0" />
