@@ -147,10 +147,20 @@ function pickMedia(d: any, body: any): {
 
   // Uazapi (whatsmeow-based) shape: data.content is an OBJECT with URL/directPath/mimetype/fileLength
   // and data.mediaType / data.messageType describe the kind. Handle this BEFORE flat fallbacks.
+  // IMPORTANT: only treat as media when there is an actual media indicator. ExtendedTextMessage and
+  // ConversationMessage are TEXT, not media — even though messageType ends in "message".
   const contentObj = (d?.content && typeof d.content === "object" && !Array.isArray(d.content)) ? d.content : null;
   const uazMediaType = (d?.mediaType || "").toString().toLowerCase();
   const uazMessageType = (d?.messageType || "").toString().toLowerCase(); // e.g. "imagemessage"
-  if (contentObj || uazMediaType || uazMessageType.endsWith("message")) {
+  const isTextMessageType = uazMessageType === "extendedtextmessage"
+    || uazMessageType === "conversation"
+    || uazMessageType === "textmessage"
+    || uazMessageType === "reactionmessage";
+  const hasMediaIndicator = !!(contentObj?.URL || contentObj?.url || contentObj?.directPath
+    || contentObj?.mimetype || contentObj?.fileLength
+    || uazMediaType
+    || (uazMessageType.endsWith("message") && !isTextMessageType));
+  if (hasMediaIndicator) {
     const url = contentObj?.URL || contentObj?.url || contentObj?.directPath || null;
     const mime = contentObj?.mimetype || contentObj?.mimeType || null;
     const fileName = contentObj?.fileName || contentObj?.title || contentObj?.name || null;
@@ -611,7 +621,9 @@ async function downloadUazapiMediaToStorage(
       if (resolvedMime?.includes("mp4")) return "mp4";
       return "bin";
     })();
-    const path = `inbound/${company_id}/${external_id}.${ext}`;
+    // Sanitize external_id for storage path (strip ":" which breaks public URLs in some browsers)
+    const safeId = String(external_id).replace(/[^a-zA-Z0-9_-]/g, "_");
+    const path = `inbound/${company_id}/${safeId}.${ext}`;
     const { error: upErr } = await supabase.storage
       .from("whatsapp-media")
       .upload(path, bytes, {
@@ -623,6 +635,7 @@ async function downloadUazapiMediaToStorage(
       return fallbackUrl ?? null;
     }
     const { data: pub } = supabase.storage.from("whatsapp-media").getPublicUrl(path);
+    console.log("[downloadUazapiMediaToStorage] success", { path, publicUrl: pub?.publicUrl, bytes: bytes.byteLength, mime: resolvedMime });
     return pub?.publicUrl || fallbackUrl || null;
   } catch (e) {
     console.warn("[downloadUazapiMediaToStorage] failed:", (e as Error).message);
@@ -877,29 +890,38 @@ async function handleIncomingMessage(
     if (stored) resolvedMediaUrl = stored;
   }
 
+  const insertPayload = {
+    company_id,
+    contact_id: contact.id,
+    phone: primaryPhone,
+    message: message || caption || "",
+    direction: "inbound",
+    status: "delivered",
+    delivered_at: new Date().toISOString(),
+    external_message_id: external_id ?? null,
+    message_type,
+    media_url: resolvedMediaUrl,
+    metadata: {
+      external_id: external_id ?? null,
+      provider: provider ?? null,
+      fileName: file_name ?? null,
+      mimeType: mime_type ?? null,
+      fileSize: file_size ?? null,
+      caption: caption ?? null,
+    },
+  };
+  console.log("[handleIncomingMessage] db-payload", { type: message_type, hasMedia: !!resolvedMediaUrl, external_id });
   const { error: msgError } = await supabase
     .from("whatsapp_messages")
-    .insert({
-      company_id,
-      contact_id: contact.id,
-      phone: primaryPhone,
-      message: message || caption || "",
-      direction: "inbound",
-      status: "delivered",
-      delivered_at: new Date().toISOString(),
-      external_message_id: external_id ?? null,
-      message_type,
-      media_url: resolvedMediaUrl,
-      metadata: {
-        external_id: external_id ?? null,
-        provider: provider ?? null,
-        fileName: file_name ?? null,
-        mimeType: mime_type ?? null,
-        fileSize: file_size ?? null,
-        caption: caption ?? null,
-      },
-    });
-  if (msgError) throw msgError;
+    .insert(insertPayload);
+  if (msgError) {
+    // 23505 = unique_violation (race condition between duplicate webhook calls). Treat as success.
+    if ((msgError as any).code === "23505") {
+      console.log("[handleIncomingMessage] race-dedup: external_id already inserted by parallel call", external_id);
+    } else {
+      throw msgError;
+    }
+  }
 
   // 6. Notification
   if (contact.assigned_to) {
