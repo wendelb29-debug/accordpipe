@@ -632,7 +632,14 @@ export function InboxChat({
         </div>
       </div>
 
-      <div ref={msgsRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col gap-2 px-4 py-3 relative scroll-smooth bg-muted/20 dark:bg-background/60 overscroll-contain">
+      <div
+        ref={msgsRef}
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col gap-2 px-4 py-3 relative scroll-smooth bg-muted/20 dark:bg-background/60 overscroll-contain"
+      >
         <AccordWatermark />
         <div className="relative z-10 max-w-4xl mx-auto w-full flex flex-col gap-2">
           <div className="flex items-center gap-3 my-2">
@@ -656,6 +663,15 @@ export function InboxChat({
           >
             Novas mensagens ↓
           </button>
+        )}
+        {isDragging && !isClosed && (
+          <div className="absolute inset-2 z-30 rounded-2xl border-2 border-dashed border-primary/60 bg-primary/10 backdrop-blur-sm flex items-center justify-center pointer-events-none animate-fade-in">
+            <div className="flex flex-col items-center gap-2 text-primary">
+              <Paperclip size={28} />
+              <p className="text-sm font-medium">Solte para anexar</p>
+              <p className="text-[11px] text-muted-foreground">Imagens, PDFs e documentos · até 25 MB</p>
+            </div>
+          </div>
         )}
       </div>
 
