@@ -92,16 +92,27 @@ export default function AccordStack() {
       }
     : null;
 
-  // Map InboxMessage -> ChatMessage
-  const chatMessages = messages.map((m) => ({
-    id: m.id,
-    message: m.message,
-    direction: m.direction,
-    created_at: m.created_at,
-    type: m.message_type,
-    mediaUrl: m.media_url || undefined,
-    status: m.status,
-  }));
+  // Map InboxMessage -> ChatMessage (extracts attachment metadata when available)
+  const chatMessages = messages.map((m) => {
+    const meta = (m.metadata || {}) as Record<string, any>;
+    const fileName =
+      meta.fileName || meta.file_name || meta.filename ||
+      meta.docName || meta.name || undefined;
+    const fileSize = meta.fileSize || meta.file_size || meta.size || undefined;
+    const mimeType = meta.mimeType || meta.mime_type || meta.mimetype || undefined;
+    return {
+      id: m.id,
+      message: m.message,
+      direction: m.direction,
+      created_at: m.created_at,
+      type: m.message_type,
+      mediaUrl: m.media_url || undefined,
+      fileName,
+      fileSize,
+      mimeType,
+      status: m.status,
+    };
+  });
 
   console.log("[AccordStack] selectedContactId:", selectedContactId, "messages:", messages.length, "chatMessages:", chatMessages.length);
 
