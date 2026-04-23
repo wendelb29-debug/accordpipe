@@ -98,12 +98,99 @@ function isFromMe(d: any, body: any): boolean {
     d?.key?.fromMe === true || body?.fromMe === true;
 }
 
+// Extract media descriptor from a wide variety of provider payload shapes.
+function pickMedia(d: any, body: any): {
+  message_type: string;
+  media_url: string | null;
+  file_name: string | null;
+  mime_type: string | null;
+  file_size: number | null;
+  caption: string | null;
+} {
+  const sources = [d, body, d?.message, d?.msgContent, body?.message].filter(Boolean);
+
+  // typed message containers (Baileys-style)
+  const m = d?.message || body?.message || {};
+  const typedContainers: Array<{ key: string; t: string }> = [
+    { key: "imageMessage", t: "image" },
+    { key: "videoMessage", t: "video" },
+    { key: "audioMessage", t: "audio" },
+    { key: "documentMessage", t: "document" },
+    { key: "documentWithCaptionMessage", t: "document" },
+    { key: "stickerMessage", t: "image" },
+    { key: "ptvMessage", t: "video" },
+  ];
+
+  for (const { key, t } of typedContainers) {
+    const c = m?.[key] || d?.[key] || body?.[key] ||
+      m?.documentWithCaptionMessage?.message?.documentMessage; // nested doc+caption
+    if (c && typeof c === "object") {
+      const url = c.url || c.directPath || c.fileUrl || c.mediaUrl || null;
+      const mime = c.mimetype || c.mimeType || null;
+      const fileName = c.fileName || c.title || c.name || null;
+      const sz = c.fileLength || c.fileSize || c.size || null;
+      const caption = c.caption || null;
+      let kind = t;
+      if (mime?.startsWith("audio/") || c.ptt === true) kind = "audio";
+      if (mime === "application/pdf") kind = "pdf";
+      else if (kind === "document" && mime && !mime.includes("pdf")) kind = "document";
+      return {
+        message_type: kind,
+        media_url: typeof url === "string" ? url : null,
+        file_name: typeof fileName === "string" ? fileName : null,
+        mime_type: typeof mime === "string" ? mime : null,
+        file_size: sz != null ? Number(sz) || null : null,
+        caption: typeof caption === "string" ? caption : null,
+      };
+    }
+  }
+
+  // flat fields used by Z-API / Uazapi simple events
+  const flatType = (d?.type || d?.messageType || body?.type || body?.messageType || "")
+    .toString().toLowerCase();
+  const flatMime = d?.mimeType || d?.mimetype || d?.contentType || body?.mimeType || null;
+  const flatUrl =
+    d?.mediaUrl || d?.media || d?.fileUrl || d?.url || d?.documentUrl || d?.imageUrl ||
+    d?.audioUrl || d?.videoUrl || d?.image?.imageUrl || d?.document?.documentUrl ||
+    d?.audio?.audioUrl || d?.video?.videoUrl || null;
+  const flatName =
+    d?.fileName || d?.filename || d?.docName || d?.name || d?.document?.fileName ||
+    d?.image?.caption || null;
+  const flatSize = d?.fileSize || d?.size || d?.document?.fileSize || null;
+  const flatCaption =
+    d?.caption || d?.image?.caption || d?.video?.caption || d?.document?.caption || null;
+
+  if (flatUrl || ["image","audio","ptt","voice","video","document","pdf","file","sticker"].includes(flatType)) {
+    let kind: string = "file";
+    if (flatType === "image" || flatMime?.startsWith?.("image/")) kind = "image";
+    else if (flatType === "video" || flatMime?.startsWith?.("video/")) kind = "video";
+    else if (flatType === "audio" || flatType === "ptt" || flatType === "voice" || flatMime?.startsWith?.("audio/")) kind = "audio";
+    else if (flatMime === "application/pdf" || /\.pdf($|\?)/i.test(String(flatUrl || ""))) kind = "pdf";
+    else if (flatType === "document" || flatType === "file") kind = "document";
+    return {
+      message_type: kind,
+      media_url: typeof flatUrl === "string" ? flatUrl : null,
+      file_name: typeof flatName === "string" ? flatName : null,
+      mime_type: typeof flatMime === "string" ? flatMime : null,
+      file_size: flatSize != null ? Number(flatSize) || null : null,
+      caption: typeof flatCaption === "string" ? flatCaption : null,
+    };
+  }
+
+  return {
+    message_type: "text",
+    media_url: null,
+    file_name: null,
+    mime_type: null,
+    file_size: null,
+    caption: null,
+  };
+}
+
 function normalizeUazapi(body: any): NormalizedEvent {
   const ev = (body?.event || body?.type || body?.EventType || "").toString().toLowerCase();
-  // Try multiple data containers
   const data = body?.data ?? body?.message ?? body?.payload ?? body;
 
-  // Connection/status events
   if (ev.includes("status") || ev.includes("connection") || ev.includes("presence") || data?.connection || data?.state) {
     return {
       kind: "instance_status",
@@ -112,7 +199,6 @@ function normalizeUazapi(body: any): NormalizedEvent {
     };
   }
 
-  // Message status / ack events (delivery/read receipts)
   const ackRaw = data?.ack ?? data?.status ?? data?.messageStatus ?? body?.ack ?? body?.status;
   const externalId = data?.id || data?.messageId || data?.key?.id || body?.messageId;
   if ((ev.includes("status") || ev.includes("ack") || ev.includes("receipt")) && externalId) {
@@ -122,34 +208,36 @@ function normalizeUazapi(body: any): NormalizedEvent {
     }
   }
 
-  // Skip outbound echoes (only after we ruled out status updates for outbound msgs)
   if (isFromMe(data, body)) {
-    // If it's a status event for a sent message, allow it through above; otherwise ignore
     return { kind: "ignore", reason: "fromMe/wasSentByApi" };
   }
 
-  // Message event: be permissive — if we can extract phone+text, treat as inbound
   const phone = pickPhone(data) || pickPhone(body);
   const text = pickText(data) || pickText(body);
+  const media = pickMedia(data, body);
 
-  if (phone && text) {
+  // Accept either text OR media (image/audio/doc with no caption is valid)
+  if (phone && (text || media.media_url || media.message_type !== "text")) {
     return {
       kind: "message_received",
       phone: String(phone).replace(/[^\d]/g, ""),
-      message: String(text),
+      message: text || media.caption || "",
       sender_name: data?.senderName || data?.pushName || data?.notifyName || data?.contact?.name || null,
       sender_avatar: pickAvatar(data) || pickAvatar(body),
-      message_type: data?.type || data?.messageType || "text",
-      media_url: data?.mediaUrl || data?.media || data?.message?.imageMessage?.url || null,
+      message_type: media.message_type,
+      media_url: media.media_url,
+      file_name: media.file_name,
+      mime_type: media.mime_type,
+      file_size: media.file_size,
+      caption: media.caption,
       external_id: externalId || null,
     };
   }
 
-  return { kind: "ignore", reason: `no_phone_or_text (event=${ev || "none"}, dataKeys=${Object.keys(data || {}).join(",").slice(0,120)})` };
+  return { kind: "ignore", reason: `no_phone_or_content (event=${ev || "none"}, dataKeys=${Object.keys(data || {}).join(",").slice(0,120)})` };
 }
 
 function normalizeZapi(body: any): NormalizedEvent {
-  // Z-API status events
   const status = body?.status || body?.messageStatus;
   const messageId = body?.messageId || body?.ids?.[0];
   if (status && messageId) {
@@ -158,17 +246,22 @@ function normalizeZapi(body: any): NormalizedEvent {
   }
 
   const phone = body?.phone || body?.data?.phone;
-  const text = body?.message || body?.data?.message || body?.text;
+  const text = pickText(body) || pickText(body?.data);
+  const media = pickMedia(body?.data || body, body);
   if (body?.fromMe === true) return { kind: "ignore", reason: "fromMe" };
-  if (phone && text) {
+  if (phone && (text || media.media_url || media.message_type !== "text")) {
     return {
       kind: "message_received",
       phone: String(phone).replace(/[^\d]/g, ""),
-      message: String(text),
+      message: text || media.caption || "",
       sender_name: body?.senderName || body?.notifyName || null,
       sender_avatar: pickAvatar(body),
-      message_type: body?.type || "text",
-      media_url: body?.mediaUrl || null,
+      message_type: media.message_type,
+      media_url: media.media_url,
+      file_name: media.file_name,
+      mime_type: media.mime_type,
+      file_size: media.file_size,
+      caption: media.caption,
       external_id: messageId || null,
     };
   }
