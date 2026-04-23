@@ -42,14 +42,25 @@ export default function Home() {
       <BirthdayCelebration />
 
       {/* Top bar */}
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex items-center justify-end gap-1.5 sm:gap-2">
         {isAdmin && (
-          <Button variant="outline" size="sm" className="gap-2 h-9" onClick={() => setManageOpen(true)}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 h-10 w-10 sm:h-9 sm:w-auto sm:px-3 p-0 sm:p-2 rounded-xl active:scale-95"
+            onClick={() => setManageOpen(true)}
+            aria-label="Comunicados"
+          >
             <Megaphone className="h-4 w-4" />
             <span className="hidden sm:inline">Comunicados</span>
           </Button>
         )}
-        <Button size="sm" className="gap-2 h-9 gradient-primary text-primary-foreground shadow-md" onClick={() => setSupportOpen(true)}>
+        <Button
+          size="sm"
+          className="gap-2 h-10 w-10 sm:h-9 sm:w-auto sm:px-3 p-0 sm:p-2 gradient-primary text-primary-foreground shadow-md rounded-xl active:scale-95"
+          onClick={() => setSupportOpen(true)}
+          aria-label="Suporte"
+        >
           <HeadphonesIcon className="h-4 w-4" />
           <span className="hidden sm:inline">Suporte</span>
         </Button>
