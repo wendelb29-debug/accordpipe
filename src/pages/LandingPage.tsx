@@ -14,6 +14,7 @@ import { SocialProofSection } from "@/components/landing/SocialProofSection";
 import { FAQSection } from "@/components/landing/FAQSection";
 import { ObjectionBreaker } from "@/components/landing/ObjectionBreaker";
 import { PremiumCTASection } from "@/components/landing/PremiumCTASection";
+import { PricingSection } from "@/components/landing/PricingSection";
 import { FooterSection } from "@/components/landing/FooterSection";
 import { TrialSignupDialog } from "@/components/landing/TrialSignupDialog";
 
@@ -70,6 +71,7 @@ export default function LandingPage() {
       <SocialProofSection />
       <FAQSection />
       <ObjectionBreaker />
+      <PricingSection />
       <PremiumCTASection />
       <FooterSection />
       <TrialSignupDialog open={trialOpen} onOpenChange={setTrialOpen} />
