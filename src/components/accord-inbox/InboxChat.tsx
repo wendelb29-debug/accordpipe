@@ -949,10 +949,13 @@ export function InboxChat({
       </div>
 
       <div
-        className="flex-shrink-0 p-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] border-t"
+        className="flex-shrink-0 p-3 border-t"
         style={{
           background: "linear-gradient(to bottom, hsl(var(--primary) / 0.06), hsl(var(--primary) / 0.10))",
           borderTopColor: "hsl(var(--primary) / 0.18)",
+          paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))',
+          paddingLeft: 'max(0.75rem, env(safe-area-inset-left, 0px))',
+          paddingRight: 'max(0.75rem, env(safe-area-inset-right, 0px))',
         }}
       >
         <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => handleFileChange(e, "file")} />
