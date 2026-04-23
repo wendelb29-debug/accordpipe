@@ -722,7 +722,7 @@ export default function ServidoresTab() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem className="gap-2" onClick={() => navigate(`/servidores/novo?id=${company.id}`)}>
+                          <DropdownMenuItem className="gap-2" onClick={() => navigate(`/tenant/${company.id}/editar`)}>
                             <Pencil className="h-4 w-4" />
                             Editar
                           </DropdownMenuItem>
