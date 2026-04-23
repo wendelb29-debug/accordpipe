@@ -378,7 +378,7 @@ export function InboxChat({
   }
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-background">
+    <div className="flex-1 flex flex-col min-w-0 bg-background overflow-hidden">
       <div className="flex items-center gap-2 px-2 sm:px-4 py-2.5 sm:py-3 border-b border-border/60 bg-background flex-shrink-0">
         {onBack && (
           <button
