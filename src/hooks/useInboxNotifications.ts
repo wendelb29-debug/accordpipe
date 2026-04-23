@@ -85,8 +85,8 @@ export function useInboxNotifications() {
         async (payload) => {
           const msg: any = payload.new;
           if (!msg || msg.direction !== "inbound") return;
-          // Skip if user is already viewing the inbox
-          if (isOnInboxPage) return;
+          // Skip if user is currently viewing the inbox
+          if (isOnInboxPageRef.current) return;
 
           // Fetch contact info
           const { data: contact } = await supabase
@@ -112,17 +112,13 @@ export function useInboxNotifications() {
             if (existing) {
               return prev.map((p) =>
                 p.contact_id === notif.contact_id
-                  ? {
-                      ...notif,
-                      unread_count: existing.unread_count + 1,
-                    }
+                  ? { ...notif, unread_count: existing.unread_count + 1 }
                   : p
               );
             }
             return [...prev, notif];
           });
 
-          // Show / refresh preview balloon
           setPreview((prev) => {
             const merged: InboxNotification = prev?.contact_id === notif.contact_id
               ? { ...notif, unread_count: prev.unread_count + 1 }
@@ -137,7 +133,9 @@ export function useInboxNotifications() {
           }, PREVIEW_DURATION_MS);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.info("[inbox realtime] channel status:", status, "companyId:", activeCompanyId);
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -146,7 +144,7 @@ export function useInboxNotifications() {
         previewTimerRef.current = null;
       }
     };
-  }, [activeCompanyId, isOnInboxPage]);
+  }, [activeCompanyId]);
 
   // When user navigates to inbox, clear pending state
   useEffect(() => {
