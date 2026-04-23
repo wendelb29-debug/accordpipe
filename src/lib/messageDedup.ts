@@ -27,48 +27,47 @@ export interface DedupableMessage {
  * to the database id, and finally to a content-based hash so realtime events
  * that arrive before the DB roundtrip still dedupe correctly.
  */
-export function getMessageUniqueKey(message: DedupableMessage): string {
+export function getMessageUniqueKey(message: any): string {
   return (
-    (message.external_message_id as string) ||
-    (message.message_id as string) ||
-    (message.provider_message_id as string) ||
-    (message.id as string) ||
-    `${message.contact_id || message.conversation_id || message.phone || ""}-${
-      message.direction || ""
-    }-${message.message || message.content || ""}-${message.created_at || ""}`
+    message?.external_message_id ||
+    message?.message_id ||
+    message?.provider_message_id ||
+    message?.client_temp_id ||
+    message?.id ||
+    `${message?.contact_id || message?.conversation_id || message?.phone || ""}-${
+      message?.direction || ""
+    }-${message?.message || message?.content || ""}-${message?.created_at || ""}`
   );
 }
 
 /**
  * Merge two lists of messages, dropping duplicates by stable key.
- * When the same key appears more than once, later occurrences overwrite
- * (shallow-merge) earlier ones — this is what lets a confirmed backend
- * message replace an optimistic temp message with the same key.
+ * When the same key appears more than once, later occurrences shallow-merge
+ * over earlier ones — this is what lets a confirmed backend message replace
+ * an optimistic temp message with the same key.
  */
-export function mergeMessagesDedup<T extends DedupableMessage>(
-  prev: T[],
-  incoming: T[],
-): T[] {
+export function mergeMessagesDedup<T = any>(prev: T[], incoming: T[]): T[] {
   const map = new Map<string, T>();
 
   for (const msg of [...prev, ...incoming]) {
     const key = getMessageUniqueKey(msg);
     const existing = map.get(key);
     if (existing) {
-      map.set(key, { ...existing, ...msg });
+      map.set(key, { ...(existing as any), ...(msg as any) });
     } else {
       map.set(key, msg);
     }
   }
 
-  return Array.from(map.values()).sort((a, b) => {
-    const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
-    const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+  return Array.from(map.values()).sort((a: any, b: any) => {
+    const ta = a?.created_at ? new Date(a.created_at).getTime() : 0;
+    const tb = b?.created_at ? new Date(b.created_at).getTime() : 0;
     return ta - tb;
   });
 }
 
 /** Convenience: dedupe a single list (e.g. straight after a fetch). */
-export function dedupMessages<T extends DedupableMessage>(list: T[]): T[] {
+export function dedupMessages<T = any>(list: T[]): T[] {
   return mergeMessagesDedup<T>([], list);
 }
+
