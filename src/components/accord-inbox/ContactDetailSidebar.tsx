@@ -52,28 +52,48 @@ export function ContactDetailSidebar({ contact, onClose, onCreateDemand, company
   useEffect(() => {
     if (!companyId) return;
 
-    // Fetch lead if linked
+    // Fetch lead if linked (with workspace + column info)
     if (contact.lead_id) {
       supabase
         .from("crm_leads")
-        .select("id, company_name, stage, value_mrr, contact_name, created_at")
+        .select("id, company_name, stage, value_mrr, contact_name, created_at, workspace_id")
         .eq("id", contact.lead_id)
         .maybeSingle()
-        .then(({ data }) => {
-          if (data) setLead(data);
+        .then(async ({ data }) => {
+          if (!data) return;
+          const enriched: LeadInfo = { ...data } as LeadInfo;
+          if (data.workspace_id) {
+            const { data: ws } = await supabase
+              .from("workspaces")
+              .select("name")
+              .eq("id", data.workspace_id)
+              .maybeSingle();
+            enriched.workspace_name = ws?.name || null;
+          }
+          if (data.stage) {
+            const { data: col } = await supabase
+              .from("kanban_columns")
+              .select("name")
+              .eq("id", data.stage)
+              .maybeSingle();
+            enriched.column_name = col?.name || null;
+          }
+          setLead(enriched);
         });
+    } else {
+      setLead(null);
     }
 
     // Fetch related leads by phone
     supabase
       .from("crm_leads")
-      .select("id, company_name, stage, value_mrr, contact_name, created_at")
+      .select("id, company_name, stage, value_mrr, contact_name, created_at, workspace_id")
       .eq("servidor_id", companyId)
       .eq("phone", contact.phone)
       .order("created_at", { ascending: false })
       .limit(5)
       .then(({ data }) => {
-        setRelatedLeads(data || []);
+        setRelatedLeads((data || []) as LeadInfo[]);
       });
 
     // Fetch registration if lead linked
