@@ -514,10 +514,20 @@ async function handleIncomingMessage(
     message_type?: string;
     media_url?: string;
     external_id?: string;
+    file_name?: string;
+    mime_type?: string;
+    file_size?: number;
+    caption?: string;
     provider?: string;
   },
 ) {
-  const { company_id, phone, message, sender_name: payloadName, sender_avatar: payloadAvatar, message_type = "text", media_url, external_id, provider } = data;
+  const {
+    company_id, phone, message,
+    sender_name: payloadName, sender_avatar: payloadAvatar,
+    message_type = "text", media_url, external_id,
+    file_name, mime_type, file_size, caption,
+    provider,
+  } = data;
   let sender_avatar = payloadAvatar;
   let sender_name = payloadName;
   const normalizedPhone = String(phone || "").replace(/\D/g, "");
