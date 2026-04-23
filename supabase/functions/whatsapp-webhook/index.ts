@@ -145,6 +145,45 @@ function pickMedia(d: any, body: any): {
     }
   }
 
+  // Uazapi (whatsmeow-based) shape: data.content is an OBJECT with URL/directPath/mimetype/fileLength
+  // and data.mediaType / data.messageType describe the kind. Handle this BEFORE flat fallbacks.
+  const contentObj = (d?.content && typeof d.content === "object" && !Array.isArray(d.content)) ? d.content : null;
+  const uazMediaType = (d?.mediaType || "").toString().toLowerCase();
+  const uazMessageType = (d?.messageType || "").toString().toLowerCase(); // e.g. "imagemessage"
+  if (contentObj || uazMediaType || uazMessageType.endsWith("message")) {
+    const url = contentObj?.URL || contentObj?.url || contentObj?.directPath || null;
+    const mime = contentObj?.mimetype || contentObj?.mimeType || null;
+    const fileName = contentObj?.fileName || contentObj?.title || contentObj?.name || null;
+    const sz = contentObj?.fileLength || contentObj?.fileSize || contentObj?.size || null;
+    const caption = contentObj?.caption || d?.text || null;
+
+    let kind = "file";
+    const t = uazMediaType ||
+      (uazMessageType.includes("image") ? "image"
+       : uazMessageType.includes("video") ? "video"
+       : uazMessageType.includes("audio") || uazMessageType.includes("ptt") ? "audio"
+       : uazMessageType.includes("document") ? "document"
+       : uazMessageType.includes("sticker") ? "image"
+       : "");
+
+    if (t === "image" || mime?.startsWith?.("image/")) kind = "image";
+    else if (t === "video" || mime?.startsWith?.("video/")) kind = "video";
+    else if (t === "audio" || t === "ptt" || t === "voice" || mime?.startsWith?.("audio/") || contentObj?.ptt === true) kind = "audio";
+    else if (mime === "application/pdf" || /\.pdf($|\?)/i.test(String(url || fileName || ""))) kind = "pdf";
+    else if (t === "document" || t === "file") kind = "document";
+
+    if (url || kind !== "file" || mime || fileName) {
+      return {
+        message_type: kind,
+        media_url: typeof url === "string" ? url : null,
+        file_name: typeof fileName === "string" ? fileName : null,
+        mime_type: typeof mime === "string" ? mime : null,
+        file_size: sz != null ? Number(sz) || null : null,
+        caption: typeof caption === "string" ? caption : null,
+      };
+    }
+  }
+
   // flat fields used by Z-API / Uazapi simple events
   const flatType = (d?.type || d?.messageType || body?.type || body?.messageType || "")
     .toString().toLowerCase();
@@ -160,7 +199,7 @@ function pickMedia(d: any, body: any): {
   const flatCaption =
     d?.caption || d?.image?.caption || d?.video?.caption || d?.document?.caption || null;
 
-  if (flatUrl || ["image","audio","ptt","voice","video","document","pdf","file","sticker"].includes(flatType)) {
+  if (flatUrl || ["image","audio","ptt","voice","video","document","pdf","file","sticker","media"].includes(flatType)) {
     let kind: string = "file";
     if (flatType === "image" || flatMime?.startsWith?.("image/")) kind = "image";
     else if (flatType === "video" || flatMime?.startsWith?.("video/")) kind = "video";
@@ -503,6 +542,94 @@ async function fetchUazapiAvatar(
   }
 }
 
+// Download Uazapi-encrypted media via /message/download and upload to Supabase Storage,
+// returning a permanent public URL. Falls back to the original (encrypted) URL on failure.
+async function downloadUazapiMediaToStorage(
+  supabase: any,
+  company_id: string,
+  external_id: string | null | undefined,
+  fallbackUrl: string | null | undefined,
+  mimeType: string | null | undefined,
+  fileName: string | null | undefined,
+): Promise<string | null> {
+  try {
+    if (!external_id) return fallbackUrl ?? null;
+    const { data: integ } = await supabase
+      .from("tenant_whatsapp_integrations")
+      .select("server_url, instance_token")
+      .eq("tenant_id", company_id)
+      .eq("provider_type", "uazapi")
+      .maybeSingle();
+    if (!integ?.server_url || !integ?.instance_token) {
+      return fallbackUrl ?? null;
+    }
+    const baseUrl = integ.server_url.replace(/\/$/, "");
+    // Uazapi /message/download returns the decrypted media as a downloadable stream/url
+    const dlRes = await fetch(`${baseUrl}/message/download`, {
+      method: "POST",
+      headers: { token: integ.instance_token, "Content-Type": "application/json" },
+      body: JSON.stringify({ id: external_id }),
+    });
+    if (!dlRes.ok) {
+      console.warn("[downloadUazapiMediaToStorage] non-ok", dlRes.status);
+      return fallbackUrl ?? null;
+    }
+    const ct = dlRes.headers.get("content-type") || "";
+    let bytes: Uint8Array | null = null;
+    let resolvedMime = mimeType || null;
+    if (ct.includes("application/json")) {
+      const json: any = await dlRes.json().catch(() => null);
+      // Uazapi may return { fileURL, base64, mimetype, fileName }
+      const b64 = json?.base64 || json?.fileBase64 || json?.data;
+      const fileUrl = json?.fileURL || json?.url;
+      resolvedMime = json?.mimetype || json?.mimeType || resolvedMime;
+      if (b64 && typeof b64 === "string") {
+        const clean = b64.replace(/^data:[^;]+;base64,/, "");
+        bytes = Uint8Array.from(atob(clean), (c) => c.charCodeAt(0));
+      } else if (fileUrl && typeof fileUrl === "string") {
+        const r2 = await fetch(fileUrl);
+        if (r2.ok) {
+          bytes = new Uint8Array(await r2.arrayBuffer());
+          resolvedMime = r2.headers.get("content-type") || resolvedMime;
+        }
+      }
+    } else {
+      bytes = new Uint8Array(await dlRes.arrayBuffer());
+      resolvedMime = ct || resolvedMime;
+    }
+    if (!bytes || bytes.byteLength === 0) {
+      return fallbackUrl ?? null;
+    }
+    const ext = (() => {
+      if (fileName?.includes(".")) return fileName.split(".").pop();
+      if (resolvedMime?.includes("jpeg")) return "jpg";
+      if (resolvedMime?.includes("png")) return "png";
+      if (resolvedMime?.includes("webp")) return "webp";
+      if (resolvedMime?.includes("pdf")) return "pdf";
+      if (resolvedMime?.includes("ogg")) return "ogg";
+      if (resolvedMime?.includes("mpeg")) return "mp3";
+      if (resolvedMime?.includes("mp4")) return "mp4";
+      return "bin";
+    })();
+    const path = `inbound/${company_id}/${external_id}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from("whatsapp-media")
+      .upload(path, bytes, {
+        contentType: resolvedMime || "application/octet-stream",
+        upsert: true,
+      });
+    if (upErr) {
+      console.warn("[downloadUazapiMediaToStorage] upload error:", upErr.message);
+      return fallbackUrl ?? null;
+    }
+    const { data: pub } = supabase.storage.from("whatsapp-media").getPublicUrl(path);
+    return pub?.publicUrl || fallbackUrl || null;
+  } catch (e) {
+    console.warn("[downloadUazapiMediaToStorage] failed:", (e as Error).message);
+    return fallbackUrl ?? null;
+  }
+}
+
 async function handleIncomingMessage(
   supabase: any,
   data: {
@@ -740,6 +867,16 @@ async function handleIncomingMessage(
     }
   }
 
+  // For Uazapi inbound media, fetch the decrypted file and re-upload to Supabase Storage so
+  // the frontend can render/download it (the original `mmg.whatsapp.net` URL is encrypted).
+  let resolvedMediaUrl = media_url ?? null;
+  if (provider === "uazapi" && message_type !== "text" && external_id) {
+    const stored = await downloadUazapiMediaToStorage(
+      supabase, company_id, external_id, media_url, mime_type, file_name,
+    );
+    if (stored) resolvedMediaUrl = stored;
+  }
+
   const { error: msgError } = await supabase
     .from("whatsapp_messages")
     .insert({
@@ -752,7 +889,7 @@ async function handleIncomingMessage(
       delivered_at: new Date().toISOString(),
       external_message_id: external_id ?? null,
       message_type,
-      media_url: media_url ?? null,
+      media_url: resolvedMediaUrl,
       metadata: {
         external_id: external_id ?? null,
         provider: provider ?? null,
