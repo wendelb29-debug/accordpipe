@@ -272,19 +272,22 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
     ? new Date(msg.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
     : "";
 
-  // Decide presentation: prioritize message_type, but fall back to mime/url sniffing
+  // Decide presentation: prioritize message_type, but fall back to mime/url sniffing.
+  // IMPORTANT: if there's no mediaUrl, fall through to text rendering so links/text still render
+  // (avoids "Mídia indisponível" cards for plain text that was tagged with a generic type).
   const kind = (() => {
-    if (msg.type === "audio" || msg.type === "voice" || msg.type === "ptt") return "audio" as const;
-    if (msg.type === "image") return "image" as const;
-    if (msg.type === "video") return "video" as const;
+    if ((msg.type === "audio" || msg.type === "voice" || msg.type === "ptt") && msg.mediaUrl) return "audio" as const;
+    if (msg.type === "image" && msg.mediaUrl) return "image" as const;
+    if (msg.type === "video" && msg.mediaUrl) return "video" as const;
     const isMediaType =
-      msg.type === "file" || msg.type === "document" || msg.type === "pdf" || msg.type === "media";
-    if (msg.mediaUrl || isMediaType) {
+      msg.type === "file" || msg.type === "document" || msg.type === "pdf";
+    if (msg.mediaUrl) {
       const k = classifyAttachment({ mime: msg.mimeType, fileName: msg.fileName, url: msg.mediaUrl });
       if (k === "image") return "image" as const;
       if (k === "audio") return "audio" as const;
       return "attachment" as const;
     }
+    if (isMediaType) return "attachment" as const;
     return "text" as const;
   })();
 
