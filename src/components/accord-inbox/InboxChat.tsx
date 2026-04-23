@@ -426,8 +426,27 @@ export function InboxChat({
     if (taRef.current) taRef.current.style.height = "40px";
   };
 
-  const uploadAndSend = async (file: File, messageType: "image" | "audio" | "file") => {
+  const MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // 25MB
+
+  const detectMessageType = (file: File): "image" | "audio" | "video" | "file" => {
+    const mime = (file.type || "").toLowerCase();
+    if (mime.startsWith("image/")) return "image";
+    if (mime.startsWith("audio/")) return "audio";
+    if (mime.startsWith("video/")) return "video";
+    return "file";
+  };
+
+  const uploadAndSend = async (
+    file: File,
+    forcedType?: "image" | "audio" | "file",
+  ) => {
     if (!companyId || !contact) return;
+    if (file.size > MAX_UPLOAD_BYTES) {
+      const { toast } = await import("sonner");
+      toast.error(`Arquivo muito grande (máx. ${Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB).`);
+      return;
+    }
+    const messageType = forcedType || detectMessageType(file);
     setUploading(true);
     try {
       const { supabase } = await import("@/integrations/supabase/client");
@@ -438,7 +457,9 @@ export function InboxChat({
         .upload(path, file, { contentType: file.type, upsert: false });
       if (upErr) throw upErr;
       const { data: pub } = supabase.storage.from("whatsapp-media").getPublicUrl(path);
-      onSendMessage(file.name, { messageType, mediaUrl: pub.publicUrl, fileName: file.name });
+      // For non-image/audio types, we send 'file' to backend (uazapi treats document/audio/image distinctly)
+      const sendType = messageType === "video" ? "file" : messageType;
+      onSendMessage(file.name, { messageType: sendType, mediaUrl: pub.publicUrl, fileName: file.name });
     } catch (err: any) {
       const { toast } = await import("sonner");
       toast.error(err?.message || "Falha no upload do arquivo");
@@ -447,10 +468,44 @@ export function InboxChat({
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: "image" | "audio" | "file") => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type?: "image" | "audio" | "file") => {
     const f = e.target.files?.[0];
     if (f) uploadAndSend(f, type);
     e.target.value = "";
+  };
+
+  // ===== Drag & drop on the messages area =====
+  const [isDragging, setIsDragging] = useState(false);
+  const dragDepthRef = useRef(0);
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    if (!e.dataTransfer?.types?.includes("Files")) return;
+    e.preventDefault();
+    dragDepthRef.current += 1;
+    setIsDragging(true);
+  };
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!e.dataTransfer?.types?.includes("Files")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  };
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setIsDragging(false);
+  };
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragDepthRef.current = 0;
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer?.files || []);
+    if (!files.length || isClosed) return;
+    // Upload files sequentially to avoid hammering the API
+    (async () => {
+      for (const f of files) {
+        await uploadAndSend(f);
+      }
+    })();
   };
 
   const startRecording = async () => {
