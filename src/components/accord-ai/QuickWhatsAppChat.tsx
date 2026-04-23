@@ -102,9 +102,9 @@ export function QuickWhatsAppChat({
 
       const { data, error } = await supabase.functions.invoke("whatsapp-send", {
         body: {
-          company_id: companyId,
+          tenant_id: companyId,
           phone: notification.contact_phone,
-          message: text,
+          text: text,
           message_type: "text",
         },
       });
