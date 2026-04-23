@@ -41,8 +41,10 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <BackNavigationProvider>
       <div className={cn(
-        "bg-background safe-area-top overflow-x-hidden",
-        isAccordStackRoute ? "h-[100dvh] overflow-hidden" : "min-h-screen"
+        "bg-background",
+        isAccordStackRoute
+          ? "h-[100dvh] overflow-hidden flex flex-col"
+          : "min-h-screen safe-area-top overflow-x-hidden"
       )}>
         {/* Desktop sidebar (hidden on Accord Stack for full-width chat) */}
         {!isMobile && !isAccordStack && <Sidebar />}
