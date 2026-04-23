@@ -1,4 +1,7 @@
-import { Search, Plus, Users, MessageSquare } from "lucide-react";
+import { Search, Plus, Users, MessageSquare, RefreshCw } from "lucide-react";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export type ConversationStatusFilter = "fila" | "em_atendimento" | "encerrado";
@@ -34,6 +37,8 @@ interface InboxSidebarProps {
   statusFilter: ConversationStatusFilter;
   onStatusFilterChange: (v: ConversationStatusFilter) => void;
   onNewConversation?: () => void;
+  tenantId?: string | null;
+  onAvatarsSynced?: () => void;
 }
 
 const CHANNEL_STYLES = {
@@ -86,9 +91,28 @@ const STATUS_TABS: { key: ConversationStatusFilter; label: string; colorClass: s
 export function InboxSidebar({
   contacts, selectedId, onSelect, searchTerm, onSearchChange,
   filter, onFilterChange, isAdmin, loading, statusFilter, onStatusFilterChange,
-  onNewConversation,
+  onNewConversation, tenantId, onAvatarsSynced,
 }: InboxSidebarProps) {
   const filterOpts = ["Todas", "Não lidas"];
+  const [syncingAvatars, setSyncingAvatars] = useState(false);
+
+  const handleSyncAvatars = async () => {
+    if (!tenantId || syncingAvatars) return;
+    setSyncingAvatars(true);
+    const t = toast.loading("Sincronizando fotos do WhatsApp...");
+    try {
+      const { data, error } = await supabase.functions.invoke("whatsapp-sync-all-avatars", {
+        body: { tenant_id: tenantId, limit: 200 },
+      });
+      if (error) throw error;
+      toast.success(`Fotos atualizadas: ${data?.updated ?? 0} de ${data?.total ?? 0}`, { id: t });
+      onAvatarsSynced?.();
+    } catch (e: any) {
+      toast.error(e?.message || "Falha ao sincronizar fotos", { id: t });
+    } finally {
+      setSyncingAvatars(false);
+    }
+  };
 
   const counts = {
     fila: contacts.filter((c) => c.conversationStatus === "fila" || c.conversationStatus === "aguardando").length,
@@ -99,14 +123,27 @@ export function InboxSidebar({
   return (
     <div className="flex flex-col w-full md:w-[272px] md:min-w-[272px] md:border-r border-border/60 bg-background h-full">
       <div className="px-3 pt-3 pb-2 space-y-2">
-        <div className="flex items-center gap-2 bg-muted/60 border border-border/50 rounded-xl px-3 py-2">
-          <Search size={14} className="text-muted-foreground flex-shrink-0" />
-          <input
-            className="bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground w-full"
-            placeholder="Buscar conversa, número..."
-            value={searchTerm}
-            onChange={(e) => onSearchChange(e.target.value)}
-          />
+        <div className="flex items-center gap-2">
+          <div className="flex-1 flex items-center gap-2 bg-muted/60 border border-border/50 rounded-xl px-3 py-2">
+            <Search size={14} className="text-muted-foreground flex-shrink-0" />
+            <input
+              className="bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground w-full"
+              placeholder="Buscar conversa, número..."
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+            />
+          </div>
+          {isAdmin && tenantId && (
+            <button
+              type="button"
+              onClick={handleSyncAvatars}
+              disabled={syncingAvatars}
+              title="Atualizar fotos de perfil"
+              className="w-9 h-9 flex items-center justify-center rounded-xl border border-border/50 bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-50 transition-all"
+            >
+              <RefreshCw size={14} className={cn(syncingAvatars && "animate-spin")} />
+            </button>
+          )}
         </div>
 
         <div className="flex gap-1">
