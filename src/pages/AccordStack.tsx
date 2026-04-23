@@ -192,7 +192,7 @@ export default function AccordStack() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-3rem)] min-h-0 bg-background overflow-hidden">
+    <div className="flex h-full min-h-0 bg-background overflow-hidden">
       <div className={cn(
         "flex-shrink-0 w-full md:w-auto h-full",
         showChatOnly && "hidden md:block",
