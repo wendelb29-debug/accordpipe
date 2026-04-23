@@ -603,6 +603,20 @@ async function handleIncomingMessage(
     }
   }
 
+  // Preview text shown in the conversation list when there's no caption
+  const mediaPreviewLabel: Record<string, string> = {
+    image: "📷 Imagem",
+    audio: "🎵 Áudio",
+    video: "🎥 Vídeo",
+    pdf: "📄 PDF",
+    document: "📄 Documento",
+    file: "📎 Arquivo",
+    sticker: "🌟 Sticker",
+  };
+  const previewText = (message && message.trim())
+    ? message
+    : (mediaPreviewLabel[message_type] || message_type !== "text" ? mediaPreviewLabel[message_type] || "📎 Anexo" : "");
+
   if (!contact) {
     const { data: newContact, error } = await supabase
       .from("whatsapp_contacts")
@@ -612,7 +626,7 @@ async function handleIncomingMessage(
         name: sender_name || primaryPhone,
         avatar_url: sender_avatar || null,
         avatar_synced_at: sender_avatar ? new Date().toISOString() : null,
-        last_message: message,
+        last_message: previewText,
         last_message_at: new Date().toISOString(),
         workspace_id,
         conversation_status: "fila",
@@ -624,7 +638,7 @@ async function handleIncomingMessage(
   } else {
     const updates: any = {
       phone: primaryPhone,
-      last_message: message,
+      last_message: previewText,
       last_message_at: new Date().toISOString(),
     };
     // Reabrir contatos encerrados/finalizados → volta para "fila"
