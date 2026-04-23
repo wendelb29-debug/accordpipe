@@ -864,9 +864,24 @@ export function InboxChat({
             <div className="flex-1 h-px bg-border/40" />
           </div>
           <div className="flex flex-col gap-2">
-            {messages.map((msg) => (
-              <MessageBubble key={msg.id} msg={msg} />
-            ))}
+            {messages.map((msg) => {
+              const originalForReply = msg.replyToMessageId ? messagesById[msg.replyToMessageId] : undefined;
+              return (
+                <MessageBubble
+                  key={msg.id}
+                  msg={msg}
+                  originalForReply={originalForReply}
+                  currentUserId={currentUserId || undefined}
+                  onReply={(m) => {
+                    setReplyTo(m);
+                    requestAnimationFrame(() => taRef.current?.focus());
+                  }}
+                  onReact={handleReact}
+                  onOpenImage={(m) => setLightboxMsg(m)}
+                  onJumpToOriginal={handleJumpToMessage}
+                />
+              );
+            })}
           </div>
         </div>
         <div ref={messagesEndRef} />
