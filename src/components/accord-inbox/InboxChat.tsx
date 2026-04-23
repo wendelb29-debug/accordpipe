@@ -260,21 +260,69 @@ export function InboxChat({
   const [recordSeconds, setRecordSeconds] = useState(0);
   const [recordStream, setRecordStream] = useState<MediaStream | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [hasNewBelow, setHasNewBelow] = useState(false);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const msgsRef = useRef<HTMLDivElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordTimerRef = useRef<number | null>(null);
+  const isAtBottomRef = useRef(true);
+  const prevContactIdRef = useRef<string | null>(null);
+  const prevMsgCountRef = useRef(0);
 
   const isClosed = contact?.conversationStatus === "encerrado" || contact?.conversationStatus === "finalizado";
 
+  // Scroll only inside the message container (never scrolls the page).
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+    const el = msgsRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior });
+    setHasNewBelow(false);
+  };
+
+  // Track if user is near the bottom of the messages list
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, contact?.id]);
+    const el = msgsRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+      const atBottom = distance < 80;
+      isAtBottomRef.current = atBottom;
+      if (atBottom) setHasNewBelow(false);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [contact?.id]);
+
+  // On open conversation: jump instantly to bottom (no smooth, no page scroll)
+  useEffect(() => {
+    if (!contact?.id) return;
+    if (prevContactIdRef.current !== contact.id) {
+      prevContactIdRef.current = contact.id;
+      prevMsgCountRef.current = messages.length;
+      requestAnimationFrame(() => scrollToBottom("auto"));
+      isAtBottomRef.current = true;
+      setHasNewBelow(false);
+    }
+  }, [contact?.id, messages.length]);
+
+  // On new messages: follow if at bottom, otherwise show "new messages" hint
+  useEffect(() => {
+    if (messages.length === prevMsgCountRef.current) return;
+    const grew = messages.length > prevMsgCountRef.current;
+    prevMsgCountRef.current = messages.length;
+    if (!grew) return;
+    if (isAtBottomRef.current) {
+      requestAnimationFrame(() => scrollToBottom("smooth"));
+    } else {
+      const last = messages[messages.length - 1];
+      if (last?.direction !== "outbound") setHasNewBelow(true);
+      else requestAnimationFrame(() => scrollToBottom("smooth"));
+    }
+  }, [messages]);
 
   const send = () => {
     if (!text.trim() || isClosed) return;
