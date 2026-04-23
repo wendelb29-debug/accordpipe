@@ -435,10 +435,8 @@ export function useWhatsAppInbox() {
           const isInbound = newMsg.direction === "inbound";
 
           if (matches) {
-            setMessages(prev => {
-              if (prev.some(m => m.id === newMsg.id)) return prev;
-              return [...prev, newMsg];
-            });
+            console.log("[messages:incoming] source=realtime-INSERT key=", getMessageUniqueKey(newMsg));
+            setMessages(prev => mergeMessagesDedup(prev, [newMsg]));
           }
 
           // Inbound notifications: only when conversation isn't actively open
