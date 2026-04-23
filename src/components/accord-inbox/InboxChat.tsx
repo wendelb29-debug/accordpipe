@@ -174,6 +174,24 @@ function AttachmentIcon({ kind, className }: { kind: AttachmentKind; className?:
   }
 }
 
+async function downloadFileViaBlob(url: string, filename: string) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Download failed");
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+  } catch {
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+}
+
 function AttachmentCard({
   direction, fileName, fileSize, src, mimeType,
 }: {
@@ -189,12 +207,20 @@ function AttachmentCard({
   const sizeLabel = typeof fileSize === "number"
     ? formatFileSize(fileSize)
     : (fileSize || formatFileSize(undefined));
-  const safeName = fileName || `arquivo.${ext.toLowerCase()}`;
+  const safeName = fileName || (src ? `arquivo.${ext.toLowerCase()}` : "Mídia indisponível");
+
+  const handleDownload = (e: React.MouseEvent) => {
+    if (!src) return;
+    e.preventDefault();
+    e.stopPropagation();
+    downloadFileViaBlob(src, safeName);
+  };
 
   const content = (
     <div className={cn(
       "flex items-center gap-3 px-3 py-2.5 rounded-2xl min-w-[240px] max-w-[320px]",
       isOut ? "bg-primary rounded-br-sm" : "bg-muted/80 dark:bg-muted/50 rounded-bl-sm border border-border/40",
+      !src && "opacity-70",
     )}>
       <div className={cn(
         "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
@@ -207,14 +233,21 @@ function AttachmentCard({
           {safeName}
         </p>
         <p className={cn("text-[11px] truncate", isOut ? "text-white/70" : "text-muted-foreground")}>
-          {ext}{sizeLabel ? ` · ${sizeLabel}` : ""}
+          {src ? `${ext}${sizeLabel ? ` · ${sizeLabel}` : ""}` : "Arquivo não disponível para download"}
         </p>
       </div>
       {src && (
-        <Download
-          size={15}
-          className={cn("flex-shrink-0", isOut ? "text-white/80" : "text-muted-foreground")}
-        />
+        <button
+          type="button"
+          onClick={handleDownload}
+          aria-label="Baixar arquivo"
+          className={cn(
+            "flex-shrink-0 p-1.5 rounded-md transition hover:bg-black/10",
+            isOut ? "text-white/90 hover:bg-white/15" : "text-muted-foreground",
+          )}
+        >
+          <Download size={15} />
+        </button>
       )}
     </div>
   );
@@ -225,7 +258,6 @@ function AttachmentCard({
       href={src}
       target="_blank"
       rel="noopener noreferrer"
-      download={safeName}
       title={safeName}
       className="block hover:opacity-90 transition"
     >
@@ -242,10 +274,12 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
 
   // Decide presentation: prioritize message_type, but fall back to mime/url sniffing
   const kind = (() => {
-    if (msg.type === "audio") return "audio" as const;
+    if (msg.type === "audio" || msg.type === "voice" || msg.type === "ptt") return "audio" as const;
     if (msg.type === "image") return "image" as const;
     if (msg.type === "video") return "video" as const;
-    if (msg.mediaUrl || msg.type === "file" || msg.type === "document" || msg.type === "pdf") {
+    const isMediaType =
+      msg.type === "file" || msg.type === "document" || msg.type === "pdf" || msg.type === "media";
+    if (msg.mediaUrl || isMediaType) {
       const k = classifyAttachment({ mime: msg.mimeType, fileName: msg.fileName, url: msg.mediaUrl });
       if (k === "image") return "image" as const;
       if (k === "audio") return "audio" as const;
