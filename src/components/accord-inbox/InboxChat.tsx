@@ -433,7 +433,7 @@ export function InboxChat({
         </div>
       </div>
 
-      <div ref={msgsRef} className="flex-1 overflow-y-auto flex flex-col gap-1.5 py-4 px-5 relative">
+      <div ref={msgsRef} className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-1.5 py-4 px-5 relative">
         <AccordWatermark />
         <div className="relative z-10 flex items-center gap-3 my-2">
           <div className="flex-1 h-px bg-border/40" />
