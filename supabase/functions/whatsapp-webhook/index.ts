@@ -723,21 +723,44 @@ async function handleIncomingMessage(
     }
   }
 
-  // 5. Save message
+  // 5. Save message — dedupe by external_message_id when provided
+  if (external_id) {
+    const { data: dup } = await supabase
+      .from("whatsapp_messages")
+      .select("id")
+      .eq("company_id", company_id)
+      .eq("external_message_id", external_id)
+      .maybeSingle();
+    if (dup) {
+      console.log("[handleIncomingMessage] duplicate external_id, skipping insert", external_id);
+      return new Response(
+        JSON.stringify({ success: true, deduped: true, lead_id: contact.lead_id }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+  }
+
   const { error: msgError } = await supabase
     .from("whatsapp_messages")
     .insert({
       company_id,
       contact_id: contact.id,
       phone: primaryPhone,
-      message,
+      message: message || caption || "",
       direction: "inbound",
       status: "delivered",
       delivered_at: new Date().toISOString(),
       external_message_id: external_id ?? null,
       message_type,
-      media_url,
-      metadata: { external_id: external_id ?? null, provider: provider ?? null },
+      media_url: media_url ?? null,
+      metadata: {
+        external_id: external_id ?? null,
+        provider: provider ?? null,
+        fileName: file_name ?? null,
+        mimeType: mime_type ?? null,
+        fileSize: file_size ?? null,
+        caption: caption ?? null,
+      },
     });
   if (msgError) throw msgError;
 
