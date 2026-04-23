@@ -999,10 +999,40 @@ export function InboxChat({
               </div>
             ) : (
               <div className="flex items-end gap-1 bg-muted/50 border border-border/50 rounded-2xl px-1.5 py-1 focus-within:border-primary/50 focus-within:bg-muted/30 transition-colors">
-                {/* Left actions: attachments + AI */}
+                {/* Left actions: attachments + emoji + AI */}
                 <div className="flex items-center gap-0.5 pb-0.5 flex-shrink-0">
                   <ToolBtn icon={<Paperclip size={16} />} title="Anexar arquivo" onClick={() => fileInputRef.current?.click()} className="w-9 h-9 rounded-full" />
                   <ToolBtn icon={<Image size={16} />} title="Enviar imagem" onClick={() => imageInputRef.current?.click()} className="w-9 h-9 rounded-full" />
+                  <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        title="Inserir emoji"
+                        aria-label="Inserir emoji"
+                        className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                      >
+                        <Smile size={16} />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      side="top"
+                      align="start"
+                      sideOffset={8}
+                      className="p-0 border-0 bg-transparent shadow-2xl w-auto z-50"
+                    >
+                      <EmojiPicker
+                        onEmojiClick={(data) => insertEmoji(data.emoji)}
+                        theme={Theme.AUTO}
+                        emojiStyle={EmojiStyle.NATIVE}
+                        searchPlaceHolder="Buscar emoji..."
+                        skinTonesDisabled
+                        previewConfig={{ showPreview: false }}
+                        height={380}
+                        width={320}
+                        lazyLoadEmojis
+                      />
+                    </PopoverContent>
+                  </Popover>
                   <AiImprovePopover text={text} onApply={(newText) => {
                     setText(newText);
                     requestAnimationFrame(() => {
