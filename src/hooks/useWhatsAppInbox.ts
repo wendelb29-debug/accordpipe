@@ -111,8 +111,14 @@ export function useWhatsAppInbox() {
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [filter, setFilter] = useState<InboxFilter>("all");
   const [loading, setLoading] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<"disconnected" | "connecting" | "connected">("disconnected");
   const [unreadByContact, setUnreadByContact] = useState<Record<string, number>>({});
+
+  // In-memory message cache, isolated per tenant (cleared on tenant switch).
+  // Enables stale-while-revalidate: instant render of previously-loaded conversations.
+  const messagesCacheRef = useRef<Map<string, InboxMessage[]>>(new Map());
+  const cacheTenantRef = useRef<string | null>(null);
   const originalTitleRef = useRef<string>(typeof document !== "undefined" ? document.title : "Accord Stack");
   const [activeIntegration, setActiveIntegration] = useState<{
     id?: string;
