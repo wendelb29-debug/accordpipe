@@ -111,6 +111,8 @@ export default function AccordStack() {
       fileSize,
       mimeType,
       status: m.status,
+      replyToMessageId: m.reply_to_message_id || undefined,
+      reactions: Array.isArray(m.reactions) ? m.reactions : [],
     };
   });
 
