@@ -14,16 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
-const FILTER_LABEL_TO_VALUE: Record<string, InboxFilter> = {
-  Minhas: "mine",
-  Todas: "all",
-  "Não atrib.": "unassigned",
-};
-const FILTER_VALUE_TO_LABEL: Record<InboxFilter, string> = {
-  mine: "Minhas",
-  all: "Todas",
-  unassigned: "Não atrib.",
-};
+type UiFilter = "Todas" | "Não lidas";
 
 export default function AccordStack() {
   const {
@@ -42,6 +33,7 @@ export default function AccordStack() {
   const [demandModalOpen, setDemandModalOpen] = useState(false);
   const [newConvOpen, setNewConvOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<ConversationStatusFilter>("fila");
+  const [uiFilter, setUiFilter] = useState<UiFilter>("Todas");
 
   const selectedContact = contacts.find((c) => c.id === selectedContactId) || null;
   // On mobile, show chat full-screen when a conversation is selected (hide list)
@@ -56,11 +48,14 @@ export default function AccordStack() {
     return true;
   };
 
-  const filteredContacts = contacts.filter((c) =>
-    matchesStatus(c.conversation_status, statusFilter) &&
-    (c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.phone.includes(searchTerm))
-  );
+  const filteredContacts = contacts.filter((c) => {
+    const matchesSearch =
+      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.phone.includes(searchTerm);
+    const matchesUnread =
+      uiFilter === "Todas" ? true : (unreadByContact[c.id] || 0) > 0;
+    return matchesStatus(c.conversation_status, statusFilter) && matchesSearch && matchesUnread;
+  });
 
   // Map InboxContact -> SidebarContact (with unread badge + unread-first ordering)
   const sidebarContacts = filteredContacts
@@ -203,8 +198,8 @@ export default function AccordStack() {
           onSelect={selectContact}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
-          filter={FILTER_VALUE_TO_LABEL[filter]}
-          onFilterChange={(label) => setFilter(FILTER_LABEL_TO_VALUE[label] || "mine")}
+          filter={uiFilter}
+          onFilterChange={(label) => setUiFilter((label as UiFilter) || "Todas")}
           isAdmin={isAdminOrCeo}
           loading={loading}
           statusFilter={statusFilter}

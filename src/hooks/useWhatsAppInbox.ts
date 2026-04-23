@@ -98,7 +98,7 @@ export function useWhatsAppInbox() {
   const [contacts, setContacts] = useState<InboxContact[]>([]);
   const [messages, setMessages] = useState<InboxMessage[]>([]);
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<InboxFilter>("mine");
+  const [filter, setFilter] = useState<InboxFilter>("all");
   const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState<"disconnected" | "connecting" | "connected">("disconnected");
   const [unreadByContact, setUnreadByContact] = useState<Record<string, number>>({});
