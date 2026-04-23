@@ -80,10 +80,10 @@ export function AppLayout({ children }: AppLayoutProps) {
               Complete seu cadastro — Foto de perfil obrigatória *
             </Link>
           )}
-          {!hideHeader && <Header />}
+          {!hideHeader && !isAccordStackRoute && <Header />}
           <main className={cn(
-            "w-full max-w-none flex-1 min-w-0 min-h-0",
-            isAccordStackRoute ? "p-0 overflow-hidden flex flex-col h-full" : (hideHeader ? "p-0" : "p-2 sm:p-3 lg:p-4 2xl:p-5")
+            "w-full max-w-none min-w-0 min-h-0",
+            isAccordStackRoute ? "p-0 overflow-hidden flex flex-col flex-1" : cn("flex-1", hideHeader ? "p-0" : "p-2 sm:p-3 lg:p-4 2xl:p-5")
           )}>
             {children}
           </main>
