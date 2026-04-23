@@ -17,10 +17,11 @@ interface ChatMessage {
   message: string;
   direction: "inbound" | "outbound" | string;
   created_at: string;
-  type?: "text" | "audio" | "image" | "file" | string;
+  type?: "text" | "audio" | "image" | "file" | "document" | "pdf" | "video" | string;
   mediaUrl?: string;
   fileName?: string;
-  fileSize?: string;
+  fileSize?: string | number;
+  mimeType?: string;
   status?: string;
 }
 
