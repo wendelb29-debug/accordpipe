@@ -1088,6 +1088,14 @@ export function InboxChat({
           </div>
         )}
       </div>
+      {lightboxMsg && lightboxMsg.mediaUrl && (
+        <ImageLightbox
+          src={lightboxMsg.mediaUrl}
+          fileName={lightboxMsg.fileName}
+          createdAt={lightboxMsg.created_at}
+          onClose={() => setLightboxMsg(null)}
+        />
+      )}
     </div>
   );
 }
