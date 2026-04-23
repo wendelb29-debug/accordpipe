@@ -193,10 +193,18 @@ export function ContactDetailSidebar({ contact, onClose, onCreateDemand, company
 
             {lead ? (
               <div className="rounded-lg border border-border p-3 space-y-2 bg-muted/30">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-foreground">{lead.company_name}</span>
-                  <Badge variant="outline" className="text-[9px] h-4">{lead.stage}</Badge>
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-xs font-medium text-foreground line-clamp-2">{lead.company_name}</span>
+                  {lead.column_name && (
+                    <Badge variant="outline" className="text-[9px] h-4 shrink-0">{lead.column_name}</Badge>
+                  )}
                 </div>
+                {lead.workspace_name && (
+                  <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                    <KanbanSquare className="h-3 w-3" />
+                    {lead.workspace_name}
+                  </div>
+                )}
                 {lead.contact_name && (
                   <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                     <User className="h-3 w-3" />
@@ -206,7 +214,11 @@ export function ContactDetailSidebar({ contact, onClose, onCreateDemand, company
                 <Button
                   size="sm" variant="ghost"
                   className="h-7 w-full text-xs gap-1.5 text-primary hover:text-primary"
-                  onClick={() => navigate(`/atendimento?lead=${lead.id}`)}
+                  onClick={() => navigate(
+                    lead.workspace_id
+                      ? `/atendimento?workspace=${lead.workspace_id}&lead=${lead.id}`
+                      : `/atendimento?lead=${lead.id}`
+                  )}
                 >
                   <ExternalLink className="h-3 w-3" /> Abrir no CRM
                 </Button>
@@ -216,7 +228,11 @@ export function ContactDetailSidebar({ contact, onClose, onCreateDemand, company
                 {relatedLeads.slice(0, 3).map(rl => (
                   <button
                     key={rl.id}
-                    onClick={() => navigate(`/atendimento?lead=${rl.id}`)}
+                    onClick={() => navigate(
+                      rl.workspace_id
+                        ? `/atendimento?workspace=${rl.workspace_id}&lead=${rl.id}`
+                        : `/atendimento?lead=${rl.id}`
+                    )}
                     className="w-full flex items-center justify-between p-2 rounded-lg border border-border hover:bg-muted/50 transition-colors"
                   >
                     <span className="text-xs font-medium text-foreground truncate">{rl.company_name}</span>
