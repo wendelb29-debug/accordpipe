@@ -6,6 +6,8 @@ import ReactMarkdown from "react-markdown";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useInboxNotifications, type InboxNotification } from "@/hooks/useInboxNotifications";
+import { QuickWhatsAppChat } from "./QuickWhatsAppChat";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -138,10 +140,14 @@ export function AccordAIChat() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const { profile, activeCompany } = useAuth();
+  const { profile, activeCompany, activeCompanyId } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
   const bottomOffset = useBottomOffset(isMobile);
+
+  // Smart launcher — inbox notifications
+  const { preview, pending, totalUnread, clearPreview, dismissContact } = useInboxNotifications();
+  const [activeQuickChat, setActiveQuickChat] = useState<InboxNotification | null>(null);
 
   const { pageName, quickActions } = getContextForRoute(location.pathname);
 
@@ -293,6 +299,36 @@ export function AccordAIChat() {
   const extraClearance = needsExtraClearance ? (isMobile ? 80 : 90) : 0;
   const safeBottom = baseBottom + bottomOffset + extraClearance;
 
+  // Smart launcher mode: quick_chat > new_message_preview > ai
+  const launcherMode: "ai" | "new_message_preview" | "quick_chat" =
+    activeQuickChat ? "quick_chat" : (preview ? "new_message_preview" : "ai");
+  const hasPending = pending.length > 0;
+  const showWhatsAppLook = launcherMode !== "ai" || hasPending;
+
+  const openQuickChat = (notif: InboxNotification) => {
+    setActiveQuickChat(notif);
+    setOpen(false);
+    clearPreview();
+  };
+
+  const closeQuickChat = () => {
+    if (activeQuickChat) dismissContact(activeQuickChat.contact_id);
+    setActiveQuickChat(null);
+  };
+
+  // Quick chat takes over the floating slot
+  if (activeQuickChat && activeCompanyId) {
+    return (
+      <QuickWhatsAppChat
+        notification={activeQuickChat}
+        companyId={activeCompanyId}
+        onClose={closeQuickChat}
+        bottomOffset={safeBottom}
+        isMobile={isMobile}
+      />
+    );
+  }
+
   // ── Minimized state: show a tiny pill ──
   if (assistantState === "minimized") {
     return (
@@ -307,23 +343,77 @@ export function AccordAIChat() {
       >
         <div
           className="h-6 w-6 rounded-full flex items-center justify-center shrink-0"
-          style={{ background: "linear-gradient(135deg, #3B3F9C, #7A3FF2)" }}
+          style={{
+            background: showWhatsAppLook
+              ? "linear-gradient(135deg, #10b981, #059669)"
+              : "linear-gradient(135deg, #3B3F9C, #7A3FF2)",
+          }}
         >
           <MessageSquare className="h-3 w-3 text-white" />
         </div>
         <span className="text-[10px] font-medium text-muted-foreground group-hover:text-foreground transition-colors hidden sm:inline">
-          IA
+          {showWhatsAppLook ? `${totalUnread}` : "IA"}
         </span>
       </button>
     );
   }
 
+  const handleFabClick = () => {
+    if (preview) {
+      openQuickChat(preview);
+      return;
+    }
+    if (hasPending) {
+      openQuickChat(pending[pending.length - 1]);
+      return;
+    }
+    setOpen((v) => !v);
+  };
+
   // ── Expanded state ──
   return (
     <>
+      {/* Preview balloon (shown for ~10s on new inbound messages) */}
+      {preview && !open && (
+        <button
+          onClick={() => openQuickChat(preview)}
+          className={cn(
+            "fixed z-50 flex items-start gap-2.5 rounded-2xl border border-border bg-background/95 backdrop-blur-md shadow-xl px-3 py-2.5 text-left transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] animate-in slide-in-from-bottom-2 fade-in",
+            isMobile ? "max-w-[calc(100vw-32px)]" : "max-w-[300px]"
+          )}
+          style={{
+            bottom: `${safeBottom + (isMobile ? 56 : 68)}px`,
+            right: isMobile ? 16 : 24,
+          }}
+        >
+          <div className="h-9 w-9 rounded-full bg-emerald-500/15 flex items-center justify-center overflow-hidden shrink-0">
+            {preview.contact_avatar ? (
+              <img src={preview.contact_avatar} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <MessageSquare className="h-4 w-4 text-emerald-600" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold truncate text-foreground">
+                {preview.contact_name}
+              </p>
+              {preview.unread_count > 1 && (
+                <span className="text-[10px] font-bold bg-emerald-500 text-white rounded-full px-1.5 py-0.5 shrink-0">
+                  {preview.unread_count}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground truncate mt-0.5">
+              {preview.last_message_preview}
+            </p>
+          </div>
+        </button>
+      )}
+
       {/* FAB */}
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={handleFabClick}
         className={cn(
           "fixed z-40 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 group",
           "text-primary-foreground",
@@ -332,12 +422,23 @@ export function AccordAIChat() {
         style={{
           bottom: `${safeBottom}px`,
           right: isMobile ? 16 : 24,
-          background: "linear-gradient(135deg, #3B3F9C, #7A3FF2)",
+          background: showWhatsAppLook
+            ? "linear-gradient(135deg, #10b981, #059669)"
+            : "linear-gradient(135deg, #3B3F9C, #7A3FF2)",
         }}
-        title="✨ Assistente IA"
+        title={showWhatsAppLook ? "Nova mensagem" : "✨ Assistente IA"}
       >
         {open ? (
           <X className="h-5 w-5 sm:h-6 sm:w-6" />
+        ) : showWhatsAppLook ? (
+          <div className="relative">
+            <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />
+            {totalUnread > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 border-2 border-background text-white text-[10px] font-bold flex items-center justify-center">
+                {totalUnread > 99 ? "99+" : totalUnread}
+              </span>
+            )}
+          </div>
         ) : (
           <div className="relative">
             <Bot className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -345,6 +446,7 @@ export function AccordAIChat() {
           </div>
         )}
       </button>
+
 
       {/* Chat window */}
       {open && (
