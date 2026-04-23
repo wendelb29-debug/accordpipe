@@ -19,6 +19,10 @@ type NormalizedEvent =
       message_type?: string;
       media_url?: string | null;
       external_id?: string | null;
+      file_name?: string | null;
+      mime_type?: string | null;
+      file_size?: number | null;
+      caption?: string | null;
     }
   | { kind: "message_status"; external_id: string; status: "sent" | "delivered" | "read" }
   | { kind: "instance_status"; status: string; phone?: string | null }
