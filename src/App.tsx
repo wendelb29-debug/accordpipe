@@ -52,6 +52,9 @@ import MeusTenants from "./pages/MeusTenants";
 import Academy from "./pages/Academy";
 import GestaoTenants from "./pages/GestaoTenants";
 import WhatsAppConnection from "./pages/WhatsAppConnection";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import RefundPolicy from "./pages/RefundPolicy";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1 } },
@@ -364,6 +367,12 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/politica-de-privacidade" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/termos" element={<TermsOfService />} />
+            <Route path="/refund-policy" element={<RefundPolicy />} />
+            <Route path="/reembolso" element={<RefundPolicy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

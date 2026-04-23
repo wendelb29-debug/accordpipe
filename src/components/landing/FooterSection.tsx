@@ -1,11 +1,12 @@
 import { Mail, MapPin } from "lucide-react";
+import { Link } from "react-router-dom";
 import accordLogo from "@/assets/accord-logo.png";
 
 export function FooterSection() {
   return (
     <footer className="border-t border-[rgba(255,255,255,0.04)]" style={{ background: '#070A12' }}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8 sm:py-12">
-        <div className="grid gap-6 sm:gap-8 md:grid-cols-3">
+        <div className="grid gap-6 sm:gap-8 md:grid-cols-4">
           <div>
             <div className="flex items-center gap-2 mb-3 sm:mb-4">
               <img src={accordLogo} alt="ACCORD" className="h-7 sm:h-8 w-auto brightness-200" width="38" height="32" />
@@ -21,6 +22,14 @@ export function FooterSection() {
               <li><a href="#features" className="hover:text-[#D1D5DB] transition-colors duration-150">Funcionalidades</a></li>
               <li><a href="#faq" className="hover:text-[#D1D5DB] transition-colors duration-150">Perguntas Frequentes</a></li>
               <li><a href="#planos" className="hover:text-[#D1D5DB] transition-colors duration-150">Planos</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-xs sm:text-sm font-semibold text-[#E5E7EB] mb-3 sm:mb-4">Legal</h4>
+            <ul className="space-y-2 text-xs sm:text-sm text-[#6B7280]">
+              <li><Link to="/terms" className="hover:text-[#D1D5DB] transition-colors duration-150">Termos de Uso</Link></li>
+              <li><Link to="/privacy" className="hover:text-[#D1D5DB] transition-colors duration-150">Política de Privacidade</Link></li>
+              <li><Link to="/refund-policy" className="hover:text-[#D1D5DB] transition-colors duration-150">Política de Reembolso</Link></li>
             </ul>
           </div>
           <div>
