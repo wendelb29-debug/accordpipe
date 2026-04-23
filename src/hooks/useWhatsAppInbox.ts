@@ -167,12 +167,9 @@ export function useWhatsAppInbox() {
       return;
     }
 
-    const deduped = (data || []).reduce<InboxMessage[]>((acc, item) => {
-      if (!acc.some((msg) => msg.id === item.id)) acc.push(item as InboxMessage);
-      return acc;
-    }, []);
+    const deduped = dedupMessages((data || []) as InboxMessage[]);
 
-    console.log("[inbox] fetched", deduped.length, "messages for contact", contactId);
+    console.log("[inbox] fetched", deduped.length, "messages for contact", contactId, "(source: fetch)");
     setMessages(deduped);
   }, [companyId]);
 
