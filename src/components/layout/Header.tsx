@@ -81,8 +81,12 @@ export function Header() {
 
   return (
     <header
-      className="sticky top-0 z-30 flex items-center justify-between border-b border-border/50 bg-card/95 backdrop-blur-xl px-2 sm:px-4 lg:px-6 shadow-sm gap-1 sm:gap-2 h-14 sm:h-12"
-      style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingLeft: 'max(0.5rem, env(safe-area-inset-left, 0px))', paddingRight: 'max(0.5rem, env(safe-area-inset-right, 0px))' }}
+      className="sticky top-0 z-30 flex items-center justify-between border-b border-border/50 bg-card/95 backdrop-blur-xl px-2 sm:px-4 lg:px-6 shadow-sm gap-1 sm:gap-2 min-h-[56px] sm:h-12 box-content"
+      style={{
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingLeft: 'max(0.5rem, env(safe-area-inset-left, 0px))',
+        paddingRight: 'max(0.5rem, env(safe-area-inset-right, 0px))',
+      }}
     >
       {isMobile && <MobileSidebar />}
 
