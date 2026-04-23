@@ -262,6 +262,7 @@ export function InboxChat({
   const [uploading, setUploading] = useState(false);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const msgsRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -272,8 +273,8 @@ export function InboxChat({
   const isClosed = contact?.conversationStatus === "encerrado" || contact?.conversationStatus === "finalizado";
 
   useEffect(() => {
-    if (msgsRef.current) msgsRef.current.scrollTop = msgsRef.current.scrollHeight;
-  }, [messages]);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, contact?.id]);
 
   const send = () => {
     if (!text.trim() || isClosed) return;
@@ -433,9 +434,9 @@ export function InboxChat({
         </div>
       </div>
 
-      <div ref={msgsRef} className="flex-1 min-h-0 overflow-y-auto relative bg-muted/20 dark:bg-background/60">
+      <div ref={msgsRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col gap-1.5 py-4 px-5 relative scroll-smooth bg-muted/20 dark:bg-background/60">
         <AccordWatermark />
-        <div className="relative z-10 max-w-4xl mx-auto w-full flex flex-col gap-2 py-5 px-4 sm:px-6">
+        <div className="relative z-10 max-w-4xl mx-auto w-full flex flex-col gap-2">
           <div className="flex items-center gap-3 my-2">
             <div className="flex-1 h-px bg-border/40" />
             <span className="text-[11px] text-muted-foreground/70 px-2 bg-background rounded-full border border-border/30 py-0.5">
@@ -447,6 +448,7 @@ export function InboxChat({
             {messages.map((msg) => (
               <MessageBubble key={msg.id} msg={msg} />
             ))}
+            <div ref={messagesEndRef} />
           </div>
         </div>
       </div>
