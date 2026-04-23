@@ -1,12 +1,16 @@
 import { useState, useRef, useEffect } from "react";
 import {
   Search, ArrowLeftRight, Info, X, Paperclip, Image, Mic, Trash2,
-  Send, Play, Pause, FileText,
+  Send, Play, Pause, FileText, FileSpreadsheet, FileArchive, FileImage, FileVideo, FileAudio, File as FileIcon, Download,
   MoreVertical, Users, Check, CheckCheck, ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AiImprovePopover } from "./AiImprovePopover";
 import { AudioVisualizer } from "./AudioVisualizer";
+import {
+  linkifyText, classifyAttachment, formatFileSize, extensionLabel,
+  type AttachmentKind,
+} from "@/lib/messageContent";
 
 interface ChatMessage {
   id: string;
