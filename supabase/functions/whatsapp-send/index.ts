@@ -30,8 +30,8 @@ async function sendUazapiReaction(
       headers: { token: instanceToken, "Content-Type": "application/json" },
       body: JSON.stringify({
         number: normalizePhone(phone),
-        messageId: targetMessageId,
-        emoji: reaction,
+        id: targetMessageId,
+        text: reaction,
       }),
     });
     const rawText = await res.text();
