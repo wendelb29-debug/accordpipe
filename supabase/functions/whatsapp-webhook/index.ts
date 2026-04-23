@@ -867,6 +867,16 @@ async function handleIncomingMessage(
     }
   }
 
+  // For Uazapi inbound media, fetch the decrypted file and re-upload to Supabase Storage so
+  // the frontend can render/download it (the original `mmg.whatsapp.net` URL is encrypted).
+  let resolvedMediaUrl = media_url ?? null;
+  if (provider === "uazapi" && message_type !== "text" && external_id) {
+    const stored = await downloadUazapiMediaToStorage(
+      supabase, company_id, external_id, media_url, mime_type, file_name,
+    );
+    if (stored) resolvedMediaUrl = stored;
+  }
+
   const { error: msgError } = await supabase
     .from("whatsapp_messages")
     .insert({
