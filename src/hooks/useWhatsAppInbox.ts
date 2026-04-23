@@ -162,14 +162,24 @@ export function useWhatsAppInbox() {
     setLoading(false);
   }, [companyId, filter, user?.id]);
 
-  const fetchMessages = useCallback(async (contactId: string, contactPhone?: string | null) => {
+  // Invalidate cache when tenant changes (multi-tenant isolation)
+  useEffect(() => {
+    if (cacheTenantRef.current !== companyId) {
+      messagesCacheRef.current.clear();
+      cacheTenantRef.current = companyId ?? null;
+    }
+  }, [companyId]);
+
+  const fetchMessages = useCallback(async (
+    contactId: string,
+    contactPhone?: string | null,
+    opts?: { background?: boolean },
+  ) => {
     if (!companyId) return;
 
     const phoneVariants = buildPhoneVariants(contactPhone);
     const phoneFilters = phoneVariants.map((phone) => `phone.eq.${phone}`);
     const orFilter = [`contact_id.eq.${contactId}`, ...phoneFilters].join(",");
-
-    console.log("[inbox] fetchMessages", { contactId, contactPhone, phoneVariants, companyId, orFilter });
 
     const { data, error } = await supabase
       .from("whatsapp_messages")
@@ -180,13 +190,20 @@ export function useWhatsAppInbox() {
 
     if (error) {
       console.error("[inbox] Error fetching messages:", error);
+      if (!opts?.background) setLoadingMessages(false);
       return;
     }
 
     const deduped = dedupMessages((data || []) as unknown as InboxMessage[]);
 
-    console.log("[inbox] fetched", deduped.length, "messages for contact", contactId, "(source: fetch)");
-    setMessages(deduped);
+    // Cache results for instant re-open
+    messagesCacheRef.current.set(contactId, deduped);
+
+    // Only apply to UI if user is still on this contact (avoid race when switching fast)
+    if (selectedContactIdRef.current === contactId) {
+      setMessages(deduped);
+    }
+    if (!opts?.background) setLoadingMessages(false);
   }, [companyId]);
 
   const selectContact = useCallback((contactId: string | null) => {
@@ -199,9 +216,22 @@ export function useWhatsAppInbox() {
         delete next[contactId];
         return next;
       });
+
       const contact = contacts.find((item) => item.id === contactId);
-      fetchMessages(contactId, contact?.phone);
-      // Fire-and-forget: sync name + avatar from UazAPI
+      const cached = messagesCacheRef.current.get(contactId);
+
+      if (cached && cached.length > 0) {
+        // Stale-while-revalidate: paint cached messages instantly, refresh in background
+        setMessages(cached);
+        setLoadingMessages(false);
+        fetchMessages(contactId, contact?.phone, { background: true });
+      } else {
+        setMessages([]);
+        setLoadingMessages(true);
+        fetchMessages(contactId, contact?.phone);
+      }
+
+      // Fire-and-forget: sync name + avatar from provider
       supabase.functions.invoke("whatsapp-sync-contact", { body: { contact_id: contactId } })
         .then((res: any) => {
           if (res?.data?.success && (res.data.avatar_url || res.data.name)) {
@@ -211,6 +241,7 @@ export function useWhatsAppInbox() {
         .catch(() => undefined);
     } else {
       setMessages([]);
+      setLoadingMessages(false);
     }
   }, [contacts, fetchMessages, fetchContacts]);
 
