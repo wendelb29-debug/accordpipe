@@ -41,6 +41,7 @@ import AssinarPdf from "./pages/AssinarPdf";
 import ValidarDocumento from "./pages/ValidarDocumento";
 import Servidores from "./pages/Servidores";
 import NovoServidor from "./pages/NovoServidor";
+import EditarTenant from "./pages/EditarTenant";
 import AceitarConvite from "./pages/AceitarConvite";
 import AssinarDocumento from "./pages/AssinarDocumento";
 import AuditLogs from "./pages/AuditLogs";
@@ -307,6 +308,19 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            {/* Dedicated edit route — never creates a tenant, only edits */}
+            <Route
+              path="/tenant/:id/editar"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <EditarTenant />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            {/* Legacy redirect: /servidores/novo?id=... still works, but new
+                links from the UI go through /tenant/:id/editar */}
             <Route
               path="/configuracoes/auditoria"
               element={
