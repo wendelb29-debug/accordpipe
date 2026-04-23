@@ -42,18 +42,17 @@ export default function Home() {
       <BirthdayCelebration />
 
       {/* Top bar */}
-      <div className="flex items-center justify-between">
-        <div />
-        <div className="flex gap-2">
-          {isAdmin && (
-            <Button variant="outline" size="sm" className="gap-2" onClick={() => setManageOpen(true)}>
-              <Megaphone className="h-4 w-4" /> Comunicados
-            </Button>
-          )}
-          <Button size="sm" className="gap-2 gradient-primary text-primary-foreground shadow-md" onClick={() => setSupportOpen(true)}>
-            <HeadphonesIcon className="h-4 w-4" /> Suporte
+      <div className="flex items-center justify-end gap-2">
+        {isAdmin && (
+          <Button variant="outline" size="sm" className="gap-2 h-9" onClick={() => setManageOpen(true)}>
+            <Megaphone className="h-4 w-4" />
+            <span className="hidden sm:inline">Comunicados</span>
           </Button>
-        </div>
+        )}
+        <Button size="sm" className="gap-2 h-9 gradient-primary text-primary-foreground shadow-md" onClick={() => setSupportOpen(true)}>
+          <HeadphonesIcon className="h-4 w-4" />
+          <span className="hidden sm:inline">Suporte</span>
+        </Button>
       </div>
 
       {/* Birthday banner (missing birth date) */}
