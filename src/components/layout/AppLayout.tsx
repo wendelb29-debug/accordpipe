@@ -83,7 +83,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           {!hideHeader && <Header />}
           <main className={cn(
             "w-full max-w-none flex-1 min-w-0 min-h-0",
-            isAccordStackRoute ? "p-0 overflow-hidden flex flex-col" : (hideHeader ? "p-0" : "p-2 sm:p-3 lg:p-4 2xl:p-5")
+            isAccordStackRoute ? "p-0 overflow-hidden flex flex-col h-full" : (hideHeader ? "p-0" : "p-2 sm:p-3 lg:p-4 2xl:p-5")
           )}>
             {children}
           </main>
