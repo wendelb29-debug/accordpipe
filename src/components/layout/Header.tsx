@@ -138,7 +138,7 @@ export function Header() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="rounded-xl h-9 gap-2.5 px-2 hover:bg-muted/60">
+            <Button variant="ghost" className="rounded-xl h-10 sm:h-9 gap-2.5 px-1.5 sm:px-2 hover:bg-muted/60">
               {loading ? (
                 <Skeleton className="hidden md:block h-4 w-20 rounded" />
               ) : profile ? (
@@ -153,7 +153,7 @@ export function Header() {
                   )}
                 </div>
               ) : null}
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg overflow-hidden" style={{ background: 'linear-gradient(135deg, #2563EB, #7A3FF2)' }}>
+              <div className="flex h-9 w-9 sm:h-8 sm:w-8 items-center justify-center rounded-lg overflow-hidden" style={{ background: 'linear-gradient(135deg, #2563EB, #7A3FF2)' }}>
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
                 ) : (
