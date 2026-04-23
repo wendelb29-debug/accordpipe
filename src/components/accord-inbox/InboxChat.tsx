@@ -1017,19 +1017,20 @@ export function InboxChat({
                       side="top"
                       align="start"
                       sideOffset={8}
-                      className="p-0 border-0 bg-transparent shadow-2xl w-auto z-50"
+                      className="p-2 w-72 z-50 bg-popover border border-border shadow-2xl"
                     >
-                      <EmojiPicker
-                        onEmojiClick={(data) => insertEmoji(data.emoji)}
-                        theme={Theme.AUTO}
-                        emojiStyle={EmojiStyle.NATIVE}
-                        searchPlaceHolder="Buscar emoji..."
-                        skinTonesDisabled
-                        previewConfig={{ showPreview: false }}
-                        height={380}
-                        width={320}
-                        lazyLoadEmojis
-                      />
+                      <div className="grid grid-cols-8 gap-1 max-h-64 overflow-y-auto">
+                        {EMOJI_LIST.map((e) => (
+                          <button
+                            key={e}
+                            type="button"
+                            onClick={() => { insertEmoji(e); }}
+                            className="w-8 h-8 rounded-md flex items-center justify-center text-xl hover:bg-muted transition-colors"
+                          >
+                            {e}
+                          </button>
+                        ))}
+                      </div>
                     </PopoverContent>
                   </Popover>
                   <AiImprovePopover text={text} onApply={(newText) => {
