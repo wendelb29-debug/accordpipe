@@ -889,7 +889,7 @@ async function handleIncomingMessage(
       delivered_at: new Date().toISOString(),
       external_message_id: external_id ?? null,
       message_type,
-      media_url: media_url ?? null,
+      media_url: resolvedMediaUrl,
       metadata: {
         external_id: external_id ?? null,
         provider: provider ?? null,
