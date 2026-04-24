@@ -542,10 +542,11 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
       </div>
 
       {/* Kanban Columns */}
-      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+      <div className="flex-1 min-h-0 flex flex-col w-full max-w-full">
         <div
           ref={pipelineRef}
-          className="flex flex-1 min-h-0 items-stretch gap-2 px-2 pb-0 overflow-x-auto overflow-y-hidden cursor-grab [&::-webkit-scrollbar]:h-[4px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gradient-to-r [&::-webkit-scrollbar-thumb]:from-[hsl(var(--primary))] [&::-webkit-scrollbar-thumb]:to-[hsl(263,87%,60%)]"
+          style={{ scrollBehavior: 'smooth', scrollbarWidth: 'thin' }}
+          className="flex flex-1 min-h-0 items-stretch gap-2 pl-2 pr-6 pb-0 w-full max-w-full overflow-x-auto overflow-y-hidden cursor-grab [&::-webkit-scrollbar]:h-[6px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gradient-to-r [&::-webkit-scrollbar-thumb]:from-[hsl(var(--primary))] [&::-webkit-scrollbar-thumb]:to-[hsl(263,87%,60%)]"
           onMouseDown={handlePipelineMouseDown}
           onMouseMove={handlePipelineMouseMove}
           onMouseUp={handlePipelineMouseUp}
