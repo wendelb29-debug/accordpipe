@@ -460,10 +460,10 @@ function MessageBubble({
         </div>
       ) : (
         <div className={cn(
-          "px-3.5 py-2 rounded-2xl text-[13px] leading-relaxed break-words whitespace-pre-wrap",
+          "relative px-3.5 pt-2 pb-1.5 rounded-2xl text-[13px] leading-relaxed break-words whitespace-pre-wrap shadow-sm transition-shadow hover:shadow-md",
           isOut
-            ? "bg-primary text-primary-foreground rounded-br-sm"
-            : "bg-background dark:bg-muted/50 text-foreground rounded-bl-sm border border-border/40",
+            ? "bg-primary text-primary-foreground rounded-br-md ring-1 ring-primary/20"
+            : "bg-card text-foreground rounded-bl-md border border-border/60",
         )}>
           {originalForReply && (
             <ReplyPreviewBlock
@@ -472,7 +472,21 @@ function MessageBubble({
               onClick={() => onJumpToOriginal(originalForReply.id)}
             />
           )}
-          {linkifyText(msg.message)}
+          <div className="pr-12">{linkifyText(msg.message)}</div>
+          <div className={cn(
+            "absolute bottom-1 right-2 flex items-center gap-1 text-[10px] leading-none",
+            isOut ? "text-primary-foreground/70" : "text-muted-foreground",
+          )}>
+            <span>{time}</span>
+            {isOut && (() => {
+              const s = msg.status;
+              if (s === "read") return <CheckCheck size={11} className="text-emerald-300" />;
+              if (s === "delivered") return <CheckCheck size={11} className="opacity-80" />;
+              if (s === "failed") return <span className="text-red-300">!</span>;
+              if (s === "sending") return <span className="opacity-60">⋯</span>;
+              return <Check size={11} className="opacity-80" />;
+            })()}
+          </div>
         </div>
       )}
 
