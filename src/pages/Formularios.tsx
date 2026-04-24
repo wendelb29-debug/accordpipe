@@ -17,7 +17,7 @@ import { slugify } from "@/lib/slugify";
 import { toast } from "sonner";
 
 export default function Formularios() {
-  const { forms, loading, createForm, updateForm, deleteForm } = useCrmForms();
+  const { forms, loading, createForm, updateForm, deleteForm, duplicateForm } = useCrmForms();
   const { workspaces } = useWorkspaceContext();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingForm, setEditingForm] = useState<CrmForm | null>(null);
