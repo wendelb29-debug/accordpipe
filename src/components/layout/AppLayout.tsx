@@ -60,8 +60,9 @@ export function AppLayout({ children }: AppLayoutProps) {
           "transition-all duration-300 min-w-0 flex w-full max-w-full flex-col min-h-0 overflow-hidden",
           isAccordStackRoute ? "h-full overflow-hidden" : "min-h-screen",
           isMobile || isAccordStack ? "pl-0" : "pl-0"
-        )}>
-          
+        )}
+        style={desktopMainStyle}>
+
           {/* Tenant billing alert banner */}
           <TenantBillingBanner />
 
