@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import accordLogo from "@/assets/accord-logo-vector.png";
+import accordLogo from "@/assets/accord-logo-2025.png";
 
 interface PublicForm {
   id: string;
