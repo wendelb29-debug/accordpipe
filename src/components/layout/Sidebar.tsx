@@ -259,9 +259,9 @@ export function Sidebar() {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className={cn(
-        "fixed left-0 top-0 z-40 h-screen border-r border-sidebar-border bg-sidebar flex flex-col",
+        "fixed left-0 top-0 z-40 h-screen border-r border-sidebar-border bg-sidebar flex flex-col overflow-hidden",
         "transition-[width] duration-300 ease-in-out",
-        collapsed ? "w-[60px]" : "w-[232px]"
+        collapsed ? "w-[56px] min-w-[56px]" : "w-[232px] min-w-[232px]"
       )}
     >
       {/* Logo */}
