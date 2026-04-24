@@ -419,8 +419,8 @@ function MessageBubble({
           tabIndex={0}
           onClick={(e) => { e.stopPropagation(); if (msg.mediaUrl) onOpenImage(msg); }}
           className={cn(
-            "rounded-2xl overflow-hidden block cursor-zoom-in",
-            isOut ? "rounded-br-sm" : "rounded-bl-sm border border-border/40",
+            "rounded-2xl overflow-hidden block cursor-zoom-in shadow-sm hover:shadow-md transition-shadow",
+            isOut ? "rounded-br-md ring-1 ring-primary/20" : "rounded-bl-md border border-border/60",
           )}
         >
           {originalForReply && (
