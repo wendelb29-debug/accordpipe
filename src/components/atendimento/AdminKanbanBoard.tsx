@@ -138,9 +138,9 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-muted/30">
+    <div className="flex h-full min-h-0 w-full max-w-full flex-col overflow-hidden bg-muted/30">
       {/* Summary Bar */}
-      <div className="px-4 py-3 flex items-center gap-3">
+      <div className="flex w-full max-w-full items-center gap-3 overflow-hidden px-4 py-3">
         <div className="bg-card rounded-xl border border-border/50 px-4 py-2.5 shadow-sm">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Validação de Clientes</p>
           <p className="text-xl font-bold text-foreground mt-0.5">{filteredLeads.length} <span className="text-sm font-normal text-muted-foreground">pendentes</span></p>
@@ -150,7 +150,7 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
       {/* Kanban Columns */}
       <div
         ref={pipelineRef}
-        className="flex gap-3 px-4 pb-4 flex-1 min-h-0 overflow-x-auto cursor-grab"
+        className="flex w-full max-w-full flex-1 min-h-0 gap-2 overflow-x-auto overflow-y-hidden cursor-grab box-border px-3 pb-4"
         onMouseDown={handlePipelineMouseDown}
         onMouseMove={handlePipelineMouseMove}
         onMouseUp={handlePipelineMouseUp}
@@ -165,7 +165,7 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
             <div
               key={stage.id}
               className={cn(
-                "flex-shrink-0 w-[280px] rounded-2xl flex flex-col border transition-all duration-200",
+                "flex-[0_0_220px] min-w-[220px] max-w-[240px] rounded-2xl flex flex-col border transition-all duration-200",
                 colors.border,
                 colors.bg,
                 dragOverStage === stage.id && "ring-2 ring-primary/60 scale-[1.01]"
