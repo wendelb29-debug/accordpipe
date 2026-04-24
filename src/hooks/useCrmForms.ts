@@ -197,5 +197,29 @@ export function useCrmForms() {
     return true;
   };
 
-  return { forms, loading, createForm, updateForm, deleteForm, refetch: fetchForms };
+  const duplicateForm = async (id: string) => {
+    const original = forms.find((f) => f.id === id);
+    if (!original) {
+      toast.error("Formulário não encontrado");
+      return null;
+    }
+    return await createForm({
+      name: `${original.name} (cópia)`,
+      description: original.description || undefined,
+      fields: original.fields,
+      workspace_id: original.workspace_id || undefined,
+      tags: original.tags || undefined,
+      slug: original.slug ? `${original.slug}-copia` : undefined,
+      landing_page_enabled: original.landing_page_enabled,
+      headline: original.headline || undefined,
+      subheadline: original.subheadline || undefined,
+      cta_text: original.cta_text || undefined,
+      thank_you_message: original.thank_you_message || undefined,
+      redirect_url_after_submit: original.redirect_url_after_submit || undefined,
+      seo_title: original.seo_title || undefined,
+      seo_description: original.seo_description || undefined,
+    });
+  };
+
+  return { forms, loading, createForm, updateForm, deleteForm, duplicateForm, refetch: fetchForms };
 }

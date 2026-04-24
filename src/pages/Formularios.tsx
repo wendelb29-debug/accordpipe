@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Copy, Check, Trash2, Edit2, Eye, EyeOff, Code2, BarChart3, Loader2, FileText, ExternalLink, Globe } from "lucide-react";
+import { Plus, Copy, Check, Trash2, Edit2, Eye, EyeOff, Code2, BarChart3, Loader2, FileText, ExternalLink, Globe, Copy as CopyIcon, Files } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +17,7 @@ import { slugify } from "@/lib/slugify";
 import { toast } from "sonner";
 
 export default function Formularios() {
-  const { forms, loading, createForm, updateForm, deleteForm } = useCrmForms();
+  const { forms, loading, createForm, updateForm, deleteForm, duplicateForm } = useCrmForms();
   const { workspaces } = useWorkspaceContext();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingForm, setEditingForm] = useState<CrmForm | null>(null);
@@ -212,92 +212,137 @@ export default function Formularios() {
           <CardContent className="p-12 text-center">
             <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
             <h3 className="text-lg font-semibold mb-1">Nenhum formulário criado</h3>
-            <p className="text-sm text-muted-foreground mb-4">Crie seu primeiro formulário para começar a capturar leads.</p>
+            <p className="text-sm text-muted-foreground mb-4">Crie seu primeiro formulário para começar a capturar leads de tráfego pago.</p>
             <Button onClick={openNew} className="gap-2">
               <Plus className="h-4 w-4" /> Criar Formulário
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead className="hidden md:table-cell">Workspace</TableHead>
-                <TableHead className="hidden sm:table-cell">Campos</TableHead>
-                <TableHead className="text-center">Leads</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {forms.map((form) => (
-                <TableRow key={form.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{form.name}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {forms.map((form) => {
+            const url = getFormUrl(form);
+            const wsName = workspaces.find((ws) => ws.id === form.workspace_id)?.name || "—";
+            return (
+              <Card
+                key={form.id}
+                className="group relative overflow-hidden border-border/60 hover:border-primary/40 transition-all hover:shadow-[0_8px_30px_-12px_hsl(var(--primary)/0.25)] flex flex-col"
+              >
+                {/* top accent bar */}
+                <div className={`h-1 w-full ${form.is_active ? "bg-gradient-to-r from-primary via-primary/70 to-emerald-500" : "bg-muted"}`} />
+
+                <CardContent className="p-5 flex flex-col gap-4 flex-1">
+                  {/* header */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-semibold text-base truncate">{form.name}</h3>
+                        <Badge
+                          variant={form.is_active ? "default" : "secondary"}
+                          className={form.is_active ? "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/20 border border-emerald-500/30" : ""}
+                        >
+                          {form.is_active ? "Ativo" : "Inativo"}
+                        </Badge>
+                      </div>
                       {form.description && (
-                        <p className="text-xs text-muted-foreground truncate max-w-[200px]">{form.description}</p>
-                      )}
-                      {form.tags && form.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {form.tags.map((tag) => (
-                            <Badge key={tag} variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{form.description}</p>
                       )}
                     </div>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    <Badge variant="outline" className="text-xs">
-                      {workspaces.find((ws) => ws.id === form.workspace_id)?.name || "—"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Globe className="h-5 w-5 text-primary" />
+                    </div>
+                  </div>
+
+                  {/* meta */}
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="rounded-lg border bg-muted/30 p-2.5">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Workspace</p>
+                      <p className="font-medium truncate">{wsName}</p>
+                    </div>
+                    <div className="rounded-lg border bg-muted/30 p-2.5">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Leads</p>
+                      <p className="font-semibold text-base leading-tight">{form.lead_count || 0}</p>
+                    </div>
+                  </div>
+
+                  {/* tags */}
+                  {form.tags && form.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1">
-                      {(form.fields || []).map((f) => (
-                        <Badge key={f} variant="secondary" className="text-[10px]">
-                          {AVAILABLE_FIELDS.find((af) => af.id === f)?.label || f}
+                      {form.tags.map((tag) => (
+                        <Badge key={tag} variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600">
+                          {tag}
                         </Badge>
                       ))}
                     </div>
-                  </TableCell>
-                  <TableCell className="text-center font-semibold">{form.lead_count || 0}</TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant={form.is_active ? "default" : "secondary"}>
-                      {form.is_active ? "Ativo" : "Inativo"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => copyLink(form)} title="Copiar link público">
-                        {copiedId === form.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  )}
+
+                  {/* public link */}
+                  <div className="rounded-lg border bg-muted/40 p-2 flex items-center gap-2 group/link">
+                    <Globe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <code className="text-[11px] truncate flex-1 text-muted-foreground" title={url}>
+                      {url.replace(/^https?:\/\//, "")}
+                    </code>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0 shrink-0"
+                      onClick={() => copyLink(form)}
+                      title="Copiar link"
+                    >
+                      {copiedId === form.id ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <CopyIcon className="h-3.5 w-3.5" />}
+                    </Button>
+                  </div>
+
+                  {/* primary CTA row */}
+                  <div className="grid grid-cols-2 gap-2 mt-auto">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => window.open(url, "_blank")}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" /> Abrir
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => openEdit(form)}
+                    >
+                      <Edit2 className="h-3.5 w-3.5" /> Editar
+                    </Button>
+                  </div>
+
+                  {/* secondary actions */}
+                  <div className="flex items-center justify-between pt-1 border-t">
+                    <div className="flex items-center gap-1">
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => duplicateForm(form.id)} title="Duplicar formulário">
+                        <Files className="h-4 w-4" />
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => window.open(getFormUrl(form), "_blank")} title="Visualizar Landing Page">
-                        <Globe className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => openEmbed(form.id)} title="Código embed">
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEmbed(form.id)} title="Código embed">
                         <Code2 className="h-4 w-4" />
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => openEdit(form)} title="Editar">
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => handleToggleActive(form)} title={form.is_active ? "Desativar" : "Ativar"}>
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => handleToggleActive(form)} title={form.is_active ? "Desativar" : "Ativar"}>
                         {form.is_active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
-                      <Button size="sm" variant="ghost" className="text-destructive" onClick={() => deleteForm(form.id)} title="Excluir">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => {
+                        if (confirm(`Excluir o formulário "${form.name}"?`)) deleteForm(form.id);
+                      }}
+                      title="Excluir"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       )}
 
       {/* Create/Edit Dialog */}
