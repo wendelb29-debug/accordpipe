@@ -49,10 +49,16 @@ export function AppLayout({ children }: AppLayoutProps) {
         {/* Desktop sidebar (hidden on Accord Stack for full-width chat) */}
         {!isMobile && !isAccordStack && <Sidebar />}
 
-        <div className={cn(
-          "min-w-0 flex flex-col",
-          isAccordStackRoute ? "h-full overflow-hidden" : "min-h-screen",
-        )}>
+        <div
+          style={{
+            marginLeft: isMobile || isAccordStack ? 0 : (sidebarExpanded ? 232 : 60),
+            transition: 'margin-left 300ms ease-in-out',
+          }}
+          className={cn(
+            "min-w-0 flex flex-col",
+            isAccordStackRoute ? "h-full overflow-hidden" : "min-h-screen",
+          )}
+        >
           {/* Tenant billing alert banner */}
           <TenantBillingBanner />
 
