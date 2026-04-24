@@ -48,13 +48,15 @@ function AtendimentoContent() {
   // Show hub if no workspace selected yet
   if (!selectedWsId) {
     return (
-      <div className="-m-3 md:-m-6 lg:-m-8 h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
+      <div className="flex h-full min-h-0 w-full max-w-full overflow-hidden">
+        <div className="flex h-full min-h-0 w-full max-w-full flex-col overflow-hidden">
         <WorkspaceHub
           onSelectWorkspace={(id) => {
             selectWorkspace(id);
             setSelectedWsId(id);
           }}
         />
+        </div>
       </div>
     );
   }
@@ -70,9 +72,11 @@ function AtendimentoContent() {
   // If user only has access to admin pipeline
   if (canSeeAdmin && !canSeeCommercial) {
     return (
-      <div className="-m-3 md:-m-6 lg:-m-8 h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
+      <div className="flex h-full min-h-0 w-full max-w-full overflow-hidden">
+        <div className="flex h-full min-h-0 w-full max-w-full flex-col overflow-hidden">
         {backButton}
         <AdminKanbanBoard searchTerm={crmSearch} />
+        </div>
       </div>
     );
   }
@@ -80,9 +84,11 @@ function AtendimentoContent() {
   // If user only has access to commercial
   if (canSeeCommercial && !canSeeAdmin) {
     return (
-      <div className="-m-3 md:-m-6 lg:-m-8 h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
+      <div className="flex h-full min-h-0 w-full max-w-full overflow-hidden">
+        <div className="flex h-full min-h-0 w-full max-w-full flex-col overflow-hidden">
         {backButton}
         <CrmKanbanBoard searchTerm={crmSearch} workspaceId={selectedWsId} />
+        </div>
       </div>
     );
   }
@@ -90,19 +96,23 @@ function AtendimentoContent() {
   // Only commercial (fallback)
   if (!canSeeAdmin) {
     return (
-      <div className="-m-3 md:-m-6 lg:-m-8 h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
+      <div className="flex h-full min-h-0 w-full max-w-full overflow-hidden">
+        <div className="flex h-full min-h-0 w-full max-w-full flex-col overflow-hidden">
         {backButton}
         <CrmKanbanBoard searchTerm={crmSearch} workspaceId={selectedWsId} />
+        </div>
       </div>
     );
   }
 
   // Both pipelines accessible
   return (
-    <div className="-m-3 md:-m-6 lg:-m-8 h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
+    <div className="flex h-full min-h-0 w-full max-w-full overflow-hidden">
+      <div className="flex h-full min-h-0 w-full max-w-full flex-col overflow-hidden">
       {backButton}
-      <Tabs defaultValue="comercial" className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="mx-3 mt-0.5 mb-0 w-fit h-8">
+      <Tabs defaultValue="comercial" className="flex-1 flex min-h-0 w-full max-w-full flex-col overflow-hidden">
+        <div className="w-full max-w-full overflow-x-auto overflow-y-hidden px-3">
+        <TabsList className="mt-0.5 mb-0 w-fit h-8 max-w-full shrink-0">
           <TabsTrigger value="comercial" className="gap-1 text-[11px] h-7 px-3">
             <MessageSquare className="h-3 w-3" /> Pipeline Comercial
           </TabsTrigger>
@@ -110,13 +120,15 @@ function AtendimentoContent() {
             <FileSpreadsheet className="h-3 w-3" /> Importar Planilha
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="comercial" className="flex-1 overflow-hidden mt-0">
+        </div>
+        <TabsContent value="comercial" className="flex-1 min-h-0 overflow-hidden mt-0">
           <CrmKanbanBoard searchTerm={crmSearch} workspaceId={selectedWsId} />
         </TabsContent>
-        <TabsContent value="importar" className="flex-1 overflow-hidden mt-0">
+        <TabsContent value="importar" className="flex-1 min-h-0 overflow-hidden mt-0">
           <ImportarPlanilha />
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }
