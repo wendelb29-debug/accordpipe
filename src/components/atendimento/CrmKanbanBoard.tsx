@@ -439,10 +439,10 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   }
 
   return (
-    <div className="flex h-full min-h-0 w-full max-w-full flex-col overflow-hidden bg-muted/30">
+    <div className="flex flex-col h-full overflow-hidden bg-muted/30">
       {/* KPI Cards */}
-      <div className="flex w-full max-w-full items-center justify-between gap-2 overflow-hidden px-3 py-1 shrink-0">
-        <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+      <div className="px-3 py-1 flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 flex-1">
           <div className="flex items-center gap-3 bg-card rounded-lg border border-border/50 px-3 py-1 shadow-sm">
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Oport.</span>
@@ -462,8 +462,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
         </div>
 
         {/* Action buttons */}
-        <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 overflow-hidden">
-          <div className="flex min-w-0 items-center justify-end gap-1.5 overflow-x-auto overflow-y-hidden pb-1 pr-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex items-center gap-1.5 shrink-0">
           {searchOpen && (
             <Input
               autoFocus
@@ -471,16 +470,16 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
               placeholder="Buscar lead..."
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
-              className="h-8 w-44 shrink-0 text-xs border-border/50 bg-card rounded-lg shadow-sm"
+              className="h-8 w-44 text-xs border-border/50 bg-card rounded-lg shadow-sm"
               onBlur={() => { if (!localSearch) setSearchOpen(false); }}
             />
           )}
-          <Button size="icon" variant="outline" className="h-8 w-8 shrink-0 rounded-lg shadow-sm border-border/50" onClick={() => setGlobalSearchOpen(true)} title="Pesquisar">
+          <Button size="icon" variant="outline" className="h-8 w-8 rounded-lg shadow-sm border-border/50" onClick={() => setGlobalSearchOpen(true)} title="Pesquisar">
             <Search className="h-3.5 w-3.5" />
           </Button>
           {(isAdminOrMaster || teamMembers.length > 0) && teamMembers.length > 0 && (
             <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-              <SelectTrigger className="h-8 w-36 shrink-0 text-xs border-border/50 bg-card rounded-lg shadow-sm">
+              <SelectTrigger className="h-8 w-36 text-xs border-border/50 bg-card rounded-lg shadow-sm">
                 <Users className="h-3 w-3 mr-1 shrink-0" />
                 <SelectValue placeholder="Equipe" />
               </SelectTrigger>
@@ -495,7 +494,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
           {availableTags.length > 0 && (
             <Popover>
               <PopoverTrigger asChild>
-                  <Button size="icon" variant={selectedTags.length > 0 ? "default" : "outline"} className="h-8 w-8 shrink-0 relative rounded-lg shadow-sm border-border/50">
+                <Button size="icon" variant={selectedTags.length > 0 ? "default" : "outline"} className="h-8 w-8 relative rounded-lg shadow-sm border-border/50">
                   <Filter className="h-3.5 w-3.5" />
                   {selectedTags.length > 0 && (
                     <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground px-0.5">
@@ -530,14 +529,13 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
               </PopoverContent>
             </Popover>
           )}
-          <Button size="icon" variant="outline" className="h-8 w-8 shrink-0 rounded-lg shadow-sm border-border/50" onClick={() => setFormLinkOpen(true)}>
+          <Button size="icon" variant="outline" className="h-8 w-8 rounded-lg shadow-sm border-border/50" onClick={() => setFormLinkOpen(true)}>
             <Tag className="h-3.5 w-3.5" />
           </Button>
-          <Button size="icon" variant="outline" className="h-8 w-8 shrink-0 rounded-lg shadow-sm border-border/50" onClick={() => navigate("/contato")}>
+          <Button size="icon" variant="outline" className="h-8 w-8 rounded-lg shadow-sm border-border/50" onClick={() => navigate("/contato")}>
             <Link2 className="h-3.5 w-3.5" />
           </Button>
-          </div>
-          <Button size="sm" onClick={openNew} className="h-8 shrink-0 gap-1.5 text-xs px-4 rounded-[10px] shadow-sm bg-primary hover:bg-primary/90">
+          <Button size="sm" onClick={openNew} className="h-8 gap-1.5 text-xs px-4 rounded-[10px] shadow-sm bg-primary hover:bg-primary/90">
             <Plus className="h-3.5 w-3.5" /> Novo Card
           </Button>
         </div>
@@ -548,7 +546,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
         <div
           ref={pipelineRef}
           style={{ scrollBehavior: 'smooth', scrollbarWidth: 'thin' }}
-          className="flex w-full max-w-full flex-1 min-h-0 items-stretch gap-2 overflow-x-auto overflow-y-hidden cursor-grab box-border px-3 pb-0 [&::-webkit-scrollbar]:h-[6px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gradient-to-r [&::-webkit-scrollbar-thumb]:from-[hsl(var(--primary))] [&::-webkit-scrollbar-thumb]:to-[hsl(263,87%,60%)]"
+          className="flex flex-1 min-h-0 items-stretch gap-2 pl-2 pr-6 pb-0 w-full max-w-full overflow-x-auto overflow-y-hidden cursor-grab [&::-webkit-scrollbar]:h-[6px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gradient-to-r [&::-webkit-scrollbar-thumb]:from-[hsl(var(--primary))] [&::-webkit-scrollbar-thumb]:to-[hsl(263,87%,60%)]"
           onMouseDown={handlePipelineMouseDown}
           onMouseMove={handlePipelineMouseMove}
           onMouseUp={handlePipelineMouseUp}
@@ -566,7 +564,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
             <div
               key={stage.id}
               className={cn(
-                "flex-[0_0_220px] min-w-[220px] max-w-[240px] rounded-xl flex flex-col border transition-all duration-200",
+                "flex-shrink-0 w-[220px] rounded-xl flex flex-col border transition-all duration-200",
                 dynCol ? "border-border/50" : `${colors.border} ${colors.bg}`,
                 !dynCol && !colors.bg && "bg-muted/20",
                 dragOverStage === stage.id && "ring-2 ring-primary/60 scale-[1.01]"

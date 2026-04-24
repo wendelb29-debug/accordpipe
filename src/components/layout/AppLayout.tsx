@@ -38,31 +38,20 @@ export function AppLayout({ children }: AppLayoutProps) {
     return () => window.removeEventListener("sidebar-toggle", handler);
   }, []);
 
-  const desktopSidebarWidth = sidebarCollapsed ? 56 : 232;
-  const desktopMainStyle = !isMobile && !isAccordStack
-    ? {
-        marginLeft: `${desktopSidebarWidth}px`,
-        width: `calc(100vw - ${desktopSidebarWidth}px)`,
-        maxWidth: `calc(100vw - ${desktopSidebarWidth}px)`,
-      }
-    : undefined;
-
   return (
     <BackNavigationProvider>
       <div className={cn(
-        "bg-background flex w-screen max-w-[100vw] flex-col overflow-hidden",
-        isAccordStackRoute ? "h-[100dvh]" : "min-h-screen"
+        "bg-background flex flex-col",
+        isAccordStackRoute ? "h-[100dvh] overflow-hidden" : "min-h-screen"
       )}>
         {/* Desktop sidebar (hidden on Accord Stack for full-width chat) */}
         {!isMobile && !isAccordStack && <Sidebar />}
 
         <div className={cn(
-          "transition-all duration-300 min-w-0 flex w-full max-w-full flex-col min-h-0 overflow-hidden",
+          "transition-all duration-300 min-w-0 flex flex-col min-h-0",
           isAccordStackRoute ? "h-full overflow-hidden" : "min-h-screen",
-          isMobile || isAccordStack ? "pl-0" : "pl-0"
-        )}
-        style={desktopMainStyle}>
-
+          isMobile || isAccordStack ? "pl-0" : (sidebarCollapsed ? "pl-[60px]" : "pl-[232px]")
+        )}>
           {/* Tenant billing alert banner */}
           <TenantBillingBanner />
 
@@ -93,8 +82,8 @@ export function AppLayout({ children }: AppLayoutProps) {
           )}
           {!hideHeader && !isAccordStackRoute && <Header />}
           <main
-              className={cn(
-                "w-full max-w-full flex-1 min-w-0 min-h-0 overflow-hidden",
+            className={cn(
+              "w-full max-w-none flex-1 min-w-0 min-h-0",
               isAccordStackRoute
                 ? "p-0 overflow-hidden flex flex-col flex-1 min-h-0"
                 : (hideHeader ? "p-0" : "p-3 sm:p-3 lg:p-4")
