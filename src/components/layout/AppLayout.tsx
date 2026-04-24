@@ -38,6 +38,15 @@ export function AppLayout({ children }: AppLayoutProps) {
     return () => window.removeEventListener("sidebar-toggle", handler);
   }, []);
 
+  const desktopSidebarWidth = sidebarCollapsed ? 56 : 232;
+  const desktopMainStyle = !isMobile && !isAccordStack
+    ? {
+        marginLeft: `${desktopSidebarWidth}px`,
+        width: `calc(100vw - ${desktopSidebarWidth}px)`,
+        maxWidth: `calc(100vw - ${desktopSidebarWidth}px)`,
+      }
+    : undefined;
+
   return (
     <BackNavigationProvider>
       <div className={cn(
@@ -50,8 +59,9 @@ export function AppLayout({ children }: AppLayoutProps) {
         <div className={cn(
           "transition-all duration-300 min-w-0 flex w-full max-w-full flex-col min-h-0 overflow-hidden",
           isAccordStackRoute ? "h-full overflow-hidden" : "min-h-screen",
-          isMobile || isAccordStack ? "pl-0" : (sidebarCollapsed ? "pl-[56px]" : "pl-[232px]")
+          isMobile || isAccordStack ? "pl-0" : "pl-0"
         )}>
+          
           {/* Tenant billing alert banner */}
           <TenantBillingBanner />
 
