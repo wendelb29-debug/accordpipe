@@ -30,16 +30,9 @@ export function AppLayout({ children }: AppLayoutProps) {
   const isAccordStack = false;
   const isAccordStackRoute = location.pathname.startsWith("/accord-stack");
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
   const [sidebarExpanded, setSidebarExpanded] = useState(
     () => localStorage.getItem("sidebar-pinned") === "true"
   );
-
-  useEffect(() => {
-    const handler = (e: Event) => setSidebarCollapsed((e as CustomEvent).detail);
-    window.addEventListener("sidebar-toggle", handler);
-    return () => window.removeEventListener("sidebar-toggle", handler);
-  }, []);
 
   useEffect(() => {
     const handler = (e: Event) => setSidebarExpanded((e as CustomEvent).detail);
