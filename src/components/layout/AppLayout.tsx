@@ -59,7 +59,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         <div className={cn(
           "transition-all duration-300 min-w-0 flex flex-col min-h-0",
           isAccordStackRoute ? "h-full overflow-hidden" : "min-h-screen",
-          isMobile || isAccordStack ? "pl-0" : (sidebarCollapsed ? "pl-[60px]" : "pl-[232px]")
+          isMobile || isAccordStack ? "pl-0" : (sidebarExpanded ? "pl-[232px]" : "pl-[60px]")
         )}>
           {/* Tenant billing alert banner */}
           <TenantBillingBanner />
