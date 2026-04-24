@@ -93,6 +93,12 @@ export function Sidebar() {
     localStorage.setItem("sidebar-collapsed", String(layoutCollapsed));
   }, [pinned]);
 
+  // Notify AppLayout about hover expansion so content shifts with the sidebar
+  useEffect(() => {
+    const expanded = pinned || hovered;
+    window.dispatchEvent(new CustomEvent("sidebar-hover", { detail: expanded }));
+  }, [pinned, hovered]);
+
   const handleMouseEnter = () => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
     setHovered(true);
