@@ -492,10 +492,10 @@ function MessageBubble({
 
       {(kind === "image" || kind === "attachment") && hasCaption && (
         <div className={cn(
-          "mt-1 px-3 py-1.5 rounded-xl text-[12.5px] leading-relaxed break-words whitespace-pre-wrap max-w-full",
+          "mt-1 px-3 py-1.5 rounded-xl text-[12.5px] leading-relaxed break-words whitespace-pre-wrap max-w-full shadow-sm",
           isOut
-            ? "bg-primary/90 text-primary-foreground"
-            : "bg-background dark:bg-muted/40 text-foreground border border-border/40",
+            ? "bg-primary/90 text-primary-foreground ring-1 ring-primary/20"
+            : "bg-card text-foreground border border-border/60",
         )}>
           {linkifyText(msg.message)}
         </div>
