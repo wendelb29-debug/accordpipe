@@ -301,6 +301,10 @@ button, a, input, select, textarea {
 
 /* Full-height chain for flex layouts (chat etc.) */
 html, body, #root {
+  min-height: 100%;
+}
+/* Lock scroll only for routes that opt-in (e.g. Accord Stack chat) */
+html.lock-scroll, html.lock-scroll body, html.lock-scroll #root {
   height: 100%;
   overflow: hidden;
 }
