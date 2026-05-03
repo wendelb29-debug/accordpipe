@@ -40,6 +40,15 @@ export function AppLayout({ children }: AppLayoutProps) {
     return () => window.removeEventListener("sidebar-hover", handler);
   }, []);
 
+  useEffect(() => {
+    if (isAccordStackRoute) {
+      document.documentElement.classList.add("lock-scroll");
+    } else {
+      document.documentElement.classList.remove("lock-scroll");
+    }
+    return () => document.documentElement.classList.remove("lock-scroll");
+  }, [isAccordStackRoute]);
+
   return (
     <BackNavigationProvider>
       <div className={cn(
