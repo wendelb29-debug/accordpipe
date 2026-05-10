@@ -308,6 +308,7 @@ serve(async (req) => {
           birth_date,
           whatsapp: cleanWhatsapp,
           company_id,
+          must_change_password: true,
         })
         .eq("user_id", userId);
 
