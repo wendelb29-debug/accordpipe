@@ -24,6 +24,7 @@ import Usuarios from "./pages/Usuarios";
 import Atendimento from "./pages/Atendimento";
 import AssinarContrato from "./pages/AssinarContrato";
 import ResetPassword from "./pages/ResetPassword";
+import PrimeiroAcesso from "./pages/PrimeiroAcesso";
 import CapturaLead from "./pages/CapturaLead";
 import FormularioContato from "./pages/FormularioContato";
 import Atividades from "./pages/Atividades";
