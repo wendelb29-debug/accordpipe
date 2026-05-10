@@ -445,6 +445,8 @@ export default function Usuarios() {
       toast({ title: "Ação bloqueada", description: "Você não pode excluir seu próprio usuário.", variant: "destructive" });
       return;
     }
+    const removedId = deletingUser.id;
+    const removedName = deletingUser.name;
     setIsDeleting(true);
     try {
       const { data, error } = await supabase.functions.invoke("delete-user", {
@@ -452,10 +454,11 @@ export default function Usuarios() {
       });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.error || "Erro ao excluir");
-      toast({ title: "Usuário excluído", description: `${deletingUser.name} foi removido.` });
+      // Optimistic UI removal — no full reload needed
+      setUsers((prev) => prev.filter((u) => u.id !== removedId));
+      toast({ title: "Usuário excluído com sucesso", description: `${removedName} foi removido permanentemente.` });
       setDeleteDialogOpen(false);
       setDeletingUser(null);
-      fetchUsers();
     } catch (e: any) {
       toast({ title: "Erro ao excluir", description: e.message || "Não foi possível excluir.", variant: "destructive" });
     } finally {
@@ -895,10 +898,10 @@ export default function Usuarios() {
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-destructive">
                   <Trash2 className="h-5 w-5" />
-                  Excluir usuário
+                  Excluir usuário permanentemente
                 </DialogTitle>
                 <DialogDescription>
-                  Tem certeza que deseja excluir este usuário? Essa ação remove o acesso ao sistema e não poderá ser desfeita facilmente.
+                  Tem certeza que deseja excluir este usuário <strong>permanentemente</strong>? Essa ação remove o acesso, apaga o cadastro do banco e do sistema de autenticação. <strong>Não poderá ser desfeita.</strong>
                 </DialogDescription>
               </DialogHeader>
               {deletingUser && (
@@ -913,9 +916,9 @@ export default function Usuarios() {
                 <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isDeleting}>
                   Cancelar
                 </Button>
-                <Button variant="destructive" onClick={handleDeleteUser} disabled={isDeleting} className="gap-2">
+                <Button variant="destructive" onClick={handleDeleteUser} disabled={isDeleting} className="gap-2 bg-red-600 hover:bg-red-700">
                   {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                  Excluir usuário
+                  Excluir permanentemente
                 </Button>
               </DialogFooter>
             </DialogContent>

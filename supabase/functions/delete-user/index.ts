@@ -5,6 +5,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function json(status: number, body: Record<string, unknown>) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -23,14 +30,11 @@ Deno.serve(async (req) => {
 
     const { data: userData, error: userErr } = await userClient.auth.getUser();
     if (userErr || !userData.user) {
-      return new Response(JSON.stringify({ ok: false, error: "Não autenticado" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json(401, { ok: false, error: "Não autenticado" });
     }
     const actorId = userData.user.id;
 
-    // Verify actor role: must be CEO or Master
+    // Verify actor: must be Master, CEO or Admin
     const { data: actorProfile } = await admin
       .from("profiles")
       .select("is_master, company_id, name, email")
@@ -42,63 +46,47 @@ Deno.serve(async (req) => {
       .select("role")
       .eq("user_id", actorId);
 
-    const isCeo = (actorRoles || []).some((r: any) => r.role === "ceo");
-    const isMaster = !!actorProfile?.is_master || (actorRoles || []).some((r: any) => r.role === "master");
+    const roles = (actorRoles || []).map((r: any) => r.role);
+    const isMaster = !!actorProfile?.is_master || roles.includes("master");
+    const isCeo = roles.includes("ceo");
+    const isAdmin = roles.includes("admin");
 
-    if (!isCeo && !isMaster) {
-      return new Response(JSON.stringify({ ok: false, error: "Apenas CEO ou Master podem excluir usuários." }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!isMaster && !isCeo && !isAdmin) {
+      return json(403, { ok: false, error: "Apenas Master, CEO ou Admin podem excluir usuários." });
     }
 
     const { target_user_id } = await req.json();
     if (!target_user_id) {
-      return new Response(JSON.stringify({ ok: false, error: "target_user_id obrigatório" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json(400, { ok: false, error: "target_user_id obrigatório" });
     }
 
     // Self-delete protection
     if (target_user_id === actorId) {
-      return new Response(JSON.stringify({ ok: false, error: "Você não pode excluir seu próprio usuário." }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json(400, { ok: false, error: "Você não pode excluir seu próprio usuário." });
     }
 
     // Load target
     const { data: target } = await admin
       .from("profiles")
-      .select("id, user_id, name, email, company_id, is_master, status, is_active")
+      .select("id, user_id, name, email, company_id, is_master, status, is_active, avatar_url")
       .eq("user_id", target_user_id)
       .maybeSingle();
 
     if (!target) {
-      return new Response(JSON.stringify({ ok: false, error: "Usuário não encontrado." }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json(404, { ok: false, error: "Usuário não encontrado." });
     }
 
-    // Multi-tenant: non-master must operate on same tenant
+    // Tenant boundary: non-master must operate on same tenant
     if (!isMaster && target.company_id !== actorProfile?.company_id) {
-      return new Response(JSON.stringify({ ok: false, error: "Usuário fora do seu tenant." }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json(403, { ok: false, error: "Usuário fora do seu tenant." });
     }
 
-    // Cannot delete master profile
+    // Cannot delete Master profile
     if (target.is_master) {
-      return new Response(JSON.stringify({ ok: false, error: "Não é possível excluir um usuário Master." }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json(400, { ok: false, error: "Não é possível excluir um usuário Master." });
     }
 
-    // Prevent removing last CEO/Master of tenant
+    // Prevent removing the last critical (CEO/Master) of the tenant
     if (target.company_id) {
       const { data: targetRoles } = await admin
         .from("user_roles")
@@ -114,8 +102,8 @@ Deno.serve(async (req) => {
           .eq("is_active", true)
           .neq("user_id", target_user_id);
 
-        const otherIds = (tenantUsers || []).map((u: any) => u.user_id);
         let hasOtherCritical = (tenantUsers || []).some((u: any) => u.is_master);
+        const otherIds = (tenantUsers || []).map((u: any) => u.user_id);
         if (!hasOtherCritical && otherIds.length > 0) {
           const { data: otherRoles } = await admin
             .from("user_roles")
@@ -124,50 +112,80 @@ Deno.serve(async (req) => {
           hasOtherCritical = (otherRoles || []).some((r: any) => r.role === "ceo" || r.role === "master");
         }
         if (!hasOtherCritical) {
-          return new Response(
-            JSON.stringify({ ok: false, error: "Não é possível remover o último CEO/Master do tenant." }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-          );
+          return json(400, { ok: false, error: "Não é possível remover o último CEO/Master do tenant." });
         }
       }
     }
 
     const before = { ...target };
+    const errors: Record<string, string> = {};
 
-    // Soft delete: deactivate + mark status as deleted
-    const { error: updErr } = await admin
+    // ──────────────────────────────────────────────
+    // HARD DELETE — purge user data from all tables
+    // ──────────────────────────────────────────────
+    const tableDeletes: Array<[string, string]> = [
+      ["user_workspace_permissions", "user_id"],
+      ["user_custom_permissions", "user_id"],
+      ["user_goals", "user_id"],
+      ["user_tenants", "user_id"],
+      ["user_roles", "user_id"],
+      ["notifications", "user_id"],
+    ];
+
+    for (const [table, col] of tableDeletes) {
+      const { error } = await admin.from(table).delete().eq(col, target_user_id);
+      if (error) errors[table] = error.message;
+    }
+
+    // Storage cleanup — best-effort
+    const buckets = ["avatars", "user-signatures"];
+    for (const bucket of buckets) {
+      try {
+        const { data: files } = await admin.storage.from(bucket).list(target_user_id, { limit: 1000 });
+        if (files && files.length > 0) {
+          const paths = files.map((f) => `${target_user_id}/${f.name}`);
+          await admin.storage.from(bucket).remove(paths);
+        }
+      } catch (_e) { /* best-effort */ }
+    }
+
+    // Delete profile (last, before auth)
+    const { error: profDelErr } = await admin
       .from("profiles")
-      .update({ is_active: false, status: "deleted" })
+      .delete()
       .eq("user_id", target_user_id);
-    if (updErr) throw updErr;
+    if (profDelErr) errors["profiles"] = profDelErr.message;
 
-    // Revoke auth access by banning the user (sign-out)
-    try {
-      await admin.auth.admin.updateUserById(target_user_id, { ban_duration: "876000h" });
-    } catch (_e) { /* non-fatal */ }
+    // Delete from Supabase Auth
+    const { error: authDelErr } = await admin.auth.admin.deleteUser(target_user_id);
+    if (authDelErr) errors["auth"] = authDelErr.message;
 
-    // Audit log
+    // Audit log (kept on purpose for compliance — references actor, target_id is text)
     await admin.from("audit_logs").insert({
       user_id: actorId,
       user_name: actorProfile?.name || actorProfile?.email || "system",
-      action: "user_deleted",
+      action: "user_deleted_hard",
       target_type: "user",
       target_id: target_user_id,
       details: {
         before_payload: before,
-        after_payload: { is_active: false, status: "deleted" },
-        soft_delete: true,
+        hard_delete: true,
+        cleanup_errors: errors,
       },
       servidor_id: target.company_id,
     });
 
-    return new Response(JSON.stringify({ ok: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const hadCritical = errors["profiles"] || errors["auth"];
+    if (hadCritical) {
+      return json(500, {
+        ok: false,
+        error: `Falha ao excluir: ${errors["profiles"] || errors["auth"]}`,
+        partial_errors: errors,
+      });
+    }
+
+    return json(200, { ok: true, partial_errors: errors });
   } catch (e: any) {
-    return new Response(JSON.stringify({ ok: false, error: e.message || String(e) }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json(500, { ok: false, error: e.message || String(e) });
   }
 });
