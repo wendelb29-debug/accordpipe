@@ -11,7 +11,6 @@ import { KeyRound, Loader2, ShieldCheck } from "lucide-react";
 
 export default function PrimeiroAcesso() {
   const { user, profile, refreshProfile } = useAuth() as any;
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [pwd, setPwd] = useState("");
   const [confirm, setConfirm] = useState("");
