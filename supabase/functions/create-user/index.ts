@@ -117,6 +117,9 @@ serve(async (req) => {
     const cleanCpf = cpf.replace(/\D/g, "");
     const cleanWhatsapp = whatsapp.replace(/\D/g, "");
 
+    // Generate friendly random password: Accord@XXXX
+    const tempPassword = `Accord@${Math.floor(1000 + Math.random() * 9000)}${Math.random().toString(36).slice(2, 4).toUpperCase()}`;
+
     // ──────────────────────────────────────────────
     // STEP 1: Check if user_tenants link already exists for this email + tenant
     // ──────────────────────────────────────────────
@@ -156,7 +159,6 @@ serve(async (req) => {
     // ──────────────────────────────────────────────
     // STEP 2: Try to create auth user
     // ──────────────────────────────────────────────
-    const tempPassword = crypto.randomUUID().slice(0, 12) + "A1!";
     let userId: string;
     let isLinkedExisting = false;
 
@@ -168,7 +170,6 @@ serve(async (req) => {
     });
 
     if (createError) {
-      // Check if it's an email conflict
       const isEmailConflict =
         createError.message?.toLowerCase().includes("already") ||
         createError.message?.toLowerCase().includes("duplicate") ||
@@ -181,26 +182,37 @@ serve(async (req) => {
       }
 
       // ──────────────────────────────────────────────
-      // STEP 3: User already exists in auth — find them
+      // STEP 3: User already exists in auth — find via profiles (fast path)
       // ──────────────────────────────────────────────
-      let foundUser: any = null;
-      let page = 1;
-      const perPage = 50;
-      while (!foundUser) {
-        const { data: pageData, error: pageError } = await supabase.auth.admin.listUsers({ page, perPage });
-        if (pageError || !pageData?.users?.length) break;
-        foundUser = pageData.users.find((u: any) => u.email === email);
-        if (pageData.users.length < perPage) break;
-        page++;
-        if (page > 20) break;
+      const { data: existingByEmail } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("email", email)
+        .maybeSingle();
+
+      let foundUserId: string | null = existingByEmail?.user_id ?? null;
+
+      // Fallback: paginate auth users (slow but reliable)
+      if (!foundUserId) {
+        let page = 1;
+        const perPage = 200;
+        while (!foundUserId) {
+          const { data: pageData, error: pageError } = await supabase.auth.admin.listUsers({ page, perPage });
+          if (pageError || !pageData?.users?.length) break;
+          const match = pageData.users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
+          if (match) { foundUserId = match.id; break; }
+          if (pageData.users.length < perPage) break;
+          page++;
+          if (page > 10) break;
+        }
       }
 
-      if (!foundUser) {
+      if (!foundUserId) {
         console.error("Could not find existing auth user for email:", email);
-        return respond(false, { error: "E-mail já existe mas não foi possível vincular. Contate o suporte." });
+        return respond(false, { error: "E-mail já existe no Auth mas não foi possível localizar o usuário. Contate o suporte." });
       }
 
-      userId = foundUser.id;
+      userId = foundUserId;
       isLinkedExisting = true;
     } else {
       userId = newUser.user.id;
@@ -244,8 +256,12 @@ serve(async (req) => {
             whatsapp: cleanWhatsapp,
             is_active: true,
             status: "ativo",
+            must_change_password: true,
           })
           .eq("user_id", userId);
+
+        // Reset password to the new temp password so admin can share it
+        await supabase.auth.admin.updateUserById(userId, { password: tempPassword });
 
         if (updateErr) {
           console.error("Profile update error (linked user):", updateErr);
@@ -266,6 +282,7 @@ serve(async (req) => {
             is_active: true,
             status: "ativo",
             is_master: false,
+            must_change_password: true,
           });
 
         if (insertProfileError) {
@@ -291,6 +308,7 @@ serve(async (req) => {
           birth_date,
           whatsapp: cleanWhatsapp,
           company_id,
+          must_change_password: true,
         })
         .eq("user_id", userId);
 
@@ -338,14 +356,45 @@ serve(async (req) => {
       _details: JSON.stringify({ name, email, role, company_id, linked: isLinkedExisting }),
     });
 
+    // ──────────────────────────────────────────────
+    // STEP 8: Send WhatsApp with credentials (best-effort)
+    // ──────────────────────────────────────────────
+    const appUrl = Deno.env.get("APP_URL") || "https://accordpipe.com.br";
+    let whatsappSent = false;
+    let whatsappError: string | null = null;
+    try {
+      const waText =
+        `Olá, ${name.split(" ")[0]} 👋\n\n` +
+        `Seu acesso ao *ACCORD* foi criado com sucesso.\n\n` +
+        `🌐 URL: ${appUrl}\n` +
+        `👤 Login: ${email}\n` +
+        `🔑 Senha temporária: ${tempPassword}\n\n` +
+        `No primeiro acesso você deverá definir uma nova senha permanente.`;
+
+      const { data: waData, error: waErr } = await supabase.functions.invoke("whatsapp-send", {
+        body: {
+          tenant_id: company_id,
+          phone: cleanWhatsapp,
+          text: waText,
+        },
+      });
+      if (waErr) whatsappError = waErr.message || "Falha ao invocar whatsapp-send";
+      else if (waData?.success === false) whatsappError = waData?.message || "Provider WhatsApp retornou erro";
+      else whatsappSent = true;
+    } catch (e: any) {
+      whatsappError = e?.message || "Erro inesperado no envio WhatsApp";
+    }
+
     const successMessage = isLinkedExisting
       ? "Usuário existente vinculado a este tenant com sucesso!"
       : "Usuário criado com sucesso!";
 
     return respond(true, {
       user_id: userId,
-      temp_password: isLinkedExisting ? undefined : tempPassword,
+      temp_password: tempPassword,
       linked_existing: isLinkedExisting,
+      whatsapp_sent: whatsappSent,
+      whatsapp_error: whatsappError,
       message: successMessage,
     });
   } catch (err: any) {

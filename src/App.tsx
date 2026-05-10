@@ -24,6 +24,7 @@ import Usuarios from "./pages/Usuarios";
 import Atendimento from "./pages/Atendimento";
 import AssinarContrato from "./pages/AssinarContrato";
 import ResetPassword from "./pages/ResetPassword";
+import PrimeiroAcesso from "./pages/PrimeiroAcesso";
 import CapturaLead from "./pages/CapturaLead";
 import FormularioContato from "./pages/FormularioContato";
 import Atividades from "./pages/Atividades";
@@ -286,6 +287,7 @@ const App = () => (
             <Route path="/form/:formId" element={<FormPublico />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/aceitar-convite" element={<AceitarConvite />} />
+            <Route path="/primeiro-acesso" element={<ProtectedRoute><PrimeiroAcesso /></ProtectedRoute>} />
             <Route
               path="/servidores"
               element={
