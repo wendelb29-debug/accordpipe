@@ -127,24 +127,28 @@ export default function Usuarios() {
     let query = supabase
       .from("companies")
       .select("id, nome_fantasia, razao_social, cnpj")
-      .is("servidor_id", null)
       .in("status", ["active", "teste"])
       .order("razao_social");
 
     if (isGlobalMaster) {
-      // all platform tenants
+      // Global Master: list ALL tenants of the platform (master + children)
     } else if (isResellerTenant && profile?.company_id) {
-      // reseller sees own + its child tenants
-      query = query.or(`id.eq.${profile.company_id},parent_tenant_id.eq.${profile.company_id},created_by_tenant_id.eq.${profile.company_id}`);
+      // Reseller sees own + its child tenants
+      query = query.or(
+        `id.eq.${profile.company_id},parent_tenant_id.eq.${profile.company_id},created_by_tenant_id.eq.${profile.company_id}`
+      );
     } else if (profile?.company_id) {
-      // standard user/CEO/Admin only sees their own tenant
+      // Standard user/CEO/Admin: only their own tenant
       query = query.eq("id", profile.company_id);
     } else {
       setAllCompanies([]);
       return;
     }
 
-    const { data } = await query;
+    const { data, error } = await query;
+    if (error) {
+      console.error("[Usuarios] fetchAllCompanies error:", error);
+    }
     setAllCompanies(data || []);
   };
 
