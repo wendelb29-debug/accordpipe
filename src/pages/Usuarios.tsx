@@ -301,9 +301,27 @@ export default function Usuarios() {
 
       if (roleError) throw roleError;
 
-      // Also sync user_tenants if company_id is set
+      // Sync user_tenants - if master changed the tenant, isolate access to ONLY the new one
       const tenantId = formData.company_id || editingUser.company_id;
+      const tenantChanged = isMaster && tenantId && tenantId !== editingUser.company_id;
+
       if (tenantId) {
+        if (tenantChanged) {
+          // Remove ALL previous tenant links so the user only has access to the new tenant
+          await supabase
+            .from("user_tenants")
+            .delete()
+            .eq("user_id", editingUser.user_id)
+            .neq("tenant_id", tenantId);
+
+          // Remove workspace permissions tied to any other tenant
+          await supabase
+            .from("user_workspace_permissions")
+            .delete()
+            .eq("user_id", editingUser.user_id)
+            .neq("tenant_id", tenantId);
+        }
+
         const { data: existingLink } = await supabase
           .from("user_tenants")
           .select("id")
@@ -314,7 +332,7 @@ export default function Usuarios() {
         if (existingLink) {
           await supabase
             .from("user_tenants")
-            .update({ role: formData.role } as any)
+            .update({ role: formData.role, status: "ativo" } as any)
             .eq("id", existingLink.id);
         } else {
           await supabase
