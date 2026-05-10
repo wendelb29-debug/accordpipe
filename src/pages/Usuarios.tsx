@@ -97,6 +97,8 @@ export default function Usuarios() {
   // Tenant management tabs: Global Master in their own (master) tenant OR a reseller tenant.
   const showTenantTabs = (isGlobalMaster && profile?.company_id === activeCompanyId) || isResellerTenant;
   const canManageUsers = isMaster || isCeo || isAdmin;
+  // Only Global Master and enabled Reseller tenants may pick a different tenant for the user.
+  const canSelectTenant = isGlobalMaster || isResellerTenant;
   const canDeleteUsers = isMaster || isCeo;
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingUser, setDeletingUser] = useState<UserWithRole | null>(null);
@@ -119,15 +121,30 @@ export default function Usuarios() {
   useEffect(() => {
     fetchUsers();
     fetchAllCompanies();
-  }, [activeCompanyId]);
+  }, [activeCompanyId, isGlobalMaster, isResellerTenant, profile?.company_id]);
 
   const fetchAllCompanies = async () => {
-    const { data } = await supabase
+    let query = supabase
       .from("companies")
       .select("id, nome_fantasia, razao_social, cnpj")
       .is("servidor_id", null)
       .in("status", ["active", "teste"])
       .order("razao_social");
+
+    if (isGlobalMaster) {
+      // all platform tenants
+    } else if (isResellerTenant && profile?.company_id) {
+      // reseller sees own + its child tenants
+      query = query.or(`id.eq.${profile.company_id},parent_tenant_id.eq.${profile.company_id},created_by_tenant_id.eq.${profile.company_id}`);
+    } else if (profile?.company_id) {
+      // standard user/CEO/Admin only sees their own tenant
+      query = query.eq("id", profile.company_id);
+    } else {
+      setAllCompanies([]);
+      return;
+    }
+
+    const { data } = await query;
     setAllCompanies(data || []);
   };
 
@@ -216,8 +233,8 @@ export default function Usuarios() {
 
     setIsSubmitting(true);
     try {
-      const companyId = isMaster
-        ? (formData.company_id || activeCompanyId)
+      const companyId = canSelectTenant
+        ? (formData.company_id || activeCompanyId || profile?.company_id)
         : profile?.company_id;
 
       const { data, error } = await supabase.functions.invoke("create-user", {
@@ -280,8 +297,10 @@ export default function Usuarios() {
     try {
       const updateData: any = { 
         name: formData.name, 
-        company_id: formData.company_id || null,
       };
+      if (canSelectTenant) {
+        updateData.company_id = formData.company_id || editingUser.company_id || null;
+      }
       if (formData.cpf) updateData.cpf = formData.cpf.replace(/\D/g, "");
       if (formData.birth_date) updateData.birth_date = formData.birth_date;
       if (formData.whatsapp) updateData.whatsapp = formData.whatsapp.replace(/\D/g, "");
@@ -303,7 +322,7 @@ export default function Usuarios() {
 
       // Sync user_tenants - if master changed the tenant, isolate access to ONLY the new one
       const tenantId = formData.company_id || editingUser.company_id;
-      const tenantChanged = isMaster && tenantId && tenantId !== editingUser.company_id;
+      const tenantChanged = canSelectTenant && tenantId && tenantId !== editingUser.company_id;
 
       if (tenantId) {
         if (tenantChanged) {
@@ -795,31 +814,28 @@ export default function Usuarios() {
                   <div className="space-y-2">
                     <Label htmlFor="company">Tenant vinculado</Label>
                     <Select
-                      value={formData.company_id || activeCompanyId || ""}
+                      value={formData.company_id || activeCompanyId || profile?.company_id || ""}
                       onValueChange={(value: string) =>
                         setFormData({ ...formData, company_id: value })
                       }
-                      disabled={!isMaster}
+                      disabled={!canSelectTenant}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o tenant" />
                       </SelectTrigger>
                       <SelectContent>
-                        {isMaster
-                          ? allCompanies.map((c) => (
-                              <SelectItem key={c.id} value={c.id}>
-                                {c.nome_fantasia || c.razao_social} - {c.cnpj}
-                              </SelectItem>
-                            ))
-                          : allCompanies
-                              .filter((c) => c.id === activeCompanyId)
-                              .map((c) => (
-                                <SelectItem key={c.id} value={c.id}>
-                                  {c.nome_fantasia || c.razao_social} - {c.cnpj}
-                                </SelectItem>
-                              ))}
+                        {allCompanies.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.nome_fantasia || c.razao_social} - {c.cnpj}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
+                    {!canSelectTenant && (
+                      <p className="text-xs text-muted-foreground">
+                        O usuário será vinculado automaticamente ao seu tenant atual.
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
