@@ -898,10 +898,10 @@ export default function Usuarios() {
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-destructive">
                   <Trash2 className="h-5 w-5" />
-                  Excluir usuário
+                  Excluir usuário permanentemente
                 </DialogTitle>
                 <DialogDescription>
-                  Tem certeza que deseja excluir este usuário? Essa ação remove o acesso ao sistema e não poderá ser desfeita facilmente.
+                  Tem certeza que deseja excluir este usuário <strong>permanentemente</strong>? Essa ação remove o acesso, apaga o cadastro do banco e do sistema de autenticação. <strong>Não poderá ser desfeita.</strong>
                 </DialogDescription>
               </DialogHeader>
               {deletingUser && (
