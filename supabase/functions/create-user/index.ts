@@ -356,14 +356,45 @@ serve(async (req) => {
       _details: JSON.stringify({ name, email, role, company_id, linked: isLinkedExisting }),
     });
 
+    // ──────────────────────────────────────────────
+    // STEP 8: Send WhatsApp with credentials (best-effort)
+    // ──────────────────────────────────────────────
+    const appUrl = Deno.env.get("APP_URL") || "https://accordpipe.com.br";
+    let whatsappSent = false;
+    let whatsappError: string | null = null;
+    try {
+      const waText =
+        `Olá, ${name.split(" ")[0]} 👋\n\n` +
+        `Seu acesso ao *ACCORD* foi criado com sucesso.\n\n` +
+        `🌐 URL: ${appUrl}\n` +
+        `👤 Login: ${email}\n` +
+        `🔑 Senha temporária: ${tempPassword}\n\n` +
+        `No primeiro acesso você deverá definir uma nova senha permanente.`;
+
+      const { data: waData, error: waErr } = await supabase.functions.invoke("whatsapp-send", {
+        body: {
+          tenant_id: company_id,
+          phone: cleanWhatsapp,
+          text: waText,
+        },
+      });
+      if (waErr) whatsappError = waErr.message || "Falha ao invocar whatsapp-send";
+      else if (waData?.success === false) whatsappError = waData?.message || "Provider WhatsApp retornou erro";
+      else whatsappSent = true;
+    } catch (e: any) {
+      whatsappError = e?.message || "Erro inesperado no envio WhatsApp";
+    }
+
     const successMessage = isLinkedExisting
       ? "Usuário existente vinculado a este tenant com sucesso!"
       : "Usuário criado com sucesso!";
 
     return respond(true, {
       user_id: userId,
-      temp_password: isLinkedExisting ? undefined : tempPassword,
+      temp_password: tempPassword,
       linked_existing: isLinkedExisting,
+      whatsapp_sent: whatsappSent,
+      whatsapp_error: whatsappError,
       message: successMessage,
     });
   } catch (err: any) {
