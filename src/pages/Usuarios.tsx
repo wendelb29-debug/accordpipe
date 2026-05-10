@@ -233,8 +233,8 @@ export default function Usuarios() {
 
     setIsSubmitting(true);
     try {
-      const companyId = isMaster
-        ? (formData.company_id || activeCompanyId)
+      const companyId = canSelectTenant
+        ? (formData.company_id || activeCompanyId || profile?.company_id)
         : profile?.company_id;
 
       const { data, error } = await supabase.functions.invoke("create-user", {
