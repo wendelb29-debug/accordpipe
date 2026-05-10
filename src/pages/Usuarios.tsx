@@ -814,31 +814,28 @@ export default function Usuarios() {
                   <div className="space-y-2">
                     <Label htmlFor="company">Tenant vinculado</Label>
                     <Select
-                      value={formData.company_id || activeCompanyId || ""}
+                      value={formData.company_id || activeCompanyId || profile?.company_id || ""}
                       onValueChange={(value: string) =>
                         setFormData({ ...formData, company_id: value })
                       }
-                      disabled={!isMaster}
+                      disabled={!canSelectTenant}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o tenant" />
                       </SelectTrigger>
                       <SelectContent>
-                        {isMaster
-                          ? allCompanies.map((c) => (
-                              <SelectItem key={c.id} value={c.id}>
-                                {c.nome_fantasia || c.razao_social} - {c.cnpj}
-                              </SelectItem>
-                            ))
-                          : allCompanies
-                              .filter((c) => c.id === activeCompanyId)
-                              .map((c) => (
-                                <SelectItem key={c.id} value={c.id}>
-                                  {c.nome_fantasia || c.razao_social} - {c.cnpj}
-                                </SelectItem>
-                              ))}
+                        {allCompanies.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.nome_fantasia || c.razao_social} - {c.cnpj}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
+                    {!canSelectTenant && (
+                      <p className="text-xs text-muted-foreground">
+                        O usuário será vinculado automaticamente ao seu tenant atual.
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
