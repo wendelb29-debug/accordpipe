@@ -159,7 +159,6 @@ serve(async (req) => {
     // ──────────────────────────────────────────────
     // STEP 2: Try to create auth user
     // ──────────────────────────────────────────────
-    const tempPassword = crypto.randomUUID().slice(0, 12) + "A1!";
     let userId: string;
     let isLinkedExisting = false;
 
@@ -171,7 +170,6 @@ serve(async (req) => {
     });
 
     if (createError) {
-      // Check if it's an email conflict
       const isEmailConflict =
         createError.message?.toLowerCase().includes("already") ||
         createError.message?.toLowerCase().includes("duplicate") ||
@@ -184,26 +182,37 @@ serve(async (req) => {
       }
 
       // ──────────────────────────────────────────────
-      // STEP 3: User already exists in auth — find them
+      // STEP 3: User already exists in auth — find via profiles (fast path)
       // ──────────────────────────────────────────────
-      let foundUser: any = null;
-      let page = 1;
-      const perPage = 50;
-      while (!foundUser) {
-        const { data: pageData, error: pageError } = await supabase.auth.admin.listUsers({ page, perPage });
-        if (pageError || !pageData?.users?.length) break;
-        foundUser = pageData.users.find((u: any) => u.email === email);
-        if (pageData.users.length < perPage) break;
-        page++;
-        if (page > 20) break;
+      const { data: existingByEmail } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("email", email)
+        .maybeSingle();
+
+      let foundUserId: string | null = existingByEmail?.user_id ?? null;
+
+      // Fallback: paginate auth users (slow but reliable)
+      if (!foundUserId) {
+        let page = 1;
+        const perPage = 200;
+        while (!foundUserId) {
+          const { data: pageData, error: pageError } = await supabase.auth.admin.listUsers({ page, perPage });
+          if (pageError || !pageData?.users?.length) break;
+          const match = pageData.users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
+          if (match) { foundUserId = match.id; break; }
+          if (pageData.users.length < perPage) break;
+          page++;
+          if (page > 10) break;
+        }
       }
 
-      if (!foundUser) {
+      if (!foundUserId) {
         console.error("Could not find existing auth user for email:", email);
-        return respond(false, { error: "E-mail já existe mas não foi possível vincular. Contate o suporte." });
+        return respond(false, { error: "E-mail já existe no Auth mas não foi possível localizar o usuário. Contate o suporte." });
       }
 
-      userId = foundUser.id;
+      userId = foundUserId;
       isLinkedExisting = true;
     } else {
       userId = newUser.user.id;
