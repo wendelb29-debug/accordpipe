@@ -51,6 +51,15 @@ export function ProtectedRoute({ children, allowedRoles, requiredPermission }: P
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
+  // Force password change on first access
+  if (
+    profile &&
+    (profile as any).must_change_password === true &&
+    location.pathname !== "/primeiro-acesso"
+  ) {
+    return <Navigate to="/primeiro-acesso" replace />;
+  }
+
   // Check if user is active or pending
   if (profile && (!profile.is_active || (profile as any).status === "pendente" || (profile as any).status === "bloqueado")) {
     const status = (profile as any).status;
