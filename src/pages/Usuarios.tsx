@@ -121,7 +121,7 @@ export default function Usuarios() {
   useEffect(() => {
     fetchUsers();
     fetchAllCompanies();
-  }, [activeCompanyId]);
+  }, [activeCompanyId, isGlobalMaster, isResellerTenant, profile?.company_id]);
 
   const fetchAllCompanies = async () => {
     let query = supabase
