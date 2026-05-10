@@ -357,11 +357,22 @@ serve(async (req) => {
     });
 
     // ──────────────────────────────────────────────
-    // STEP 8: Send WhatsApp with credentials (best-effort)
+    // STEP 8: Send WhatsApp with credentials (best-effort, direct via provider)
     // ──────────────────────────────────────────────
     const appUrl = Deno.env.get("APP_URL") || "https://accordpipe.com.br";
     let whatsappSent = false;
     let whatsappError: string | null = null;
+
+    // Normalize phone with BR DDI (55) when missing
+    const normalizePhoneBR = (raw: string): string => {
+      const digits = (raw || "").replace(/\D/g, "");
+      if (!digits) return "";
+      if (digits.startsWith("55") && digits.length >= 12) return digits;
+      if (digits.length === 10 || digits.length === 11) return `55${digits}`;
+      return digits;
+    };
+    const targetPhone = normalizePhoneBR(cleanWhatsapp);
+
     try {
       const waText =
         `Olá, ${name.split(" ")[0]} 👋\n\n` +
@@ -371,19 +382,76 @@ serve(async (req) => {
         `🔑 Senha temporária: ${tempPassword}\n\n` +
         `No primeiro acesso você deverá definir uma nova senha permanente.`;
 
-      const { data: waData, error: waErr } = await supabase.functions.invoke("whatsapp-send", {
-        body: {
-          tenant_id: company_id,
-          phone: cleanWhatsapp,
-          text: waText,
-        },
-      });
-      if (waErr) whatsappError = waErr.message || "Falha ao invocar whatsapp-send";
-      else if (waData?.success === false) whatsappError = waData?.message || "Provider WhatsApp retornou erro";
-      else whatsappSent = true;
+      if (!targetPhone || targetPhone.length < 12) {
+        whatsappError = "WhatsApp inválido ou ausente.";
+      } else {
+        // Load tenant integration with service role (bypass RLS — auth context not available here)
+        const { data: integ, error: integErr } = await supabase
+          .from("tenant_whatsapp_integrations")
+          .select("*")
+          .eq("tenant_id", company_id)
+          .order("is_active", { ascending: false })
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (integErr || !integ) {
+          whatsappError = "Nenhuma integração WhatsApp ativa para este tenant.";
+        } else if (!integ.server_url || !integ.instance_token) {
+          whatsappError = "Credenciais incompletas na integração WhatsApp.";
+        } else {
+          const base = String(integ.server_url).replace(/\/$/, "");
+          let res: Response;
+          if (integ.provider_type === "uazapi") {
+            res = await fetch(`${base}/send/text`, {
+              method: "POST",
+              headers: { token: integ.instance_token, "Content-Type": "application/json" },
+              body: JSON.stringify({ number: targetPhone, text: waText }),
+            });
+          } else if (integ.provider_type === "zapi") {
+            const { data: comp } = await supabase
+              .from("companies")
+              .select("zapi_client_token")
+              .eq("id", company_id)
+              .maybeSingle();
+            const headers: Record<string, string> = { "Content-Type": "application/json" };
+            if (comp?.zapi_client_token) headers["Client-Token"] = comp.zapi_client_token;
+            res = await fetch(
+              `${base}/instances/${integ.instance_id || ""}/token/${integ.instance_token}/send-text`,
+              { method: "POST", headers, body: JSON.stringify({ phone: targetPhone, message: waText }) },
+            );
+          } else {
+            whatsappError = `Provider '${integ.provider_type}' não suportado.`;
+            res = new Response(null, { status: 0 });
+          }
+
+          if (!whatsappError) {
+            const bodyText = await res.text().catch(() => "");
+            if (res.ok) {
+              whatsappSent = true;
+            } else {
+              whatsappError = `Provider HTTP ${res.status}: ${bodyText.slice(0, 200)}`;
+            }
+          }
+        }
+      }
     } catch (e: any) {
       whatsappError = e?.message || "Erro inesperado no envio WhatsApp";
     }
+
+    // Audit WhatsApp send result
+    await supabase.rpc("log_audit", {
+      _user_id: caller.id,
+      _user_name: callerName,
+      _action: whatsappSent ? "whatsapp_access_sent" : "whatsapp_access_send_failed",
+      _target_type: "user",
+      _target_id: userId,
+      _details: JSON.stringify({
+        phone: targetPhone,
+        error: whatsappError,
+        tenant_id: company_id,
+      }),
+    });
 
     const successMessage = isLinkedExisting
       ? "Usuário existente vinculado a este tenant com sucesso!"
