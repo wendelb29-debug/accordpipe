@@ -256,8 +256,12 @@ serve(async (req) => {
             whatsapp: cleanWhatsapp,
             is_active: true,
             status: "ativo",
+            must_change_password: true,
           })
           .eq("user_id", userId);
+
+        // Reset password to the new temp password so admin can share it
+        await supabase.auth.admin.updateUserById(userId, { password: tempPassword });
 
         if (updateErr) {
           console.error("Profile update error (linked user):", updateErr);
