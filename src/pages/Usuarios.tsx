@@ -320,7 +320,7 @@ export default function Usuarios() {
 
       // Sync user_tenants - if master changed the tenant, isolate access to ONLY the new one
       const tenantId = formData.company_id || editingUser.company_id;
-      const tenantChanged = isMaster && tenantId && tenantId !== editingUser.company_id;
+      const tenantChanged = canSelectTenant && tenantId && tenantId !== editingUser.company_id;
 
       if (tenantId) {
         if (tenantChanged) {
