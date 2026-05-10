@@ -40,7 +40,8 @@ export default function PrimeiroAcesso() {
 
       if (typeof refreshProfile === "function") await refreshProfile();
       toast({ title: "Senha definida com sucesso! 🎉", description: "Bem-vindo ao Accord." });
-      navigate("/home", { replace: true });
+      // Hard reload to refresh AuthContext state
+      window.location.replace("/home");
     } catch (err: any) {
       toast({ title: "Erro ao definir senha", description: err?.message, variant: "destructive" });
     } finally {
