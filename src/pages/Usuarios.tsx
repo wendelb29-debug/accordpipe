@@ -297,8 +297,10 @@ export default function Usuarios() {
     try {
       const updateData: any = { 
         name: formData.name, 
-        company_id: formData.company_id || null,
       };
+      if (canSelectTenant) {
+        updateData.company_id = formData.company_id || editingUser.company_id || null;
+      }
       if (formData.cpf) updateData.cpf = formData.cpf.replace(/\D/g, "");
       if (formData.birth_date) updateData.birth_date = formData.birth_date;
       if (formData.whatsapp) updateData.whatsapp = formData.whatsapp.replace(/\D/g, "");
