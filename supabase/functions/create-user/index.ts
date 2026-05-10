@@ -282,6 +282,7 @@ serve(async (req) => {
             is_active: true,
             status: "ativo",
             is_master: false,
+            must_change_password: true,
           });
 
         if (insertProfileError) {
