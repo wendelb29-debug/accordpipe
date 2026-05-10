@@ -287,6 +287,7 @@ const App = () => (
             <Route path="/form/:formId" element={<FormPublico />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/aceitar-convite" element={<AceitarConvite />} />
+            <Route path="/primeiro-acesso" element={<ProtectedRoute><PrimeiroAcesso /></ProtectedRoute>} />
             <Route
               path="/servidores"
               element={
