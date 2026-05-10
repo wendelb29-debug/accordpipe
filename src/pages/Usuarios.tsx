@@ -916,9 +916,9 @@ export default function Usuarios() {
                 <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isDeleting}>
                   Cancelar
                 </Button>
-                <Button variant="destructive" onClick={handleDeleteUser} disabled={isDeleting} className="gap-2">
+                <Button variant="destructive" onClick={handleDeleteUser} disabled={isDeleting} className="gap-2 bg-red-600 hover:bg-red-700">
                   {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                  Excluir usuário
+                  Excluir permanentemente
                 </Button>
               </DialogFooter>
             </DialogContent>
