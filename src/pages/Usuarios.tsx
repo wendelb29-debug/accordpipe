@@ -248,11 +248,16 @@ export default function Usuarios() {
       }
 
       const isLinked = data?.linked_existing;
+      const waNote = data?.whatsapp_sent
+        ? " Credenciais enviadas por WhatsApp."
+        : data?.whatsapp_error
+          ? ` (WhatsApp não enviado: ${data.whatsapp_error})`
+          : "";
       toast({
         title: isLinked ? "Usuário vinculado com sucesso" : "Usuário criado com sucesso",
         description: isLinked
-          ? `${formData.name} já possuía cadastro e foi vinculado a este tenant.`
-          : `${formData.name} foi criado e vinculado ao tenant.${data?.temp_password ? ` Senha temporária: ${data.temp_password}` : ""}`,
+          ? `${formData.name} já possuía cadastro e foi vinculado a este tenant.${waNote}`
+          : `${formData.name} foi criado.${data?.temp_password ? ` Senha temporária: ${data.temp_password}.` : ""}${waNote}`,
       });
 
       setDialogOpen(false);
