@@ -117,6 +117,9 @@ serve(async (req) => {
     const cleanCpf = cpf.replace(/\D/g, "");
     const cleanWhatsapp = whatsapp.replace(/\D/g, "");
 
+    // Generate friendly random password: Accord@XXXX
+    const tempPassword = `Accord@${Math.floor(1000 + Math.random() * 9000)}${Math.random().toString(36).slice(2, 4).toUpperCase()}`;
+
     // ──────────────────────────────────────────────
     // STEP 1: Check if user_tenants link already exists for this email + tenant
     // ──────────────────────────────────────────────
