@@ -3703,6 +3703,7 @@ export type Database = {
           is_active: boolean
           is_master: boolean
           last_assigned_at: string | null
+          must_change_password: boolean
           name: string
           preferred_language: string
           signature_completed: boolean
@@ -3724,6 +3725,7 @@ export type Database = {
           is_active?: boolean
           is_master?: boolean
           last_assigned_at?: string | null
+          must_change_password?: boolean
           name: string
           preferred_language?: string
           signature_completed?: boolean
@@ -3745,6 +3747,7 @@ export type Database = {
           is_active?: boolean
           is_master?: boolean
           last_assigned_at?: string | null
+          must_change_password?: boolean
           name?: string
           preferred_language?: string
           signature_completed?: boolean
