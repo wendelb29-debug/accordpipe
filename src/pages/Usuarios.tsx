@@ -445,6 +445,8 @@ export default function Usuarios() {
       toast({ title: "Ação bloqueada", description: "Você não pode excluir seu próprio usuário.", variant: "destructive" });
       return;
     }
+    const removedId = deletingUser.id;
+    const removedName = deletingUser.name;
     setIsDeleting(true);
     try {
       const { data, error } = await supabase.functions.invoke("delete-user", {
@@ -452,10 +454,11 @@ export default function Usuarios() {
       });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.error || "Erro ao excluir");
-      toast({ title: "Usuário excluído", description: `${deletingUser.name} foi removido.` });
+      // Optimistic UI removal — no full reload needed
+      setUsers((prev) => prev.filter((u) => u.id !== removedId));
+      toast({ title: "Usuário excluído com sucesso", description: `${removedName} foi removido permanentemente.` });
       setDeleteDialogOpen(false);
       setDeletingUser(null);
-      fetchUsers();
     } catch (e: any) {
       toast({ title: "Erro ao excluir", description: e.message || "Não foi possível excluir.", variant: "destructive" });
     } finally {
