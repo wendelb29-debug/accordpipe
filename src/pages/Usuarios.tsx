@@ -822,7 +822,7 @@ export default function Usuarios() {
                       onValueChange={(value: string) =>
                         setFormData({ ...formData, company_id: value })
                       }
-                      disabled={!canSelectTenant}
+                      disabled={!canSelectTenant || !!editingUser?.is_master}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o tenant" />
@@ -835,9 +835,11 @@ export default function Usuarios() {
                         ))}
                       </SelectContent>
                     </Select>
-                    {!canSelectTenant && (
+                    {(!canSelectTenant || editingUser?.is_master) && (
                       <p className="text-xs text-muted-foreground">
-                        O usuário será vinculado automaticamente ao seu tenant atual.
+                        {editingUser?.is_master
+                          ? "O tenant do usuário master não pode ser alterado."
+                          : "O usuário será vinculado automaticamente ao seu tenant atual."}
                       </p>
                     )}
                   </div>
