@@ -22,11 +22,6 @@ export default function AceitarConvite() {
   const [accepted, setAccepted] = useState(false);
 
   useEffect(() => {
-    console.log("=== DEBUG CONVITE ===");
-    console.log("URL completa:", window.location.href);
-    console.log("Token raw:", rawToken);
-    console.log("Token decoded:", token);
-    console.log("Token length:", token?.length);
     if (!token) {
       setLoading(false);
       return;
@@ -42,14 +37,6 @@ export default function AceitarConvite() {
         .eq("token", token)
         .maybeSingle();
 
-      console.log("Data retornada:", data);
-      console.log("Erro retornado:", error);
-      console.log("Hora atual UTC:", new Date().toISOString());
-      if (data) {
-        console.log("expires_at:", data.expires_at);
-        console.log("status:", data.status);
-        console.log("Expirou?", new Date(data.expires_at) < new Date());
-      }
 
       if (error) {
         console.error("[AceitarConvite] erro ao buscar convite:", error);

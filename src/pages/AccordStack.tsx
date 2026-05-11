@@ -116,7 +116,7 @@ export default function AccordStack() {
     };
   });
 
-  console.log("[AccordStack] selectedContactId:", selectedContactId, "messages:", messages.length, "chatMessages:", chatMessages.length);
+  
 
   const handleTransfer = (contactId: string) => {
     setTransferContactId(contactId);
@@ -157,7 +157,7 @@ export default function AccordStack() {
       activeIntegration.connection_status !== "error")
   );
 
-  console.log("[AccordStack] activeIntegration:", activeIntegration, "→ isConnected:", isIntegrationConnected);
+  
 
   const integrations = activeIntegration
     ? [
@@ -289,7 +289,7 @@ export default function AccordStack() {
             toast.error("Número inválido");
             return;
           }
-          console.log("[NewConversation] start", { normalizedPhone, name, integrationId, companyId });
+          
 
           try {
             // Pega usuário atual para atribuir a conversa automaticamente
@@ -337,7 +337,7 @@ export default function AccordStack() {
                 return;
               }
               contactId = created.id;
-              console.log("[NewConversation] contato criado:", contactId);
+              
             }
 
             // 2. Fecha modal, ajusta filtros para garantir visibilidade e abre conversa

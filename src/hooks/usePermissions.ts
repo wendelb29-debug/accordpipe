@@ -14,11 +14,10 @@ function resolveKey(key: string): string {
 }
 
 export function usePermissions() {
-  const { user, role, profile } = useAuth();
+  const { user, role, profile, loading: authLoading } = useAuth();
   const [roleDefaults, setRoleDefaults] = useState<Record<string, PermissionEntry>>({});
   const [customPerms, setCustomPerms] = useState<Record<string, PermissionEntry>>({});
   const [loading, setLoading] = useState(true);
-  const { loading: authLoading } = useAuth();
 
   const isCeoOrMaster = role === "ceo" || role === "master" || profile?.is_master === true;
 

@@ -317,7 +317,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
         validationCode,
       );
 
-      console.log("HTML FINAL:", renderedContent);
+      
 
       let finalPdfUrl = template.pdf_url;
       if (renderedContent) {

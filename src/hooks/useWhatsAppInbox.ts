@@ -159,7 +159,7 @@ export function useWhatsAppInbox() {
       return;
     }
 
-    console.log("[useWhatsAppInbox] fetched contacts:", data?.length ?? 0, "for tenant:", companyId);
+    
     setContacts((data || []) as InboxContact[]);
     setLoading(false);
   }, [companyId, filter, user?.id]);
@@ -449,8 +449,6 @@ export function useWhatsAppInbox() {
       return;
     }
 
-    console.log("[checkConnection] querying for companyId:", companyId);
-
     try {
       const { data: integ, error } = await supabase
         .from("tenant_whatsapp_integrations" as any)
@@ -466,7 +464,6 @@ export function useWhatsAppInbox() {
       }
 
       const integData = integ as any;
-      console.log("[useWhatsAppInbox] active integration:", integData);
 
       const hasCredentials = !!integData && (
         integData.provider_type === "uazapi"
@@ -557,7 +554,7 @@ export function useWhatsAppInbox() {
           const isInbound = newMsg.direction === "inbound";
 
           if (matches) {
-            console.log("[messages:incoming] source=realtime-INSERT key=", getMessageUniqueKey(newMsg));
+            
             setMessages(prev => {
               const merged = mergeMessagesDedup(prev, [newMsg]);
               messagesCacheRef.current.set(newMsg.contact_id, merged);
@@ -624,7 +621,7 @@ export function useWhatsAppInbox() {
         (payload) => {
           const updated = payload.new as InboxMessage;
           if (matchesSelectedConversation(updated, selectedContactIdRef.current, selectedContactPhoneRef.current)) {
-            console.log("[messages:incoming] source=realtime-UPDATE key=", getMessageUniqueKey(updated));
+            
             setMessages(prev => {
               const merged = mergeMessagesDedup(prev, [updated]);
               messagesCacheRef.current.set(updated.contact_id, merged);
@@ -638,9 +635,7 @@ export function useWhatsAppInbox() {
           }
         }
       )
-      .subscribe((status) => {
-        console.log("[inbox realtime] channel status:", status, "companyId:", companyId);
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);

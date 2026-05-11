@@ -30,8 +30,10 @@ import {
   GraduationCap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTenantLogo } from "@/hooks/useTenantLogo";
+import { useOverdueCount } from "@/hooks/useOverdueCount";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -108,16 +110,16 @@ export function Sidebar() {
     hoverTimeoutRef.current = setTimeout(() => setHovered(false), 200);
   };
 
-  const [overdueCount, setOverdueCount] = useState(0);
   const [configOpen, setConfigOpen] = useState(false);
   const { role, signOut, profile, isMasterTenantAdmin, isGlobalMaster, isResellerTenant } = useAuth();
   const activeCompanyId = useActiveCompanyId();
-  const [tenantLogoUrl, setTenantLogoUrl] = useState<string | null>(null);
+  const tenantLogoUrl = useTenantLogo(activeCompanyId);
+  const overdueCount = useOverdueCount();
 
   // Sync language from profile on load
   useEffect(() => {
-    if (profile && (profile as any).preferred_language) {
-      const lang = (profile as any).preferred_language;
+    if (profile?.preferred_language) {
+      const lang = profile.preferred_language;
       setCurrentLang(lang);
       localStorage.setItem("accord-lang", lang);
     }
@@ -131,58 +133,6 @@ export function Sidebar() {
       await supabase.from("profiles").update({ preferred_language: code } as any).eq("id", profile.id);
     }
   };
-
-  useEffect(() => {
-    if (!activeCompanyId) { setTenantLogoUrl(null); return; }
-    const fetchLogo = async () => {
-      const { data } = await supabase
-        .from("companies")
-        .select("brand_logo_url, servidor_id")
-        .eq("id", activeCompanyId)
-        .single();
-      // Master tenant uses Accord logo
-      if (data && data.servidor_id !== null && data.brand_logo_url) {
-        setTenantLogoUrl(data.brand_logo_url);
-      } else {
-        setTenantLogoUrl(null);
-      }
-    };
-    fetchLogo();
-    const handler = () => fetchLogo();
-    window.addEventListener("brand-colors-updated", handler);
-    window.addEventListener("tenant-switched", handler);
-    return () => {
-      window.removeEventListener("brand-colors-updated", handler);
-      window.removeEventListener("tenant-switched", handler);
-    };
-  }, [activeCompanyId]);
-
-  const fetchOverdueActivities = useCallback(async () => {
-    if (!profile?.user_id || !activeCompanyId) return;
-    const { data, error } = await supabase
-      .from("crm_lead_activities")
-      .select("id, metadata")
-      .eq("created_by_user_id", profile.user_id)
-      .eq("servidor_id", activeCompanyId)
-      .in("type", ["activity", "meeting", "call", "email", "internal", "whatsapp"]);
-    if (error || !data) return;
-    const now = new Date();
-    const overdue = data.filter((a: any) => {
-      const meta = a.metadata || {};
-      const status = meta.status || meta.activity_status || "planejada";
-      if (status === "concluida" || status === "no_show") return false;
-      const scheduled = meta.scheduled_at || meta.scheduled_date;
-      if (!scheduled) return false;
-      return new Date(scheduled) < now;
-    });
-    setOverdueCount(overdue.length);
-  }, [profile?.user_id, activeCompanyId]);
-
-  useEffect(() => {
-    fetchOverdueActivities();
-    const interval = setInterval(fetchOverdueActivities, 60000);
-    return () => clearInterval(interval);
-  }, [fetchOverdueActivities]);
 
   const { hasPermission } = usePermissions();
 
