@@ -426,7 +426,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   if (detailLead) {
     const currentLead = leads.find((l) => l.id === detailLead.id) || detailLead;
     return (
-      <div className="flex flex-col h-full w-full overflow-hidden">
+      <div className="flex flex-col flex-1 min-h-0 w-full overflow-hidden">
         <CrmLeadDetailView
           lead={currentLead}
           onBack={() => setDetailLead(null)}
