@@ -116,7 +116,7 @@ export default function AccordStack() {
     };
   });
 
-  console.log("[AccordStack] selectedContactId:", selectedContactId, "messages:", messages.length, "chatMessages:", chatMessages.length);
+  
 
   const handleTransfer = (contactId: string) => {
     setTransferContactId(contactId);
