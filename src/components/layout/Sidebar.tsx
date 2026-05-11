@@ -229,7 +229,11 @@ export function Sidebar() {
           <img
             src={tenantLogoUrl || accordLogo}
             alt={tenantLogoUrl ? "Tenant" : "ACCORD"}
-            className={cn("transition-all duration-300 object-contain", collapsed ? "h-7" : "h-8", tenantLogoUrl && "max-w-[120px]")}
+            className={cn(
+              "transition-all duration-300 object-contain w-auto flex-shrink-0",
+              collapsed ? "h-7 max-w-[36px]" : "h-8",
+              tenantLogoUrl ? "max-w-[120px]" : "max-w-[32px]"
+            )}
           />
           {!tenantLogoUrl && (
             <span className={cn(
