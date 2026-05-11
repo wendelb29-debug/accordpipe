@@ -635,9 +635,7 @@ export function useWhatsAppInbox() {
           }
         }
       )
-      .subscribe((status) => {
-        console.log("[inbox realtime] channel status:", status, "companyId:", companyId);
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
