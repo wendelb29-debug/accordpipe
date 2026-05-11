@@ -22,11 +22,11 @@ export default function AceitarConvite() {
   const [accepted, setAccepted] = useState(false);
 
   useEffect(() => {
-    console.log("=== DEBUG CONVITE ===");
-    console.log("URL completa:", window.location.href);
-    console.log("Token raw:", rawToken);
-    console.log("Token decoded:", token);
-    console.log("Token length:", token?.length);
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+    loadInvitation();
     if (!token) {
       setLoading(false);
       return;
