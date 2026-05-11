@@ -449,8 +449,6 @@ export function useWhatsAppInbox() {
       return;
     }
 
-    console.log("[checkConnection] querying for companyId:", companyId);
-
     try {
       const { data: integ, error } = await supabase
         .from("tenant_whatsapp_integrations" as any)
