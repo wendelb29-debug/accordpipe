@@ -289,7 +289,7 @@ export default function AccordStack() {
             toast.error("Número inválido");
             return;
           }
-          console.log("[NewConversation] start", { normalizedPhone, name, integrationId, companyId });
+          
 
           try {
             // Pega usuário atual para atribuir a conversa automaticamente
