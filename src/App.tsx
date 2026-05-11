@@ -3,63 +3,72 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeSync } from "@/components/layout/ThemeSync";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+
+// Eager — critical entry points
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Home from "./pages/Home";
-import Dashboard from "./pages/Dashboard";
-import Empresas from "./pages/Empresas";
-import CompanyDetail from "./pages/CompanyDetail";
-import Boletos from "./pages/Boletos";
-import Documentos from "./pages/Documentos";
-import Relatorios from "./pages/Relatorios";
-import Contratos from "./pages/Contratos";
-import Cancelamentos from "./pages/Cancelamentos";
-import Usuarios from "./pages/Usuarios";
-import Atendimento from "./pages/Atendimento";
-import AssinarContrato from "./pages/AssinarContrato";
-import ResetPassword from "./pages/ResetPassword";
 import PrimeiroAcesso from "./pages/PrimeiroAcesso";
-import CapturaLead from "./pages/CapturaLead";
-import FormularioContato from "./pages/FormularioContato";
-import Atividades from "./pages/Atividades";
-import Perfil from "./pages/Perfil";
-import AccordStack from "./pages/AccordStack";
-import GestaoVendas from "./pages/GestaoVendas";
-import NotFound from "./pages/NotFound";
-import Formularios from "./pages/Formularios";
-import FormPublico from "./pages/FormPublico";
-import Cadastrados from "./pages/Cadastrados";
-import Financeiro from "./pages/Financeiro";
-import Clientes from "./pages/Clientes";
-import Descarte from "./pages/Descarte";
-import AssinarPdf from "./pages/AssinarPdf";
-import ValidarDocumento from "./pages/ValidarDocumento";
-import Servidores from "./pages/Servidores";
-import NovoServidor from "./pages/NovoServidor";
-import AceitarConvite from "./pages/AceitarConvite";
-import AssinarDocumento from "./pages/AssinarDocumento";
 
-import Performance from "./pages/Performance";
-import TenantSetupPublico from "./pages/TenantSetupPublico";
-
-import Eventos from "./pages/Eventos";
-import MeusTenants from "./pages/MeusTenants";
-import Academy from "./pages/Academy";
-import GestaoTenants from "./pages/GestaoTenants";
-import WhatsAppConnection from "./pages/WhatsAppConnection";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsOfService from "./pages/TermsOfService";
-import RefundPolicy from "./pages/RefundPolicy";
+// Lazy — all other routes
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Empresas = lazy(() => import("./pages/Empresas"));
+const CompanyDetail = lazy(() => import("./pages/CompanyDetail"));
+const Boletos = lazy(() => import("./pages/Boletos"));
+const Documentos = lazy(() => import("./pages/Documentos"));
+const Relatorios = lazy(() => import("./pages/Relatorios"));
+const Contratos = lazy(() => import("./pages/Contratos"));
+const Cancelamentos = lazy(() => import("./pages/Cancelamentos"));
+const Usuarios = lazy(() => import("./pages/Usuarios"));
+const Atendimento = lazy(() => import("./pages/Atendimento"));
+const AssinarContrato = lazy(() => import("./pages/AssinarContrato"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const CapturaLead = lazy(() => import("./pages/CapturaLead"));
+const FormularioContato = lazy(() => import("./pages/FormularioContato"));
+const Atividades = lazy(() => import("./pages/Atividades"));
+const Perfil = lazy(() => import("./pages/Perfil"));
+const AccordStack = lazy(() => import("./pages/AccordStack"));
+const GestaoVendas = lazy(() => import("./pages/GestaoVendas"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Formularios = lazy(() => import("./pages/Formularios"));
+const FormPublico = lazy(() => import("./pages/FormPublico"));
+const Cadastrados = lazy(() => import("./pages/Cadastrados"));
+const Financeiro = lazy(() => import("./pages/Financeiro"));
+const Clientes = lazy(() => import("./pages/Clientes"));
+const Descarte = lazy(() => import("./pages/Descarte"));
+const AssinarPdf = lazy(() => import("./pages/AssinarPdf"));
+const ValidarDocumento = lazy(() => import("./pages/ValidarDocumento"));
+const Servidores = lazy(() => import("./pages/Servidores"));
+const NovoServidor = lazy(() => import("./pages/NovoServidor"));
+const AceitarConvite = lazy(() => import("./pages/AceitarConvite"));
+const AssinarDocumento = lazy(() => import("./pages/AssinarDocumento"));
+const Performance = lazy(() => import("./pages/Performance"));
+const TenantSetupPublico = lazy(() => import("./pages/TenantSetupPublico"));
+const Eventos = lazy(() => import("./pages/Eventos"));
+const MeusTenants = lazy(() => import("./pages/MeusTenants"));
+const Academy = lazy(() => import("./pages/Academy"));
+const GestaoTenants = lazy(() => import("./pages/GestaoTenants"));
+const WhatsAppConnection = lazy(() => import("./pages/WhatsAppConnection"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1 } },
 });
+
+const PageLoader = () => (
+  <div className="flex min-h-screen items-center justify-center bg-background">
+    <div className="animate-spin rounded-full h-10 w-10 border-[3px] border-muted border-t-primary" />
+  </div>
+);
 
 const App = () => (
   <ErrorBoundary fallbackModule="app_root">
@@ -70,6 +79,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <ThemeSync />
+          <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
@@ -377,6 +387,7 @@ const App = () => (
             <Route path="/reembolso" element={<RefundPolicy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
