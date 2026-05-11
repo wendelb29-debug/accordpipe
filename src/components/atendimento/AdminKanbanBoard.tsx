@@ -126,14 +126,16 @@ export function AdminKanbanBoard({ searchTerm }: AdminKanbanBoardProps) {
   if (detailLead) {
     const currentLead = leads.find((l) => l.id === detailLead.id) || detailLead;
     return (
-      <CrmLeadDetailView
-        lead={currentLead}
-        onBack={() => setDetailLead(null)}
-        onUpdate={updateLead}
-        onMoveStage={moveToStage}
-        onDelete={async (id) => { await deleteLead(id); setDetailLead(null); return true; }}
-        isAdminPipeline
-      />
+      <div className="flex flex-col h-full w-full overflow-hidden">
+        <CrmLeadDetailView
+          lead={currentLead}
+          onBack={() => setDetailLead(null)}
+          onUpdate={updateLead}
+          onMoveStage={moveToStage}
+          onDelete={async (id) => { await deleteLead(id); setDetailLead(null); return true; }}
+          isAdminPipeline
+        />
+      </div>
     );
   }
 
