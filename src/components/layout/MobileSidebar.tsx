@@ -61,9 +61,8 @@ export function MobileSidebar() {
   const [currentLang, setCurrentLang] = useState(() => localStorage.getItem("accord-lang") || "pt-BR");
 
   useEffect(() => {
-    if (profile && (profile as any).preferred_language) {
-      const lang = (profile as any).preferred_language;
-      setCurrentLang(lang);
+    if (profile?.preferred_language) {
+      setCurrentLang(profile.preferred_language);
     }
   }, [profile]);
 
