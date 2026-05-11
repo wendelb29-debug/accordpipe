@@ -54,7 +54,7 @@ export function ProtectedRoute({ children, allowedRoles, requiredPermission }: P
   // Force password change on first access
   if (
     profile &&
-    (profile as any).must_change_password === true &&
+    profile.must_change_password === true &&
     location.pathname !== "/primeiro-acesso"
   ) {
     return <Navigate to="/primeiro-acesso" replace />;
