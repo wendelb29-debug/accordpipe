@@ -159,7 +159,7 @@ export function useWhatsAppInbox() {
       return;
     }
 
-    console.log("[useWhatsAppInbox] fetched contacts:", data?.length ?? 0, "for tenant:", companyId);
+    
     setContacts((data || []) as InboxContact[]);
     setLoading(false);
   }, [companyId, filter, user?.id]);
