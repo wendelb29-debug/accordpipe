@@ -337,7 +337,7 @@ export default function AccordStack() {
                 return;
               }
               contactId = created.id;
-              console.log("[NewConversation] contato criado:", contactId);
+              
             }
 
             // 2. Fecha modal, ajusta filtros para garantir visibilidade e abre conversa
