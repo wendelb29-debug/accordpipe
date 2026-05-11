@@ -464,7 +464,6 @@ export function useWhatsAppInbox() {
       }
 
       const integData = integ as any;
-      console.log("[useWhatsAppInbox] active integration:", integData);
 
       const hasCredentials = !!integData && (
         integData.provider_type === "uazapi"
