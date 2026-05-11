@@ -47,6 +47,9 @@ interface Profile {
   cpf: string | null;
   whatsapp: string | null;
   preferred_language: string;
+  must_change_password?: boolean;
+  phone?: string | null;
+  status?: string | null;
 }
 
 interface CompanyOption {
