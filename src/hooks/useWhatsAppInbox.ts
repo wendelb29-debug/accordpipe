@@ -554,7 +554,7 @@ export function useWhatsAppInbox() {
           const isInbound = newMsg.direction === "inbound";
 
           if (matches) {
-            console.log("[messages:incoming] source=realtime-INSERT key=", getMessageUniqueKey(newMsg));
+            
             setMessages(prev => {
               const merged = mergeMessagesDedup(prev, [newMsg]);
               messagesCacheRef.current.set(newMsg.contact_id, merged);
