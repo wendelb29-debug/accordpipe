@@ -157,7 +157,7 @@ export default function AccordStack() {
       activeIntegration.connection_status !== "error")
   );
 
-  console.log("[AccordStack] activeIntegration:", activeIntegration, "→ isConnected:", isIntegrationConnected);
+  
 
   const integrations = activeIntegration
     ? [
