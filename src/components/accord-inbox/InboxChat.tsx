@@ -86,12 +86,14 @@ interface InboxChatProps {
 }
 
 function ContactAvatar({ contact, size = 36 }: { contact: ChatContact; size?: number }) {
+  const [imgError, setImgError] = useState(false);
   const initials = contact.name.split(" ").map((w) => w[0]).join("").substring(0, 2).toUpperCase();
-  if (contact.profilePicUrl) {
+  if (contact.profilePicUrl && !imgError) {
     return (
       <img src={contact.profilePicUrl} alt={contact.name}
         className="rounded-full object-cover flex-shrink-0"
-        style={{ width: size, height: size }} />
+        style={{ width: size, height: size }}
+        onError={() => setImgError(true)} />
     );
   }
   return (
