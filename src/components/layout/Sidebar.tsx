@@ -116,8 +116,8 @@ export function Sidebar() {
 
   // Sync language from profile on load
   useEffect(() => {
-    if (profile && (profile as any).preferred_language) {
-      const lang = (profile as any).preferred_language;
+    if (profile?.preferred_language) {
+      const lang = profile.preferred_language;
       setCurrentLang(lang);
       localStorage.setItem("accord-lang", lang);
     }
