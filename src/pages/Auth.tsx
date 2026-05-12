@@ -225,8 +225,14 @@ export default function Auth() {
 
         {/* Content */}
         <div className="relative z-[1] flex flex-col">
-          <img src={accordLogo} alt="ACCORD" className="mb-1.5" style={{ height: 48, width: "auto", objectFit: "contain" }} />
-          <div className="text-[11px] text-[#6B7280] mb-9">plataforma comercial inteligente</div>
+          <img
+            src={accordLogo}
+            alt="ACCORD"
+            className="mb-3 -ml-1 w-[240px] sm:w-[280px] lg:w-[300px] h-auto select-none drop-shadow-[0_2px_12px_rgba(122,63,242,0.18)]"
+            style={{ objectFit: "contain" }}
+            draggable={false}
+          />
+          <div className="text-[12px] font-medium tracking-wide text-[#6B7280] mb-9">plataforma comercial inteligente</div>
 
           <h1 className="text-[36px] font-black text-[#0D1117] tracking-[-1.8px] leading-[1.08] mb-4 max-w-[430px]">
             CRM, contratos e atendimento com{" "}
