@@ -115,6 +115,7 @@ export default function Auth() {
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+  const [openSheet, setOpenSheet] = useState<null | "about" | "contact" | "terms" | "privacy">(null);
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
