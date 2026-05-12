@@ -175,16 +175,16 @@ export function HeroSection() {
 
       <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#070B14] to-transparent pointer-events-none z-10" />
 
-      <div className="relative z-20 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-12 pb-8 sm:pt-16 sm:pb-12 md:pt-20 md:pb-16 lg:pt-24 lg:pb-20 w-full">
-        <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+      <div className="relative z-20 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-6 pb-4 sm:pt-8 sm:pb-6 lg:pt-10 lg:pb-8 w-full">
+        <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 items-center">
           {/* Left — Content */}
           <div className="text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(59,130,246,0.25)] bg-[rgba(59,130,246,0.06)] px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-medium text-[#60A5FA] mb-5 sm:mb-6 animate-fade-in">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(59,130,246,0.25)] bg-[rgba(59,130,246,0.06)] px-3 py-1 text-[11px] sm:text-xs font-medium text-[#60A5FA] mb-3 sm:mb-4 animate-fade-in">
               <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6] animate-pulse" />
               Plataforma SaaS Enterprise
             </div>
 
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] xl:text-6xl font-black tracking-[-0.03em] leading-[1.1] text-white animate-slide-up">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3rem] xl:text-[3.5rem] font-black tracking-[-0.03em] leading-[1.05] text-white animate-slide-up">
               Sua empresa perde vendas{" "}
               <br className="hidden sm:block" />
               por falta de{" "}
@@ -193,32 +193,32 @@ export function HeroSection() {
               </span>
             </h1>
 
-            <p className="mt-4 sm:mt-5 text-sm sm:text-base md:text-lg text-[#94A3B8] max-w-xl mx-auto lg:mx-0 leading-relaxed animate-slide-up" style={{ animationDelay: "0.1s" }}>
+            <p className="mt-3 text-sm sm:text-base text-[#94A3B8] max-w-xl mx-auto lg:mx-0 leading-relaxed animate-slide-up" style={{ animationDelay: "0.1s" }}>
               Centralize CRM, propostas, contratos, atendimento e automação com IA em um único sistema — e transforme sua operação em uma máquina previsível de crescimento.
             </p>
 
             {/* Benefits */}
-            <div className="mt-6 sm:mt-7 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 max-w-lg mx-auto lg:mx-0 animate-slide-up" style={{ animationDelay: "0.2s" }}>
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg mx-auto lg:mx-0 animate-slide-up" style={{ animationDelay: "0.2s" }}>
               {benefits.map((b) => (
-                <div key={b.text} className="flex items-center gap-2 sm:gap-2.5 rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] px-3 sm:px-3.5 py-2 sm:py-2.5 transition-all duration-200 hover:border-[rgba(59,130,246,0.15)] hover:bg-[rgba(59,130,246,0.04)]">
-                  <b.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#3B82F6] shrink-0" />
+                <div key={b.text} className="flex items-center gap-2 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 transition-all duration-200 hover:border-[rgba(59,130,246,0.15)] hover:bg-[rgba(59,130,246,0.04)]">
+                  <b.icon className="h-3.5 w-3.5 text-[#3B82F6] shrink-0" />
                   <span className="text-[12px] sm:text-[13px] text-[#CBD5E1] font-medium">{b.text}</span>
                 </div>
               ))}
             </div>
 
             {/* CTAs */}
-            <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:justify-center lg:justify-start animate-slide-up" style={{ animationDelay: "0.3s" }}>
+            <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:justify-center lg:justify-start animate-slide-up" style={{ animationDelay: "0.3s" }}>
               <Button
                 size="lg"
-                className="gap-2 sm:gap-2.5 px-6 sm:px-8 text-sm font-semibold bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-xl shadow-[rgba(37,99,235,0.25)] h-12 sm:h-13 rounded-xl transition-all duration-200 hover:shadow-2xl hover:shadow-[rgba(37,99,235,0.35)] hover:scale-[1.02] w-full sm:w-auto border-0"
+                className="gap-2 px-6 text-sm font-semibold bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-xl shadow-[rgba(37,99,235,0.25)] h-11 rounded-xl transition-all duration-200 hover:shadow-2xl hover:shadow-[rgba(37,99,235,0.35)] hover:scale-[1.02] w-full sm:w-auto border-0"
                 onClick={() => setTrialOpen(true)}
               >
                 <Rocket className="h-4 w-4" />
                 Teste 7 dias grátis
               </Button>
               <a href="mailto:contato@accordhub.com.br?subject=Solicitar demonstração" className="w-full sm:w-auto">
-                <Button size="lg" variant="outline" className="gap-2 sm:gap-2.5 px-6 sm:px-8 text-sm font-medium h-12 sm:h-13 rounded-xl border-[rgba(255,255,255,0.1)] text-[#E2E8F0] hover:bg-[rgba(255,255,255,0.05)] hover:border-[rgba(255,255,255,0.2)] transition-all duration-200 w-full bg-transparent">
+                <Button size="lg" variant="outline" className="gap-2 px-6 text-sm font-medium h-11 rounded-xl border-[rgba(255,255,255,0.1)] text-[#E2E8F0] hover:bg-[rgba(255,255,255,0.05)] hover:border-[rgba(255,255,255,0.2)] transition-all duration-200 w-full bg-transparent">
                   <Play className="h-4 w-4" />
                   Ver demonstração
                 </Button>
@@ -226,7 +226,7 @@ export function HeroSection() {
             </div>
 
             {/* Trust */}
-            <div className="mt-5 sm:mt-6 flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-5 text-[11px] sm:text-xs text-[#64748B] animate-slide-up" style={{ animationDelay: "0.4s" }}>
+            <div className="mt-3 flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-5 text-[11px] sm:text-xs text-[#64748B] animate-slide-up" style={{ animationDelay: "0.4s" }}>
               <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-[#22C55E]" /> Sem cartão de crédito</span>
               <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-[#22C55E]" /> 7 dias grátis</span>
               <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-[#22C55E]" /> Suporte incluso</span>
@@ -242,7 +242,7 @@ export function HeroSection() {
 
       {/* Social proof bar — relative now, not absolute */}
       <div className="relative z-20">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pb-6 sm:pb-8">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pb-3 sm:pb-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(17,24,39,0.6)] backdrop-blur-xl px-4 sm:px-6 py-4 sm:py-5">
             {[
               { value: "12k+", label: "Propostas geradas" },
