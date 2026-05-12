@@ -191,12 +191,19 @@ export default function Auth() {
     { icon: Sparkles, title: "Accord IA", desc: "Automação inteligente de mensagens e tarefas" },
   ];
 
-  const topLinks = [
-    { icon: Home, label: "Sobre a empresa", href: "/" },
-    { icon: Phone, label: "Contato", href: "mailto:suporte@accordclass.com.br" },
-    { icon: FileText, label: "Termos de serviço", href: "/terms" },
-    { icon: Shield, label: "Política de privacidade", href: "/privacy" },
+  const topLinks: { icon: typeof Home; label: string; key: "about" | "contact" | "terms" | "privacy" }[] = [
+    { icon: Home, label: "Sobre a empresa", key: "about" },
+    { icon: Phone, label: "Contato", key: "contact" },
+    { icon: FileText, label: "Termos de serviço", key: "terms" },
+    { icon: Shield, label: "Política de privacidade", key: "privacy" },
   ];
+
+  const sheetTitles: Record<NonNullable<typeof openSheet>, string> = {
+    about: "Sobre a empresa",
+    contact: "Contato",
+    terms: "Termos de serviço",
+    privacy: "Política de privacidade",
+  };
 
   return (
     <div className="flex min-h-screen font-sans" style={{ fontFamily: "'Geist', -apple-system, sans-serif" }}>
@@ -212,16 +219,17 @@ export default function Auth() {
         <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-0.5 px-8 py-[13px] border-b border-[rgba(122,63,242,0.1)] backdrop-blur-md" style={{ background: "rgba(244,242,255,0.75)" }}>
           {topLinks.map((l) => {
             const Icon = l.icon;
-            const inner = (
-              <>
+            return (
+              <button
+                key={l.label}
+                type="button"
+                onClick={() => setOpenSheet(l.key)}
+                className="flex items-center gap-1.5 text-[12.5px] font-medium text-[#4B5563] hover:text-[#7A3FF2] hover:bg-[rgba(122,63,242,0.08)] px-3 py-[5px] rounded-md transition-colors"
+              >
                 <Icon className="w-3.5 h-3.5" strokeWidth={1.8} />
                 <span>{l.label}</span>
-              </>
+              </button>
             );
-            const cls = "flex items-center gap-1.5 text-[12.5px] font-medium text-[#4B5563] hover:text-[#7A3FF2] hover:bg-[rgba(122,63,242,0.08)] px-3 py-[5px] rounded-md transition-colors";
-            return l.href.startsWith("http") || l.href.startsWith("mailto") || l.href === "/"
-              ? <a key={l.label} href={l.href} className={cls}>{inner}</a>
-              : <Link key={l.label} to={l.href} className={cls}>{inner}</Link>;
           })}
         </div>
 
