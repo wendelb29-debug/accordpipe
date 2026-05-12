@@ -242,7 +242,7 @@ export function HeroSection() {
 
       {/* Social proof bar — relative now, not absolute */}
       <div className="relative z-20">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pb-6 sm:pb-8">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pb-3 sm:pb-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(17,24,39,0.6)] backdrop-blur-xl px-4 sm:px-6 py-4 sm:py-5">
             {[
               { value: "12k+", label: "Propostas geradas" },
