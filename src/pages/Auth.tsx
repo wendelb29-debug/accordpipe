@@ -225,7 +225,7 @@ export default function Auth() {
 
         {/* Content */}
         <div className="relative z-[1] flex flex-col">
-          <img src={accordLogo} alt="ACCORD" width={44} height={44} className="mb-1.5" style={{ width: 44, height: 44, objectFit: "contain" }} />
+          <img src={accordLogo} alt="ACCORD" className="mb-1.5" style={{ height: 48, width: "auto", objectFit: "contain" }} />
           <div className="text-[11px] text-[#6B7280] mb-9">plataforma comercial inteligente</div>
 
           <h1 className="text-[36px] font-black text-[#0D1117] tracking-[-1.8px] leading-[1.08] mb-4 max-w-[430px]">
