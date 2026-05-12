@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import LandingPage from "./LandingPage";
+import Auth from "./Auth";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -22,7 +22,7 @@ const Index = () => {
   }
 
   if (!user) {
-    return <LandingPage />;
+    return <Auth />;
   }
 
   return null;
