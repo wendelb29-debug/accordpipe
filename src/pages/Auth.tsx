@@ -429,7 +429,7 @@ export default function Auth() {
 
             {openSheet === "terms" && (
               <>
-                <p className="text-xs text-[#9CA3AF]">Última atualização: 23 de abril de 2026</p>
+                <p className="text-[11px] uppercase tracking-wider text-[#7A3FF2]/70 font-semibold">Última atualização: 23 de abril de 2026</p>
                 <Section title="1. Identificação do Vendedor">
                   Estes Termos de Uso regem o acesso e utilização da plataforma Accord, fornecida por <strong>Accord Pipe</strong>.
                 </Section>
@@ -448,7 +448,7 @@ export default function Auth() {
 
             {openSheet === "privacy" && (
               <>
-                <p className="text-xs text-[#9CA3AF]">Última atualização: 23 de abril de 2026</p>
+                <p className="text-[11px] uppercase tracking-wider text-[#7A3FF2]/70 font-semibold">Última atualização: 23 de abril de 2026</p>
                 <Section title="1. Controlador">Accord Pipe atua como controlador dos dados pessoais coletados.</Section>
                 <Section title="2. Dados Coletados">Cadastro (nome, e-mail, CPF, telefone), dados da empresa, conteúdo do usuário, telemetria e suporte.</Section>
                 <Section title="3. Finalidades">Manutenção da conta, prestação do serviço, prevenção a fraudes, melhoria e suporte.</Section>
