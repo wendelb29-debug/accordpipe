@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import accordLogo from "@/assets/accord-logo.png";
@@ -114,6 +115,7 @@ export default function Auth() {
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+  const [openSheet, setOpenSheet] = useState<null | "about" | "contact" | "terms" | "privacy">(null);
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -189,12 +191,19 @@ export default function Auth() {
     { icon: Sparkles, title: "Accord IA", desc: "Automação inteligente de mensagens e tarefas" },
   ];
 
-  const topLinks = [
-    { icon: Home, label: "Sobre a empresa", href: "/" },
-    { icon: Phone, label: "Contato", href: "mailto:suporte@accordclass.com.br" },
-    { icon: FileText, label: "Termos de serviço", href: "/terms" },
-    { icon: Shield, label: "Política de privacidade", href: "/privacy" },
+  const topLinks: { icon: typeof Home; label: string; key: "about" | "contact" | "terms" | "privacy" }[] = [
+    { icon: Home, label: "Sobre a empresa", key: "about" },
+    { icon: Phone, label: "Contato", key: "contact" },
+    { icon: FileText, label: "Termos de serviço", key: "terms" },
+    { icon: Shield, label: "Política de privacidade", key: "privacy" },
   ];
+
+  const sheetTitles: Record<NonNullable<typeof openSheet>, string> = {
+    about: "Sobre a empresa",
+    contact: "Contato",
+    terms: "Termos de serviço",
+    privacy: "Política de privacidade",
+  };
 
   return (
     <div className="flex min-h-screen font-sans" style={{ fontFamily: "'Geist', -apple-system, sans-serif" }}>
@@ -210,16 +219,17 @@ export default function Auth() {
         <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-0.5 px-8 py-[13px] border-b border-[rgba(122,63,242,0.1)] backdrop-blur-md" style={{ background: "rgba(244,242,255,0.75)" }}>
           {topLinks.map((l) => {
             const Icon = l.icon;
-            const inner = (
-              <>
+            return (
+              <button
+                key={l.label}
+                type="button"
+                onClick={() => setOpenSheet(l.key)}
+                className="flex items-center gap-1.5 text-[12.5px] font-medium text-[#4B5563] hover:text-[#7A3FF2] hover:bg-[rgba(122,63,242,0.08)] px-3 py-[5px] rounded-md transition-colors"
+              >
                 <Icon className="w-3.5 h-3.5" strokeWidth={1.8} />
                 <span>{l.label}</span>
-              </>
+              </button>
             );
-            const cls = "flex items-center gap-1.5 text-[12.5px] font-medium text-[#4B5563] hover:text-[#7A3FF2] hover:bg-[rgba(122,63,242,0.08)] px-3 py-[5px] rounded-md transition-colors";
-            return l.href.startsWith("http") || l.href.startsWith("mailto") || l.href === "/"
-              ? <a key={l.label} href={l.href} className={cls}>{inner}</a>
-              : <Link key={l.label} to={l.href} className={cls}>{inner}</Link>;
           })}
         </div>
 
@@ -379,6 +389,90 @@ export default function Auth() {
           </div>
         </div>
       </div>
+
+      {/* Side sheet for footer/topbar info pages */}
+      <Sheet open={openSheet !== null} onOpenChange={(o) => !o && setOpenSheet(null)}>
+        <SheetContent
+          side="right"
+          className="w-screen sm:max-w-none sm:w-1/2 overflow-y-auto bg-[#070B14] text-[#E5E7EB] border-l border-white/10 p-0"
+        >
+          <SheetHeader className="px-6 sm:px-8 pt-6 pb-4 border-b border-white/10">
+            <SheetTitle className="text-[#E5E7EB] text-2xl font-bold">
+              {openSheet ? sheetTitles[openSheet] : ""}
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className="px-6 sm:px-8 py-6 space-y-6 text-sm sm:text-base text-[#D1D5DB] leading-relaxed">
+            {openSheet === "about" && (
+              <>
+                <p>O <strong>ACCORD</strong> é uma plataforma comercial inteligente que une CRM, contratos digitais, atendimento via WhatsApp, gestão financeira e automações com IA — tudo em um único sistema.</p>
+                <p>Nossa missão é ajudar times de vendas e operações a escalarem com processo, controle e produtividade, eliminando ferramentas fragmentadas.</p>
+                <p>Desenvolvido pela <strong>Accord Pipe</strong>, focamos em entregar uma experiência premium, segura e adaptada à realidade de empresas brasileiras.</p>
+              </>
+            )}
+
+            {openSheet === "contact" && (
+              <>
+                <p>Estamos disponíveis para tirar dúvidas, ajudar com onboarding ou discutir parcerias.</p>
+                <div className="space-y-3 mt-4">
+                  <div className="flex items-center gap-3">
+                    <Mail className="w-4 h-4 text-[#7A3FF2]" />
+                    <a href="mailto:suporte@accordclass.com.br" className="text-[#2563EB] hover:underline">suporte@accordclass.com.br</a>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <MessageCircle className="w-4 h-4 text-[#7A3FF2]" />
+                    <span>Atendimento via WhatsApp diretamente pela plataforma</span>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {openSheet === "terms" && (
+              <>
+                <p className="text-xs text-[#9CA3AF]">Última atualização: 23 de abril de 2026</p>
+                <Section title="1. Identificação do Vendedor">
+                  Estes Termos de Uso regem o acesso e utilização da plataforma Accord, fornecida por <strong>Accord Pipe</strong>.
+                </Section>
+                <Section title="2. Aceitação">O uso continuado do Serviço constitui aceitação destes Termos.</Section>
+                <Section title="3. Descrição do Serviço">Plataforma SaaS de gestão operacional com CRM, contratos, assinatura digital, WhatsApp e financeiro.</Section>
+                <Section title="4. Uso Permitido">Não utilizar para fins ilícitos, fraude, spam ou violação de propriedade intelectual.</Section>
+                <Section title="5. Propriedade Intelectual">Software, marca e identidade visual são de propriedade exclusiva da Accord Pipe.</Section>
+                <Section title="6. Pagamentos">Processados por revendedor oficial. Consulte a Política de Reembolso.</Section>
+                <Section title="7. Limitação de Responsabilidade">Limitada aos valores efetivamente pagos nos 12 meses anteriores ao evento.</Section>
+                <Section title="8. Lei Aplicável">Regidos pelas leis do Brasil. Foro: Comarca de Uberlândia/MG.</Section>
+                <Section title="9. Contato">
+                  <a href="mailto:suporte@accordclass.com.br" className="text-[#2563EB] hover:underline">suporte@accordclass.com.br</a>
+                </Section>
+              </>
+            )}
+
+            {openSheet === "privacy" && (
+              <>
+                <p className="text-xs text-[#9CA3AF]">Última atualização: 23 de abril de 2026</p>
+                <Section title="1. Controlador">Accord Pipe atua como controlador dos dados pessoais coletados.</Section>
+                <Section title="2. Dados Coletados">Cadastro (nome, e-mail, CPF, telefone), dados da empresa, conteúdo do usuário, telemetria e suporte.</Section>
+                <Section title="3. Finalidades">Manutenção da conta, prestação do serviço, prevenção a fraudes, melhoria e suporte.</Section>
+                <Section title="4. Compartilhamento">Provedores de infraestrutura, Merchant of Record, assessores e autoridades quando exigido por lei.</Section>
+                <Section title="5. Retenção">Mantemos dados apenas pelo tempo necessário às finalidades e obrigações legais.</Section>
+                <Section title="6. Direitos do Titular (LGPD)">Acesso, correção, anonimização, portabilidade e revogação de consentimento.</Section>
+                <Section title="7. Segurança">Criptografia em trânsito, controle de acesso baseado em função e auditoria.</Section>
+                <Section title="8. Contato">
+                  <a href="mailto:suporte@accordclass.com.br" className="text-[#2563EB] hover:underline">suporte@accordclass.com.br</a>
+                </Section>
+              </>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section>
+      <h3 className="text-base font-semibold text-[#E5E7EB] mb-1.5">{title}</h3>
+      <div>{children}</div>
+    </section>
   );
 }
