@@ -199,7 +199,7 @@ export default function Auth() {
   return (
     <div className="flex min-h-screen font-sans" style={{ fontFamily: "'Geist', -apple-system, sans-serif" }}>
       {/* LEFT */}
-      <div className="hidden lg:flex flex-1 relative flex-col overflow-hidden bg-[#F4F2FF] px-[52px] pt-[56px] pb-12">
+      <div className="hidden lg:flex flex-1 relative flex-col overflow-hidden bg-[#F4F2FF] px-[52px] pt-[44px] pb-12">
         <ParticleCanvas />
         {/* Orbs */}
         <div className="orb-anim absolute rounded-full pointer-events-none z-0" style={{ width: 320, height: 320, top: -80, left: -80, background: "rgba(122,63,242,0.12)", filter: "blur(70px)" }} />
@@ -228,11 +228,11 @@ export default function Auth() {
           <img
             src={accordLogo}
             alt="ACCORD"
-            className="-mt-2 -ml-1 w-[240px] sm:w-[280px] lg:w-[300px] h-auto select-none drop-shadow-[0_2px_12px_rgba(122,63,242,0.18)]"
+            className="-mt-5 -ml-1 w-[240px] sm:w-[280px] lg:w-[300px] h-auto select-none drop-shadow-[0_2px_12px_rgba(122,63,242,0.18)]"
             style={{ objectFit: "contain" }}
             draggable={false}
           />
-          <div className="text-[12px] font-medium tracking-wide text-[#6B7280] -mt-1 mb-5">plataforma comercial inteligente</div>
+          <div className="text-[12px] font-medium tracking-wide text-[#6B7280] -mt-3 mb-3">plataforma comercial inteligente</div>
 
           <h1 className="text-[36px] font-black text-[#0D1117] tracking-[-1.8px] leading-[1.08] mb-4 max-w-[430px]">
             CRM, contratos e atendimento com{" "}
