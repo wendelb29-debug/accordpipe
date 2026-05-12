@@ -232,7 +232,7 @@ export default function Auth() {
             style={{ objectFit: "contain" }}
             draggable={false}
           />
-          <div className="text-[12px] font-medium tracking-wide text-[#6B7280] mt-[38px] mb-3">plataforma comercial inteligente</div>
+          <div className="text-[12px] font-medium tracking-wide text-[#6B7280] -mt-2 mb-6">plataforma comercial inteligente</div>
 
           <h1 className="text-[36px] font-black text-[#0D1117] tracking-[-1.8px] leading-[1.08] mb-4 max-w-[430px]">
             CRM, contratos e atendimento com{" "}
