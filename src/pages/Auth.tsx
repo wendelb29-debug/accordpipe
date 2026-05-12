@@ -471,7 +471,7 @@ export default function Auth() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h3 className="text-base font-semibold text-[#E5E7EB] mb-1.5">{title}</h3>
+      <h3 className="text-[14px] font-bold text-[#0D1117] mb-1.5 tracking-[-0.2px]">{title}</h3>
       <div>{children}</div>
     </section>
   );
