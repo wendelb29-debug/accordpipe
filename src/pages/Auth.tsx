@@ -285,7 +285,7 @@ export default function Auth() {
 
         <div className="relative z-[1] w-full max-w-[360px]">
           <div className="flex justify-center mb-6">
-            <img src={accordLogo} alt="ACCORD" className="brightness-0 invert" style={{ height: 56, width: "auto", objectFit: "contain" }} />
+            <img src={accordLogo} alt="ACCORD" className="brightness-0 invert" style={{ height: 168, width: "auto", objectFit: "contain" }} />
           </div>
 
           <div className="text-[22px] font-extrabold text-white tracking-[-0.8px] text-center mb-1.5">Entre na sua conta</div>
