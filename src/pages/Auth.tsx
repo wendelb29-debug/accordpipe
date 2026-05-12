@@ -396,8 +396,8 @@ export default function Auth() {
           side="right"
           className="w-screen sm:max-w-none sm:w-1/2 overflow-y-auto bg-[#F4F2FF] text-[#0D1117] border-l border-[rgba(122,63,242,0.15)] p-0"
         >
-          <SheetHeader className="px-6 sm:px-8 pt-6 pb-4 border-b border-white/10">
-            <SheetTitle className="text-[#E5E7EB] text-2xl font-bold">
+          <SheetHeader className="px-8 h-14 flex flex-row items-center justify-start border-b border-[rgba(122,63,242,0.12)] bg-white/60 backdrop-blur-md space-y-0">
+            <SheetTitle className="text-[#0D1117] text-[15px] font-bold tracking-[-0.3px]">
               {openSheet ? sheetTitles[openSheet] : ""}
             </SheetTitle>
           </SheetHeader>
