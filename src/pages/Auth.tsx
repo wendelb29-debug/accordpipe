@@ -284,7 +284,7 @@ export default function Auth() {
         <div className="absolute pointer-events-none rounded-full" style={{ bottom: -110, left: -70, width: 300, height: 300, background: "rgba(37,99,235,0.25)", filter: "blur(60px)" }} />
 
         <div className="relative z-[1] w-full max-w-[360px] -translate-y-10">
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mt-16 mb-2">
             <img src={accordLogo} alt="ACCORD" className="brightness-0 invert" style={{ height: 168, width: "auto", objectFit: "contain" }} />
           </div>
 
