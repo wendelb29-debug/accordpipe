@@ -69,11 +69,11 @@ export function ThemeSync() {
     if (loading) return;
     let targetTheme: string;
     if (!user) {
-      targetTheme = "light";
+      targetTheme = "dark";
     } else if (profile?.theme) {
       targetTheme = profile.theme;
     } else {
-      targetTheme = "light";
+      targetTheme = "dark";
     }
     const html = document.documentElement;
     const current = html.classList.contains("dark") ? "dark" : "light";
