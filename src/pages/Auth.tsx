@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader2, CheckCircle2, ArrowLeft, Shield, LockKeyhole, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader2, CheckCircle2, ArrowLeft, ShieldCheck, KanbanSquare, Calendar, MessageCircle, FileText, Users, Sparkles, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
