@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import accordLogo from "@/assets/accord-logo.png";
 
 const loginSchema = z.object({
   email: z.string().trim().email({ message: "E-mail inválido" }).max(255),
@@ -224,9 +225,7 @@ export default function Auth() {
 
         {/* Content */}
         <div className="relative z-[1] flex flex-col">
-          <div className="text-[15px] font-extrabold text-[#0D1117] tracking-[-0.5px] mb-0.5">
-            ACCORD<span className="text-[#7A3FF2]">.</span>
-          </div>
+          <img src={accordLogo} alt="ACCORD" className="h-9 w-auto mb-1.5 -ml-2" />
           <div className="text-[11px] text-[#6B7280] mb-9">plataforma comercial inteligente</div>
 
           <h1 className="text-[36px] font-black text-[#0D1117] tracking-[-1.8px] leading-[1.08] mb-4 max-w-[430px]">
@@ -279,10 +278,8 @@ export default function Auth() {
         <div className="absolute pointer-events-none rounded-full" style={{ bottom: -110, left: -70, width: 300, height: 300, background: "rgba(37,99,235,0.25)", filter: "blur(60px)" }} />
 
         <div className="relative z-[1] w-full max-w-[360px]">
-          <div className="text-center mb-6">
-            <div className="text-[30px] font-black text-white tracking-[-1.2px]">
-              ACCORD<span className="text-white/30 font-light">.</span>
-            </div>
+          <div className="flex justify-center mb-6">
+            <img src={accordLogo} alt="ACCORD" className="h-11 w-auto brightness-0 invert" />
           </div>
 
           <div className="text-[22px] font-extrabold text-white tracking-[-0.8px] text-center mb-1.5">Entre na sua conta</div>
