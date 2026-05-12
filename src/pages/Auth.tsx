@@ -402,7 +402,7 @@ export default function Auth() {
             </SheetTitle>
           </SheetHeader>
 
-          <div className="px-6 sm:px-8 py-6 space-y-6 text-sm sm:text-base text-[#D1D5DB] leading-relaxed">
+          <div className="px-8 py-8 space-y-5 text-[13.5px] text-[#4B5563] leading-[1.7]">
             {openSheet === "about" && (
               <>
                 <p>O <strong>ACCORD</strong> é uma plataforma comercial inteligente que une CRM, contratos digitais, atendimento via WhatsApp, gestão financeira e automações com IA — tudo em um único sistema.</p>
