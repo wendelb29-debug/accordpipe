@@ -154,10 +154,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setActiveCompanyIdState(null);
           setLoading(false);
           clearMonitoringUser();
-          // Reset theme to light on logout
-          localStorage.setItem("theme", "light");
-          document.documentElement.classList.remove("dark");
-          document.documentElement.classList.add("light");
+          // Reset theme to dark on logout
+          localStorage.setItem("theme", "dark");
+          document.documentElement.classList.remove("light");
+          document.documentElement.classList.add("dark");
         }
       }
     );
@@ -255,10 +255,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    // Reset theme before signing out
-    localStorage.setItem("theme", "light");
-    document.documentElement.classList.remove("dark");
-    document.documentElement.classList.add("light");
+    // Reset theme to dark before signing out
+    localStorage.setItem("theme", "dark");
+    document.documentElement.classList.remove("light");
+    document.documentElement.classList.add("dark");
 
     await supabase.auth.signOut();
     setUser(null);
