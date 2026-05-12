@@ -394,7 +394,7 @@ export default function Auth() {
       <Sheet open={openSheet !== null} onOpenChange={(o) => !o && setOpenSheet(null)}>
         <SheetContent
           side="right"
-          className="w-screen sm:max-w-none sm:w-1/2 overflow-y-auto bg-[#070B14] text-[#E5E7EB] border-l border-white/10 p-0"
+          className="w-screen sm:max-w-none sm:w-1/2 overflow-y-auto bg-[#F4F2FF] text-[#0D1117] border-l border-[rgba(122,63,242,0.15)] p-0"
         >
           <SheetHeader className="px-6 sm:px-8 pt-6 pb-4 border-b border-white/10">
             <SheetTitle className="text-[#E5E7EB] text-2xl font-bold">
