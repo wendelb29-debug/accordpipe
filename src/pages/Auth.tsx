@@ -394,15 +394,15 @@ export default function Auth() {
       <Sheet open={openSheet !== null} onOpenChange={(o) => !o && setOpenSheet(null)}>
         <SheetContent
           side="right"
-          className="w-screen sm:max-w-none sm:w-1/2 overflow-y-auto bg-[#070B14] text-[#E5E7EB] border-l border-white/10 p-0"
+          className="w-screen sm:max-w-none sm:w-1/2 overflow-y-auto bg-[#F4F2FF] text-[#0D1117] border-l border-[rgba(122,63,242,0.15)] p-0"
         >
-          <SheetHeader className="px-6 sm:px-8 pt-6 pb-4 border-b border-white/10">
-            <SheetTitle className="text-[#E5E7EB] text-2xl font-bold">
+          <SheetHeader className="px-8 h-14 flex flex-row items-center justify-start border-b border-[rgba(122,63,242,0.12)] bg-white/60 backdrop-blur-md space-y-0">
+            <SheetTitle className="text-[#0D1117] text-[15px] font-bold tracking-[-0.3px]">
               {openSheet ? sheetTitles[openSheet] : ""}
             </SheetTitle>
           </SheetHeader>
 
-          <div className="px-6 sm:px-8 py-6 space-y-6 text-sm sm:text-base text-[#D1D5DB] leading-relaxed">
+          <div className="px-8 py-8 space-y-5 text-[13.5px] text-[#4B5563] leading-[1.7]">
             {openSheet === "about" && (
               <>
                 <p>O <strong>ACCORD</strong> é uma plataforma comercial inteligente que une CRM, contratos digitais, atendimento via WhatsApp, gestão financeira e automações com IA — tudo em um único sistema.</p>
@@ -429,7 +429,7 @@ export default function Auth() {
 
             {openSheet === "terms" && (
               <>
-                <p className="text-xs text-[#9CA3AF]">Última atualização: 23 de abril de 2026</p>
+                <p className="text-[11px] uppercase tracking-wider text-[#7A3FF2]/70 font-semibold">Última atualização: 23 de abril de 2026</p>
                 <Section title="1. Identificação do Vendedor">
                   Estes Termos de Uso regem o acesso e utilização da plataforma Accord, fornecida por <strong>Accord Pipe</strong>.
                 </Section>
@@ -448,7 +448,7 @@ export default function Auth() {
 
             {openSheet === "privacy" && (
               <>
-                <p className="text-xs text-[#9CA3AF]">Última atualização: 23 de abril de 2026</p>
+                <p className="text-[11px] uppercase tracking-wider text-[#7A3FF2]/70 font-semibold">Última atualização: 23 de abril de 2026</p>
                 <Section title="1. Controlador">Accord Pipe atua como controlador dos dados pessoais coletados.</Section>
                 <Section title="2. Dados Coletados">Cadastro (nome, e-mail, CPF, telefone), dados da empresa, conteúdo do usuário, telemetria e suporte.</Section>
                 <Section title="3. Finalidades">Manutenção da conta, prestação do serviço, prevenção a fraudes, melhoria e suporte.</Section>
@@ -471,7 +471,7 @@ export default function Auth() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h3 className="text-base font-semibold text-[#E5E7EB] mb-1.5">{title}</h3>
+      <h3 className="text-[14px] font-bold text-[#0D1117] mb-1.5 tracking-[-0.2px]">{title}</h3>
       <div>{children}</div>
     </section>
   );
