@@ -1266,7 +1266,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
               </div>
             ) : viewDoc?.html_content ? (
               <ScrollArea className="rounded-lg border bg-muted/20 h-[600px]">
-                <div className="p-6 prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: viewDoc.html_content }} />
+                <div className="p-6 prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(viewDoc.html_content) }} />
               </ScrollArea>
             ) : null;
           })()}
