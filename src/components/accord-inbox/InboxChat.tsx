@@ -730,7 +730,13 @@ export function InboxChat({
       const { data: pub } = supabase.storage.from("whatsapp-media").getPublicUrl(path);
       // For non-image/audio types, we send 'file' to backend (uazapi treats document/audio/image distinctly)
       const sendType = messageType === "video" ? "file" : messageType;
-      onSendMessage(file.name, { messageType: sendType, mediaUrl: pub.publicUrl, fileName: file.name });
+      onSendMessage(file.name, {
+        messageType: sendType,
+        mediaUrl: pub.publicUrl,
+        fileName: file.name,
+        replyToMessageId: replyTo?.id ?? null,
+      });
+      setReplyTo(null);
     } catch (err: any) {
       const { toast } = await import("sonner");
       toast.error(err?.message || "Falha no upload do arquivo");
