@@ -583,112 +583,6 @@ export function InboxChat({
     return () => { mounted = false; };
   }, []);
 
-  // Canvas particle animation for empty state
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    let animId: number;
-
-    const getColors = () => {
-      const isDark = document.documentElement.classList.contains('dark');
-      return {
-        blue:       isDark ? [37, 99, 235]   : [59, 130, 246],
-        purple:     [122, 63, 242],
-        dotAlpha:   isDark ? 0.07 : 0.06,
-        lineAlpha:  isDark ? 0.13 : 0.08,
-        ptAlphaMin: isDark ? 0.12 : 0.07,
-        ptAlphaMax: isDark ? 0.40 : 0.22,
-      };
-    };
-
-    const lerp = (a: number[], b: number[], t: number) =>
-      a.map((v, i) => Math.round(v + (b[i] - v) * t));
-
-    const resize = () => {
-      const parent = canvas.parentElement;
-      if (!parent) return;
-      const { width, height } = parent.getBoundingClientRect();
-      canvas.width  = width  * devicePixelRatio;
-      canvas.height = height * devicePixelRatio;
-      canvas.style.width  = width  + 'px';
-      canvas.style.height = height + 'px';
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.scale(devicePixelRatio, devicePixelRatio);
-    };
-
-    const { ptAlphaMin, ptAlphaMax } = getColors();
-    const pts = Array.from({ length: 65 }, () => {
-      const parent = canvas.parentElement;
-      const W = parent?.offsetWidth  || 800;
-      const H = parent?.offsetHeight || 600;
-      const t = Math.random();
-      return {
-        x: Math.random() * W, y: Math.random() * H,
-        vx: (Math.random() - .5) * .28,
-        vy: (Math.random() - .5) * .28,
-        r: Math.random() * 1.6 + .7,
-        t,
-        a: ptAlphaMin + Math.random() * (ptAlphaMax - ptAlphaMin),
-      };
-    });
-
-    const draw = () => {
-      const parent = canvas.parentElement;
-      if (!parent) return;
-      const W = parent.offsetWidth;
-      const H = parent.offsetHeight;
-      const { blue, purple, dotAlpha, lineAlpha } = getColors();
-
-      ctx.clearRect(0, 0, W, H);
-
-      const gs = 36;
-      ctx.fillStyle = `rgba(122,63,242,${dotAlpha})`;
-      for (let x = gs / 2; x < W; x += gs)
-        for (let y = gs / 2; y < H; y += gs) {
-          ctx.beginPath(); ctx.arc(x, y, .85, 0, Math.PI * 2); ctx.fill();
-        }
-
-      for (let i = 0; i < pts.length; i++) {
-        const p = pts[i];
-        for (let j = i + 1; j < pts.length; j++) {
-          const q = pts[j];
-          const dx = p.x - q.x, dy = p.y - q.y;
-          const d = Math.sqrt(dx * dx + dy * dy);
-          if (d < 120) {
-            const col = lerp(lerp(blue, purple, p.t), lerp(blue, purple, q.t), .5);
-            ctx.strokeStyle = `rgba(${col[0]},${col[1]},${col[2]},${(1 - d / 120) * lineAlpha})`;
-            ctx.lineWidth = .55;
-            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
-          }
-        }
-      }
-
-      for (const p of pts) {
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0 || p.x > W) p.vx *= -1;
-        if (p.y < 0 || p.y > H) p.vy *= -1;
-        const col = lerp(blue, purple, p.t);
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${p.a})`;
-        ctx.fill();
-      }
-
-      animId = requestAnimationFrame(draw);
-    };
-
-    resize();
-    draw();
-
-    const ro = new ResizeObserver(resize);
-    if (canvas.parentElement) ro.observe(canvas.parentElement);
-
-    return () => {
-      cancelAnimationFrame(animId);
-      ro.disconnect();
-    };
-  }, []);
 
   const messagesById = (() => {
     const map: Record<string, ChatMessage> = {};
@@ -724,7 +618,88 @@ export function InboxChat({
   const isAtBottomRef = useRef(true);
   const prevContactIdRef = useRef<string | null>(null);
   const prevMsgCountRef = useRef(0);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    let animId: number;
+    const lerp = (a: number[], b: number[], t: number) =>
+      a.map((v, i) => Math.round(v + (b[i] - v) * t));
+    const getColors = () => {
+      const isDark = document.documentElement.classList.contains('dark');
+      return {
+        blue:       isDark ? [37, 99, 235] : [59, 130, 246],
+        purple:     [122, 63, 242] as number[],
+        dotAlpha:   isDark ? 0.07 : 0.05,
+        lineAlpha:  isDark ? 0.13 : 0.07,
+        ptAlphaMin: isDark ? 0.12 : 0.06,
+        ptAlphaMax: isDark ? 0.40 : 0.20,
+      };
+    };
+    const resize = () => {
+      const p = canvas.parentElement;
+      if (!p) return;
+      const { width, height } = p.getBoundingClientRect();
+      canvas.width  = width  * devicePixelRatio;
+      canvas.height = height * devicePixelRatio;
+      canvas.style.width  = width  + 'px';
+      canvas.style.height = height + 'px';
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+    };
+    const c = getColors();
+    const pts = Array.from({ length: 65 }, () => {
+      const p = canvas.parentElement;
+      const W = p?.offsetWidth || 800;
+      const H = p?.offsetHeight || 600;
+      const t = Math.random();
+      return { x: Math.random()*W, y: Math.random()*H,
+        vx:(Math.random()-.5)*.28, vy:(Math.random()-.5)*.28,
+        r:Math.random()*1.6+.7, t,
+        a: c.ptAlphaMin + Math.random()*(c.ptAlphaMax - c.ptAlphaMin) };
+    });
+    const draw = () => {
+      const p = canvas.parentElement;
+      if (!p) return;
+      const W = p.offsetWidth, H = p.offsetHeight;
+      const { blue, purple, dotAlpha, lineAlpha } = getColors();
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = `rgba(122,63,242,${dotAlpha})`;
+      for (let x = 18; x < W; x += 36)
+        for (let y = 18; y < H; y += 36) {
+          ctx.beginPath(); ctx.arc(x, y, .85, 0, Math.PI*2); ctx.fill();
+        }
+      for (let i = 0; i < pts.length; i++) {
+        const a = pts[i];
+        for (let j = i+1; j < pts.length; j++) {
+          const b = pts[j];
+          const dx = a.x-b.x, dy = a.y-b.y, d = Math.sqrt(dx*dx+dy*dy);
+          if (d < 120) {
+            const col = lerp(lerp(blue,purple,a.t), lerp(blue,purple,b.t), .5);
+            ctx.strokeStyle=`rgba(${col[0]},${col[1]},${col[2]},${(1-d/120)*lineAlpha})`;
+            ctx.lineWidth=.55;
+            ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+          }
+        }
+      }
+      for (const p of pts) {
+        p.x+=p.vx; p.y+=p.vy;
+        if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1;
+        const col=lerp(blue,purple,p.t);
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.fillStyle=`rgba(${col[0]},${col[1]},${col[2]},${p.a})`; ctx.fill();
+      }
+      animId = requestAnimationFrame(draw);
+    };
+    resize(); draw();
+    const ro = new ResizeObserver(resize);
+    if (canvas.parentElement) ro.observe(canvas.parentElement);
+    return () => { cancelAnimationFrame(animId); ro.disconnect(); };
+  }, []);
 
   const isClosed = contact?.conversationStatus === "encerrado" || contact?.conversationStatus === "finalizado";
 
@@ -953,64 +928,44 @@ export function InboxChat({
   if (!contact) {
     return (
       <div
-        className="flex-1 relative overflow-hidden bg-background min-h-0"
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        className="flex-1 relative overflow-hidden bg-background"
+        style={{ display:'flex', alignItems:'center', justifyContent:'center' }}
       >
         <canvas
           ref={canvasRef}
-          style={{
-            position: 'absolute',
-            top: 0, left: 0,
-            width: '100%',
-            height: '100%',
-            pointerEvents: 'none',
-            display: 'block',
-          }}
+          style={{ position:'absolute', top:0, left:0, width:'100%', height:'100%', pointerEvents:'none', display:'block' }}
           aria-hidden
         />
-        <div
-          style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0 24px' }}
-          className="w-full max-w-md"
-        >
+        <div style={{ position:'relative', zIndex:10, display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', padding:'0 24px' }}>
           <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
             <MessageSquare size={26} className="text-primary/70" />
           </div>
-
           <p className="text-[17px] font-bold text-foreground tracking-tight mb-1.5">
             Selecione uma conversa
           </p>
           <p className="text-[13px] text-muted-foreground max-w-[220px] leading-relaxed mb-7">
             Escolha um atendimento ao lado ou inicie uma nova conversa
           </p>
-
           <div className="grid grid-cols-3 gap-2.5 w-full max-w-[400px] mb-7">
-            {[
-              { icon: Plus, label: 'Nova conversa', onClick: onNewConversation },
-              { icon: Filter, label: 'Filtrar fila', onClick: onFilterQueue },
-              { icon: BarChart2, label: 'Ver relatório', onClick: onViewReport },
-            ].map(({ icon: Icon, label, onClick }) => (
-              <button
-                key={label}
-                onClick={onClick}
-                disabled={!onClick}
-                className="flex flex-col items-center gap-2 bg-white/[0.04] hover:bg-primary/10 border border-white/[0.07] hover:border-primary/25 rounded-xl py-3.5 px-2 transition-all duration-150 group disabled:opacity-40 disabled:hover:bg-white/[0.04] disabled:hover:border-white/[0.07]"
-              >
+            {([
+              { Icon: Plus,      label: 'Nova conversa' },
+              { Icon: Filter,    label: 'Filtrar fila'  },
+              { Icon: BarChart2, label: 'Ver relatório' },
+            ]).map(({ Icon, label }) => (
+              <button key={label} className="flex flex-col items-center gap-2 bg-white/[0.04] hover:bg-primary/10 border border-white/[0.07] hover:border-primary/25 rounded-xl py-3.5 px-2 transition-all duration-150 group">
                 <Icon size={20} className="text-primary/70 group-hover:text-primary transition-colors" />
-                <span className="text-[11.5px] font-semibold text-foreground/60 group-hover:text-foreground/80 leading-tight text-center transition-colors">
-                  {label}
-                </span>
+                <span className="text-[11.5px] font-semibold text-foreground/60 group-hover:text-foreground/80 leading-tight text-center transition-colors">{label}</span>
               </button>
             ))}
           </div>
-
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span className="text-[11px] text-muted-foreground/50">{inServiceCount} em atendimento</span>
+              <span className="text-[11px] text-muted-foreground/50">em atendimento</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
-              <span className="text-[11px] text-muted-foreground/50">{queueCount} na fila</span>
+              <span className="text-[11px] text-muted-foreground/50">na fila</span>
             </div>
           </div>
         </div>
