@@ -49,7 +49,7 @@ export default function CompanyDetail() {
     const fetchData = async () => {
       setLoading(true);
       const [companyRes, paymentsRes] = await Promise.all([
-        supabase.from("companies").select(COMPANY_SAFE_COLUMNS).eq("id", id).maybeSingle(),
+        supabase.from("companies").select(COMPANY_SAFE_COLUMNS) as any.eq("id", id).maybeSingle(),
         supabase.from("payments").select("*").eq("company_id", id).order("created_at", { ascending: false }),
       ]);
       if (companyRes.error || !companyRes.data) {

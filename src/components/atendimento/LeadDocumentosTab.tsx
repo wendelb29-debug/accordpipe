@@ -587,7 +587,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
     try {
       const [tenantRes, activityRes, regRes] = await Promise.all([
-        supabase.from("companies").select(COMPANY_SAFE_COLUMNS).eq("id", servidorId).maybeSingle(),
+        supabase.from("companies").select(COMPANY_SAFE_COLUMNS) as any.eq("id", servidorId).maybeSingle(),
         supabase.from("crm_lead_activities").select("*").eq("lead_id", lead.id).eq("type", "proposal").order("created_at", { ascending: false }),
         supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
       ]);
@@ -933,7 +933,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
           setSelectedTemplate("");
           // Pre-fetch tenant, proposal (from activities), vendor, registration for variable preview
           const [tenantRes, activityRes, regRes] = await Promise.all([
-            supabase.from("companies").select(COMPANY_SAFE_COLUMNS).eq("id", servidorId).maybeSingle(),
+            supabase.from("companies").select(COMPANY_SAFE_COLUMNS) as any.eq("id", servidorId).maybeSingle(),
             supabase.from("crm_lead_activities").select("*").eq("lead_id", lead.id).eq("type", "proposal").order("created_at", { ascending: false }),
             supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
           ]);
