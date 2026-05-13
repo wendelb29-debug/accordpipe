@@ -186,11 +186,13 @@ async function sendUazapi(
   instanceToken: string,
   phone: string,
   text: string,
+  quotedExternalId?: string | null,
 ): Promise<SendResult> {
   const base = serverUrl.replace(/\/$/, "");
   // uazapi endpoint: POST /send/text with header `token` (instance token)
   const url = `${base}/send/text`;
-  const payload = { number: normalizePhone(phone), text };
+  const payload: Record<string, unknown> = { number: normalizePhone(phone), text };
+  if (quotedExternalId) payload.replyid = quotedExternalId;
 
   console.log("[sendUazapi] POST", url);
   console.log("[sendUazapi] instanceName:", instanceName);
