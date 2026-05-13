@@ -225,7 +225,7 @@ export default function AccordStack() {
         />
       </div>
 
-      <div className={cn("flex-1 min-w-0 min-h-0 overflow-hidden", showListOnly && "hidden md:flex")}>
+      <div className={cn("flex-1 min-w-0 min-h-0 h-full overflow-hidden flex flex-col", showListOnly && "hidden md:flex")}>
         <InboxChat
           contact={chatContact}
           messages={chatMessages}
