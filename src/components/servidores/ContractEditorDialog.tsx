@@ -219,7 +219,7 @@ export function ContractEditorDialog({ open, onOpenChange, templateName, initial
                 )}
                 <div
                   className="prose prose-sm max-w-none prose-headings:font-bold prose-h1:text-xl prose-h2:text-lg prose-h3:text-base prose-p:text-sm prose-p:leading-relaxed prose-table:border-collapse prose-td:border prose-td:p-2 prose-th:border prose-th:p-2 prose-th:bg-muted/50"
-                  dangerouslySetInnerHTML={{ __html: replaceVars(htmlContent) }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(replaceVars(htmlContent)) }}
                 />
                 {/* Branded footer preview */}
                 <div className="mt-8 pt-3 text-center" style={{ borderTop: `1px solid ${branding?.primaryColor || '#ccc'}` }}>
