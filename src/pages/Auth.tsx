@@ -234,45 +234,45 @@ export default function Auth() {
         </div>
 
         {/* Content */}
-        <div className="relative z-[1] flex flex-col">
+        <div className="relative z-[1] flex flex-col justify-center flex-1 min-h-0">
           <img
             src={accordLogo}
             alt="ACCORD"
-            className="-mt-5 -ml-1 w-[240px] sm:w-[280px] lg:w-[300px] h-auto select-none drop-shadow-[0_2px_12px_rgba(122,63,242,0.18)]"
-            style={{ objectFit: "contain" }}
+            className="-ml-1 w-[240px] sm:w-[260px] lg:w-[280px] h-auto select-none drop-shadow-[0_2px_12px_rgba(122,63,242,0.18)]"
+            style={{ objectFit: "contain", marginBottom: -28 }}
             draggable={false}
           />
-          <div className="text-[12px] font-medium tracking-wide text-[#6B7280] -mt-10 mb-6">plataforma comercial inteligente</div>
+          <div className="text-[12px] font-medium tracking-wide text-[#6B7280] mb-4">plataforma comercial inteligente</div>
 
-          <h1 className="text-[36px] font-black text-[#0D1117] tracking-[-1.8px] leading-[1.08] mb-4 max-w-[430px]">
+          <h1 className="text-[32px] font-black text-[#0D1117] tracking-[-1.6px] leading-[1.08] mb-3 max-w-[430px]">
             CRM, contratos e atendimento com{" "}
             <em className="not-italic bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(135deg, #2563EB 0%, #7A3FF2 100%)" }}>
               inteligência artificial
             </em>
           </h1>
 
-          <p className="text-[14px] text-[#4B5563] leading-[1.75] max-w-[400px] mb-[38px]">
+          <p className="text-[13.5px] text-[#4B5563] leading-[1.6] max-w-[400px] mb-5">
             ACCORD é uma plataforma completa para times de vendas que querem escalar com processo, controle e automação — tudo em um único sistema.
           </p>
 
-          <div className="grid grid-cols-2 gap-3.5 mb-10 max-w-[560px]">
+          <div className="grid grid-cols-2 gap-x-3.5 gap-y-2.5 mb-5 max-w-[560px]">
             {features.map(({ icon: Icon, title, desc }) => (
               <div key={title} className="group flex items-start gap-3">
-                <div className="flex-shrink-0 w-[38px] h-[38px] bg-white/90 border border-[rgba(122,63,242,0.18)] rounded-[10px] flex items-center justify-center group-hover:bg-[rgba(122,63,242,0.08)] group-hover:border-[rgba(122,63,242,0.3)] group-hover:-translate-y-px transition-all">
-                  <Icon className="w-[18px] h-[18px] text-[#7A3FF2]" strokeWidth={1.8} />
+                <div className="flex-shrink-0 w-[34px] h-[34px] bg-white/90 border border-[rgba(122,63,242,0.18)] rounded-[10px] flex items-center justify-center group-hover:bg-[rgba(122,63,242,0.08)] group-hover:border-[rgba(122,63,242,0.3)] group-hover:-translate-y-px transition-all">
+                  <Icon className="w-[16px] h-[16px] text-[#7A3FF2]" strokeWidth={1.8} />
                 </div>
                 <div>
-                  <div className="text-[13px] font-bold text-[#0D1117] mb-[3px]">{title}</div>
-                  <div className="text-[11.5px] text-[#6B7280] leading-[1.55]">{desc}</div>
+                  <div className="text-[12.5px] font-bold text-[#0D1117] mb-[2px] leading-tight">{title}</div>
+                  <div className="text-[11px] text-[#6B7280] leading-[1.45]">{desc}</div>
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="flex gap-2.5 flex-wrap">
+          <div className="flex gap-2 flex-wrap">
             {["Integração oficial WhatsApp", "Multi-empresa", "Segurança enterprise"].map((b) => (
-              <div key={b} className="flex items-center gap-[7px] text-white text-[12px] font-semibold px-[18px] py-2 rounded-full transition-all hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(122,63,242,0.3)]" style={{ background: "linear-gradient(135deg, #2563EB 0%, #7A3FF2 100%)" }}>
-                <Check className="w-[13px] h-[13px]" strokeWidth={2.5} />
+              <div key={b} className="flex items-center gap-[7px] text-white text-[11.5px] font-semibold px-[14px] py-1.5 rounded-full transition-all hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(122,63,242,0.3)]" style={{ background: "linear-gradient(135deg, #2563EB 0%, #7A3FF2 100%)" }}>
+                <Check className="w-[12px] h-[12px]" strokeWidth={2.5} />
                 {b}
               </div>
             ))}
