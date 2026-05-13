@@ -6,8 +6,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Eye, EyeOff, Lock, Mail, AlertCircle, Loader2, CheckCircle2, ArrowRight,
-  Home, Phone, FileText, Shield, KanbanSquare, Calendar, MessageCircle,
-  Users, Sparkles, Check, ShieldCheck,
+  Building2, Phone, FileText, Shield, GitMerge, CalendarDays, MessageCircle,
+  Users, Bot, Check, ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
