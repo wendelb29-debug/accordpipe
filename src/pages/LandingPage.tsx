@@ -86,18 +86,20 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <HeroSection />
-      <PositioningSection />
-      <ProductScreenshots />
-      <ModulesSection />
-      
-      <AuthoritySection />
-      <DifferentialSection />
-      <SocialProofSection />
-      <FAQSection />
-      <ObjectionBreaker />
-      <PricingSection />
-      <PremiumCTASection />
+      <main>
+        <HeroSection />
+        <PositioningSection />
+        <ProductScreenshots />
+        <ModulesSection />
+
+        <AuthoritySection />
+        <DifferentialSection />
+        <SocialProofSection />
+        <FAQSection />
+        <ObjectionBreaker />
+        <PricingSection />
+        <PremiumCTASection />
+      </main>
       <FooterSection />
       <TrialSignupDialog open={trialOpen} onOpenChange={setTrialOpen} />
     </div>
