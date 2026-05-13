@@ -206,9 +206,9 @@ export default function Auth() {
   };
 
   return (
-    <div className="flex min-h-screen font-sans" style={{ fontFamily: "'Geist', -apple-system, sans-serif" }}>
+    <div className="flex lg:h-screen min-h-screen lg:min-h-0 lg:overflow-hidden font-sans" style={{ fontFamily: "'Geist', -apple-system, sans-serif" }}>
       {/* LEFT */}
-      <div className="hidden lg:flex flex-1 relative flex-col overflow-hidden bg-[#F4F2FF] px-[52px] pt-[44px] pb-12">
+      <div className="hidden lg:flex flex-1 relative flex-col overflow-hidden bg-[#F4F2FF] px-[52px] pt-[60px] pb-6">
         <ParticleCanvas />
         {/* Orbs */}
         <div className="orb-anim absolute rounded-full pointer-events-none z-0" style={{ width: 320, height: 320, top: -80, left: -80, background: "rgba(122,63,242,0.12)", filter: "blur(70px)" }} />
@@ -234,45 +234,45 @@ export default function Auth() {
         </div>
 
         {/* Content */}
-        <div className="relative z-[1] flex flex-col">
+        <div className="relative z-[1] flex flex-col justify-center flex-1 min-h-0">
           <img
             src={accordLogo}
             alt="ACCORD"
-            className="-mt-5 -ml-1 w-[240px] sm:w-[280px] lg:w-[300px] h-auto select-none drop-shadow-[0_2px_12px_rgba(122,63,242,0.18)]"
-            style={{ objectFit: "contain" }}
+            className="-ml-1 w-[240px] sm:w-[260px] lg:w-[280px] h-auto select-none drop-shadow-[0_2px_12px_rgba(122,63,242,0.18)]"
+            style={{ objectFit: "contain", marginBottom: -28 }}
             draggable={false}
           />
-          <div className="text-[12px] font-medium tracking-wide text-[#6B7280] -mt-10 mb-6">plataforma comercial inteligente</div>
+          <div className="text-[12px] font-medium tracking-wide text-[#6B7280] mb-4">plataforma comercial inteligente</div>
 
-          <h1 className="text-[36px] font-black text-[#0D1117] tracking-[-1.8px] leading-[1.08] mb-4 max-w-[430px]">
+          <h1 className="text-[32px] font-black text-[#0D1117] tracking-[-1.6px] leading-[1.08] mb-3 max-w-[430px]">
             CRM, contratos e atendimento com{" "}
             <em className="not-italic bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(135deg, #2563EB 0%, #7A3FF2 100%)" }}>
               inteligência artificial
             </em>
           </h1>
 
-          <p className="text-[14px] text-[#4B5563] leading-[1.75] max-w-[400px] mb-[38px]">
+          <p className="text-[13.5px] text-[#4B5563] leading-[1.6] max-w-[400px] mb-5">
             ACCORD é uma plataforma completa para times de vendas que querem escalar com processo, controle e automação — tudo em um único sistema.
           </p>
 
-          <div className="grid grid-cols-2 gap-3.5 mb-10 max-w-[560px]">
+          <div className="grid grid-cols-2 gap-x-3.5 gap-y-2.5 mb-5 max-w-[560px]">
             {features.map(({ icon: Icon, title, desc }) => (
               <div key={title} className="group flex items-start gap-3">
-                <div className="flex-shrink-0 w-[38px] h-[38px] bg-white/90 border border-[rgba(122,63,242,0.18)] rounded-[10px] flex items-center justify-center group-hover:bg-[rgba(122,63,242,0.08)] group-hover:border-[rgba(122,63,242,0.3)] group-hover:-translate-y-px transition-all">
-                  <Icon className="w-[18px] h-[18px] text-[#7A3FF2]" strokeWidth={1.8} />
+                <div className="flex-shrink-0 w-[34px] h-[34px] bg-white/90 border border-[rgba(122,63,242,0.18)] rounded-[10px] flex items-center justify-center group-hover:bg-[rgba(122,63,242,0.08)] group-hover:border-[rgba(122,63,242,0.3)] group-hover:-translate-y-px transition-all">
+                  <Icon className="w-[16px] h-[16px] text-[#7A3FF2]" strokeWidth={1.8} />
                 </div>
                 <div>
-                  <div className="text-[13px] font-bold text-[#0D1117] mb-[3px]">{title}</div>
-                  <div className="text-[11.5px] text-[#6B7280] leading-[1.55]">{desc}</div>
+                  <div className="text-[12.5px] font-bold text-[#0D1117] mb-[2px] leading-tight">{title}</div>
+                  <div className="text-[11px] text-[#6B7280] leading-[1.45]">{desc}</div>
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="flex gap-2.5 flex-wrap">
+          <div className="flex gap-2 flex-wrap">
             {["Integração oficial WhatsApp", "Multi-empresa", "Segurança enterprise"].map((b) => (
-              <div key={b} className="flex items-center gap-[7px] text-white text-[12px] font-semibold px-[18px] py-2 rounded-full transition-all hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(122,63,242,0.3)]" style={{ background: "linear-gradient(135deg, #2563EB 0%, #7A3FF2 100%)" }}>
-                <Check className="w-[13px] h-[13px]" strokeWidth={2.5} />
+              <div key={b} className="flex items-center gap-[7px] text-white text-[11.5px] font-semibold px-[14px] py-1.5 rounded-full transition-all hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(122,63,242,0.3)]" style={{ background: "linear-gradient(135deg, #2563EB 0%, #7A3FF2 100%)" }}>
+                <Check className="w-[12px] h-[12px]" strokeWidth={2.5} />
                 {b}
               </div>
             ))}
@@ -287,19 +287,19 @@ export default function Auth() {
 
       {/* RIGHT */}
       <div
-        className="flex flex-col items-center justify-center w-full lg:w-[430px] lg:flex-shrink-0 px-5 sm:px-10 lg:px-10 py-12 relative overflow-hidden min-h-screen lg:min-h-0"
+        className="flex flex-col items-center justify-center w-full lg:w-[430px] lg:flex-shrink-0 px-5 sm:px-10 lg:px-10 py-8 relative overflow-hidden min-h-screen lg:min-h-0 lg:h-screen"
         style={{ background: "linear-gradient(155deg, #2563EB 0%, #5B2FD8 38%, #7A3FF2 65%, #8B28C4 100%)" }}
       >
         <div className="absolute pointer-events-none rounded-full" style={{ top: -130, right: -90, width: 380, height: 380, background: "rgba(139,40,196,0.3)", filter: "blur(70px)" }} />
         <div className="absolute pointer-events-none rounded-full" style={{ bottom: -110, left: -70, width: 300, height: 300, background: "rgba(37,99,235,0.25)", filter: "blur(60px)" }} />
 
-        <div className="relative z-[1] w-full max-w-[360px] -translate-y-10">
-          <div className="flex justify-center mt-16 mb-2">
-            <img src={accordLogo} alt="ACCORD" className="brightness-0 invert" style={{ height: 168, width: "auto", objectFit: "contain" }} />
+        <div className="relative z-[1] w-full max-w-[360px]">
+          <div className="flex justify-center mb-1">
+            <img src={accordLogo} alt="ACCORD" className="brightness-0 invert" style={{ height: 130, width: "auto", objectFit: "contain", marginBottom: -18 }} />
           </div>
 
-          <div className="text-[22px] font-extrabold text-white tracking-[-0.8px] text-center mb-1.5">Entre na sua conta</div>
-          <div className="text-[13px] text-white/60 text-center mb-[26px]">Acesse sua conta para continuar</div>
+          <div className="text-[20px] font-extrabold text-white tracking-[-0.8px] text-center mb-1">Entre na sua conta</div>
+          <div className="text-[12.5px] text-white/60 text-center mb-4">Acesse sua conta para continuar</div>
 
           {error && (
             <Alert variant="destructive" className="mb-4 rounded-xl border-red-200 bg-red-50">
@@ -314,7 +314,7 @@ export default function Auth() {
             </Alert>
           )}
 
-          <form onSubmit={loginForm.handleSubmit(onLogin)} className="bg-white rounded-2xl px-[26px] py-7">
+          <form onSubmit={loginForm.handleSubmit(onLogin)} className="bg-white rounded-2xl px-[26px] py-5">
             <div className="mb-3.5">
               <label className="block text-[12px] font-semibold text-[#374151] mb-1.5">E-mail</label>
               <div className="flex items-center gap-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-[9px] px-3.5 transition-all focus-within:border-[#7A3FF2] focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(122,63,242,0.12)]">
