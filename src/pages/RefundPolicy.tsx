@@ -1,7 +1,17 @@
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 
 export default function RefundPolicy() {
   return (
+    <>
+      <Helmet>
+        <title>Política de Reembolso | ACCORD</title>
+        <meta name="description" content="Garantia de 30 dias da Accord Pipe. Saiba como solicitar reembolso, prazos de processamento e cancelamento de assinatura." />
+        <link rel="canonical" href="https://accordpipe.com.br/refund-policy" />
+        <meta property="og:title" content="Política de Reembolso | ACCORD" />
+        <meta property="og:description" content="Garantia de 30 dias da Accord Pipe. Como solicitar reembolso e cancelar assinatura." />
+        <meta property="og:url" content="https://accordpipe.com.br/refund-policy" />
+      </Helmet>
     <div className="min-h-screen bg-[#070B14] text-[#E5E7EB]">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12 sm:py-16">
         <Link to="/" className="text-sm text-[#2563EB] hover:underline">← Voltar</Link>
