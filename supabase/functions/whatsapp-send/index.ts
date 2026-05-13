@@ -388,9 +388,10 @@ Deno.serve(async (req) => {
           uazType as "image" | "audio" | "video" | "document",
           text || "",
           file_name,
+          quotedExternalId,
         );
       } else {
-        result = await sendUazapi(integ.server_url, instanceName, integ.instance_token, phone, text);
+        result = await sendUazapi(integ.server_url, instanceName, integ.instance_token, phone, text, quotedExternalId);
       }
     } else if (integ.provider_type === "zapi") {
       const { data: comp } = await admin
