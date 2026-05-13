@@ -84,6 +84,11 @@ interface InboxChatProps {
   onCreateDemand?: () => void;
   onUpdateStatus?: (contactId: string, status: string) => void;
   onBack?: () => void;
+  queueCount?: number;
+  inServiceCount?: number;
+  onNewConversation?: () => void;
+  onFilterQueue?: () => void;
+  onViewReport?: () => void;
 }
 
 function ContactAvatar({ contact, size = 36 }: { contact: ChatContact; size?: number }) {
