@@ -177,7 +177,7 @@ export default function Auth() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F4F2FF]">
+      <div className="flex min-h-screen items-center justify-center bg-[#F2F0FF]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7A3FF2]" />
       </div>
     );
@@ -218,7 +218,7 @@ export default function Auth() {
       </Helmet>
       <main className="flex lg:h-screen min-h-screen lg:min-h-0 lg:overflow-hidden font-sans" style={{ fontFamily: "'Geist', -apple-system, sans-serif" }}>
       {/* LEFT */}
-      <div className="hidden lg:flex flex-1 relative flex-col overflow-hidden bg-[#F4F2FF] px-[52px] pt-[56px] pb-6">
+      <div className="hidden lg:flex flex-1 relative flex-col overflow-hidden bg-[#F2F0FF] px-[52px] pt-[56px] pb-6">
         <ParticleCanvas />
         {/* Orbs */}
         <div className="orb-anim absolute rounded-full pointer-events-none z-0" style={{ width: 320, height: 320, top: -80, left: -80, background: "rgba(122,63,242,0.12)", filter: "blur(70px)" }} />
@@ -226,7 +226,7 @@ export default function Auth() {
         <div className="orb-anim absolute rounded-full pointer-events-none z-0" style={{ width: 180, height: 180, top: "40%", right: 60, background: "rgba(122,63,242,0.08)", filter: "blur(70px)", animationDelay: "2s" }} />
 
         {/* Topbar */}
-        <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-0.5 px-8 py-[13px] border-b border-[rgba(122,63,242,0.1)] backdrop-blur-md" style={{ background: "rgba(244,242,255,0.75)" }}>
+        <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-0.5 px-8 py-[13px] border-b border-[rgba(122,63,242,0.1)] backdrop-blur-md" style={{ background: "rgba(242,240,255,0.75)" }}>
           {topLinks.map((l) => {
             const Icon = l.icon;
             return (
@@ -404,7 +404,7 @@ export default function Auth() {
       <Sheet open={openSheet !== null} onOpenChange={(o) => !o && setOpenSheet(null)}>
         <SheetContent
           side="right"
-          className="w-screen sm:max-w-none sm:w-1/2 overflow-y-auto bg-[#F4F2FF] text-[#0D1117] border-l border-[rgba(122,63,242,0.15)] p-0"
+          className="w-screen sm:max-w-none sm:w-1/2 overflow-y-auto bg-[#F2F0FF] text-[#0D1117] border-l border-[rgba(122,63,242,0.15)] p-0"
         >
           <SheetHeader className="px-8 h-14 flex flex-row items-center justify-start border-b border-[rgba(122,63,242,0.12)] bg-white/60 backdrop-blur-md space-y-0">
             <SheetTitle className="text-[#0D1117] text-[15px] font-bold tracking-[-0.3px]">
