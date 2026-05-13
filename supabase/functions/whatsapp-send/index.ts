@@ -426,6 +426,7 @@ Deno.serve(async (req) => {
           comp?.zapi_client_token ?? null,
           phone,
           text,
+          quotedExternalId,
         );
       }
     } else {
