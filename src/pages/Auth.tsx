@@ -474,7 +474,8 @@ export default function Auth() {
           </div>
         </SheetContent>
       </Sheet>
-    </div>
+    </main>
+    </>
   );
 }
 
