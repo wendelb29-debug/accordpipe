@@ -591,17 +591,15 @@ export function InboxChat({
     if (!ctx) return;
     let animId: number;
 
-    // Lê as cores do tema em tempo real via CSS variables
-    const getThemeColors = () => {
+    const getColors = () => {
       const isDark = document.documentElement.classList.contains('dark');
-
       return {
-        blue:   isDark ? [37,  99, 235] : [59, 130, 246],  // azul primário
-        purple: [122, 63, 242],                              // roxo sidebar-primary #7A3FF2 (igual nos dois modos)
-        dotAlpha:   isDark ? 0.07 : 0.08,
-        lineAlpha:  isDark ? 0.14 : 0.10,
-        ptAlphaMin: isDark ? 0.12 : 0.08,
-        ptAlphaMax: isDark ? 0.40 : 0.28,
+        blue:       isDark ? [37, 99, 235]   : [59, 130, 246],
+        purple:     [122, 63, 242],
+        dotAlpha:   isDark ? 0.07 : 0.06,
+        lineAlpha:  isDark ? 0.13 : 0.08,
+        ptAlphaMin: isDark ? 0.12 : 0.07,
+        ptAlphaMax: isDark ? 0.40 : 0.22,
       };
     };
 
@@ -609,66 +607,64 @@ export function InboxChat({
       a.map((v, i) => Math.round(v + (b[i] - v) * t));
 
     const resize = () => {
-      canvas.width  = canvas.offsetWidth  * devicePixelRatio;
-      canvas.height = canvas.offsetHeight * devicePixelRatio;
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      const { width, height } = parent.getBoundingClientRect();
+      canvas.width  = width  * devicePixelRatio;
+      canvas.height = height * devicePixelRatio;
+      canvas.style.width  = width  + 'px';
+      canvas.style.height = height + 'px';
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.scale(devicePixelRatio, devicePixelRatio);
     };
 
-    // Gera partículas com alpha baseado no tema atual
-    const makePts = () => {
-      const { ptAlphaMin, ptAlphaMax } = getThemeColors();
-      const range = ptAlphaMax - ptAlphaMin;
-      return Array.from({ length: 60 }, () => {
-        const t = Math.random();
-        return {
-          x:  Math.random() * canvas.offsetWidth,
-          y:  Math.random() * canvas.offsetHeight,
-          vx: (Math.random() - .5) * .28,
-          vy: (Math.random() - .5) * .28,
-          r:  Math.random() * 1.6 + .7,
-          t,
-          a:  ptAlphaMin + Math.random() * range,
-        };
-      });
-    };
-
-    resize();
-    const pts = makePts();
+    const { ptAlphaMin, ptAlphaMax } = getColors();
+    const pts = Array.from({ length: 65 }, () => {
+      const parent = canvas.parentElement;
+      const W = parent?.offsetWidth  || 800;
+      const H = parent?.offsetHeight || 600;
+      const t = Math.random();
+      return {
+        x: Math.random() * W, y: Math.random() * H,
+        vx: (Math.random() - .5) * .28,
+        vy: (Math.random() - .5) * .28,
+        r: Math.random() * 1.6 + .7,
+        t,
+        a: ptAlphaMin + Math.random() * (ptAlphaMax - ptAlphaMin),
+      };
+    });
 
     const draw = () => {
-      const W = canvas.offsetWidth, H = canvas.offsetHeight;
-      const { blue, purple, dotAlpha, lineAlpha } = getThemeColors();
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      const W = parent.offsetWidth;
+      const H = parent.offsetHeight;
+      const { blue, purple, dotAlpha, lineAlpha } = getColors();
+
       ctx.clearRect(0, 0, W, H);
 
-      // Grid de pontos
       const gs = 36;
       ctx.fillStyle = `rgba(122,63,242,${dotAlpha})`;
       for (let x = gs / 2; x < W; x += gs)
         for (let y = gs / 2; y < H; y += gs) {
-          ctx.beginPath(); ctx.arc(x, y, .8, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x, y, .85, 0, Math.PI * 2); ctx.fill();
         }
 
-      // Linhas entre partículas próximas
       for (let i = 0; i < pts.length; i++) {
         const p = pts[i];
         for (let j = i + 1; j < pts.length; j++) {
           const q = pts[j];
-          const dx = p.x - q.x, dy = p.y - q.y, d = Math.sqrt(dx*dx + dy*dy);
-          if (d < 110) {
-            const col = lerp(
-              lerp(blue, purple, p.t),
-              lerp(blue, purple, q.t),
-              .5
-            );
-            const a = (1 - d / 110) * lineAlpha;
-            ctx.strokeStyle = `rgba(${col[0]},${col[1]},${col[2]},${a})`;
+          const dx = p.x - q.x, dy = p.y - q.y;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < 120) {
+            const col = lerp(lerp(blue, purple, p.t), lerp(blue, purple, q.t), .5);
+            ctx.strokeStyle = `rgba(${col[0]},${col[1]},${col[2]},${(1 - d / 120) * lineAlpha})`;
             ctx.lineWidth = .55;
             ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
           }
         }
       }
 
-      // Partículas
       for (const p of pts) {
         p.x += p.vx; p.y += p.vy;
         if (p.x < 0 || p.x > W) p.vx *= -1;
@@ -682,9 +678,16 @@ export function InboxChat({
       animId = requestAnimationFrame(draw);
     };
 
+    resize();
     draw();
-    window.addEventListener('resize', resize);
-    return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', resize); };
+
+    const ro = new ResizeObserver(resize);
+    if (canvas.parentElement) ro.observe(canvas.parentElement);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      ro.disconnect();
+    };
   }, []);
 
   const messagesById = (() => {
@@ -949,13 +952,26 @@ export function InboxChat({
 
   if (!contact) {
     return (
-      <div className="flex-1 flex items-center justify-center relative overflow-hidden bg-background min-h-0">
+      <div
+        className="flex-1 relative overflow-hidden bg-background min-h-0"
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      >
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 w-full h-full pointer-events-none select-none"
+          style={{
+            position: 'absolute',
+            top: 0, left: 0,
+            width: '100%',
+            height: '100%',
+            pointerEvents: 'none',
+            display: 'block',
+          }}
           aria-hidden
         />
-        <div className="relative z-10 flex flex-col items-center justify-center gap-0 text-center px-6 py-0 w-full max-w-md">
+        <div
+          style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0 24px' }}
+          className="w-full max-w-md"
+        >
           <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
             <MessageSquare size={26} className="text-primary/70" />
           </div>
