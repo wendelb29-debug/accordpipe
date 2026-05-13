@@ -9,6 +9,7 @@ import { ContractVariableAudit } from "./ContractVariableAudit";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import { renderGeneratedDocumentPdf } from "@/lib/renderGeneratedDocumentPdf";
 import { supabase } from "@/integrations/supabase/client";
+import DOMPurify from "dompurify";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { Button } from "@/components/ui/button";
@@ -1265,7 +1266,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
               </div>
             ) : viewDoc?.html_content ? (
               <ScrollArea className="rounded-lg border bg-muted/20 h-[600px]">
-                <div className="p-6 prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: viewDoc.html_content }} />
+                <div className="p-6 prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(viewDoc.html_content) }} />
               </ScrollArea>
             ) : null;
           })()}

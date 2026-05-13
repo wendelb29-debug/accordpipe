@@ -64,12 +64,41 @@ Deno.serve(async (req) => {
       if (!claimsErr && claims?.user) userId = claims.user.id;
     }
 
+    if (!userId) {
+      return new Response(JSON.stringify({ success: false, code: "UNAUTHORIZED", message: "Authentication required" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const body = await req.json();
     const { action, tenant_id } = body;
 
     console.log(`[asaas-api] action=${action} tenant=${tenant_id} user=${userId}`);
 
     if (!tenant_id) return errorResponse("MISSING_TENANT", "tenant_id required");
+
+    // Verify caller belongs to tenant_id (prevents cross-tenant access)
+    const { data: membership, error: memErr } = await supabaseAdmin
+      .from("user_tenants")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("tenant_id", tenant_id)
+      .maybeSingle();
+    if (memErr || !membership) {
+      // Fallback: also allow profile.company_id match (legacy linkage)
+      const { data: prof } = await supabaseAdmin
+        .from("profiles")
+        .select("company_id")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!prof || prof.company_id !== tenant_id) {
+        return new Response(JSON.stringify({ success: false, code: "FORBIDDEN", message: "Access denied to this tenant" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
 
     async function getIntegration() {
       const { data, error } = await supabaseAdmin
