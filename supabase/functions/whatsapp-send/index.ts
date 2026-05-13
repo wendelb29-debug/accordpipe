@@ -301,7 +301,9 @@ Deno.serve(async (req) => {
       target_message_id,
       reaction_emoji,
       reaction_mode,
+      quoted_external_id,
     } = await req.json();
+    const quotedExternalId: string | null = quoted_external_id || null;
     const msgType: string = message_type || "text";
     const isMedia = msgType !== "text" && !!media_url;
     const isReaction = msgType === "reaction";
