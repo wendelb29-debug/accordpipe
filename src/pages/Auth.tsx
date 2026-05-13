@@ -6,8 +6,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Eye, EyeOff, Lock, Mail, AlertCircle, Loader2, CheckCircle2, ArrowRight,
-  Home, Phone, FileText, Shield, KanbanSquare, Calendar, MessageCircle,
-  Users, Sparkles, Check, ShieldCheck,
+  Building2, Phone, FileText, Shield, GitMerge, CalendarDays, MessageCircle,
+  Users, Bot, Check, ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -177,23 +177,23 @@ export default function Auth() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F4F2FF]">
+      <div className="flex min-h-screen items-center justify-center bg-[#F2F0FF]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7A3FF2]" />
       </div>
     );
   }
 
   const features = [
-    { icon: KanbanSquare, title: "Pipeline de Vendas", desc: "Kanban visual com acompanhamento em tempo real" },
-    { icon: Calendar, title: "Gestão de Agenda", desc: "Reuniões, follow-ups e lembretes automáticos" },
+    { icon: GitMerge, title: "Pipeline de Vendas", desc: "Kanban visual com acompanhamento em tempo real" },
+    { icon: CalendarDays, title: "Gestão de Agenda", desc: "Reuniões, follow-ups e lembretes automáticos" },
     { icon: MessageCircle, title: "Atendimento WhatsApp", desc: "Inbox unificado com chatbot e transferências" },
     { icon: FileText, title: "Propostas Comerciais", desc: "Geração automática e assinatura digital" },
     { icon: Users, title: "CRM Integrado", desc: "Gestão completa de clientes e empresas" },
-    { icon: Sparkles, title: "Accord IA", desc: "Automação inteligente de mensagens e tarefas" },
+    { icon: Bot, title: "Accord IA", desc: "Automação inteligente de mensagens e tarefas" },
   ];
 
-  const topLinks: { icon: typeof Home; label: string; key: "about" | "contact" | "terms" | "privacy" }[] = [
-    { icon: Home, label: "Sobre a empresa", key: "about" },
+  const topLinks: { icon: typeof Building2; label: string; key: "about" | "contact" | "terms" | "privacy" }[] = [
+    { icon: Building2, label: "Sobre a empresa", key: "about" },
     { icon: Phone, label: "Contato", key: "contact" },
     { icon: FileText, label: "Termos de serviço", key: "terms" },
     { icon: Shield, label: "Política de privacidade", key: "privacy" },
@@ -218,7 +218,8 @@ export default function Auth() {
       </Helmet>
       <main className="flex lg:h-screen min-h-screen lg:min-h-0 lg:overflow-hidden font-sans" style={{ fontFamily: "'Geist', -apple-system, sans-serif" }}>
       {/* LEFT */}
-      <div className="hidden lg:flex flex-1 relative flex-col overflow-hidden bg-[#F4F2FF] px-[52px] pt-[56px] pb-6">
+      <div className="hidden lg:flex flex-1 relative flex-col overflow-hidden bg-[#F2F0FF] px-[52px] pt-[56px] pb-6">
+        <div className="absolute inset-0 z-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(circle, rgba(122,63,242,0.14) 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
         <ParticleCanvas />
         {/* Orbs */}
         <div className="orb-anim absolute rounded-full pointer-events-none z-0" style={{ width: 320, height: 320, top: -80, left: -80, background: "rgba(122,63,242,0.12)", filter: "blur(70px)" }} />
@@ -226,7 +227,7 @@ export default function Auth() {
         <div className="orb-anim absolute rounded-full pointer-events-none z-0" style={{ width: 180, height: 180, top: "40%", right: 60, background: "rgba(122,63,242,0.08)", filter: "blur(70px)", animationDelay: "2s" }} />
 
         {/* Topbar */}
-        <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-0.5 px-8 py-[13px] border-b border-[rgba(122,63,242,0.1)] backdrop-blur-md" style={{ background: "rgba(244,242,255,0.75)" }}>
+        <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-0.5 px-8 py-[13px] border-b border-[rgba(122,63,242,0.1)] backdrop-blur-md" style={{ background: "rgba(242,240,255,0.75)" }}>
           {topLinks.map((l) => {
             const Icon = l.icon;
             return (
@@ -404,7 +405,7 @@ export default function Auth() {
       <Sheet open={openSheet !== null} onOpenChange={(o) => !o && setOpenSheet(null)}>
         <SheetContent
           side="right"
-          className="w-screen sm:max-w-none sm:w-1/2 overflow-y-auto bg-[#F4F2FF] text-[#0D1117] border-l border-[rgba(122,63,242,0.15)] p-0"
+          className="w-screen sm:max-w-none sm:w-1/2 overflow-y-auto bg-[#F2F0FF] text-[#0D1117] border-l border-[rgba(122,63,242,0.15)] p-0"
         >
           <SheetHeader className="px-8 h-14 flex flex-row items-center justify-start border-b border-[rgba(122,63,242,0.12)] bg-white/60 backdrop-blur-md space-y-0">
             <SheetTitle className="text-[#0D1117] text-[15px] font-bold tracking-[-0.3px]">
