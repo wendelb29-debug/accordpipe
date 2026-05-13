@@ -949,13 +949,13 @@ export function InboxChat({
 
   if (!contact) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden bg-background">
+      <div className="flex-1 flex items-center justify-center relative overflow-hidden bg-background min-h-0">
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 w-full h-full pointer-events-none"
+          className="absolute inset-0 w-full h-full pointer-events-none select-none"
           aria-hidden
         />
-        <div className="relative z-10 flex flex-col items-center gap-0 text-center px-6">
+        <div className="relative z-10 flex flex-col items-center justify-center gap-0 text-center px-6 py-0 w-full max-w-md">
           <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
             <MessageSquare size={26} className="text-primary/70" />
           </div>
