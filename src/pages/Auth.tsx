@@ -314,7 +314,7 @@ export default function Auth() {
             </Alert>
           )}
 
-          <form onSubmit={loginForm.handleSubmit(onLogin)} className="bg-white rounded-2xl px-[26px] py-7">
+          <form onSubmit={loginForm.handleSubmit(onLogin)} className="bg-white rounded-2xl px-[26px] py-5">
             <div className="mb-3.5">
               <label className="block text-[12px] font-semibold text-[#374151] mb-1.5">E-mail</label>
               <div className="flex items-center gap-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-[9px] px-3.5 transition-all focus-within:border-[#7A3FF2] focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(122,63,242,0.12)]">
