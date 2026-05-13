@@ -591,7 +591,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         supabase.from("crm_lead_activities").select("*").eq("lead_id", lead.id).eq("type", "proposal").order("created_at", { ascending: false }),
         supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
       ]);
-      const tenant = tenantRes.data;
+      const tenant: any = tenantRes.data;
       const registration = regRes.data;
 
       const activities = activityRes.data || [];

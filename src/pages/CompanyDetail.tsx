@@ -57,7 +57,7 @@ export default function CompanyDetail() {
         navigate("/empresas");
         return;
       }
-      setCompany(companyRes.data);
+      setCompany(companyRes.data as any);
       setPayments((paymentsRes.data as Payment[]) || []);
       setLoading(false);
     };
