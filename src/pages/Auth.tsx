@@ -234,7 +234,7 @@ export default function Auth() {
         </div>
 
         {/* Content */}
-        <div className="relative z-[1] flex flex-col justify-center flex-1 min-h-0">
+        <div className="relative z-[1] flex flex-col justify-start flex-1 min-h-0 pt-4">
           <img
             src={accordLogo}
             alt="ACCORD"
