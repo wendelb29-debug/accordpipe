@@ -937,7 +937,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
             supabase.from("crm_lead_activities").select("*").eq("lead_id", lead.id).eq("type", "proposal").order("created_at", { ascending: false }),
             supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
           ]);
-          setPreviewTenant(tenantRes.data);
+          setPreviewTenant(tenantRes.data as any);
           setPreviewRegistration(regRes.data);
           const activities = activityRes.data || [];
           const acceptedActivity = activities.find((a: any) => ACCEPTED_STATUSES.has(((a.metadata as any)?.status || "").toLowerCase()))

@@ -295,7 +295,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
       ) || activities[0] || null;
 
       const proposal = activityToProposal(selectedActivity);
-      const tenant = tenantRes.data;
+      const tenant: any = tenantRes.data;
       const registration = registrationRes.data;
 
       let vendor: any = null;
