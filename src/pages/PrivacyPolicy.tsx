@@ -1,7 +1,17 @@
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 
 export default function PrivacyPolicy() {
   return (
+    <>
+      <Helmet>
+        <title>Política de Privacidade | ACCORD</title>
+        <meta name="description" content="Política de privacidade da ACCORD. Saiba como protegemos seus dados pessoais e cumprimos a LGPD." />
+        <link rel="canonical" href="https://accordpipe.com.br/privacy" />
+        <meta property="og:title" content="Política de Privacidade | ACCORD" />
+        <meta property="og:description" content="Política de privacidade da ACCORD. Saiba como protegemos seus dados pessoais." />
+        <meta property="og:url" content="https://accordpipe.com.br/privacy" />
+      </Helmet>
     <div className="min-h-screen bg-[#070B14] text-[#E5E7EB]">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12 sm:py-16">
         <Link to="/" className="text-sm text-[#2563EB] hover:underline">← Voltar</Link>
