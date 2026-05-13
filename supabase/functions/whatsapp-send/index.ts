@@ -141,6 +141,7 @@ async function sendUazapiMedia(
   mediaType: "image" | "audio" | "video" | "document",
   caption: string,
   fileName?: string,
+  quotedExternalId?: string | null,
 ): Promise<SendResult> {
   const base = serverUrl.replace(/\/$/, "");
   const url = `${base}/send/media`;
@@ -153,6 +154,7 @@ async function sendUazapiMedia(
   if (fileName) payload.docName = fileName;
   // Send as voice note (PTT) when audio — appears as recorded-on-the-fly in WhatsApp
   if (mediaType === "audio") payload.ptt = true;
+  if (quotedExternalId) payload.replyid = quotedExternalId;
 
   console.log("[sendUazapiMedia] POST", url, "type:", mediaType);
 
