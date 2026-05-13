@@ -635,9 +635,9 @@ export function InboxChat({
         blue:       isDark ? [37, 99, 235] : [59, 130, 246],
         purple:     [122, 63, 242] as number[],
         dotAlpha:   isDark ? 0.07 : 0.05,
-        lineAlpha:  isDark ? 0.13 : 0.07,
-        ptAlphaMin: isDark ? 0.12 : 0.06,
-        ptAlphaMax: isDark ? 0.40 : 0.20,
+        lineAlpha:  isDark ? 0.18 : 0.10,
+        ptAlphaMin: isDark ? 0.18 : 0.09,
+        ptAlphaMax: isDark ? 0.55 : 0.30,
       };
     };
     const resize = () => {
