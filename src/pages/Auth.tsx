@@ -184,16 +184,16 @@ export default function Auth() {
   }
 
   const features = [
-    { icon: KanbanSquare, title: "Pipeline de Vendas", desc: "Kanban visual com acompanhamento em tempo real" },
-    { icon: Calendar, title: "Gestão de Agenda", desc: "Reuniões, follow-ups e lembretes automáticos" },
+    { icon: GitMerge, title: "Pipeline de Vendas", desc: "Kanban visual com acompanhamento em tempo real" },
+    { icon: CalendarDays, title: "Gestão de Agenda", desc: "Reuniões, follow-ups e lembretes automáticos" },
     { icon: MessageCircle, title: "Atendimento WhatsApp", desc: "Inbox unificado com chatbot e transferências" },
     { icon: FileText, title: "Propostas Comerciais", desc: "Geração automática e assinatura digital" },
     { icon: Users, title: "CRM Integrado", desc: "Gestão completa de clientes e empresas" },
-    { icon: Sparkles, title: "Accord IA", desc: "Automação inteligente de mensagens e tarefas" },
+    { icon: Bot, title: "Accord IA", desc: "Automação inteligente de mensagens e tarefas" },
   ];
 
-  const topLinks: { icon: typeof Home; label: string; key: "about" | "contact" | "terms" | "privacy" }[] = [
-    { icon: Home, label: "Sobre a empresa", key: "about" },
+  const topLinks: { icon: typeof Building2; label: string; key: "about" | "contact" | "terms" | "privacy" }[] = [
+    { icon: Building2, label: "Sobre a empresa", key: "about" },
     { icon: Phone, label: "Contato", key: "contact" },
     { icon: FileText, label: "Termos de serviço", key: "terms" },
     { icon: Shield, label: "Política de privacidade", key: "privacy" },
