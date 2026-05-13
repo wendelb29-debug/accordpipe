@@ -904,16 +904,54 @@ export function InboxChat({
 
   if (!contact) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-4 relative overflow-hidden bg-muted/20 dark:bg-background/60">
-        <AccordWatermark />
-        <div className="relative z-10 flex flex-col items-center gap-3 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
-            <Users size={24} className="text-primary opacity-60" />
+      <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden bg-background">
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          aria-hidden
+        />
+        <div className="relative z-10 flex flex-col items-center gap-0 text-center px-6">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
+            <MessageSquare size={26} className="text-primary/70" />
           </div>
-          <p className="text-sm font-medium text-foreground/70">Selecione uma conversa</p>
-          <p className="text-xs text-muted-foreground max-w-[180px] leading-relaxed">
-            Escolha um atendimento ao lado para iniciar
+
+          <p className="text-[17px] font-bold text-foreground tracking-tight mb-1.5">
+            Selecione uma conversa
           </p>
+          <p className="text-[13px] text-muted-foreground max-w-[220px] leading-relaxed mb-7">
+            Escolha um atendimento ao lado ou inicie uma nova conversa
+          </p>
+
+          <div className="grid grid-cols-3 gap-2.5 w-full max-w-[400px] mb-7">
+            {[
+              { icon: Plus, label: 'Nova conversa', onClick: onNewConversation },
+              { icon: Filter, label: 'Filtrar fila', onClick: onFilterQueue },
+              { icon: BarChart2, label: 'Ver relatório', onClick: onViewReport },
+            ].map(({ icon: Icon, label, onClick }) => (
+              <button
+                key={label}
+                onClick={onClick}
+                disabled={!onClick}
+                className="flex flex-col items-center gap-2 bg-white/[0.04] hover:bg-primary/10 border border-white/[0.07] hover:border-primary/25 rounded-xl py-3.5 px-2 transition-all duration-150 group disabled:opacity-40 disabled:hover:bg-white/[0.04] disabled:hover:border-white/[0.07]"
+              >
+                <Icon size={20} className="text-primary/70 group-hover:text-primary transition-colors" />
+                <span className="text-[11.5px] font-semibold text-foreground/60 group-hover:text-foreground/80 leading-tight text-center transition-colors">
+                  {label}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-5">
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span className="text-[11px] text-muted-foreground/50">{inServiceCount} em atendimento</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
+              <span className="text-[11px] text-muted-foreground/50">{queueCount} na fila</span>
+            </div>
+          </div>
         </div>
       </div>
     );
