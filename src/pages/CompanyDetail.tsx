@@ -1,3 +1,4 @@
+import { COMPANY_SAFE_COLUMNS } from "@/lib/safeColumns";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Building2, Receipt, Loader2, Mail, Phone, MapPin, User } from "lucide-react";
@@ -48,7 +49,7 @@ export default function CompanyDetail() {
     const fetchData = async () => {
       setLoading(true);
       const [companyRes, paymentsRes] = await Promise.all([
-        supabase.from("companies").select("*").eq("id", id).maybeSingle(),
+        supabase.from("companies").select(COMPANY_SAFE_COLUMNS).eq("id", id).maybeSingle(),
         supabase.from("payments").select("*").eq("company_id", id).order("created_at", { ascending: false }),
       ]);
       if (companyRes.error || !companyRes.data) {

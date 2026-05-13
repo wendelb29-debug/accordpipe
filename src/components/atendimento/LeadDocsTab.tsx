@@ -1,3 +1,4 @@
+import { COMPANY_SAFE_COLUMNS } from "@/lib/safeColumns";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Paperclip, Upload, Trash2, Eye, Download, Loader2, FileText, CreditCard, MapPin, Building2, FileSignature, CheckCircle2, Shield, User, Plus, ChevronDown, FolderOpen, ImageIcon, Link2, Clock, XCircle, MoreHorizontal, PenTool, Send, Copy, Mail, MessageCircle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -284,7 +285,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
           .eq("lead_id", lead.id)
           .eq("type", "proposal")
           .order("created_at", { ascending: false }),
-        supabase.from("companies").select("*").eq("id", lead.servidor_id).maybeSingle(),
+        supabase.from("companies").select(COMPANY_SAFE_COLUMNS).eq("id", lead.servidor_id).maybeSingle(),
         supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
       ]);
 

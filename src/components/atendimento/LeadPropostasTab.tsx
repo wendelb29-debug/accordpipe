@@ -1,3 +1,4 @@
+import { COMPANY_SAFE_COLUMNS } from "@/lib/safeColumns";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   ArrowLeft, Building2, User, Mail, PhoneCall, MapPin, Calendar,
@@ -789,7 +790,7 @@ ${meta.items ? `\nItens contratados:\n${meta.items.split("\n").filter(Boolean).m
     // Fetch company data if available, otherwise use lead data
     let company: any = null;
     if (lead.company_id) {
-      const { data } = await supabase.from("companies").select("*").eq("id", lead.company_id).maybeSingle();
+      const { data } = await supabase.from("companies").select(COMPANY_SAFE_COLUMNS).eq("id", lead.company_id).maybeSingle();
       company = data;
     }
 
