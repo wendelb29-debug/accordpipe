@@ -219,6 +219,7 @@ export default function Auth() {
       <main className="flex lg:h-screen min-h-screen lg:min-h-0 lg:overflow-hidden font-sans" style={{ fontFamily: "'Geist', -apple-system, sans-serif" }}>
       {/* LEFT */}
       <div className="hidden lg:flex flex-1 relative flex-col overflow-hidden bg-[#F2F0FF] px-[52px] pt-[56px] pb-6">
+        <div className="absolute inset-0 z-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(circle, rgba(122,63,242,0.14) 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
         <ParticleCanvas />
         {/* Orbs */}
         <div className="orb-anim absolute rounded-full pointer-events-none z-0" style={{ width: 320, height: 320, top: -80, left: -80, background: "rgba(122,63,242,0.12)", filter: "blur(70px)" }} />
