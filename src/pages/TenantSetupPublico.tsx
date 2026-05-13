@@ -69,11 +69,9 @@ export default function TenantSetupPublico() {
   useEffect(() => {
     if (!token) return;
     const load = async () => {
-      const { data, error } = await supabase
-        .from("tenant_setup_requests")
-        .select("*")
-        .eq("token", token)
-        .maybeSingle();
+      const { data: rows, error } = await supabase
+        .rpc("get_tenant_setup_by_token", { p_token: token });
+      const data = Array.isArray(rows) ? rows[0] : rows;
       if (error || !data) { setNotFound(true); setLoading(false); return; }
       if (data.status === "submitted" || data.status === "activated") setSubmitted(true);
       setRequestId(data.id);
@@ -188,11 +186,9 @@ export default function TenantSetupPublico() {
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase
-      .from("tenant_setup_requests")
-      .update({ ...form, status: "submitted", submitted_at: new Date().toISOString() } as any)
-      .eq("id", requestId);
-    if (error) {
+    const { data: ok, error } = await supabase
+      .rpc("submit_tenant_setup_by_token", { p_token: token, p_payload: form as any });
+    if (error || !ok) {
       toast.error("Erro ao enviar configuração");
       console.error(error);
     } else {
