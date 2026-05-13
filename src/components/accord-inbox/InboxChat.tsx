@@ -928,64 +928,44 @@ export function InboxChat({
   if (!contact) {
     return (
       <div
-        className="flex-1 relative overflow-hidden bg-background min-h-0"
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        className="flex-1 relative overflow-hidden bg-background"
+        style={{ display:'flex', alignItems:'center', justifyContent:'center' }}
       >
         <canvas
           ref={canvasRef}
-          style={{
-            position: 'absolute',
-            top: 0, left: 0,
-            width: '100%',
-            height: '100%',
-            pointerEvents: 'none',
-            display: 'block',
-          }}
+          style={{ position:'absolute', top:0, left:0, width:'100%', height:'100%', pointerEvents:'none', display:'block' }}
           aria-hidden
         />
-        <div
-          style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0 24px' }}
-          className="w-full max-w-md"
-        >
+        <div style={{ position:'relative', zIndex:10, display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', padding:'0 24px' }}>
           <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
             <MessageSquare size={26} className="text-primary/70" />
           </div>
-
           <p className="text-[17px] font-bold text-foreground tracking-tight mb-1.5">
             Selecione uma conversa
           </p>
           <p className="text-[13px] text-muted-foreground max-w-[220px] leading-relaxed mb-7">
             Escolha um atendimento ao lado ou inicie uma nova conversa
           </p>
-
           <div className="grid grid-cols-3 gap-2.5 w-full max-w-[400px] mb-7">
-            {[
-              { icon: Plus, label: 'Nova conversa', onClick: onNewConversation },
-              { icon: Filter, label: 'Filtrar fila', onClick: onFilterQueue },
-              { icon: BarChart2, label: 'Ver relatório', onClick: onViewReport },
-            ].map(({ icon: Icon, label, onClick }) => (
-              <button
-                key={label}
-                onClick={onClick}
-                disabled={!onClick}
-                className="flex flex-col items-center gap-2 bg-white/[0.04] hover:bg-primary/10 border border-white/[0.07] hover:border-primary/25 rounded-xl py-3.5 px-2 transition-all duration-150 group disabled:opacity-40 disabled:hover:bg-white/[0.04] disabled:hover:border-white/[0.07]"
-              >
+            {([
+              { Icon: Plus,      label: 'Nova conversa' },
+              { Icon: Filter,    label: 'Filtrar fila'  },
+              { Icon: BarChart2, label: 'Ver relatório' },
+            ]).map(({ Icon, label }) => (
+              <button key={label} className="flex flex-col items-center gap-2 bg-white/[0.04] hover:bg-primary/10 border border-white/[0.07] hover:border-primary/25 rounded-xl py-3.5 px-2 transition-all duration-150 group">
                 <Icon size={20} className="text-primary/70 group-hover:text-primary transition-colors" />
-                <span className="text-[11.5px] font-semibold text-foreground/60 group-hover:text-foreground/80 leading-tight text-center transition-colors">
-                  {label}
-                </span>
+                <span className="text-[11.5px] font-semibold text-foreground/60 group-hover:text-foreground/80 leading-tight text-center transition-colors">{label}</span>
               </button>
             ))}
           </div>
-
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span className="text-[11px] text-muted-foreground/50">{inServiceCount} em atendimento</span>
+              <span className="text-[11px] text-muted-foreground/50">em atendimento</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
-              <span className="text-[11px] text-muted-foreground/50">{queueCount} na fila</span>
+              <span className="text-[11px] text-muted-foreground/50">na fila</span>
             </div>
           </div>
         </div>
