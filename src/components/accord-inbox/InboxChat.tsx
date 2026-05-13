@@ -583,6 +583,65 @@ export function InboxChat({
     return () => { mounted = false; };
   }, []);
 
+  // Canvas particle animation for empty state
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    let animId: number;
+    const BLUE = [37, 99, 235], PURPLE = [122, 63, 242];
+    const lerpColor = (a: number[], b: number[], t: number) =>
+      a.map((v, i) => v + (b[i] - v) * t);
+
+    const resize = () => {
+      canvas.width = canvas.offsetWidth * devicePixelRatio;
+      canvas.height = canvas.offsetHeight * devicePixelRatio;
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+    };
+
+    const pts = Array.from({ length: 60 }, () => {
+      const t = Math.random(), col = lerpColor(BLUE, PURPLE, t);
+      return { x: Math.random() * canvas.offsetWidth, y: Math.random() * canvas.offsetHeight,
+        vx: (Math.random() - .5) * .28, vy: (Math.random() - .5) * .28,
+        r: Math.random() * 1.6 + .7, col, a: Math.random() * .4 + .12 };
+    });
+
+    const draw = () => {
+      const W = canvas.offsetWidth, H = canvas.offsetHeight;
+      ctx.clearRect(0, 0, W, H);
+      const gs = 36;
+      ctx.fillStyle = 'rgba(122,63,242,0.07)';
+      for (let x = gs / 2; x < W; x += gs)
+        for (let y = gs / 2; y < H; y += gs) {
+          ctx.beginPath(); ctx.arc(x, y, .8, 0, Math.PI * 2); ctx.fill();
+        }
+      for (let i = 0; i < pts.length; i++) {
+        const p = pts[i];
+        for (let j = i + 1; j < pts.length; j++) {
+          const q = pts[j], dx = p.x - q.x, dy = p.y - q.y, d = Math.sqrt(dx*dx+dy*dy);
+          if (d < 110) {
+            const mid = lerpColor(p.col, q.col, .5);
+            ctx.strokeStyle = `rgba(${mid[0]},${mid[1]},${mid[2]},${(1 - d / 110) * .14})`;
+            ctx.lineWidth = .55;
+            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+          }
+        }
+      }
+      for (const p of pts) {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > W) p.vx *= -1;
+        if (p.y < 0 || p.y > H) p.vy *= -1;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${p.col[0]},${p.col[1]},${p.col[2]},${p.a})`; ctx.fill();
+      }
+      animId = requestAnimationFrame(draw);
+    };
+    resize(); draw();
+    window.addEventListener('resize', resize);
+    return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', resize); };
+  }, []);
+
   const messagesById = (() => {
     const map: Record<string, ChatMessage> = {};
     for (const m of messages) map[m.id] = m;
