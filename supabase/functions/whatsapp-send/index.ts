@@ -238,16 +238,20 @@ async function sendZapi(
   clientToken: string | null,
   phone: string,
   text: string,
+  quotedExternalId?: string | null,
 ): Promise<SendResult> {
   const base = serverUrl.replace(/\/$/, "");
   const url = `${base}/instances/${instanceId}/token/${token}/send-text`;
   try {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (clientToken) headers["Client-Token"] = clientToken;
+    const payload: Record<string, unknown> = { phone: normalizePhone(phone), message: text };
+    // Z-API native reply — attaches the new message as a quote of the original
+    if (quotedExternalId) payload.messageId = quotedExternalId;
     const res = await fetch(url, {
       method: "POST",
       headers,
-      body: JSON.stringify({ phone: normalizePhone(phone), message: text }),
+      body: JSON.stringify(payload),
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
