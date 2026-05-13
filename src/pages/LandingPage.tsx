@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import accordLogo from "@/assets/accord-logo-full.png";
