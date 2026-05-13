@@ -95,13 +95,13 @@ function buildPhoneVariants(rawPhone?: string | null) {
 function matchesSelectedConversation(
   message: Pick<InboxMessage, "contact_id" | "phone">,
   selectedContactId: string | null,
-  selectedContactPhone: string | null,
+  _selectedContactPhone: string | null,
 ) {
-  if (selectedContactId && message.contact_id === selectedContactId) return true;
-  if (!selectedContactPhone) return false;
-
-  const selectedVariants = new Set(buildPhoneVariants(selectedContactPhone));
-  return buildPhoneVariants(message.phone).some((variant) => selectedVariants.has(variant));
+  // Strict isolation: a message belongs to a chat ONLY when its contact_id
+  // matches. Phone-based fallback used to leak messages across chats that
+  // shared a phone number (or duplicated contacts), so it was removed.
+  if (!selectedContactId) return false;
+  return message.contact_id === selectedContactId;
 }
 
 export function useWhatsAppInbox() {
