@@ -649,6 +649,8 @@ export function InboxChat({
       requestAnimationFrame(() => scrollToBottom("auto"));
       isAtBottomRef.current = true;
       setHasNewBelow(false);
+      // Clear any reply-state carried from a previous conversation
+      setReplyTo(null);
     }
   }, [contact?.id, messages.length]);
 
