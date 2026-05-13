@@ -285,7 +285,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
           .eq("lead_id", lead.id)
           .eq("type", "proposal")
           .order("created_at", { ascending: false }),
-        supabase.from("companies").select(COMPANY_SAFE_COLUMNS) as any.eq("id", lead.servidor_id).maybeSingle(),
+        supabase.from("companies").select(COMPANY_SAFE_COLUMNS).eq("id", lead.servidor_id).maybeSingle(),
         supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
       ]);
 
