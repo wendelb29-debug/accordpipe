@@ -52,7 +52,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 border-b border-[rgba(255,255,255,0.05)] bg-[rgba(7,11,20,0.85)] backdrop-blur-2xl" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex items-center shrink-0">
-            <img src={accordLogo} alt="ACCORD" className="h-16 w-auto shrink-0 brightness-200" width="120" height="64" fetchpriority="high" decoding="async" />
+            <img src={accordLogo} alt="ACCORD" className="h-16 w-auto shrink-0 brightness-200" width="120" height="64" fetchPriority="high" decoding="async" />
           </Link>
 
           <nav className="hidden lg:flex items-center gap-8">
