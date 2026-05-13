@@ -174,20 +174,19 @@ export function useWhatsAppInbox() {
 
   const fetchMessages = useCallback(async (
     contactId: string,
-    contactPhone?: string | null,
+    _contactPhone?: string | null,
     opts?: { background?: boolean },
   ) => {
     if (!companyId) return;
 
-    const phoneVariants = buildPhoneVariants(contactPhone);
-    const phoneFilters = phoneVariants.map((phone) => `phone.eq.${phone}`);
-    const orFilter = [`contact_id.eq.${contactId}`, ...phoneFilters].join(",");
-
+    // Strict per-chat isolation: only rows explicitly tied to this contact_id.
+    // Phone-based matching used to mix conversations whenever two contacts
+    // shared (or normalized to) the same number.
     const { data, error } = await supabase
       .from("whatsapp_messages")
       .select("*")
       .eq("company_id", companyId)
-      .or(orFilter)
+      .eq("contact_id", contactId)
       .order("created_at", { ascending: true });
 
     if (error) {
