@@ -95,13 +95,13 @@ function buildPhoneVariants(rawPhone?: string | null) {
 function matchesSelectedConversation(
   message: Pick<InboxMessage, "contact_id" | "phone">,
   selectedContactId: string | null,
-  selectedContactPhone: string | null,
+  _selectedContactPhone: string | null,
 ) {
-  if (selectedContactId && message.contact_id === selectedContactId) return true;
-  if (!selectedContactPhone) return false;
-
-  const selectedVariants = new Set(buildPhoneVariants(selectedContactPhone));
-  return buildPhoneVariants(message.phone).some((variant) => selectedVariants.has(variant));
+  // Strict isolation: a message belongs to a chat ONLY when its contact_id
+  // matches. Phone-based fallback used to leak messages across chats that
+  // shared a phone number (or duplicated contacts), so it was removed.
+  if (!selectedContactId) return false;
+  return message.contact_id === selectedContactId;
 }
 
 export function useWhatsAppInbox() {
@@ -174,20 +174,19 @@ export function useWhatsAppInbox() {
 
   const fetchMessages = useCallback(async (
     contactId: string,
-    contactPhone?: string | null,
+    _contactPhone?: string | null,
     opts?: { background?: boolean },
   ) => {
     if (!companyId) return;
 
-    const phoneVariants = buildPhoneVariants(contactPhone);
-    const phoneFilters = phoneVariants.map((phone) => `phone.eq.${phone}`);
-    const orFilter = [`contact_id.eq.${contactId}`, ...phoneFilters].join(",");
-
+    // Strict per-chat isolation: only rows explicitly tied to this contact_id.
+    // Phone-based matching used to mix conversations whenever two contacts
+    // shared (or normalized to) the same number.
     const { data, error } = await supabase
       .from("whatsapp_messages")
       .select("*")
       .eq("company_id", companyId)
-      .or(orFilter)
+      .eq("contact_id", contactId)
       .order("created_at", { ascending: true });
 
     if (error) {
