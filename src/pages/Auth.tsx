@@ -287,19 +287,19 @@ export default function Auth() {
 
       {/* RIGHT */}
       <div
-        className="flex flex-col items-center justify-center w-full lg:w-[430px] lg:flex-shrink-0 px-5 sm:px-10 lg:px-10 py-12 relative overflow-hidden min-h-screen lg:min-h-0"
+        className="flex flex-col items-center justify-center w-full lg:w-[430px] lg:flex-shrink-0 px-5 sm:px-10 lg:px-10 py-8 relative overflow-hidden min-h-screen lg:min-h-0 lg:h-screen"
         style={{ background: "linear-gradient(155deg, #2563EB 0%, #5B2FD8 38%, #7A3FF2 65%, #8B28C4 100%)" }}
       >
         <div className="absolute pointer-events-none rounded-full" style={{ top: -130, right: -90, width: 380, height: 380, background: "rgba(139,40,196,0.3)", filter: "blur(70px)" }} />
         <div className="absolute pointer-events-none rounded-full" style={{ bottom: -110, left: -70, width: 300, height: 300, background: "rgba(37,99,235,0.25)", filter: "blur(60px)" }} />
 
-        <div className="relative z-[1] w-full max-w-[360px] -translate-y-10">
-          <div className="flex justify-center mt-16 mb-2">
-            <img src={accordLogo} alt="ACCORD" className="brightness-0 invert" style={{ height: 168, width: "auto", objectFit: "contain" }} />
+        <div className="relative z-[1] w-full max-w-[360px]">
+          <div className="flex justify-center mb-1">
+            <img src={accordLogo} alt="ACCORD" className="brightness-0 invert" style={{ height: 130, width: "auto", objectFit: "contain", marginBottom: -18 }} />
           </div>
 
-          <div className="text-[22px] font-extrabold text-white tracking-[-0.8px] text-center mb-1.5">Entre na sua conta</div>
-          <div className="text-[13px] text-white/60 text-center mb-[26px]">Acesse sua conta para continuar</div>
+          <div className="text-[20px] font-extrabold text-white tracking-[-0.8px] text-center mb-1">Entre na sua conta</div>
+          <div className="text-[12.5px] text-white/60 text-center mb-4">Acesse sua conta para continuar</div>
 
           {error && (
             <Alert variant="destructive" className="mb-4 rounded-xl border-red-200 bg-red-50">
