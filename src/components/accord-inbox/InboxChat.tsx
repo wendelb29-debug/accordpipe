@@ -617,6 +617,7 @@ export function InboxChat({
   const isAtBottomRef = useRef(true);
   const prevContactIdRef = useRef<string | null>(null);
   const prevMsgCountRef = useRef(0);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const isClosed = contact?.conversationStatus === "encerrado" || contact?.conversationStatus === "finalizado";
 
