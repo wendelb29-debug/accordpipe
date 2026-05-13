@@ -1,0 +1,32 @@
+# ACCORD
+
+> Plataforma SaaS completa para gestão de vendas, contratos digitais, CRM, WhatsApp e automação com inteligência artificial.
+
+ACCORD é uma plataforma enterprise que centraliza pipeline de vendas, propostas, contratos com assinatura digital, atendimento via WhatsApp, fintech integrada e automação com IA — tudo em um único ecossistema para times comerciais.
+
+## Páginas
+
+- [/](/): Página inicial — landing page e login.
+- [/auth](/auth): Área de login e cadastro.
+- [/contato](/contato): Formulário de contato comercial.
+- [/privacy](/privacy): Política de privacidade e LGPD.
+- [/terms](/terms): Termos de uso do serviço.
+- [/refund-policy](/refund-policy): Política de reembolso e garantia.
+- [/validar-documento](/validar-documento): Validação pública de documentos assinados.
+- [/aceitar-convite](/aceitar-convite): Aceitar convite de equipe.
+
+## Funcionalidades
+
+- CRM com pipeline Kanban personalizável
+- Propostas e contratos digitais com assinatura eletrônica
+- Atendimento via WhatsApp centralizado (inbox multi-atendente)
+- Automação com inteligência artificial (Accord AI)
+- Gestão financeira integrada (fintech)
+- Relatórios e insights de performance comercial
+- Gestão de eventos e aniversariantes
+- Base de clientes e cadastro administrativo
+- White-label e multi-tenant para revendas
+
+## Opcional
+
+- [/reset-password](/reset-password): Recuperação de senha.
