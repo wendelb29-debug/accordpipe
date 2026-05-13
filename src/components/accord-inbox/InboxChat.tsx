@@ -3,6 +3,7 @@ import {
   Search, ArrowLeftRight, Info, X, Paperclip, Image, Mic, Trash2,
   Send, Play, Pause, FileText, FileSpreadsheet, FileArchive, FileImage, FileVideo, FileAudio, File as FileIcon, Download,
   MoreVertical, Users, Check, CheckCheck, ArrowLeft, Reply, Smile,
+  MessageSquare, Plus, Filter, BarChart2,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
