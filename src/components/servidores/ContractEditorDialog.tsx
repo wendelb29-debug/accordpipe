@@ -8,6 +8,7 @@ import { ContractRichEditor } from "./ContractRichEditor";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { renderGeneratedDocumentPdf } from "@/lib/renderGeneratedDocumentPdf";
 import { toast } from "sonner";
+import DOMPurify from "dompurify";
 
 interface BrandingConfig {
   logoUrl?: string | null;
