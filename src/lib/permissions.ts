@@ -386,7 +386,7 @@ export const ROUTE_PERMISSIONS: Record<string, string> = {
   "/configuracoes/usuarios": "view_users",
   "/configuracoes/assinaturas": "view_users",
   "/empresas": "edit_clients",
-  "/accord-stack": "create_user",
+  "/accord-stack": "view_conversations",
   "/configuracoes/auditoria": "view_audit_logs",
   "/performance": "view_performance_module",
   "/planos": "view_billing_plans",
