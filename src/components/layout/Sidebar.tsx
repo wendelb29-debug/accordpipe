@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import accordLogo from "@/assets/accord-logo.png";
+import accordLogoIcon from "@/assets/accord-logo-icon.png";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -222,26 +223,36 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div className={cn(
-        "flex h-12 items-center border-b border-sidebar-border/30 shrink-0 select-none overflow-hidden",
+        "flex h-14 items-center border-b border-sidebar-border/30 shrink-0 select-none",
         collapsed ? "justify-center px-2" : "justify-start px-4"
       )}>
-        <div className="flex items-center gap-2.5 cursor-default shrink-0" onClick={(e) => e.preventDefault()}>
-          <img
-            src={tenantLogoUrl || accordLogo}
-            alt={tenantLogoUrl ? "Tenant" : "ACCORD"}
-            className={cn(
-              "transition-all duration-300 object-contain w-auto flex-shrink-0",
-              collapsed ? "h-7 max-w-[36px]" : "h-8",
-              tenantLogoUrl ? "max-w-[120px]" : "max-w-[32px]"
-            )}
-          />
-          {!tenantLogoUrl && (
-            <span className={cn(
-              "text-[15px] font-bold tracking-tight text-sidebar-foreground/90 whitespace-nowrap transition-all duration-300",
-              collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 w-auto"
-            )}>
-              ACCORD
-            </span>
+        <div className="flex items-center gap-2 cursor-default min-w-0" onClick={(e) => e.preventDefault()}>
+          {tenantLogoUrl ? (
+            <img
+              src={tenantLogoUrl}
+              alt="Tenant"
+              className={cn(
+                "transition-all duration-300 object-contain w-auto flex-shrink-0",
+                collapsed ? "h-8 max-w-[40px]" : "h-9 max-w-[140px]"
+              )}
+            />
+          ) : (
+            <>
+              <img
+                src={accordLogoIcon}
+                alt="ACCORD"
+                className={cn(
+                  "transition-all duration-300 object-contain w-auto flex-shrink-0",
+                  collapsed ? "h-9" : "h-9"
+                )}
+              />
+              <span className={cn(
+                "text-[15px] font-bold tracking-tight text-sidebar-foreground/90 whitespace-nowrap transition-all duration-300",
+                collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 w-auto"
+              )}>
+                ACCORD
+              </span>
+            </>
           )}
         </div>
         {/* Pin/Toggle button - visible when expanded */}
