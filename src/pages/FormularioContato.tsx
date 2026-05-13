@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { Helmet } from "react-helmet-async";
 import { User, Phone, Mail, Building2, FileText, Send, CheckCircle2, Loader2, AlertCircle, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,6 +99,15 @@ export default function FormularioContato() {
   }
 
   return (
+    <>
+      <Helmet>
+        <title>Fale com um especialista | ACCORD</title>
+        <meta name="description" content="Fale com um especialista ACCORD. Tire dúvidas sobre CRM, contratos digitais, WhatsApp e IA para sua operação de vendas." />
+        <link rel="canonical" href="https://accordpipe.com.br/contato" />
+        <meta property="og:title" content="Fale com um especialista | ACCORD" />
+        <meta property="og:description" content="Tire dúvidas sobre o ACCORD com nosso time." />
+        <meta property="og:url" content="https://accordpipe.com.br/contato" />
+      </Helmet>
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/10 p-4">
       <Card className="max-w-lg w-full shadow-xl border-0 bg-card/95 backdrop-blur">
         <CardHeader className="text-center space-y-4 pb-2">
@@ -211,5 +221,6 @@ export default function FormularioContato() {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 }

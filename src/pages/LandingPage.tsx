@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import accordLogo from "@/assets/accord-logo-full.png";
@@ -23,6 +24,30 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[#070B14] overflow-x-hidden safe-area-bottom">
+      <Helmet>
+        <link rel="canonical" href="https://accordpipe.com.br/" />
+        <meta property="og:url" content="https://accordpipe.com.br/" />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: [
+            { "@type": "Question", name: "O que é o ACCORD?", acceptedAnswer: { "@type": "Answer", text: "É uma plataforma completa de gestão operacional que centraliza CRM, atendimento via WhatsApp, contratos digitais, faturamento, relatórios e inteligência artificial em um único painel moderno e seguro." } },
+            { "@type": "Question", name: "O ACCORD possui Inteligência Artificial?", acceptedAnswer: { "@type": "Answer", text: "Sim! O Accord AI é um assistente inteligente integrado que utiliza tecnologia de IA para gerar respostas automáticas, analisar dados, fornecer insights estratégicos e auxiliar na tomada de decisões." } },
+            { "@type": "Question", name: "Preciso pagar para usar?", acceptedAnswer: { "@type": "Answer", text: "O ACCORD possui planos flexíveis. Oferecemos um teste gratuito de 7 dias para que você conheça todas as funcionalidades antes de tomar sua decisão." } },
+            { "@type": "Question", name: "Posso testar o sistema antes de contratar?", acceptedAnswer: { "@type": "Answer", text: "Sim! Oferecemos 7 dias de teste gratuito com acesso a todas as funcionalidades." } },
+            { "@type": "Question", name: "O sistema é seguro?", acceptedAnswer: { "@type": "Answer", text: "Sim. Utilizamos criptografia de ponta a ponta, autenticação segura, controle de acesso por níveis de permissão e backups automáticos diários." } },
+            { "@type": "Question", name: "Quais integrações o ACCORD oferece?", acceptedAnswer: { "@type": "Answer", text: "O sistema integra com API WhatsApp, gateway de pagamento para cobranças, e possui IA integrada para automações inteligentes." } },
+          ],
+        })}</script>
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "LocalBusiness",
+          name: "ACCORD",
+          email: "suporte@accordclass.com.br",
+          url: "https://accordpipe.com.br",
+          address: { "@type": "PostalAddress", addressLocality: "Uberlândia", addressRegion: "MG", addressCountry: "BR" },
+        })}</script>
+      </Helmet>
       {/* Navbar */}
       <header className="sticky top-0 z-50 border-b border-[rgba(255,255,255,0.05)] bg-[rgba(7,11,20,0.85)] backdrop-blur-2xl" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -61,18 +86,20 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <HeroSection />
-      <PositioningSection />
-      <ProductScreenshots />
-      <ModulesSection />
-      
-      <AuthoritySection />
-      <DifferentialSection />
-      <SocialProofSection />
-      <FAQSection />
-      <ObjectionBreaker />
-      <PricingSection />
-      <PremiumCTASection />
+      <main>
+        <HeroSection />
+        <PositioningSection />
+        <ProductScreenshots />
+        <ModulesSection />
+
+        <AuthoritySection />
+        <DifferentialSection />
+        <SocialProofSection />
+        <FAQSection />
+        <ObjectionBreaker />
+        <PricingSection />
+        <PremiumCTASection />
+      </main>
       <FooterSection />
       <TrialSignupDialog open={trialOpen} onOpenChange={setTrialOpen} />
     </div>
