@@ -3,6 +3,7 @@ import {
   Search, ArrowLeftRight, Info, X, Paperclip, Image, Mic, Trash2,
   Send, Play, Pause, FileText, FileSpreadsheet, FileArchive, FileImage, FileVideo, FileAudio, File as FileIcon, Download,
   MoreVertical, Users, Check, CheckCheck, ArrowLeft, Reply, Smile,
+  MessageSquare, Plus, Filter, BarChart2,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -83,6 +84,11 @@ interface InboxChatProps {
   onCreateDemand?: () => void;
   onUpdateStatus?: (contactId: string, status: string) => void;
   onBack?: () => void;
+  queueCount?: number;
+  inServiceCount?: number;
+  onNewConversation?: () => void;
+  onFilterQueue?: () => void;
+  onViewReport?: () => void;
 }
 
 function ContactAvatar({ contact, size = 36 }: { contact: ChatContact; size?: number }) {
@@ -559,7 +565,7 @@ function AccordWatermark() {
 
 export function InboxChat({
   contact, messages, onSendMessage, onReactToMessage, onTransfer, onToggleInfo, showInfo, onUpdateStatus, companyId,
-  onBack,
+  onBack, queueCount = 0, inServiceCount = 0, onNewConversation, onFilterQueue, onViewReport,
 }: InboxChatProps) {
   const [text, setText] = useState("");
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
@@ -575,6 +581,65 @@ export function InboxChat({
       if (mounted) setCurrentUserId(data.user?.id || null);
     })();
     return () => { mounted = false; };
+  }, []);
+
+  // Canvas particle animation for empty state
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    let animId: number;
+    const BLUE = [37, 99, 235], PURPLE = [122, 63, 242];
+    const lerpColor = (a: number[], b: number[], t: number) =>
+      a.map((v, i) => v + (b[i] - v) * t);
+
+    const resize = () => {
+      canvas.width = canvas.offsetWidth * devicePixelRatio;
+      canvas.height = canvas.offsetHeight * devicePixelRatio;
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+    };
+
+    const pts = Array.from({ length: 60 }, () => {
+      const t = Math.random(), col = lerpColor(BLUE, PURPLE, t);
+      return { x: Math.random() * canvas.offsetWidth, y: Math.random() * canvas.offsetHeight,
+        vx: (Math.random() - .5) * .28, vy: (Math.random() - .5) * .28,
+        r: Math.random() * 1.6 + .7, col, a: Math.random() * .4 + .12 };
+    });
+
+    const draw = () => {
+      const W = canvas.offsetWidth, H = canvas.offsetHeight;
+      ctx.clearRect(0, 0, W, H);
+      const gs = 36;
+      ctx.fillStyle = 'rgba(122,63,242,0.07)';
+      for (let x = gs / 2; x < W; x += gs)
+        for (let y = gs / 2; y < H; y += gs) {
+          ctx.beginPath(); ctx.arc(x, y, .8, 0, Math.PI * 2); ctx.fill();
+        }
+      for (let i = 0; i < pts.length; i++) {
+        const p = pts[i];
+        for (let j = i + 1; j < pts.length; j++) {
+          const q = pts[j], dx = p.x - q.x, dy = p.y - q.y, d = Math.sqrt(dx*dx+dy*dy);
+          if (d < 110) {
+            const mid = lerpColor(p.col, q.col, .5);
+            ctx.strokeStyle = `rgba(${mid[0]},${mid[1]},${mid[2]},${(1 - d / 110) * .14})`;
+            ctx.lineWidth = .55;
+            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+          }
+        }
+      }
+      for (const p of pts) {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > W) p.vx *= -1;
+        if (p.y < 0 || p.y > H) p.vy *= -1;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${p.col[0]},${p.col[1]},${p.col[2]},${p.a})`; ctx.fill();
+      }
+      animId = requestAnimationFrame(draw);
+    };
+    resize(); draw();
+    window.addEventListener('resize', resize);
+    return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', resize); };
   }, []);
 
   const messagesById = (() => {
@@ -611,6 +676,7 @@ export function InboxChat({
   const isAtBottomRef = useRef(true);
   const prevContactIdRef = useRef<string | null>(null);
   const prevMsgCountRef = useRef(0);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const isClosed = contact?.conversationStatus === "encerrado" || contact?.conversationStatus === "finalizado";
 
@@ -838,16 +904,54 @@ export function InboxChat({
 
   if (!contact) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-4 relative overflow-hidden bg-muted/20 dark:bg-background/60">
-        <AccordWatermark />
-        <div className="relative z-10 flex flex-col items-center gap-3 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
-            <Users size={24} className="text-primary opacity-60" />
+      <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden bg-background">
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          aria-hidden
+        />
+        <div className="relative z-10 flex flex-col items-center gap-0 text-center px-6">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
+            <MessageSquare size={26} className="text-primary/70" />
           </div>
-          <p className="text-sm font-medium text-foreground/70">Selecione uma conversa</p>
-          <p className="text-xs text-muted-foreground max-w-[180px] leading-relaxed">
-            Escolha um atendimento ao lado para iniciar
+
+          <p className="text-[17px] font-bold text-foreground tracking-tight mb-1.5">
+            Selecione uma conversa
           </p>
+          <p className="text-[13px] text-muted-foreground max-w-[220px] leading-relaxed mb-7">
+            Escolha um atendimento ao lado ou inicie uma nova conversa
+          </p>
+
+          <div className="grid grid-cols-3 gap-2.5 w-full max-w-[400px] mb-7">
+            {[
+              { icon: Plus, label: 'Nova conversa', onClick: onNewConversation },
+              { icon: Filter, label: 'Filtrar fila', onClick: onFilterQueue },
+              { icon: BarChart2, label: 'Ver relatório', onClick: onViewReport },
+            ].map(({ icon: Icon, label, onClick }) => (
+              <button
+                key={label}
+                onClick={onClick}
+                disabled={!onClick}
+                className="flex flex-col items-center gap-2 bg-white/[0.04] hover:bg-primary/10 border border-white/[0.07] hover:border-primary/25 rounded-xl py-3.5 px-2 transition-all duration-150 group disabled:opacity-40 disabled:hover:bg-white/[0.04] disabled:hover:border-white/[0.07]"
+              >
+                <Icon size={20} className="text-primary/70 group-hover:text-primary transition-colors" />
+                <span className="text-[11.5px] font-semibold text-foreground/60 group-hover:text-foreground/80 leading-tight text-center transition-colors">
+                  {label}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-5">
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span className="text-[11px] text-muted-foreground/50">{inServiceCount} em atendimento</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
+              <span className="text-[11px] text-muted-foreground/50">{queueCount} na fila</span>
+            </div>
+          </div>
         </div>
       </div>
     );

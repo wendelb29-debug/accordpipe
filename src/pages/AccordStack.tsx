@@ -36,6 +36,8 @@ export default function AccordStack() {
   const [uiFilter, setUiFilter] = useState<UiFilter>("Todas");
 
   const selectedContact = contacts.find((c) => c.id === selectedContactId) || null;
+  const queueCount = contacts.filter((c) => c.conversation_status === "fila" || c.conversation_status === "aguardando").length;
+  const inServiceCount = contacts.filter((c) => c.conversation_status === "em_atendimento").length;
   // On mobile, show chat full-screen when a conversation is selected (hide list)
   const showChatOnly = isMobile && !!selectedContactId;
   const showListOnly = isMobile && !selectedContactId;
@@ -238,6 +240,10 @@ export default function AccordStack() {
           onCreateDemand={() => setDemandModalOpen(true)}
           onUpdateStatus={handleUpdateStatus}
           onBack={isMobile ? () => selectContact(null) : undefined}
+          queueCount={queueCount}
+          inServiceCount={inServiceCount}
+          onNewConversation={() => setNewConvOpen(true)}
+          onViewReport={() => navigate("/relatorios")}
         />
       </div>
 
