@@ -6437,6 +6437,15 @@ export type Database = {
           status: string
         }[]
       }
+      get_company_credentials: {
+        Args: { _company_id: string }
+        Returns: {
+          webhook_token: string
+          zapi_client_token: string
+          zapi_instance_id: string
+          zapi_token: string
+        }[]
+      }
       get_contract_company_id: {
         Args: { _contract_id: string }
         Returns: string
@@ -6604,6 +6613,10 @@ export type Database = {
           role: string
           status: string
         }[]
+      }
+      get_whatsapp_instance_token: {
+        Args: { _integration_id: string }
+        Returns: string
       }
       has_active_paddle_subscription: {
         Args: { check_env?: string; tenant_uuid: string }

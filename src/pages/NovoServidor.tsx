@@ -1,3 +1,4 @@
+import { COMPANY_SAFE_COLUMNS } from "@/lib/safeColumns";
 import { useState } from "react";
 import { useNavigate, useSearchParams, Navigate } from "react-router-dom";
 import {
@@ -232,7 +233,7 @@ export default function NovoServidor() {
   useEffect(() => {
     if (!editId) return;
     const load = async () => {
-      const { data } = await supabase.from("companies").select("*").eq("id", editId).single();
+      const { data }: any = await supabase.from("companies").select(COMPANY_SAFE_COLUMNS).eq("id", editId).single();
       if (data) {
         setFormData({
           razao_social: data.razao_social,

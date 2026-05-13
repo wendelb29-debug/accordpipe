@@ -1,3 +1,4 @@
+import { COMPANY_SAFE_COLUMNS } from "@/lib/safeColumns";
 import { useState, useEffect, useCallback } from "react";
 import {
   Plus, Loader2, MoreVertical, Eye, Download, Trash2,
@@ -586,11 +587,11 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
     try {
       const [tenantRes, activityRes, regRes] = await Promise.all([
-        supabase.from("companies").select("*").eq("id", servidorId).maybeSingle(),
+        supabase.from("companies").select(COMPANY_SAFE_COLUMNS).eq("id", servidorId).maybeSingle(),
         supabase.from("crm_lead_activities").select("*").eq("lead_id", lead.id).eq("type", "proposal").order("created_at", { ascending: false }),
         supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
       ]);
-      const tenant = tenantRes.data;
+      const tenant: any = tenantRes.data;
       const registration = regRes.data;
 
       const activities = activityRes.data || [];
@@ -932,11 +933,11 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
           setSelectedTemplate("");
           // Pre-fetch tenant, proposal (from activities), vendor, registration for variable preview
           const [tenantRes, activityRes, regRes] = await Promise.all([
-            supabase.from("companies").select("*").eq("id", servidorId).maybeSingle(),
+            supabase.from("companies").select(COMPANY_SAFE_COLUMNS).eq("id", servidorId).maybeSingle(),
             supabase.from("crm_lead_activities").select("*").eq("lead_id", lead.id).eq("type", "proposal").order("created_at", { ascending: false }),
             supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
           ]);
-          setPreviewTenant(tenantRes.data);
+          setPreviewTenant(tenantRes.data as any);
           setPreviewRegistration(regRes.data);
           const activities = activityRes.data || [];
           const acceptedActivity = activities.find((a: any) => ACCEPTED_STATUSES.has(((a.metadata as any)?.status || "").toLowerCase()))

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { WHATSAPP_INTEGRATION_SAFE_COLUMNS } from "@/lib/safeColumns";
 
 export type WhatsAppProvider = "zapi" | "uazapi";
 
@@ -41,7 +42,7 @@ export function useTenantWhatsAppIntegration(tenantId: string | null | undefined
     setLoading(true);
     const { data, error } = await supabase
       .from("tenant_whatsapp_integrations" as any)
-      .select("*")
+      .select(WHATSAPP_INTEGRATION_SAFE_COLUMNS)
       .eq("tenant_id", tenantId)
       .order("created_at", { ascending: true });
     if (error) {
