@@ -928,8 +928,8 @@ export function InboxChat({
   if (!contact) {
     return (
       <div
-        className="flex-1 relative overflow-hidden bg-background"
-        style={{ display:'flex', alignItems:'center', justifyContent:'center' }}
+        className="relative overflow-hidden bg-background"
+        style={{ display:'flex', alignItems:'center', justifyContent:'center', flex:'1 1 0', minHeight: 0, height: '100%' }}
       >
         <canvas
           ref={canvasRef}
