@@ -127,7 +127,7 @@ export function AcademyLessonViewer({ courseId, lessonId, onBack, onSelectLesson
         {lesson.content_html && (
           <Card>
             <CardContent className="p-6 prose prose-sm dark:prose-invert max-w-none">
-              <div dangerouslySetInnerHTML={{ __html: lesson.content_html }} />
+              <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(lesson.content_html) }} />
             </CardContent>
           </Card>
         )}
