@@ -1,7 +1,17 @@
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 
 export default function TermsOfService() {
   return (
+    <>
+      <Helmet>
+        <title>Termos de Uso | ACCORD</title>
+        <meta name="description" content="Termos de uso da plataforma ACCORD. Regras de uso, limitações de responsabilidade e condições do serviço." />
+        <link rel="canonical" href="https://accordpipe.com.br/terms" />
+        <meta property="og:title" content="Termos de Uso | ACCORD" />
+        <meta property="og:description" content="Termos de uso da plataforma ACCORD." />
+        <meta property="og:url" content="https://accordpipe.com.br/terms" />
+      </Helmet>
     <div className="min-h-screen bg-[#070B14] text-[#E5E7EB]">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12 sm:py-16">
         <Link to="/" className="text-sm text-[#2563EB] hover:underline">← Voltar</Link>
