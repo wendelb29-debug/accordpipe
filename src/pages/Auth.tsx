@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Helmet } from "react-helmet-async";
 import { useNavigate, Link } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -206,7 +207,16 @@ export default function Auth() {
   };
 
   return (
-    <div className="flex lg:h-screen min-h-screen lg:min-h-0 lg:overflow-hidden font-sans" style={{ fontFamily: "'Geist', -apple-system, sans-serif" }}>
+    <>
+      <Helmet>
+        <title>ACCORD | Login — Plataforma de Vendas e Contratos com IA</title>
+        <meta name="description" content="Entre na ACCORD. Plataforma completa para times de vendas: pipeline, contratos inteligentes e atendimento com IA." />
+        <link rel="canonical" href="https://accordpipe.com.br/auth" />
+        <meta property="og:title" content="ACCORD | Login — Plataforma de Vendas e Contratos com IA" />
+        <meta property="og:description" content="Entre na ACCORD. Plataforma completa para times de vendas: pipeline, contratos inteligentes e atendimento com IA." />
+        <meta property="og:url" content="https://accordpipe.com.br/auth" />
+      </Helmet>
+      <main className="flex lg:h-screen min-h-screen lg:min-h-0 lg:overflow-hidden font-sans" style={{ fontFamily: "'Geist', -apple-system, sans-serif" }}>
       {/* LEFT */}
       <div className="hidden lg:flex flex-1 relative flex-col overflow-hidden bg-[#F4F2FF] px-[52px] pt-[56px] pb-6">
         <ParticleCanvas />
@@ -464,7 +474,8 @@ export default function Auth() {
           </div>
         </SheetContent>
       </Sheet>
-    </div>
+    </main>
+    </>
   );
 }
 
