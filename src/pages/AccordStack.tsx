@@ -240,6 +240,10 @@ export default function AccordStack() {
           onCreateDemand={() => setDemandModalOpen(true)}
           onUpdateStatus={handleUpdateStatus}
           onBack={isMobile ? () => selectContact(null) : undefined}
+          queueCount={queueCount}
+          inServiceCount={inServiceCount}
+          onNewConversation={() => setNewConvOpen(true)}
+          onViewReport={() => navigate("/relatorios")}
         />
       </div>
 
