@@ -350,7 +350,7 @@ export function useWhatsAppInbox() {
       .from("whatsapp_contacts")
       .update(updates)
       .eq("id", selectedContactId);
-  }, [selectedContactId, companyId, contacts]);
+  }, [selectedContactId, companyId, contacts, messages]);
 
   /**
    * Toggle a reaction on a message and forward it to the connected WhatsApp
