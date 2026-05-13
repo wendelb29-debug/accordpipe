@@ -196,17 +196,28 @@ export function useWhatsAppInbox() {
       return;
     }
 
-    const deduped = dedupMessages((data || []) as unknown as InboxMessage[]);
+    const fetched = (data || []) as unknown as InboxMessage[];
 
-    // Cache results for instant re-open
-    messagesCacheRef.current.set(contactId, deduped);
+    // CRITICAL: never wipe the chat on a refresh.
+    // Merge fetched rows with whatever is already cached/on-screen so that
+    // optimistic sends, realtime arrivals, or any rows the query may have
+    // missed (RLS race, phone-variant edge case, etc.) are preserved.
+    const existingCached = messagesCacheRef.current.get(contactId) || [];
+    const existingOnScreen =
+      selectedContactIdRef.current === contactId ? messages : [];
+    const merged = mergeMessagesDedup(
+      mergeMessagesDedup(existingCached, existingOnScreen),
+      fetched,
+    );
+
+    messagesCacheRef.current.set(contactId, merged);
 
     // Only apply to UI if user is still on this contact (avoid race when switching fast)
     if (selectedContactIdRef.current === contactId) {
-      setMessages(deduped);
+      setMessages(merged);
     }
     if (!opts?.background) setLoadingMessages(false);
-  }, [companyId]);
+  }, [companyId, messages]);
 
   const selectContact = useCallback((contactId: string | null) => {
     setSelectedContactId(contactId);
