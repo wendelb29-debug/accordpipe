@@ -6333,6 +6333,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_user_invitation_by_token: {
+        Args: { p_token: string }
+        Returns: boolean
+      }
       block_expired_trials: { Args: never; Returns: undefined }
       check_cnpj_status: {
         Args: { _cnpj: string }
@@ -6549,6 +6553,31 @@ export type Database = {
           workspace_id: string
         }[]
       }
+      get_tenant_setup_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          bairro: string
+          brand_accent_color: string
+          brand_bg_color: string
+          brand_primary_color: string
+          brand_secondary_color: string
+          brand_text_color: string
+          cep: string
+          cidade: string
+          cnpj: string
+          complemento: string
+          email: string
+          endereco: string
+          estado: string
+          id: string
+          nome_fantasia: string
+          numero: string
+          razao_social: string
+          responsavel: string
+          status: string
+          telefone: string
+        }[]
+      }
       get_tenant_type: { Args: { _tenant_id: string }; Returns: string }
       get_tenant_user_limit: { Args: { _tenant_id: string }; Returns: number }
       get_today_birthdays: {
@@ -6561,6 +6590,21 @@ export type Database = {
         }[]
       }
       get_user_company_id: { Args: { _user_id: string }; Returns: string }
+      get_user_invitation_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          company_id: string
+          expires_at: string
+          id: string
+          invitee_birth_date: string
+          invitee_cpf: string
+          invitee_email: string
+          invitee_name: string
+          invitee_whatsapp: string
+          role: string
+          status: string
+        }[]
+      }
       has_active_paddle_subscription: {
         Args: { check_env?: string; tenant_uuid: string }
         Returns: boolean
@@ -6660,6 +6704,10 @@ export type Database = {
       resolve_tenant_by_webhook_token: {
         Args: { p_token: string }
         Returns: string
+      }
+      submit_tenant_setup_by_token: {
+        Args: { p_payload: Json; p_token: string }
+        Returns: boolean
       }
       sync_master_client_user_count: {
         Args: { _tenant_id: string }

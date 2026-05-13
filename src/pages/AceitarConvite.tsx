@@ -31,11 +31,9 @@ export default function AceitarConvite() {
 
   const loadInvitation = async () => {
     try {
-      const { data, error } = await supabase
-        .from("user_invitations")
-        .select("*")
-        .eq("token", token)
-        .maybeSingle();
+      const { data: rows, error } = await supabase
+        .rpc("get_user_invitation_by_token", { p_token: token });
+      const data = Array.isArray(rows) ? rows[0] : rows;
 
 
       if (error) {
@@ -116,11 +114,8 @@ export default function AceitarConvite() {
           .eq("user_id", authData.user.id);
       }
 
-      // Mark invitation as accepted
-      await supabase
-        .from("user_invitations")
-        .update({ status: "accepted", accepted_at: new Date().toISOString() } as any)
-        .eq("id", invitation.id);
+      // Mark invitation as accepted (token-scoped RPC)
+      await supabase.rpc("accept_user_invitation_by_token", { p_token: token });
 
       toast.success("Conta criada com sucesso! Verifique seu e-mail para confirmar.");
       setTimeout(() => navigate("/auth"), 3000);
