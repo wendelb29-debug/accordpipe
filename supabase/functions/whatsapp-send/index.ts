@@ -141,6 +141,7 @@ async function sendUazapiMedia(
   mediaType: "image" | "audio" | "video" | "document",
   caption: string,
   fileName?: string,
+  quotedExternalId?: string | null,
 ): Promise<SendResult> {
   const base = serverUrl.replace(/\/$/, "");
   const url = `${base}/send/media`;
@@ -153,6 +154,7 @@ async function sendUazapiMedia(
   if (fileName) payload.docName = fileName;
   // Send as voice note (PTT) when audio — appears as recorded-on-the-fly in WhatsApp
   if (mediaType === "audio") payload.ptt = true;
+  if (quotedExternalId) payload.replyid = quotedExternalId;
 
   console.log("[sendUazapiMedia] POST", url, "type:", mediaType);
 
@@ -184,11 +186,13 @@ async function sendUazapi(
   instanceToken: string,
   phone: string,
   text: string,
+  quotedExternalId?: string | null,
 ): Promise<SendResult> {
   const base = serverUrl.replace(/\/$/, "");
   // uazapi endpoint: POST /send/text with header `token` (instance token)
   const url = `${base}/send/text`;
-  const payload = { number: normalizePhone(phone), text };
+  const payload: Record<string, unknown> = { number: normalizePhone(phone), text };
+  if (quotedExternalId) payload.replyid = quotedExternalId;
 
   console.log("[sendUazapi] POST", url);
   console.log("[sendUazapi] instanceName:", instanceName);
@@ -234,16 +238,20 @@ async function sendZapi(
   clientToken: string | null,
   phone: string,
   text: string,
+  quotedExternalId?: string | null,
 ): Promise<SendResult> {
   const base = serverUrl.replace(/\/$/, "");
   const url = `${base}/instances/${instanceId}/token/${token}/send-text`;
   try {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (clientToken) headers["Client-Token"] = clientToken;
+    const payload: Record<string, unknown> = { phone: normalizePhone(phone), message: text };
+    // Z-API native reply — attaches the new message as a quote of the original
+    if (quotedExternalId) payload.messageId = quotedExternalId;
     const res = await fetch(url, {
       method: "POST",
       headers,
-      body: JSON.stringify({ phone: normalizePhone(phone), message: text }),
+      body: JSON.stringify(payload),
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -293,7 +301,9 @@ Deno.serve(async (req) => {
       target_message_id,
       reaction_emoji,
       reaction_mode,
+      quoted_external_id,
     } = await req.json();
+    const quotedExternalId: string | null = quoted_external_id || null;
     const msgType: string = message_type || "text";
     const isMedia = msgType !== "text" && !!media_url;
     const isReaction = msgType === "reaction";
@@ -378,9 +388,10 @@ Deno.serve(async (req) => {
           uazType as "image" | "audio" | "video" | "document",
           text || "",
           file_name,
+          quotedExternalId,
         );
       } else {
-        result = await sendUazapi(integ.server_url, instanceName, integ.instance_token, phone, text);
+        result = await sendUazapi(integ.server_url, instanceName, integ.instance_token, phone, text, quotedExternalId);
       }
     } else if (integ.provider_type === "zapi") {
       const { data: comp } = await admin
@@ -415,6 +426,7 @@ Deno.serve(async (req) => {
           comp?.zapi_client_token ?? null,
           phone,
           text,
+          quotedExternalId,
         );
       }
     } else {

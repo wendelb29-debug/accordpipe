@@ -268,6 +268,21 @@ export function useWhatsAppInbox() {
 
     const messageType = options?.messageType || "text";
     const mediaUrl = options?.mediaUrl || null;
+    const replyToId = options?.replyToMessageId || null;
+
+    // Resolve the provider-side message id of the message being replied to.
+    // The provider needs the external id (Z-API messageId / Uazapi key.id) to
+    // attach the new message as a real WhatsApp reply.
+    let quotedExternalId: string | null = null;
+    if (replyToId) {
+      const original = messages.find((m) => m.id === replyToId);
+      quotedExternalId =
+        original?.external_message_id ||
+        (original?.metadata as any)?.external_id ||
+        (original?.metadata as any)?.zapi_message_id ||
+        (original?.metadata as any)?.messageId ||
+        null;
+    }
 
     const { data: msgData, error: msgError } = await supabase
       .from("whatsapp_messages")
@@ -280,7 +295,7 @@ export function useWhatsAppInbox() {
         status: "sending",
         message_type: messageType,
         media_url: mediaUrl,
-        reply_to_message_id: options?.replyToMessageId || null,
+        reply_to_message_id: replyToId,
       } as any)
       .select()
       .single();
@@ -300,6 +315,7 @@ export function useWhatsAppInbox() {
           message_type: messageType,
           media_url: mediaUrl,
           file_name: options?.fileName,
+          quoted_external_id: quotedExternalId,
         },
       });
 
@@ -334,7 +350,7 @@ export function useWhatsAppInbox() {
       .from("whatsapp_contacts")
       .update(updates)
       .eq("id", selectedContactId);
-  }, [selectedContactId, companyId, contacts]);
+  }, [selectedContactId, companyId, contacts, messages]);
 
   /**
    * Toggle a reaction on a message and forward it to the connected WhatsApp
