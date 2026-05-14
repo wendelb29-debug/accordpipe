@@ -15,6 +15,7 @@ interface ProtectedRouteProps {
 
 // Routes that suspended tenants can still access
 const BILLING_ALLOWED_ROUTES = ["/perfil", "/home"];
+const TRIAL_EXPIRED_ALLOWED_ROUTES = ["/trial-expired", "/perfil"];
 
 export function ProtectedRoute({ children, allowedRoles, requiredPermission }: ProtectedRouteProps) {
   const { user, role, loading, profile } = useAuth();
@@ -58,6 +59,16 @@ export function ProtectedRoute({ children, allowedRoles, requiredPermission }: P
     location.pathname !== "/primeiro-acesso"
   ) {
     return <Navigate to="/primeiro-acesso" replace />;
+  }
+
+  // Block per-user trial that has expired
+  if (
+    profile &&
+    (profile as any).trial_expires_at &&
+    new Date((profile as any).trial_expires_at).getTime() <= Date.now() &&
+    !TRIAL_EXPIRED_ALLOWED_ROUTES.includes(location.pathname)
+  ) {
+    return <Navigate to="/trial-expired" replace />;
   }
 
   // Check if user is active or pending
