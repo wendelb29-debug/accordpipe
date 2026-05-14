@@ -154,6 +154,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const { role, profile } = useAuth();
   const { activities, loading: activitiesLoading, addActivity, refetch: refetchActivities } = useCrmActivities(lead.id);
   const [editing, setEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState("historico");
   const [detailsCollapsed, setDetailsCollapsed] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try { return localStorage.getItem('accord-sidebar-collapsed') === 'true'; } catch { return false; }
