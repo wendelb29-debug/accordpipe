@@ -855,6 +855,65 @@ export default function Usuarios() {
                     )}
                   </div>
 
+                  {!editingUser && isTrialTenant && (
+                    <div className="space-y-3 p-4 rounded-lg border border-amber-500/30 bg-amber-500/5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-amber-400 text-sm font-medium">⏱ Período de Trial</span>
+                        <span className="text-xs text-muted-foreground">
+                          O acesso será bloqueado automaticamente após o prazo
+                        </span>
+                      </div>
+                      <div className="flex gap-2 flex-wrap">
+                        {[7, 15, 30].map((days) => (
+                          <button
+                            key={days}
+                            type="button"
+                            onClick={() => {
+                              setTrialDays(days);
+                              const expires = new Date();
+                              expires.setDate(expires.getDate() + days);
+                              setTrialExpiresAt(expires);
+                            }}
+                            className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
+                              trialDays === days
+                                ? "bg-amber-500 border-amber-500 text-white"
+                                : "border-border text-muted-foreground hover:border-amber-400"
+                            }`}
+                          >
+                            {days} dias
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => setTrialDays(0)}
+                          className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
+                            trialDays === 0
+                              ? "bg-amber-500 border-amber-500 text-white"
+                              : "border-border text-muted-foreground hover:border-amber-400"
+                          }`}
+                        >
+                          Personalizado
+                        </button>
+                      </div>
+                      {trialDays === 0 && (
+                        <Input
+                          type="date"
+                          min={new Date().toISOString().split("T")[0]}
+                          value={trialExpiresAt ? trialExpiresAt.toISOString().split("T")[0] : ""}
+                          onChange={(e) => setTrialExpiresAt(e.target.value ? new Date(e.target.value) : null)}
+                        />
+                      )}
+                      {trialExpiresAt && (
+                        <p className="text-xs text-muted-foreground">
+                          Acesso válido até:{" "}
+                          <span className="text-amber-400 font-medium">
+                            {trialExpiresAt.toLocaleDateString("pt-BR")}
+                          </span>
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <Label htmlFor="role">Perfil</Label>
                     <Select
