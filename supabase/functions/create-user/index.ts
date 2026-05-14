@@ -406,11 +406,31 @@ serve(async (req) => {
           .limit(1)
           .maybeSingle();
 
-        if (integErr || !integ) {
+        // Fallback: if tenant has no integration, use platform-level ZAPI secrets
+        // (allows tenants like "demo" to still deliver credentials via the master WhatsApp).
+        let effectiveInteg = integ as any;
+        if (!effectiveInteg || !effectiveInteg.server_url || !effectiveInteg.instance_token) {
+          const fallbackToken = Deno.env.get("ZAPI_TOKEN");
+          const fallbackInstance = Deno.env.get("ZAPI_INSTANCE_ID");
+          const fallbackClientToken = Deno.env.get("ZAPI_CLIENT_TOKEN");
+          if (fallbackToken && fallbackInstance) {
+            effectiveInteg = {
+              provider_type: "zapi",
+              server_url: "https://api.z-api.io",
+              instance_token: fallbackToken,
+              instance_id: fallbackInstance,
+              _fallback_client_token: fallbackClientToken,
+              _is_fallback: true,
+            };
+          }
+        }
+
+        if (!effectiveInteg) {
           whatsappError = "Nenhuma integração WhatsApp ativa para este tenant.";
-        } else if (!integ.server_url || !integ.instance_token) {
+        } else if (!effectiveInteg.server_url || !effectiveInteg.instance_token) {
           whatsappError = "Credenciais incompletas na integração WhatsApp.";
         } else {
+          const integ = effectiveInteg;
           const base = String(integ.server_url).replace(/\/$/, "");
           let res: Response;
           if (integ.provider_type === "uazapi") {
