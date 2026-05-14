@@ -98,6 +98,9 @@ export default function ServidoresTab() {
   const [permUserIsCeo, setPermUserIsCeo] = useState(false);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
+  const [deleteTenantTarget, setDeleteTenantTarget] = useState<Company | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [isDeletingTenant, setIsDeletingTenant] = useState(false);
   const { toast } = useToast();
   const { isMaster, isGlobalMaster, isResellerTenant, profile, user, activeCompanyId } = useAuth();
   const [resellerFilter, setResellerFilter] = useState<string>("all");
