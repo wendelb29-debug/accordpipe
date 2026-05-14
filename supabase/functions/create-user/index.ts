@@ -262,6 +262,8 @@ serve(async (req) => {
             is_active: true,
             status: "ativo",
             must_change_password: true,
+            trial_expires_at: trialExpiresAt,
+            is_trial_user: isTrialUser,
           })
           .eq("user_id", userId);
 
@@ -288,6 +290,8 @@ serve(async (req) => {
             status: "ativo",
             is_master: false,
             must_change_password: true,
+            trial_expires_at: trialExpiresAt,
+            is_trial_user: isTrialUser,
           });
 
         if (insertProfileError) {
@@ -314,6 +318,8 @@ serve(async (req) => {
           whatsapp: cleanWhatsapp,
           company_id,
           must_change_password: true,
+          trial_expires_at: trialExpiresAt,
+          is_trial_user: isTrialUser,
         })
         .eq("user_id", userId);
 
