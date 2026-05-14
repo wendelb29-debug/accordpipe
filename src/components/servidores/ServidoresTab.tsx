@@ -98,6 +98,9 @@ export default function ServidoresTab() {
   const [permUserIsCeo, setPermUserIsCeo] = useState(false);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
+  const [deleteTenantTarget, setDeleteTenantTarget] = useState<Company | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [isDeletingTenant, setIsDeletingTenant] = useState(false);
   const { toast } = useToast();
   const { isMaster, isGlobalMaster, isResellerTenant, profile, user, activeCompanyId } = useAuth();
   const [resellerFilter, setResellerFilter] = useState<string>("all");
@@ -253,6 +256,32 @@ export default function ServidoresTab() {
       fetchCompanies();
     } catch (err: any) {
       sonnerToast.error("Erro ao excluir: " + (err.message || ""));
+    }
+  };
+
+  const handleConfirmDeleteTenant = async () => {
+    if (!deleteTenantTarget) return;
+    const expected = deleteTenantTarget.nome_fantasia || deleteTenantTarget.razao_social;
+    if (deleteConfirmText.trim() !== expected.trim()) {
+      sonnerToast.error("Digite exatamente o nome do tenant para confirmar.");
+      return;
+    }
+    setIsDeletingTenant(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("delete-tenant", {
+        body: { tenant_id: deleteTenantTarget.id },
+      });
+      if (error || (data && data.ok === false)) {
+        throw new Error(error?.message || data?.error || "Erro desconhecido");
+      }
+      sonnerToast.success("Tenant excluído com sucesso.");
+      setDeleteTenantTarget(null);
+      setDeleteConfirmText("");
+      await fetchCompanies();
+    } catch (err: any) {
+      sonnerToast.error("Erro ao excluir tenant: " + (err.message || ""));
+    } finally {
+      setIsDeletingTenant(false);
     }
   };
 
@@ -811,6 +840,15 @@ export default function ServidoresTab() {
                               {company.status === "active" ? "Bloquear" : "Ativar"}
                             </DropdownMenuItem>
                           )}
+                          {profile?.is_master && company.id !== profile?.company_id && (
+                            <DropdownMenuItem
+                              className="gap-2 text-destructive focus:text-destructive"
+                              onClick={() => { setDeleteConfirmText(""); setDeleteTenantTarget(company); }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Excluir tenant
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     ) : null}
@@ -1221,6 +1259,53 @@ export default function ServidoresTab() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete tenant confirmation (Master only) */}
+      <Dialog open={!!deleteTenantTarget} onOpenChange={(open) => { if (!open) { setDeleteTenantTarget(null); setDeleteConfirmText(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-destructive flex items-center gap-2">
+              <Trash2 className="h-5 w-5" />
+              Excluir tenant?
+            </DialogTitle>
+            <DialogDescription>
+              Essa ação é <strong>irreversível</strong>. Todos os dados de{" "}
+              <strong>{deleteTenantTarget?.nome_fantasia || deleteTenantTarget?.razao_social}</strong>{" "}
+              serão permanentemente apagados (leads, contratos, propostas, workspaces, integrações, etc.).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label className="text-sm">
+              Para confirmar, digite o nome do tenant:{" "}
+              <span className="font-mono text-foreground">
+                {deleteTenantTarget?.nome_fantasia || deleteTenantTarget?.razao_social}
+              </span>
+            </Label>
+            <Input
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="Digite o nome do tenant"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setDeleteTenantTarget(null); setDeleteConfirmText(""); }} disabled={isDeletingTenant}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDeleteTenant}
+              disabled={
+                isDeletingTenant ||
+                deleteConfirmText.trim() !== (deleteTenantTarget?.nome_fantasia || deleteTenantTarget?.razao_social || "").trim()
+              }
+            >
+              {isDeletingTenant ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Excluindo...</>) : "Excluir permanentemente"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
