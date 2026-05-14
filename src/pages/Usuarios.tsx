@@ -103,8 +103,14 @@ export default function Usuarios() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingUser, setDeletingUser] = useState<UserWithRole | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [allCompanies, setAllCompanies] = useState<{id: string; nome_fantasia: string | null; razao_social: string; cnpj: string}[]>([]);
+  const [allCompanies, setAllCompanies] = useState<{id: string; nome_fantasia: string | null; razao_social: string; cnpj: string; is_trial?: boolean; status?: string}[]>([]);
   const [inviteOpen, setInviteOpen] = useState(false);
+
+  // Trial period state (only used when selected tenant is trial)
+  const [trialDays, setTrialDays] = useState<number>(7);
+  const [trialExpiresAt, setTrialExpiresAt] = useState<Date | null>(() => {
+    const d = new Date(); d.setDate(d.getDate() + 7); return d;
+  });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -118,6 +124,10 @@ export default function Usuarios() {
     company_id: "" as string,
   });
 
+  const selectedTenantId = formData.company_id || activeCompanyId || profile?.company_id || "";
+  const selectedTenant = allCompanies.find((c) => c.id === selectedTenantId);
+  const isTrialTenant = !!(selectedTenant && (selectedTenant.is_trial || selectedTenant.status === "teste"));
+
   useEffect(() => {
     fetchUsers();
     fetchAllCompanies();
@@ -126,7 +136,7 @@ export default function Usuarios() {
   const fetchAllCompanies = async () => {
     let query = supabase
       .from("companies")
-      .select("id, nome_fantasia, razao_social, cnpj")
+      .select("id, nome_fantasia, razao_social, cnpj, is_trial, status")
       .in("status", ["active", "teste"])
       .order("razao_social");
 
@@ -250,6 +260,7 @@ export default function Usuarios() {
           whatsapp: formData.whatsapp,
           company_id: companyId,
           role: formData.role,
+          trial_expires_at: isTrialTenant && trialExpiresAt ? trialExpiresAt.toISOString() : null,
         },
       });
 
@@ -843,6 +854,65 @@ export default function Usuarios() {
                       </p>
                     )}
                   </div>
+
+                  {!editingUser && isTrialTenant && (
+                    <div className="space-y-3 p-4 rounded-lg border border-amber-500/30 bg-amber-500/5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-amber-400 text-sm font-medium">⏱ Período de Trial</span>
+                        <span className="text-xs text-muted-foreground">
+                          O acesso será bloqueado automaticamente após o prazo
+                        </span>
+                      </div>
+                      <div className="flex gap-2 flex-wrap">
+                        {[7, 15, 30].map((days) => (
+                          <button
+                            key={days}
+                            type="button"
+                            onClick={() => {
+                              setTrialDays(days);
+                              const expires = new Date();
+                              expires.setDate(expires.getDate() + days);
+                              setTrialExpiresAt(expires);
+                            }}
+                            className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
+                              trialDays === days
+                                ? "bg-amber-500 border-amber-500 text-white"
+                                : "border-border text-muted-foreground hover:border-amber-400"
+                            }`}
+                          >
+                            {days} dias
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => setTrialDays(0)}
+                          className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
+                            trialDays === 0
+                              ? "bg-amber-500 border-amber-500 text-white"
+                              : "border-border text-muted-foreground hover:border-amber-400"
+                          }`}
+                        >
+                          Personalizado
+                        </button>
+                      </div>
+                      {trialDays === 0 && (
+                        <Input
+                          type="date"
+                          min={new Date().toISOString().split("T")[0]}
+                          value={trialExpiresAt ? trialExpiresAt.toISOString().split("T")[0] : ""}
+                          onChange={(e) => setTrialExpiresAt(e.target.value ? new Date(e.target.value) : null)}
+                        />
+                      )}
+                      {trialExpiresAt && (
+                        <p className="text-xs text-muted-foreground">
+                          Acesso válido até:{" "}
+                          <span className="text-amber-400 font-medium">
+                            {trialExpiresAt.toLocaleDateString("pt-BR")}
+                          </span>
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="role">Perfil</Label>
