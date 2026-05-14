@@ -123,14 +123,41 @@ export default function Descarte() {
           </h1>
           <p className="text-xs text-muted-foreground">{leads.length} lead(s) perdido(s) no total</p>
         </div>
-        <Button onClick={exportToExcel} variant="outline" size="sm" className="gap-1.5" disabled={filtered.length === 0}>
-          <Download className="h-3.5 w-3.5" /> Exportar Excel
-        </Button>
       </div>
 
-      {/* Reason summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {Object.entries(reasonCounts).map(([reason, count]) => (
+      <Tabs defaultValue="lista" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="lista" className="gap-1.5 text-xs">
+            <List className="h-3.5 w-3.5" /> Lista
+          </TabsTrigger>
+          <TabsTrigger value="analise" className="gap-1.5 text-xs">
+            <BarChart3 className="h-3.5 w-3.5" /> Análise de Descartes
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="lista" className="space-y-4">
+          <div className="flex items-center justify-end">
+            <Button onClick={exportToExcel} variant="outline" size="sm" className="gap-1.5" disabled={filtered.length === 0}>
+              <Download className="h-3.5 w-3.5" /> Exportar Excel
+            </Button>
+          </div>
+
+          {/* Reason summary cards */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {Object.entries(reasonCounts).map(([reason, count]) => (
+              <Card key={reason}>
+                <CardContent className="p-3 flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-destructive/10">
+                    <XCircle className="h-4 w-4 text-destructive" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground truncate max-w-24" title={reason}>{LOST_REASONS_MAP[reason] || reason}</p>
+                    <p className="text-lg font-bold">{count}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
           <Card key={reason}>
             <CardContent className="p-3 flex items-center gap-3">
               <div className="p-2 rounded-lg bg-destructive/10">
