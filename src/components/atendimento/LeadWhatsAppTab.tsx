@@ -25,7 +25,8 @@ function MessageStatusIcon({ status }: { status: string }) {
   }
 }
 
-export function LeadWhatsAppTab({ lead }: LeadWhatsAppTabProps) {
+export function LeadWhatsAppTab({ lead, onBack }: LeadWhatsAppTabProps) {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
