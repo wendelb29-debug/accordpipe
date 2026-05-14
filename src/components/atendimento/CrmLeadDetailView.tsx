@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { LeadCadastroTab } from "./LeadCadastroTab";
 import { LeadWhatsAppTab } from "./LeadWhatsAppTab";
+import { WhatsAppSendDialog } from "./WhatsAppSendDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -167,6 +168,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const [form, setForm] = useState<any>({ ...lead });
   const [newActivity, setNewActivity] = useState({ type: "note", title: "", description: "" });
   const [showActivityForm, setShowActivityForm] = useState(false);
+  const [whatsAppOpen, setWhatsAppOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchingCnpj, setSearchingCnpj] = useState(false);
   const [searchingCep, setSearchingCep] = useState(false);
@@ -1094,7 +1096,24 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                 <DetailField icon={Building2} label="Empresa" value={lead.company_name} />
                 <DetailField icon={User} label="Nome do Cliente" value={lead.contact_name || "Não informado"} />
                 <DetailField icon={Mail} label="Email" value={lead.email || "Não informado"} />
-                <DetailField icon={PhoneIcon} label="Telefone" value={lead.phone || "Não informado"} />
+                <div>
+                  <p className="text-[10px] text-primary font-medium flex items-center gap-1">
+                    <PhoneIcon className="h-3 w-3" /> Telefone
+                  </p>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <p className="text-xs text-foreground">{lead.phone || "Não informado"}</p>
+                    {lead.phone?.trim() && (
+                      <button
+                        type="button"
+                        onClick={() => setWhatsAppOpen(true)}
+                        className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-medium transition-colors"
+                      >
+                        <MessageSquare className="h-3 w-3" />
+                        Enviar mensagem
+                      </button>
+                    )}
+                  </div>
+                </div>
                 <DetailField icon={DollarSign} label="Valor de P&S" value={formatCurrency(lead.value_ps)} />
                 <DetailField icon={DollarSign} label="Valor de MRR" value={formatCurrency(lead.value_mrr)} />
                 <DetailField icon={Clock} label="Tempo da oportunidade" value={`${getDaysTotal()} dia(s) (${new Date(lead.created_at).toLocaleDateString("pt-BR")})`} />
@@ -1445,7 +1464,23 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         leadName={lead.contact_name || lead.company_name}
       />
 
-      {/* Return to operator dialog */}
+      <WhatsAppSendDialog
+        open={whatsAppOpen}
+        onOpenChange={setWhatsAppOpen}
+        phone={lead.phone || ""}
+        contactName={lead.contact_name}
+        companyName={lead.company_name}
+        tenantId={lead.servidor_id}
+        onSent={(text, formattedPhone) => {
+          const preview = text.length > 60 ? `${text.slice(0, 60)}...` : text;
+          addActivity({
+            type: "whatsapp_sent",
+            title: `📱 WhatsApp enviado para +${formattedPhone}`,
+            description: preview,
+          });
+        }}
+      />
+
       <Dialog open={showReturnDialog} onOpenChange={setShowReturnDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
