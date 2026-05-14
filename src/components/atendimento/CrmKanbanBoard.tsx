@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useBackNavigation } from "@/contexts/BackNavigationContext";
 import {
   Clock, Users, MessageSquare, Phone, RefreshCw, FileSignature,
@@ -116,6 +116,19 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
     });
     return unregister;
   }, [detailLead, pushBackHandler]);
+
+  // Auto-open lead detail when navigated with ?lead=ID (e.g. coming back from Inbox)
+  const [searchParamsKb, setSearchParamsKb] = useSearchParams();
+  useEffect(() => {
+    const leadParam = searchParamsKb.get("lead");
+    if (!leadParam || loading) return;
+    const target = leads.find((l) => l.id === leadParam);
+    if (target) {
+      setDetailLead(target);
+      searchParamsKb.delete("lead");
+      setSearchParamsKb(searchParamsKb, { replace: true });
+    }
+  }, [searchParamsKb, leads, loading, setSearchParamsKb]);
   const [linkCopied, setLinkCopied] = useState(false);
   const [formLinkOpen, setFormLinkOpen] = useState(false);
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);

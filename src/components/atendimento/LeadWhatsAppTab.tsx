@@ -220,7 +220,11 @@ export function LeadWhatsAppTab({ lead, onBack }: LeadWhatsAppTabProps) {
       )}
       {phoneClean && (
         <button
-          onClick={() => navigate(`/atendimento?contact=${phoneClean}`)}
+          onClick={() => {
+            const params = new URLSearchParams({ contact: phoneClean, from_deal: lead.id });
+            if ((lead as any).workspace_id) params.set("from_workspace", (lead as any).workspace_id);
+            navigate(`/accord-stack?${params.toString()}`);
+          }}
           className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
         >
           <ExternalLink size={11} />

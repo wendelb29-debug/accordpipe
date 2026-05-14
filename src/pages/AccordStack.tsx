@@ -8,9 +8,9 @@ import { TransferDialog } from "@/components/accord-inbox/TransferDialog";
 import { ContactDetailSidebar } from "@/components/accord-inbox/ContactDetailSidebar";
 import { CreateDemandModal } from "@/components/accord-inbox/CreateDemandModal";
 import { NewConversationModal } from "@/components/accord-inbox/NewConversationModal";
-import { WifiOff, User } from "lucide-react";
+import { WifiOff, User, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +25,9 @@ export default function AccordStack() {
   } = useWhatsAppInbox();
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const fromDealId = searchParams.get("from_deal");
+  const fromWorkspaceId = searchParams.get("from_workspace");
   const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState("");
   const [transferOpen, setTransferOpen] = useState(false);
@@ -202,7 +205,24 @@ export default function AccordStack() {
   }
 
   return (
-    <div className="flex h-full min-h-0 bg-background overflow-hidden">
+    <div className="flex flex-col h-full min-h-0 bg-background overflow-hidden">
+      {fromDealId && (
+        <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 border-b border-primary/20 flex-shrink-0">
+          <button
+            onClick={() => {
+              const params = new URLSearchParams({ lead: fromDealId });
+              if (fromWorkspaceId) params.set("workspace", fromWorkspaceId);
+              navigate(`/atendimento?${params.toString()}`);
+            }}
+            className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 font-medium transition-colors group"
+          >
+            <ArrowLeft size={13} className="group-hover:-translate-x-0.5 transition-transform" />
+            Voltar para o card
+          </button>
+          <span className="text-xs text-muted-foreground">· você veio de uma oportunidade</span>
+        </div>
+      )}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
       <div className={cn(
         "flex-shrink-0 w-full md:w-auto h-full",
         showChatOnly && "hidden md:block",
@@ -410,6 +430,7 @@ export default function AccordStack() {
           }
         }}
       />
+      </div>
     </div>
   );
 }
