@@ -59,6 +59,7 @@ const WhatsAppConnection = lazy(() => import("./pages/WhatsAppConnection"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
+const TrialExpired = lazy(() => import("./pages/TrialExpired"));
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1 } },
@@ -83,6 +84,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/trial-expired" element={<TrialExpired />} />
             <Route
               path="/home"
               element={

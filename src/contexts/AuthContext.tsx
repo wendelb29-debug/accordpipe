@@ -50,6 +50,8 @@ interface Profile {
   must_change_password?: boolean;
   phone?: string | null;
   status?: string | null;
+  trial_expires_at?: string | null;
+  is_trial_user?: boolean;
 }
 
 interface CompanyOption {
