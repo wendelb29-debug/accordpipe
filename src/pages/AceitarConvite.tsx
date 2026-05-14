@@ -100,6 +100,10 @@ export default function AceitarConvite() {
       if (invitation.invitee_cpf) profileUpdate.cpf = invitation.invitee_cpf;
       if (invitation.invitee_birth_date) profileUpdate.birth_date = invitation.invitee_birth_date;
       if (invitation.invitee_whatsapp) profileUpdate.whatsapp = invitation.invitee_whatsapp;
+      if (invitation.trial_expires_at) {
+        profileUpdate.trial_expires_at = invitation.trial_expires_at;
+        profileUpdate.is_trial_user = true;
+      }
 
       await supabase
         .from("profiles")
