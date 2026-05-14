@@ -3702,6 +3702,7 @@ export type Database = {
           id: string
           is_active: boolean
           is_master: boolean
+          is_trial_user: boolean
           last_assigned_at: string | null
           must_change_password: boolean
           name: string
@@ -3710,6 +3711,7 @@ export type Database = {
           status: string
           tags: string[] | null
           theme: string
+          trial_expires_at: string | null
           updated_at: string
           user_id: string
           whatsapp: string | null
@@ -3724,6 +3726,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_master?: boolean
+          is_trial_user?: boolean
           last_assigned_at?: string | null
           must_change_password?: boolean
           name: string
@@ -3732,6 +3735,7 @@ export type Database = {
           status?: string
           tags?: string[] | null
           theme?: string
+          trial_expires_at?: string | null
           updated_at?: string
           user_id: string
           whatsapp?: string | null
@@ -3746,6 +3750,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_master?: boolean
+          is_trial_user?: boolean
           last_assigned_at?: string | null
           must_change_password?: boolean
           name?: string
@@ -3754,6 +3759,7 @@ export type Database = {
           status?: string
           tags?: string[] | null
           theme?: string
+          trial_expires_at?: string | null
           updated_at?: string
           user_id?: string
           whatsapp?: string | null
@@ -6643,6 +6649,7 @@ export type Database = {
         Args: { _child_id: string; _reseller_id: string }
         Returns: boolean
       }
+      is_user_trial_expired: { Args: { _user_id: string }; Returns: boolean }
       log_audit: {
         Args: {
           _action: string

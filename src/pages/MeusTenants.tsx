@@ -214,9 +214,16 @@ export default function MeusTenants() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={child.status === "active" ? "default" : "secondary"}>
-                      {child.status === "active" ? "Ativo" : "Bloqueado"}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={child.status === "active" ? "default" : "secondary"}>
+                        {child.status === "active" ? "Ativo" : "Bloqueado"}
+                      </Badge>
+                      {child.tenant_type === "trial" && (
+                        <Badge className="bg-amber-500/15 text-amber-600 border border-amber-500/30 hover:bg-amber-500/20">
+                          Trial
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>

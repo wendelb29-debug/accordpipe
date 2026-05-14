@@ -71,11 +71,16 @@ serve(async (req) => {
       }
     }
 
-    const { name, email, cpf, birth_date, whatsapp, company_id, role } = await req.json();
+    const { name, email, cpf, birth_date, whatsapp, company_id, role, trial_expires_at } = await req.json();
 
     if (!name || !email || !cpf || !birth_date || !whatsapp || !company_id || !role) {
       return respond(false, { error: "Todos os campos são obrigatórios" });
     }
+
+    const trialExpiresAt: string | null = trial_expires_at && typeof trial_expires_at === "string"
+      ? trial_expires_at
+      : null;
+    const isTrialUser = !!trialExpiresAt;
 
     // ──────────────────────────────────────────────
     // CHECK USER LIMIT BEFORE PROCEEDING
@@ -257,6 +262,8 @@ serve(async (req) => {
             is_active: true,
             status: "ativo",
             must_change_password: true,
+            trial_expires_at: trialExpiresAt,
+            is_trial_user: isTrialUser,
           })
           .eq("user_id", userId);
 
@@ -283,6 +290,8 @@ serve(async (req) => {
             status: "ativo",
             is_master: false,
             must_change_password: true,
+            trial_expires_at: trialExpiresAt,
+            is_trial_user: isTrialUser,
           });
 
         if (insertProfileError) {
@@ -309,6 +318,8 @@ serve(async (req) => {
           whatsapp: cleanWhatsapp,
           company_id,
           must_change_password: true,
+          trial_expires_at: trialExpiresAt,
+          is_trial_user: isTrialUser,
         })
         .eq("user_id", userId);
 
