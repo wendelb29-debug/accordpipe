@@ -126,7 +126,20 @@ export default function Descarte() {
     toast.success("Arquivo exportado com sucesso!");
   };
 
-  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
+  if (loading) {
+    return (
+      <div className="p-4 space-y-4">
+        <Skeleton className="h-8 w-64" />
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16" />)}
+        </div>
+        <Skeleton className="h-9 w-full" />
+        <div className="space-y-2">
+          {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-10" />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 space-y-4">
@@ -218,7 +231,7 @@ export default function Descarte() {
                 {filtered.length === 0 && (
                   <TableRow><TableCell colSpan={canRescue ? 9 : 8} className="text-center text-xs text-muted-foreground py-8">Nenhum lead descartado encontrado</TableCell></TableRow>
                 )}
-                {filtered.map(l => {
+                {paginated.map(l => {
                   const reason = l.lost_reason?.split(":")[0]?.trim() || "—";
                   return (
                     <TableRow key={l.id}>
@@ -254,6 +267,23 @@ export default function Descarte() {
               </TableBody>
             </Table>
           </div>
+
+          {filtered.length > PAGE_SIZE && (
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>
+                Mostrando {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, filtered.length)} de {filtered.length}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="h-8 gap-1" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>
+                  <ChevronLeft className="h-3.5 w-3.5" /> Anterior
+                </Button>
+                <span className="px-2">Página {page + 1} de {totalPages}</span>
+                <Button variant="outline" size="sm" className="h-8 gap-1" disabled={page >= totalPages - 1} onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}>
+                  Próxima <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="analise">
