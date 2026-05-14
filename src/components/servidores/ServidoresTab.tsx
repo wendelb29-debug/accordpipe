@@ -1259,6 +1259,53 @@ export default function ServidoresTab() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete tenant confirmation (Master only) */}
+      <Dialog open={!!deleteTenantTarget} onOpenChange={(open) => { if (!open) { setDeleteTenantTarget(null); setDeleteConfirmText(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-destructive flex items-center gap-2">
+              <Trash2 className="h-5 w-5" />
+              Excluir tenant?
+            </DialogTitle>
+            <DialogDescription>
+              Essa ação é <strong>irreversível</strong>. Todos os dados de{" "}
+              <strong>{deleteTenantTarget?.nome_fantasia || deleteTenantTarget?.razao_social}</strong>{" "}
+              serão permanentemente apagados (leads, contratos, propostas, workspaces, integrações, etc.).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label className="text-sm">
+              Para confirmar, digite o nome do tenant:{" "}
+              <span className="font-mono text-foreground">
+                {deleteTenantTarget?.nome_fantasia || deleteTenantTarget?.razao_social}
+              </span>
+            </Label>
+            <Input
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="Digite o nome do tenant"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setDeleteTenantTarget(null); setDeleteConfirmText(""); }} disabled={isDeletingTenant}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDeleteTenant}
+              disabled={
+                isDeletingTenant ||
+                deleteConfirmText.trim() !== (deleteTenantTarget?.nome_fantasia || deleteTenantTarget?.razao_social || "").trim()
+              }
+            >
+              {isDeletingTenant ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Excluindo...</>) : "Excluir permanentemente"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
