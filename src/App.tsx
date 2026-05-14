@@ -62,7 +62,16 @@ const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
 const TrialExpired = lazy(() => import("./pages/TrialExpired"));
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1 } },
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      // Cache served instantly for 30s; stays in memory for 5min after unmount.
+      // Big perceived speedup when navigating back to a recently visited page.
+      staleTime: 30_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+    },
+  },
 });
 
 const PageLoader = () => (
