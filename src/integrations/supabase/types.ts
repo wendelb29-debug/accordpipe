@@ -5358,6 +5358,7 @@ export type Database = {
           role: string
           status: string
           token: string
+          trial_expires_at: string | null
         }
         Insert: {
           accepted_at?: string | null
@@ -5376,6 +5377,7 @@ export type Database = {
           role?: string
           status?: string
           token?: string
+          trial_expires_at?: string | null
         }
         Update: {
           accepted_at?: string | null
@@ -5394,6 +5396,7 @@ export type Database = {
           role?: string
           status?: string
           token?: string
+          trial_expires_at?: string | null
         }
         Relationships: [
           {
@@ -6618,6 +6621,7 @@ export type Database = {
           invitee_whatsapp: string
           role: string
           status: string
+          trial_expires_at: string
         }[]
       }
       get_whatsapp_instance_token: {
