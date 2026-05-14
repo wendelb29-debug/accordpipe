@@ -840,6 +840,15 @@ export default function ServidoresTab() {
                               {company.status === "active" ? "Bloquear" : "Ativar"}
                             </DropdownMenuItem>
                           )}
+                          {profile?.is_master && company.id !== profile?.company_id && (
+                            <DropdownMenuItem
+                              className="gap-2 text-destructive focus:text-destructive"
+                              onClick={() => { setDeleteConfirmText(""); setDeleteTenantTarget(company); }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Excluir tenant
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     ) : null}
