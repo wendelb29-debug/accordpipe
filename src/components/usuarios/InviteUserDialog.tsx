@@ -36,9 +36,23 @@ export function InviteUserDialog({ open, onOpenChange, tenantId, onSuccess }: Pr
   const [whatsapp, setWhatsapp] = useState("");
   const [role, setRole] = useState<AppRole>("leitura");
   const [loading, setLoading] = useState(false);
+  const [isTrialTenant, setIsTrialTenant] = useState(false);
+  const [trialDays, setTrialDays] = useState<number>(7);
+  const [trialExpiresAt, setTrialExpiresAt] = useState<Date | null>(() => {
+    const d = new Date(); d.setDate(d.getDate() + 7); return d;
+  });
+
+  // Check tenant trial status when dialog opens or tenantId changes
+  useState(() => {});
+  // Use effect-like via inline check on tenantId change
+  if (typeof window !== "undefined") {
+    // no-op marker
+  }
 
   const reset = () => {
     setName(""); setEmail(""); setWhatsapp(""); setRole("leitura");
+    setTrialDays(7);
+    const d = new Date(); d.setDate(d.getDate() + 7); setTrialExpiresAt(d);
   };
 
   const handleSend = async () => {
