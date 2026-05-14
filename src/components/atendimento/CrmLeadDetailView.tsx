@@ -1132,7 +1132,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
         {/* Main Content - Tabs */}
         <div className="flex-1 overflow-hidden flex flex-col">
-          <Tabs defaultValue="historico" className="flex-1 flex flex-col overflow-hidden">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
             <div className="overflow-x-auto scrollbar-hide border-b bg-card">
               <TabsList className="w-max sm:w-full justify-start rounded-none bg-card px-3 sm:px-4 h-10">
                 <TabsTrigger value="historico" className="text-[11px] sm:text-xs gap-1">
