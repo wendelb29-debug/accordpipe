@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Send, Loader2, MessageSquare, Bot, Clock, Check, CheckCheck, AlertCircle } from "lucide-react";
+import { Send, Loader2, MessageSquare, Bot, Clock, Check, CheckCheck, AlertCircle, ArrowLeft, RefreshCw, ExternalLink, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -11,6 +12,7 @@ import { CrmLead } from "@/hooks/useCrmLeads";
 
 interface LeadWhatsAppTabProps {
   lead: CrmLead;
+  onBack?: () => void;
 }
 
 function MessageStatusIcon({ status }: { status: string }) {
