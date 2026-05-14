@@ -71,11 +71,16 @@ serve(async (req) => {
       }
     }
 
-    const { name, email, cpf, birth_date, whatsapp, company_id, role } = await req.json();
+    const { name, email, cpf, birth_date, whatsapp, company_id, role, trial_expires_at } = await req.json();
 
     if (!name || !email || !cpf || !birth_date || !whatsapp || !company_id || !role) {
       return respond(false, { error: "Todos os campos são obrigatórios" });
     }
+
+    const trialExpiresAt: string | null = trial_expires_at && typeof trial_expires_at === "string"
+      ? trial_expires_at
+      : null;
+    const isTrialUser = !!trialExpiresAt;
 
     // ──────────────────────────────────────────────
     // CHECK USER LIMIT BEFORE PROCEEDING
