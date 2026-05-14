@@ -2,10 +2,15 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Search, Users, CheckCircle2, AlertTriangle, XCircle, Clock } from "lucide-react";
+import { Search, Users, CheckCircle2, AlertTriangle, XCircle, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+
+const PAGE_SIZE = 20;
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   ativo: { label: "Ativo", color: "bg-green-500/10 text-green-700 border-green-300", icon: CheckCircle2 },
@@ -20,7 +25,9 @@ export default function Clientes() {
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
     const fetch = async () => {
@@ -38,8 +45,8 @@ export default function Clientes() {
   const filtered = useMemo(() => {
     return clients.filter(c => {
       if (statusFilter !== "all" && (c.client_status || "pendente") !== statusFilter) return false;
-      if (!search) return true;
-      const s = search.toLowerCase();
+      if (!debouncedSearch) return true;
+      const s = debouncedSearch.toLowerCase();
       return (
         c.nome_completo?.toLowerCase().includes(s) ||
         c.email?.toLowerCase().includes(s) ||
@@ -47,7 +54,13 @@ export default function Clientes() {
         (c.crm_leads as any)?.company_name?.toLowerCase().includes(s)
       );
     });
-  }, [clients, search, statusFilter]);
+  }, [clients, debouncedSearch, statusFilter]);
+
+  useEffect(() => { setPage(0); }, [debouncedSearch, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageStart = page * PAGE_SIZE;
+  const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
 
   const counts = useMemo(() => ({
     total: clients.length,
@@ -57,7 +70,20 @@ export default function Clientes() {
     cancelado: clients.filter(c => (c.client_status || "pendente") === "cancelado").length,
   }), [clients]);
 
-  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
+  if (loading) {
+    return (
+      <div className="p-4 space-y-4">
+        <Skeleton className="h-7 w-40" />
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16" />)}
+        </div>
+        <Skeleton className="h-9 w-full" />
+        <div className="space-y-2">
+          {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-10" />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 space-y-4">
@@ -111,7 +137,7 @@ export default function Clientes() {
           {filtered.length === 0 && (
             <TableRow><TableCell colSpan={7} className="text-center text-xs text-muted-foreground py-8">Nenhum cliente encontrado</TableCell></TableRow>
           )}
-          {filtered.map(c => {
+          {paginated.map(c => {
             const st = (c.client_status || "pendente") as string;
             const cfg = statusConfig[st] || statusConfig.pendente;
             return (
@@ -130,6 +156,21 @@ export default function Clientes() {
           })}
         </TableBody>
       </Table>
+
+      {filtered.length > PAGE_SIZE && (
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>Mostrando {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, filtered.length)} de {filtered.length}</span>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="h-8 gap-1" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>
+              <ChevronLeft className="h-3.5 w-3.5" /> Anterior
+            </Button>
+            <span className="px-2">Página {page + 1} de {totalPages}</span>
+            <Button variant="outline" size="sm" className="h-8 gap-1" disabled={page >= totalPages - 1} onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}>
+              Próxima <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
