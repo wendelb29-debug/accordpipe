@@ -1384,12 +1384,12 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               </TabsContent>
             )}
 
-            {/* Cadastro do Cliente */}
-            {(isAdminPipeline || role === "administrativo" || role === "admin") && (
-              <TabsContent value="cadastro" className="flex-1 overflow-y-auto p-4 mt-0">
-                <LeadCadastroTab lead={lead} onUpdate={onUpdate} />
-              </TabsContent>
-            )}
+            {/* Conversa WhatsApp */}
+            <TabsContent value="conversa" className="flex-1 overflow-hidden p-0 mt-0">
+              <div className="h-full p-3">
+                <LeadWhatsAppTab lead={lead} />
+              </div>
+            </TabsContent>
           </Tabs>
         </div>
       </div>
