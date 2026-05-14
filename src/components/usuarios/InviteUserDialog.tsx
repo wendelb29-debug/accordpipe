@@ -47,10 +47,12 @@ export function InviteUserDialog({ open, onOpenChange, tenantId, onSuccess }: Pr
     (async () => {
       const { data } = await supabase
         .from("companies")
-        .select("is_trial, status")
+        .select("is_trial, status, nome_fantasia")
         .eq("id", tenantId)
         .maybeSingle();
-      setIsTrialTenant(!!(data && (data.is_trial || data.status === "teste")));
+      // Apenas o tenant "demo" pode receber período de trial
+      const isDemo = ((data?.nome_fantasia || "") as string).trim().toLowerCase() === "demo";
+      setIsTrialTenant(!!(data && isDemo && (data.is_trial || data.status === "teste")));
     })();
   }, [tenantId, open]);
 
