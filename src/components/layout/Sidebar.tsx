@@ -352,47 +352,6 @@ export function Sidebar() {
           </div>
         )}
 
-        {/* User Card */}
-        {!collapsed && profile && (
-          <Link
-            to="/perfil"
-            className="flex items-center gap-3 rounded-xl bg-sidebar-accent/60 p-3 mb-2 border border-sidebar-border/20 hover:bg-sidebar-accent/80 transition-all duration-200 group"
-          >
-            <Avatar className="h-8 w-8 shrink-0 ring-2 ring-sidebar-primary/25">
-              {(profile as any)?.avatar_url ? (
-                <img src={(profile as any).avatar_url} alt={profile.name} className="h-full w-full object-cover rounded-full" />
-              ) : (
-                <AvatarFallback className="text-[10px] font-bold bg-sidebar-primary/20 text-sidebar-primary">
-                  {userInitials}
-                </AvatarFallback>
-              )}
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-sidebar-foreground truncate">{profile.name}</p>
-              <p className="text-[10px] text-sidebar-foreground/30 truncate">{profile.email}</p>
-            </div>
-          </Link>
-        )}
-
-        {collapsed && profile && (
-          <Tooltip delayDuration={0}>
-            <TooltipTrigger asChild>
-              <Link to="/perfil" className="flex justify-center mb-2">
-                <Avatar className="h-8 w-8 ring-2 ring-sidebar-primary/25">
-                  {(profile as any)?.avatar_url ? (
-                    <img src={(profile as any).avatar_url} alt={profile.name} className="h-full w-full object-cover rounded-full" />
-                  ) : (
-                    <AvatarFallback className="text-[10px] font-bold bg-sidebar-primary/20 text-sidebar-primary">
-                      {userInitials}
-                    </AvatarFallback>
-                  )}
-                </Avatar>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="text-xs">{profile.name}</TooltipContent>
-          </Tooltip>
-        )}
-
         {/* Language Selector */}
         {collapsed ? (
           <DropdownMenu>

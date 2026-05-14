@@ -240,26 +240,6 @@ export function MobileSidebar() {
           className="border-t border-sidebar-border/50 px-3 pt-3 shrink-0"
           style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom, 0px))" }}
         >
-          {profile && (
-            <Link
-              to="/perfil"
-              onClick={closeAndGo}
-              className="flex items-center gap-3 rounded-xl bg-sidebar-accent/50 p-3 mb-2 border border-sidebar-border/20"
-            >
-              <Avatar className="h-9 w-9 shrink-0 ring-2 ring-sidebar-primary/25">
-                {(profile as any)?.avatar_url ? (
-                  <img src={(profile as any).avatar_url} alt={profile.name} className="h-full w-full object-cover rounded-full" />
-                ) : (
-                  <AvatarFallback className="text-[10px] font-bold bg-sidebar-primary/20 text-sidebar-primary">{userInitials}</AvatarFallback>
-                )}
-              </Avatar>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-sidebar-foreground truncate">{profile.name}</p>
-                <p className="text-[10px] text-sidebar-foreground/40 truncate">{profile.email}</p>
-              </div>
-            </Link>
-          )}
-
           <button
             onClick={() => { signOut(); setOpen(false); }}
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-sidebar-foreground/40 hover:bg-destructive/10 hover:text-destructive transition-all"
