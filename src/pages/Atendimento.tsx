@@ -30,7 +30,7 @@ function AtendimentoContent() {
       setSelectedWsId(wsParam);
       // Clean up query params after consuming
       searchParams.delete("workspace");
-      searchParams.delete("lead");
+      searchParams.delete("workspace");
       setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams, selectedWsId, wsLoading, selectWorkspace, setSearchParams]);
