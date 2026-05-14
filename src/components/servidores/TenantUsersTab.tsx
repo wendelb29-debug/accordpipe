@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Search, User, MoreHorizontal, Pencil, Power, Shield, Eye, EyeOff, Loader2, UserX } from "lucide-react";
+import { Plus, Search, User, MoreHorizontal, Power, Shield, Loader2, UserX, Clock, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +22,7 @@ import { PermissionsEditor } from "@/components/usuarios/PermissionsEditor";
 import { AppRole } from "@/contexts/AuthContext";
 
 interface TenantUser {
-  id: string; // user_tenants id
+  id: string;
   user_id: string;
   role: string;
   status: string;
@@ -31,6 +31,7 @@ interface TenantUser {
   cpf: string | null;
   whatsapp: string | null;
   is_master: boolean;
+  trial_expires_at: string | null;
 }
 
 const roleLabels: Record<string, string> = {
@@ -62,6 +63,40 @@ const formatPhone = (v: string) => {
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 };
 
+type TrialDuration = "7" | "15" | "30" | "custom";
+
+const computeExpiresAt = (duration: TrialDuration, customDate?: string): string | null => {
+  if (duration === "custom") {
+    return customDate ? new Date(customDate + "T23:59:59").toISOString() : null;
+  }
+  const days = parseInt(duration, 10);
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+};
+
+const formatExpirationStatus = (expiresAt: string | null) => {
+  if (!expiresAt) return { label: "Sem limite", variant: "outline" as const, className: "text-muted-foreground" };
+  const date = new Date(expiresAt);
+  const now = new Date();
+  const ms = date.getTime() - now.getTime();
+  const days = Math.ceil(ms / (1000 * 60 * 60 * 24));
+  const formatted = date.toLocaleDateString("pt-BR");
+  if (ms <= 0) {
+    return { label: `Expirado em ${formatted}`, variant: "destructive" as const, className: "" };
+  }
+  if (days <= 3) {
+    return {
+      label: `Expira em ${days} dia${days > 1 ? "s" : ""}`,
+      variant: "outline" as const,
+      className: "border-amber-500/40 text-amber-600 bg-amber-500/10",
+    };
+  }
+  return {
+    label: `Ativo até ${formatted}`,
+    variant: "outline" as const,
+    className: "border-green-500/30 text-green-600",
+  };
+};
+
 interface TenantUsersTabProps {
   companyId: string | null;
   companyName?: string;
@@ -74,7 +109,7 @@ export default function TenantUsersTab({ companyId, companyName }: TenantUsersTa
   const [searchTerm, setSearchTerm] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [tenantType, setTenantType] = useState<string>("standard");
 
   // Permissions modal
   const [permDialogOpen, setPermDialogOpen] = useState(false);
@@ -82,11 +117,30 @@ export default function TenantUsersTab({ companyId, companyName }: TenantUsersTa
   const [permUserName, setPermUserName] = useState("");
   const [permUserIsCeo, setPermUserIsCeo] = useState(false);
 
+  // Edit expiration modal
+  const [editExpUser, setEditExpUser] = useState<TenantUser | null>(null);
+  const [editExpDate, setEditExpDate] = useState<string>("");
+  const [editExpSaving, setEditExpSaving] = useState(false);
+
   // Form
   const [formData, setFormData] = useState({
-    name: "", cpf: "", birth_date: "", email: "", whatsapp: "", password: "",
+    name: "", cpf: "", birth_date: "", email: "", whatsapp: "",
     role: "leitura" as AppRole,
+    trialDuration: "7" as TrialDuration,
+    trialCustomDate: "",
   });
+
+  const isTrialTenant = tenantType === "trial";
+
+  const fetchTenantInfo = useCallback(async () => {
+    if (!companyId) return;
+    const { data } = await supabase
+      .from("companies")
+      .select("tenant_type")
+      .eq("id", companyId)
+      .maybeSingle();
+    setTenantType((data as any)?.tenant_type || "standard");
+  }, [companyId]);
 
   const fetchUsers = useCallback(async () => {
     if (!companyId) { setUsers([]); setLoading(false); return; }
@@ -94,7 +148,7 @@ export default function TenantUsersTab({ companyId, companyName }: TenantUsersTa
     try {
       const { data, error } = await supabase
         .from("user_tenants")
-        .select("id, user_id, role, status, profiles:user_id(user_id, name, email, cpf, whatsapp, is_master)")
+        .select("id, user_id, role, status, profiles:user_id(user_id, name, email, cpf, whatsapp, is_master, trial_expires_at)")
         .eq("tenant_id", companyId);
 
       if (error) throw error;
@@ -109,6 +163,7 @@ export default function TenantUsersTab({ companyId, companyName }: TenantUsersTa
         cpf: ut.profiles?.cpf || null,
         whatsapp: ut.profiles?.whatsapp || null,
         is_master: ut.profiles?.is_master || false,
+        trial_expires_at: ut.profiles?.trial_expires_at || null,
       }));
       setUsers(mapped);
     } catch (err) {
@@ -118,10 +173,10 @@ export default function TenantUsersTab({ companyId, companyName }: TenantUsersTa
     }
   }, [companyId]);
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  useEffect(() => { fetchTenantInfo(); fetchUsers(); }, [fetchTenantInfo, fetchUsers]);
 
   const handleOpenCreate = () => {
-    setFormData({ name: "", cpf: "", birth_date: "", email: "", whatsapp: "", password: "", role: "leitura" });
+    setFormData({ name: "", cpf: "", birth_date: "", email: "", whatsapp: "", role: "leitura", trialDuration: "7", trialCustomDate: "" });
     setDialogOpen(true);
   };
 
@@ -135,6 +190,15 @@ export default function TenantUsersTab({ companyId, companyName }: TenantUsersTa
       return;
     }
 
+    let trial_expires_at: string | null = null;
+    if (isTrialTenant) {
+      if (formData.trialDuration === "custom" && !formData.trialCustomDate) {
+        toast({ title: "Data obrigatória", description: "Selecione a data de expiração personalizada.", variant: "destructive" });
+        return;
+      }
+      trial_expires_at = computeExpiresAt(formData.trialDuration, formData.trialCustomDate);
+    }
+
     setIsSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-user", {
@@ -146,6 +210,7 @@ export default function TenantUsersTab({ companyId, companyName }: TenantUsersTa
           whatsapp: formData.whatsapp,
           company_id: companyId,
           role: formData.role,
+          trial_expires_at,
         },
       });
       if (error) throw error;
@@ -174,34 +239,23 @@ export default function TenantUsersTab({ companyId, companyName }: TenantUsersTa
     }
     try {
       const newStatus = user.status === "ativo" ? "inativo" : "ativo";
-
-      // If reactivating, check user limit
       if (newStatus === "ativo" && companyId) {
         const { data: limitCheck } = await supabase.rpc("check_user_limit", { _tenant_id: companyId });
         const lc = limitCheck as any;
         if (lc && !lc.can_add) {
-          toast({
-            title: "Limite de usuários atingido",
-            description: `Plano ${lc.plan_name}: ${lc.active_users}/${lc.effective_limit} usuários. Não é possível reativar.`,
-            variant: "destructive",
-          });
+          toast({ title: "Limite de usuários atingido", description: `Plano ${lc.plan_name}: ${lc.active_users}/${lc.effective_limit} usuários.`, variant: "destructive" });
           return;
         }
       }
 
-      const { error } = await supabase
-        .from("user_tenants")
-        .update({ status: newStatus } as any)
-        .eq("id", user.id);
+      const { error } = await supabase.from("user_tenants").update({ status: newStatus } as any).eq("id", user.id);
       if (error) throw error;
 
-      // Also sync profiles for consistency
-      await supabase
-        .from("profiles")
+      await supabase.from("profiles")
         .update({ is_active: newStatus === "ativo", status: newStatus === "ativo" ? "ativo" : "bloqueado" })
         .eq("user_id", user.user_id);
 
-      toast({ title: newStatus === "ativo" ? "Ativado" : "Desativado", description: `${user.name} foi ${newStatus === "ativo" ? "ativado" : "desativado"} neste tenant.` });
+      toast({ title: newStatus === "ativo" ? "Ativado" : "Desativado", description: `${user.name} foi ${newStatus === "ativo" ? "ativado" : "desativado"}.` });
       fetchUsers();
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
@@ -216,7 +270,7 @@ export default function TenantUsersTab({ companyId, companyName }: TenantUsersTa
     try {
       const { error } = await supabase.from("user_tenants").delete().eq("id", user.id);
       if (error) throw error;
-      toast({ title: "Removido", description: `${user.name} foi removido deste tenant.` });
+      toast({ title: "Removido", description: `${user.name} foi removido.` });
       fetchUsers();
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
@@ -228,6 +282,31 @@ export default function TenantUsersTab({ companyId, companyName }: TenantUsersTa
     setPermUserName(user.name);
     setPermUserIsCeo(user.role === "ceo" || user.role === "master");
     setPermDialogOpen(true);
+  };
+
+  const openEditExpiration = (user: TenantUser) => {
+    setEditExpUser(user);
+    setEditExpDate(user.trial_expires_at ? user.trial_expires_at.split("T")[0] : "");
+  };
+
+  const saveExpiration = async () => {
+    if (!editExpUser) return;
+    setEditExpSaving(true);
+    try {
+      const newValue = editExpDate ? new Date(editExpDate + "T23:59:59").toISOString() : null;
+      const { error } = await supabase
+        .from("profiles")
+        .update({ trial_expires_at: newValue, is_trial_user: !!newValue } as any)
+        .eq("user_id", editExpUser.user_id);
+      if (error) throw error;
+      toast({ title: "Expiração atualizada", description: newValue ? `Acesso válido até ${new Date(newValue).toLocaleDateString("pt-BR")}.` : "Expiração removida." });
+      setEditExpUser(null);
+      fetchUsers();
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } finally {
+      setEditExpSaving(false);
+    }
   };
 
   const filtered = users.filter(u =>
@@ -244,17 +323,21 @@ export default function TenantUsersTab({ companyId, companyName }: TenantUsersTa
     );
   }
 
+  const expiresPreview = isTrialTenant
+    ? computeExpiresAt(formData.trialDuration, formData.trialCustomDate)
+    : null;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nome ou e-mail..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
+        <div className="flex items-center gap-2">
+          <div className="relative w-full max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Buscar por nome ou e-mail..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" />
+          </div>
+          {isTrialTenant && (
+            <Badge className="bg-amber-500/15 text-amber-600 border border-amber-500/30">Tenant Trial</Badge>
+          )}
         </div>
         <Button onClick={handleOpenCreate} className="gap-2 shrink-0">
           <Plus className="h-4 w-4" /> Novo Usuário
@@ -278,11 +361,14 @@ export default function TenantUsersTab({ companyId, companyName }: TenantUsersTa
                 <TableHead>Usuário</TableHead>
                 <TableHead>Perfil</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Expira em</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((user) => (
+              {filtered.map((user) => {
+                const exp = formatExpirationStatus(user.trial_expires_at);
+                return (
                 <TableRow key={user.id}>
                   <TableCell>
                     <div>
@@ -300,6 +386,18 @@ export default function TenantUsersTab({ companyId, companyName }: TenantUsersTa
                       {user.status === "ativo" ? "Ativo" : "Inativo"}
                     </Badge>
                   </TableCell>
+                  <TableCell>
+                    <button
+                      onClick={() => openEditExpiration(user)}
+                      className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity"
+                      title="Editar expiração"
+                    >
+                      <Badge variant={exp.variant} className={exp.className}>
+                        {exp.label}
+                      </Badge>
+                      <Pencil className="h-3 w-3 text-muted-foreground" />
+                    </button>
+                  </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -310,6 +408,9 @@ export default function TenantUsersTab({ companyId, companyName }: TenantUsersTa
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => openPermissions(user)}>
                           <Shield className="h-4 w-4 mr-2" /> Permissões
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openEditExpiration(user)}>
+                          <Clock className="h-4 w-4 mr-2" /> Editar expiração
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleToggleStatus(user)}>
                           <Power className="h-4 w-4 mr-2" />
@@ -322,7 +423,7 @@ export default function TenantUsersTab({ companyId, companyName }: TenantUsersTa
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))}
+              );})}
             </TableBody>
           </Table>
         </div>
@@ -330,7 +431,7 @@ export default function TenantUsersTab({ companyId, companyName }: TenantUsersTa
 
       {/* Create User Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Novo Usuário</DialogTitle>
             <DialogDescription>Criar e vincular ao tenant{companyName ? ` "${companyName}"` : ""}.</DialogDescription>
@@ -359,10 +460,6 @@ export default function TenantUsersTab({ companyId, companyName }: TenantUsersTa
               <Input value={formData.whatsapp} onChange={(e) => setFormData({ ...formData, whatsapp: formatPhone(e.target.value) })} placeholder="(00) 00000-0000" />
             </div>
             <div className="space-y-2">
-              <Label>Tenant vinculado</Label>
-              <Input value={companyName || companyId || ""} disabled className="opacity-70" />
-            </div>
-            <div className="space-y-2">
               <Label>Perfil</Label>
               <Select value={formData.role} onValueChange={(v) => setFormData({ ...formData, role: v as AppRole })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -373,12 +470,67 @@ export default function TenantUsersTab({ companyId, companyName }: TenantUsersTa
                 </SelectContent>
               </Select>
             </div>
+
+            {isTrialTenant && (
+              <div className="space-y-3 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-amber-600" />
+                  <Label className="text-amber-700 dark:text-amber-500">Duração do acesso (Trial)</Label>
+                </div>
+                <Select value={formData.trialDuration} onValueChange={(v) => setFormData({ ...formData, trialDuration: v as TrialDuration })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7">7 dias</SelectItem>
+                    <SelectItem value="15">15 dias</SelectItem>
+                    <SelectItem value="30">30 dias</SelectItem>
+                    <SelectItem value="custom">Personalizado</SelectItem>
+                  </SelectContent>
+                </Select>
+                {formData.trialDuration === "custom" && (
+                  <Input
+                    type="date"
+                    value={formData.trialCustomDate}
+                    min={new Date().toISOString().split("T")[0]}
+                    onChange={(e) => setFormData({ ...formData, trialCustomDate: e.target.value })}
+                  />
+                )}
+                {expiresPreview && (
+                  <p className="text-xs text-muted-foreground">
+                    Acesso válido até: <span className="font-medium text-foreground">{new Date(expiresPreview).toLocaleDateString("pt-BR")}</span>
+                  </p>
+                )}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>Cancelar</Button>
             <Button onClick={handleCreate} disabled={isSubmitting} className="gap-2">
               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               {isSubmitting ? "Criando..." : "Criar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Expiration Dialog */}
+      <Dialog open={!!editExpUser} onOpenChange={(o) => !o && setEditExpUser(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-amber-600" /> Editar expiração
+            </DialogTitle>
+            <DialogDescription>{editExpUser?.name}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Label>Data de expiração</Label>
+            <Input type="date" value={editExpDate} onChange={(e) => setEditExpDate(e.target.value)} />
+            <p className="text-xs text-muted-foreground">Deixe em branco para acesso sem limite.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditExpUser(null)} disabled={editExpSaving}>Cancelar</Button>
+            <Button onClick={saveExpiration} disabled={editExpSaving}>
+              {editExpSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Salvar
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -395,11 +547,7 @@ export default function TenantUsersTab({ companyId, companyName }: TenantUsersTa
             <DialogDescription>Gerencie as permissões de acesso deste usuário por módulo.</DialogDescription>
           </DialogHeader>
           {permUserId && (
-            <PermissionsEditor
-              userId={permUserId}
-              isCeoOrMaster={permUserIsCeo}
-              onClose={() => setPermDialogOpen(false)}
-            />
+            <PermissionsEditor userId={permUserId} isCeoOrMaster={permUserIsCeo} onClose={() => setPermDialogOpen(false)} />
           )}
         </DialogContent>
       </Dialog>
