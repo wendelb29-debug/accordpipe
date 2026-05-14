@@ -294,6 +294,11 @@ export function AccordAIChat() {
   const shouldHide = (isMobile && hasOverlay) || (isMobile && keyboardOpen);
   if (shouldHide) return null;
 
+  // Hide on settings routes (/configuracoes/*) UNLESS there's a WhatsApp notification
+  const isSettingsPage = location.pathname.startsWith("/configuracoes");
+  const hasWhatsAppActivity = !!preview || pending.length > 0 || totalUnread > 0;
+  if (isSettingsPage && !hasWhatsAppActivity) return null;
+
   // Calculate safe bottom position (extra clearance on chat routes to avoid send button)
   const baseBottom = isMobile ? 20 : 24;
   const extraClearance = needsExtraClearance ? (isMobile ? 80 : 90) : 0;
