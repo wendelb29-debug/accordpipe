@@ -126,7 +126,12 @@ export default function Usuarios() {
 
   const selectedTenantId = formData.company_id || activeCompanyId || profile?.company_id || "";
   const selectedTenant = allCompanies.find((c) => c.id === selectedTenantId);
-  const isTrialTenant = !!(selectedTenant && (selectedTenant.is_trial || selectedTenant.status === "teste"));
+  // Apenas o tenant "demo" pode receber período de trial
+  const isTrialTenant = !!(
+    selectedTenant &&
+    (selectedTenant.is_trial || selectedTenant.status === "teste") &&
+    (selectedTenant.nome_fantasia || "").trim().toLowerCase() === "demo"
+  );
 
   useEffect(() => {
     fetchUsers();
