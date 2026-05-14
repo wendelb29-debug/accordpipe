@@ -12,6 +12,9 @@ import * as XLSX from "xlsx";
 import { RescueLeadDialog } from "@/components/descarte/RescueLeadDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import DescarteAnalytics from "@/components/descarte/DescarteAnalytics";
+import { BarChart3, List } from "lucide-react";
 
 const LOST_REASONS_MAP: Record<string, string> = {
   "DADOS INCORRETOS": "Dados Incorretos",
