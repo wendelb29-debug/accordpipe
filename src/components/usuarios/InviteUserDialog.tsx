@@ -88,7 +88,8 @@ export function InviteUserDialog({ open, onOpenChange, tenantId, onSuccess }: Pr
           company_name: companyName,
           role,
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        })
+          trial_expires_at: isTrialTenant && trialExpiresAt ? trialExpiresAt.toISOString() : null,
+        } as any)
         .select("id")
         .single();
 
