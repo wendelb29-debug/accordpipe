@@ -25,6 +25,9 @@ export default function AccordStack() {
   } = useWhatsAppInbox();
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const fromDealId = searchParams.get("from_deal");
+  const fromWorkspaceId = searchParams.get("from_workspace");
   const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState("");
   const [transferOpen, setTransferOpen] = useState(false);
