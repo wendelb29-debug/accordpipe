@@ -1157,11 +1157,9 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                     <Headphones className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Pós-Venda
                   </TabsTrigger>
                 )}
-                {(isAdminPipeline || role === "administrativo" || role === "admin") && (
-                  <TabsTrigger value="cadastro" className="text-[11px] sm:text-xs gap-1">
-                    <ClipboardList className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Upsell
-                  </TabsTrigger>
-                )}
+                <TabsTrigger value="conversa" className="text-[11px] sm:text-xs gap-1">
+                  <MessageCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Conversa
+                </TabsTrigger>
               </TabsList>
             </div>
 
