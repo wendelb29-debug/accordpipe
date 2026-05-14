@@ -406,11 +406,31 @@ serve(async (req) => {
           .limit(1)
           .maybeSingle();
 
-        if (integErr || !integ) {
+        // Fallback: if tenant has no integration, use platform-level ZAPI secrets
+        // (allows tenants like "demo" to still deliver credentials via the master WhatsApp).
+        let effectiveInteg = integ as any;
+        if (!effectiveInteg || !effectiveInteg.server_url || !effectiveInteg.instance_token) {
+          const fallbackToken = Deno.env.get("ZAPI_TOKEN");
+          const fallbackInstance = Deno.env.get("ZAPI_INSTANCE_ID");
+          const fallbackClientToken = Deno.env.get("ZAPI_CLIENT_TOKEN");
+          if (fallbackToken && fallbackInstance) {
+            effectiveInteg = {
+              provider_type: "zapi",
+              server_url: "https://api.z-api.io",
+              instance_token: fallbackToken,
+              instance_id: fallbackInstance,
+              _fallback_client_token: fallbackClientToken,
+              _is_fallback: true,
+            };
+          }
+        }
+
+        if (!effectiveInteg) {
           whatsappError = "Nenhuma integração WhatsApp ativa para este tenant.";
-        } else if (!integ.server_url || !integ.instance_token) {
+        } else if (!effectiveInteg.server_url || !effectiveInteg.instance_token) {
           whatsappError = "Credenciais incompletas na integração WhatsApp.";
         } else {
+          const integ = effectiveInteg;
           const base = String(integ.server_url).replace(/\/$/, "");
           let res: Response;
           if (integ.provider_type === "uazapi") {
@@ -420,13 +440,17 @@ serve(async (req) => {
               body: JSON.stringify({ number: targetPhone, text: waText }),
             });
           } else if (integ.provider_type === "zapi") {
-            const { data: comp } = await supabase
-              .from("companies")
-              .select("zapi_client_token")
-              .eq("id", company_id)
-              .maybeSingle();
+            let clientToken: string | null = integ._fallback_client_token || null;
+            if (!clientToken) {
+              const { data: comp } = await supabase
+                .from("companies")
+                .select("zapi_client_token")
+                .eq("id", company_id)
+                .maybeSingle();
+              clientToken = comp?.zapi_client_token || null;
+            }
             const headers: Record<string, string> = { "Content-Type": "application/json" };
-            if (comp?.zapi_client_token) headers["Client-Token"] = comp.zapi_client_token;
+            if (clientToken) headers["Client-Token"] = clientToken;
             res = await fetch(
               `${base}/instances/${integ.instance_id || ""}/token/${integ.instance_token}/send-text`,
               { method: "POST", headers, body: JSON.stringify({ phone: targetPhone, message: waText }) },
