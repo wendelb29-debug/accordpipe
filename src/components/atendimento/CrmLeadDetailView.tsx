@@ -1464,7 +1464,23 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         leadName={lead.contact_name || lead.company_name}
       />
 
-      {/* Return to operator dialog */}
+      <WhatsAppSendDialog
+        open={whatsAppOpen}
+        onOpenChange={setWhatsAppOpen}
+        phone={lead.phone || ""}
+        contactName={lead.contact_name}
+        companyName={lead.company_name}
+        tenantId={lead.servidor_id}
+        onSent={(text, formattedPhone) => {
+          const preview = text.length > 60 ? `${text.slice(0, 60)}...` : text;
+          addActivity({
+            type: "whatsapp_sent",
+            title: `📱 WhatsApp enviado para +${formattedPhone}`,
+            description: preview,
+          });
+        }}
+      />
+
       <Dialog open={showReturnDialog} onOpenChange={setShowReturnDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
