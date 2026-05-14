@@ -440,13 +440,17 @@ serve(async (req) => {
               body: JSON.stringify({ number: targetPhone, text: waText }),
             });
           } else if (integ.provider_type === "zapi") {
-            const { data: comp } = await supabase
-              .from("companies")
-              .select("zapi_client_token")
-              .eq("id", company_id)
-              .maybeSingle();
+            let clientToken: string | null = integ._fallback_client_token || null;
+            if (!clientToken) {
+              const { data: comp } = await supabase
+                .from("companies")
+                .select("zapi_client_token")
+                .eq("id", company_id)
+                .maybeSingle();
+              clientToken = comp?.zapi_client_token || null;
+            }
             const headers: Record<string, string> = { "Content-Type": "application/json" };
-            if (comp?.zapi_client_token) headers["Client-Token"] = comp.zapi_client_token;
+            if (clientToken) headers["Client-Token"] = clientToken;
             res = await fetch(
               `${base}/instances/${integ.instance_id || ""}/token/${integ.instance_token}/send-text`,
               { method: "POST", headers, body: JSON.stringify({ phone: targetPhone, message: waText }) },
