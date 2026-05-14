@@ -103,8 +103,14 @@ export default function Usuarios() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingUser, setDeletingUser] = useState<UserWithRole | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [allCompanies, setAllCompanies] = useState<{id: string; nome_fantasia: string | null; razao_social: string; cnpj: string}[]>([]);
+  const [allCompanies, setAllCompanies] = useState<{id: string; nome_fantasia: string | null; razao_social: string; cnpj: string; is_trial?: boolean; status?: string}[]>([]);
   const [inviteOpen, setInviteOpen] = useState(false);
+
+  // Trial period state (only used when selected tenant is trial)
+  const [trialDays, setTrialDays] = useState<number>(7);
+  const [trialExpiresAt, setTrialExpiresAt] = useState<Date | null>(() => {
+    const d = new Date(); d.setDate(d.getDate() + 7); return d;
+  });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -117,6 +123,10 @@ export default function Usuarios() {
     role: "leitura" as AppRole,
     company_id: "" as string,
   });
+
+  const selectedTenantId = formData.company_id || activeCompanyId || profile?.company_id || "";
+  const selectedTenant = allCompanies.find((c) => c.id === selectedTenantId);
+  const isTrialTenant = !!(selectedTenant && (selectedTenant.is_trial || selectedTenant.status === "teste"));
 
   useEffect(() => {
     fetchUsers();
