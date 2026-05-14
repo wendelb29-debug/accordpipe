@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Send, Loader2, MessageSquare, Bot, Clock, Check, CheckCheck, AlertCircle } from "lucide-react";
+import { Send, Loader2, MessageSquare, Bot, Clock, Check, CheckCheck, AlertCircle, ArrowLeft, RefreshCw, ExternalLink, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -11,6 +12,7 @@ import { CrmLead } from "@/hooks/useCrmLeads";
 
 interface LeadWhatsAppTabProps {
   lead: CrmLead;
+  onBack?: () => void;
 }
 
 function MessageStatusIcon({ status }: { status: string }) {
@@ -23,7 +25,8 @@ function MessageStatusIcon({ status }: { status: string }) {
   }
 }
 
-export function LeadWhatsAppTab({ lead }: LeadWhatsAppTabProps) {
+export function LeadWhatsAppTab({ lead, onBack }: LeadWhatsAppTabProps) {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -181,37 +184,93 @@ export function LeadWhatsAppTab({ lead }: LeadWhatsAppTabProps) {
     }
   };
 
+  const phoneClean = (lead.phone || "").replace(/\D/g, "");
+
+  const Header = (
+    <div className="flex items-center gap-3 px-3 py-2 border-b border-border bg-muted/30 shrink-0">
+      {onBack && (
+        <>
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group"
+          >
+            <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
+            Voltar ao card
+          </button>
+          <div className="w-px h-4 bg-border" />
+        </>
+      )}
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+          <MessageCircle size={13} className="text-emerald-500" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-medium truncate">{lead.contact_name || lead.company_name}</p>
+          {lead.phone && <p className="text-[10px] text-muted-foreground truncate">{lead.phone}</p>}
+        </div>
+      </div>
+      {contactId && (
+        <button
+          onClick={() => fetchMessages(contactId)}
+          className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+        >
+          <RefreshCw size={11} />
+          Atualizar
+        </button>
+      )}
+      {phoneClean && (
+        <button
+          onClick={() => navigate(`/atendimento?contact=${phoneClean}`)}
+          className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+        >
+          <ExternalLink size={11} />
+          Abrir no Inbox
+        </button>
+      )}
+    </div>
+  );
+
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="flex flex-col h-full">
+        {Header}
+        <div className="flex-1 flex justify-center items-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
       </div>
     );
   }
 
   if (!lead.phone) {
     return (
-      <div className="text-center py-12 text-muted-foreground">
-        <MessageSquare className="h-10 w-10 mx-auto mb-3 opacity-30" />
-        <p className="text-sm">Nenhum telefone cadastrado neste lead.</p>
+      <div className="flex flex-col h-full">
+        {Header}
+        <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-6">
+          <MessageSquare className="h-10 w-10 mb-3 opacity-30" />
+          <p className="text-sm">Nenhum telefone cadastrado neste lead.</p>
+        </div>
       </div>
     );
   }
 
   if (!contactId) {
     return (
-      <div className="text-center py-12 text-muted-foreground">
-        <MessageSquare className="h-10 w-10 mx-auto mb-3 opacity-30" />
-        <p className="text-sm">Nenhuma conversa WhatsApp encontrada para este lead.</p>
-        <p className="text-xs mt-1">O lead será vinculado automaticamente quando uma mensagem chegar.</p>
+      <div className="flex flex-col h-full">
+        {Header}
+        <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-6 text-center">
+          <MessageSquare className="h-10 w-10 mb-3 opacity-30" />
+          <p className="text-sm">Nenhuma conversa WhatsApp encontrada para este lead.</p>
+          <p className="text-xs mt-1">O lead será vinculado automaticamente quando uma mensagem chegar.</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full min-h-[400px]">
+    <div className="flex flex-col h-full min-h-0">
+      {Header}
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1 bg-muted/20 rounded-t-lg">
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1 bg-muted/20 min-h-0">
         {messages.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground text-xs">
             Nenhuma mensagem ainda.
@@ -240,25 +299,31 @@ export function LeadWhatsAppTab({ lead }: LeadWhatsAppTabProps) {
       </div>
 
       {/* Input */}
-      <div className="flex items-center gap-1.5 px-2 py-2 bg-card border-t border-border rounded-b-lg">
+      <div className="flex items-end gap-1.5 px-2 py-2 bg-card border-t border-border shrink-0">
         <Button
           size="icon" variant="ghost"
-          className="h-8 w-8 shrink-0 text-emerald-600 hover:bg-emerald-500/10"
+          className="h-9 w-9 shrink-0 text-emerald-600 hover:bg-emerald-500/10"
           onClick={handleAccordAI}
           disabled={accordLoading}
         >
           {accordLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
         </Button>
-        <input
+        <textarea
           value={inputValue}
           onChange={e => setInputValue(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && !e.shiftKey && handleSend()}
+          onKeyDown={e => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
           placeholder="Digite uma mensagem…"
-          className="flex-1 h-9 rounded-xl bg-muted/60 border-0 px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary/30"
+          rows={1}
+          className="flex-1 resize-none px-3 py-2 rounded-xl bg-muted/60 text-sm text-foreground placeholder:text-muted-foreground border border-transparent focus:outline-none focus:border-emerald-500 max-h-24 overflow-y-auto transition-colors"
         />
         <Button
           size="icon" onClick={handleSend} disabled={!inputValue.trim() || sending}
-          className="h-9 w-9 shrink-0 rounded-full bg-emerald-500 hover:bg-emerald-600 shadow-sm"
+          className="h-9 w-9 shrink-0 rounded-xl bg-emerald-500 hover:bg-emerald-600 shadow-sm"
         >
           {sending ? <Loader2 className="h-4 w-4 text-white animate-spin" /> : <Send className="h-4 w-4 text-white" />}
         </Button>

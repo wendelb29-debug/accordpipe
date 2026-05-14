@@ -154,6 +154,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const { role, profile } = useAuth();
   const { activities, loading: activitiesLoading, addActivity, refetch: refetchActivities } = useCrmActivities(lead.id);
   const [editing, setEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState("historico");
   const [detailsCollapsed, setDetailsCollapsed] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try { return localStorage.getItem('accord-sidebar-collapsed') === 'true'; } catch { return false; }
@@ -1131,7 +1132,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
         {/* Main Content - Tabs */}
         <div className="flex-1 overflow-hidden flex flex-col">
-          <Tabs defaultValue="historico" className="flex-1 flex flex-col overflow-hidden">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
             <div className="overflow-x-auto scrollbar-hide border-b bg-card">
               <TabsList className="w-max sm:w-full justify-start rounded-none bg-card px-3 sm:px-4 h-10">
                 <TabsTrigger value="historico" className="text-[11px] sm:text-xs gap-1">
@@ -1385,10 +1386,8 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             )}
 
             {/* Conversa WhatsApp */}
-            <TabsContent value="conversa" className="flex-1 overflow-hidden p-0 mt-0">
-              <div className="h-full p-3">
-                <LeadWhatsAppTab lead={lead} />
-              </div>
+            <TabsContent value="conversa" className="flex-1 overflow-hidden p-0 mt-0 flex flex-col">
+              <LeadWhatsAppTab lead={lead} onBack={() => setActiveTab("historico")} />
             </TabsContent>
           </Tabs>
         </div>
