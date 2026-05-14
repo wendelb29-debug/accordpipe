@@ -136,7 +136,7 @@ export default function Usuarios() {
   const fetchAllCompanies = async () => {
     let query = supabase
       .from("companies")
-      .select("id, nome_fantasia, razao_social, cnpj")
+      .select("id, nome_fantasia, razao_social, cnpj, is_trial, status")
       .in("status", ["active", "teste"])
       .order("razao_social");
 
