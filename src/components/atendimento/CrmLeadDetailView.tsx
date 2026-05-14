@@ -168,6 +168,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const [form, setForm] = useState<any>({ ...lead });
   const [newActivity, setNewActivity] = useState({ type: "note", title: "", description: "" });
   const [showActivityForm, setShowActivityForm] = useState(false);
+  const [whatsAppOpen, setWhatsAppOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchingCnpj, setSearchingCnpj] = useState(false);
   const [searchingCep, setSearchingCep] = useState(false);
