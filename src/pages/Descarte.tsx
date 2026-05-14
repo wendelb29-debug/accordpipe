@@ -5,16 +5,20 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Search, Trash2, Download, XCircle, Calendar, RotateCcw } from "lucide-react";
+import { Search, Trash2, Download, XCircle, Calendar, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { RescueLeadDialog } from "@/components/descarte/RescueLeadDialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import DescarteAnalytics from "@/components/descarte/DescarteAnalytics";
 import { BarChart3, List } from "lucide-react";
+
+const PAGE_SIZE = 20;
 
 const LOST_REASONS_MAP: Record<string, string> = {
   "DADOS INCORRETOS": "Dados Incorretos",
@@ -32,10 +36,12 @@ export default function Descarte() {
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [reasonFilter, setReasonFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [rescueLead, setRescueLead] = useState<any>(null);
+  const [page, setPage] = useState(0);
 
   const canRescue = isMaster || role === "admin" || role === "ceo" || role === "administrativo";
 
@@ -58,8 +64,8 @@ export default function Descarte() {
 
   const filtered = useMemo(() => {
     return leads.filter(l => {
-      if (search) {
-        const s = search.toLowerCase();
+      if (debouncedSearch) {
+        const s = debouncedSearch.toLowerCase();
         const match = l.company_name?.toLowerCase().includes(s) ||
           l.contact_name?.toLowerCase().includes(s) ||
           l.email?.toLowerCase().includes(s) ||
@@ -77,7 +83,15 @@ export default function Descarte() {
       }
       return true;
     });
-  }, [leads, search, reasonFilter, dateFrom, dateTo]);
+  }, [leads, debouncedSearch, reasonFilter, dateFrom, dateTo]);
+
+  // Reset to first page whenever filters change
+  useEffect(() => { setPage(0); }, [debouncedSearch, reasonFilter, dateFrom, dateTo]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageStart = page * PAGE_SIZE;
+  const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+
 
   const reasonCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -112,7 +126,20 @@ export default function Descarte() {
     toast.success("Arquivo exportado com sucesso!");
   };
 
-  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
+  if (loading) {
+    return (
+      <div className="p-4 space-y-4">
+        <Skeleton className="h-8 w-64" />
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16" />)}
+        </div>
+        <Skeleton className="h-9 w-full" />
+        <div className="space-y-2">
+          {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-10" />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 space-y-4">
@@ -204,7 +231,7 @@ export default function Descarte() {
                 {filtered.length === 0 && (
                   <TableRow><TableCell colSpan={canRescue ? 9 : 8} className="text-center text-xs text-muted-foreground py-8">Nenhum lead descartado encontrado</TableCell></TableRow>
                 )}
-                {filtered.map(l => {
+                {paginated.map(l => {
                   const reason = l.lost_reason?.split(":")[0]?.trim() || "—";
                   return (
                     <TableRow key={l.id}>
@@ -240,6 +267,23 @@ export default function Descarte() {
               </TableBody>
             </Table>
           </div>
+
+          {filtered.length > PAGE_SIZE && (
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>
+                Mostrando {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, filtered.length)} de {filtered.length}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="h-8 gap-1" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>
+                  <ChevronLeft className="h-3.5 w-3.5" /> Anterior
+                </Button>
+                <span className="px-2">Página {page + 1} de {totalPages}</span>
+                <Button variant="outline" size="sm" className="h-8 gap-1" disabled={page >= totalPages - 1} onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}>
+                  Próxima <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="analise">
