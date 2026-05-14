@@ -5,7 +5,7 @@ import {
   MessageSquare, PhoneCall, FileText, Activity, Trash2, Send, Loader2,
   FileSignature, Eye, Download, Copy, Image as ImageIcon, Search,
   FileSpreadsheet, Edit, MoreVertical, ThumbsUp, ThumbsDown, Paperclip,
-  Link2, CopyPlus, ClipboardList, UserRoundPen, Headphones, ChevronDown, ChevronUp, PanelLeftClose, PanelLeftOpen
+  Link2, CopyPlus, ClipboardList, UserRoundPen, Headphones, ChevronDown, ChevronUp, PanelLeftClose, PanelLeftOpen, MessageCircle
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadContractPdf } from "@/lib/generateContractPdf";
@@ -1157,11 +1157,9 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                     <Headphones className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Pós-Venda
                   </TabsTrigger>
                 )}
-                {(isAdminPipeline || role === "administrativo" || role === "admin") && (
-                  <TabsTrigger value="cadastro" className="text-[11px] sm:text-xs gap-1">
-                    <ClipboardList className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Upsell
-                  </TabsTrigger>
-                )}
+                <TabsTrigger value="conversa" className="text-[11px] sm:text-xs gap-1">
+                  <MessageCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Conversa
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -1386,12 +1384,12 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               </TabsContent>
             )}
 
-            {/* Cadastro do Cliente */}
-            {(isAdminPipeline || role === "administrativo" || role === "admin") && (
-              <TabsContent value="cadastro" className="flex-1 overflow-y-auto p-4 mt-0">
-                <LeadCadastroTab lead={lead} onUpdate={onUpdate} />
-              </TabsContent>
-            )}
+            {/* Conversa WhatsApp */}
+            <TabsContent value="conversa" className="flex-1 overflow-hidden p-0 mt-0">
+              <div className="h-full p-3">
+                <LeadWhatsAppTab lead={lead} />
+              </div>
+            </TabsContent>
           </Tabs>
         </div>
       </div>
