@@ -259,6 +259,32 @@ export default function ServidoresTab() {
     }
   };
 
+  const handleConfirmDeleteTenant = async () => {
+    if (!deleteTenantTarget) return;
+    const expected = deleteTenantTarget.nome_fantasia || deleteTenantTarget.razao_social;
+    if (deleteConfirmText.trim() !== expected.trim()) {
+      sonnerToast.error("Digite exatamente o nome do tenant para confirmar.");
+      return;
+    }
+    setIsDeletingTenant(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("delete-tenant", {
+        body: { tenant_id: deleteTenantTarget.id },
+      });
+      if (error || (data && data.ok === false)) {
+        throw new Error(error?.message || data?.error || "Erro desconhecido");
+      }
+      sonnerToast.success("Tenant excluído com sucesso.");
+      setDeleteTenantTarget(null);
+      setDeleteConfirmText("");
+      await fetchCompanies();
+    } catch (err: any) {
+      sonnerToast.error("Erro ao excluir tenant: " + (err.message || ""));
+    } finally {
+      setIsDeletingTenant(false);
+    }
+  };
+
   const handleOpenUsersDialog = async (company: Company) => {
     setUsersDialogCompany(company);
     setUsersDialogOpen(true);
