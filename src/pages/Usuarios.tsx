@@ -260,6 +260,7 @@ export default function Usuarios() {
           whatsapp: formData.whatsapp,
           company_id: companyId,
           role: formData.role,
+          trial_expires_at: isTrialTenant && trialExpiresAt ? trialExpiresAt.toISOString() : null,
         },
       });
 
