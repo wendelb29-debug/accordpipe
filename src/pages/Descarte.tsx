@@ -5,16 +5,20 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Search, Trash2, Download, XCircle, Calendar, RotateCcw } from "lucide-react";
+import { Search, Trash2, Download, XCircle, Calendar, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { RescueLeadDialog } from "@/components/descarte/RescueLeadDialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import DescarteAnalytics from "@/components/descarte/DescarteAnalytics";
 import { BarChart3, List } from "lucide-react";
+
+const PAGE_SIZE = 20;
 
 const LOST_REASONS_MAP: Record<string, string> = {
   "DADOS INCORRETOS": "Dados Incorretos",
@@ -32,10 +36,12 @@ export default function Descarte() {
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [reasonFilter, setReasonFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [rescueLead, setRescueLead] = useState<any>(null);
+  const [page, setPage] = useState(0);
 
   const canRescue = isMaster || role === "admin" || role === "ceo" || role === "administrativo";
 
@@ -58,8 +64,8 @@ export default function Descarte() {
 
   const filtered = useMemo(() => {
     return leads.filter(l => {
-      if (search) {
-        const s = search.toLowerCase();
+      if (debouncedSearch) {
+        const s = debouncedSearch.toLowerCase();
         const match = l.company_name?.toLowerCase().includes(s) ||
           l.contact_name?.toLowerCase().includes(s) ||
           l.email?.toLowerCase().includes(s) ||
@@ -77,7 +83,15 @@ export default function Descarte() {
       }
       return true;
     });
-  }, [leads, search, reasonFilter, dateFrom, dateTo]);
+  }, [leads, debouncedSearch, reasonFilter, dateFrom, dateTo]);
+
+  // Reset to first page whenever filters change
+  useEffect(() => { setPage(0); }, [debouncedSearch, reasonFilter, dateFrom, dateTo]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageStart = page * PAGE_SIZE;
+  const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+
 
   const reasonCounts = useMemo(() => {
     const counts: Record<string, number> = {};
