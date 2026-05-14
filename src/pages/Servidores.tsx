@@ -57,10 +57,10 @@ export default function Servidores() {
       return {
         blue:       isDark ? [37, 99, 235]  : [59, 130, 246],
         purple:     [122, 63, 242] as number[],
-        dotAlpha:   isDark ? 0.07 : 0.06,
-        lineAlpha:  isDark ? 0.13 : 0.08,
-        ptAlphaMin: isDark ? 0.15 : 0.09,
-        ptAlphaMax: isDark ? 0.45 : 0.26,
+        dotAlpha:   isDark ? 0.12 : 0.09,
+        lineAlpha:  isDark ? 0.22 : 0.13,
+        ptAlphaMin: isDark ? 0.25 : 0.14,
+        ptAlphaMax: isDark ? 0.65 : 0.40,
       };
     };
 
