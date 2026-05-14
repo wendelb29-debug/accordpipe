@@ -42,12 +42,17 @@ export function InviteUserDialog({ open, onOpenChange, tenantId, onSuccess }: Pr
     const d = new Date(); d.setDate(d.getDate() + 7); return d;
   });
 
-  // Check tenant trial status when dialog opens or tenantId changes
-  useState(() => {});
-  // Use effect-like via inline check on tenantId change
-  if (typeof window !== "undefined") {
-    // no-op marker
-  }
+  useEffect(() => {
+    if (!tenantId || !open) { setIsTrialTenant(false); return; }
+    (async () => {
+      const { data } = await supabase
+        .from("companies")
+        .select("is_trial, status")
+        .eq("id", tenantId)
+        .maybeSingle();
+      setIsTrialTenant(!!(data && (data.is_trial || data.status === "teste")));
+    })();
+  }, [tenantId, open]);
 
   const reset = () => {
     setName(""); setEmail(""); setWhatsapp(""); setRole("leitura");
