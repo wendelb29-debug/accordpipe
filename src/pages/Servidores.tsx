@@ -40,6 +40,102 @@ export default function Servidores() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { activeCompanyId, setActiveCompanyId, profile, isGlobalMaster, isResellerTenant } = useAuth();
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    let animId: number;
+
+    const lerp = (a: number[], b: number[], t: number) =>
+      a.map((v, i) => Math.round(v + (b[i] - v) * t));
+
+    const getColors = () => {
+      const isDark = document.documentElement.classList.contains('dark');
+      return {
+        blue:       isDark ? [37, 99, 235]  : [59, 130, 246],
+        purple:     [122, 63, 242] as number[],
+        dotAlpha:   isDark ? 0.07 : 0.06,
+        lineAlpha:  isDark ? 0.13 : 0.08,
+        ptAlphaMin: isDark ? 0.15 : 0.09,
+        ptAlphaMax: isDark ? 0.45 : 0.26,
+      };
+    };
+
+    const resize = () => {
+      const p = canvas.parentElement;
+      if (!p) return;
+      const { width, height } = p.getBoundingClientRect();
+      canvas.width  = width  * devicePixelRatio;
+      canvas.height = height * devicePixelRatio;
+      canvas.style.width  = width  + 'px';
+      canvas.style.height = height + 'px';
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+    };
+
+    const c = getColors();
+    const pts = Array.from({ length: 70 }, () => {
+      const p = canvas.parentElement;
+      const W = p?.offsetWidth  || 1000;
+      const H = p?.offsetHeight || 700;
+      const t = Math.random();
+      return {
+        x: Math.random() * W, y: Math.random() * H,
+        vx: (Math.random() - .5) * .25,
+        vy: (Math.random() - .5) * .25,
+        r: Math.random() * 1.8 + .8, t,
+        a: c.ptAlphaMin + Math.random() * (c.ptAlphaMax - c.ptAlphaMin),
+      };
+    });
+
+    const draw = () => {
+      const p = canvas.parentElement;
+      if (!p) return;
+      const W = p.offsetWidth, H = p.offsetHeight;
+      const { blue, purple, dotAlpha, lineAlpha } = getColors();
+      ctx.clearRect(0, 0, W, H);
+
+      ctx.fillStyle = `rgba(122,63,242,${dotAlpha})`;
+      for (let x = 18; x < W; x += 36)
+        for (let y = 18; y < H; y += 36) {
+          ctx.beginPath(); ctx.arc(x, y, .85, 0, Math.PI * 2); ctx.fill();
+        }
+
+      for (let i = 0; i < pts.length; i++) {
+        const a = pts[i];
+        for (let j = i + 1; j < pts.length; j++) {
+          const b = pts[j];
+          const dx = a.x - b.x, dy = a.y - b.y;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < 130) {
+            const col = lerp(lerp(blue, purple, a.t), lerp(blue, purple, b.t), .5);
+            ctx.strokeStyle = `rgba(${col[0]},${col[1]},${col[2]},${(1 - d / 130) * lineAlpha})`;
+            ctx.lineWidth = .6;
+            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+          }
+        }
+      }
+
+      for (const p of pts) {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > W) p.vx *= -1;
+        if (p.y < 0 || p.y > H) p.vy *= -1;
+        const col = lerp(blue, purple, p.t);
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${p.a})`; ctx.fill();
+      }
+      animId = requestAnimationFrame(draw);
+    };
+
+    resize(); draw();
+    const ro = new ResizeObserver(resize);
+    if (canvas.parentElement) ro.observe(canvas.parentElement);
+    return () => { cancelAnimationFrame(animId); ro.disconnect(); };
+  }, []);
+
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [tenants, setTenants] = useState<TenantItem[]>([]);
   const [fetching, setFetching] = useState(true);
@@ -174,19 +270,8 @@ export default function Servidores() {
 
   return (
     <div className="relative min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden">
-      {/* Background pattern */}
-      <div
-        className="absolute inset-0 dark:hidden"
-        style={{ backgroundImage: `url(${accordPatternDark})`, backgroundSize: '500px', backgroundRepeat: 'repeat', opacity: 0.08 }}
-      />
-      <div className="absolute inset-0 dark:hidden bg-[radial-gradient(ellipse_at_center,transparent_20%,hsl(var(--background))_75%)]" />
-      <div
-        className="absolute inset-0 hidden dark:block"
-        style={{ backgroundImage: `url(${accordPatternDark})`, backgroundSize: '500px', backgroundRepeat: 'repeat', opacity: 0.15 }}
-      />
-      <div className="absolute inset-0 hidden dark:block bg-[radial-gradient(ellipse_at_center,transparent_20%,hsl(var(--background))_75%)]" />
-      <div className="absolute top-1/4 left-1/3 w-[400px] h-[400px] rounded-full bg-primary/[0.04] blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] rounded-full bg-primary/[0.03] blur-[80px] pointer-events-none" />
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
+
 
       {/* Content */}
       <div className="relative z-10 w-full max-w-lg animate-fade-in">
