@@ -251,12 +251,12 @@ export default function Auth() {
             src={accordLogo}
             alt="ACCORD"
             className="-ml-1 w-[240px] sm:w-[260px] lg:w-[280px] h-auto select-none drop-shadow-[0_2px_12px_rgba(122,63,242,0.18)]"
-            style={{ objectFit: "contain", marginBottom: -28 }}
+            style={{ objectFit: "contain", marginBottom: -40 }}
             draggable={false}
           />
-          <div className="text-[12px] font-medium tracking-wide text-[#6B7280] mb-4">plataforma comercial inteligente</div>
+          <div className="text-[12px] font-medium tracking-wide text-[#6B7280] mb-1.5">plataforma comercial inteligente</div>
 
-          <h1 className="text-[32px] font-black text-[#0D1117] tracking-[-1.6px] leading-[1.08] mb-3 max-w-[430px]">
+          <h1 className="text-[32px] font-black text-[#0D1117] tracking-[-1.6px] leading-[1.08] mb-1.5 max-w-[430px]">
             CRM, contratos e atendimento com{" "}
             <em className="not-italic bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(135deg, #2563EB 0%, #7A3FF2 100%)" }}>
               inteligência artificial
