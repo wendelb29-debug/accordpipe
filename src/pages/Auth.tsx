@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Eye, EyeOff, Lock, Mail, AlertCircle, Loader2, CheckCircle2, ArrowRight,
   Building2, Phone, FileText, Shield, GitMerge, CalendarDays, MessageCircle,
-  Users, Bot, Check, ShieldCheck,
+  Users, Bot, Check, ShieldCheck, Award,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
