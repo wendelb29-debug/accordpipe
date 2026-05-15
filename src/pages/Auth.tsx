@@ -190,6 +190,7 @@ export default function Auth() {
     { icon: FileText, title: "Propostas Comerciais", desc: "Geração automática e assinatura digital" },
     { icon: Users, title: "CRM Integrado", desc: "Gestão completa de clientes e empresas" },
     { icon: Bot, title: "Accord IA", desc: "Automação inteligente de mensagens e tarefas" },
+    { icon: Award, title: "Assinatura Digital ICP-Brasil", desc: "Contratos com validade jurídica garantida pela certificação ICP-Brasil" },
   ];
 
   const topLinks: { icon: typeof Building2; label: string; key: "about" | "contact" | "terms" | "privacy" }[] = [
