@@ -257,7 +257,8 @@ export default function FormPublico() {
   const headline = formConfig.headline || `Transforme seu atendimento com o Accord Stack`;
   const subheadline = formConfig.subheadline || formConfig.description || "WhatsApp, CRM, contratos digitais e muito mais — tudo integrado em uma única plataforma.";
   const ctaText = formConfig.cta_text || "Quero começar agora";
-  const logoUrl = formConfig.brand_logo_url || accordLogo;
+  // Sempre usar o logo Accord no header da página pública (nunca foto do tenant/usuário)
+  const logoUrl = accordLogo;
   const fieldsList = formConfig.fields?.length ? formConfig.fields : ["nome", "telefone", "email", "empresa", "colaboradores"];
 
   return (
