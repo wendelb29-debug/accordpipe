@@ -399,9 +399,16 @@ export default function Auth() {
             <Link to="/" className="text-white font-bold hover:underline">Solicitar acesso</Link>
           </div>
 
-          <div className="flex items-center justify-center gap-1.5 mt-5 text-[11px] text-white/40">
-            <ShieldCheck className="w-[13px] h-[13px]" strokeWidth={1.8} />
-            Conexão criptografada e segura
+          <div className="flex items-center justify-center gap-3 mt-5 text-[11px] text-white/45 flex-wrap">
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="w-[13px] h-[13px]" strokeWidth={1.8} />
+              Conexão criptografada e segura
+            </span>
+            <span className="opacity-30">|</span>
+            <span className="flex items-center gap-1.5 text-white/80 font-semibold">
+              <Award className="w-[13px] h-[13px]" strokeWidth={1.9} />
+              Assinatura ICP-Brasil
+            </span>
           </div>
         </div>
       </div>
