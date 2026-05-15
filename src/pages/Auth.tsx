@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Eye, EyeOff, Lock, Mail, AlertCircle, Loader2, CheckCircle2, ArrowRight,
   Building2, Phone, FileText, Shield, GitMerge, CalendarDays, MessageCircle,
-  Users, Bot, Check, ShieldCheck,
+  Users, Bot, Check, ShieldCheck, Award,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -190,6 +190,7 @@ export default function Auth() {
     { icon: FileText, title: "Propostas Comerciais", desc: "Geração automática e assinatura digital" },
     { icon: Users, title: "CRM Integrado", desc: "Gestão completa de clientes e empresas" },
     { icon: Bot, title: "Accord IA", desc: "Automação inteligente de mensagens e tarefas" },
+    { icon: Award, title: "Assinatura Digital ICP-Brasil", desc: "Contratos com validade jurídica garantida pela certificação ICP-Brasil" },
   ];
 
   const topLinks: { icon: typeof Building2; label: string; key: "about" | "contact" | "terms" | "privacy" }[] = [
@@ -287,6 +288,10 @@ export default function Auth() {
                 {b}
               </div>
             ))}
+            <div className="flex items-center gap-[7px] text-[#2563EB] text-[11.5px] font-semibold px-[14px] py-1.5 rounded-full bg-[rgba(37,99,235,0.1)] border border-[rgba(37,99,235,0.3)] transition-all hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(37,99,235,0.2)]">
+              <Award className="w-[13px] h-[13px]" strokeWidth={2.2} />
+              Assinatura ICP-Brasil
+            </div>
           </div>
         </div>
 
@@ -394,9 +399,16 @@ export default function Auth() {
             <Link to="/" className="text-white font-bold hover:underline">Solicitar acesso</Link>
           </div>
 
-          <div className="flex items-center justify-center gap-1.5 mt-5 text-[11px] text-white/40">
-            <ShieldCheck className="w-[13px] h-[13px]" strokeWidth={1.8} />
-            Conexão criptografada e segura
+          <div className="flex items-center justify-center gap-3 mt-5 text-[11px] text-white/45 flex-wrap">
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="w-[13px] h-[13px]" strokeWidth={1.8} />
+              Conexão criptografada e segura
+            </span>
+            <span className="opacity-30">|</span>
+            <span className="flex items-center gap-1.5 text-white/80 font-semibold">
+              <Award className="w-[13px] h-[13px]" strokeWidth={1.9} />
+              Assinatura ICP-Brasil
+            </span>
           </div>
         </div>
       </div>
