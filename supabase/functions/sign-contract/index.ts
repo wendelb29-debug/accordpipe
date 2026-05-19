@@ -886,6 +886,36 @@ Deno.serve(async (req) => {
             description: `Todas as assinaturas foram coletadas e o PDF final foi gerado. Hash: ${documentHash.slice(0, 16)}... Código: ${validationCode}`,
             created_by_name: "Sistema",
           });
+
+          // Auto-aplica selo ICP-Brasil + Carimbo do Tempo (não bloqueia resposta)
+          try {
+            const { error: icpErr } = await supabase.functions.invoke("sign-pdf-icp", {
+              body: { contract_id: contractId },
+            });
+            if (icpErr) {
+              await supabase.from("pdf_contract_history").insert({
+                contract_id: contractId,
+                action: "erro_selo_icp",
+                description: `Falha ao aplicar selo ICP-Brasil automaticamente: ${icpErr.message}. É possível reaplicar manualmente.`,
+                created_by_name: "Sistema",
+              });
+            } else {
+              await supabase.from("pdf_contract_history").insert({
+                contract_id: contractId,
+                action: "selo_icp_aplicado",
+                description: "Selo ICP-Brasil + Carimbo do Tempo (ITI) aplicado automaticamente ao contrato.",
+                created_by_name: "Sistema",
+              });
+            }
+          } catch (icpCatch) {
+            const msg = icpCatch instanceof Error ? icpCatch.message : String(icpCatch);
+            await supabase.from("pdf_contract_history").insert({
+              contract_id: contractId,
+              action: "erro_selo_icp",
+              description: `Falha ao aplicar selo ICP-Brasil automaticamente: ${msg}. É possível reaplicar manualmente.`,
+              created_by_name: "Sistema",
+            });
+          }
         } catch (error) {
           pdfError = error instanceof Error ? error.message : "Falha ao gerar o PDF final";
           await supabase.from("pdf_contract_history").insert({
