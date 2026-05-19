@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   CheckCircle2, Clock, XCircle, Eye, Copy, User, MapPin, Send,
-  Shield, Download, Hash, Globe, MessageSquare,
+  Shield, Download, Hash, Globe, MessageSquare, Award, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +35,35 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
   const [currentContract, setCurrentContract] = useState<Props["contract"]>(contract);
   const [signers, setSigners] = useState(initialSigners);
   const [signedFieldIds, setSignedFieldIds] = useState<string[]>([]);
+  const [icpLoading, setIcpLoading] = useState(false);
+
+  const handleApplyIcpSeal = async () => {
+    if (!currentContract?.id) return;
+    setIcpLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sign-pdf-icp", {
+        body: { contract_id: currentContract.id },
+      });
+      if (error) throw error;
+      if (data?.error === "not_configured") {
+        toast.error("Certificado A1 ICP-Brasil ainda não foi provisionado.");
+        return;
+      }
+      if (!data?.ok) throw new Error(data?.error || "Falha ao aplicar selo ICP");
+      toast.success("Selo ICP-Brasil aplicado com sucesso!");
+      setCurrentContract((prev) => prev ? { ...prev, ...{
+        icp_signed_at: data.signed_at,
+        icp_pdf_url: data.icp_pdf_url,
+        icp_signer_cn: data.signer_cn,
+        icp_tsa_authority: data.tsa_authority,
+      }} as any : prev);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(`Erro ao aplicar selo ICP: ${err.message || err}`);
+    } finally {
+      setIcpLoading(false);
+    }
+  };
 
   useEffect(() => {
     setCurrentContract(contract);
@@ -282,14 +311,51 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
                     <span className="font-mono text-muted-foreground">Código: {currentContract.validation_code}</span>
                   </div>
                 </div>
-                <div className="flex gap-2 pt-1">
+                <div className="flex flex-wrap gap-2 pt-1">
                   <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={copyValidationLink}>
                     <Copy className="h-3 w-3" /> Link de Validação
                   </Button>
                   <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={handleDownloadSignedPdf}>
                     <Download className="h-3 w-3" /> Baixar PDF Assinado
                   </Button>
+                  {(currentContract as any).icp_pdf_url ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1 text-xs h-7 border-blue-500/40 text-blue-600 hover:bg-blue-500/10"
+                      onClick={() => window.open((currentContract as any).icp_pdf_url, "_blank")}
+                    >
+                      <Award className="h-3 w-3" /> Baixar PDF ICP-Brasil
+                    </Button>
+                  ) : (
+                    canManage && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1 text-xs h-7 border-blue-500/40 text-blue-600 hover:bg-blue-500/10"
+                        onClick={handleApplyIcpSeal}
+                        disabled={icpLoading}
+                      >
+                        {icpLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Award className="h-3 w-3" />}
+                        {icpLoading ? "Selando..." : "Aplicar selo ICP-Brasil"}
+                      </Button>
+                    )
+                  )}
                 </div>
+                {(currentContract as any).icp_signed_at && (
+                  <div className="mt-2 flex items-center gap-2 rounded-md border border-blue-500/30 bg-blue-500/5 px-3 py-2 text-xs">
+                    <Award className="h-4 w-4 text-blue-600" />
+                    <div className="flex-1">
+                      <div className="font-semibold text-blue-700 dark:text-blue-400">Selo ICP-Brasil aplicado</div>
+                      <div className="text-muted-foreground">
+                        Por {(currentContract as any).icp_signer_cn || "Accord"}
+                        {(currentContract as any).icp_tsa_authority && ` · Carimbo do tempo: ${(currentContract as any).icp_tsa_authority}`}
+                        {" · "}
+                        {new Date((currentContract as any).icp_signed_at).toLocaleString("pt-BR")}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
