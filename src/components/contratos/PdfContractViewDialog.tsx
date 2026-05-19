@@ -35,6 +35,35 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
   const [currentContract, setCurrentContract] = useState<Props["contract"]>(contract);
   const [signers, setSigners] = useState(initialSigners);
   const [signedFieldIds, setSignedFieldIds] = useState<string[]>([]);
+  const [icpLoading, setIcpLoading] = useState(false);
+
+  const handleApplyIcpSeal = async () => {
+    if (!currentContract?.id) return;
+    setIcpLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sign-pdf-icp", {
+        body: { contract_id: currentContract.id },
+      });
+      if (error) throw error;
+      if (data?.error === "not_configured") {
+        toast.error("Certificado A1 ICP-Brasil ainda não foi provisionado.");
+        return;
+      }
+      if (!data?.ok) throw new Error(data?.error || "Falha ao aplicar selo ICP");
+      toast.success("Selo ICP-Brasil aplicado com sucesso!");
+      setCurrentContract((prev) => prev ? { ...prev, ...{
+        icp_signed_at: data.signed_at,
+        icp_pdf_url: data.icp_pdf_url,
+        icp_signer_cn: data.signer_cn,
+        icp_tsa_authority: data.tsa_authority,
+      }} as any : prev);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(`Erro ao aplicar selo ICP: ${err.message || err}`);
+    } finally {
+      setIcpLoading(false);
+    }
+  };
 
   useEffect(() => {
     setCurrentContract(contract);
