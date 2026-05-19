@@ -407,7 +407,7 @@ export default function Auth() {
             <span className="opacity-30">|</span>
             <span className="flex items-center gap-1.5 text-white/80 font-semibold">
               <Award className="w-[13px] h-[13px]" strokeWidth={1.9} />
-              Assinatura ICP-Brasil
+              Selo ICP-Brasil
             </span>
           </div>
         </div>
