@@ -3230,6 +3230,12 @@ export type Database = {
           created_by_user_id: string | null
           description: string | null
           document_hash: string | null
+          icp_cert_valid_until: string | null
+          icp_pdf_url: string | null
+          icp_signed_at: string | null
+          icp_signer_cn: string | null
+          icp_tsa_authority: string | null
+          icp_tsa_token: string | null
           id: string
           name: string
           pdf_assinado_path: string | null
@@ -3248,6 +3254,12 @@ export type Database = {
           created_by_user_id?: string | null
           description?: string | null
           document_hash?: string | null
+          icp_cert_valid_until?: string | null
+          icp_pdf_url?: string | null
+          icp_signed_at?: string | null
+          icp_signer_cn?: string | null
+          icp_tsa_authority?: string | null
+          icp_tsa_token?: string | null
           id?: string
           name: string
           pdf_assinado_path?: string | null
@@ -3266,6 +3278,12 @@ export type Database = {
           created_by_user_id?: string | null
           description?: string | null
           document_hash?: string | null
+          icp_cert_valid_until?: string | null
+          icp_pdf_url?: string | null
+          icp_signed_at?: string | null
+          icp_signer_cn?: string | null
+          icp_tsa_authority?: string | null
+          icp_tsa_token?: string | null
           id?: string
           name?: string
           pdf_assinado_path?: string | null
