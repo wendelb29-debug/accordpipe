@@ -290,7 +290,7 @@ export default function Auth() {
             ))}
             <div className="flex items-center gap-[7px] text-[#2563EB] text-[11.5px] font-semibold px-[14px] py-1.5 rounded-full bg-[rgba(37,99,235,0.1)] border border-[rgba(37,99,235,0.3)] transition-all hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(37,99,235,0.2)]">
               <Award className="w-[13px] h-[13px]" strokeWidth={2.2} />
-              Assinatura ICP-Brasil
+              Selo ICP-Brasil
             </div>
           </div>
         </div>
