@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   CheckCircle2, Clock, XCircle, Eye, Copy, User, MapPin, Send,
-  Shield, Download, Hash, Globe, MessageSquare,
+  Shield, Download, Hash, Globe, MessageSquare, Award, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
