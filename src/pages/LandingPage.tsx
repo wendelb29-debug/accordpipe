@@ -43,7 +43,7 @@ export default function LandingPage() {
           "@context": "https://schema.org",
           "@type": "LocalBusiness",
           name: "ACCORD",
-          email: "suporte@accordclass.com.br",
+          email: "contato@accordpipe.com.br",
           url: "https://accordpipe.com.br",
           address: { "@type": "PostalAddress", addressLocality: "Uberlândia", addressRegion: "MG", addressCountry: "BR" },
         })}</script>

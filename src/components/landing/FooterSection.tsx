@@ -37,8 +37,8 @@ export function FooterSection() {
             <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm text-[#6B7280]">
               <li className="flex items-center gap-2">
                 <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#2563EB] shrink-0" />
-                <a href="mailto:suporte@accordclass.com.br" className="hover:text-[#D1D5DB] transition-colors duration-150 break-all">
-                  suporte@accordclass.com.br
+                <a href="mailto:contato@accordpipe.com.br" className="hover:text-[#D1D5DB] transition-colors duration-150 break-all">
+                  contato@accordpipe.com.br
                 </a>
               </li>
               <li className="flex items-center gap-2">

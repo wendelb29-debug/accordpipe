@@ -26,7 +26,7 @@ export default function RefundPolicy() {
 
           <section>
             <h2 className="text-xl font-semibold text-[#E5E7EB] mb-2">2. Como solicitar o reembolso</h2>
-            <p>Os reembolsos são processados pela Paddle, nossa Merchant of Record oficial. Para solicitar, acesse <a href="https://paddle.net" target="_blank" rel="noopener noreferrer" className="text-[#2563EB] hover:underline">paddle.net</a> com o e-mail utilizado na compra ou entre em contato com nosso suporte em <a href="mailto:suporte@accordclass.com.br" className="text-[#2563EB] hover:underline">suporte@accordclass.com.br</a>.</p>
+            <p>Os reembolsos são processados pela Paddle, nossa Merchant of Record oficial. Para solicitar, acesse <a href="https://paddle.net" target="_blank" rel="noopener noreferrer" className="text-[#2563EB] hover:underline">paddle.net</a> com o e-mail utilizado na compra ou entre em contato com nosso suporte em <a href="mailto:contato@accordpipe.com.br" className="text-[#2563EB] hover:underline">contato@accordpipe.com.br</a>.</p>
           </section>
 
           <section>
@@ -41,7 +41,7 @@ export default function RefundPolicy() {
 
           <section>
             <h2 className="text-xl font-semibold text-[#E5E7EB] mb-2">5. Contato</h2>
-            <p>Dúvidas sobre reembolsos: <a href="mailto:suporte@accordclass.com.br" className="text-[#2563EB] hover:underline">suporte@accordclass.com.br</a>.</p>
+            <p>Dúvidas sobre reembolsos: <a href="mailto:contato@accordpipe.com.br" className="text-[#2563EB] hover:underline">contato@accordpipe.com.br</a>.</p>
           </section>
         </div>
       </div>

@@ -87,7 +87,7 @@ export default function TermsOfService() {
 
           <section>
             <h2 className="text-xl font-semibold text-[#E5E7EB] mb-2">14. Contato</h2>
-            <p>Dúvidas sobre estes Termos: <a href="mailto:suporte@accordclass.com.br" className="text-[#2563EB] hover:underline">suporte@accordclass.com.br</a>.</p>
+            <p>Dúvidas sobre estes Termos: <a href="mailto:contato@accordpipe.com.br" className="text-[#2563EB] hover:underline">contato@accordpipe.com.br</a>.</p>
           </section>
         </div>
       </div>
