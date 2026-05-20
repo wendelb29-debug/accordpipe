@@ -299,6 +299,16 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/accord-pulse"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "ceo", "comercial"]}>
+                  <AppLayout>
+                    <AccordPulse />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
             <Route path="/assinar/:token" element={<AssinarContrato />} />
             <Route path="/assinar-pdf/:token" element={<AssinarPdf />} />
             <Route path="/assinar-documento/:token" element={<AssinarDocumento />} />
