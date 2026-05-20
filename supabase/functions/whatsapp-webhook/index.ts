@@ -933,6 +933,83 @@ async function handleIncomingMessage(
     });
   }
 
+  // 7. Accord Pulse — classify inbound if contact belongs to an active outbound flow
+  try {
+    const { data: pulseLeads } = await supabase
+      .from("pulse_outbound_leads")
+      .select("*, pulse_campaigns!inner(id, company_id, name, objective, offer)")
+      .eq("whatsapp_contact_id", contact.id)
+      .eq("opt_out", false)
+      .limit(1);
+    const pulse = (pulseLeads || [])[0] as any;
+    if (pulse && pulse.pulse_campaigns?.company_id === company_id) {
+      const { data: recentMsgs } = await supabase
+        .from("whatsapp_messages")
+        .select("direction, message, created_at")
+        .eq("contact_id", contact.id)
+        .order("created_at", { ascending: false })
+        .limit(8);
+
+      const { data: lead } = await supabase
+        .from("crm_leads").select("*").eq("id", pulse.crm_lead_id).maybeSingle();
+
+      const classifyRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/accord-pulse-agent`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({
+          action: "classify_inbound",
+          inboundMessage: message || caption || "",
+          lead,
+          pulseLead: pulse,
+          recentMessages: (recentMsgs || []).reverse(),
+        }),
+      });
+      const cls: any = await classifyRes.json().catch(() => ({}));
+
+      // load settings for delay
+      const { data: settings } = await supabase
+        .from("pulse_agent_settings").select("*").eq("campaign_id", pulse.campaign_id).maybeSingle();
+      const minD = settings?.min_delay_minutes ?? 30;
+      const maxD = settings?.max_delay_minutes ?? 120;
+      const delayMin = Math.floor(minD + Math.random() * Math.max(1, maxD - minD));
+      const nextAt = (cls.opt_out || cls.needs_human)
+        ? null
+        : new Date(Date.now() + delayMin * 60000).toISOString();
+
+      const newTemp = Math.max(0, Math.min(100, (pulse.temperature || 15) + (cls.temperature_delta ?? 5)));
+
+      await supabase.from("pulse_outbound_leads").update({
+        last_inbound_at: new Date().toISOString(),
+        intent: cls.intent || pulse.intent,
+        sentiment: cls.sentiment || pulse.sentiment,
+        last_objection: cls.objection || pulse.last_objection,
+        temperature: newTemp,
+        status: cls.next_status || "respondeu",
+        needs_human: cls.needs_human === true,
+        opt_out: cls.opt_out === true,
+        auto_enabled: cls.opt_out || cls.needs_human ? false : pulse.auto_enabled,
+        conversation_summary: cls.summary_update || pulse.conversation_summary,
+        next_action_at: nextAt,
+      }).eq("id", pulse.id);
+
+      await supabase.from("pulse_agent_events").insert({
+        campaign_id: pulse.campaign_id,
+        pulse_lead_id: pulse.id,
+        event_type: "inbound_classified",
+        direction: "inbound",
+        message: message || caption || "",
+        detected_intent: cls.intent,
+        detected_objection: cls.objection,
+        metadata: { sentiment: cls.sentiment, needs_human: cls.needs_human, opt_out: cls.opt_out, meeting_requested: cls.meeting_requested },
+      });
+    }
+  } catch (pulseErr) {
+    console.error("[whatsapp-webhook] pulse classify error", pulseErr);
+  }
+
   return new Response(
     JSON.stringify({ success: true, lead_id: contact.lead_id }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } },
