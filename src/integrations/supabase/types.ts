@@ -4025,11 +4025,13 @@ export type Database = {
           created_at: string
           detected_intent: string | null
           detected_objection: string | null
+          detected_sentiment: string | null
           direction: string | null
           event_type: string
           id: string
           message: string | null
           metadata: Json
+          next_goal: string | null
           pulse_lead_id: string
         }
         Insert: {
@@ -4038,11 +4040,13 @@ export type Database = {
           created_at?: string
           detected_intent?: string | null
           detected_objection?: string | null
+          detected_sentiment?: string | null
           direction?: string | null
           event_type: string
           id?: string
           message?: string | null
           metadata?: Json
+          next_goal?: string | null
           pulse_lead_id: string
         }
         Update: {
@@ -4051,11 +4055,13 @@ export type Database = {
           created_at?: string
           detected_intent?: string | null
           detected_objection?: string | null
+          detected_sentiment?: string | null
           direction?: string | null
           event_type?: string
           id?: string
           message?: string | null
           metadata?: Json
+          next_goal?: string | null
           pulse_lead_id?: string
         }
         Relationships: [
@@ -4077,68 +4083,101 @@ export type Database = {
       }
       pulse_agent_settings: {
         Row: {
+          auto_pause_on_end_date: boolean | null
+          auto_reply_inbound: boolean | null
+          auto_start_conversations: boolean | null
+          block_outside_window: boolean | null
           campaign_id: string
           created_at: string
           daily_limit: number
           enabled: boolean
+          ends_at: string | null
           id: string
           known_objections: string
           main_offer: string
           max_attempts_per_lead: number
           max_delay_minutes: number
+          max_messages_per_lead: number | null
+          max_negotiation_days: number | null
           min_delay_minutes: number
           playbook: string
+          require_approval_first_message: boolean | null
+          require_approval_sensitive_objection: boolean | null
           scheduling_instructions: string
           send_weekdays: number[]
           send_window_end: string
           send_window_start: string
+          starts_at: string | null
           stop_on_human_request: boolean
           stop_on_meeting: boolean
           stop_on_opt_out: boolean
+          timezone: string | null
           tone: string
           updated_at: string
         }
         Insert: {
+          auto_pause_on_end_date?: boolean | null
+          auto_reply_inbound?: boolean | null
+          auto_start_conversations?: boolean | null
+          block_outside_window?: boolean | null
           campaign_id: string
           created_at?: string
           daily_limit?: number
           enabled?: boolean
+          ends_at?: string | null
           id?: string
           known_objections?: string
           main_offer?: string
           max_attempts_per_lead?: number
           max_delay_minutes?: number
+          max_messages_per_lead?: number | null
+          max_negotiation_days?: number | null
           min_delay_minutes?: number
           playbook?: string
+          require_approval_first_message?: boolean | null
+          require_approval_sensitive_objection?: boolean | null
           scheduling_instructions?: string
           send_weekdays?: number[]
           send_window_end?: string
           send_window_start?: string
+          starts_at?: string | null
           stop_on_human_request?: boolean
           stop_on_meeting?: boolean
           stop_on_opt_out?: boolean
+          timezone?: string | null
           tone?: string
           updated_at?: string
         }
         Update: {
+          auto_pause_on_end_date?: boolean | null
+          auto_reply_inbound?: boolean | null
+          auto_start_conversations?: boolean | null
+          block_outside_window?: boolean | null
           campaign_id?: string
           created_at?: string
           daily_limit?: number
           enabled?: boolean
+          ends_at?: string | null
           id?: string
           known_objections?: string
           main_offer?: string
           max_attempts_per_lead?: number
           max_delay_minutes?: number
+          max_messages_per_lead?: number | null
+          max_negotiation_days?: number | null
           min_delay_minutes?: number
           playbook?: string
+          require_approval_first_message?: boolean | null
+          require_approval_sensitive_objection?: boolean | null
           scheduling_instructions?: string
           send_weekdays?: number[]
           send_window_end?: string
           send_window_start?: string
+          starts_at?: string | null
           stop_on_human_request?: boolean
           stop_on_meeting?: boolean
           stop_on_opt_out?: boolean
+          timezone?: string | null
           tone?: string
           updated_at?: string
         }
@@ -4205,8 +4244,53 @@ export type Database = {
           },
         ]
       }
+      pulse_knowledge_base: {
+        Row: {
+          campaign_id: string
+          content: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          priority: number | null
+          title: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          priority?: number | null
+          title: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          priority?: number | null
+          title?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pulse_knowledge_base_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "pulse_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pulse_outbound_leads: {
         Row: {
+          ai_typing: boolean | null
           attempts: number
           auto_enabled: boolean
           campaign_id: string
@@ -4215,17 +4299,24 @@ export type Database = {
           crm_lead_id: string
           id: string
           intent: string | null
+          internal_ai_note: string | null
+          last_ai_recommendation: string | null
           last_inbound_at: string | null
           last_objection: string | null
           last_outbound_at: string | null
           last_sent_at: string | null
+          manual_takeover_at: string | null
+          manual_takeover_by: string | null
           max_attempts: number | null
           meeting_at: string | null
           messages_sent: number
           metadata: Json
           needs_human: boolean
+          negotiation_ends_at: string | null
+          negotiation_started_at: string | null
           next_action_at: string | null
           next_action_type: string
+          next_goal: string | null
           next_message: string | null
           opt_out: boolean
           sentiment: string | null
@@ -4236,6 +4327,7 @@ export type Database = {
           whatsapp_contact_id: string | null
         }
         Insert: {
+          ai_typing?: boolean | null
           attempts?: number
           auto_enabled?: boolean
           campaign_id: string
@@ -4244,17 +4336,24 @@ export type Database = {
           crm_lead_id: string
           id?: string
           intent?: string | null
+          internal_ai_note?: string | null
+          last_ai_recommendation?: string | null
           last_inbound_at?: string | null
           last_objection?: string | null
           last_outbound_at?: string | null
           last_sent_at?: string | null
+          manual_takeover_at?: string | null
+          manual_takeover_by?: string | null
           max_attempts?: number | null
           meeting_at?: string | null
           messages_sent?: number
           metadata?: Json
           needs_human?: boolean
+          negotiation_ends_at?: string | null
+          negotiation_started_at?: string | null
           next_action_at?: string | null
           next_action_type?: string
+          next_goal?: string | null
           next_message?: string | null
           opt_out?: boolean
           sentiment?: string | null
@@ -4265,6 +4364,7 @@ export type Database = {
           whatsapp_contact_id?: string | null
         }
         Update: {
+          ai_typing?: boolean | null
           attempts?: number
           auto_enabled?: boolean
           campaign_id?: string
@@ -4273,17 +4373,24 @@ export type Database = {
           crm_lead_id?: string
           id?: string
           intent?: string | null
+          internal_ai_note?: string | null
+          last_ai_recommendation?: string | null
           last_inbound_at?: string | null
           last_objection?: string | null
           last_outbound_at?: string | null
           last_sent_at?: string | null
+          manual_takeover_at?: string | null
+          manual_takeover_by?: string | null
           max_attempts?: number | null
           meeting_at?: string | null
           messages_sent?: number
           metadata?: Json
           needs_human?: boolean
+          negotiation_ends_at?: string | null
+          negotiation_started_at?: string | null
           next_action_at?: string | null
           next_action_type?: string
+          next_goal?: string | null
           next_message?: string | null
           opt_out?: boolean
           sentiment?: string | null
@@ -6121,6 +6228,7 @@ export type Database = {
       }
       whatsapp_messages: {
         Row: {
+          ai_generated: boolean | null
           company_id: string
           contact_id: string
           created_at: string
@@ -6133,6 +6241,9 @@ export type Database = {
           message_type: string
           metadata: Json | null
           phone: string
+          pulse_campaign_id: string | null
+          pulse_lead_id: string | null
+          pulse_source: string | null
           reactions: Json
           read_at: string | null
           reply_to_message_id: string | null
@@ -6140,6 +6251,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          ai_generated?: boolean | null
           company_id: string
           contact_id: string
           created_at?: string
@@ -6152,6 +6264,9 @@ export type Database = {
           message_type?: string
           metadata?: Json | null
           phone: string
+          pulse_campaign_id?: string | null
+          pulse_lead_id?: string | null
+          pulse_source?: string | null
           reactions?: Json
           read_at?: string | null
           reply_to_message_id?: string | null
@@ -6159,6 +6274,7 @@ export type Database = {
           status?: string
         }
         Update: {
+          ai_generated?: boolean | null
           company_id?: string
           contact_id?: string
           created_at?: string
@@ -6171,6 +6287,9 @@ export type Database = {
           message_type?: string
           metadata?: Json | null
           phone?: string
+          pulse_campaign_id?: string | null
+          pulse_lead_id?: string | null
+          pulse_source?: string | null
           reactions?: Json
           read_at?: string | null
           reply_to_message_id?: string | null
