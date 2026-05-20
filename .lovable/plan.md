@@ -1,69 +1,87 @@
+# Accord Pulse — Agente Autônomo de Negociação
 
-# Plano: Selo ICP-Brasil nos contratos (A1 da Accord + Timestamp)
+Transformar o módulo Accord Pulse em um agente IA que importa leads via planilha, negocia sozinho no WhatsApp dentro de guardrails configuráveis, classifica respostas inbound e tenta agendar reuniões.
 
-## O que vai acontecer
-Hoje, quando todos os signatários assinam um contrato no Accord, geramos um PDF com foto, IP, hash e código de validação. O plano adiciona **uma etapa final automática**: o PDF é selado com o **certificado A1 da Accord (PAdES-B-T)** e um **carimbo do tempo (RFC 3161) de uma TSA ICP-Brasil**.
+## 1. Banco de dados (migração Supabase)
 
-Resultado: qualquer leitor PDF (Adobe Reader, gov.br validador) abre o documento e mostra:
-- "Assinado por: ACCORD ... (certificado ICP-Brasil)"
-- "Carimbo do tempo: AC TSA — [data/hora oficial]"
-- Status: **válido**, íntegro, com data confiável
+**Nova tabela `pulse_agent_settings`** (1 por campanha):
+- Toggle `enabled`, `daily_limit`, janela `send_window_start/end`, `send_weekdays`
+- `min_delay_minutes`, `max_delay_minutes`, `max_attempts_per_lead`
+- Flags `stop_on_opt_out`, `stop_on_human_request`, `stop_on_meeting`
+- Textos: `playbook`, `known_objections`, `main_offer`, `scheduling_instructions`, `tone`
+- RLS por `servidor_id` (via campanha) com roles admin/ceo/comercial
 
-Importante (transparência jurídica): isso é **assinatura da plataforma** atestando integridade + data oficial. As assinaturas dos signatários continuam sendo **avançadas** (não qualificadas individuais). Para presunção contra terceiros das partes, cada signatário precisaria de certificado próprio — fica como evolução futura.
+**Alterar `pulse_outbound_leads`** — novas colunas:
+`auto_enabled`, `intent`, `sentiment`, `messages_sent`, `max_attempts`, `next_action_type`, `needs_human`, `opt_out`, `last_inbound_at`, `last_outbound_at`, `conversation_summary`, `next_action_at`
 
----
+**Nova tabela `pulse_agent_events`**: log de cada decisão da IA (event_type, direction, message, reasoning, intent, objection, metadata).
 
-## Etapas
+**Novos status** em `pulse_outbound_leads.status`: `aguardando_inicio`, `em_cadencia`, `respondeu`, `negociando`, `objecao`, `agendar`, `reuniao_marcada`, `ganho`, `perdido`, `pausado`, `precisa_humano`, `opt_out`.
 
-### 1. Provisionar certificado A1 e TSA
-- Você adquire um **certificado A1 PJ ICP-Brasil** em nome da Accord (Soluti / Serasa / Certisign — ~R$ 250–400/ano, arquivo .pfx + senha).
-- Eu provisiono dois secrets no Lovable Cloud:
-  - `ACCORD_A1_PFX_BASE64` (conteúdo do .pfx em base64)
-  - `ACCORD_A1_PFX_PASSWORD`
-- TSA ICP-Brasil gratuita: usaremos `https://timestamp.iti.gov.br` (oficial do ITI) com fallback Serasa.
+## 2. Edge Function `accord-pulse-agent` (evolução)
 
-### 2. Edge function `sign-pdf-icp`
-Nova função Deno que recebe um `contract_id`, baixa o PDF assinado do storage, aplica selo PAdES-B-T usando `@signpdf/signpdf` + `@signpdf/signer-p12` + carimbo do tempo via `node-forge`/`pkijs`, e devolve o PDF selado.
+Três ações via `action` no body:
 
-### 3. Hook automático no fluxo de assinatura
-Em `buildSignedPdfBlob` (após o último signatário): chamar `sign-pdf-icp` e salvar o PDF selado como versão final no bucket. Mantém o original como backup.
+- **`generate_next_message`** — IA gera próxima mensagem WhatsApp consultiva e curta, devolve `{message, intent, next_stage, temperature, should_send, needs_human, stop_reason, reasoning}`. Aplica guardrails do playbook.
+- **`classify_inbound`** — classifica resposta do lead em intent/sentiment/objection, devolve update de status e flags (`opt_out`, `meeting_requested`, `needs_human`).
+- **`run_due_leads`** — varredura: para cada campanha com agente ativo, dentro da janela e dia da semana, busca leads elegíveis (`auto_enabled`, sem opt_out, `next_action_at <= now()`, abaixo do `daily_limit` e `max_attempts`), gera próxima mensagem, envia via `whatsapp-send`, atualiza lead + insere evento. Respeita delay aleatório humano.
 
-### 4. Coluna de auditoria
-Migração: adicionar em `pdf_contracts`:
-- `icp_signed_at` (timestamptz)
-- `icp_signer_cn` (text) — CN do certificado usado
-- `icp_tsa_token` (text) — token RFC 3161 retornado
-- `icp_pdf_url` (text) — URL do PDF selado
+Usa Lovable AI Gateway (`google/gemini-2.5-flash`) com fallback local.
 
-### 5. UI
-- Em `PdfContractViewDialog` e `ValidarDocumento`: badge "ICP-Brasil ✓ Selado em [data] por AC Soluti" quando `icp_signed_at` existir.
-- Na página `/validar-documento/:code`: link "Baixar PDF ICP" + instruções de validação no Adobe/gov.br.
+## 3. Webhook inbound (integração)
 
-### 6. Landing
-Atualizar o badge atual em `Auth.tsx`: trocar "Assinatura Digital ICP-Brasil" por **"Selo ICP-Brasil + Carimbo do Tempo"** (descrição honesta do que entregamos).
+Atualizar `whatsapp-webhook` para, ao receber mensagem inbound, detectar se há `pulse_outbound_lead` ativo para o contato e chamar `classify_inbound`. Atualiza lead, agenda próxima resposta com delay humano, marca `needs_human` ou `opt_out` quando aplicável.
 
----
+## 4. Cron scheduler
 
-## Detalhes técnicos
+Configurar `pg_cron` (5 min) chamando `run_due_leads` da edge function via `pg_net`.
 
-**Lib**: `@signpdf/signpdf@^3` + `@signpdf/signer-p12@^3` + `@signpdf/placeholder-plain` (compatível com Deno via npm:).
+## 5. Frontend (`src/pages/AccordPulse.tsx`)
 
-**Fluxo PAdES-B-T**:
-1. `pdf-lib` insere placeholder de assinatura no PDF
-2. `signer-p12` assina o ByteRange com o A1
-3. Envia hash da CMS pra TSA ITI → recebe token RFC 3161
-4. Embed do token como unsigned attribute (LTV-ready)
-5. Salva PDF resultante no bucket `pdf-contracts/icp/`
+Nova estrutura em 4 abas dentro da campanha selecionada:
 
-**Rotação**: A1 vence em 1 ano. Adicionar alerta no painel admin 30 dias antes do vencimento (consulta `icp_signer_cn` validade).
+### Aba "Importar leads"
+- Upload `.xlsx/.xls/.csv` usando `xlsx`
+- Mapeamento flexível de colunas (empresa/contato/telefone/email/origem/observações/motivo_perda/cidade/estado/valor_mrr)
+- Preview com tabela paginada
+- Seleção de campanha destino
+- Validação: telefone obrigatório
+- Ao confirmar: cria/reutiliza `crm_leads` (source = "Accord Pulse Import"), cria `pulse_outbound_leads`, cria `whatsapp_contacts` quando possível
+- Resultado: importados / ignorados / com erro
 
-**Custo**: certificado A1 ~R$ 300/ano. TSA ITI gratuita. Sem custo por documento.
+### Aba "Agente IA"
+Formulário de configuração `pulse_agent_settings` por campanha com todos os campos descritos.
 
----
+### Aba "Fila outbound" (evoluída)
+Cards/linhas mostrando: temperatura, intent, última objeção, próxima ação, próxima mensagem, último contato, total enviadas, badge auto/pausado.
+Ações por lead: pausar/retomar automático, assumir conversa, marcar reunião, marcar perdido, abrir no inbox WhatsApp.
 
-## O que você precisa fazer
-1. Comprar o A1 PJ da Accord (recomendo **Soluti** ou **Certisign**, emissão online em ~1h)
-2. Me enviar o `.pfx` + senha quando estiver pronto (via secrets, não cole no chat)
-3. Aprovar este plano pra eu começar pela infra (migration + edge function) usando um certificado de teste enquanto o real não chega
+### Aba "Leads descartados"
+Mantida (já existe).
 
-Posso começar pelas partes 2, 4, 5 e 6 já — o certificado real só é necessário pra ativar em produção.
+## 6. Detalhes técnicos
+
+- Frontend usa shadcn/ui + lucide-react, tema dark Accord
+- Cliente Supabase existente `@/integrations/supabase/client`
+- `xlsx` já no projeto
+- Guardrails: limite diário por campanha, janela de envio respeitada, delays humanos, opt_out permanente, nunca mais de 1 mensagem por execução por lead
+- Operador sempre pode pausar via toggle por lead ou pelo `enabled` da campanha
+
+## 7. Arquivos a criar/editar
+
+```text
+supabase/migrations/<timestamp>_pulse_agent.sql    (novo)
+supabase/functions/accord-pulse-agent/index.ts     (reescrito com 3 actions)
+supabase/functions/whatsapp-webhook/index.ts       (hook inbound -> classify)
+src/pages/AccordPulse.tsx                          (refatorado com 4 abas)
+src/components/pulse/PulseImportTab.tsx            (novo)
+src/components/pulse/PulseAgentSettingsTab.tsx     (novo)
+src/components/pulse/PulseQueueTab.tsx             (novo)
+src/components/pulse/PulseLeadActions.tsx          (novo)
+```
+
+Cron `pg_cron` configurado via `supabase--insert` após deploy da função.
+
+## Confirmação
+
+Posso seguir com a migração de banco primeiro (que requer sua aprovação), depois implementar edge function e frontend?
