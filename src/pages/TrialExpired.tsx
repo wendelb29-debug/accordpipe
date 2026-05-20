@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
 const SUPPORT_WHATSAPP = "5511999999999"; // ajuste conforme necessário
-const SUPPORT_EMAIL = "comercial@accordpipe.com.br";
+const SUPPORT_EMAIL = "contato@accordpipe.com.br";
 
 export default function TrialExpired() {
   const navigate = useNavigate();

@@ -440,7 +440,7 @@ export default function Auth() {
                 <div className="space-y-3 mt-4">
                   <div className="flex items-center gap-3">
                     <Mail className="w-4 h-4 text-[#7A3FF2]" />
-                    <a href="mailto:suporte@accordclass.com.br" className="text-[#2563EB] hover:underline">suporte@accordclass.com.br</a>
+                    <a href="mailto:contato@accordpipe.com.br" className="text-[#2563EB] hover:underline">contato@accordpipe.com.br</a>
                   </div>
                   <div className="flex items-center gap-3">
                     <MessageCircle className="w-4 h-4 text-[#7A3FF2]" />
@@ -471,7 +471,7 @@ export default function Auth() {
                 <Section title="7. Limitação de Responsabilidade">Limitada aos valores efetivamente pagos nos 12 meses anteriores ao evento.</Section>
                 <Section title="8. Lei Aplicável">Regidos pelas leis do Brasil. Foro: Comarca de Uberlândia/MG.</Section>
                 <Section title="9. Contato">
-                  <a href="mailto:suporte@accordclass.com.br" className="text-[#2563EB] hover:underline">suporte@accordclass.com.br</a>
+                  <a href="mailto:contato@accordpipe.com.br" className="text-[#2563EB] hover:underline">contato@accordpipe.com.br</a>
                 </Section>
               </>
             )}
@@ -487,7 +487,7 @@ export default function Auth() {
                 <Section title="6. Direitos do Titular (LGPD)">Acesso, correção, anonimização, portabilidade e revogação de consentimento.</Section>
                 <Section title="7. Segurança">Criptografia em trânsito, controle de acesso baseado em função e auditoria.</Section>
                 <Section title="8. Contato">
-                  <a href="mailto:suporte@accordclass.com.br" className="text-[#2563EB] hover:underline">suporte@accordclass.com.br</a>
+                  <a href="mailto:contato@accordpipe.com.br" className="text-[#2563EB] hover:underline">contato@accordpipe.com.br</a>
                 </Section>
               </>
             )}

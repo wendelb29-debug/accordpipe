@@ -58,7 +58,7 @@ export default function PrivacyPolicy() {
 
           <section>
             <h2 className="text-xl font-semibold text-[#E5E7EB] mb-2">6. Direitos do Titular (LGPD)</h2>
-            <p>Você pode, a qualquer momento, solicitar: confirmação da existência de tratamento; acesso aos dados; correção de dados incompletos ou desatualizados; anonimização, bloqueio ou eliminação; portabilidade; informação sobre compartilhamentos; revogação do consentimento. Para exercer seus direitos, contate <a href="mailto:suporte@accordclass.com.br" className="text-[#2563EB] hover:underline">suporte@accordclass.com.br</a>.</p>
+            <p>Você pode, a qualquer momento, solicitar: confirmação da existência de tratamento; acesso aos dados; correção de dados incompletos ou desatualizados; anonimização, bloqueio ou eliminação; portabilidade; informação sobre compartilhamentos; revogação do consentimento. Para exercer seus direitos, contate <a href="mailto:contato@accordpipe.com.br" className="text-[#2563EB] hover:underline">contato@accordpipe.com.br</a>.</p>
           </section>
 
           <section>
@@ -73,7 +73,7 @@ export default function PrivacyPolicy() {
 
           <section>
             <h2 className="text-xl font-semibold text-[#E5E7EB] mb-2">9. Contato</h2>
-            <p>Em caso de dúvidas sobre esta Política, entre em contato pelo e-mail <a href="mailto:suporte@accordclass.com.br" className="text-[#2563EB] hover:underline">suporte@accordclass.com.br</a>.</p>
+            <p>Em caso de dúvidas sobre esta Política, entre em contato pelo e-mail <a href="mailto:contato@accordpipe.com.br" className="text-[#2563EB] hover:underline">contato@accordpipe.com.br</a>.</p>
           </section>
         </div>
       </div>
