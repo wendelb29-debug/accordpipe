@@ -1,87 +1,61 @@
-# Accord Pulse — Agente Autônomo de Negociação
+# Accord Pulse — Negociação ao vivo (chat IA em tempo real)
 
-Transformar o módulo Accord Pulse em um agente IA que importa leads via planilha, negocia sozinho no WhatsApp dentro de guardrails configuráveis, classifica respostas inbound e tenta agendar reuniões.
+Evoluir o módulo Accord Pulse para uma central de negociação assistida por IA, com chat em tempo real, configuração avançada do agente e base de conhecimento por campanha.
 
-## 1. Banco de dados (migração Supabase)
+## 1. Banco de dados (migração)
 
-**Nova tabela `pulse_agent_settings`** (1 por campanha):
-- Toggle `enabled`, `daily_limit`, janela `send_window_start/end`, `send_weekdays`
-- `min_delay_minutes`, `max_delay_minutes`, `max_attempts_per_lead`
-- Flags `stop_on_opt_out`, `stop_on_human_request`, `stop_on_meeting`
-- Textos: `playbook`, `known_objections`, `main_offer`, `scheduling_instructions`, `tone`
-- RLS por `servidor_id` (via campanha) com roles admin/ceo/comercial
+**Alterar `pulse_agent_settings`** — garantir todos os campos solicitados (`starts_at`, `ends_at`, `max_messages_per_lead`, `max_negotiation_days`, `auto_pause_on_end_date`, `auto_reply_inbound`, `auto_start_conversations`, `require_approval_first_message`, `require_approval_sensitive_objection`, `block_outside_window`, `tone`, etc.).
 
-**Alterar `pulse_outbound_leads`** — novas colunas:
-`auto_enabled`, `intent`, `sentiment`, `messages_sent`, `max_attempts`, `next_action_type`, `needs_human`, `opt_out`, `last_inbound_at`, `last_outbound_at`, `conversation_summary`, `next_action_at`
+**Alterar `pulse_outbound_leads`** — adicionar: `ai_typing`, `last_objection`, `internal_ai_note`, `next_goal`, `last_ai_recommendation`, `negotiation_started_at`, `negotiation_ends_at`, `manual_takeover_by`, `manual_takeover_at` (os outros já existem).
 
-**Nova tabela `pulse_agent_events`**: log de cada decisão da IA (event_type, direction, message, reasoning, intent, objection, metadata).
+**Nova `pulse_knowledge_base`** — campanha, título, tipo (texto/faq/oferta/objecoes/politica/case/script), conteúdo, prioridade, ativo. RLS por servidor_id via campanha.
 
-**Novos status** em `pulse_outbound_leads.status`: `aguardando_inicio`, `em_cadencia`, `respondeu`, `negociando`, `objecao`, `agendar`, `reuniao_marcada`, `ganho`, `perdido`, `pausado`, `precisa_humano`, `opt_out`.
+**Alterar `whatsapp_messages`** — adicionar `pulse_source` (`ai`/`operator`/`null`), `pulse_lead_id`, `pulse_campaign_id`, `ai_generated`.
 
-## 2. Edge Function `accord-pulse-agent` (evolução)
+**`pulse_agent_events`** já existe — garantir campos `ai_reasoning`, `detected_intent`, `detected_objection`, `detected_sentiment`, `next_goal`.
 
-Três ações via `action` no body:
+**Realtime** — adicionar `whatsapp_messages`, `pulse_outbound_leads`, `pulse_agent_events` ao `supabase_realtime`.
 
-- **`generate_next_message`** — IA gera próxima mensagem WhatsApp consultiva e curta, devolve `{message, intent, next_stage, temperature, should_send, needs_human, stop_reason, reasoning}`. Aplica guardrails do playbook.
-- **`classify_inbound`** — classifica resposta do lead em intent/sentiment/objection, devolve update de status e flags (`opt_out`, `meeting_requested`, `needs_human`).
-- **`run_due_leads`** — varredura: para cada campanha com agente ativo, dentro da janela e dia da semana, busca leads elegíveis (`auto_enabled`, sem opt_out, `next_action_at <= now()`, abaixo do `daily_limit` e `max_attempts`), gera próxima mensagem, envia via `whatsapp-send`, atualiza lead + insere evento. Respeita delay aleatório humano.
+## 2. Edge function `accord-pulse-agent`
 
-Usa Lovable AI Gateway (`google/gemini-2.5-flash`) com fallback local.
+Estender com 4 actions:
+- `classify_inbound` — classifica msg do lead (intent/objeção/sentimento), atualiza resumo, decide `needs_human` e `should_auto_reply`.
+- `generate_reply` — gera próxima mensagem usando knowledge base + histórico + nota interna; pode marcar `should_send`.
+- `generate_suggestion` — igual mas nunca envia, só retorna preview.
+- `run_due_leads` — varre leads `next_action_at <= now()`, valida janela/dias/timezone/limites, envia via `whatsapp-send`, marca `pulse_source=ai`.
 
-## 3. Webhook inbound (integração)
+Lovable AI Gateway (`google/gemini-2.5-flash`), system prompt com tom + materiais de apoio ativos ordenados por prioridade, instrução "nunca dizer que é IA, nunca inventar fora da base".
 
-Atualizar `whatsapp-webhook` para, ao receber mensagem inbound, detectar se há `pulse_outbound_lead` ativo para o contato e chamar `classify_inbound`. Atualiza lead, agenda próxima resposta com delay humano, marca `needs_human` ou `opt_out` quando aplicável.
+## 3. Webhook inbound
 
-## 4. Cron scheduler
+Em `whatsapp-webhook`, após salvar mensagem inbound:
+1. Buscar `pulse_outbound_leads` ativo pelo `contact_id`/phone.
+2. Se `settings.auto_reply_inbound`, setar `ai_typing=true`, chamar `classify_inbound`.
+3. Aplicar delay aleatório, setar `next_action_at`. Cron processa.
 
-Configurar `pg_cron` (5 min) chamando `run_due_leads` da edge function via `pg_net`.
+## 4. Frontend — `src/pages/AccordPulse.tsx`
 
-## 5. Frontend (`src/pages/AccordPulse.tsx`)
+Adicionar 2 novas abas mantendo as atuais:
 
-Nova estrutura em 4 abas dentro da campanha selecionada:
+### Aba "Negociação ao vivo" (`PulseLiveChatTab.tsx`)
+3 colunas (stack em mobile):
+- **Esquerda**: lista filtrável de leads em negociação (status, temperatura, última msg, badge "precisa humano", indicador "digitando").
+- **Centro**: chat estilo WhatsApp inbox. Header com nome/status/temperatura + botões (Pausar IA, Retomar, Assumir, Marcar reunião, Marcar perdido). Mensagens com badge IA/Operador, status de entrega, horário, auto-scroll. Footer com input manual, toggle "IA auto-responde", botão "Gerar sugestão" (preview editável antes de enviar). Estados ao vivo: "IA analisando", "IA preparando próxima mensagem", "Próxima ação em Xmin", "Pausado", "Precisa humano".
+- **Direita**: contexto — resumo, intenção, objeção, sentimento, última recomendação, próximo objetivo, dados do lead, botão editar contexto, textarea "Nota interna para IA".
 
-### Aba "Importar leads"
-- Upload `.xlsx/.xls/.csv` usando `xlsx`
-- Mapeamento flexível de colunas (empresa/contato/telefone/email/origem/observações/motivo_perda/cidade/estado/valor_mrr)
-- Preview com tabela paginada
-- Seleção de campanha destino
-- Validação: telefone obrigatório
-- Ao confirmar: cria/reutiliza `crm_leads` (source = "Accord Pulse Import"), cria `pulse_outbound_leads`, cria `whatsapp_contacts` quando possível
-- Resultado: importados / ignorados / com erro
+Realtime via `supabase.channel` em `whatsapp_messages` (filtrado por contato), `pulse_outbound_leads` (id do lead), `pulse_agent_events` (campaign).
 
-### Aba "Agente IA"
-Formulário de configuração `pulse_agent_settings` por campanha com todos os campos descritos.
+### Aba "Configuração do agente" (estender `PulseAgentSettingsTab.tsx`)
+Form completo com seções: Período (datas/horários/dias/timezone/delays/limites), Comportamento (todos os switches), e seção **Base de conhecimento** (CRUD inline de `pulse_knowledge_base` por campanha — adicionar/editar/ativar materiais por tipo).
 
-### Aba "Fila outbound" (evoluída)
-Cards/linhas mostrando: temperatura, intent, última objeção, próxima ação, próxima mensagem, último contato, total enviadas, badge auto/pausado.
-Ações por lead: pausar/retomar automático, assumir conversa, marcar reunião, marcar perdido, abrir no inbox WhatsApp.
+## 5. Stack técnica
 
-### Aba "Leads descartados"
-Mantida (já existe).
+- shadcn/ui (Tabs, Card, Button, ScrollArea, Badge, Switch, Textarea, Select, Dialog), lucide-react.
+- Realtime Supabase, sem polling.
+- Mantém visual dark Accord, responsivo.
 
-## 6. Detalhes técnicos
+## Notas
 
-- Frontend usa shadcn/ui + lucide-react, tema dark Accord
-- Cliente Supabase existente `@/integrations/supabase/client`
-- `xlsx` já no projeto
-- Guardrails: limite diário por campanha, janela de envio respeitada, delays humanos, opt_out permanente, nunca mais de 1 mensagem por execução por lead
-- Operador sempre pode pausar via toggle por lead ou pelo `enabled` da campanha
-
-## 7. Arquivos a criar/editar
-
-```text
-supabase/migrations/<timestamp>_pulse_agent.sql    (novo)
-supabase/functions/accord-pulse-agent/index.ts     (reescrito com 3 actions)
-supabase/functions/whatsapp-webhook/index.ts       (hook inbound -> classify)
-src/pages/AccordPulse.tsx                          (refatorado com 4 abas)
-src/components/pulse/PulseImportTab.tsx            (novo)
-src/components/pulse/PulseAgentSettingsTab.tsx     (novo)
-src/components/pulse/PulseQueueTab.tsx             (novo)
-src/components/pulse/PulseLeadActions.tsx          (novo)
-```
-
-Cron `pg_cron` configurado via `supabase--insert` após deploy da função.
-
-## Confirmação
-
-Posso seguir com a migração de banco primeiro (que requer sua aprovação), depois implementar edge function e frontend?
+- Cron `run_due_leads` já configurado anteriormente — apenas estendido.
+- Sem landing page, sem mudanças em outras telas.
+- Build precisa passar.
