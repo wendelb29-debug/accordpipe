@@ -4018,6 +4018,140 @@ export type Database = {
           },
         ]
       }
+      pulse_agent_events: {
+        Row: {
+          ai_reasoning: string | null
+          campaign_id: string
+          created_at: string
+          detected_intent: string | null
+          detected_objection: string | null
+          direction: string | null
+          event_type: string
+          id: string
+          message: string | null
+          metadata: Json
+          pulse_lead_id: string
+        }
+        Insert: {
+          ai_reasoning?: string | null
+          campaign_id: string
+          created_at?: string
+          detected_intent?: string | null
+          detected_objection?: string | null
+          direction?: string | null
+          event_type: string
+          id?: string
+          message?: string | null
+          metadata?: Json
+          pulse_lead_id: string
+        }
+        Update: {
+          ai_reasoning?: string | null
+          campaign_id?: string
+          created_at?: string
+          detected_intent?: string | null
+          detected_objection?: string | null
+          direction?: string | null
+          event_type?: string
+          id?: string
+          message?: string | null
+          metadata?: Json
+          pulse_lead_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pulse_agent_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "pulse_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pulse_agent_events_pulse_lead_id_fkey"
+            columns: ["pulse_lead_id"]
+            isOneToOne: false
+            referencedRelation: "pulse_outbound_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pulse_agent_settings: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          daily_limit: number
+          enabled: boolean
+          id: string
+          known_objections: string
+          main_offer: string
+          max_attempts_per_lead: number
+          max_delay_minutes: number
+          min_delay_minutes: number
+          playbook: string
+          scheduling_instructions: string
+          send_weekdays: number[]
+          send_window_end: string
+          send_window_start: string
+          stop_on_human_request: boolean
+          stop_on_meeting: boolean
+          stop_on_opt_out: boolean
+          tone: string
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          daily_limit?: number
+          enabled?: boolean
+          id?: string
+          known_objections?: string
+          main_offer?: string
+          max_attempts_per_lead?: number
+          max_delay_minutes?: number
+          min_delay_minutes?: number
+          playbook?: string
+          scheduling_instructions?: string
+          send_weekdays?: number[]
+          send_window_end?: string
+          send_window_start?: string
+          stop_on_human_request?: boolean
+          stop_on_meeting?: boolean
+          stop_on_opt_out?: boolean
+          tone?: string
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          daily_limit?: number
+          enabled?: boolean
+          id?: string
+          known_objections?: string
+          main_offer?: string
+          max_attempts_per_lead?: number
+          max_delay_minutes?: number
+          min_delay_minutes?: number
+          playbook?: string
+          scheduling_instructions?: string
+          send_weekdays?: number[]
+          send_window_end?: string
+          send_window_start?: string
+          stop_on_human_request?: boolean
+          stop_on_meeting?: boolean
+          stop_on_opt_out?: boolean
+          tone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pulse_agent_settings_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "pulse_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pulse_campaigns: {
         Row: {
           company_id: string
@@ -4074,16 +4208,27 @@ export type Database = {
       pulse_outbound_leads: {
         Row: {
           attempts: number
+          auto_enabled: boolean
           campaign_id: string
+          conversation_summary: string | null
           created_at: string
           crm_lead_id: string
           id: string
+          intent: string | null
+          last_inbound_at: string | null
           last_objection: string | null
+          last_outbound_at: string | null
           last_sent_at: string | null
+          max_attempts: number | null
           meeting_at: string | null
+          messages_sent: number
           metadata: Json
+          needs_human: boolean
           next_action_at: string | null
+          next_action_type: string
           next_message: string | null
+          opt_out: boolean
+          sentiment: string | null
           stage: string
           status: string
           temperature: number
@@ -4092,16 +4237,27 @@ export type Database = {
         }
         Insert: {
           attempts?: number
+          auto_enabled?: boolean
           campaign_id: string
+          conversation_summary?: string | null
           created_at?: string
           crm_lead_id: string
           id?: string
+          intent?: string | null
+          last_inbound_at?: string | null
           last_objection?: string | null
+          last_outbound_at?: string | null
           last_sent_at?: string | null
+          max_attempts?: number | null
           meeting_at?: string | null
+          messages_sent?: number
           metadata?: Json
+          needs_human?: boolean
           next_action_at?: string | null
+          next_action_type?: string
           next_message?: string | null
+          opt_out?: boolean
+          sentiment?: string | null
           stage?: string
           status?: string
           temperature?: number
@@ -4110,16 +4266,27 @@ export type Database = {
         }
         Update: {
           attempts?: number
+          auto_enabled?: boolean
           campaign_id?: string
+          conversation_summary?: string | null
           created_at?: string
           crm_lead_id?: string
           id?: string
+          intent?: string | null
+          last_inbound_at?: string | null
           last_objection?: string | null
+          last_outbound_at?: string | null
           last_sent_at?: string | null
+          max_attempts?: number | null
           meeting_at?: string | null
+          messages_sent?: number
           metadata?: Json
+          needs_human?: boolean
           next_action_at?: string | null
+          next_action_type?: string
           next_message?: string | null
+          opt_out?: boolean
+          sentiment?: string | null
           stage?: string
           status?: string
           temperature?: number
