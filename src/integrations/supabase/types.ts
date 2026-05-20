@@ -4018,6 +4018,138 @@ export type Database = {
           },
         ]
       }
+      pulse_campaigns: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          human_delay_minutes: number
+          id: string
+          max_daily_messages: number
+          name: string
+          objective: string
+          offer: string
+          status: string
+          tone: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          human_delay_minutes?: number
+          id?: string
+          max_daily_messages?: number
+          name: string
+          objective?: string
+          offer?: string
+          status?: string
+          tone?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          human_delay_minutes?: number
+          id?: string
+          max_daily_messages?: number
+          name?: string
+          objective?: string
+          offer?: string
+          status?: string
+          tone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pulse_campaigns_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pulse_outbound_leads: {
+        Row: {
+          attempts: number
+          campaign_id: string
+          created_at: string
+          crm_lead_id: string
+          id: string
+          last_objection: string | null
+          last_sent_at: string | null
+          meeting_at: string | null
+          metadata: Json
+          next_action_at: string | null
+          next_message: string | null
+          stage: string
+          status: string
+          temperature: number
+          updated_at: string
+          whatsapp_contact_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          campaign_id: string
+          created_at?: string
+          crm_lead_id: string
+          id?: string
+          last_objection?: string | null
+          last_sent_at?: string | null
+          meeting_at?: string | null
+          metadata?: Json
+          next_action_at?: string | null
+          next_message?: string | null
+          stage?: string
+          status?: string
+          temperature?: number
+          updated_at?: string
+          whatsapp_contact_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          campaign_id?: string
+          created_at?: string
+          crm_lead_id?: string
+          id?: string
+          last_objection?: string | null
+          last_sent_at?: string | null
+          meeting_at?: string | null
+          metadata?: Json
+          next_action_at?: string | null
+          next_message?: string | null
+          stage?: string
+          status?: string
+          temperature?: number
+          updated_at?: string
+          whatsapp_contact_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pulse_outbound_leads_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "pulse_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pulse_outbound_leads_crm_lead_id_fkey"
+            columns: ["crm_lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pulse_outbound_leads_whatsapp_contact_id_fkey"
+            columns: ["whatsapp_contact_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       push_subscriptions: {
         Row: {
           auth_key: string
