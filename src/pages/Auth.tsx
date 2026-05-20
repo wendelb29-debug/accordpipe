@@ -444,7 +444,14 @@ export default function Auth() {
                   </div>
                   <div className="flex items-center gap-3">
                     <MessageCircle className="w-4 h-4 text-[#7A3FF2]" />
-                    <span>Atendimento via WhatsApp diretamente pela plataforma</span>
+                    <a
+                      href="https://wa.me/5534984363555"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#2563EB] hover:underline"
+                    >
+                      WhatsApp: (34) 98436-3555
+                    </a>
                   </div>
                 </div>
               </>
