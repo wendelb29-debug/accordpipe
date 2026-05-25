@@ -17,6 +17,8 @@ import { Flame, Plus, Users, Thermometer, CalendarCheck2, Loader2, Bot, Upload, 
 import PulseImportTab from "@/components/pulse/PulseImportTab";
 import PulseAgentSettingsTab from "@/components/pulse/PulseAgentSettingsTab";
 import PulseQueueTab from "@/components/pulse/PulseQueueTab";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 type Campaign = any;
 
@@ -211,7 +213,7 @@ export default function AccordPulse() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </PageContainer>
   );
 }
 
