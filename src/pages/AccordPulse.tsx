@@ -101,35 +101,28 @@ export default function AccordPulse() {
   if (!allowed) return null;
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div className="flex items-start gap-3">
-          <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-orange-500/15 text-orange-500">
-            <Flame className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Accord Pulse</h1>
-            <p className="text-sm text-muted-foreground max-w-2xl">
-              Agente autônomo de negociação por WhatsApp. Importe leads, configure os guardrails e deixe a IA conduzir a conversa.
-            </p>
-          </div>
-        </div>
-        {activeCampaign && (
-          <Badge variant="secondary" className="text-xs">
-            Campanha: <span className="ml-1 font-semibold">{activeCampaign.name}</span>
-          </Badge>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2 flex-wrap">
+    <PageContainer size="wide">
+      <PageHeader
+        icon={Flame}
+        iconClassName="bg-orange-500/15 text-orange-500"
+        title="Accord Pulse"
+        description="Agente autônomo de negociação por WhatsApp. Importe leads, configure os guardrails e deixe a IA conduzir a conversa."
+        actions={
+          activeCampaign && (
+            <Badge variant="secondary" className="text-xs">
+              Campanha: <span className="ml-1 font-semibold">{activeCampaign.name}</span>
+            </Badge>
+          )
+        }
+      >
         <Label className="text-xs text-muted-foreground">Campanha:</Label>
         <Select value={selectedCampaignId} onValueChange={setSelectedCampaignId}>
           <SelectTrigger className="h-9 w-[300px]"><SelectValue placeholder="Selecione uma campanha" /></SelectTrigger>
           <SelectContent>{campaigns.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
         </Select>
-      </div>
+      </PageHeader>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Metric label="Leads na campanha" value={metrics.total} icon={Users} />
         <Metric label="Em automático" value={metrics.ativos} icon={Bot} accent="emerald" />
         <Metric label="Reuniões marcadas" value={metrics.reunioes} icon={CalendarCheck2} accent="emerald" />
