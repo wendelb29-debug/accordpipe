@@ -738,9 +738,48 @@ function PostActionsBar({
         >
           <Sparkle className="h-4 w-4" /> CoPilot
         </button>
-        <div className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground/70 pr-2">
-          <Eye className="h-3.5 w-3.5" /> {views}
-        </div>
+        {isAuthor && (
+          <Popover open={viewersOpen} onOpenChange={setViewersOpen}>
+            <PopoverTrigger asChild>
+              <button
+                className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground/70 hover:text-foreground pr-2 h-9 transition-colors"
+                title="Quem visualizou"
+              >
+                <Eye className="h-3.5 w-3.5" /> {viewers.length}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-72 p-0">
+              <div className="px-3 py-2 border-b border-border/50">
+                <p className="text-xs font-semibold">Visualizações</p>
+                <p className="text-[11px] text-muted-foreground">{viewers.length} pessoa{viewers.length === 1 ? "" : "s"} visualizaram</p>
+              </div>
+              <div className="max-h-72 overflow-y-auto p-1">
+                {viewersQ.isLoading ? (
+                  <div className="flex items-center justify-center py-6 text-xs text-muted-foreground">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> Carregando…
+                  </div>
+                ) : viewers.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-6">Ninguém visualizou ainda.</p>
+                ) : (
+                  viewers.map((v) => (
+                    <div key={v.user_id} className="flex items-center gap-2 p-2 rounded-md hover:bg-accent/50">
+                      <Avatar className="h-7 w-7">
+                        {v.avatar_url && <AvatarImage src={v.avatar_url} />}
+                        <AvatarFallback className="text-[10px]">{initials(v.name)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">{v.name}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {formatDistanceToNow(new Date(v.viewed_at), { addSuffix: true, locale: ptBR })}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
       </div>
 
       {/* CoPilot inline panel */}
