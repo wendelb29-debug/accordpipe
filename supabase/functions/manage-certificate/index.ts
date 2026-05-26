@@ -365,7 +365,7 @@ Deno.serve(async (req) => {
     else if (action === "delete") result = await handleDelete(supa, body.cert_id, user.id);
     else if (action === "set_use_global") result = await handleSetUseGlobal(supa, body.tenant_id, !!body.use, user.id);
     else if (action === "update_purpose") result = await handleUpdatePurpose(supa, body, user.id);
-    else return new Response(JSON.stringify({ error: "Ação desconhecida" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
+    else return new Response(JSON.stringify({ error: `Ação desconhecida: ${JSON.stringify(action)}` }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
 
     // audit (log estrutural)
     await supa.from("audit_logs").insert({
