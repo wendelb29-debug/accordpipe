@@ -364,7 +364,7 @@ function QuickPostComposer({
     if (tab === "Mensagem") {
       if (!text.trim()) return toast.info("Escreva algo para publicar");
       await onPublishPost({ content: text.trim(), tags });
-      setText(""); setTags([]); setShowTags(false);
+      setText(""); setTags([]); setShowTags(false); setRecipients([]);
     } else if (tab === "Arquivo") {
       onOpenAnnouncements();
     } else if (tab === "Enquete") {
