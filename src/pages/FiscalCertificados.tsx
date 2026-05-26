@@ -33,6 +33,10 @@ type Cert = {
   is_active: boolean;
   is_icp_brasil: boolean;
   use_master_global: boolean;
+  uso_nfe: boolean;
+  uso_assinatura_contratos: boolean;
+  ambiente_nfe: "homologacao" | "producao" | null;
+  ambiente_assinatura: "producao" | null;
   last_test_at: string | null;
   last_test_status: string | null;
   last_test_message: string | null;
