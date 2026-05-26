@@ -488,7 +488,7 @@ export default function FiscalCertificados() {
                     Nenhum certificado próprio configurado.
                   </Card>
                 )}
-                {myCerts.map(c => <CertCard key={c.id} cert={c} canManage onTest={onTest} onDelete={onDelete} />)}
+                {myCerts.map(c => <CertCard key={c.id} cert={c} canManage onTest={onTest} onDelete={onDelete} onTogglePurpose={onTogglePurpose} />)}
               </div>
             </TabsContent>
           )}
@@ -509,7 +509,7 @@ export default function FiscalCertificados() {
                     Nenhum certificado global cadastrado.
                   </Card>
                 )}
-                {globalCerts.map(c => <CertCard key={c.id} cert={c} canManage onTest={onTest} onDelete={onDelete} />)}
+                {globalCerts.map(c => <CertCard key={c.id} cert={c} canManage onTest={onTest} onDelete={onDelete} onTogglePurpose={onTogglePurpose} />)}
               </div>
             </TabsContent>
           )}
@@ -526,7 +526,7 @@ export default function FiscalCertificados() {
                         <Building2 className="h-3 w-3 inline mr-1" />
                         {t?.nome_fantasia || t?.razao_social || c.tenant_id}
                       </p>
-                      <CertCard cert={c} canManage onTest={onTest} onDelete={onDelete} />
+                      <CertCard cert={c} canManage onTest={onTest} onDelete={onDelete} onTogglePurpose={onTogglePurpose} />
                     </div>
                   );
                 })}
