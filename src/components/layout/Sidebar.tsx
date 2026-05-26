@@ -366,31 +366,11 @@ export function Sidebar() {
             >
               <div className="overflow-hidden">
                 <div className="space-y-0.5 pl-3 border-l border-sidebar-border/40 ml-4">
-                  {filteredConfigNavigation.map((item) => {
-                    const isCert = item.href === "/fiscal-certificados";
-                    const dotColor =
-                      certStatus === "expired"
-                        ? "bg-destructive shadow-[0_0_6px_hsl(var(--destructive))]"
-                        : certStatus === "expiring"
-                        ? "bg-yellow-400 shadow-[0_0_6px_rgba(250,204,21,0.6)]"
-                        : certStatus === "valid"
-                        ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)]"
-                        : "";
-                    return (
-                      <div key={t(item.nameKey)} className="relative">
-                        <NavItem item={item} isActive={location.pathname === item.href} />
-                        {isCert && dotColor && (
-                          <span
-                            aria-label={`Certificado ${certStatus}`}
-                            className={cn(
-                              "pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full",
-                              dotColor
-                            )}
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
+                  {filteredConfigNavigation.map((item) => (
+                    <div key={t(item.nameKey)} className="relative">
+                      <NavItem item={item} isActive={location.pathname === item.href} />
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
