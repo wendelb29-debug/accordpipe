@@ -13,27 +13,27 @@ export default function Home() {
   const firstName = (profile?.name || "").split(" ")[0] || "";
 
   return (
-    <div className="mx-auto w-full max-w-[1400px]">
+    <div className="relative mx-auto w-full max-w-[1280px]">
+      {/* ambient gradient backdrop — gives the page that social/community feel */}
+      <div className="pointer-events-none absolute inset-x-0 -top-20 h-[320px] bg-gradient-to-b from-primary/10 via-violet-500/5 to-transparent blur-3xl" />
+
       <BirthdayCelebration />
       <BirthdayBanner key={refreshKey} onSaved={() => setRefreshKey((k) => k + 1)} />
 
-      {/* Greeting header — minimal, no dashboard chrome */}
-      <header className="px-1 pt-2 pb-5">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-          {greet}, <span className="bg-gradient-to-r from-primary to-violet-500 bg-clip-text text-transparent">{firstName}</span>
+      {/* minimal social header */}
+      <header className="relative px-1 pt-3 pb-4">
+        <h1 className="text-xl md:text-[22px] font-semibold tracking-tight">
+          {greet}, <span className="bg-gradient-to-r from-primary to-violet-500 bg-clip-text text-transparent">{firstName}</span> 👋
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Fique por dentro do que está acontecendo na sua equipe.
-        </p>
       </header>
 
-      {/* Feed centralizado + rail lateral minimalista */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,720px)_320px] xl:justify-center">
+      {/* Feed centralizado · sidebar minimalista à direita */}
+      <div className="relative grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,680px)_300px] xl:justify-center">
         <main className="min-w-0">
           <SocialFeed />
         </main>
-        <aside className="hidden lg:block space-y-4">
-          <div className="sticky top-4 space-y-4">
+        <aside className="hidden lg:block">
+          <div className="sticky top-4">
             <BirthdayCard />
           </div>
         </aside>
