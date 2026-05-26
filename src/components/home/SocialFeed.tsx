@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,7 +14,12 @@ import {
   Calendar, Clock, MapPin, Users, ImagePlus, Megaphone, CalendarPlus,
   Send, Heart, MessageCircle, Share2, CheckCircle2, MoreHorizontal, Sparkles,
   Sparkle, Paperclip, FileText, AtSign, Quote, Hash, Video, Type, Search, X, Plus,
+  Upload, Cloud, HardDrive, FileSpreadsheet, Presentation, LayoutDashboard,
+  Bold, Italic, Smile, ChevronDown, BarChart3, ThumbsUp,
 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -44,32 +49,271 @@ const initials = (n?: string | null) =>
 const COMPOSER_TABS = ["Mensagem", "Evento", "Enquete", "Arquivo", "Mais"] as const;
 type ComposerTab = typeof COMPOSER_TABS[number];
 
+type PollQuestion = { id: string; question: string; answers: string[]; multi: boolean };
+const newPollQ = (): PollQuestion => ({
+  id: crypto.randomUUID(), question: "", answers: ["", ""], multi: false,
+});
+
+function MentionPopover() {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const tenantId = useActiveCompanyId();
+  const { data: users = [] } = useQuery({
+    queryKey: ["mention-users", tenantId, q],
+    enabled: open && !!tenantId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles").select("id,name,avatar_url")
+        .ilike("name", `%${q}%`).limit(8);
+      return data ?? [];
+    },
+  });
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button className="flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[12px] font-medium text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors">
+          <AtSign className="h-4 w-4" /><span className="hidden sm:inline">Mencionar</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-0" align="start">
+        <div className="p-2 border-b border-border/50">
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="pesquisa" className="h-9" />
+        </div>
+        <div className="max-h-64 overflow-y-auto p-1">
+          {users.length === 0 ? (
+            <p className="text-xs text-muted-foreground p-3 text-center">Nenhum usuário</p>
+          ) : users.map((u: any) => (
+            <button key={u.id} className="flex items-center gap-2 w-full p-2 rounded-md hover:bg-accent transition-colors text-left">
+              <Avatar className="h-7 w-7">
+                {u.avatar_url && <AvatarImage src={u.avatar_url} />}
+                <AvatarFallback className="text-[10px]">{initials(u.name)}</AvatarFallback>
+              </Avatar>
+              <span className="text-sm">{u.name}</span>
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function FileSourcesPanel({ onUpload }: { onUpload: () => void }) {
+  const sources = [
+    { icon: Upload, label: "Carregar", color: "text-emerald-500", bg: "bg-emerald-500/10", onClick: onUpload },
+    { icon: Cloud, label: "Meu Drive", color: "text-sky-500", bg: "bg-sky-500/10" },
+    { icon: HardDrive, label: "Google Docs", color: "text-rose-500", bg: "bg-rose-500/10" },
+    { icon: FileText, label: "Office 365", color: "text-orange-500", bg: "bg-orange-500/10" },
+    { icon: Cloud, label: "Dropbox", color: "text-blue-500", bg: "bg-blue-500/10" },
+  ];
+  return (
+    <div className="space-y-3 animate-fade-in">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        {sources.map((s) => (
+          <button
+            key={s.label}
+            onClick={s.onClick || (() => toast.info(`${s.label} em breve`))}
+            className="flex flex-col items-center gap-2 p-3 rounded-xl bg-card/60 hover:bg-card ring-1 ring-white/5 hover:ring-white/10 transition-all"
+          >
+            <div className={`h-10 w-10 rounded-lg ${s.bg} flex items-center justify-center`}>
+              <s.icon className={`h-5 w-5 ${s.color}`} />
+            </div>
+            <span className="text-[11px] font-medium">{s.label}</span>
+          </button>
+        ))}
+      </div>
+      <button
+        onClick={onUpload}
+        className="w-full py-6 rounded-xl border-2 border-dashed border-white/10 hover:border-primary/40 hover:bg-primary/5 transition-all text-sm text-muted-foreground"
+      >
+        Solte seus arquivos aqui
+      </button>
+    </div>
+  );
+}
+
+function DocumentTypesPanel() {
+  const docs = [
+    { icon: FileText, label: "Documento", ext: "DOCX", color: "from-blue-500 to-blue-600" },
+    { icon: FileSpreadsheet, label: "Planilha", ext: "XLSX", color: "from-emerald-500 to-emerald-600" },
+    { icon: Presentation, label: "Apresentação", ext: "PPTX", color: "from-orange-500 to-red-500" },
+    { icon: LayoutDashboard, label: "Lousa", ext: "BOARD", color: "from-cyan-500 to-teal-500" },
+  ];
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-fade-in">
+      {docs.map((d) => (
+        <button
+          key={d.label}
+          onClick={() => toast.info(`Criar ${d.label} em breve`)}
+          className="group relative flex flex-col items-center gap-2 p-4 rounded-xl bg-card/60 hover:bg-card ring-1 ring-white/5 hover:ring-white/10 transition-all"
+        >
+          <div className={`h-14 w-14 rounded-lg bg-gradient-to-br ${d.color} flex items-center justify-center text-white text-[10px] font-bold relative`}>
+            {d.ext}
+            <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg">
+              <Plus className="h-3.5 w-3.5" />
+            </div>
+          </div>
+          <span className="text-xs font-medium">{d.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function EventQuickFields({
+  onCreate, loading,
+}: { onCreate: (f: { title: string; start_at: string; end_at: string; location: string }) => void; loading: boolean }) {
+  const [title, setTitle] = useState("");
+  const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [start, setStart] = useState("09:00");
+  const [end, setEnd] = useState("10:00");
+  const [location, setLocation] = useState("");
+  return (
+    <div className="space-y-3 animate-fade-in">
+      <Input placeholder="Título do evento" value={title} onChange={(e) => setTitle(e.target.value)} className="h-10" />
+      <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2">
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-10" />
+        </div>
+        <Input type="time" value={start} onChange={(e) => setStart(e.target.value)} className="h-10 w-32" />
+        <Input type="time" value={end} onChange={(e) => setEnd(e.target.value)} className="h-10 w-32" />
+      </div>
+      <div className="flex items-center gap-2">
+        <MapPin className="h-4 w-4 text-muted-foreground" />
+        <Input placeholder="Localização (sala, link, endereço)" value={location} onChange={(e) => setLocation(e.target.value)} className="h-10" />
+      </div>
+      <Button
+        onClick={() => {
+          if (!title.trim()) return toast.error("Adicione um título");
+          onCreate({
+            title,
+            start_at: new Date(`${date}T${start}`).toISOString(),
+            end_at: new Date(`${date}T${end}`).toISOString(),
+            location,
+          });
+        }}
+        disabled={loading}
+        className="w-full sm:w-auto bg-primary hover:bg-primary/90"
+      >
+        <CalendarPlus className="h-4 w-4 mr-2" /> Criar evento
+      </Button>
+    </div>
+  );
+}
+
+function PollBuilder({ onPublish }: { onPublish: () => void }) {
+  const [questions, setQuestions] = useState<PollQuestion[]>([newPollQ()]);
+
+  const updateQ = (id: string, patch: Partial<PollQuestion>) =>
+    setQuestions((qs) => qs.map((q) => (q.id === id ? { ...q, ...patch } : q)));
+
+  return (
+    <div className="space-y-4 animate-fade-in">
+      {questions.map((q, qi) => (
+        <div key={q.id} className="space-y-2 p-3 rounded-xl bg-card/40 ring-1 ring-white/5">
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Pergunta"
+              value={q.question}
+              onChange={(e) => updateQ(q.id, { question: e.target.value })}
+              className="h-10"
+            />
+            {questions.length > 1 && (
+              <button
+                onClick={() => setQuestions((qs) => qs.filter((x) => x.id !== q.id))}
+                className="h-9 w-9 rounded-md hover:bg-white/5 flex items-center justify-center text-muted-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          {q.answers.map((ans, ai) => (
+            <div key={ai} className="flex items-center gap-2">
+              <Input
+                placeholder={`Resposta ${ai + 1}`}
+                value={ans}
+                onChange={(e) => {
+                  const next = [...q.answers]; next[ai] = e.target.value;
+                  updateQ(q.id, { answers: next });
+                }}
+                className="h-9"
+              />
+              {q.answers.length > 2 && (
+                <button
+                  onClick={() => updateQ(q.id, { answers: q.answers.filter((_, i) => i !== ai) })}
+                  className="h-8 w-8 rounded-md hover:bg-white/5 flex items-center justify-center text-muted-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          ))}
+          <div className="flex items-center justify-between pt-1">
+            <button
+              onClick={() => updateQ(q.id, { answers: [...q.answers, ""] })}
+              className="text-xs text-primary hover:underline flex items-center gap-1"
+            >
+              <Plus className="h-3 w-3" /> Adicionar resposta
+            </button>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+              <Checkbox checked={q.multi} onCheckedChange={(v) => updateQ(q.id, { multi: !!v })} />
+              Permitir múltipla escolha
+            </label>
+          </div>
+        </div>
+      ))}
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setQuestions((qs) => [...qs, newPollQ()])}
+          className="text-primary"
+        >
+          <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar pergunta
+        </Button>
+        <Button size="sm" onClick={onPublish} className="bg-primary hover:bg-primary/90">
+          Publicar enquete
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function QuickPostComposer({
-  onOpenAnnouncements, onOpenEvent,
-}: { onOpenAnnouncements: () => void; onOpenEvent: () => void }) {
+  onOpenAnnouncements, onOpenEvent, onCreateEvent, eventCreating,
+}: {
+  onOpenAnnouncements: () => void;
+  onOpenEvent: () => void;
+  onCreateEvent: (f: { title: string; start_at: string; end_at: string; location: string }) => void;
+  eventCreating: boolean;
+}) {
   const { profile } = useAuth();
   const [tab, setTab] = useState<ComposerTab>("Mensagem");
   const [text, setText] = useState("");
+  const [showTags, setShowTags] = useState(false);
+  const [tags, setTags] = useState<string[]>([]);
+  const [showMore, setShowMore] = useState(false);
+  const [moreView, setMoreView] = useState<"document" | null>(null);
+  const fileRef = React.useRef<HTMLInputElement>(null);
 
   const handleSubmit = () => {
-    if (tab === "Evento") return onOpenEvent();
-    if (!text.trim()) return toast.info("Escreva algo ou use Comunicado para publicar com mídia");
-    onOpenAnnouncements();
-  };
-
-  const handleTab = (t: ComposerTab) => {
-    setTab(t);
-    if (t === "Evento") onOpenEvent();
-    if (t === "Arquivo") onOpenAnnouncements();
+    if (tab === "Mensagem") {
+      if (!text.trim()) return toast.info("Escreva algo para publicar");
+      onOpenAnnouncements();
+    } else if (tab === "Arquivo") {
+      onOpenAnnouncements();
+    } else if (tab === "Enquete") {
+      toast.success("Enquete publicada (preview)");
+      setText("");
+    }
   };
 
   const toolbar = [
     { icon: Sparkle, label: "CoPilot", color: "text-violet-500" },
-    { icon: Paperclip, label: "Arquivo", onClick: onOpenAnnouncements },
-    { icon: FileText, label: "Criar documento" },
-    { icon: AtSign, label: "Mencionar" },
+    { icon: Paperclip, label: "Arquivo", onClick: () => setTab("Arquivo") },
+    { icon: FileText, label: "Criar documento", onClick: () => { setTab("Mais"); setMoreView("document"); } },
     { icon: Quote, label: "Citação" },
-    { icon: Hash, label: "Marca" },
+    { icon: Hash, label: "Marca", onClick: () => setShowTags((v) => !v) },
     { icon: Video, label: "Gravar vídeo" },
   ];
 
@@ -79,42 +323,72 @@ function QuickPostComposer({
       <div className="flex items-center gap-1 px-4 pt-3 border-b border-white/[0.06]">
         {COMPOSER_TABS.map((t) => {
           const active = tab === t;
+          const isMore = t === "Mais";
           return (
-            <button
-              key={t}
-              onClick={() => handleTab(t)}
-              className={`relative px-3 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-colors ${
-                active ? "text-primary" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t}
-              {active && <span className="absolute inset-x-2 -bottom-px h-0.5 bg-primary rounded-full" />}
-            </button>
+            <Popover key={t} open={isMore && showMore} onOpenChange={isMore ? setShowMore : undefined}>
+              <PopoverTrigger asChild>
+                <button
+                  onClick={() => {
+                    if (isMore) { setShowMore(true); return; }
+                    setTab(t); setMoreView(null);
+                  }}
+                  className={`relative px-3 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-colors flex items-center gap-1 ${
+                    active ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t}{isMore && <ChevronDown className="h-3 w-3" />}
+                  {active && <span className="absolute inset-x-2 -bottom-px h-0.5 bg-primary rounded-full" />}
+                </button>
+              </PopoverTrigger>
+              {isMore && (
+                <PopoverContent align="start" className="w-48 p-1">
+                  {[
+                    { label: "Criar documento", icon: FileText, onClick: () => { setTab("Mais"); setMoreView("document"); } },
+                    { label: "Tarefa", icon: CheckCircle2, onClick: () => toast.info("Tarefa em breve") },
+                    { label: "Anúncio importante", icon: Megaphone, onClick: () => onOpenAnnouncements() },
+                  ].map((m) => (
+                    <button
+                      key={m.label}
+                      onClick={() => { setShowMore(false); m.onClick?.(); }}
+                      className="flex items-center gap-2 w-full px-2 py-2 rounded-md hover:bg-accent text-sm text-left"
+                    >
+                      <m.icon className="h-4 w-4 text-muted-foreground" /> {m.label}
+                    </button>
+                  ))}
+                </PopoverContent>
+              )}
+            </Popover>
           );
         })}
       </div>
 
-      {/* Textarea area */}
-      <div className="px-5 pt-4">
-        <div className="flex items-start gap-3">
-          <Avatar className="h-10 w-10 ring-2 ring-primary/20 shrink-0">
-            {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
-            <AvatarFallback className="bg-gradient-to-br from-primary to-violet-600 text-white text-xs font-semibold">
-              {initials(profile?.name)}
-            </AvatarFallback>
-          </Avatar>
-          <Textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={
-              tab === "Evento" ? "Crie um novo evento…" :
-              tab === "Enquete" ? "Faça uma pergunta para a equipe…" :
-              tab === "Arquivo" ? "Anexe um arquivo para compartilhar…" :
-              "O que deseja compartilhar?"
-            }
-            className="min-h-[110px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-0 text-[15px] placeholder:text-muted-foreground/60"
-          />
-        </div>
+      {/* Body per tab */}
+      <div className="px-5 pt-4 pb-2">
+        {tab === "Mensagem" && (
+          <div className="flex items-start gap-3">
+            <Avatar className="h-10 w-10 ring-2 ring-primary/20 shrink-0">
+              {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
+              <AvatarFallback className="bg-gradient-to-br from-primary to-violet-600 text-white text-xs font-semibold">
+                {initials(profile?.name)}
+              </AvatarFallback>
+            </Avatar>
+            <Textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Digite @ para mencionar alguém ou Espaço para usar o CoPilot"
+              className="min-h-[110px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-0 text-[15px] placeholder:text-muted-foreground/60"
+            />
+          </div>
+        )}
+        {tab === "Evento" && <EventQuickFields onCreate={onCreateEvent} loading={eventCreating} />}
+        {tab === "Enquete" && <PollBuilder onPublish={handleSubmit} />}
+        {tab === "Arquivo" && (
+          <>
+            <input ref={fileRef} type="file" hidden onChange={() => onOpenAnnouncements()} />
+            <FileSourcesPanel onUpload={() => fileRef.current?.click()} />
+          </>
+        )}
+        {tab === "Mais" && moreView === "document" && <DocumentTypesPanel />}
       </div>
 
       {/* Action toolbar */}
@@ -129,7 +403,34 @@ function QuickPostComposer({
             <span className="hidden sm:inline">{t.label}</span>
           </button>
         ))}
+        <MentionPopover />
       </div>
+
+      {/* Tags row */}
+      {showTags && (
+        <div className="px-5 py-3 flex items-center gap-3 border-t border-white/[0.04] bg-white/[0.015] animate-fade-in">
+          <span className="text-[12px] font-medium text-muted-foreground shrink-0">Tags:</span>
+          <div className="flex items-center gap-2 flex-wrap flex-1">
+            {tags.map((t) => (
+              <Badge key={t} variant="secondary" className="h-7 px-2 rounded-md gap-1">
+                #{t}
+                <X className="h-3 w-3 cursor-pointer opacity-60 hover:opacity-100" onClick={() => setTags(tags.filter((x) => x !== t))} />
+              </Badge>
+            ))}
+            <input
+              placeholder="+ Adicionar tag"
+              className="bg-transparent text-[12px] outline-none text-primary placeholder:text-primary"
+              onKeyDown={(e) => {
+                const v = (e.target as HTMLInputElement).value.trim();
+                if (e.key === "Enter" && v) {
+                  setTags([...tags, v]);
+                  (e.target as HTMLInputElement).value = "";
+                }
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Recipients */}
       <div className="px-5 py-3 flex items-center gap-3 border-t border-white/[0.04] bg-white/[0.015]">
@@ -147,21 +448,23 @@ function QuickPostComposer({
       </div>
 
       {/* Submit */}
-      <div className="px-5 py-3 flex items-center gap-2 border-t border-white/[0.04]">
-        <Button
-          onClick={handleSubmit}
-          className="h-9 px-5 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold tracking-wide text-[12px] uppercase"
-        >
-          Enviar
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={() => setText("")}
-          className="h-9 px-4 rounded-md text-muted-foreground hover:text-foreground font-semibold tracking-wide text-[12px] uppercase"
-        >
-          Cancelar
-        </Button>
-      </div>
+      {tab !== "Evento" && tab !== "Enquete" && (
+        <div className="px-5 py-3 flex items-center gap-2 border-t border-white/[0.04]">
+          <Button
+            onClick={handleSubmit}
+            className="h-9 px-5 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold tracking-wide text-[12px] uppercase"
+          >
+            Enviar
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => { setText(""); setTab("Mensagem"); }}
+            className="h-9 px-4 rounded-md text-muted-foreground hover:text-foreground font-semibold tracking-wide text-[12px] uppercase"
+          >
+            Cancelar
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -440,6 +743,13 @@ export function SocialFeed() {
       <QuickPostComposer
         onOpenAnnouncements={() => setManageOpen(true)}
         onOpenEvent={() => setEventOpen(true)}
+        onCreateEvent={(f) =>
+          createEvent.mutate(
+            { ...f, event_type: "reunião", description: "", target_mode: "all" } as any,
+            { onSuccess: () => toast.success("Evento criado") }
+          )
+        }
+        eventCreating={createEvent.isPending}
       />
 
       <FeedHeaderBar />
