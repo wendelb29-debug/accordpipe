@@ -278,15 +278,6 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const PFX_B64 = Deno.env.get("ACCORD_A1_PFX_BASE64");
-    const PFX_PASS = Deno.env.get("ACCORD_A1_PFX_PASSWORD");
-    if (!PFX_B64 || !PFX_PASS) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "not_configured", message: "Certificado A1 ICP-Brasil ainda não foi provisionado." }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const body = await req.json().catch(() => ({}));
     const contractId: string | undefined = body?.contract_id;
     if (!contractId) {
@@ -321,10 +312,48 @@ Deno.serve(async (req) => {
     if (!pdfResp.ok) throw new Error(`Falha ao baixar PDF: ${pdfResp.status}`);
     const originalPdf = new Uint8Array(await pdfResp.arrayBuffer());
 
-    // 3) Load certificate
+    // 3) Resolve certificate: nova tabela (próprio tenant ou global do master) -> fallback secret legado
+    let PFX_B64: string | null = null;
+    let PFX_PASS: string | null = null;
+    try {
+      const { data: eff } = await supabase.rpc("get_effective_certificate", { _tenant_id: contract.servidor_id });
+      const row = Array.isArray(eff) ? eff[0] : eff;
+      if (row?.storage_path && row.storage_path !== "n/a") {
+        const dl = await supabase.storage.from("digital-certificates").download(row.storage_path);
+        if (!dl.error && dl.data) {
+          const buf = new Uint8Array(await dl.data.arrayBuffer());
+          PFX_B64 = btoa(String.fromCharCode(...buf));
+          // decifra senha AES-GCM
+          const keyRaw = Deno.env.get("CERT_ENCRYPTION_KEY") || "";
+          let keyBytes: Uint8Array | null = null;
+          try { const bin = atob(keyRaw); if (bin.length === 32) { keyBytes = new Uint8Array(32); for (let i = 0; i < 32; i++) keyBytes[i] = bin.charCodeAt(i); } } catch (_) {}
+          if (!keyBytes && /^[0-9a-fA-F]{64}$/.test(keyRaw)) { keyBytes = new Uint8Array(32); for (let i = 0; i < 32; i++) keyBytes[i] = parseInt(keyRaw.substr(i * 2, 2), 16); }
+          if (!keyBytes) {
+            const md = forge.md.sha256.create(); md.update(keyRaw); const hex = md.digest().toHex();
+            keyBytes = new Uint8Array(32); for (let i = 0; i < 32; i++) keyBytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+          }
+          const key = await crypto.subtle.importKey("raw", keyBytes, { name: "AES-GCM" }, false, ["decrypt"]);
+          const ct = Uint8Array.from(atob(row.password_encrypted), c => c.charCodeAt(0));
+          const iv = Uint8Array.from(atob(row.password_iv), c => c.charCodeAt(0));
+          PFX_PASS = new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ct));
+        }
+      }
+    } catch (e) { console.warn("falha ao resolver cert da tabela, tentando secret legado:", e); }
+
+    if (!PFX_B64 || !PFX_PASS) {
+      PFX_B64 = Deno.env.get("ACCORD_A1_PFX_BASE64") || null;
+      PFX_PASS = Deno.env.get("ACCORD_A1_PFX_PASSWORD") || null;
+    }
+    if (!PFX_B64 || !PFX_PASS) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "not_configured", message: "Nenhum certificado A1 ICP-Brasil configurado para este tenant." }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     const { privateKey, cert, chain } = loadPfx(PFX_B64, PFX_PASS);
     const signerCN = getCN(cert);
     const certValidUntil = cert.validity.notAfter.toISOString();
+
 
     // 4) Add signature placeholder
     const { pdfWithPlaceholder } = await prepareSignedPdf(originalPdf);
