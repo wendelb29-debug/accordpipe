@@ -2,7 +2,6 @@ import { SocialFeed } from "@/components/home/SocialFeed";
 import { BirthdayCard } from "@/components/home/BirthdayCard";
 import { BirthdayCelebration } from "@/components/home/BirthdayCelebration";
 import { BirthdayBanner } from "@/components/home/BirthdayBanner";
-import { ActivityFeed } from "@/components/home/ActivityFeed";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 
@@ -36,9 +35,6 @@ export default function Home() {
         <aside className="hidden lg:block space-y-4">
           <div className="sticky top-4 space-y-4">
             <BirthdayCard />
-            <div className="rounded-2xl border border-border/60 bg-card/80 overflow-hidden">
-              <ActivityFeed />
-            </div>
           </div>
         </aside>
       </div>
