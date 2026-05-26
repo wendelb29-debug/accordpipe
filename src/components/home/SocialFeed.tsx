@@ -370,8 +370,9 @@ export function SocialFeed() {
             const idx = postIndex++;
             if (it.kind === "event") return <EventFeedCard key={`e-${it.id}`} event={it.event} index={idx} />;
             if (it.kind === "announcement") return <AnnouncementFeedCard key={`a-${it.id}`} item={it} index={idx} />;
-            return <ActivityMiniCard key={`t-${it.id}`} item={it} index={idx} />;
+            return null;
           })}
+
         </div>
       )}
 
