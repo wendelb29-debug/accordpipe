@@ -330,19 +330,6 @@ export function SocialFeed() {
     },
   });
 
-  const activitiesQ = useQuery({
-    queryKey: ["feed-activities", tenantId],
-    enabled: !!tenantId,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("crm_lead_activities")
-        .select("id,title,type,created_by_name,created_at")
-        .eq("servidor_id", tenantId!)
-        .order("created_at", { ascending: false }).limit(8);
-      return (data ?? []) as any[];
-    },
-  });
-
   const announcementsList = announcementsQ.data ?? [];
   const refetchAnnouncements = announcementsQ.refetch;
 
@@ -353,14 +340,11 @@ export function SocialFeed() {
       kind: "announcement", id: a.id, ts: a.created_at,
       title: a.title, description: a.description, image_url: a.image_url,
     });
-    for (const act of activitiesQ.data ?? []) items.push({
-      kind: "activity", id: act.id, ts: act.created_at,
-      title: act.title, type: act.type, created_by_name: act.created_by_name,
-    });
     return items.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
-  }, [events, announcementsList, activitiesQ.data]);
+  }, [events, announcementsList]);
 
-  const isLoading = announcementsQ.isLoading || activitiesQ.isLoading;
+  const isLoading = announcementsQ.isLoading;
+
   let postIndex = 0;
 
   return (
@@ -386,8 +370,9 @@ export function SocialFeed() {
             const idx = postIndex++;
             if (it.kind === "event") return <EventFeedCard key={`e-${it.id}`} event={it.event} index={idx} />;
             if (it.kind === "announcement") return <AnnouncementFeedCard key={`a-${it.id}`} item={it} index={idx} />;
-            return <ActivityMiniCard key={`t-${it.id}`} item={it} index={idx} />;
+            return null;
           })}
+
         </div>
       )}
 
