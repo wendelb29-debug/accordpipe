@@ -1,71 +1,47 @@
-import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { QuickActions } from "@/components/home/QuickActions";
-import { AnnouncementsCarousel } from "@/components/home/AnnouncementsCarousel";
-import { ActivityFeed } from "@/components/home/ActivityFeed";
-import { SupportDialog } from "@/components/home/SupportDialog";
-import { ManageAnnouncementsDialog } from "@/components/home/ManageAnnouncementsDialog";
-import { BirthdayBanner } from "@/components/home/BirthdayBanner";
+import { SocialFeed } from "@/components/home/SocialFeed";
 import { BirthdayCard } from "@/components/home/BirthdayCard";
 import { BirthdayCelebration } from "@/components/home/BirthdayCelebration";
-import { HighlightedEventsCarousel } from "@/components/home/HighlightedEventsCarousel";
-import { OperationsCommandCenter } from "@/components/home/OperationsCommandCenter";
-
-interface Announcement {
-  id: string; title: string; image_url: string; description: string | null;
-}
+import { BirthdayBanner } from "@/components/home/BirthdayBanner";
+import { ActivityFeed } from "@/components/home/ActivityFeed";
+import { useAuth } from "@/contexts/AuthContext";
+import { useState } from "react";
 
 export default function Home() {
-  const { isAdmin, isMaster, activeCompanyId } = useAuth();
-  const [supportOpen, setSupportOpen] = useState(false);
-  const [manageOpen, setManageOpen] = useState(false);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const { profile } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
-
-  const fetchAnnouncements = useCallback(async () => {
-    let q = supabase.from("announcements").select("id,title,image_url,description")
-      .eq("is_active", true).order("display_order");
-    if (isMaster && activeCompanyId) q = q.eq("servidor_id", activeCompanyId);
-    const { data } = await q;
-    setAnnouncements((data as Announcement[]) || []);
-  }, [isMaster, activeCompanyId]);
-
-  useEffect(() => { fetchAnnouncements(); }, [fetchAnnouncements]);
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
+  const firstName = (profile?.name || "").split(" ")[0] || "";
 
   return (
-    <div className="space-y-5">
+    <div className="mx-auto w-full max-w-[1400px]">
       <BirthdayCelebration />
-
       <BirthdayBanner key={refreshKey} onSaved={() => setRefreshKey((k) => k + 1)} />
 
-      <OperationsCommandCenter
-        isAdmin={isAdmin}
-        onManageAnnouncements={() => setManageOpen(true)}
-        onSupport={() => setSupportOpen(true)}
-      />
+      {/* Greeting header — minimal, no dashboard chrome */}
+      <header className="px-1 pt-2 pb-5">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+          {greet}, <span className="bg-gradient-to-r from-primary to-violet-500 bg-clip-text text-transparent">{firstName}</span>
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Fique por dentro do que está acontecendo na sua equipe.
+        </p>
+      </header>
 
-      <QuickActions />
-
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <div className="space-y-5">
-          <BirthdayCard />
-          <HighlightedEventsCarousel />
-          <AnnouncementsCarousel />
-        </div>
-        <div className="min-h-[420px]">
-          <ActivityFeed />
-        </div>
+      {/* Feed centralizado + rail lateral minimalista */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,720px)_320px] xl:justify-center">
+        <main className="min-w-0">
+          <SocialFeed />
+        </main>
+        <aside className="hidden lg:block space-y-4">
+          <div className="sticky top-4 space-y-4">
+            <BirthdayCard />
+            <div className="rounded-2xl border border-border/60 bg-card/80 overflow-hidden">
+              <ActivityFeed />
+            </div>
+          </div>
+        </aside>
       </div>
-
-
-      <SupportDialog open={supportOpen} onOpenChange={setSupportOpen} />
-      <ManageAnnouncementsDialog
-        open={manageOpen}
-        onOpenChange={setManageOpen}
-        announcements={announcements}
-        onRefresh={fetchAnnouncements}
-      />
     </div>
   );
 }
