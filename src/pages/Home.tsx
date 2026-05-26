@@ -2,6 +2,7 @@ import { SocialFeed } from "@/components/home/SocialFeed";
 import { BirthdayCard } from "@/components/home/BirthdayCard";
 import { BirthdayCelebration } from "@/components/home/BirthdayCelebration";
 import { BirthdayBanner } from "@/components/home/BirthdayBanner";
+import { ConstellationBackground } from "@/components/ui/ConstellationBackground";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 
@@ -14,6 +15,11 @@ export default function Home() {
 
   return (
     <div className="relative mx-auto w-full max-w-[1280px]">
+      {/* Animated constellation background (fixed behind content) */}
+      <div className="fixed inset-0 -z-10 pointer-events-none">
+        <ConstellationBackground />
+      </div>
+
       {/* ambient gradient backdrop — gives the page that social/community feel */}
       <div className="pointer-events-none absolute inset-x-0 -top-20 h-[320px] bg-gradient-to-b from-primary/10 via-violet-500/5 to-transparent blur-3xl" />
 
