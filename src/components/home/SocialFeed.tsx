@@ -586,12 +586,27 @@ function FeedHeaderBar() {
 
 
 /* ───────────────────────  POST ACTIONS BAR  ─────────────────────── */
-function PostActionsBar({ confirmed = 0, postKey, sourceText = "" }: { confirmed?: number; postKey: string; sourceText?: string }) {
-  const { profile } = useAuth();
+function PostActionsBar({
+  confirmed = 0,
+  postKey,
+  sourceText = "",
+  postId,
+  authorId,
+}: {
+  confirmed?: number;
+  postKey: string;
+  sourceText?: string;
+  postId?: string;
+  authorId?: string;
+}) {
+  const { user, profile } = useAuth();
+  const tenantId = useActiveCompanyId();
+  const qc = useQueryClient();
+  const isAuthor = !!postId && !!authorId && user?.id === authorId;
+
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(Math.max(confirmed, 0));
   const [following, setFollowing] = useState(true);
-  const [views] = useState(() => Math.floor(Math.random() * 6));
   const [commentOpen, setCommentOpen] = useState(true);
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState<{ id: string; author: string; avatar?: string | null; text: string; ts: string }[]>([]);
