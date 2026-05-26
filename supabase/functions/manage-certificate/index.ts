@@ -103,12 +103,56 @@ function parsePfx(b64: string, password: string) {
   };
 }
 
+function onlyDigits(s: string | null | undefined) { return (s || "").replace(/\D/g, ""); }
+
+async function logUsage(supa: any, params: {
+  certificate_id?: string | null;
+  tenant_id?: string | null;
+  purpose: string;
+  target_type?: string | null;
+  target_id?: string | null;
+  success?: boolean;
+  message?: string | null;
+  metadata?: any;
+  user_id?: string | null;
+}) {
+  try {
+    await supa.from("certificate_usage_logs").insert({
+      certificate_id: params.certificate_id || null,
+      tenant_id: params.tenant_id || null,
+      purpose: params.purpose,
+      target_type: params.target_type || null,
+      target_id: params.target_id || null,
+      success: params.success !== false,
+      message: params.message || null,
+      metadata: params.metadata || {},
+      user_id: params.user_id || null,
+    });
+  } catch (e) { console.warn("usage log fail", (e as any)?.message); }
+}
+
 async function handleUpload(supa: any, userId: string, body: any) {
-  const { name, file_b64, password, environment = "producao", is_global = false, tenant_id = null, use_master_global = false } = body;
+  const {
+    name, file_b64, password,
+    is_global = false, tenant_id = null, use_master_global = false,
+    uso_nfe = false, uso_assinatura_contratos = true,
+    ambiente_nfe = "homologacao",
+  } = body;
   if (!name || !file_b64 || !password) throw new Error("name, file_b64 e password são obrigatórios");
+  if (!uso_nfe && !uso_assinatura_contratos) throw new Error("Selecione ao menos uma finalidade (NF-e ou Contratos)");
 
   // parse antes de salvar — falha rápido
   const meta = parsePfx(file_b64, password);
+
+  // Validação CNPJ para NF-e (cert do titular precisa bater com o CNPJ do tenant)
+  if (uso_nfe && !is_global && tenant_id) {
+    const { data: company } = await supa.from("companies").select("cnpj").eq("id", tenant_id).single();
+    const tenantCnpj = onlyDigits(company?.cnpj);
+    const certCnpj = onlyDigits(meta.holder_document);
+    if (!tenantCnpj || !certCnpj || tenantCnpj !== certCnpj) {
+      throw new Error(`CNPJ do certificado (${certCnpj || "vazio"}) não confere com o CNPJ do tenant (${tenantCnpj || "vazio"}). NF-e exige certificado do próprio titular.`);
+    }
+  }
 
   // path no bucket privado
   const scope = is_global ? "global" : `tenant/${tenant_id}`;
@@ -145,16 +189,42 @@ async function handleUpload(supa: any, userId: string, body: any) {
     serial_number: meta.serial_number,
     valid_from: meta.valid_from,
     valid_until: meta.valid_until,
-    environment,
+    environment: ambiente_nfe === "producao" ? "producao" : "homologacao",
     is_active: true,
     is_icp_brasil: meta.is_icp_brasil,
     use_master_global,
+    uso_nfe,
+    uso_assinatura_contratos,
+    ambiente_nfe,
+    ambiente_assinatura: "producao",
     uploaded_by: userId,
     last_test_status: "pending",
   }).select().single();
   if (insErr) throw new Error(insErr.message);
 
+  await logUsage(supa, {
+    certificate_id: ins.id, tenant_id: is_global ? null : tenant_id,
+    purpose: "upload", user_id: userId,
+    metadata: { is_global, uso_nfe, uso_assinatura_contratos, ambiente_nfe, is_icp_brasil: meta.is_icp_brasil },
+  });
+
   return ins;
+}
+
+async function handleValidate(supa: any, certId: string, userId: string) {
+  const { data: cert, error } = await supa.from("tenant_certificates")
+    .select("id, tenant_id, valid_until, is_icp_brasil, holder_document, uso_nfe").eq("id", certId).single();
+  if (error || !cert) throw new Error("Certificado não encontrado");
+  const expired = new Date(cert.valid_until) <= new Date();
+  let cnpjOk = true;
+  if (cert.uso_nfe && cert.tenant_id) {
+    const { data: company } = await supa.from("companies").select("cnpj").eq("id", cert.tenant_id).single();
+    cnpjOk = onlyDigits(company?.cnpj) === onlyDigits(cert.holder_document);
+  }
+  const ok = !expired && cert.is_icp_brasil && cnpjOk;
+  const msg = expired ? "Expirado" : !cert.is_icp_brasil ? "Não-ICP-Brasil" : !cnpjOk ? "CNPJ não confere com o tenant" : "Válido";
+  await logUsage(supa, { certificate_id: certId, tenant_id: cert.tenant_id, purpose: "validate", success: ok, message: msg, user_id: userId });
+  return { ok, message: msg, expired, is_icp_brasil: cert.is_icp_brasil, cnpj_ok: cnpjOk };
 }
 
 async function handleTest(supa: any, certId: string) {
