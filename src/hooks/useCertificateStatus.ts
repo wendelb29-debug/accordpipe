@@ -35,7 +35,7 @@ export function useCertificateStatus(): CertStatus {
           worst = "expired";
           break;
         }
-        if (t < soon && worst !== "expired") worst = "expiring";
+        if (t < soon) worst = "expiring";
       }
       setStatus(worst);
     })();
