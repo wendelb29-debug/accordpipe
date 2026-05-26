@@ -345,8 +345,10 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...cors, "Content-Type": "application/json" } });
     }
 
-    const body = await req.json();
-    const action = body.action;
+    let body: any = {};
+    try { body = await req.json(); } catch (_) { body = {}; }
+    const action = body?.action;
+    console.log("manage-certificate dispatch", { action, keys: Object.keys(body || {}) });
 
     // Enforce escopo: CEO só mexe no próprio tenant, nunca global
     if (!isMaster) {
