@@ -67,7 +67,7 @@ const navigation = [
 
 const configNavigation = [
   { nameKey: "nav.users", href: "/configuracoes/usuarios", icon: Users, roles: ["admin", "ceo", "administrativo"] },
-  { nameKey: "Fiscal & Certificados", href: "/fiscal-certificados", icon: ShieldCheck, roles: ["ceo", "master"] },
+  
 ];
 
 const LANGUAGES = [
