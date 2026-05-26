@@ -158,7 +158,9 @@ export function Sidebar() {
   });
 
   const filteredConfigNavigation = configNavigation.filter((item) => {
-    if (role && !item.roles.includes(role)) return false;
+    const roleAllowed = role ? item.roles.includes(role) : false;
+    const masterBypass = item.roles.includes("master") && isGlobalMaster;
+    if (!roleAllowed && !masterBypass) return false;
     if ((item as any).tenantAdminOnly && !isGlobalMaster) return false;
     if ((item as any).resellerOnly && !isResellerTenant) return false;
     const perm = ROUTE_PERMISSIONS[item.href];
