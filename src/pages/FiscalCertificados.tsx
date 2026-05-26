@@ -57,12 +57,13 @@ function statusOf(c: Cert) {
 }
 
 function CertCard({
-  cert, canManage, onTest, onDelete,
+  cert, canManage, onTest, onDelete, onTogglePurpose,
 }: {
   cert: Cert;
   canManage: boolean;
   onTest: (id: string) => void;
   onDelete: (id: string) => void;
+  onTogglePurpose: (id: string, patch: { uso_nfe?: boolean; uso_assinatura_contratos?: boolean; ambiente_nfe?: "homologacao" | "producao" }) => void;
 }) {
   const st = statusOf(cert);
   const [testing, setTesting] = useState(false);
@@ -91,20 +92,46 @@ function CertCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
+        {/* Badges de finalidade e escopo */}
+        <div className="flex flex-wrap gap-1.5">
+          <Badge variant="outline" className={cn(
+            cert.is_global
+              ? "bg-violet-500/15 text-violet-300 border-violet-500/30"
+              : "bg-blue-500/15 text-blue-300 border-blue-500/30"
+          )}>
+            {cert.is_global ? "Global master" : "Tenant local"}
+          </Badge>
+          {cert.uso_assinatura_contratos && (
+            <Badge variant="outline" className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30">
+              Contratos ativo
+            </Badge>
+          )}
+          {cert.uso_nfe && (
+            <Badge variant="outline" className="bg-cyan-500/15 text-cyan-300 border-cyan-500/30">
+              NF-e ativo
+            </Badge>
+          )}
+          {cert.uso_nfe && cert.ambiente_nfe && (
+            <Badge variant="outline" className={cn(
+              cert.ambiente_nfe === "producao"
+                ? "bg-rose-500/15 text-rose-300 border-rose-500/30"
+                : "bg-amber-500/15 text-amber-300 border-amber-500/30"
+            )}>
+              {cert.ambiente_nfe === "producao" ? "Produção" : "Homologação"}
+            </Badge>
+          )}
+        </div>
+
         <div className="grid grid-cols-2 gap-3 text-xs">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Globe className="h-3.5 w-3.5" />
-            <span className="capitalize">{cert.environment}</span>
-          </div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <Calendar className="h-3.5 w-3.5" />
             <span>{cert.valid_until ? new Date(cert.valid_until).toLocaleDateString("pt-BR") : "—"}</span>
           </div>
-          <div className="flex items-center gap-2 text-muted-foreground col-span-2">
+          <div className="flex items-center gap-2 text-muted-foreground">
             {cert.is_icp_brasil
               ? <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
               : <ShieldAlert className="h-3.5 w-3.5 text-amber-400" />}
-            <span>{cert.is_icp_brasil ? "ICP-Brasil" : "Não-ICP-Brasil"}</span>
+            <span>{cert.is_icp_brasil ? "ICP-Brasil" : "Não-ICP"}</span>
           </div>
           {cert.holder_document && (
             <div className="col-span-2 text-muted-foreground">
@@ -112,6 +139,46 @@ function CertCard({
             </div>
           )}
         </div>
+
+        {/* Toggles de finalidade (CEO/master) */}
+        {canManage && cert.storage_path !== "n/a" && (
+          <div className="space-y-2 pt-2 border-t border-border/50">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-medium">Assinar contratos</p>
+                <p className="text-[10px] text-muted-foreground">PAdES / ICP-Brasil</p>
+              </div>
+              <Switch
+                checked={cert.uso_assinatura_contratos}
+                onCheckedChange={(v) => onTogglePurpose(cert.id, { uso_assinatura_contratos: v })}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-medium">Emitir Nota Fiscal</p>
+                <p className="text-[10px] text-muted-foreground">CNPJ do cert deve bater com o tenant</p>
+              </div>
+              <Switch
+                checked={cert.uso_nfe}
+                onCheckedChange={(v) => onTogglePurpose(cert.id, { uso_nfe: v })}
+              />
+            </div>
+            {cert.uso_nfe && (
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">Ambiente NF-e</p>
+                <select
+                  className="h-7 rounded-md border border-input bg-background px-2 text-xs"
+                  value={cert.ambiente_nfe || "homologacao"}
+                  onChange={(e) => onTogglePurpose(cert.id, { ambiente_nfe: e.target.value as any })}
+                >
+                  <option value="homologacao">Homologação</option>
+                  <option value="producao">Produção</option>
+                </select>
+              </div>
+            )}
+          </div>
+        )}
+
         {cert.last_test_message && (
           <div className="text-xs px-3 py-2 rounded-lg bg-muted/30 border border-border/50 text-muted-foreground">
             {cert.last_test_message}
@@ -123,11 +190,7 @@ function CertCard({
             <Button
               size="sm" variant="secondary" className="flex-1"
               disabled={testing}
-              onClick={async () => {
-                setTesting(true);
-                await onTest(cert.id);
-                setTesting(false);
-              }}
+              onClick={async () => { setTesting(true); await onTest(cert.id); setTesting(false); }}
             >
               {testing ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1.5" />}
               Testar
