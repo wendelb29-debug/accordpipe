@@ -396,6 +396,14 @@ export default function FiscalCertificados() {
     toast.success(use ? "Usando certificado global do master" : "Voltou para certificado próprio");
     refresh();
   };
+  const onTogglePurpose = async (id: string, patch: { uso_nfe?: boolean; uso_assinatura_contratos?: boolean; ambiente_nfe?: "homologacao" | "producao" }) => {
+    const { data, error } = await supabase.functions.invoke("manage-certificate", {
+      body: { action: "update_purpose", cert_id: id, ...patch },
+    });
+    if (error || data?.error) { toast.error(data?.error || error?.message || "Falha"); return; }
+    toast.success("Atualizado");
+    refresh();
+  };
 
   if (loading) return null;
   if (!allowed) return <Navigate to="/home" replace />;
