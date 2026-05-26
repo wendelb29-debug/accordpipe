@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams, Navigate } from "react-router-dom";
 import {
   Building2, Palette, FileSignature, Search, Loader2, Save, Webhook,
   Send, LogOut, MessageSquare, Radio, Activity, Wifi, Copy, Check, RefreshCw, LayoutGrid,
-  CreditCard, Users, Package, Crown, Network,
+  CreditCard, Users, Package, Crown, Network, ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ import TenantUsersTab from "@/components/servidores/TenantUsersTab";
 import CatalogTab from "@/components/servidores/CatalogTab";
 import { TenantSubscriptionTab } from "@/components/servidores/TenantSubscriptionTab";
 import { ResellerTab } from "@/components/servidores/ResellerTab";
+import TenantCertificatesTab from "@/components/servidores/TenantCertificatesTab";
 
 import { useEffect } from "react";
 
@@ -495,6 +496,7 @@ export default function NovoServidor() {
     { value: "contrato", icon: FileSignature, label: "Contrato", short: "Contrato" },
     { value: "vendas", icon: Webhook, label: "Webhooks Z-API", short: "Z-API" },
     { value: "fintech", icon: CreditCard, label: "Webhooks Fintech", short: "Fintech" },
+    { value: "fiscal", icon: ShieldCheck, label: "Fiscal & Certificados", short: "Fiscal" },
     { value: "usuarios", icon: Users, label: "Usuários", short: "Usuários" },
     { value: "catalogo", icon: Package, label: "Catálogo", short: "Catálogo" },
     { value: "plano", icon: Crown, label: "Plano & Usuários", short: "Plano" },
@@ -755,6 +757,15 @@ export default function NovoServidor() {
               </CardContent>
             </Card>
           )}
+
+          {activeTab === "fiscal" && (
+            <Card>
+              <CardContent className="pt-6">
+                <TenantCertificatesTab tenantId={editId || pendingNewId} />
+              </CardContent>
+            </Card>
+          )}
+
 
           {activeTab === "usuarios" && (
             <Card>
