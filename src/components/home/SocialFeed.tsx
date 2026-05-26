@@ -1134,8 +1134,8 @@ export function SocialFeed() {
       const authors: Record<string, { name: string | null; avatar_url: string | null }> = {};
       if (ids.length > 0) {
         const { data: profs } = await supabase
-          .from("profiles").select("id,name,avatar_url").in("id", ids);
-        for (const p of (profs ?? []) as any[]) authors[p.id] = { name: p.name, avatar_url: p.avatar_url };
+          .from("profiles").select("user_id,name,avatar_url").in("user_id", ids);
+        for (const p of (profs ?? []) as any[]) authors[p.user_id] = { name: p.name, avatar_url: p.avatar_url };
       }
       return list.map((r) => ({ ...r, author: authors[r.author_id] || { name: null, avatar_url: null } }));
     },
