@@ -271,37 +271,53 @@ async function handleTest(supa: any, certId: string) {
   return { status, message, valid_until: meta.valid_until, is_icp_brasil: meta.is_icp_brasil };
 }
 
-async function handleDelete(supa: any, certId: string) {
-  const { data: cert } = await supa.from("tenant_certificates").select("storage_path").eq("id", certId).single();
-  if (cert?.storage_path) await supa.storage.from(BUCKET).remove([cert.storage_path]);
+async function handleDelete(supa: any, certId: string, userId: string) {
+  const { data: cert } = await supa.from("tenant_certificates").select("storage_path, tenant_id").eq("id", certId).single();
+  if (cert?.storage_path && cert.storage_path !== "n/a") await supa.storage.from(BUCKET).remove([cert.storage_path]);
   const { error } = await supa.from("tenant_certificates").delete().eq("id", certId);
   if (error) throw new Error(error.message);
+  await logUsage(supa, { certificate_id: certId, tenant_id: cert?.tenant_id || null, purpose: "delete", user_id: userId });
   return { ok: true };
 }
 
-async function handleSetUseGlobal(supa: any, tenantId: string, use: boolean) {
-  // marca todos os certs do tenant com a flag (geralmente é 1 ativo)
+async function handleSetUseGlobal(supa: any, tenantId: string, use: boolean, userId: string) {
   const { error } = await supa.from("tenant_certificates")
     .update({ use_master_global: use })
     .eq("tenant_id", tenantId);
   if (error && error.code !== "PGRST116") throw new Error(error.message);
-  // se não havia row, cria placeholder? não — flag só faz sentido com cert existente OU sem cert.
-  // Para o caso "sem cert próprio": grava na companies? não, mantemos simples: get_effective_certificate usa esta flag,
-  // então se não existir row, criamos uma placeholder is_active=false só pra carregar a flag.
-  const { data: any } = await supa.from("tenant_certificates").select("id").eq("tenant_id", tenantId).limit(1);
-  if (!any || any.length === 0) {
+  const { data: anyRow } = await supa.from("tenant_certificates").select("id").eq("tenant_id", tenantId).limit(1);
+  if (!anyRow || anyRow.length === 0) {
     await supa.from("tenant_certificates").insert({
-      tenant_id: tenantId,
-      is_global: false,
-      name: "Usar certificado global do master",
-      storage_path: "n/a",
-      password_encrypted: "n/a",
-      password_iv: "n/a",
-      use_master_global: use,
-      is_active: false,
+      tenant_id: tenantId, is_global: false, name: "Usar certificado global do master",
+      storage_path: "n/a", password_encrypted: "n/a", password_iv: "n/a",
+      use_master_global: use, is_active: false,
     });
   }
+  await logUsage(supa, { tenant_id: tenantId, purpose: "toggle_global", message: use ? "ativado" : "desativado", user_id: userId });
   return { ok: true };
+}
+
+async function handleUpdatePurpose(supa: any, body: any, userId: string) {
+  const { cert_id, uso_nfe, uso_assinatura_contratos, ambiente_nfe } = body;
+  if (!cert_id) throw new Error("cert_id obrigatório");
+  const patch: any = {};
+  if (typeof uso_nfe === "boolean") patch.uso_nfe = uso_nfe;
+  if (typeof uso_assinatura_contratos === "boolean") patch.uso_assinatura_contratos = uso_assinatura_contratos;
+  if (ambiente_nfe === "homologacao" || ambiente_nfe === "producao") patch.ambiente_nfe = ambiente_nfe;
+
+  if (patch.uso_nfe === true) {
+    const { data: cert } = await supa.from("tenant_certificates").select("tenant_id, holder_document, is_global").eq("id", cert_id).single();
+    if (cert && !cert.is_global && cert.tenant_id) {
+      const { data: company } = await supa.from("companies").select("cnpj").eq("id", cert.tenant_id).single();
+      if (onlyDigits(company?.cnpj) !== onlyDigits(cert.holder_document)) {
+        throw new Error("CNPJ do certificado não confere com o tenant. NF-e bloqueada.");
+      }
+    }
+  }
+  const { data, error } = await supa.from("tenant_certificates").update(patch).eq("id", cert_id).select().single();
+  if (error) throw new Error(error.message);
+  await logUsage(supa, { certificate_id: cert_id, tenant_id: data.tenant_id, purpose: "validate", user_id: userId, message: "purpose updated", metadata: patch });
+  return data;
 }
 
 Deno.serve(async (req) => {
