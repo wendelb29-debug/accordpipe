@@ -13,7 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Calendar, Clock, MapPin, Users, ImagePlus, Megaphone, CalendarPlus,
   Send, Heart, MessageCircle, Share2, CheckCircle2, MoreHorizontal, Sparkles,
+  Sparkle, Paperclip, FileText, AtSign, Quote, Hash, Video, Type, Search, X, Plus,
 } from "lucide-react";
+
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
@@ -38,63 +40,149 @@ const TYPE_GRADIENT: Record<string, string> = {
 const initials = (n?: string | null) =>
   !n ? "?" : n.split(" ").filter(Boolean).slice(0, 2).map(s => s[0]?.toUpperCase()).join("");
 
-/* ───────────────────────────  COMPOSER  ─────────────────────────── */
+/* ───────────────────────────  COMPOSER (Bitrix-style)  ─────────────────────────── */
+const COMPOSER_TABS = ["Mensagem", "Evento", "Enquete", "Arquivo", "Mais"] as const;
+type ComposerTab = typeof COMPOSER_TABS[number];
+
 function QuickPostComposer({
   onOpenAnnouncements, onOpenEvent,
 }: { onOpenAnnouncements: () => void; onOpenEvent: () => void }) {
   const { profile } = useAuth();
+  const [tab, setTab] = useState<ComposerTab>("Mensagem");
   const [text, setText] = useState("");
-  const [focused, setFocused] = useState(false);
+
+  const handleSubmit = () => {
+    if (tab === "Evento") return onOpenEvent();
+    if (!text.trim()) return toast.info("Escreva algo ou use Comunicado para publicar com mídia");
+    onOpenAnnouncements();
+  };
+
+  const handleTab = (t: ComposerTab) => {
+    setTab(t);
+    if (t === "Evento") onOpenEvent();
+    if (t === "Arquivo") onOpenAnnouncements();
+  };
+
+  const toolbar = [
+    { icon: Sparkle, label: "CoPilot", color: "text-violet-500" },
+    { icon: Paperclip, label: "Arquivo", onClick: onOpenAnnouncements },
+    { icon: FileText, label: "Criar documento" },
+    { icon: AtSign, label: "Mencionar" },
+    { icon: Quote, label: "Citação" },
+    { icon: Hash, label: "Marca" },
+    { icon: Video, label: "Gravar vídeo" },
+  ];
 
   return (
-    <div className="group relative animate-fade-in">
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-violet-500/5 to-transparent rounded-3xl blur-xl opacity-60 group-hover:opacity-100 transition-opacity" />
-      <div className="relative rounded-3xl bg-card/70 backdrop-blur-xl ring-1 ring-white/5 px-5 py-4 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+    <div className="animate-fade-in rounded-2xl bg-card/95 backdrop-blur-xl ring-1 ring-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.25)] overflow-hidden">
+      {/* Tabs */}
+      <div className="flex items-center gap-1 px-4 pt-3 border-b border-white/[0.06]">
+        {COMPOSER_TABS.map((t) => {
+          const active = tab === t;
+          return (
+            <button
+              key={t}
+              onClick={() => handleTab(t)}
+              className={`relative px-3 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                active ? "text-primary" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t}
+              {active && <span className="absolute inset-x-2 -bottom-px h-0.5 bg-primary rounded-full" />}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Textarea area */}
+      <div className="px-5 pt-4">
         <div className="flex items-start gap-3">
-          <Avatar className="h-11 w-11 ring-2 ring-primary/30 shrink-0">
+          <Avatar className="h-10 w-10 ring-2 ring-primary/20 shrink-0">
             {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
-            <AvatarFallback className="bg-gradient-to-br from-primary to-violet-600 text-white text-sm font-semibold">
+            <AvatarFallback className="bg-gradient-to-br from-primary to-violet-600 text-white text-xs font-semibold">
               {initials(profile?.name)}
             </AvatarFallback>
           </Avatar>
-          <div className="flex-1 min-w-0">
-            <Textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onFocus={() => setFocused(true)}
-              onBlur={() => setFocused(false)}
-              placeholder="O que deseja compartilhar?"
-              className="min-h-[44px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-0 text-[15px] placeholder:text-muted-foreground/60"
-            />
-            <div className={`flex items-center justify-between gap-2 transition-all ${focused || text ? "mt-3 opacity-100" : "mt-1 opacity-90"}`}>
-              <div className="flex items-center gap-1">
-                <button onClick={onOpenAnnouncements} className="h-9 px-3 rounded-full flex items-center gap-2 text-xs font-medium text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors">
-                  <ImagePlus className="h-4 w-4" /> Mídia
-                </button>
-                <button onClick={onOpenEvent} className="h-9 px-3 rounded-full flex items-center gap-2 text-xs font-medium text-muted-foreground hover:bg-violet-500/10 hover:text-violet-500 transition-colors">
-                  <CalendarPlus className="h-4 w-4" /> Evento
-                </button>
-                <button onClick={onOpenAnnouncements} className="h-9 px-3 rounded-full flex items-center gap-2 text-xs font-medium text-muted-foreground hover:bg-amber-500/10 hover:text-amber-500 transition-colors">
-                  <Megaphone className="h-4 w-4" /> Comunicado
-                </button>
-              </div>
-              <Button
-                size="sm"
-                className="h-9 px-4 rounded-full bg-gradient-to-r from-primary to-violet-600 hover:opacity-90 shadow-lg shadow-primary/20"
-                onClick={() => {
-                  if (!text.trim()) return toast.info("Use Comunicado para publicar com mídia");
-                  onOpenAnnouncements();
-                }}
-              >
-                <Send className="h-3.5 w-3.5 mr-1.5" /> Publicar
-              </Button>
-            </div>
-          </div>
+          <Textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={
+              tab === "Evento" ? "Crie um novo evento…" :
+              tab === "Enquete" ? "Faça uma pergunta para a equipe…" :
+              tab === "Arquivo" ? "Anexe um arquivo para compartilhar…" :
+              "O que deseja compartilhar?"
+            }
+            className="min-h-[110px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-0 text-[15px] placeholder:text-muted-foreground/60"
+          />
         </div>
+      </div>
+
+      {/* Action toolbar */}
+      <div className="px-5 pt-2 pb-3 flex flex-wrap items-center gap-1 border-t border-white/[0.04]">
+        {toolbar.map((t, i) => (
+          <button
+            key={i}
+            onClick={t.onClick}
+            className="flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[12px] font-medium text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors"
+          >
+            <t.icon className={`h-4 w-4 ${t.color ?? ""}`} />
+            <span className="hidden sm:inline">{t.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Recipients */}
+      <div className="px-5 py-3 flex items-center gap-3 border-t border-white/[0.04] bg-white/[0.015]">
+        <span className="text-[12px] font-medium text-muted-foreground shrink-0">Para:</span>
+        <div className="flex items-center gap-2 flex-wrap flex-1">
+          <Badge variant="secondary" className="h-7 px-2.5 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 gap-1.5">
+            <Users className="h-3 w-3" />
+            Todos os colaboradores
+            <X className="h-3 w-3 opacity-60 hover:opacity-100 cursor-pointer ml-1" />
+          </Badge>
+          <button className="flex items-center gap-1 h-7 px-2 rounded-md text-[12px] font-medium text-primary hover:bg-primary/10 transition-colors">
+            <Plus className="h-3.5 w-3.5" /> Adicionar mais
+          </button>
+        </div>
+      </div>
+
+      {/* Submit */}
+      <div className="px-5 py-3 flex items-center gap-2 border-t border-white/[0.04]">
+        <Button
+          onClick={handleSubmit}
+          className="h-9 px-5 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold tracking-wide text-[12px] uppercase"
+        >
+          Enviar
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={() => setText("")}
+          className="h-9 px-4 rounded-md text-muted-foreground hover:text-foreground font-semibold tracking-wide text-[12px] uppercase"
+        >
+          Cancelar
+        </Button>
       </div>
     </div>
   );
 }
+
+/* ─────────────────────────  FEED HEADER BAR  ─────────────────────── */
+function FeedHeaderBar() {
+  return (
+    <div className="flex items-center gap-4 px-1">
+      <h2 className="text-2xl font-bold tracking-tight">Feed</h2>
+      <div className="flex-1 max-w-md relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+        <input
+          type="text"
+          placeholder="Filtro e pesquisa"
+          className="w-full h-10 pl-9 pr-3 rounded-lg bg-card/60 ring-1 ring-white/5 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-primary/40 transition"
+        />
+      </div>
+    </div>
+  );
+}
+
 
 /* ───────────────────────  POST ACTIONS BAR  ─────────────────────── */
 function PostActionsBar({ confirmed = 0 }: { confirmed?: number }) {
@@ -354,7 +442,10 @@ export function SocialFeed() {
         onOpenEvent={() => setEventOpen(true)}
       />
 
+      <FeedHeaderBar />
+
       {isLoading ? (
+
         <FeedSkeleton />
       ) : merged.length === 0 ? (
         <div className="rounded-3xl bg-card/40 backdrop-blur-md ring-1 ring-white/5 p-12 text-center animate-fade-in">
