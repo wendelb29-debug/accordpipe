@@ -103,12 +103,56 @@ function parsePfx(b64: string, password: string) {
   };
 }
 
+function onlyDigits(s: string | null | undefined) { return (s || "").replace(/\D/g, ""); }
+
+async function logUsage(supa: any, params: {
+  certificate_id?: string | null;
+  tenant_id?: string | null;
+  purpose: string;
+  target_type?: string | null;
+  target_id?: string | null;
+  success?: boolean;
+  message?: string | null;
+  metadata?: any;
+  user_id?: string | null;
+}) {
+  try {
+    await supa.from("certificate_usage_logs").insert({
+      certificate_id: params.certificate_id || null,
+      tenant_id: params.tenant_id || null,
+      purpose: params.purpose,
+      target_type: params.target_type || null,
+      target_id: params.target_id || null,
+      success: params.success !== false,
+      message: params.message || null,
+      metadata: params.metadata || {},
+      user_id: params.user_id || null,
+    });
+  } catch (e) { console.warn("usage log fail", (e as any)?.message); }
+}
+
 async function handleUpload(supa: any, userId: string, body: any) {
-  const { name, file_b64, password, environment = "producao", is_global = false, tenant_id = null, use_master_global = false } = body;
+  const {
+    name, file_b64, password,
+    is_global = false, tenant_id = null, use_master_global = false,
+    uso_nfe = false, uso_assinatura_contratos = true,
+    ambiente_nfe = "homologacao",
+  } = body;
   if (!name || !file_b64 || !password) throw new Error("name, file_b64 e password são obrigatórios");
+  if (!uso_nfe && !uso_assinatura_contratos) throw new Error("Selecione ao menos uma finalidade (NF-e ou Contratos)");
 
   // parse antes de salvar — falha rápido
   const meta = parsePfx(file_b64, password);
+
+  // Validação CNPJ para NF-e (cert do titular precisa bater com o CNPJ do tenant)
+  if (uso_nfe && !is_global && tenant_id) {
+    const { data: company } = await supa.from("companies").select("cnpj").eq("id", tenant_id).single();
+    const tenantCnpj = onlyDigits(company?.cnpj);
+    const certCnpj = onlyDigits(meta.holder_document);
+    if (!tenantCnpj || !certCnpj || tenantCnpj !== certCnpj) {
+      throw new Error(`CNPJ do certificado (${certCnpj || "vazio"}) não confere com o CNPJ do tenant (${tenantCnpj || "vazio"}). NF-e exige certificado do próprio titular.`);
+    }
+  }
 
   // path no bucket privado
   const scope = is_global ? "global" : `tenant/${tenant_id}`;
@@ -145,16 +189,42 @@ async function handleUpload(supa: any, userId: string, body: any) {
     serial_number: meta.serial_number,
     valid_from: meta.valid_from,
     valid_until: meta.valid_until,
-    environment,
+    environment: ambiente_nfe === "producao" ? "producao" : "homologacao",
     is_active: true,
     is_icp_brasil: meta.is_icp_brasil,
     use_master_global,
+    uso_nfe,
+    uso_assinatura_contratos,
+    ambiente_nfe,
+    ambiente_assinatura: "producao",
     uploaded_by: userId,
     last_test_status: "pending",
   }).select().single();
   if (insErr) throw new Error(insErr.message);
 
+  await logUsage(supa, {
+    certificate_id: ins.id, tenant_id: is_global ? null : tenant_id,
+    purpose: "upload", user_id: userId,
+    metadata: { is_global, uso_nfe, uso_assinatura_contratos, ambiente_nfe, is_icp_brasil: meta.is_icp_brasil },
+  });
+
   return ins;
+}
+
+async function handleValidate(supa: any, certId: string, userId: string) {
+  const { data: cert, error } = await supa.from("tenant_certificates")
+    .select("id, tenant_id, valid_until, is_icp_brasil, holder_document, uso_nfe").eq("id", certId).single();
+  if (error || !cert) throw new Error("Certificado não encontrado");
+  const expired = new Date(cert.valid_until) <= new Date();
+  let cnpjOk = true;
+  if (cert.uso_nfe && cert.tenant_id) {
+    const { data: company } = await supa.from("companies").select("cnpj").eq("id", cert.tenant_id).single();
+    cnpjOk = onlyDigits(company?.cnpj) === onlyDigits(cert.holder_document);
+  }
+  const ok = !expired && cert.is_icp_brasil && cnpjOk;
+  const msg = expired ? "Expirado" : !cert.is_icp_brasil ? "Não-ICP-Brasil" : !cnpjOk ? "CNPJ não confere com o tenant" : "Válido";
+  await logUsage(supa, { certificate_id: certId, tenant_id: cert.tenant_id, purpose: "validate", success: ok, message: msg, user_id: userId });
+  return { ok, message: msg, expired, is_icp_brasil: cert.is_icp_brasil, cnpj_ok: cnpjOk };
 }
 
 async function handleTest(supa: any, certId: string) {
@@ -201,37 +271,53 @@ async function handleTest(supa: any, certId: string) {
   return { status, message, valid_until: meta.valid_until, is_icp_brasil: meta.is_icp_brasil };
 }
 
-async function handleDelete(supa: any, certId: string) {
-  const { data: cert } = await supa.from("tenant_certificates").select("storage_path").eq("id", certId).single();
-  if (cert?.storage_path) await supa.storage.from(BUCKET).remove([cert.storage_path]);
+async function handleDelete(supa: any, certId: string, userId: string) {
+  const { data: cert } = await supa.from("tenant_certificates").select("storage_path, tenant_id").eq("id", certId).single();
+  if (cert?.storage_path && cert.storage_path !== "n/a") await supa.storage.from(BUCKET).remove([cert.storage_path]);
   const { error } = await supa.from("tenant_certificates").delete().eq("id", certId);
   if (error) throw new Error(error.message);
+  await logUsage(supa, { certificate_id: certId, tenant_id: cert?.tenant_id || null, purpose: "delete", user_id: userId });
   return { ok: true };
 }
 
-async function handleSetUseGlobal(supa: any, tenantId: string, use: boolean) {
-  // marca todos os certs do tenant com a flag (geralmente é 1 ativo)
+async function handleSetUseGlobal(supa: any, tenantId: string, use: boolean, userId: string) {
   const { error } = await supa.from("tenant_certificates")
     .update({ use_master_global: use })
     .eq("tenant_id", tenantId);
   if (error && error.code !== "PGRST116") throw new Error(error.message);
-  // se não havia row, cria placeholder? não — flag só faz sentido com cert existente OU sem cert.
-  // Para o caso "sem cert próprio": grava na companies? não, mantemos simples: get_effective_certificate usa esta flag,
-  // então se não existir row, criamos uma placeholder is_active=false só pra carregar a flag.
-  const { data: any } = await supa.from("tenant_certificates").select("id").eq("tenant_id", tenantId).limit(1);
-  if (!any || any.length === 0) {
+  const { data: anyRow } = await supa.from("tenant_certificates").select("id").eq("tenant_id", tenantId).limit(1);
+  if (!anyRow || anyRow.length === 0) {
     await supa.from("tenant_certificates").insert({
-      tenant_id: tenantId,
-      is_global: false,
-      name: "Usar certificado global do master",
-      storage_path: "n/a",
-      password_encrypted: "n/a",
-      password_iv: "n/a",
-      use_master_global: use,
-      is_active: false,
+      tenant_id: tenantId, is_global: false, name: "Usar certificado global do master",
+      storage_path: "n/a", password_encrypted: "n/a", password_iv: "n/a",
+      use_master_global: use, is_active: false,
     });
   }
+  await logUsage(supa, { tenant_id: tenantId, purpose: "toggle_global", message: use ? "ativado" : "desativado", user_id: userId });
   return { ok: true };
+}
+
+async function handleUpdatePurpose(supa: any, body: any, userId: string) {
+  const { cert_id, uso_nfe, uso_assinatura_contratos, ambiente_nfe } = body;
+  if (!cert_id) throw new Error("cert_id obrigatório");
+  const patch: any = {};
+  if (typeof uso_nfe === "boolean") patch.uso_nfe = uso_nfe;
+  if (typeof uso_assinatura_contratos === "boolean") patch.uso_assinatura_contratos = uso_assinatura_contratos;
+  if (ambiente_nfe === "homologacao" || ambiente_nfe === "producao") patch.ambiente_nfe = ambiente_nfe;
+
+  if (patch.uso_nfe === true) {
+    const { data: cert } = await supa.from("tenant_certificates").select("tenant_id, holder_document, is_global").eq("id", cert_id).single();
+    if (cert && !cert.is_global && cert.tenant_id) {
+      const { data: company } = await supa.from("companies").select("cnpj").eq("id", cert.tenant_id).single();
+      if (onlyDigits(company?.cnpj) !== onlyDigits(cert.holder_document)) {
+        throw new Error("CNPJ do certificado não confere com o tenant. NF-e bloqueada.");
+      }
+    }
+  }
+  const { data, error } = await supa.from("tenant_certificates").update(patch).eq("id", cert_id).select().single();
+  if (error) throw new Error(error.message);
+  await logUsage(supa, { certificate_id: cert_id, tenant_id: data.tenant_id, purpose: "validate", user_id: userId, message: "purpose updated", metadata: patch });
+  return data;
 }
 
 Deno.serve(async (req) => {
@@ -273,19 +359,20 @@ Deno.serve(async (req) => {
     let result;
     if (action === "upload") result = await handleUpload(supa, user.id, body);
     else if (action === "test") result = await handleTest(supa, body.cert_id);
-    else if (action === "delete") result = await handleDelete(supa, body.cert_id);
-    else if (action === "set_use_global") result = await handleSetUseGlobal(supa, body.tenant_id, !!body.use);
+    else if (action === "validate") result = await handleValidate(supa, body.cert_id, user.id);
+    else if (action === "delete") result = await handleDelete(supa, body.cert_id, user.id);
+    else if (action === "set_use_global") result = await handleSetUseGlobal(supa, body.tenant_id, !!body.use, user.id);
+    else if (action === "update_purpose") result = await handleUpdatePurpose(supa, body, user.id);
     else return new Response(JSON.stringify({ error: "Ação desconhecida" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
 
-    // audit
+    // audit (log estrutural)
     await supa.from("audit_logs").insert({
-      user_id: user.id,
-      user_name: user.email,
+      user_id: user.id, user_name: user.email,
       action: `certificate.${action}`,
       target_type: "tenant_certificates",
       target_id: result?.id || body.cert_id || body.tenant_id || null,
       servidor_id: isMasterRow?.company_id || null,
-      details: { is_global: !!body.is_global, environment: body.environment || null },
+      details: { is_global: !!body.is_global, uso_nfe: body.uso_nfe ?? null, uso_assinatura_contratos: body.uso_assinatura_contratos ?? null, ambiente_nfe: body.ambiente_nfe ?? null },
     });
 
     return new Response(JSON.stringify({ ok: true, data: result }), { headers: { ...cors, "Content-Type": "application/json" } });

@@ -446,6 +446,63 @@ export type Database = {
           },
         ]
       }
+      certificate_usage_logs: {
+        Row: {
+          certificate_id: string | null
+          created_at: string
+          id: string
+          message: string | null
+          metadata: Json | null
+          purpose: string
+          success: boolean
+          target_id: string | null
+          target_type: string | null
+          tenant_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          certificate_id?: string | null
+          created_at?: string
+          id?: string
+          message?: string | null
+          metadata?: Json | null
+          purpose: string
+          success?: boolean
+          target_id?: string | null
+          target_type?: string | null
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          certificate_id?: string | null
+          created_at?: string
+          id?: string
+          message?: string | null
+          metadata?: Json | null
+          purpose?: string
+          success?: boolean
+          target_id?: string | null
+          target_type?: string | null
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_usage_logs_certificate_id_fkey"
+            columns: ["certificate_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_certificates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificate_usage_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_contract_history: {
         Row: {
           action: string
@@ -5015,6 +5072,8 @@ export type Database = {
       }
       tenant_certificates: {
         Row: {
+          ambiente_assinatura: string | null
+          ambiente_nfe: string | null
           created_at: string
           environment: string
           holder_document: string | null
@@ -5036,10 +5095,14 @@ export type Database = {
           updated_at: string
           uploaded_by: string | null
           use_master_global: boolean
+          uso_assinatura_contratos: boolean
+          uso_nfe: boolean
           valid_from: string | null
           valid_until: string | null
         }
         Insert: {
+          ambiente_assinatura?: string | null
+          ambiente_nfe?: string | null
           created_at?: string
           environment?: string
           holder_document?: string | null
@@ -5061,10 +5124,14 @@ export type Database = {
           updated_at?: string
           uploaded_by?: string | null
           use_master_global?: boolean
+          uso_assinatura_contratos?: boolean
+          uso_nfe?: boolean
           valid_from?: string | null
           valid_until?: string | null
         }
         Update: {
+          ambiente_assinatura?: string | null
+          ambiente_nfe?: string | null
           created_at?: string
           environment?: string
           holder_document?: string | null
@@ -5086,6 +5153,8 @@ export type Database = {
           updated_at?: string
           uploaded_by?: string | null
           use_master_global?: boolean
+          uso_assinatura_contratos?: boolean
+          uso_nfe?: boolean
           valid_from?: string | null
           valid_until?: string | null
         }
@@ -7107,8 +7176,10 @@ export type Database = {
       }
       get_drive_file_servidor: { Args: { _file_id: string }; Returns: string }
       get_effective_certificate: {
-        Args: { _tenant_id: string }
+        Args: { _purpose?: string; _tenant_id: string }
         Returns: {
+          ambiente: string
+          holder_document: string
           id: string
           is_global: boolean
           password_encrypted: string
