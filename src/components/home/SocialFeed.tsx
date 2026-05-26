@@ -505,20 +505,44 @@ function QuickPostComposer({
         </div>
       )}
 
-      {/* Recipients */}
-      <div className="px-5 py-3 flex items-center gap-3 border-t border-white/[0.04] bg-white/[0.015]">
-        <span className="text-[12px] font-medium text-muted-foreground shrink-0">Para:</span>
-        <div className="flex items-center gap-2 flex-wrap flex-1">
-          <Badge variant="secondary" className="h-7 px-2.5 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 gap-1.5">
-            <Users className="h-3 w-3" />
-            Todos os colaboradores
-            <X className="h-3 w-3 opacity-60 hover:opacity-100 cursor-pointer ml-1" />
-          </Badge>
-          <button className="flex items-center gap-1 h-7 px-2 rounded-md text-[12px] font-medium text-primary hover:bg-primary/10 transition-colors">
-            <Plus className="h-3.5 w-3.5" /> Adicionar mais
-          </button>
+      {/* Recipients — só aparece quando alguém foi mencionado/selecionado */}
+      {recipients.length > 0 && (
+        <div className="px-5 py-3 flex items-center gap-3 border-t border-white/[0.04] bg-white/[0.015] animate-fade-in">
+          <span className="text-[12px] font-medium text-muted-foreground shrink-0">Para:</span>
+          <div className="flex items-center gap-2 flex-wrap flex-1">
+            {recipients.map((r) => {
+              const isAll = r.id === ALL_RECIPIENT.id;
+              return (
+                <Badge
+                  key={r.id}
+                  variant="secondary"
+                  className={`h-7 px-2.5 rounded-md gap-1.5 ${
+                    isAll
+                      ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20"
+                      : "bg-primary/10 text-primary border border-primary/20 hover:bg-primary/15"
+                  }`}
+                >
+                  {isAll ? <Users className="h-3 w-3" /> : <AtSign className="h-3 w-3" />}
+                  {r.name}
+                  <X
+                    className="h-3 w-3 opacity-60 hover:opacity-100 cursor-pointer ml-1"
+                    onClick={() => removeRecipient(r.id)}
+                  />
+                </Badge>
+              );
+            })}
+            <MentionPicker
+              selectedIds={selectedIds}
+              onPick={addRecipient}
+              trigger={
+                <button className="flex items-center gap-1 h-7 px-2 rounded-md text-[12px] font-medium text-primary hover:bg-primary/10 transition-colors">
+                  <Plus className="h-3.5 w-3.5" /> Adicionar mais
+                </button>
+              }
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Submit */}
       {tab !== "Evento" && tab !== "Enquete" && (
