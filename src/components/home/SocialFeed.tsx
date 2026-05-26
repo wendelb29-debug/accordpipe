@@ -442,7 +442,10 @@ export function SocialFeed() {
         onOpenEvent={() => setEventOpen(true)}
       />
 
+      <FeedHeaderBar />
+
       {isLoading ? (
+
         <FeedSkeleton />
       ) : merged.length === 0 ? (
         <div className="rounded-3xl bg-card/40 backdrop-blur-md ring-1 ring-white/5 p-12 text-center animate-fade-in">
