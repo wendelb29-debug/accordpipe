@@ -909,10 +909,11 @@ function FeedSkeleton() {
 /* ─────────────────────────  MAIN FEED  ─────────────────────── */
 export function SocialFeed() {
   const tenantId = useActiveCompanyId();
-  const { isMaster } = useAuth();
+  const { isMaster, profile, user } = useAuth();
   const { events, createEvent } = useEvents();
   const [eventOpen, setEventOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   const announcementsQ = useQuery({
     queryKey: ["feed-announcements", tenantId, isMaster],
@@ -929,8 +930,51 @@ export function SocialFeed() {
     },
   });
 
+  const postsQ = useQuery({
+    queryKey: ["feed-posts", tenantId],
+    enabled: !!tenantId,
+    queryFn: async () => {
+      const { data: rows, error } = await supabase
+        .from("feed_posts")
+        .select("id,content,image_url,tags,author_id,created_at,servidor_id")
+        .eq("servidor_id", tenantId!)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      const list = (rows ?? []) as any[];
+      const ids = Array.from(new Set(list.map((r) => r.author_id).filter(Boolean)));
+      const authors: Record<string, { name: string | null; avatar_url: string | null }> = {};
+      if (ids.length > 0) {
+        const { data: profs } = await supabase
+          .from("profiles").select("id,name,avatar_url").in("id", ids);
+        for (const p of (profs ?? []) as any[]) authors[p.id] = { name: p.name, avatar_url: p.avatar_url };
+      }
+      return list.map((r) => ({ ...r, author: authors[r.author_id] || { name: null, avatar_url: null } }));
+    },
+  });
+
   const announcementsList = announcementsQ.data ?? [];
   const refetchAnnouncements = announcementsQ.refetch;
+  const postsList = postsQ.data ?? [];
+
+  const publishPost = useMutation({
+    mutationFn: async ({ content, tags }: { content: string; tags: string[] }) => {
+      if (!tenantId) throw new Error("Empresa não definida");
+      if (!user?.id) throw new Error("Sessão expirada");
+      const { error } = await supabase.from("feed_posts").insert({
+        servidor_id: tenantId,
+        author_id: user.id,
+        content,
+        tags,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Publicado no feed");
+      queryClient.invalidateQueries({ queryKey: ["feed-posts", tenantId] });
+    },
+    onError: (e: any) => toast.error(e?.message || "Não foi possível publicar"),
+  });
 
   const merged = useMemo<FeedItem[]>(() => {
     const items: FeedItem[] = [];
@@ -939,10 +983,15 @@ export function SocialFeed() {
       kind: "announcement", id: a.id, ts: a.created_at,
       title: a.title, description: a.description, image_url: a.image_url,
     });
+    for (const p of postsList) items.push({
+      kind: "post", id: p.id, ts: p.created_at,
+      content: p.content, image_url: p.image_url, tags: p.tags ?? [],
+      author_id: p.author_id, author_name: p.author?.name ?? null, author_avatar: p.author?.avatar_url ?? null,
+    });
     return items.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
-  }, [events, announcementsList]);
+  }, [events, announcementsList, postsList]);
 
-  const isLoading = announcementsQ.isLoading;
+  const isLoading = announcementsQ.isLoading || postsQ.isLoading;
 
   let postIndex = 0;
 
@@ -958,12 +1007,13 @@ export function SocialFeed() {
           )
         }
         eventCreating={createEvent.isPending}
+        onPublishPost={async (p) => { await publishPost.mutateAsync(p); }}
+        publishing={publishPost.isPending}
       />
 
       <FeedHeaderBar />
 
       {isLoading ? (
-
         <FeedSkeleton />
       ) : merged.length === 0 ? (
         <div className="rounded-3xl bg-card/40 backdrop-blur-md ring-1 ring-white/5 p-12 text-center animate-fade-in">
@@ -971,7 +1021,7 @@ export function SocialFeed() {
             <Sparkles className="h-7 w-7 text-primary" />
           </div>
           <p className="text-base font-semibold mb-1">Seu feed está vazio</p>
-          <p className="text-sm text-muted-foreground">Publique o primeiro comunicado ou crie um evento.</p>
+          <p className="text-sm text-muted-foreground">Escreva uma mensagem acima e clique em Enviar.</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -979,9 +1029,9 @@ export function SocialFeed() {
             const idx = postIndex++;
             if (it.kind === "event") return <EventFeedCard key={`e-${it.id}`} event={it.event} index={idx} />;
             if (it.kind === "announcement") return <AnnouncementFeedCard key={`a-${it.id}`} item={it} index={idx} />;
+            if (it.kind === "post") return <PostFeedCard key={`p-${it.id}`} item={it} index={idx} />;
             return null;
           })}
-
         </div>
       )}
 
@@ -1001,4 +1051,57 @@ export function SocialFeed() {
       />
     </div>
   );
+}
+
+/* ────────────────────────  POST FEED CARD  ─────────────────────── */
+function PostFeedCard({ item, index }: { item: Extract<FeedItem, { kind: "post" }>; index: number }) {
+  return (
+    <article
+      className="group animate-fade-in rounded-3xl bg-card/70 backdrop-blur-xl ring-1 ring-white/5 hover:ring-white/10 shadow-[0_4px_30px_rgb(0,0,0,0.08)] hover:shadow-[0_8px_40px_rgb(0,0,0,0.16)] transition-all overflow-hidden"
+      style={{ animationDelay: `${index * 40}ms` }}
+    >
+      <div className="flex items-center gap-3 px-5 pt-5">
+        <Avatar className="h-11 w-11 ring-2 ring-primary/20">
+          {item.author_avatar && <AvatarImage src={item.author_avatar} />}
+          <AvatarFallback className="bg-gradient-to-br from-primary to-violet-600 text-white text-xs font-semibold">
+            {initials(item.author_name)}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-sm font-semibold">{item.author_name || "Colaborador"}</p>
+            <span className="text-[11px] text-muted-foreground">› Para todos os colaboradores</span>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            {formatDistanceToNow(new Date(item.ts), { addSuffix: true, locale: ptBR })}
+          </p>
+        </div>
+        <button className="h-9 w-9 rounded-full hover:bg-white/5 flex items-center justify-center text-muted-foreground transition-colors">
+          <MoreHorizontal className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="px-5 pt-3">
+        <p className="text-[15px] text-foreground/90 leading-relaxed whitespace-pre-wrap">{item.content}</p>
+        {item.tags?.length > 0 && (
+          <div className="flex items-center gap-1.5 flex-wrap mt-2">
+            {item.tags.map((t) => (
+              <Badge key={t} variant="secondary" className="h-6 px-2 rounded-md text-[11px] gap-1">#{t}</Badge>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {item.image_url && (
+        <div className="relative mt-4 mx-5 rounded-2xl overflow-hidden bg-muted/40">
+          <img src={item.image_url} alt="" className="w-full max-h-[480px] object-cover" />
+        </div>
+      )}
+
+      <div className="px-5 pt-3 pb-5">
+        <PostActionsBar postKey={`post-${item.id}`} sourceText={item.content} />
+      </div>
+    </article>
+  );
+}
 }
