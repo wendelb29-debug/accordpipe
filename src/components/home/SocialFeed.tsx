@@ -743,6 +743,13 @@ export function SocialFeed() {
       <QuickPostComposer
         onOpenAnnouncements={() => setManageOpen(true)}
         onOpenEvent={() => setEventOpen(true)}
+        onCreateEvent={(f) =>
+          createEvent.mutate(
+            { ...f, event_type: "reunião", description: "", target_mode: "all" } as any,
+            { onSuccess: () => toast.success("Evento criado") }
+          )
+        }
+        eventCreating={createEvent.isPending}
       />
 
       <FeedHeaderBar />
