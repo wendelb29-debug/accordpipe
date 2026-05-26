@@ -15,8 +15,10 @@ import {
   Send, Heart, MessageCircle, Share2, CheckCircle2, MoreHorizontal, Sparkles,
   Sparkle, Paperclip, FileText, AtSign, Quote, Hash, Video, Type, Search, X, Plus,
   Upload, Cloud, HardDrive, FileSpreadsheet, Presentation, LayoutDashboard,
-  Bold, Italic, Smile, ChevronDown, BarChart3, ThumbsUp,
+  Bold, Italic, Smile, ChevronDown, BarChart3, ThumbsUp, Eye, BellOff, Bell,
+  Copy, MessageSquarePlus, Pencil, ClipboardCopy, ThumbsDown, Loader2,
 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -488,24 +490,224 @@ function FeedHeaderBar() {
 
 
 /* ───────────────────────  POST ACTIONS BAR  ─────────────────────── */
-function PostActionsBar({ confirmed = 0 }: { confirmed?: number }) {
+function PostActionsBar({ confirmed = 0, postKey, sourceText = "" }: { confirmed?: number; postKey: string; sourceText?: string }) {
+  const { profile } = useAuth();
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(Math.max(confirmed, 0));
+  const [following, setFollowing] = useState(true);
+  const [views] = useState(() => Math.floor(Math.random() * 6));
+  const [commentOpen, setCommentOpen] = useState(true);
+  const [comment, setComment] = useState("");
+  const [comments, setComments] = useState<{ id: string; author: string; avatar?: string | null; text: string; ts: string }[]>([]);
+  const [copilotOpen, setCopilotOpen] = useState(false);
+  const [copilotText, setCopilotText] = useState("");
+  const [copilotLoading, setCopilotLoading] = useState(false);
+
+  const runCopilot = async (prompt?: string) => {
+    setCopilotOpen(true);
+    setCopilotLoading(true);
+    setCopilotText("");
+    // Lightweight simulated assistant reply based on the post content
+    await new Promise((r) => setTimeout(r, 650));
+    const base = sourceText.trim();
+    const reply = prompt
+      ? `${prompt}\n\nO texto "${base || "publicação"}" pode ser interpretado como uma mensagem da equipe. Posso reescrevê-lo, resumi-lo ou transformá-lo em um anúncio formal.`
+      : `O texto "${base || "publicação"}" é uma mensagem do feed. Posso resumir, reescrever em tom profissional, gerar perguntas para a equipe ou transformar em uma tarefa. É só dizer.`;
+    setCopilotText(reply);
+    setCopilotLoading(false);
+  };
+
+  const submitComment = () => {
+    if (!comment.trim()) return;
+    setComments((c) => [
+      ...c,
+      {
+        id: crypto.randomUUID(),
+        author: profile?.name || "Você",
+        avatar: profile?.avatar_url,
+        text: comment.trim(),
+        ts: new Date().toISOString(),
+      },
+    ]);
+    setComment("");
+  };
+
   return (
-    <div className="flex items-center gap-1 pt-3 mt-3 border-t border-white/[0.04]">
-      <button
-        onClick={() => { setLiked(!liked); setLikes(l => liked ? l - 1 : l + 1); }}
-        className={`flex items-center gap-1.5 px-3 h-9 rounded-full text-xs font-medium transition-all hover:bg-white/5 ${liked ? "text-rose-500" : "text-muted-foreground"}`}
-      >
-        <Heart className={`h-4 w-4 transition-transform ${liked ? "fill-rose-500 scale-110" : ""}`} />
-        {likes > 0 && <span>{likes}</span>}
-      </button>
-      <button className="flex items-center gap-1.5 px-3 h-9 rounded-full text-xs font-medium text-muted-foreground hover:bg-white/5 transition-colors">
-        <MessageCircle className="h-4 w-4" /> Comentar
-      </button>
-      <button className="flex items-center gap-1.5 px-3 h-9 rounded-full text-xs font-medium text-muted-foreground hover:bg-white/5 transition-colors">
-        <Share2 className="h-4 w-4" /> Compartilhar
-      </button>
+    <div className="pt-3 mt-3 border-t border-white/[0.04]">
+      {/* Action row */}
+      <div className="flex items-center gap-0.5 flex-wrap">
+        <button
+          onClick={() => { setLiked(!liked); setLikes(l => liked ? l - 1 : l + 1); }}
+          className={`flex items-center gap-1.5 px-3 h-9 rounded-full text-xs font-medium transition-all hover:bg-white/5 ${liked ? "text-rose-500" : "text-muted-foreground"}`}
+        >
+          <Heart className={`h-4 w-4 transition-transform ${liked ? "fill-rose-500 scale-110" : ""}`} />
+          Curtir{likes > 0 && <span className="ml-0.5 opacity-80">· {likes}</span>}
+        </button>
+        <button
+          onClick={() => setCommentOpen((v) => !v)}
+          className="flex items-center gap-1.5 px-3 h-9 rounded-full text-xs font-medium text-muted-foreground hover:bg-white/5 transition-colors"
+        >
+          <MessageCircle className="h-4 w-4" /> Comentar
+        </button>
+        <button
+          onClick={() => { setFollowing((v) => !v); toast.success(following ? "Você deixou de seguir" : "Você está seguindo"); }}
+          className="flex items-center gap-1.5 px-3 h-9 rounded-full text-xs font-medium text-muted-foreground hover:bg-white/5 transition-colors"
+        >
+          {following ? <><BellOff className="h-4 w-4" /> Deixar de seguir</> : <><Bell className="h-4 w-4" /> Seguir</>}
+        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-1.5 px-3 h-9 rounded-full text-xs font-medium text-muted-foreground hover:bg-white/5 transition-colors">
+              Mais
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-52">
+            <DropdownMenuItem onClick={() => { navigator.clipboard?.writeText(sourceText); toast.success("Link copiado"); }}>
+              <Share2 className="h-4 w-4 mr-2" /> Compartilhar
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => toast.info("Fixado no topo")}>
+              <Hash className="h-4 w-4 mr-2" /> Fixar publicação
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => toast.info("Marcado como lido")}>
+              <CheckCircle2 className="h-4 w-4 mr-2" /> Marcar como lido
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => toast.info("Denúncia enviada")}>
+              <ThumbsDown className="h-4 w-4 mr-2" /> Denunciar
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <button
+          onClick={() => runCopilot()}
+          className="flex items-center gap-1.5 px-3 h-9 rounded-full text-xs font-semibold text-violet-400 hover:bg-violet-500/10 transition-colors"
+        >
+          <Sparkle className="h-4 w-4" /> CoPilot
+        </button>
+        <div className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground/70 pr-2">
+          <Eye className="h-3.5 w-3.5" /> {views}
+        </div>
+      </div>
+
+      {/* CoPilot inline panel */}
+      {copilotOpen && (
+        <div className="mt-3 rounded-2xl bg-amber-50/95 dark:bg-amber-100/[0.06] ring-1 ring-amber-300/40 dark:ring-amber-400/15 p-4 relative animate-fade-in">
+          <button
+            onClick={() => setCopilotOpen(false)}
+            className="absolute top-2.5 right-2.5 h-7 w-7 rounded-full hover:bg-black/5 dark:hover:bg-white/5 flex items-center justify-center text-muted-foreground"
+            aria-label="Fechar CoPilot"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+          <div className="flex items-start gap-3 pr-6">
+            <div className="h-8 w-8 rounded-lg bg-violet-500/15 ring-1 ring-violet-500/30 flex items-center justify-center shrink-0">
+              <Sparkle className="h-4 w-4 text-violet-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              {copilotLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> CoPilot está pensando…
+                </div>
+              ) : (
+                <p className="text-[13px] leading-relaxed text-foreground/85 whitespace-pre-wrap">{copilotText}</p>
+              )}
+              <div className="flex items-center gap-3 mt-3 text-[11px] text-muted-foreground">
+                <Sparkle className="h-3 w-3" />
+                <span>Textos gerados pelo CoPilot nem sempre podem ser factualmente precisos.</span>
+                <a className="underline ml-auto" href="#" onClick={(e) => e.preventDefault()}>Saiba mais</a>
+              </div>
+              {!copilotLoading && (
+                <div className="flex items-center gap-1 mt-3 flex-wrap">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-white dark:bg-white/10 ring-1 ring-black/5 dark:ring-white/10 text-xs hover:bg-white/90 dark:hover:bg-white/15 transition">
+                        Ações <ChevronDown className="h-3 w-3" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-60">
+                      <DropdownMenuItem onClick={() => runCopilot("Editar consulta")}>
+                        <Pencil className="h-4 w-4 mr-2" /> Editar consulta
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => { navigator.clipboard?.writeText(copilotText); toast.success("Copiado"); }}>
+                        <Copy className="h-4 w-4 mr-2" /> Copiar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => { setComment(copilotText); setCommentOpen(true); toast.success("Texto enviado para o comentário"); }}>
+                        <ClipboardCopy className="h-4 w-4 mr-2" /> Copiar para o comentário
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => toast.success("Copiado para nova publicação")}>
+                        <MessageSquarePlus className="h-4 w-4 mr-2" /> Copiar para uma nova publicação
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => toast.info("Obrigado pelo feedback")}>
+                        <ThumbsUp className="h-4 w-4 mr-2" /> Feedback
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <Button size="sm" className="h-8 px-3 text-[11px] uppercase tracking-wide" onClick={() => runCopilot("Refazer")}>
+                    Refazer
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Comments + composer */}
+      {commentOpen && (
+        <div className="mt-3 space-y-2.5 animate-fade-in">
+          {comments.map((c) => (
+            <div key={c.id} className="flex items-start gap-2.5">
+              <Avatar className="h-8 w-8 shrink-0">
+                {c.avatar && <AvatarImage src={c.avatar} />}
+                <AvatarFallback className="text-[10px] bg-gradient-to-br from-primary to-violet-600 text-white">
+                  {initials(c.author)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0 rounded-2xl bg-white/[0.04] ring-1 ring-white/5 px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold">{c.author}</span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {formatDistanceToNow(new Date(c.ts), { addSuffix: true, locale: ptBR })}
+                  </span>
+                </div>
+                <p className="text-[13px] text-foreground/90 mt-0.5 whitespace-pre-wrap">{c.text}</p>
+              </div>
+            </div>
+          ))}
+          <div className="flex items-center gap-2.5">
+            <Avatar className="h-8 w-8 shrink-0">
+              {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
+              <AvatarFallback className="text-[10px] bg-gradient-to-br from-primary to-violet-600 text-white">
+                {initials(profile?.name)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 flex items-center gap-2 rounded-full bg-white/[0.04] ring-1 ring-white/5 px-3 h-10 focus-within:ring-primary/40 transition">
+              <input
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); } }}
+                placeholder="Adicionar comentário"
+                className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted-foreground/60"
+              />
+              <button
+                onClick={() => runCopilot("Sugerir um comentário")}
+                className="h-7 w-7 rounded-full flex items-center justify-center text-violet-400 hover:bg-violet-500/10 transition"
+                title="CoPilot"
+              >
+                <Sparkle className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={submitComment}
+                disabled={!comment.trim()}
+                className="h-7 w-7 rounded-full flex items-center justify-center text-primary hover:bg-primary/10 transition disabled:opacity-40"
+                title="Enviar"
+              >
+                <Send className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -603,7 +805,7 @@ function EventFeedCard({ event, index }: { event: TenantEvent; index: number }) 
           )}
         </div>
 
-        <PostActionsBar confirmed={confirmed} />
+        <PostActionsBar confirmed={confirmed} postKey={`event-${event.id}`} sourceText={event.title} />
       </div>
       <div className="h-2" />
     </article>
@@ -647,7 +849,7 @@ function AnnouncementFeedCard({ item, index }: { item: Extract<FeedItem, { kind:
       )}
 
       <div className="px-5 pt-3 pb-5">
-        <PostActionsBar />
+        <PostActionsBar postKey={`ann-${item.id}`} sourceText={item.title} />
       </div>
     </article>
   );
