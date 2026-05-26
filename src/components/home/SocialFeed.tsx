@@ -14,7 +14,12 @@ import {
   Calendar, Clock, MapPin, Users, ImagePlus, Megaphone, CalendarPlus,
   Send, Heart, MessageCircle, Share2, CheckCircle2, MoreHorizontal, Sparkles,
   Sparkle, Paperclip, FileText, AtSign, Quote, Hash, Video, Type, Search, X, Plus,
+  Upload, Cloud, HardDrive, FileSpreadsheet, Presentation, LayoutDashboard,
+  Bold, Italic, Smile, ChevronDown, BarChart3, ThumbsUp,
 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
