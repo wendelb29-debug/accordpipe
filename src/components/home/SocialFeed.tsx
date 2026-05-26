@@ -1287,7 +1287,7 @@ function PostFeedCard({ item, index }: { item: Extract<FeedItem, { kind: "post" 
       )}
 
       <div className="px-5 pt-3 pb-5">
-        <PostActionsBar postKey={`post-${item.id}`} sourceText={item.content} />
+        <PostActionsBar postKey={`post-${item.id}`} sourceText={item.content} postId={item.id} authorId={item.author_id} />
       </div>
     </article>
   );
