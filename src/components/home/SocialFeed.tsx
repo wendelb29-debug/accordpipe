@@ -57,43 +57,94 @@ const newPollQ = (): PollQuestion => ({
   id: crypto.randomUUID(), question: "", answers: ["", ""], multi: false,
 });
 
-function MentionPopover() {
+type Recipient = { id: string; name: string; avatar_url?: string | null };
+const ALL_RECIPIENT: Recipient = { id: "__all__", name: "Todos os colaboradores" };
+
+function MentionPicker({
+  trigger, selectedIds, onPick,
+}: {
+  trigger: React.ReactNode;
+  selectedIds: Set<string>;
+  onPick: (r: Recipient) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const tenantId = useActiveCompanyId();
-  const { data: users = [] } = useQuery({
+  const { data: users = [], isLoading } = useQuery({
     queryKey: ["mention-users", tenantId, q],
     enabled: open && !!tenantId,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles").select("id,name,avatar_url")
-        .ilike("name", `%${q}%`).limit(8);
-      return data ?? [];
+      let query = supabase
+        .from("profiles")
+        .select("id,user_id,name,avatar_url,company_id")
+        .eq("company_id", tenantId!)
+        .eq("is_active", true)
+        .order("name", { ascending: true })
+        .limit(30);
+      if (q.trim()) query = query.ilike("name", `%${q.trim()}%`);
+      const { data } = await query;
+      return (data ?? []).map((u: any) => ({
+        id: u.user_id || u.id,
+        name: u.name || "Sem nome",
+        avatar_url: u.avatar_url,
+      })) as Recipient[];
     },
   });
+
+  const allSelected = selectedIds.has(ALL_RECIPIENT.id);
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button className="flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[12px] font-medium text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors">
-          <AtSign className="h-4 w-4" /><span className="hidden sm:inline">Mencionar</span>
-        </button>
-      </PopoverTrigger>
+      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent className="w-72 p-0" align="start">
         <div className="p-2 border-b border-border/50">
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="pesquisa" className="h-9" />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Pesquisar pessoas"
+            className="h-9"
+            autoFocus
+          />
         </div>
-        <div className="max-h-64 overflow-y-auto p-1">
-          {users.length === 0 ? (
+        <div className="max-h-72 overflow-y-auto p-1">
+          {/* Todos os colaboradores */}
+          <button
+            onClick={() => { onPick(ALL_RECIPIENT); setOpen(false); }}
+            disabled={allSelected}
+            className="flex items-center gap-2 w-full p-2 rounded-md hover:bg-accent transition-colors text-left disabled:opacity-40"
+          >
+            <div className="h-7 w-7 rounded-full bg-emerald-500/15 ring-1 ring-emerald-500/30 flex items-center justify-center">
+              <Users className="h-3.5 w-3.5 text-emerald-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium">Todos os colaboradores</p>
+              <p className="text-[10px] text-muted-foreground">Notifica toda a equipe</p>
+            </div>
+            {allSelected && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+          </button>
+          <div className="my-1 border-t border-border/40" />
+          {isLoading ? (
+            <p className="text-xs text-muted-foreground p-3 text-center">Carregando…</p>
+          ) : users.length === 0 ? (
             <p className="text-xs text-muted-foreground p-3 text-center">Nenhum usuário</p>
-          ) : users.map((u: any) => (
-            <button key={u.id} className="flex items-center gap-2 w-full p-2 rounded-md hover:bg-accent transition-colors text-left">
-              <Avatar className="h-7 w-7">
-                {u.avatar_url && <AvatarImage src={u.avatar_url} />}
-                <AvatarFallback className="text-[10px]">{initials(u.name)}</AvatarFallback>
-              </Avatar>
-              <span className="text-sm">{u.name}</span>
-            </button>
-          ))}
+          ) : users.map((u) => {
+            const picked = selectedIds.has(u.id);
+            return (
+              <button
+                key={u.id}
+                onClick={() => { onPick(u); setOpen(false); }}
+                disabled={picked}
+                className="flex items-center gap-2 w-full p-2 rounded-md hover:bg-accent transition-colors text-left disabled:opacity-40"
+              >
+                <Avatar className="h-7 w-7">
+                  {u.avatar_url && <AvatarImage src={u.avatar_url} />}
+                  <AvatarFallback className="text-[10px]">{initials(u.name)}</AvatarFallback>
+                </Avatar>
+                <span className="flex-1 text-sm truncate">{u.name}</span>
+                {picked && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+              </button>
+            );
+          })}
         </div>
       </PopoverContent>
     </Popover>
@@ -301,12 +352,19 @@ function QuickPostComposer({
   const [showMore, setShowMore] = useState(false);
   const [moreView, setMoreView] = useState<"document" | null>(null);
   const fileRef = React.useRef<HTMLInputElement>(null);
+  const [recipients, setRecipients] = useState<Recipient[]>([]);
+  const selectedIds = useMemo(() => new Set(recipients.map((r) => r.id)), [recipients]);
+  const addRecipient = (r: Recipient) => {
+    setRecipients((cur) => (cur.some((x) => x.id === r.id) ? cur : [...cur, r]));
+  };
+  const removeRecipient = (id: string) =>
+    setRecipients((cur) => cur.filter((x) => x.id !== id));
 
   const handleSubmit = async () => {
     if (tab === "Mensagem") {
       if (!text.trim()) return toast.info("Escreva algo para publicar");
       await onPublishPost({ content: text.trim(), tags });
-      setText(""); setTags([]); setShowTags(false);
+      setText(""); setTags([]); setShowTags(false); setRecipients([]);
     } else if (tab === "Arquivo") {
       onOpenAnnouncements();
     } else if (tab === "Enquete") {
@@ -410,7 +468,15 @@ function QuickPostComposer({
             <span className="hidden sm:inline">{t.label}</span>
           </button>
         ))}
-        <MentionPopover />
+        <MentionPicker
+          selectedIds={selectedIds}
+          onPick={addRecipient}
+          trigger={
+            <button className="flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[12px] font-medium text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors">
+              <AtSign className="h-4 w-4" /><span className="hidden sm:inline">Mencionar</span>
+            </button>
+          }
+        />
       </div>
 
       {/* Tags row */}
@@ -439,20 +505,44 @@ function QuickPostComposer({
         </div>
       )}
 
-      {/* Recipients */}
-      <div className="px-5 py-3 flex items-center gap-3 border-t border-white/[0.04] bg-white/[0.015]">
-        <span className="text-[12px] font-medium text-muted-foreground shrink-0">Para:</span>
-        <div className="flex items-center gap-2 flex-wrap flex-1">
-          <Badge variant="secondary" className="h-7 px-2.5 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 gap-1.5">
-            <Users className="h-3 w-3" />
-            Todos os colaboradores
-            <X className="h-3 w-3 opacity-60 hover:opacity-100 cursor-pointer ml-1" />
-          </Badge>
-          <button className="flex items-center gap-1 h-7 px-2 rounded-md text-[12px] font-medium text-primary hover:bg-primary/10 transition-colors">
-            <Plus className="h-3.5 w-3.5" /> Adicionar mais
-          </button>
+      {/* Recipients — só aparece quando alguém foi mencionado/selecionado */}
+      {recipients.length > 0 && (
+        <div className="px-5 py-3 flex items-center gap-3 border-t border-white/[0.04] bg-white/[0.015] animate-fade-in">
+          <span className="text-[12px] font-medium text-muted-foreground shrink-0">Para:</span>
+          <div className="flex items-center gap-2 flex-wrap flex-1">
+            {recipients.map((r) => {
+              const isAll = r.id === ALL_RECIPIENT.id;
+              return (
+                <Badge
+                  key={r.id}
+                  variant="secondary"
+                  className={`h-7 px-2.5 rounded-md gap-1.5 ${
+                    isAll
+                      ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20"
+                      : "bg-primary/10 text-primary border border-primary/20 hover:bg-primary/15"
+                  }`}
+                >
+                  {isAll ? <Users className="h-3 w-3" /> : <AtSign className="h-3 w-3" />}
+                  {r.name}
+                  <X
+                    className="h-3 w-3 opacity-60 hover:opacity-100 cursor-pointer ml-1"
+                    onClick={() => removeRecipient(r.id)}
+                  />
+                </Badge>
+              );
+            })}
+            <MentionPicker
+              selectedIds={selectedIds}
+              onPick={addRecipient}
+              trigger={
+                <button className="flex items-center gap-1 h-7 px-2 rounded-md text-[12px] font-medium text-primary hover:bg-primary/10 transition-colors">
+                  <Plus className="h-3.5 w-3.5" /> Adicionar mais
+                </button>
+              }
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Submit */}
       {tab !== "Evento" && tab !== "Enquete" && (
