@@ -468,7 +468,15 @@ function QuickPostComposer({
             <span className="hidden sm:inline">{t.label}</span>
           </button>
         ))}
-        <MentionPopover />
+        <MentionPicker
+          selectedIds={selectedIds}
+          onPick={addRecipient}
+          trigger={
+            <button className="flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[12px] font-medium text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors">
+              <AtSign className="h-4 w-4" /><span className="hidden sm:inline">Mencionar</span>
+            </button>
+          }
+        />
       </div>
 
       {/* Tags row */}
