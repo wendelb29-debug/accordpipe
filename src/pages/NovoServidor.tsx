@@ -496,6 +496,7 @@ export default function NovoServidor() {
     { value: "contrato", icon: FileSignature, label: "Contrato", short: "Contrato" },
     { value: "vendas", icon: Webhook, label: "Webhooks Z-API", short: "Z-API" },
     { value: "fintech", icon: CreditCard, label: "Webhooks Fintech", short: "Fintech" },
+    { value: "fiscal", icon: ShieldCheck, label: "Fiscal & Certificados", short: "Fiscal" },
     { value: "usuarios", icon: Users, label: "Usuários", short: "Usuários" },
     { value: "catalogo", icon: Package, label: "Catálogo", short: "Catálogo" },
     { value: "plano", icon: Crown, label: "Plano & Usuários", short: "Plano" },
