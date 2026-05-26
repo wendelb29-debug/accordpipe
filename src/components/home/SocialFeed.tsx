@@ -613,6 +613,50 @@ function PostActionsBar({
   const [copilotOpen, setCopilotOpen] = useState(false);
   const [copilotText, setCopilotText] = useState("");
   const [copilotLoading, setCopilotLoading] = useState(false);
+  const [viewersOpen, setViewersOpen] = useState(false);
+
+  // Register view (only if not the author and we have a real post id)
+  useEffect(() => {
+    if (!postId || !user?.id || !tenantId || isAuthor) return;
+    let cancelled = false;
+    (async () => {
+      const { error } = await supabase
+        .from("feed_post_views")
+        .insert({ post_id: postId, user_id: user.id, servidor_id: tenantId });
+      // Ignore duplicate key errors (user already viewed)
+      if (!cancelled && !error) {
+        qc.invalidateQueries({ queryKey: ["feed-post-viewers", postId] });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [postId, user?.id, tenantId, isAuthor, qc]);
+
+  // Author fetches viewers
+  const viewersQ = useQuery({
+    queryKey: ["feed-post-viewers", postId],
+    enabled: !!postId && isAuthor,
+    queryFn: async () => {
+      const { data: views } = await supabase
+        .from("feed_post_views")
+        .select("user_id, viewed_at")
+        .eq("post_id", postId!)
+        .order("viewed_at", { ascending: false });
+      const ids = Array.from(new Set((views ?? []).map((v: any) => v.user_id)));
+      if (ids.length === 0) return [];
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("user_id, name, avatar_url")
+        .in("user_id", ids);
+      const map = new Map((profs ?? []).map((p: any) => [p.user_id, p]));
+      return (views ?? []).map((v: any) => ({
+        user_id: v.user_id,
+        viewed_at: v.viewed_at,
+        name: map.get(v.user_id)?.name || "Usuário",
+        avatar_url: map.get(v.user_id)?.avatar_url || null,
+      }));
+    },
+  });
+  const viewers = viewersQ.data ?? [];
 
   const runCopilot = async (prompt?: string) => {
     setCopilotOpen(true);
