@@ -284,11 +284,14 @@ function PollBuilder({ onPublish }: { onPublish: () => void }) {
 
 function QuickPostComposer({
   onOpenAnnouncements, onOpenEvent, onCreateEvent, eventCreating,
+  onPublishPost, publishing,
 }: {
   onOpenAnnouncements: () => void;
   onOpenEvent: () => void;
   onCreateEvent: (f: { title: string; start_at: string; end_at: string; location: string }) => void;
   eventCreating: boolean;
+  onPublishPost: (p: { content: string; tags: string[] }) => Promise<void> | void;
+  publishing: boolean;
 }) {
   const { profile } = useAuth();
   const [tab, setTab] = useState<ComposerTab>("Mensagem");
@@ -299,10 +302,11 @@ function QuickPostComposer({
   const [moreView, setMoreView] = useState<"document" | null>(null);
   const fileRef = React.useRef<HTMLInputElement>(null);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (tab === "Mensagem") {
       if (!text.trim()) return toast.info("Escreva algo para publicar");
-      onOpenAnnouncements();
+      await onPublishPost({ content: text.trim(), tags });
+      setText(""); setTags([]); setShowTags(false);
     } else if (tab === "Arquivo") {
       onOpenAnnouncements();
     } else if (tab === "Enquete") {
