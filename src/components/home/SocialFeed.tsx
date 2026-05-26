@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -586,18 +586,77 @@ function FeedHeaderBar() {
 
 
 /* ───────────────────────  POST ACTIONS BAR  ─────────────────────── */
-function PostActionsBar({ confirmed = 0, postKey, sourceText = "" }: { confirmed?: number; postKey: string; sourceText?: string }) {
-  const { profile } = useAuth();
+function PostActionsBar({
+  confirmed = 0,
+  postKey,
+  sourceText = "",
+  postId,
+  authorId,
+}: {
+  confirmed?: number;
+  postKey: string;
+  sourceText?: string;
+  postId?: string;
+  authorId?: string;
+}) {
+  const { user, profile } = useAuth();
+  const tenantId = useActiveCompanyId();
+  const qc = useQueryClient();
+  const isAuthor = !!postId && !!authorId && user?.id === authorId;
+
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(Math.max(confirmed, 0));
   const [following, setFollowing] = useState(true);
-  const [views] = useState(() => Math.floor(Math.random() * 6));
   const [commentOpen, setCommentOpen] = useState(true);
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState<{ id: string; author: string; avatar?: string | null; text: string; ts: string }[]>([]);
   const [copilotOpen, setCopilotOpen] = useState(false);
   const [copilotText, setCopilotText] = useState("");
   const [copilotLoading, setCopilotLoading] = useState(false);
+  const [viewersOpen, setViewersOpen] = useState(false);
+
+  // Register view (only if not the author and we have a real post id)
+  useEffect(() => {
+    if (!postId || !user?.id || !tenantId || isAuthor) return;
+    let cancelled = false;
+    (async () => {
+      const { error } = await supabase
+        .from("feed_post_views")
+        .insert({ post_id: postId, user_id: user.id, servidor_id: tenantId });
+      // Ignore duplicate key errors (user already viewed)
+      if (!cancelled && !error) {
+        qc.invalidateQueries({ queryKey: ["feed-post-viewers", postId] });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [postId, user?.id, tenantId, isAuthor, qc]);
+
+  // Author fetches viewers
+  const viewersQ = useQuery({
+    queryKey: ["feed-post-viewers", postId],
+    enabled: !!postId && isAuthor,
+    queryFn: async () => {
+      const { data: views } = await supabase
+        .from("feed_post_views")
+        .select("user_id, viewed_at")
+        .eq("post_id", postId!)
+        .order("viewed_at", { ascending: false });
+      const ids = Array.from(new Set((views ?? []).map((v: any) => v.user_id)));
+      if (ids.length === 0) return [];
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("user_id, name, avatar_url")
+        .in("user_id", ids);
+      const map = new Map((profs ?? []).map((p: any) => [p.user_id, p]));
+      return (views ?? []).map((v: any) => ({
+        user_id: v.user_id,
+        viewed_at: v.viewed_at,
+        name: map.get(v.user_id)?.name || "Usuário",
+        avatar_url: map.get(v.user_id)?.avatar_url || null,
+      }));
+    },
+  });
+  const viewers = viewersQ.data ?? [];
 
   const runCopilot = async (prompt?: string) => {
     setCopilotOpen(true);
@@ -679,9 +738,48 @@ function PostActionsBar({ confirmed = 0, postKey, sourceText = "" }: { confirmed
         >
           <Sparkle className="h-4 w-4" /> CoPilot
         </button>
-        <div className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground/70 pr-2">
-          <Eye className="h-3.5 w-3.5" /> {views}
-        </div>
+        {isAuthor && (
+          <Popover open={viewersOpen} onOpenChange={setViewersOpen}>
+            <PopoverTrigger asChild>
+              <button
+                className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground/70 hover:text-foreground pr-2 h-9 transition-colors"
+                title="Quem visualizou"
+              >
+                <Eye className="h-3.5 w-3.5" /> {viewers.length}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-72 p-0">
+              <div className="px-3 py-2 border-b border-border/50">
+                <p className="text-xs font-semibold">Visualizações</p>
+                <p className="text-[11px] text-muted-foreground">{viewers.length} pessoa{viewers.length === 1 ? "" : "s"} visualizaram</p>
+              </div>
+              <div className="max-h-72 overflow-y-auto p-1">
+                {viewersQ.isLoading ? (
+                  <div className="flex items-center justify-center py-6 text-xs text-muted-foreground">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> Carregando…
+                  </div>
+                ) : viewers.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-6">Ninguém visualizou ainda.</p>
+                ) : (
+                  viewers.map((v) => (
+                    <div key={v.user_id} className="flex items-center gap-2 p-2 rounded-md hover:bg-accent/50">
+                      <Avatar className="h-7 w-7">
+                        {v.avatar_url && <AvatarImage src={v.avatar_url} />}
+                        <AvatarFallback className="text-[10px]">{initials(v.name)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">{v.name}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {formatDistanceToNow(new Date(v.viewed_at), { addSuffix: true, locale: ptBR })}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
       </div>
 
       {/* CoPilot inline panel */}
@@ -1189,7 +1287,7 @@ function PostFeedCard({ item, index }: { item: Extract<FeedItem, { kind: "post" 
       )}
 
       <div className="px-5 pt-3 pb-5">
-        <PostActionsBar postKey={`post-${item.id}`} sourceText={item.content} />
+        <PostActionsBar postKey={`post-${item.id}`} sourceText={item.content} postId={item.id} authorId={item.author_id} />
       </div>
     </article>
   );
