@@ -55,7 +55,7 @@ const Eventos = lazy(() => import("./pages/Eventos"));
 const MeusTenants = lazy(() => import("./pages/MeusTenants"));
 const Academy = lazy(() => import("./pages/Academy"));
 const GestaoTenants = lazy(() => import("./pages/GestaoTenants"));
-const FiscalCertificados = lazy(() => import("./pages/FiscalCertificados"));
+
 const WhatsAppConnection = lazy(() => import("./pages/WhatsAppConnection"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
