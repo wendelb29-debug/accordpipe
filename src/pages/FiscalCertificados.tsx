@@ -284,7 +284,10 @@ export default function FiscalCertificados() {
     queryKey: ["fiscal-certs", isMaster, tenantId],
     enabled: allowed,
     queryFn: async () => {
-      const q = supabase.from("tenant_certificates").select("*").order("created_at", { ascending: false });
+      // NUNCA selecionar password_encrypted/password_iv — esses campos só existem no backend.
+      const q = supabase.from("tenant_certificates").select(
+        "id, tenant_id, is_global, name, storage_path, holder_name, holder_document, issuer, valid_from, valid_until, environment, is_active, is_icp_brasil, use_master_global, last_test_at, last_test_status, last_test_message, created_at"
+      ).order("created_at", { ascending: false });
       const { data, error } = await q;
       if (error) throw error;
       return (data || []) as Cert[];
