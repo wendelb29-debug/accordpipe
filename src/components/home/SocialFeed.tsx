@@ -13,7 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Calendar, Clock, MapPin, Users, ImagePlus, Megaphone, CalendarPlus,
   Send, Heart, MessageCircle, Share2, CheckCircle2, MoreHorizontal, Sparkles,
+  Sparkle, Paperclip, FileText, AtSign, Quote, Hash, Video, Type, Search, X, Plus,
 } from "lucide-react";
+
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
