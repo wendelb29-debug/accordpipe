@@ -15,8 +15,10 @@ import {
   Send, Heart, MessageCircle, Share2, CheckCircle2, MoreHorizontal, Sparkles,
   Sparkle, Paperclip, FileText, AtSign, Quote, Hash, Video, Type, Search, X, Plus,
   Upload, Cloud, HardDrive, FileSpreadsheet, Presentation, LayoutDashboard,
-  Bold, Italic, Smile, ChevronDown, BarChart3, ThumbsUp,
+  Bold, Italic, Smile, ChevronDown, BarChart3, ThumbsUp, Eye, BellOff, Bell,
+  Copy, MessageSquarePlus, Pencil, ClipboardCopy, ThumbsDown, Loader2,
 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
