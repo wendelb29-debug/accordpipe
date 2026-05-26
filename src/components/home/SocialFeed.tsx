@@ -150,9 +150,6 @@ function MentionPicker({
     </Popover>
   );
 }
-    </Popover>
-  );
-}
 
 function FileSourcesPanel({ onUpload }: { onUpload: () => void }) {
   const sources = [
