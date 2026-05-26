@@ -359,12 +359,21 @@ Deno.serve(async (req) => {
     let result;
     if (action === "upload") result = await handleUpload(supa, user.id, body);
     else if (action === "test") result = await handleTest(supa, body.cert_id);
-    else if (action === "delete") result = await handleDelete(supa, body.cert_id);
-    else if (action === "set_use_global") result = await handleSetUseGlobal(supa, body.tenant_id, !!body.use);
+    else if (action === "validate") result = await handleValidate(supa, body.cert_id, user.id);
+    else if (action === "delete") result = await handleDelete(supa, body.cert_id, user.id);
+    else if (action === "set_use_global") result = await handleSetUseGlobal(supa, body.tenant_id, !!body.use, user.id);
+    else if (action === "update_purpose") result = await handleUpdatePurpose(supa, body, user.id);
     else return new Response(JSON.stringify({ error: "Ação desconhecida" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
 
-    // audit
+    // audit (log estrutural)
     await supa.from("audit_logs").insert({
+      user_id: user.id, user_name: user.email,
+      action: `certificate.${action}`,
+      target_type: "tenant_certificates",
+      target_id: result?.id || body.cert_id || body.tenant_id || null,
+      servidor_id: isMasterRow?.company_id || null,
+      details: { is_global: !!body.is_global, uso_nfe: body.uso_nfe ?? null, uso_assinatura_contratos: body.uso_assinatura_contratos ?? null, ambiente_nfe: body.ambiente_nfe ?? null },
+    });
       user_id: user.id,
       user_name: user.email,
       action: `certificate.${action}`,
