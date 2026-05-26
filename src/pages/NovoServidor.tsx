@@ -758,6 +758,15 @@ export default function NovoServidor() {
             </Card>
           )}
 
+          {activeTab === "fiscal" && (
+            <Card>
+              <CardContent className="pt-6">
+                <TenantCertificatesTab tenantId={editId || pendingNewId} />
+              </CardContent>
+            </Card>
+          )}
+
+
           {activeTab === "usuarios" && (
             <Card>
               <CardContent className="pt-6">
