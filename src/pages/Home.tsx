@@ -47,16 +47,17 @@ export default function Home() {
 
       <QuickActions />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-2 space-y-5">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="space-y-5">
           <BirthdayCard />
           <HighlightedEventsCarousel />
           <AnnouncementsCarousel />
         </div>
-        <div className="min-h-[300px]">
+        <div className="min-h-[420px]">
           <ActivityFeed />
         </div>
       </div>
+
 
       <SupportDialog open={supportOpen} onOpenChange={setSupportOpen} />
       <ManageAnnouncementsDialog
