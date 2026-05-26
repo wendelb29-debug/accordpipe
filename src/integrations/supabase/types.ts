@@ -5013,6 +5013,92 @@ export type Database = {
           },
         ]
       }
+      tenant_certificates: {
+        Row: {
+          created_at: string
+          environment: string
+          holder_document: string | null
+          holder_name: string | null
+          id: string
+          is_active: boolean
+          is_global: boolean
+          is_icp_brasil: boolean
+          issuer: string | null
+          last_test_at: string | null
+          last_test_message: string | null
+          last_test_status: string | null
+          name: string
+          password_encrypted: string
+          password_iv: string
+          serial_number: string | null
+          storage_path: string
+          tenant_id: string | null
+          updated_at: string
+          uploaded_by: string | null
+          use_master_global: boolean
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          created_at?: string
+          environment?: string
+          holder_document?: string | null
+          holder_name?: string | null
+          id?: string
+          is_active?: boolean
+          is_global?: boolean
+          is_icp_brasil?: boolean
+          issuer?: string | null
+          last_test_at?: string | null
+          last_test_message?: string | null
+          last_test_status?: string | null
+          name: string
+          password_encrypted: string
+          password_iv: string
+          serial_number?: string | null
+          storage_path: string
+          tenant_id?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+          use_master_global?: boolean
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          created_at?: string
+          environment?: string
+          holder_document?: string | null
+          holder_name?: string | null
+          id?: string
+          is_active?: boolean
+          is_global?: boolean
+          is_icp_brasil?: boolean
+          issuer?: string | null
+          last_test_at?: string | null
+          last_test_message?: string | null
+          last_test_status?: string | null
+          name?: string
+          password_encrypted?: string
+          password_iv?: string
+          serial_number?: string | null
+          storage_path?: string
+          tenant_id?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+          use_master_global?: boolean
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_certificates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_contract_sequences: {
         Row: {
           last_number: number
@@ -7020,6 +7106,17 @@ export type Database = {
         }[]
       }
       get_drive_file_servidor: { Args: { _file_id: string }; Returns: string }
+      get_effective_certificate: {
+        Args: { _tenant_id: string }
+        Returns: {
+          id: string
+          is_global: boolean
+          password_encrypted: string
+          password_iv: string
+          storage_path: string
+          valid_until: string
+        }[]
+      }
       get_pdf_contract_servidor: {
         Args: { _contract_id: string }
         Returns: string
