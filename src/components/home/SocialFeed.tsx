@@ -805,7 +805,7 @@ function EventFeedCard({ event, index }: { event: TenantEvent; index: number }) 
           )}
         </div>
 
-        <PostActionsBar confirmed={confirmed} />
+        <PostActionsBar confirmed={confirmed} postKey={`event-${event.id}`} sourceText={event.title} />
       </div>
       <div className="h-2" />
     </article>
