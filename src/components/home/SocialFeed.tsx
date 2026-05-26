@@ -1104,4 +1104,3 @@ function PostFeedCard({ item, index }: { item: Extract<FeedItem, { kind: "post" 
     </article>
   );
 }
-}
