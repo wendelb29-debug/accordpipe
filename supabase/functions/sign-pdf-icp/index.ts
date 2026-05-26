@@ -312,18 +312,25 @@ Deno.serve(async (req) => {
     if (!pdfResp.ok) throw new Error(`Falha ao baixar PDF: ${pdfResp.status}`);
     const originalPdf = new Uint8Array(await pdfResp.arrayBuffer());
 
-    // 3) Resolve certificate: nova tabela (próprio tenant ou global do master) -> fallback secret legado
+    // 3) Resolve certificado para finalidade 'contract_signature'
     let PFX_B64: string | null = null;
     let PFX_PASS: string | null = null;
+    let usedCertId: string | null = null;
+    let usedCertScope: "tenant" | "global" | "legacy" = "legacy";
     try {
-      const { data: eff } = await supabase.rpc("get_effective_certificate", { _tenant_id: contract.servidor_id });
+      const { data: eff } = await supabase.rpc("get_effective_certificate", {
+        _tenant_id: contract.servidor_id,
+        _purpose: "contract_signature",
+      });
       const row = Array.isArray(eff) ? eff[0] : eff;
       if (row?.storage_path && row.storage_path !== "n/a") {
+        if (row.valid_until && new Date(row.valid_until) <= new Date()) {
+          throw new Error("Certificado vencido — assinatura bloqueada");
+        }
         const dl = await supabase.storage.from("digital-certificates").download(row.storage_path);
         if (!dl.error && dl.data) {
           const buf = new Uint8Array(await dl.data.arrayBuffer());
           PFX_B64 = btoa(String.fromCharCode(...buf));
-          // decifra senha AES-GCM
           const keyRaw = (Deno.env.get("CERT_ENCRYPTION_KEY") || "").trim();
           if (!keyRaw) throw new Error("CERT_ENCRYPTION_KEY não configurado");
           let keyBytes: Uint8Array | null = null;
@@ -337,23 +344,35 @@ Deno.serve(async (req) => {
           const ct = Uint8Array.from(atob(row.password_encrypted), c => c.charCodeAt(0));
           const iv = Uint8Array.from(atob(row.password_iv), c => c.charCodeAt(0));
           PFX_PASS = new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ct));
+          usedCertId = row.id;
+          usedCertScope = row.is_global ? "global" : "tenant";
         }
       }
-    } catch (e) { console.warn("falha ao resolver cert da tabela, tentando secret legado:", e); }
+    } catch (e) { console.warn("falha ao resolver cert da tabela, tentando secret legado:", (e as any)?.message); }
 
     if (!PFX_B64 || !PFX_PASS) {
       PFX_B64 = Deno.env.get("ACCORD_A1_PFX_BASE64") || null;
       PFX_PASS = Deno.env.get("ACCORD_A1_PFX_PASSWORD") || null;
+      usedCertScope = "legacy";
     }
     if (!PFX_B64 || !PFX_PASS) {
+      // log de tentativa frustrada (sem PFX/senha)
+      await supabase.from("certificate_usage_logs").insert({
+        tenant_id: contract.servidor_id, purpose: "contract_signature",
+        target_type: "pdf_contracts", target_id: contract.id,
+        success: false, message: "no_certificate_for_contract_signature",
+      });
       return new Response(
-        JSON.stringify({ ok: false, error: "not_configured", message: "Nenhum certificado A1 ICP-Brasil configurado para este tenant." }),
+        JSON.stringify({ ok: false, error: "not_configured", message: "Nenhum certificado A1 habilitado para assinatura de contratos." }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
     const { privateKey, cert, chain } = loadPfx(PFX_B64, PFX_PASS);
     const signerCN = getCN(cert);
     const certValidUntil = cert.validity.notAfter.toISOString();
+    if (new Date(certValidUntil) <= new Date()) {
+      throw new Error("Certificado A1 vencido");
+    }
 
 
     // 4) Add signature placeholder
