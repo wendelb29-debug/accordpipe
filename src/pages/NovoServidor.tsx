@@ -24,6 +24,7 @@ import TenantUsersTab from "@/components/servidores/TenantUsersTab";
 import CatalogTab from "@/components/servidores/CatalogTab";
 import { TenantSubscriptionTab } from "@/components/servidores/TenantSubscriptionTab";
 import { ResellerTab } from "@/components/servidores/ResellerTab";
+import TenantCertificatesTab from "@/components/servidores/TenantCertificatesTab";
 
 import { useEffect } from "react";
 
