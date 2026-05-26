@@ -2,7 +2,6 @@ import { SocialFeed } from "@/components/home/SocialFeed";
 import { BirthdayCard } from "@/components/home/BirthdayCard";
 import { BirthdayCelebration } from "@/components/home/BirthdayCelebration";
 import { BirthdayBanner } from "@/components/home/BirthdayBanner";
-import { ActivityFeed } from "@/components/home/ActivityFeed";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 
