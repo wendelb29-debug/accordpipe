@@ -278,7 +278,6 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-  try {
     const body = await req.json().catch(() => ({}));
     const contractId: string | undefined = body?.contract_id;
     if (!contractId) {
