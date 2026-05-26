@@ -385,7 +385,7 @@ const App = () => (
             <Route
               path="/fiscal-certificados"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={["ceo", "master"] as any}>
                   <AppLayout>
                     <FiscalCertificados />
                   </AppLayout>

@@ -29,32 +29,27 @@ const ICP_BRASIL_ROOTS = [
 ];
 
 function getKey(): Uint8Array {
-  const raw = Deno.env.get("CERT_ENCRYPTION_KEY") || "";
-  if (!raw) throw new Error("CERT_ENCRYPTION_KEY not configured");
-  // tenta base64; se falhar, hex; se ainda assim != 32 bytes, derive via SHA-256.
-  let bytes: Uint8Array | null = null;
+  const raw = (Deno.env.get("CERT_ENCRYPTION_KEY") || "").trim();
+  if (!raw) {
+    throw new Error("CERT_ENCRYPTION_KEY não configurado. Gere com: openssl rand -base64 32");
+  }
+  // Aceita SOMENTE base64 com 32 bytes reais OU hex com 64 caracteres.
+  // base64
   try {
     const bin = atob(raw);
     if (bin.length === 32) {
-      bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const out = new Uint8Array(32);
+      for (let i = 0; i < 32; i++) out[i] = bin.charCodeAt(i);
+      return out;
     }
   } catch (_) { /* not base64 */ }
-  if (!bytes && /^[0-9a-fA-F]{64}$/.test(raw)) {
-    bytes = new Uint8Array(32);
-    for (let i = 0; i < 32; i++) bytes[i] = parseInt(raw.substr(i * 2, 2), 16);
+  // hex
+  if (/^[0-9a-fA-F]{64}$/.test(raw)) {
+    const out = new Uint8Array(32);
+    for (let i = 0; i < 32; i++) out[i] = parseInt(raw.substr(i * 2, 2), 16);
+    return out;
   }
-  if (!bytes) {
-    // fallback: derive 32 bytes via SHA-256 do raw para não falhar com chave humana
-    const enc = new TextEncoder().encode(raw);
-    // sync hash via forge
-    const md = forge.md.sha256.create();
-    md.update(String.fromCharCode(...enc));
-    const hex = md.digest().toHex();
-    bytes = new Uint8Array(32);
-    for (let i = 0; i < 32; i++) bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
-  }
-  return bytes;
+  throw new Error("CERT_ENCRYPTION_KEY deve ter exatamente 32 bytes em base64 ou 64 caracteres hex.");
 }
 
 async function encryptPassword(plain: string): Promise<{ cipher: string; iv: string }> {
