@@ -849,7 +849,7 @@ function AnnouncementFeedCard({ item, index }: { item: Extract<FeedItem, { kind:
       )}
 
       <div className="px-5 pt-3 pb-5">
-        <PostActionsBar />
+        <PostActionsBar postKey={`ann-${item.id}`} sourceText={item.title} />
       </div>
     </article>
   );
