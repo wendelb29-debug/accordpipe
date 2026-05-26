@@ -1,26 +1,23 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import { Megaphone, HeadphonesIcon } from "lucide-react";
-import { WelcomeBanner } from "@/components/home/WelcomeBanner";
 import { QuickActions } from "@/components/home/QuickActions";
 import { AnnouncementsCarousel } from "@/components/home/AnnouncementsCarousel";
 import { ActivityFeed } from "@/components/home/ActivityFeed";
-import { StatsOverview } from "@/components/home/StatsOverview";
 import { SupportDialog } from "@/components/home/SupportDialog";
 import { ManageAnnouncementsDialog } from "@/components/home/ManageAnnouncementsDialog";
 import { BirthdayBanner } from "@/components/home/BirthdayBanner";
 import { BirthdayCard } from "@/components/home/BirthdayCard";
 import { BirthdayCelebration } from "@/components/home/BirthdayCelebration";
 import { HighlightedEventsCarousel } from "@/components/home/HighlightedEventsCarousel";
+import { OperationsCommandCenter } from "@/components/home/OperationsCommandCenter";
 
 interface Announcement {
   id: string; title: string; image_url: string; description: string | null;
 }
 
 export default function Home() {
-  const { isAdmin, isMaster, activeCompanyId, profile } = useAuth();
+  const { isAdmin, isMaster, activeCompanyId } = useAuth();
   const [supportOpen, setSupportOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -38,55 +35,22 @@ export default function Home() {
 
   return (
     <div className="space-y-5">
-      {/* Birthday celebration modal + confetti */}
       <BirthdayCelebration />
 
-      {/* Top bar */}
-      <div className="flex items-center justify-end gap-1.5 sm:gap-2">
-        {isAdmin && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 h-10 w-10 sm:h-9 sm:w-auto sm:px-3 p-0 sm:p-2 rounded-xl active:scale-95"
-            onClick={() => setManageOpen(true)}
-            aria-label="Comunicados"
-          >
-            <Megaphone className="h-4 w-4" />
-            <span className="hidden sm:inline">Comunicados</span>
-          </Button>
-        )}
-        <Button
-          size="sm"
-          className="gap-2 h-10 w-10 sm:h-9 sm:w-auto sm:px-3 p-0 sm:p-2 gradient-primary text-primary-foreground shadow-md rounded-xl active:scale-95"
-          onClick={() => setSupportOpen(true)}
-          aria-label="Suporte"
-        >
-          <HeadphonesIcon className="h-4 w-4" />
-          <span className="hidden sm:inline">Suporte</span>
-        </Button>
-      </div>
-
-      {/* Birthday banner (missing birth date) */}
       <BirthdayBanner key={refreshKey} onSaved={() => setRefreshKey((k) => k + 1)} />
 
-      {/* Welcome */}
-      <WelcomeBanner />
+      <OperationsCommandCenter
+        isAdmin={isAdmin}
+        onManageAnnouncements={() => setManageOpen(true)}
+        onSupport={() => setSupportOpen(true)}
+      />
 
-      {/* Stats */}
-      <StatsOverview />
-
-      {/* Birthday card */}
-      <BirthdayCard />
-
-      {/* Quick actions */}
       <QuickActions />
 
-      {/* Highlighted events */}
-      <HighlightedEventsCarousel />
-
-      {/* Main content: announcements + activity feed */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="lg:col-span-2 space-y-5">
+          <BirthdayCard />
+          <HighlightedEventsCarousel />
           <AnnouncementsCarousel />
         </div>
         <div className="min-h-[300px]">
@@ -94,7 +58,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Dialogs */}
       <SupportDialog open={supportOpen} onOpenChange={setSupportOpen} />
       <ManageAnnouncementsDialog
         open={manageOpen}
