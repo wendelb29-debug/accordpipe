@@ -374,14 +374,6 @@ Deno.serve(async (req) => {
       servidor_id: isMasterRow?.company_id || null,
       details: { is_global: !!body.is_global, uso_nfe: body.uso_nfe ?? null, uso_assinatura_contratos: body.uso_assinatura_contratos ?? null, ambiente_nfe: body.ambiente_nfe ?? null },
     });
-      user_id: user.id,
-      user_name: user.email,
-      action: `certificate.${action}`,
-      target_type: "tenant_certificates",
-      target_id: result?.id || body.cert_id || body.tenant_id || null,
-      servidor_id: isMasterRow?.company_id || null,
-      details: { is_global: !!body.is_global, environment: body.environment || null },
-    });
 
     return new Response(JSON.stringify({ ok: true, data: result }), { headers: { ...cors, "Content-Type": "application/json" } });
   } catch (e: any) {
