@@ -38,6 +38,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantLogo } from "@/hooks/useTenantLogo";
 import { useOverdueCount } from "@/hooks/useOverdueCount";
+import { useCertificateStatus } from "@/hooks/useCertificateStatus";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
