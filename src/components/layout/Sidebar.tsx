@@ -67,7 +67,6 @@ const navigation = [
 
 const configNavigation = [
   { nameKey: "nav.users", href: "/configuracoes/usuarios", icon: Users, roles: ["admin", "ceo", "administrativo"] },
-  { nameKey: "nav.tenantManagement", href: "/gestao-tenants", icon: Crown, roles: ["ceo", "master"], tenantAdminOnly: true },
   { nameKey: "Fiscal & Certificados", href: "/fiscal-certificados", icon: ShieldCheck, roles: ["ceo", "master"] },
 ];
 
