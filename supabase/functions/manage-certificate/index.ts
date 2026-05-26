@@ -345,8 +345,10 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...cors, "Content-Type": "application/json" } });
     }
 
-    const body = await req.json();
-    const action = body.action;
+    let body: any = {};
+    try { body = await req.json(); } catch (_) { body = {}; }
+    const action = body?.action;
+    console.log("manage-certificate dispatch", { action, keys: Object.keys(body || {}) });
 
     // Enforce escopo: CEO só mexe no próprio tenant, nunca global
     if (!isMaster) {
@@ -363,7 +365,7 @@ Deno.serve(async (req) => {
     else if (action === "delete") result = await handleDelete(supa, body.cert_id, user.id);
     else if (action === "set_use_global") result = await handleSetUseGlobal(supa, body.tenant_id, !!body.use, user.id);
     else if (action === "update_purpose") result = await handleUpdatePurpose(supa, body, user.id);
-    else return new Response(JSON.stringify({ error: "Ação desconhecida" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
+    else return new Response(JSON.stringify({ error: `Ação desconhecida: ${JSON.stringify(action)}` }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
 
     // audit (log estrutural)
     await supa.from("audit_logs").insert({
