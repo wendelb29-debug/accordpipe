@@ -459,9 +459,10 @@ function QuickPostComposer({
         <div className="px-5 py-3 flex items-center gap-2 border-t border-white/[0.04]">
           <Button
             onClick={handleSubmit}
-            className="h-9 px-5 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold tracking-wide text-[12px] uppercase"
+            disabled={publishing}
+            className="h-9 px-5 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold tracking-wide text-[12px] uppercase disabled:opacity-60"
           >
-            Enviar
+            {publishing ? "Enviando…" : "Enviar"}
           </Button>
           <Button
             variant="ghost"
