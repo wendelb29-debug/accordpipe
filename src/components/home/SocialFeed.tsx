@@ -32,6 +32,7 @@ import { resolveSignedUrl } from "@/hooks/useSignedUrl";
 type FeedItem =
   | { kind: "event"; id: string; ts: string; event: TenantEvent }
   | { kind: "announcement"; id: string; ts: string; title: string; description: string | null; image_url: string }
+  | { kind: "post"; id: string; ts: string; content: string; image_url: string | null; tags: string[]; author_id: string; author_name: string | null; author_avatar: string | null }
   | { kind: "activity"; id: string; ts: string; title: string; type: string; created_by_name: string | null };
 
 const TYPE_GRADIENT: Record<string, string> = {
