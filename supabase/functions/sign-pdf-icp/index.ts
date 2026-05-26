@@ -437,6 +437,18 @@ Deno.serve(async (req) => {
       .eq("id", contract.id);
     if (updErr) console.warn("Update icp fields:", updErr);
 
+    // Log de uso operacional (assinatura de contrato)
+    await supabase.from("certificate_usage_logs").insert({
+      certificate_id: usedCertId,
+      tenant_id: contract.servidor_id,
+      purpose: "contract_signature",
+      target_type: "pdf_contracts",
+      target_id: contract.id,
+      success: true,
+      message: `Selo aplicado • CN=${signerCN}`,
+      metadata: { scope: usedCertScope, tsa_authority: tsAuth, cert_valid_until: certValidUntil },
+    });
+
     return new Response(
       JSON.stringify({
         ok: true,
