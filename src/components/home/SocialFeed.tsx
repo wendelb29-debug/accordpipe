@@ -352,6 +352,13 @@ function QuickPostComposer({
   const [showMore, setShowMore] = useState(false);
   const [moreView, setMoreView] = useState<"document" | null>(null);
   const fileRef = React.useRef<HTMLInputElement>(null);
+  const [recipients, setRecipients] = useState<Recipient[]>([]);
+  const selectedIds = useMemo(() => new Set(recipients.map((r) => r.id)), [recipients]);
+  const addRecipient = (r: Recipient) => {
+    setRecipients((cur) => (cur.some((x) => x.id === r.id) ? cur : [...cur, r]));
+  };
+  const removeRecipient = (id: string) =>
+    setRecipients((cur) => cur.filter((x) => x.id !== id));
 
   const handleSubmit = async () => {
     if (tab === "Mensagem") {
