@@ -87,8 +87,31 @@ function parsePfx(b64: string, password: string) {
   const cnMatch = subjectCN.match(/(\d{11}|\d{14})/);
   if (cnMatch) document = cnMatch[1];
 
-  const rootCN = chain[chain.length - 1]?.issuer.getField("CN")?.value || issuerCN;
-  const isIcp = ICP_BRASIL_ROOTS.some(r => (issuerCN + " " + rootCN).toLowerCase().includes(r.toLowerCase()));
+  // ICP-Brasil detection:
+  // 1) policy OID na arc 2.16.76.1.* (PKI ICP-Brasil) — método oficial
+  // 2) subjectAltName otherName com OID 2.16.76.1.3.* (CPF/CNPJ do titular)
+  // 3) fallback heurístico por nomes de issuer/root
+  let isIcp = false;
+  try {
+    const polExt = owner.getExtension?.("certificatePolicies") || owner.extensions?.find((e: any) => e.name === "certificatePolicies" || e.id === "2.5.29.32");
+    const polStr = JSON.stringify(polExt || {});
+    if (/2\.16\.76\.1\./.test(polStr)) isIcp = true;
+  } catch (_) {}
+  try {
+    const sanExt = owner.getExtension?.("subjectAltName") || owner.extensions?.find((e: any) => e.name === "subjectAltName" || e.id === "2.5.29.17");
+    const sanStr = JSON.stringify(sanExt || {});
+    if (/2\.16\.76\.1\.3\./.test(sanStr)) isIcp = true;
+  } catch (_) {}
+  if (!isIcp) {
+    const allIssuers = chain.map((c: any) => c.issuer.getField("CN")?.value || "").join(" | ");
+    const rootCN = chain[chain.length - 1]?.issuer.getField("CN")?.value || issuerCN;
+    const haystack = (issuerCN + " " + rootCN + " " + allIssuers).toLowerCase();
+    isIcp = ICP_BRASIL_ROOTS.some(r => haystack.includes(r.toLowerCase()))
+      || /\bicp[- ]?brasil\b/.test(haystack)
+      || /autoridade certificadora.*brasil/.test(haystack)
+      || /\brfb\b|receita federal/.test(haystack)
+      || /\bac\s+(safeweb|certisign|serasa|soluti|valid|digital|caixa|imesp|prodemge|prodest|notarial|link|boa vista|sincor|fenacon|petrobras|jus)/.test(haystack);
+  }
 
   return {
     holder_name: subjectCN,
