@@ -324,14 +324,15 @@ Deno.serve(async (req) => {
           const buf = new Uint8Array(await dl.data.arrayBuffer());
           PFX_B64 = btoa(String.fromCharCode(...buf));
           // decifra senha AES-GCM
-          const keyRaw = Deno.env.get("CERT_ENCRYPTION_KEY") || "";
+          const keyRaw = (Deno.env.get("CERT_ENCRYPTION_KEY") || "").trim();
+          if (!keyRaw) throw new Error("CERT_ENCRYPTION_KEY não configurado");
           let keyBytes: Uint8Array | null = null;
           try { const bin = atob(keyRaw); if (bin.length === 32) { keyBytes = new Uint8Array(32); for (let i = 0; i < 32; i++) keyBytes[i] = bin.charCodeAt(i); } } catch (_) {}
-          if (!keyBytes && /^[0-9a-fA-F]{64}$/.test(keyRaw)) { keyBytes = new Uint8Array(32); for (let i = 0; i < 32; i++) keyBytes[i] = parseInt(keyRaw.substr(i * 2, 2), 16); }
-          if (!keyBytes) {
-            const md = forge.md.sha256.create(); md.update(keyRaw); const hex = md.digest().toHex();
-            keyBytes = new Uint8Array(32); for (let i = 0; i < 32; i++) keyBytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+          if (!keyBytes && /^[0-9a-fA-F]{64}$/.test(keyRaw)) {
+            keyBytes = new Uint8Array(32);
+            for (let i = 0; i < 32; i++) keyBytes[i] = parseInt(keyRaw.substr(i * 2, 2), 16);
           }
+          if (!keyBytes) throw new Error("CERT_ENCRYPTION_KEY deve ter exatamente 32 bytes em base64 ou 64 caracteres hex.");
           const key = await crypto.subtle.importKey("raw", keyBytes, { name: "AES-GCM" }, false, ["decrypt"]);
           const ct = Uint8Array.from(atob(row.password_encrypted), c => c.charCodeAt(0));
           const iv = Uint8Array.from(atob(row.password_iv), c => c.charCodeAt(0));
