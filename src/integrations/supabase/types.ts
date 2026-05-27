@@ -774,6 +774,178 @@ export type Database = {
           },
         ]
       }
+      collab_conversations: {
+        Row: {
+          color: string | null
+          created_at: string
+          created_by: string
+          emoji: string | null
+          id: string
+          is_pinned: boolean
+          kind: string
+          last_message_at: string | null
+          last_message_preview: string | null
+          name: string
+          servidor_id: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          created_by: string
+          emoji?: string | null
+          id?: string
+          is_pinned?: boolean
+          kind?: string
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          name: string
+          servidor_id: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          created_by?: string
+          emoji?: string | null
+          id?: string
+          is_pinned?: boolean
+          kind?: string
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          name?: string
+          servidor_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      collab_members: {
+        Row: {
+          conversation_id: string
+          id: string
+          is_muted: boolean
+          joined_at: string
+          last_read_at: string | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          id?: string
+          is_muted?: boolean
+          joined_at?: string
+          last_read_at?: string | null
+          role?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          id?: string
+          is_muted?: boolean
+          joined_at?: string
+          last_read_at?: string | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collab_members_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "collab_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collab_messages: {
+        Row: {
+          attachments: Json
+          content: string | null
+          conversation_id: string
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          id: string
+          is_system: boolean
+          reply_to_id: string | null
+          sender_id: string | null
+          servidor_id: string
+        }
+        Insert: {
+          attachments?: Json
+          content?: string | null
+          conversation_id: string
+          created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          id?: string
+          is_system?: boolean
+          reply_to_id?: string | null
+          sender_id?: string | null
+          servidor_id: string
+        }
+        Update: {
+          attachments?: Json
+          content?: string | null
+          conversation_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          id?: string
+          is_system?: boolean
+          reply_to_id?: string | null
+          sender_id?: string | null
+          servidor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collab_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "collab_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collab_messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "collab_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collab_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collab_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "collab_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           bairro: string | null
@@ -7116,6 +7288,7 @@ export type Database = {
           status: string
         }[]
       }
+      get_collab_servidor: { Args: { _conv_id: string }; Returns: string }
       get_company_credentials: {
         Args: { _company_id: string }
         Returns: {
@@ -7331,6 +7504,14 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_collab_admin: {
+        Args: { _conv_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_collab_member: {
+        Args: { _conv_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_master: { Args: { _user_id: string }; Returns: boolean }
       is_reseller_of: {
         Args: { _child_id: string; _reseller_id: string }
