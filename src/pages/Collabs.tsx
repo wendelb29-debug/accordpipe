@@ -274,16 +274,18 @@ export default function Collabs() {
     const load = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("id, user_id, full_name, avatar_url")
+        .select("id, user_id, name, avatar_url, is_active, status")
         .eq("company_id", companyId)
-        .order("full_name", { ascending: true });
+        .eq("is_active", true)
+        .eq("status", "ativo")
+        .order("name", { ascending: true });
       if (cancelled) return;
       const list: MentionUser[] = (data || [])
-        .filter((p: any) => p.full_name)
+        .filter((p: any) => p.name)
         .map((p: any) => ({
           id: p.user_id || p.id,
-          name: p.full_name as string,
-          handle: slug((p.full_name as string).split(" ")[0] || p.full_name),
+          name: p.name as string,
+          handle: slug((p.name as string).split(" ")[0] || p.name),
           avatar_url: p.avatar_url || null,
         }));
       setMentionUsers(list);
