@@ -2203,6 +2203,7 @@ export type Database = {
           created_at: string
           id: string
           image_url: string | null
+          pinned: boolean
           recipients: string
           servidor_id: string
           tags: string[]
@@ -2214,6 +2215,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          pinned?: boolean
           recipients?: string
           servidor_id: string
           tags?: string[]
@@ -2225,6 +2227,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          pinned?: boolean
           recipients?: string
           servidor_id?: string
           tags?: string[]

@@ -17,6 +17,7 @@ import {
   Upload, Cloud, HardDrive, FileSpreadsheet, Presentation, LayoutDashboard,
   Bold, Italic, Smile, ChevronDown, BarChart3, ThumbsUp, Eye, BellOff, Bell,
   Copy, MessageSquarePlus, Pencil, ClipboardCopy, ThumbsDown, Loader2,
+  Pin, PinOff, Star, Link2, Mail, UserPlus, Edit3, EyeOff, ListChecks, Trash2,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -32,7 +33,7 @@ import { resolveSignedUrl } from "@/hooks/useSignedUrl";
 type FeedItem =
   | { kind: "event"; id: string; ts: string; event: TenantEvent }
   | { kind: "announcement"; id: string; ts: string; title: string; description: string | null; image_url: string }
-  | { kind: "post"; id: string; ts: string; content: string; image_url: string | null; tags: string[]; author_id: string; author_name: string | null; author_avatar: string | null }
+  | { kind: "post"; id: string; ts: string; content: string; image_url: string | null; tags: string[]; author_id: string; author_name: string | null; author_avatar: string | null; pinned: boolean }
   | { kind: "activity"; id: string; ts: string; title: string; type: string; created_by_name: string | null };
 
 const TYPE_GRADIENT: Record<string, string> = {
@@ -1124,8 +1125,9 @@ export function SocialFeed() {
     queryFn: async () => {
       const { data: rows, error } = await supabase
         .from("feed_posts")
-        .select("id,content,image_url,tags,author_id,created_at,servidor_id")
+        .select("id,content,image_url,tags,author_id,created_at,servidor_id,pinned")
         .eq("servidor_id", tenantId!)
+        .order("pinned", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
@@ -1178,8 +1180,14 @@ export function SocialFeed() {
       kind: "post", id: p.id, ts: p.created_at,
       content: p.content, image_url: p.image_url, tags: p.tags ?? [],
       author_id: p.author_id, author_name: p.author?.name ?? null, author_avatar: p.author?.avatar_url ?? null,
+      pinned: !!p.pinned,
     });
-    return items.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
+    return items.sort((a, b) => {
+      const ap = a.kind === "post" && a.pinned ? 1 : 0;
+      const bp = b.kind === "post" && b.pinned ? 1 : 0;
+      if (ap !== bp) return bp - ap;
+      return new Date(b.ts).getTime() - new Date(a.ts).getTime();
+    });
   }, [events, announcementsList, postsList]);
 
   const isLoading = announcementsQ.isLoading || postsQ.isLoading;
@@ -1246,11 +1254,84 @@ export function SocialFeed() {
 
 /* ────────────────────────  POST FEED CARD  ─────────────────────── */
 function PostFeedCard({ item, index }: { item: Extract<FeedItem, { kind: "post" }>; index: number }) {
+  const { user, profile, isMaster, role } = useAuth();
+  const queryClient = useQueryClient();
+  const tenantId = useActiveCompanyId();
+  const navigate = useNavigate();
+  const isAuthor = user?.id === item.author_id;
+  const canManage = isAuthor || isMaster || role === "admin" || role === "ceo";
+
+  const [favorited, setFavorited] = useState<boolean>(() => {
+    try { return JSON.parse(localStorage.getItem("feed:favorites") || "[]").includes(item.id); } catch { return false; }
+  });
+  const [hidden, setHidden] = useState<boolean>(() => {
+    try { return JSON.parse(localStorage.getItem("feed:hidden") || "[]").includes(item.id); } catch { return false; }
+  });
+
+  const toggleLocalList = (key: string, on: boolean) => {
+    try {
+      const cur: string[] = JSON.parse(localStorage.getItem(key) || "[]");
+      const next = on ? Array.from(new Set([...cur, item.id])) : cur.filter((x) => x !== item.id);
+      localStorage.setItem(key, JSON.stringify(next));
+    } catch {}
+  };
+
+  const pinMutation = useMutation({
+    mutationFn: async (next: boolean) => {
+      const { error } = await supabase.from("feed_posts").update({ pinned: next }).eq("id", item.id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, next) => {
+      toast.success(next ? "Publicação fixada no topo" : "Publicação desafixada");
+      queryClient.invalidateQueries({ queryKey: ["feed-posts", tenantId] });
+    },
+    onError: (e: any) => toast.error(e?.message || "Não foi possível fixar"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("feed_posts").delete().eq("id", item.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Publicação excluída");
+      queryClient.invalidateQueries({ queryKey: ["feed-posts", tenantId] });
+    },
+    onError: (e: any) => toast.error(e?.message || "Não foi possível excluir"),
+  });
+
+  const copyLink = () => {
+    const url = `${window.location.origin}/home#post-${item.id}`;
+    navigator.clipboard?.writeText(url);
+    toast.success("Link copiado");
+  };
+
+  const openMessage = () => {
+    window.location.hash = `#post-${item.id}`;
+    toast.info("Abrindo publicação");
+  };
+
+  const handleEdit = () => toast.info("Edição em breve");
+  const handleAddRecipients = () => toast.info("Adicionar destinatários em breve");
+  const handleCreateTask = () => navigate("/atividades?from=post&postId=" + item.id);
+
+  if (hidden) return null;
+
   return (
     <article
-      className="group animate-fade-in rounded-3xl bg-card/70 backdrop-blur-xl ring-1 ring-white/5 hover:ring-white/10 shadow-[0_4px_30px_rgb(0,0,0,0.08)] hover:shadow-[0_8px_40px_rgb(0,0,0,0.16)] transition-all overflow-hidden"
+      id={`post-${item.id}`}
+      className={`group animate-fade-in rounded-3xl backdrop-blur-xl ring-1 transition-all overflow-hidden ${
+        item.pinned
+          ? "bg-gradient-to-br from-amber-500/[0.04] to-card/70 ring-amber-500/30 shadow-[0_4px_30px_rgba(245,158,11,0.15)]"
+          : "bg-card/70 ring-white/5 hover:ring-white/10 shadow-[0_4px_30px_rgb(0,0,0,0.08)] hover:shadow-[0_8px_40px_rgb(0,0,0,0.16)]"
+      }`}
       style={{ animationDelay: `${index * 40}ms` }}
     >
+      {item.pinned && (
+        <div className="flex items-center gap-1.5 px-5 pt-3 text-[11px] font-semibold text-amber-500 uppercase tracking-wide">
+          <Pin className="h-3 w-3 fill-amber-500" /> Fixado no topo
+        </div>
+      )}
       <div className="flex items-center gap-3 px-5 pt-5">
         <Avatar className="h-11 w-11 ring-2 ring-primary/20">
           {item.author_avatar && <AvatarImage src={item.author_avatar} />}
@@ -1267,9 +1348,66 @@ function PostFeedCard({ item, index }: { item: Extract<FeedItem, { kind: "post" 
             {formatDistanceToNow(new Date(item.ts), { addSuffix: true, locale: ptBR })}
           </p>
         </div>
-        <button className="h-9 w-9 rounded-full hover:bg-white/5 flex items-center justify-center text-muted-foreground transition-colors">
-          <MoreHorizontal className="h-4 w-4" />
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="h-9 w-9 rounded-full hover:bg-white/5 flex items-center justify-center text-muted-foreground transition-colors"
+              aria-label="Ações da publicação"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            {canManage && (
+              <DropdownMenuItem onClick={() => pinMutation.mutate(!item.pinned)}>
+                {item.pinned ? (
+                  <><PinOff className="h-4 w-4 mr-2" /> Desafixar</>
+                ) : (
+                  <><Pin className="h-4 w-4 mr-2" /> Fixar no topo</>
+                )}
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={() => { const next = !favorited; setFavorited(next); toggleLocalList("feed:favorites", next); toast.success(next ? "Adicionado aos favoritos" : "Removido dos favoritos"); }}>
+              <Star className={`h-4 w-4 mr-2 ${favorited ? "fill-amber-500 text-amber-500" : ""}`} />
+              {favorited ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={openMessage}>
+              <Mail className="h-4 w-4 mr-2" /> Abrir mensagem
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={copyLink}>
+              <Link2 className="h-4 w-4 mr-2" /> Copiar link
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleAddRecipients}>
+              <UserPlus className="h-4 w-4 mr-2" /> Adicionar destinatários
+            </DropdownMenuItem>
+            {isAuthor && (
+              <DropdownMenuItem onClick={handleEdit}>
+                <Edit3 className="h-4 w-4 mr-2" /> Editar
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={() => { setHidden(true); toggleLocalList("feed:hidden", true); toast.success("Publicação ocultada"); }}>
+              <EyeOff className="h-4 w-4 mr-2" /> Ocultar
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleCreateTask}>
+              <ListChecks className="h-4 w-4 mr-2" /> Criar tarefa
+            </DropdownMenuItem>
+            {canManage && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (confirm("Excluir esta publicação? Esta ação não pode ser desfeita.")) {
+                      deleteMutation.mutate();
+                    }
+                  }}
+                  className="text-rose-500 focus:text-rose-500"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="px-5 pt-3">
