@@ -613,23 +613,60 @@ export default function Collabs() {
         >
           {/* Emoji picker */}
           {showEmoji && (
-            <div className="absolute bottom-full left-3 mb-2 bg-white rounded-2xl shadow-xl p-3 z-20 border border-black/5 w-[360px] max-h-[360px] overflow-y-auto">
-              {EMOJI_CATEGORIES.map((cat) => (
-                <div key={cat.label} className="mb-3 last:mb-0">
-                  <div className="text-[11px] font-medium text-gray-500 px-1 mb-1.5 sticky top-0 bg-white">{cat.label}</div>
-                  <div className="grid grid-cols-8 gap-1">
-                    {cat.emojis.map((e, i) => (
-                      <button
-                        key={`${cat.label}-${i}-${e}`}
-                        onClick={() => { insertAtCursor(e); setShowEmoji(false); }}
-                        className="w-9 h-9 rounded-lg hover:bg-gray-100 text-xl flex items-center justify-center"
-                      >
-                        {e}
-                      </button>
-                    ))}
+            <div className="absolute bottom-full left-3 mb-2 bg-white rounded-2xl shadow-xl z-20 border border-black/5 w-[380px] flex flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-3 max-h-[360px]">
+                {pickerTab === "emoji" ? (
+                  EMOJI_CATEGORIES.map((cat) => (
+                    <div key={cat.label} className="mb-3 last:mb-0">
+                      <div className="text-[11px] font-medium text-gray-500 px-1 mb-1.5 sticky top-0 bg-white">{cat.label}</div>
+                      <div className="grid grid-cols-8 gap-1">
+                        {cat.emojis.map((e, i) => (
+                          <button
+                            key={`${cat.label}-${i}-${e}`}
+                            onClick={() => { insertAtCursor(e); setShowEmoji(false); }}
+                            className="w-9 h-9 rounded-lg hover:bg-gray-100 text-xl flex items-center justify-center"
+                          >
+                            {e}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div>
+                    <div className="text-[11px] font-medium text-gray-500 px-1 mb-1.5">Adesivos animados</div>
+                    <div className="grid grid-cols-4 gap-2">
+                      {STICKERS.map((url, i) => (
+                        <button
+                          key={`${url}-${i}`}
+                          onClick={() => sendSticker(url)}
+                          className="aspect-square rounded-xl hover:bg-gray-100 p-1 flex items-center justify-center transition"
+                        >
+                          <img src={url} alt="sticker" className="w-full h-full object-contain" loading="lazy" />
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )}
+              </div>
+              <div className="flex items-center justify-center gap-2 p-2 border-t border-gray-100 bg-gray-50/60">
+                <button
+                  onClick={() => setPickerTab("emoji")}
+                  className={`px-4 py-1.5 rounded-full text-[12px] font-medium transition ${
+                    pickerTab === "emoji" ? "bg-blue-500 text-white shadow" : "text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  Emoji
+                </button>
+                <button
+                  onClick={() => setPickerTab("stickers")}
+                  className={`px-4 py-1.5 rounded-full text-[12px] font-medium transition ${
+                    pickerTab === "stickers" ? "bg-blue-500 text-white shadow" : "text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  Adesivos
+                </button>
+              </div>
             </div>
           )}
           {/* Mentions */}
