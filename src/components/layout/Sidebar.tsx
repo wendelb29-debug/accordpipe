@@ -48,22 +48,33 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const navigation = [
-  { nameKey: "nav.home", href: "/home", icon: Home, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
-  { nameKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
-  { nameKey: "nav.accordSales", href: "/atendimento", icon: MessageSquare, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
-  { nameKey: "nav.forms", href: "/formularios", icon: ClipboardList, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
-  { nameKey: "nav.activities", href: "/atividades", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
-  { nameKey: "nav.fintech", href: "/financeiro", icon: Receipt, roles: ["admin", "ceo", "financeiro"] },
-  { nameKey: "nav.documents", href: "/documentos", icon: FileText, roles: ["admin", "ceo", "administrativo", "financeiro"] },
-  { nameKey: "nav.reports", href: "/relatorios", icon: BarChart3, roles: ["admin", "leitura", "ceo", "administrativo", "financeiro"] },
-  { nameKey: "nav.clientBase", href: "/cadastrados", icon: Users, roles: ["admin", "ceo", "administrativo"] },
-  { nameKey: "nav.performance", href: "/performance", icon: TrendingUp, roles: ["admin", "ceo", "operador", "comercial"] },
-  
-  { nameKey: "nav.academy", href: "/academy", icon: GraduationCap, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
-  { nameKey: "nav.accordPulse", href: "/accord-pulse", icon: Flame, roles: ["admin", "ceo", "comercial"] },
-  { nameKey: "nav.discard", href: "/descarte", icon: Trash2, roles: ["admin", "ceo"] },
+const navigationSections = [
+  {
+    label: "Principal",
+    items: [
+      { nameKey: "nav.home", href: "/home", icon: Home, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
+      { nameKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
+      { nameKey: "nav.accordSales", href: "/atendimento", icon: MessageSquare, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
+      { nameKey: "nav.forms", href: "/formularios", icon: ClipboardList, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
+      { nameKey: "nav.activities", href: "/atividades", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
+    ],
+  },
+  {
+    label: "Gestão",
+    items: [
+      { nameKey: "nav.fintech", href: "/financeiro", icon: Receipt, roles: ["admin", "ceo", "financeiro"] },
+      { nameKey: "nav.documents", href: "/documentos", icon: FileText, roles: ["admin", "ceo", "administrativo", "financeiro"] },
+      { nameKey: "nav.reports", href: "/relatorios", icon: BarChart3, roles: ["admin", "leitura", "ceo", "administrativo", "financeiro"] },
+      { nameKey: "nav.clientBase", href: "/cadastrados", icon: Users, roles: ["admin", "ceo", "administrativo"] },
+      { nameKey: "nav.performance", href: "/performance", icon: TrendingUp, roles: ["admin", "ceo", "operador", "comercial"] },
+      { nameKey: "nav.academy", href: "/academy", icon: GraduationCap, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
+      { nameKey: "nav.accordPulse", href: "/accord-pulse", icon: Flame, roles: ["admin", "ceo", "comercial"] },
+      { nameKey: "nav.discard", href: "/descarte", icon: Trash2, roles: ["admin", "ceo"] },
+    ],
+  },
 ];
+
+const navigation = navigationSections.flatMap((s) => s.items);
 
 const configNavigation = [
   { nameKey: "nav.users", href: "/configuracoes/usuarios", icon: Users, roles: ["admin", "ceo", "administrativo"] },
