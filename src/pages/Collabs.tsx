@@ -261,6 +261,45 @@ export default function Collabs() {
   const [accordSearch, setAccordSearch] = useState("");
   const [accordPath, setAccordPath] = useState<Array<{ id: string | null; name: string }>>([{ id: null, name: "Documentos" }]);
 
+  // Dynamic mentions from registered users (tenant scoped)
+  type MentionUser = { id: string; name: string; handle: string; avatar_url: string | null };
+  const [mentionUsers, setMentionUsers] = useState<MentionUser[]>([]);
+
+  const slug = (s: string) =>
+    s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "").slice(0, 24) || "user";
+
+  useEffect(() => {
+    if (!companyId) { setMentionUsers([]); return; }
+    let cancelled = false;
+    const load = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, user_id, full_name, avatar_url")
+        .eq("company_id", companyId)
+        .order("full_name", { ascending: true });
+      if (cancelled) return;
+      const list: MentionUser[] = (data || [])
+        .filter((p: any) => p.full_name)
+        .map((p: any) => ({
+          id: p.user_id || p.id,
+          name: p.full_name as string,
+          handle: slug((p.full_name as string).split(" ")[0] || p.full_name),
+          avatar_url: p.avatar_url || null,
+        }));
+      setMentionUsers(list);
+    };
+    load();
+    const channel = supabase
+      .channel(`collabs-mentions-${companyId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles", filter: `company_id=eq.${companyId}` },
+        () => load(),
+      )
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
+  }, [companyId]);
+
   const loadAccordFolder = async (parentId: string | null) => {
     if (!companyId) return;
     setAccordLoading(true);
@@ -739,16 +778,30 @@ export default function Collabs() {
           )}
           {/* Mentions */}
           {showMentions && (
-            <div className="absolute bottom-full left-3 mb-2 bg-white rounded-2xl shadow-xl py-2 z-20 border border-black/5 min-w-[180px]">
-              {MENTIONS.map((m) => (
-                <button
-                  key={m}
-                  onClick={() => { insertAtCursor(`@${m} `); setShowMentions(false); }}
-                  className="w-full text-left px-3 py-1.5 hover:bg-gray-100 text-[13px] text-gray-700"
-                >
-                  @{m}
-                </button>
-              ))}
+            <div className="absolute bottom-full left-3 mb-2 bg-white rounded-2xl shadow-xl py-1.5 z-20 border border-black/5 min-w-[240px] max-h-[280px] overflow-y-auto">
+              {mentionUsers.length === 0 ? (
+                <div className="px-3 py-3 text-[12px] text-gray-400">Nenhum usuário cadastrado</div>
+              ) : (
+                mentionUsers.map((u) => (
+                  <button
+                    key={u.id}
+                    onClick={() => { insertAtCursor(`@${u.handle} `); setShowMentions(false); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-1.5 hover:bg-gray-100 text-left"
+                  >
+                    {u.avatar_url ? (
+                      <img src={u.avatar_url} alt={u.name} className="h-7 w-7 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div className="h-7 w-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 text-white text-[11px] font-semibold flex items-center justify-center shrink-0">
+                        {u.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[13px] text-gray-800 truncate leading-tight">{u.name}</div>
+                      <div className="text-[11px] text-gray-500 truncate leading-tight">@{u.handle}</div>
+                    </div>
+                  </button>
+                ))
+              )}
             </div>
           )}
 
