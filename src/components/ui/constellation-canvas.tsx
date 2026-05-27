@@ -20,10 +20,10 @@ export function ConstellationCanvas() {
       return {
         blue: isDark ? [59, 130, 246] : [37, 99, 235],
         purple: [139, 92, 246] as number[],
-        dotAlpha: isDark ? 0.14 : 0.22,
-        lineAlpha: isDark ? 0.45 : 0.55,
-        ptAlphaMin: isDark ? 0.45 : 0.55,
-        ptAlphaMax: isDark ? 0.95 : 1.0,
+        dotAlpha: isDark ? 0.10 : 0.16,
+        lineAlpha: isDark ? 0.30 : 0.38,
+        ptAlphaMin: isDark ? 0.30 : 0.40,
+        ptAlphaMax: isDark ? 0.70 : 0.80,
       };
     };
 
