@@ -311,6 +311,16 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/collabs"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"]}>
+                  <AppLayout>
+                    <Collabs />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
             <Route path="/assinar/:token" element={<AssinarContrato />} />
             <Route path="/assinar-pdf/:token" element={<AssinarPdf />} />
             <Route path="/assinar-documento/:token" element={<AssinarDocumento />} />
