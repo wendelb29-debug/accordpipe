@@ -18,14 +18,15 @@ export function ConstellationCanvas() {
     const getColors = () => {
       const isDark = document.documentElement.classList.contains("dark");
       return {
-        blue: isDark ? [37, 99, 235] : [59, 130, 246],
-        purple: [122, 63, 242] as number[],
-        dotAlpha: isDark ? 0.07 : 0.13,
-        lineAlpha: isDark ? 0.18 : 0.22,
-        ptAlphaMin: isDark ? 0.18 : 0.22,
-        ptAlphaMax: isDark ? 0.55 : 0.6,
+        blue: isDark ? [59, 130, 246] : [37, 99, 235],
+        purple: [139, 92, 246] as number[],
+        dotAlpha: isDark ? 0.14 : 0.22,
+        lineAlpha: isDark ? 0.45 : 0.55,
+        ptAlphaMin: isDark ? 0.45 : 0.55,
+        ptAlphaMax: isDark ? 0.95 : 1.0,
       };
     };
+
     const resize = () => {
       const p = canvas.parentElement;
       if (!p) return;
