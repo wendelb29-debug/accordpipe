@@ -261,6 +261,45 @@ export default function Collabs() {
   const [accordSearch, setAccordSearch] = useState("");
   const [accordPath, setAccordPath] = useState<Array<{ id: string | null; name: string }>>([{ id: null, name: "Documentos" }]);
 
+  // Dynamic mentions from registered users (tenant scoped)
+  type MentionUser = { id: string; name: string; handle: string; avatar_url: string | null };
+  const [mentionUsers, setMentionUsers] = useState<MentionUser[]>([]);
+
+  const slug = (s: string) =>
+    s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "").slice(0, 24) || "user";
+
+  useEffect(() => {
+    if (!companyId) { setMentionUsers([]); return; }
+    let cancelled = false;
+    const load = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, user_id, full_name, avatar_url")
+        .eq("company_id", companyId)
+        .order("full_name", { ascending: true });
+      if (cancelled) return;
+      const list: MentionUser[] = (data || [])
+        .filter((p: any) => p.full_name)
+        .map((p: any) => ({
+          id: p.user_id || p.id,
+          name: p.full_name as string,
+          handle: slug((p.full_name as string).split(" ")[0] || p.full_name),
+          avatar_url: p.avatar_url || null,
+        }));
+      setMentionUsers(list);
+    };
+    load();
+    const channel = supabase
+      .channel(`collabs-mentions-${companyId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles", filter: `company_id=eq.${companyId}` },
+        () => load(),
+      )
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
+  }, [companyId]);
+
   const loadAccordFolder = async (parentId: string | null) => {
     if (!companyId) return;
     setAccordLoading(true);
