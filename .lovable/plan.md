@@ -1,61 +1,58 @@
-# Accord Pulse — Negociação ao vivo (chat IA em tempo real)
 
-Evoluir o módulo Accord Pulse para uma central de negociação assistida por IA, com chat em tempo real, configuração avançada do agente e base de conhecimento por campanha.
+# Collabs como chat omnichannel interno real
+
+Hoje a tela `src/pages/Collabs.tsx` usa dados mock (conversas e mensagens hardcoded). Vou transformar em um chat interno real, persistido e em tempo real, escopado por tenant (`servidor_id`), removendo todos os mocks.
 
 ## 1. Banco de dados (migração)
 
-**Alterar `pulse_agent_settings`** — garantir todos os campos solicitados (`starts_at`, `ends_at`, `max_messages_per_lead`, `max_negotiation_days`, `auto_pause_on_end_date`, `auto_reply_inbound`, `auto_start_conversations`, `require_approval_first_message`, `require_approval_sensitive_objection`, `block_outside_window`, `tone`, etc.).
+Novas tabelas em `public`:
 
-**Alterar `pulse_outbound_leads`** — adicionar: `ai_typing`, `last_objection`, `internal_ai_note`, `next_goal`, `last_ai_recommendation`, `negotiation_started_at`, `negotiation_ends_at`, `manual_takeover_by`, `manual_takeover_at` (os outros já existem).
+- **`collab_conversations`** — `id`, `servidor_id`, `kind` (`group|channel|collab|copilot|video|direct`), `name`, `emoji`, `color`, `created_by`, `is_pinned`, `last_message_at`, `last_message_preview`, timestamps.
+- **`collab_members`** — `id`, `conversation_id`, `user_id`, `role` (`owner|admin|member`), `joined_at`, `last_read_at`, `is_muted`. Unique `(conversation_id, user_id)`.
+- **`collab_messages`** — `id`, `conversation_id`, `servidor_id`, `sender_id`, `content` (text), `attachments` (jsonb — array de `{kind,name,size,url}`), `reply_to_id`, `system` (bool), `created_at`, `edited_at`, `deleted_at`.
+- **`collab_reactions`** — `id`, `message_id`, `user_id`, `emoji`, `created_at`. Unique `(message_id, user_id, emoji)`.
 
-**Nova `pulse_knowledge_base`** — campanha, título, tipo (texto/faq/oferta/objecoes/politica/case/script), conteúdo, prioridade, ativo. RLS por servidor_id via campanha.
+Cada tabela: GRANTs para `authenticated` + `service_role`, RLS habilitado.
 
-**Alterar `whatsapp_messages`** — adicionar `pulse_source` (`ai`/`operator`/`null`), `pulse_lead_id`, `pulse_campaign_id`, `ai_generated`.
+Políticas RLS (sem subqueries recursivas — usar funções `SECURITY DEFINER` quando necessário):
+- `is_collab_member(conv_id, user_id)` — função para checagem reutilizável.
+- Conversations: SELECT se membro OU mesma `servidor_id` e `kind='channel'`. INSERT por usuários do tenant. UPDATE/DELETE por `owner/admin`.
+- Members: SELECT por membros da mesma conversa. INSERT/DELETE por owner/admin.
+- Messages: SELECT por membros. INSERT pelo próprio `sender_id` sendo membro. UPDATE/DELETE só pelo autor.
+- Reactions: SELECT por membros. INSERT/DELETE pelo próprio `user_id`.
 
-**`pulse_agent_events`** já existe — garantir campos `ai_reasoning`, `detected_intent`, `detected_objection`, `detected_sentiment`, `next_goal`.
+Trigger em `collab_messages` para atualizar `last_message_at` e `last_message_preview` da conversa.
 
-**Realtime** — adicionar `whatsapp_messages`, `pulse_outbound_leads`, `pulse_agent_events` ao `supabase_realtime`.
+Realtime: adicionar `collab_conversations`, `collab_members`, `collab_messages`, `collab_reactions` ao `supabase_realtime`.
 
-## 2. Edge function `accord-pulse-agent`
+Storage: usar bucket `documents` existente, com pasta `collabs/<servidor_id>/<conversation_id>/`.
 
-Estender com 4 actions:
-- `classify_inbound` — classifica msg do lead (intent/objeção/sentimento), atualiza resumo, decide `needs_human` e `should_auto_reply`.
-- `generate_reply` — gera próxima mensagem usando knowledge base + histórico + nota interna; pode marcar `should_send`.
-- `generate_suggestion` — igual mas nunca envia, só retorna preview.
-- `run_due_leads` — varre leads `next_action_at <= now()`, valida janela/dias/timezone/limites, envia via `whatsapp-send`, marca `pulse_source=ai`.
+## 2. Frontend — `src/pages/Collabs.tsx`
 
-Lovable AI Gateway (`google/gemini-2.5-flash`), system prompt com tom + materiais de apoio ativos ordenados por prioridade, instrução "nunca dizer que é IA, nunca inventar fora da base".
+Remoção total dos mocks (`conversations`, `initialMessages`, `MENTIONS`, sistema de demo).
 
-## 3. Webhook inbound
+Refatorar para:
+- Buscar conversas reais via `supabase.from('collab_conversations')` filtradas pelas que o usuário é membro (RLS cuida) + canais públicos do tenant.
+- Carregar mensagens da conversa ativa via `collab_messages` com join leve em `profiles` (nome/avatar do autor).
+- Realtime por canal:
+  - `collab-list-<servidor>` para a sidebar (novas conversas, last_message_preview).
+  - `collab-conv-<conversationId>` para mensagens + reações da conversa aberta.
+- Enviar mensagem → INSERT em `collab_messages`. Reply → setar `reply_to_id`. Reações → INSERT/DELETE em `collab_reactions`. Upload → storage `documents` + INSERT com `attachments`.
+- Modal "Criar" cria registro real em `collab_conversations` + members selecionados. "Convidar" insere members.
+- Marcar como lido: ao abrir a conversa, atualizar `last_read_at` no membro; badge de não lidas = `count(messages where created_at > last_read_at)`.
+- Empty states limpos quando não há conversas/mensagens (sem fallback mock).
 
-Em `whatsapp-webhook`, após salvar mensagem inbound:
-1. Buscar `pulse_outbound_leads` ativo pelo `contact_id`/phone.
-2. Se `settings.auto_reply_inbound`, setar `ai_typing=true`, chamar `classify_inbound`.
-3. Aplicar delay aleatório, setar `next_action_at`. Cron processa.
+Mantém o visual atual (sidebar roxa, feed branco, cards premium, emojis, stickers, anexos, menções a usuários reais).
 
-## 4. Frontend — `src/pages/AccordPulse.tsx`
+## 3. Detalhes técnicos
 
-Adicionar 2 novas abas mantendo as atuais:
+- `useActiveCompanyId()` continua sendo a fonte do `servidor_id`.
+- Menções continuam usando `profiles` do tenant (já implementado).
+- Sem edge functions novas — tudo direto pelo client com RLS.
+- Sem alterações em outras telas/rotas.
 
-### Aba "Negociação ao vivo" (`PulseLiveChatTab.tsx`)
-3 colunas (stack em mobile):
-- **Esquerda**: lista filtrável de leads em negociação (status, temperatura, última msg, badge "precisa humano", indicador "digitando").
-- **Centro**: chat estilo WhatsApp inbox. Header com nome/status/temperatura + botões (Pausar IA, Retomar, Assumir, Marcar reunião, Marcar perdido). Mensagens com badge IA/Operador, status de entrega, horário, auto-scroll. Footer com input manual, toggle "IA auto-responde", botão "Gerar sugestão" (preview editável antes de enviar). Estados ao vivo: "IA analisando", "IA preparando próxima mensagem", "Próxima ação em Xmin", "Pausado", "Precisa humano".
-- **Direita**: contexto — resumo, intenção, objeção, sentimento, última recomendação, próximo objetivo, dados do lead, botão editar contexto, textarea "Nota interna para IA".
+## Fora de escopo
 
-Realtime via `supabase.channel` em `whatsapp_messages` (filtrado por contato), `pulse_outbound_leads` (id do lead), `pulse_agent_events` (campaign).
-
-### Aba "Configuração do agente" (estender `PulseAgentSettingsTab.tsx`)
-Form completo com seções: Período (datas/horários/dias/timezone/delays/limites), Comportamento (todos os switches), e seção **Base de conhecimento** (CRUD inline de `pulse_knowledge_base` por campanha — adicionar/editar/ativar materiais por tipo).
-
-## 5. Stack técnica
-
-- shadcn/ui (Tabs, Card, Button, ScrollArea, Badge, Switch, Textarea, Select, Dialog), lucide-react.
-- Realtime Supabase, sem polling.
-- Mantém visual dark Accord, responsivo.
-
-## Notas
-
-- Cron `run_due_leads` já configurado anteriormente — apenas estendido.
-- Sem landing page, sem mudanças em outras telas.
-- Build precisa passar.
+- Integrações omnichannel externas (WhatsApp/Email/IG) — só chat interno agora.
+- Vídeo real (Jitsi/Daily) — `kind=video` cria a conversa, integração real fica para depois.
+- CoPilot IA — `kind=copilot` cria a conversa; respostas do bot ficam para próxima iteração.
