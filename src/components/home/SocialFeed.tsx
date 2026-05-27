@@ -587,7 +587,7 @@ function QuickPostComposer({
           </Button>
           <Button
             variant="ghost"
-            onClick={() => { setText(""); setTab("Mensagem"); }}
+            onClick={handleCancel}
             className="h-9 px-4 rounded-md text-muted-foreground hover:text-foreground font-semibold tracking-wide text-[12px] uppercase"
           >
             Cancelar
