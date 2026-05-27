@@ -455,11 +455,53 @@ export default function Collabs() {
   };
 
 
+  const messagePlainText = (m: MockMessage): string => {
+    if (typeof m.text === "string") return m.text;
+    if (m.file) return `📎 ${m.file.name}`;
+    if (m.files?.length) return `📎 ${m.files.length} arquivo(s)`;
+    return "Mensagem";
+  };
+
+  const startReply = (m: MockMessage) => {
+    const name = m.sent ? "Você" : m.sender?.name ?? "Mensagem";
+    setReplyTo({ id: m.id, name, text: messagePlainText(m).slice(0, 120) });
+    inputRef.current?.focus();
+  };
+
+  const toggleReaction = (msgId: string, emoji: string) => {
+    setAllMessages((prev) => {
+      const list = prev[activeId] ?? [];
+      return {
+        ...prev,
+        [activeId]: list.map((m) => {
+          if (m.id !== msgId) return m;
+          const rx = [...(m.reactions ?? [])];
+          const i = rx.findIndex((r) => r.emoji === emoji);
+          if (i >= 0) {
+            rx[i] = { ...rx[i], count: rx[i].count + 1 };
+          } else {
+            rx.push({ emoji, count: 1 });
+          }
+          return { ...m, reactions: rx };
+        }),
+      };
+    });
+    setReactPickerFor(null);
+  };
+
   const sendText = () => {
     const t = input.trim();
     if (!t) return;
-    pushMessage({ id: crypto.randomUUID(), sent: true, time: nowTime(), text: t, status: "sent" });
+    pushMessage({
+      id: crypto.randomUUID(),
+      sent: true,
+      time: nowTime(),
+      text: t,
+      status: "sent",
+      quote: replyTo ? { name: replyTo.name, text: replyTo.text } : undefined,
+    });
     setInput("");
+    setReplyTo(null);
     setShowEmoji(false);
     setShowMentions(false);
   };
