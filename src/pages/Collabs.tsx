@@ -826,10 +826,10 @@ export default function Collabs() {
 
               <div className="relative z-10 flex flex-col gap-1">
                 {loadingMsgs ? (
-                  <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-white" /></div>
+                  <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-violet-400" /></div>
                 ) : messages.length === 0 ? (
                   <div className="text-center my-10">
-                    <span className="text-[12px] text-white bg-black/30 px-4 py-1.5 rounded-xl inline-block">
+                    <span className="text-[12px] text-gray-500 bg-white/80 border border-violet-100 px-4 py-1.5 rounded-full inline-block shadow-sm backdrop-blur">
                       Nenhuma mensagem ainda. Diga olá 👋
                     </span>
                   </div>
@@ -837,13 +837,14 @@ export default function Collabs() {
                   messages.map((m) => {
                     if (m.is_system) {
                       return (
-                        <div key={m.id} className="text-center my-1.5">
-                          <span className="text-[11.5px] text-white bg-black/30 px-3.5 py-1 rounded-xl inline-block leading-snug">
+                        <div key={m.id} className="text-center my-2">
+                          <span className="text-[11.5px] text-gray-500 bg-white/80 border border-gray-200 px-3.5 py-1 rounded-full inline-block leading-snug shadow-sm backdrop-blur">
                             {m.content}
                           </span>
                         </div>
                       );
                     }
+
                     const isSent = m.sender_id === user?.id;
                     const sender = userMap.get(m.sender_id || "");
                     const senderName = sender?.name || "Usuário";
