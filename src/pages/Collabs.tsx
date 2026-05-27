@@ -514,13 +514,26 @@ export default function Collabs() {
 
           <div className="flex items-center gap-1.5 bg-white rounded-[24px] pl-3.5 pr-2 py-1.5">
             <div className="flex gap-0.5">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                title="Anexar arquivo"
-                className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
-              >
-                <Paperclip className="h-[17px] w-[17px]" />
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    title="Anexar"
+                    className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
+                  >
+                    <Paperclip className="h-[17px] w-[17px]" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" side="top" className="w-64">
+                  <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                    <Monitor className="h-4 w-4 mr-2" />
+                    Arquivo neste computador
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={openAccordPicker}>
+                    <HardDrive className="h-4 w-4 mr-2" />
+                    Arquivo no Accord
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <button
                 onClick={() => imageInputRef.current?.click()}
                 title="Enviar imagem"
