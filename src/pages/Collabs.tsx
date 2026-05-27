@@ -771,50 +771,58 @@ export default function Collabs() {
 
 
       {/* CHAT MAIN */}
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {!active ? (
-          <div className="relative flex-1 flex flex-col items-center justify-center text-center px-6 text-muted-foreground overflow-hidden">
+          <div className="relative flex-1 flex flex-col items-center justify-center text-center px-6 overflow-hidden" style={{ background: "linear-gradient(180deg, #fdfcff 0%, #f5f0fb 100%)" }}>
             <ConstellationCanvas />
             <div className="relative z-10 flex flex-col items-center">
-              <MessageSquare className="h-14 w-14 mb-4 opacity-30" />
-              <div className="text-base font-medium text-foreground">Selecione uma conversa</div>
-              <p className="text-sm mt-1 max-w-sm">Suas conversas, canais e collabs do tenant aparecem aqui em tempo real.</p>
+              <MessageSquare className="h-14 w-14 mb-4 text-violet-300" />
+              <div className="text-base font-semibold text-gray-800">Selecione uma conversa</div>
+              <p className="text-sm mt-1 max-w-sm text-gray-500">Suas conversas, canais e collabs do tenant aparecem aqui em tempo real.</p>
             </div>
           </div>
 
         ) : (
           <>
-            <header className="h-[60px] flex items-center gap-3 px-4 shrink-0 border-b border-white/10" style={{ background: "hsl(var(--sidebar-primary))" }}>
-              <div className="w-9 h-9 rounded-full bg-white/25 flex items-center justify-center text-white" style={{ background: (active.color || KIND_META[active.kind].color) + "AA" }}>
-                {(() => { const I = KIND_META[active.kind].Icon; return <I className="h-4 w-4" />; })()}
+            <header className="h-[64px] flex items-center gap-3 px-5 shrink-0 bg-white/80 backdrop-blur-xl border-b border-gray-200/70">
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-md shrink-0" style={{ background: `linear-gradient(135deg, ${active.color || KIND_META[active.kind].color} 0%, ${(active.color || KIND_META[active.kind].color)}cc 100%)` }}>
+                {(() => { const I = KIND_META[active.kind].Icon; return <I className="h-[18px] w-[18px]" />; })()}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-white leading-tight truncate">
+                <div className="text-[14px] font-semibold text-gray-900 leading-tight truncate">
                   {active.kind === "channel" ? "# " : ""}{active.name}
                 </div>
-                <div className="text-[11.5px] text-white/75">
-                  {memberCount} {memberCount === 1 ? "membro" : "membros"} · {KIND_META[active.kind].label}
+                <div className="text-[11.5px] text-gray-500 mt-0.5 flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    {onlineIds.size} online
+                  </span>
+                  <span className="opacity-40">·</span>
+                  <span>{memberCount} {memberCount === 1 ? "membro" : "membros"}</span>
+                  <span className="opacity-40">·</span>
+                  <span>{KIND_META[active.kind].label}</span>
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <button onClick={() => { setInviteTab("colab"); setInviteOpen(true); }} className="w-8 h-8 rounded-full flex items-center justify-center text-white/85 hover:bg-white/15 transition-colors" title="Adicionar membros">
+                <button onClick={() => { setInviteTab("colab"); setInviteOpen(true); }} className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors" title="Adicionar membros">
                   <UserPlus className="h-[17px] w-[17px]" />
                 </button>
-                <button className="w-8 h-8 rounded-full flex items-center justify-center text-white/85 hover:bg-white/15 transition-colors">
+                <button className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors">
                   <MoreVertical className="h-[17px] w-[17px]" />
                 </button>
               </div>
             </header>
 
             <div
-              className="flex-1 overflow-y-auto px-4 py-3 relative"
+              className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-5 relative"
               style={{
-                backgroundColor: "#8fadc8",
-                backgroundImage: "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.18) 1px, transparent 0)",
-                backgroundSize: "20px 20px",
+                background: "linear-gradient(180deg, #fdfcff 0%, #f7f4fc 100%)",
+                backgroundImage: `radial-gradient(circle at 1px 1px, rgba(124,58,237,0.07) 1px, transparent 0), linear-gradient(180deg, #fdfcff 0%, #f7f4fc 100%)`,
+                backgroundSize: "22px 22px, auto",
               }}
             >
-              <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(135deg, #a8c5da 0%, #7ba3c0 35%, #9eb8d0 60%, #6d98b8 100%)", opacity: 0.6 }} />
+              <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(900px 500px at 85% -10%, rgba(124,58,237,0.08), transparent 60%), radial-gradient(700px 400px at -10% 110%, rgba(99,102,241,0.07), transparent 60%)" }} />
+
 
               <div className="relative z-10 flex flex-col gap-1">
                 {loadingMsgs ? (
