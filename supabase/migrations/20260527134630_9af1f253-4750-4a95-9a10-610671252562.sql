@@ -1,0 +1,2 @@
+ALTER TABLE public.feed_posts ADD COLUMN IF NOT EXISTS pinned boolean NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS idx_feed_posts_pinned ON public.feed_posts (servidor_id, pinned, created_at DESC);
