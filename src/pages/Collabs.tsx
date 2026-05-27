@@ -13,8 +13,27 @@ import {
   FileText,
   FileSpreadsheet,
   Pin,
+  Monitor,
+  HardDrive,
+  Loader2,
+  File as FileIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
+
 
 /* ──────────────────────────  MOCK DATA  ────────────────────────── */
 
@@ -116,6 +135,46 @@ export default function Collabs() {
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const companyId = useActiveCompanyId();
+  const [accordOpen, setAccordOpen] = useState(false);
+  const [accordLoading, setAccordLoading] = useState(false);
+  const [accordFiles, setAccordFiles] = useState<Array<{ id: string; name: string; file_url: string | null; file_size: number | null; file_type: string | null }>>([]);
+  const [accordSearch, setAccordSearch] = useState("");
+
+  const openAccordPicker = async () => {
+    setAccordOpen(true);
+    if (!companyId) return;
+    setAccordLoading(true);
+    const { data, error } = await supabase
+      .from("drive_files")
+      .select("id,name,file_url,file_size,file_type")
+      .eq("servidor_id", companyId)
+      .eq("type", "file")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (!error) setAccordFiles((data as any) || []);
+    setAccordLoading(false);
+  };
+
+  const pickAccordFile = (f: { id: string; name: string; file_url: string | null; file_size: number | null }) => {
+    const lower = f.name.toLowerCase();
+    const isImage = /\.(png|jpe?g|gif|webp|svg)$/i.test(lower);
+    const kind: MockMessage["file"]["kind"] = isImage
+      ? "image"
+      : lower.endsWith(".pdf") ? "pdf"
+      : /\.(xls|xlsx|csv)$/i.test(lower) ? "xls"
+      : "file";
+    pushMessage({
+      id: crypto.randomUUID(),
+      sent: true,
+      time: nowTime(),
+      text: isImage && f.file_url ? <img src={f.file_url} alt={f.name} className="rounded-lg max-w-[260px] max-h-[260px] object-cover" /> : undefined,
+      file: isImage ? undefined : { kind, name: f.name, size: f.file_size ? formatBytes(f.file_size) : "—", url: f.file_url ?? undefined },
+      status: "sent",
+    });
+    setAccordOpen(false);
+  };
+
 
   const active = conversations.find((c) => c.id === activeId) ?? conversations[0];
   const filtered = conversations.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()));
@@ -455,13 +514,26 @@ export default function Collabs() {
 
           <div className="flex items-center gap-1.5 bg-white rounded-[24px] pl-3.5 pr-2 py-1.5">
             <div className="flex gap-0.5">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                title="Anexar arquivo"
-                className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
-              >
-                <Paperclip className="h-[17px] w-[17px]" />
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    title="Anexar"
+                    className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
+                  >
+                    <Paperclip className="h-[17px] w-[17px]" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" side="top" className="w-64">
+                  <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                    <Monitor className="h-4 w-4 mr-2" />
+                    Arquivo neste computador
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={openAccordPicker}>
+                    <HardDrive className="h-4 w-4 mr-2" />
+                    Arquivo no Accord
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <button
                 onClick={() => imageInputRef.current?.click()}
                 title="Enviar imagem"
@@ -512,6 +584,55 @@ export default function Collabs() {
         </div>
 
       </main>
+
+      {/* Accord file picker */}
+      <Dialog open={accordOpen} onOpenChange={setAccordOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Arquivos no Accord</DialogTitle>
+          </DialogHeader>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              value={accordSearch}
+              onChange={(e) => setAccordSearch(e.target.value)}
+              placeholder="Buscar arquivo..."
+              className="w-full bg-muted rounded-lg pl-9 pr-3 py-2 text-sm outline-none"
+            />
+          </div>
+          <div className="max-h-[360px] overflow-y-auto -mx-2">
+            {accordLoading ? (
+              <div className="flex items-center justify-center py-10 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+              </div>
+            ) : accordFiles.length === 0 ? (
+              <div className="text-center py-10 text-sm text-muted-foreground">
+                Nenhum arquivo encontrado em Documentos.
+              </div>
+            ) : (
+              accordFiles
+                .filter((f) => f.name.toLowerCase().includes(accordSearch.toLowerCase()))
+                .map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => pickAccordFile(f)}
+                    className="w-full flex items-center gap-3 px-3 py-2 hover:bg-muted rounded-lg text-left"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      <FileIcon className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{f.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {f.file_size ? formatBytes(f.file_size) : "—"}
+                      </div>
+                    </div>
+                  </button>
+                ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
