@@ -238,7 +238,9 @@ export default function Collabs() {
   const [search, setSearch] = useState("");
   const [allMessages, setAllMessages] = useState<Record<string, MockMessage[]>>(initialMessages);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [showMentions, setShowMentions] = useState(false);
   const [pickerTab, setPickerTab] = useState<"emoji" | "stickers">("emoji");
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
