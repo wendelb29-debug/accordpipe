@@ -711,13 +711,13 @@ export default function Collabs() {
           </DropdownMenu>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-1">
+        <div className="flex-1 overflow-y-auto py-2 px-1.5 scrollbar-thin">
           {loadingConvs ? (
-            <div className="flex items-center justify-center py-10 text-muted-foreground">
+            <div className="flex items-center justify-center py-10 text-white/50">
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center px-6 py-12 text-sm text-muted-foreground">
+            <div className="text-center px-6 py-12 text-sm text-white/55">
               <MessageSquare className="h-10 w-10 mx-auto mb-3 opacity-30" />
               Nenhuma conversa ainda.<br />
               Clique no <PenSquare className="inline h-3.5 w-3.5 mx-0.5" /> para criar a primeira.
@@ -733,27 +733,32 @@ export default function Collabs() {
                 key={c.id}
                 onClick={() => setActiveId(c.id)}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2 mx-1.5 my-0.5 rounded-xl cursor-pointer transition-colors h-[64px]",
-                  isActive ? "bg-[hsl(var(--sidebar-primary))] text-white" : "hover:bg-muted",
+                  "flex items-center gap-3 px-2.5 py-2 my-0.5 rounded-2xl cursor-pointer transition-all h-[64px]",
+                  isActive
+                    ? "bg-white/12 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18),0_8px_24px_-12px_rgba(124,58,237,0.6)]"
+                    : "hover:bg-white/6",
                 )}
               >
-                <div className="w-12 h-12 min-w-12 rounded-full flex items-center justify-center text-white" style={{ background: color }}>
-                  <Icon className="h-5 w-5" />
+                <div
+                  className="w-11 h-11 min-w-11 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-md"
+                  style={{ background: `linear-gradient(135deg, ${color} 0%, ${color}cc 100%)` }}
+                >
+                  <Icon className="h-[18px] w-[18px]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1 min-w-0">
-                      {c.is_pinned && <Pin className={cn("h-3 w-3 shrink-0", isActive ? "text-white/80" : "text-muted-foreground")} />}
-                      <span className={cn("text-[13.5px] font-medium truncate", isActive ? "text-white" : "text-foreground")}>
+                      {c.is_pinned && <Pin className="h-3 w-3 shrink-0 text-white/55" />}
+                      <span className="text-[13.5px] font-medium truncate text-white">
                         {prefix}{c.name}
                       </span>
                     </div>
-                    <span className={cn("text-[11px] shrink-0", isActive ? "text-white/80" : "text-muted-foreground")}>
+                    <span className="text-[11px] shrink-0 text-white/50">
                       {formatTime(c.last_message_at)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-2 mt-0.5">
-                    <span className={cn("text-xs truncate", isActive ? "text-white/70" : "text-muted-foreground")}>
+                    <span className="text-xs truncate text-white/55">
                       {c.last_message_preview || "Sem mensagens ainda"}
                     </span>
                   </div>
@@ -763,6 +768,7 @@ export default function Collabs() {
           })}
         </div>
       </aside>
+
 
       {/* CHAT MAIN */}
       <main className="flex-1 flex flex-col min-w-0">
