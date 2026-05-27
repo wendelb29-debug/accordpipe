@@ -1076,18 +1076,18 @@ export default function Collabs() {
               <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => { handleFiles(e.target.files, false); e.target.value = ""; }} />
               <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { handleFiles(e.target.files, true); e.target.value = ""; }} />
 
-              <div className="flex items-center gap-1.5 bg-white rounded-[24px] pl-3.5 pr-2 py-1.5">
+              <div className="flex items-center gap-1.5 bg-white rounded-[24px] pl-3.5 pr-2 py-1.5 shadow-[0_8px_24px_-12px_rgba(124,58,237,0.35),inset_0_0_0_1px_rgba(124,58,237,0.08)]">
                 <div className="flex gap-0.5">
-                  <button onClick={() => fileInputRef.current?.click()} title="Anexar" className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100">
+                  <button onClick={() => fileInputRef.current?.click()} title="Anexar" className="w-[32px] h-[32px] rounded-full flex items-center justify-center text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition">
                     <Paperclip className="h-[17px] w-[17px]" />
                   </button>
-                  <button onClick={() => imageInputRef.current?.click()} title="Enviar imagem" className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100">
+                  <button onClick={() => imageInputRef.current?.click()} title="Enviar imagem" className="w-[32px] h-[32px] rounded-full flex items-center justify-center text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition">
                     <ImageIcon className="h-[17px] w-[17px]" />
                   </button>
-                  <button onClick={() => { setShowEmoji((v) => !v); setShowMentions(false); }} title="Emojis" className={cn("w-[30px] h-[30px] rounded-full flex items-center justify-center", showEmoji ? "bg-gray-100 text-gray-700" : "text-gray-500 hover:bg-gray-100")}>
+                  <button onClick={() => { setShowEmoji((v) => !v); setShowMentions(false); }} title="Emojis" className={cn("w-[32px] h-[32px] rounded-full flex items-center justify-center transition", showEmoji ? "bg-violet-100 text-violet-700" : "text-gray-500 hover:bg-violet-50 hover:text-violet-600")}>
                     <Smile className="h-[17px] w-[17px]" />
                   </button>
-                  <button onClick={() => { setShowMentions((v) => !v); setShowEmoji(false); }} title="Mencionar" className={cn("w-[30px] h-[30px] rounded-full flex items-center justify-center", showMentions ? "bg-gray-100 text-gray-700" : "text-gray-500 hover:bg-gray-100")}>
+                  <button onClick={() => { setShowMentions((v) => !v); setShowEmoji(false); }} title="Mencionar" className={cn("w-[32px] h-[32px] rounded-full flex items-center justify-center transition", showMentions ? "bg-violet-100 text-violet-700" : "text-gray-500 hover:bg-violet-50 hover:text-violet-600")}>
                     <AtSign className="h-[17px] w-[17px]" />
                   </button>
                 </div>
@@ -1100,9 +1100,15 @@ export default function Collabs() {
                     if (e.key === "Escape") { setShowEmoji(false); setShowMentions(false); }
                   }}
                   placeholder={`Mensagem ${active.name}...`}
-                  className="flex-1 bg-transparent outline-none text-[13.5px] text-[#1a1a2e] placeholder:text-gray-400"
+                  className="flex-1 bg-transparent outline-none text-[13.5px] text-[#1a1a2e] placeholder:text-gray-400 min-w-0"
                 />
-                <button onClick={sendText} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors" style={{ background: input.trim() ? "hsl(var(--sidebar-primary))" : "transparent", color: input.trim() ? "#fff" : "#888" }}>
+                <button
+                  onClick={sendText}
+                  className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all"
+                  style={input.trim()
+                    ? { background: "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)", color: "#fff", boxShadow: "0 8px 20px -8px rgba(124,58,237,0.6)" }
+                    : { background: "transparent", color: "#888" }}
+                >
                   {input.trim() ? <Send className="h-4 w-4" /> : <Mic className="h-[18px] w-[18px]" />}
                 </button>
               </div>
@@ -1110,6 +1116,61 @@ export default function Collabs() {
           </>
         )}
       </main>
+
+      {/* RIGHT PANEL — online by department */}
+      <aside className="hidden lg:flex w-[280px] min-w-[280px] shrink-0 flex-col bg-white/70 backdrop-blur-xl border-l border-gray-200/70">
+        <div className="h-[64px] flex items-center gap-2 px-5 border-b border-gray-200/70 shrink-0">
+          <Users className="h-4 w-4 text-violet-600" />
+          <div className="flex-1">
+            <div className="text-[13px] font-semibold text-gray-900 leading-tight">Equipe online</div>
+            <div className="text-[11px] text-gray-500">{onlineIds.size} de {tenantUsers.length} ativos agora</div>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+          {usersByDept.length === 0 ? (
+            <div className="text-center text-[12px] text-gray-400 py-8">Sem colaboradores ativos.</div>
+          ) : usersByDept.map(([dept, list]) => {
+            const onlineList = list.filter((u) => onlineIds.has(u.id));
+            const offlineList = list.filter((u) => !onlineIds.has(u.id));
+            const ordered = [...onlineList, ...offlineList];
+            return (
+              <div key={dept}>
+                <div className="flex items-center justify-between px-2 mb-1.5">
+                  <span className="text-[10.5px] font-semibold tracking-wider text-gray-500 uppercase">{dept}</span>
+                  <span className="text-[10px] text-emerald-600 font-medium">{onlineList.length}/{list.length}</span>
+                </div>
+                <div className="space-y-0.5">
+                  {ordered.map((u) => {
+                    const isOnline = onlineIds.has(u.id);
+                    const isTyping = typingIds.has(u.id);
+                    const status = isTyping ? "Digitando…" : isOnline ? "Online" : "Offline";
+                    const dotColor = isOnline ? "bg-emerald-500" : "bg-gray-300";
+                    return (
+                      <div key={u.id} className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-violet-50/60 transition cursor-pointer">
+                        <div className="relative shrink-0">
+                          {u.avatar_url ? (
+                            <img src={u.avatar_url} alt="" className={cn("h-8 w-8 rounded-full object-cover", !isOnline && "grayscale opacity-70")} />
+                          ) : (
+                            <div className={cn("h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-semibold text-white", !isOnline && "opacity-60")} style={{ background: avatarColorFor(u.id) }}>
+                              {initialsOf(u.name)}
+                            </div>
+                          )}
+                          <span className={cn("absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white", dotColor)} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className={cn("text-[12.5px] font-medium truncate", isOnline ? "text-gray-900" : "text-gray-500")}>{u.name}</div>
+                          <div className={cn("text-[10.5px] truncate", isTyping ? "text-violet-600 font-medium" : isOnline ? "text-emerald-600" : "text-gray-400")}>{status}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </aside>
+
 
       {/* CREATE DIALOG */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
