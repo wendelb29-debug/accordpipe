@@ -48,22 +48,33 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const navigation = [
-  { nameKey: "nav.home", href: "/home", icon: Home, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
-  { nameKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
-  { nameKey: "nav.accordSales", href: "/atendimento", icon: MessageSquare, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
-  { nameKey: "nav.forms", href: "/formularios", icon: ClipboardList, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
-  { nameKey: "nav.activities", href: "/atividades", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
-  { nameKey: "nav.fintech", href: "/financeiro", icon: Receipt, roles: ["admin", "ceo", "financeiro"] },
-  { nameKey: "nav.documents", href: "/documentos", icon: FileText, roles: ["admin", "ceo", "administrativo", "financeiro"] },
-  { nameKey: "nav.reports", href: "/relatorios", icon: BarChart3, roles: ["admin", "leitura", "ceo", "administrativo", "financeiro"] },
-  { nameKey: "nav.clientBase", href: "/cadastrados", icon: Users, roles: ["admin", "ceo", "administrativo"] },
-  { nameKey: "nav.performance", href: "/performance", icon: TrendingUp, roles: ["admin", "ceo", "operador", "comercial"] },
-  
-  { nameKey: "nav.academy", href: "/academy", icon: GraduationCap, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
-  { nameKey: "nav.accordPulse", href: "/accord-pulse", icon: Flame, roles: ["admin", "ceo", "comercial"] },
-  { nameKey: "nav.discard", href: "/descarte", icon: Trash2, roles: ["admin", "ceo"] },
+const navigationSections = [
+  {
+    label: "Principal",
+    items: [
+      { nameKey: "nav.home", href: "/home", icon: Home, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
+      { nameKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
+      { nameKey: "nav.accordSales", href: "/atendimento", icon: MessageSquare, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
+      { nameKey: "nav.forms", href: "/formularios", icon: ClipboardList, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
+      { nameKey: "nav.activities", href: "/atividades", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
+    ],
+  },
+  {
+    label: "Gestão",
+    items: [
+      { nameKey: "nav.fintech", href: "/financeiro", icon: Receipt, roles: ["admin", "ceo", "financeiro"] },
+      { nameKey: "nav.documents", href: "/documentos", icon: FileText, roles: ["admin", "ceo", "administrativo", "financeiro"] },
+      { nameKey: "nav.reports", href: "/relatorios", icon: BarChart3, roles: ["admin", "leitura", "ceo", "administrativo", "financeiro"] },
+      { nameKey: "nav.clientBase", href: "/cadastrados", icon: Users, roles: ["admin", "ceo", "administrativo"] },
+      { nameKey: "nav.performance", href: "/performance", icon: TrendingUp, roles: ["admin", "ceo", "operador", "comercial"] },
+      { nameKey: "nav.academy", href: "/academy", icon: GraduationCap, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
+      { nameKey: "nav.accordPulse", href: "/accord-pulse", icon: Flame, roles: ["admin", "ceo", "comercial"] },
+      { nameKey: "nav.discard", href: "/descarte", icon: Trash2, roles: ["admin", "ceo"] },
+    ],
+  },
 ];
+
+const navigation = navigationSections.flatMap((s) => s.items);
 
 const configNavigation = [
   { nameKey: "nav.users", href: "/configuracoes/usuarios", icon: Users, roles: ["admin", "ceo", "administrativo"] },
@@ -321,15 +332,30 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className={cn("flex-1 space-y-0.5 overflow-y-auto py-2", collapsed ? "px-2" : "px-3")}>
-        {!collapsed && (
-          <p className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-sidebar-foreground/20 transition-opacity duration-300">
-            Menu
-          </p>
-        )}
-        {filteredNavigation.map((item) => (
-          <NavItem key={t(item.nameKey)} item={item} isActive={location.pathname === item.href} />
-        ))}
+      <nav className={cn("flex-1 overflow-y-auto py-2", collapsed ? "px-2" : "px-3")}>
+        {navigationSections.map((section, idx) => {
+          const items = section.items.filter((item) => {
+            if (role && !item.roles.includes(role)) return false;
+            const perm = ROUTE_PERMISSIONS[item.href];
+            if (perm && !hasPermission(perm)) return false;
+            return true;
+          });
+          if (items.length === 0) return null;
+          return (
+            <div key={section.label} className={cn("space-y-0.5", idx > 0 && "mt-4")}>
+              {!collapsed ? (
+                <p className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-sidebar-foreground/20 transition-opacity duration-300">
+                  {section.label}
+                </p>
+              ) : idx > 0 ? (
+                <div className="mx-2 my-2 h-px bg-sidebar-border/40" />
+              ) : null}
+              {items.map((item) => (
+                <NavItem key={t(item.nameKey)} item={item} isActive={location.pathname === item.href} />
+              ))}
+            </div>
+          );
+        })}
       </nav>
 
       {/* Config & User */}
