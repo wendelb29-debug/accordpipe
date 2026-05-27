@@ -25,6 +25,10 @@ import {
   Video,
   UserPlus,
   Info,
+  Reply,
+  SmilePlus,
+  ExternalLink,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -69,6 +73,8 @@ const conversations: Conversation[] = [
   { id: "privado", name: "Privado - Wendel 🔒", avatar: "🔒", color: "bg-[hsl(var(--sidebar-primary))]", time: "Seg", preview: "Você: Ok! 👊", members: 2, online: 2 },
 ];
 
+type FileAttachment = { kind: "pdf" | "xls" | "image" | "file" | "doc"; name: string; size: string; url?: string };
+
 interface MockMessage {
   id: string;
   sender?: { name: string; initials: string; color: string; nameColor?: string };
@@ -77,10 +83,21 @@ interface MockMessage {
   time: string;
   reactions?: { emoji: string; count: number }[];
   quote?: { name: string; text: string };
-  file?: { kind: "pdf" | "xls" | "image" | "file"; name: string; size: string; url?: string };
+  file?: FileAttachment;
+  files?: FileAttachment[];
   system?: React.ReactNode;
   status?: "sent" | "delivered" | "read";
 }
+
+const QUICK_REACTIONS = ["👍", "❤️", "😂", "🎉", "🔥", "👏", "✅", "💡"];
+
+const FILE_THEME: Record<FileAttachment["kind"], { from: string; to: string; iconBg: string; iconColor: string; label: string }> = {
+  pdf:   { from: "#FFF3EE", to: "#FFE2D4", iconBg: "#FFD6BF", iconColor: "#D85A30", label: "PDF" },
+  xls:   { from: "#EEFBE2", to: "#DCF3C1", iconBg: "#C7E8A2", iconColor: "#3B6D11", label: "XLSX" },
+  doc:   { from: "#E8F1FF", to: "#D2E3FF", iconBg: "#BCD3FF", iconColor: "#2563EB", label: "DOC" },
+  image: { from: "#F3EBFF", to: "#E4D3FF", iconBg: "#D5BBFF", iconColor: "#7C3AED", label: "IMG" },
+  file:  { from: "#F1F3F8", to: "#E4E8F1", iconBg: "#D1D7E3", iconColor: "#475569", label: "FILE" },
+};
 
 const initialMessages: Record<string, MockMessage[]> = {
   geral: [
@@ -254,6 +271,8 @@ export default function Collabs() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const companyId = useActiveCompanyId();
+  const [replyTo, setReplyTo] = useState<{ id: string; name: string; text: string } | null>(null);
+  const [reactPickerFor, setReactPickerFor] = useState<string | null>(null);
   const [accordOpen, setAccordOpen] = useState(false);
   const [accordLoading, setAccordLoading] = useState(false);
   type AccordEntry = { id: string; name: string; type: "file" | "folder"; file_url: string | null; file_size: number | null; file_type: string | null };
@@ -436,11 +455,53 @@ export default function Collabs() {
   };
 
 
+  const messagePlainText = (m: MockMessage): string => {
+    if (typeof m.text === "string") return m.text;
+    if (m.file) return `📎 ${m.file.name}`;
+    if (m.files?.length) return `📎 ${m.files.length} arquivo(s)`;
+    return "Mensagem";
+  };
+
+  const startReply = (m: MockMessage) => {
+    const name = m.sent ? "Você" : m.sender?.name ?? "Mensagem";
+    setReplyTo({ id: m.id, name, text: messagePlainText(m).slice(0, 120) });
+    inputRef.current?.focus();
+  };
+
+  const toggleReaction = (msgId: string, emoji: string) => {
+    setAllMessages((prev) => {
+      const list = prev[activeId] ?? [];
+      return {
+        ...prev,
+        [activeId]: list.map((m) => {
+          if (m.id !== msgId) return m;
+          const rx = [...(m.reactions ?? [])];
+          const i = rx.findIndex((r) => r.emoji === emoji);
+          if (i >= 0) {
+            rx[i] = { ...rx[i], count: rx[i].count + 1 };
+          } else {
+            rx.push({ emoji, count: 1 });
+          }
+          return { ...m, reactions: rx };
+        }),
+      };
+    });
+    setReactPickerFor(null);
+  };
+
   const sendText = () => {
     const t = input.trim();
     if (!t) return;
-    pushMessage({ id: crypto.randomUUID(), sent: true, time: nowTime(), text: t, status: "sent" });
+    pushMessage({
+      id: crypto.randomUUID(),
+      sent: true,
+      time: nowTime(),
+      text: t,
+      status: "sent",
+      quote: replyTo ? { name: replyTo.name, text: replyTo.text } : undefined,
+    });
     setInput("");
+    setReplyTo(null);
     setShowEmoji(false);
     setShowMentions(false);
   };
@@ -458,23 +519,28 @@ export default function Collabs() {
 
   const handleFiles = (files: FileList | null, asImage: boolean) => {
     if (!files) return;
-    Array.from(files).forEach((f) => {
+    const arr = Array.from(files);
+    const attachments: FileAttachment[] = arr.map((f) => {
       const isImage = asImage || f.type.startsWith("image/");
       const url = URL.createObjectURL(f);
-      const kind: MockMessage["file"]["kind"] = isImage
+      const lower = f.name.toLowerCase();
+      const kind: FileAttachment["kind"] = isImage
         ? "image"
-        : f.name.toLowerCase().endsWith(".pdf") ? "pdf"
-        : /\.(xls|xlsx|csv)$/i.test(f.name) ? "xls"
+        : lower.endsWith(".pdf") ? "pdf"
+        : /\.(xls|xlsx|csv)$/i.test(lower) ? "xls"
+        : /\.(docx?|gdoc|odt|txt|md)$/i.test(lower) ? "doc"
         : "file";
-      pushMessage({
-        id: crypto.randomUUID(),
-        sent: true,
-        time: nowTime(),
-        text: isImage ? <img src={url} alt={f.name} className="rounded-lg max-w-[260px] max-h-[260px] object-cover" /> : undefined,
-        file: isImage ? undefined : { kind, name: f.name, size: formatBytes(f.size), url },
-        status: "sent",
-      });
+      return { kind, name: f.name, size: formatBytes(f.size), url };
     });
+    pushMessage({
+      id: crypto.randomUUID(),
+      sent: true,
+      time: nowTime(),
+      files: attachments,
+      status: "sent",
+      quote: replyTo ? { name: replyTo.name, text: replyTo.text } : undefined,
+    });
+    setReplyTo(null);
   };
 
   const insertAtCursor = (text: string) => {
@@ -683,84 +749,174 @@ export default function Collabs() {
               }
 
               const isSent = !!m.sent;
+              const allFiles: FileAttachment[] = m.files ?? (m.file ? [m.file] : []);
+              const hasBubble = !!m.text || !!m.quote;
               return (
-                <div key={m.id} className={cn("flex gap-2 mb-1.5", isSent && "flex-row-reverse")}>
+                <div key={m.id} className={cn("group/msg flex gap-2 mb-2", isSent && "flex-row-reverse")}>
                   {!isSent && m.sender && (
-                    <div className={cn("w-8 h-8 min-w-8 rounded-full flex items-center justify-center text-[11px] font-medium text-white self-end", m.sender.color)}>
+                    <div className={cn("w-8 h-8 min-w-8 rounded-full flex items-center justify-center text-[11px] font-medium text-white self-end shadow-sm", m.sender.color)}>
                       {m.sender.initials}
                     </div>
                   )}
-                  <div className={cn("flex flex-col gap-0.5 max-w-[68%]", isSent && "items-end")}>
+                  <div className={cn("flex flex-col gap-1 max-w-[68%] min-w-0", isSent && "items-end")}>
                     {!isSent && m.sender && (
                       <div className="text-[11.5px] font-medium pl-0.5" style={{ color: m.sender.nameColor || "hsl(var(--sidebar-primary))" }}>
                         {m.sender.name}
                       </div>
                     )}
-                    <div
-                      className={cn(
-                        "px-3 py-2 rounded-2xl text-[13px] leading-snug shadow-sm break-words",
-                        isSent ? "text-white" : "bg-white/95 text-[#1a1a2e]"
-                      )}
-                      style={isSent ? { background: "hsl(var(--sidebar-primary))" } : undefined}
-                    >
-                      {m.quote && (
-                        <div
-                          className="border-l-[3px] pl-2 mb-1.5"
-                          style={{ borderColor: isSent ? "rgba(255,255,255,0.6)" : "hsl(var(--sidebar-primary))" }}
-                        >
-                          <div className="text-[11px] font-medium" style={{ color: isSent ? "rgba(255,255,255,0.9)" : "hsl(var(--sidebar-primary))" }}>
-                            {m.quote.name}
-                          </div>
-                          <div className={cn("text-xs", isSent ? "text-white/70" : "text-muted-foreground")}>
-                            {m.quote.text}
-                          </div>
-                        </div>
-                      )}
-                      <div>{m.text}</div>
-                      <span className={cn("block text-right text-[10px] mt-1", isSent ? "text-white/60" : "text-black/35")}>
-                        {m.time}
-                        {isSent && m.status === "read" && " ✓✓"}
-                      </span>
-                    </div>
 
-                    {m.file && (
-                      <div className="flex items-center gap-2.5 bg-white/95 rounded-xl px-3 py-2.5 shadow-sm min-w-[240px]">
-                        <div
-                          className={cn(
-                            "w-9 h-9 rounded-lg flex items-center justify-center",
-                            m.file.kind === "pdf" ? "bg-[#FAECE7]" : "bg-[#EAF3DE]"
-                          )}
+                    {/* Bubble + hover actions wrapper */}
+                    <div className={cn("relative flex items-center gap-1.5", isSent && "flex-row-reverse")}>
+                      {/* Hover action toolbar */}
+                      <div
+                        className={cn(
+                          "opacity-0 group-hover/msg:opacity-100 transition-opacity flex items-center gap-0.5 bg-white/95 backdrop-blur rounded-full shadow-md border border-black/5 px-1 py-0.5 z-10",
+                          isSent ? "mr-1" : "ml-1"
+                        )}
+                      >
+                        <button
+                          onClick={() => setReactPickerFor(reactPickerFor === m.id ? null : m.id)}
+                          title="Reagir"
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-violet-600"
                         >
-                          {m.file.kind === "pdf" ? (
-                            <FileText className="h-[18px] w-[18px] text-[#D85A30]" />
-                          ) : (
-                            <FileSpreadsheet className="h-[18px] w-[18px] text-[#3B6D11]" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[12.5px] font-medium text-[#1a1a2e] truncate">{m.file.name}</div>
-                          <div className="text-[11px] text-muted-foreground">{m.file.size}</div>
-                        </div>
-                        <button className="text-muted-foreground hover:text-foreground">
-                          <Download className="h-4 w-4" />
+                          <SmilePlus className="h-[15px] w-[15px]" />
+                        </button>
+                        <button
+                          onClick={() => startReply(m)}
+                          title="Responder"
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-violet-600"
+                        >
+                          <Reply className="h-[15px] w-[15px]" />
                         </button>
                       </div>
-                    )}
 
-                    {m.reactions && (
-                      <div className="flex gap-1 mt-1 flex-wrap">
-                        {m.reactions.map((r, i) => (
+                      <div className={cn("flex flex-col gap-1.5 min-w-0", isSent && "items-end")}>
+                        {hasBubble && (
                           <div
-                            key={i}
                             className={cn(
-                              "rounded-xl px-2 py-0.5 text-[11.5px] flex items-center gap-1 shadow-sm cursor-pointer",
-                              isSent ? "bg-white/20 text-white/90" : "bg-white/85 text-gray-700"
+                              "px-3.5 py-2 rounded-2xl text-[13px] leading-snug shadow-sm break-words relative",
+                              isSent ? "text-white" : "bg-white/95 text-[#1a1a2e] backdrop-blur-sm"
                             )}
+                            style={
+                              isSent
+                                ? { background: "linear-gradient(135deg, hsl(var(--sidebar-primary)) 0%, #6366f1 100%)" }
+                                : undefined
+                            }
+                          >
+                            {m.quote && (
+                              <div
+                                className="border-l-[3px] pl-2 mb-1.5 rounded-r-md py-0.5"
+                                style={{
+                                  borderColor: isSent ? "rgba(255,255,255,0.7)" : "hsl(var(--sidebar-primary))",
+                                  background: isSent ? "rgba(255,255,255,0.08)" : "rgba(124,58,237,0.06)",
+                                }}
+                              >
+                                <div className="text-[11px] font-medium" style={{ color: isSent ? "rgba(255,255,255,0.95)" : "hsl(var(--sidebar-primary))" }}>
+                                  {m.quote.name}
+                                </div>
+                                <div className={cn("text-xs truncate", isSent ? "text-white/75" : "text-muted-foreground")}>
+                                  {m.quote.text}
+                                </div>
+                              </div>
+                            )}
+                            {m.text && <div>{m.text}</div>}
+                            <span className={cn("block text-right text-[10px] mt-1", isSent ? "text-white/65" : "text-black/40")}>
+                              {m.time}
+                              {isSent && m.status === "read" && " ✓✓"}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* File cards */}
+                        {allFiles.map((f, idx) => {
+                          const theme = FILE_THEME[f.kind];
+                          const Icon = f.kind === "pdf" ? FileText : f.kind === "xls" ? FileSpreadsheet : f.kind === "doc" ? FileText : FileIcon;
+                          return (
+                            <div
+                              key={idx}
+                              className="group/file flex items-center gap-3 rounded-2xl px-3 py-2.5 min-w-[260px] max-w-[320px] border border-white/60 shadow-[0_4px_18px_-6px_rgba(15,23,42,0.18)] hover:shadow-[0_8px_24px_-6px_rgba(15,23,42,0.28)] transition-all"
+                              style={{ background: `linear-gradient(135deg, ${theme.from} 0%, ${theme.to} 100%)` }}
+                            >
+                              <div
+                                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+                                style={{ background: theme.iconBg, color: theme.iconColor }}
+                              >
+                                <Icon className="h-[19px] w-[19px]" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[12.5px] font-semibold text-[#1a1a2e] truncate">{f.name}</div>
+                                <div className="text-[11px] text-gray-600 flex items-center gap-1.5">
+                                  <span className="font-medium tracking-wide" style={{ color: theme.iconColor }}>{theme.label}</span>
+                                  <span className="opacity-50">·</span>
+                                  <span>{f.size}</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-0.5 opacity-70 group-hover/file:opacity-100 transition">
+                                {f.url && (
+                                  <a
+                                    href={f.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    title="Abrir"
+                                    className="w-8 h-8 rounded-full flex items-center justify-center text-gray-700 hover:bg-white/70"
+                                  >
+                                    <ExternalLink className="h-4 w-4" />
+                                  </a>
+                                )}
+                                <a
+                                  href={f.url || "#"}
+                                  download={f.name}
+                                  title="Baixar"
+                                  className="w-8 h-8 rounded-full flex items-center justify-center text-gray-700 hover:bg-white/70"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </a>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Quick reaction picker */}
+                      {reactPickerFor === m.id && (
+                        <div
+                          className={cn(
+                            "absolute z-20 bottom-full mb-1.5 flex items-center gap-0.5 bg-white rounded-full shadow-xl border border-black/5 px-1.5 py-1",
+                            isSent ? "right-0" : "left-0"
+                          )}
+                        >
+                          {QUICK_REACTIONS.map((e) => (
+                            <button
+                              key={e}
+                              onClick={() => toggleReaction(m.id, e)}
+                              className="w-8 h-8 rounded-full hover:bg-gray-100 text-[17px] flex items-center justify-center transition hover:scale-125"
+                            >
+                              {e}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {m.reactions && m.reactions.length > 0 && (
+                      <div className={cn("flex gap-1 flex-wrap", isSent && "justify-end")}>
+                        {m.reactions.map((r, i) => (
+                          <button
+                            key={i}
+                            onClick={() => toggleReaction(m.id, r.emoji)}
+                            className="rounded-full px-2 py-0.5 text-[11.5px] flex items-center gap-1 shadow-sm cursor-pointer bg-white/90 hover:bg-white text-gray-700 border border-black/5 transition"
                           >
                             <span>{r.emoji}</span>
-                            <span>{r.count}</span>
-                          </div>
+                            <span className="font-medium text-gray-600">{r.count}</span>
+                          </button>
                         ))}
+                        <button
+                          onClick={() => setReactPickerFor(reactPickerFor === m.id ? null : m.id)}
+                          className="rounded-full w-6 h-6 flex items-center justify-center bg-white/70 hover:bg-white text-gray-500 border border-black/5"
+                          title="Adicionar reação"
+                        >
+                          <SmilePlus className="h-3 w-3" />
+                        </button>
                       </div>
                     )}
                   </div>
@@ -790,6 +946,26 @@ export default function Collabs() {
           className="px-3 py-2.5 border-t border-white/10 shrink-0 relative"
           style={{ background: "hsl(var(--sidebar-primary))" }}
         >
+          {/* Reply banner */}
+          {replyTo && (
+            <div className="mb-2 flex items-center gap-2 bg-white/95 rounded-xl px-3 py-2 shadow-sm border-l-[3px]" style={{ borderColor: "hsl(var(--sidebar-primary))" }}>
+              <Reply className="h-4 w-4 shrink-0" style={{ color: "hsl(var(--sidebar-primary))" }} />
+              <div className="flex-1 min-w-0">
+                <div className="text-[11.5px] font-medium" style={{ color: "hsl(var(--sidebar-primary))" }}>
+                  Respondendo a {replyTo.name}
+                </div>
+                <div className="text-xs text-gray-600 truncate">{replyTo.text}</div>
+              </div>
+              <button
+                onClick={() => setReplyTo(null)}
+                className="w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                title="Cancelar resposta"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+
           {/* Emoji picker */}
           {showEmoji && (
             <div className="absolute bottom-full left-3 mb-2 bg-white rounded-2xl shadow-xl z-20 border border-black/5 w-[380px] flex flex-col overflow-hidden">
