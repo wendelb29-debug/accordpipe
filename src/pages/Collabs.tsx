@@ -69,6 +69,8 @@ const conversations: Conversation[] = [
   { id: "privado", name: "Privado - Wendel 🔒", avatar: "🔒", color: "bg-[hsl(var(--sidebar-primary))]", time: "Seg", preview: "Você: Ok! 👊", members: 2, online: 2 },
 ];
 
+type FileAttachment = { kind: "pdf" | "xls" | "image" | "file" | "doc"; name: string; size: string; url?: string };
+
 interface MockMessage {
   id: string;
   sender?: { name: string; initials: string; color: string; nameColor?: string };
@@ -77,10 +79,21 @@ interface MockMessage {
   time: string;
   reactions?: { emoji: string; count: number }[];
   quote?: { name: string; text: string };
-  file?: { kind: "pdf" | "xls" | "image" | "file"; name: string; size: string; url?: string };
+  file?: FileAttachment;
+  files?: FileAttachment[];
   system?: React.ReactNode;
   status?: "sent" | "delivered" | "read";
 }
+
+const QUICK_REACTIONS = ["👍", "❤️", "😂", "🎉", "🔥", "👏", "✅", "💡"];
+
+const FILE_THEME: Record<FileAttachment["kind"], { from: string; to: string; iconBg: string; iconColor: string; label: string }> = {
+  pdf:   { from: "#FFF3EE", to: "#FFE2D4", iconBg: "#FFD6BF", iconColor: "#D85A30", label: "PDF" },
+  xls:   { from: "#EEFBE2", to: "#DCF3C1", iconBg: "#C7E8A2", iconColor: "#3B6D11", label: "XLSX" },
+  doc:   { from: "#E8F1FF", to: "#D2E3FF", iconBg: "#BCD3FF", iconColor: "#2563EB", label: "DOC" },
+  image: { from: "#F3EBFF", to: "#E4D3FF", iconBg: "#D5BBFF", iconColor: "#7C3AED", label: "IMG" },
+  file:  { from: "#F1F3F8", to: "#E4E8F1", iconBg: "#D1D7E3", iconColor: "#475569", label: "FILE" },
+};
 
 const initialMessages: Record<string, MockMessage[]> = {
   geral: [
