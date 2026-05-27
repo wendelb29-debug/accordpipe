@@ -158,8 +158,6 @@ function FileSourcesPanel({ onUpload }: { onUpload: () => void }) {
     { icon: Upload, label: "Carregar", color: "text-emerald-500", bg: "bg-emerald-500/10", onClick: onUpload },
     { icon: Cloud, label: "Meu Drive", color: "text-sky-500", bg: "bg-sky-500/10" },
     { icon: HardDrive, label: "Google Docs", color: "text-rose-500", bg: "bg-rose-500/10" },
-    { icon: FileText, label: "Office 365", color: "text-orange-500", bg: "bg-orange-500/10" },
-    { icon: Cloud, label: "Dropbox", color: "text-blue-500", bg: "bg-blue-500/10" },
   ];
   return (
     <div className="space-y-3 animate-fade-in">
