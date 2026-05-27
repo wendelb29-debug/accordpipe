@@ -1135,7 +1135,10 @@ export function SocialFeed() {
       if (ids.length > 0) {
         const { data: profs } = await supabase
           .from("profiles").select("user_id,name,avatar_url").in("user_id", ids);
-        for (const p of (profs ?? []) as any[]) authors[p.user_id] = { name: p.name, avatar_url: p.avatar_url };
+        await Promise.all(((profs ?? []) as any[]).map(async (p) => {
+          const url = p.avatar_url ? await resolveSignedUrl(p.avatar_url).catch(() => p.avatar_url) : null;
+          authors[p.user_id] = { name: p.name, avatar_url: url };
+        }));
       }
       return list.map((r) => ({ ...r, author: authors[r.author_id] || { name: null, avatar_url: null } }));
     },
