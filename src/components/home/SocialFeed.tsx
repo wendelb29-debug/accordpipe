@@ -352,6 +352,7 @@ function QuickPostComposer({
   const [tags, setTags] = useState<string[]>([]);
   const [showMore, setShowMore] = useState(false);
   const [moreView, setMoreView] = useState<"document" | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
   const fileRef = React.useRef<HTMLInputElement>(null);
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const selectedIds = useMemo(() => new Set(recipients.map((r) => r.id)), [recipients]);
@@ -374,6 +375,11 @@ function QuickPostComposer({
     }
   };
 
+  const handleCancel = () => {
+    setText(""); setTags([]); setShowTags(false); setRecipients([]); setTab("Mensagem");
+    setCollapsed(true);
+  };
+
   const toolbar = [
     { icon: Sparkle, label: "CoPilot", color: "text-violet-500" },
     { icon: Paperclip, label: "Arquivo", onClick: () => setTab("Arquivo") },
@@ -382,6 +388,30 @@ function QuickPostComposer({
     { icon: Hash, label: "Marca", onClick: () => setShowTags((v) => !v) },
     { icon: Video, label: "Gravar vídeo" },
   ];
+
+  // Collapsed compact prompt
+  if (collapsed) {
+    return (
+      <button
+        onClick={() => setCollapsed(false)}
+        className="group w-full text-left animate-fade-in rounded-2xl bg-card/95 backdrop-blur-xl ring-1 ring-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.25)] hover:ring-primary/30 hover:shadow-[0_8px_40px_rgba(124,58,237,0.18)] transition-all px-5 py-3.5 flex items-center gap-3"
+      >
+        <Avatar className="h-9 w-9 ring-2 ring-primary/20 shrink-0">
+          {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
+          <AvatarFallback className="bg-gradient-to-br from-primary to-violet-600 text-white text-xs font-semibold">
+            {initials(profile?.name)}
+          </AvatarFallback>
+        </Avatar>
+        <span className="flex-1 text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+          Compartilhe uma atualização com sua equipe…
+        </span>
+        <span className="hidden sm:inline-flex items-center gap-1 h-8 px-3 rounded-full bg-primary/10 text-primary text-[11px] font-semibold uppercase tracking-wider">
+          <Sparkle className="h-3.5 w-3.5" /> Criar
+        </span>
+      </button>
+    );
+  }
+
 
   return (
     <div className="animate-fade-in rounded-2xl bg-card/95 backdrop-blur-xl ring-1 ring-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.25)] overflow-hidden">
