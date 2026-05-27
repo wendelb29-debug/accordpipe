@@ -62,6 +62,7 @@ const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
 const TrialExpired = lazy(() => import("./pages/TrialExpired"));
 const AccordPulse = lazy(() => import("./pages/AccordPulse"));
+const Collabs = lazy(() => import("./pages/Collabs"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -306,6 +307,16 @@ const App = () => (
                 <ProtectedRoute allowedRoles={["admin", "ceo", "comercial"]}>
                   <AppLayout>
                     <AccordPulse />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/collabs"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"]}>
+                  <AppLayout>
+                    <Collabs />
                   </AppLayout>
                 </ProtectedRoute>
               }
