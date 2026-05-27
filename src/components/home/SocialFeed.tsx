@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -352,6 +353,7 @@ function QuickPostComposer({
   const [tags, setTags] = useState<string[]>([]);
   const [showMore, setShowMore] = useState(false);
   const [moreView, setMoreView] = useState<"document" | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
   const fileRef = React.useRef<HTMLInputElement>(null);
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const selectedIds = useMemo(() => new Set(recipients.map((r) => r.id)), [recipients]);
@@ -374,6 +376,11 @@ function QuickPostComposer({
     }
   };
 
+  const handleCancel = () => {
+    setText(""); setTags([]); setShowTags(false); setRecipients([]); setTab("Mensagem");
+    setCollapsed(true);
+  };
+
   const toolbar = [
     { icon: Sparkle, label: "CoPilot", color: "text-violet-500" },
     { icon: Paperclip, label: "Arquivo", onClick: () => setTab("Arquivo") },
@@ -382,6 +389,30 @@ function QuickPostComposer({
     { icon: Hash, label: "Marca", onClick: () => setShowTags((v) => !v) },
     { icon: Video, label: "Gravar vídeo" },
   ];
+
+  // Collapsed compact prompt
+  if (collapsed) {
+    return (
+      <button
+        onClick={() => setCollapsed(false)}
+        className="group w-full text-left animate-fade-in rounded-2xl bg-card/95 backdrop-blur-xl ring-1 ring-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.25)] hover:ring-primary/30 hover:shadow-[0_8px_40px_rgba(124,58,237,0.18)] transition-all px-5 py-3.5 flex items-center gap-3"
+      >
+        <Avatar className="h-9 w-9 ring-2 ring-primary/20 shrink-0">
+          {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
+          <AvatarFallback className="bg-gradient-to-br from-primary to-violet-600 text-white text-xs font-semibold">
+            {initials(profile?.name)}
+          </AvatarFallback>
+        </Avatar>
+        <span className="flex-1 text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+          Compartilhe uma atualização com sua equipe…
+        </span>
+        <span className="hidden sm:inline-flex items-center gap-1 h-8 px-3 rounded-full bg-primary/10 text-primary text-[11px] font-semibold uppercase tracking-wider">
+          <Sparkle className="h-3.5 w-3.5" /> Criar
+        </span>
+      </button>
+    );
+  }
+
 
   return (
     <div className="animate-fade-in rounded-2xl bg-card/95 backdrop-blur-xl ring-1 ring-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.25)] overflow-hidden">
@@ -557,7 +588,7 @@ function QuickPostComposer({
           </Button>
           <Button
             variant="ghost"
-            onClick={() => { setText(""); setTab("Mensagem"); }}
+            onClick={handleCancel}
             className="h-9 px-4 rounded-md text-muted-foreground hover:text-foreground font-semibold tracking-wide text-[12px] uppercase"
           >
             Cancelar
@@ -568,10 +599,87 @@ function QuickPostComposer({
   );
 }
 
+/* ─────────────────────────  ONLINE USERS INDICATOR  ─────────────────────── */
+function OnlineUsersIndicator() {
+  const { user, profile } = useAuth();
+  const tenantId = useActiveCompanyId();
+  const [online, setOnline] = useState<Array<{ user_id: string; name: string; avatar_url: string | null }>>([]);
+
+  useEffect(() => {
+    if (!tenantId || !user?.id) return;
+    const channel = supabase.channel(`presence:feed:${tenantId}`, {
+      config: { presence: { key: user.id } },
+    });
+
+    channel
+      .on("presence", { event: "sync" }, () => {
+        const state = channel.presenceState() as Record<string, any[]>;
+        const users: Record<string, { user_id: string; name: string; avatar_url: string | null }> = {};
+        Object.entries(state).forEach(([uid, metas]) => {
+          const m = metas?.[0] || {};
+          users[uid] = { user_id: uid, name: m.name || "Usuário", avatar_url: m.avatar_url || null };
+        });
+        setOnline(Object.values(users));
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await channel.track({
+            name: profile?.name || "Você",
+            avatar_url: profile?.avatar_url || null,
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
+
+    return () => { supabase.removeChannel(channel); };
+  }, [tenantId, user?.id, profile?.name, profile?.avatar_url]);
+
+  if (online.length === 0) return null;
+  const visible = online.slice(0, 4);
+  const extra = online.length - visible.length;
+
+  return (
+    <TooltipProvider delayDuration={150}>
+      <div className="flex items-center gap-2 px-3 h-10 rounded-full bg-card/60 ring-1 ring-white/5 backdrop-blur-md">
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+        </span>
+        <span className="text-[11px] font-semibold text-muted-foreground hidden sm:inline">
+          {online.length} online
+        </span>
+        <div className="flex -space-x-2">
+          {visible.map((u) => (
+            <Tooltip key={u.user_id}>
+              <TooltipTrigger asChild>
+                <div className="relative">
+                  <Avatar className="h-7 w-7 ring-2 ring-card hover:scale-110 transition-transform">
+                    {u.avatar_url && <AvatarImage src={u.avatar_url} />}
+                    <AvatarFallback className="text-[10px] bg-gradient-to-br from-primary to-violet-600 text-white">
+                      {initials(u.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-card" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">{u.name}</TooltipContent>
+            </Tooltip>
+          ))}
+          {extra > 0 && (
+            <div className="h-7 w-7 rounded-full bg-muted/60 ring-2 ring-card flex items-center justify-center text-[10px] font-semibold text-muted-foreground">
+              +{extra}
+            </div>
+          )}
+        </div>
+      </div>
+    </TooltipProvider>
+  );
+}
+
 /* ─────────────────────────  FEED HEADER BAR  ─────────────────────── */
 function FeedHeaderBar() {
   return (
-    <div className="flex items-center gap-4 px-1">
+    <div className="flex items-center gap-3 px-1">
       <h2 className="text-2xl font-bold tracking-tight">Feed</h2>
       <div className="flex-1 max-w-md relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
@@ -581,6 +689,7 @@ function FeedHeaderBar() {
           className="w-full h-10 pl-9 pr-3 rounded-lg bg-card/60 ring-1 ring-white/5 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-primary/40 transition"
         />
       </div>
+      <OnlineUsersIndicator />
     </div>
   );
 }
