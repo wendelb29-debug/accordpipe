@@ -177,7 +177,7 @@ export default function Collabs() {
       {/* ──────────  CHAT MAIN  ────────── */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <header className="flex items-center gap-3 px-4 py-2.5 border-b border-white/15 backdrop-blur-md" style={{ background: "hsl(var(--sidebar-primary) / 0.92)" }}>
+        <header className="h-[60px] flex items-center gap-3 px-4 shrink-0 border-b border-white/10" style={{ background: "hsl(var(--sidebar-primary))" }}>
           <div className="w-9 h-9 rounded-full bg-white/25 flex items-center justify-center text-white text-xs font-medium">
             {active.avatar}
           </div>
