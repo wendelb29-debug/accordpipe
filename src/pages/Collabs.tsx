@@ -382,6 +382,60 @@ export default function Collabs() {
     setAllMessages((prev) => ({ ...prev, [activeId]: [...(prev[activeId] ?? []), msg] }));
   };
 
+  const inviteLink = `${typeof window !== "undefined" ? window.location.origin : ""}/collabs/convite/${activeId}`;
+
+  const createKindMeta = {
+    group:   { title: "Novo bate-papo em grupo", desc: "Discussões em grupo",            color: "#6366f1", Icon: Users },
+    channel: { title: "Novo canal",              desc: "Notícias e comunicados",          color: "#f59e0b", Icon: Megaphone },
+    collab:  { title: "Nova Collab",             desc: "Colabore com equipes externas",   color: "#10b981", Icon: Handshake },
+    copilot: { title: "Conversar com o CoPilot", desc: "Resolução assistida por IA",      color: "#a855f7", Icon: Sparkles },
+    video:   { title: "Nova videoconferência",   desc: "Organize com convidados",         color: "#ef4444", Icon: Video },
+  } as const;
+
+  const openCreate = (kind: keyof typeof createKindMeta) => {
+    setCreateKind(kind);
+    setNewName("");
+    setSelectedMemberIds([]);
+    setMemberSearch("");
+    setCreateOpen(true);
+  };
+
+  const toggleMember = (id: string) =>
+    setSelectedMemberIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  const submitCreate = () => {
+    if (!newName.trim()) return;
+    const meta = createKindMeta[createKind];
+    const id = crypto.randomUUID();
+    const initial = newName.trim()[0]?.toUpperCase() ?? "C";
+    const newConv: Conversation = {
+      id,
+      name: createKind === "channel" ? `# ${newName.trim()}` : newName.trim(),
+      avatar: initial,
+      color: "bg-[hsl(var(--sidebar-primary))]",
+      time: nowTime(),
+      preview: "Conversa criada agora",
+      members: selectedMemberIds.length + 1,
+      online: 1,
+    };
+    conversations.unshift(newConv);
+    setAllMessages((prev) => ({
+      ...prev,
+      [id]: [{ id: "sys-create", time: "", system: <><meta.Icon className="inline h-3 w-3 mr-1" style={{ color: meta.color }} /><b className="font-medium">{newConv.name}</b> foi criado.</> }],
+    }));
+    setActiveId(id);
+    setCreateOpen(false);
+  };
+
+  const copyInviteLink = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setInviteLinkCopied(true);
+      setTimeout(() => setInviteLinkCopied(false), 1800);
+    } catch {}
+  };
+
+
   const sendText = () => {
     const t = input.trim();
     if (!t) return;
