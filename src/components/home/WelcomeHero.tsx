@@ -31,7 +31,7 @@ export function WelcomeHero() {
                  dark:from-[#1b1530] dark:via-[#241a3d] dark:to-[#15102a]
                  shadow-[0_12px_40px_-18px_rgba(124,58,237,0.35)]
                  px-5 md:px-7 flex items-center"
-      style={{ height: "150px" }}
+      style={{ height: "78px" }}
     >
       <svg
         className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.07] dark:opacity-[0.12]"
