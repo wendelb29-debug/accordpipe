@@ -39,7 +39,7 @@ export function ConstellationCanvas() {
       ctx.scale(devicePixelRatio, devicePixelRatio);
     };
     const c = getColors();
-    const pts = Array.from({ length: 65 }, () => {
+    const pts = Array.from({ length: 110 }, () => {
       const p = canvas.parentElement;
       const W = p?.offsetWidth || 800;
       const H = p?.offsetHeight || 600;
@@ -47,13 +47,14 @@ export function ConstellationCanvas() {
       return {
         x: Math.random() * W,
         y: Math.random() * H,
-        vx: (Math.random() - 0.5) * 0.28,
-        vy: (Math.random() - 0.5) * 0.28,
-        r: Math.random() * 1.6 + 0.7,
+        vx: (Math.random() - 0.5) * 0.65,
+        vy: (Math.random() - 0.5) * 0.65,
+        r: Math.random() * 2.2 + 1.1,
         t,
         a: c.ptAlphaMin + Math.random() * (c.ptAlphaMax - c.ptAlphaMin),
       };
     });
+
     const draw = () => {
       const p = canvas.parentElement;
       if (!p) return;
