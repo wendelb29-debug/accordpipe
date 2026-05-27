@@ -710,11 +710,15 @@ export default function Collabs() {
       {/* CHAT MAIN */}
       <main className="flex-1 flex flex-col min-w-0">
         {!active ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-center px-6 text-muted-foreground">
-            <MessageSquare className="h-14 w-14 mb-4 opacity-30" />
-            <div className="text-base font-medium text-foreground">Selecione uma conversa</div>
-            <p className="text-sm mt-1 max-w-sm">Suas conversas, canais e collabs do tenant aparecem aqui em tempo real.</p>
+          <div className="relative flex-1 flex flex-col items-center justify-center text-center px-6 text-muted-foreground overflow-hidden">
+            <ConstellationCanvas />
+            <div className="relative z-10 flex flex-col items-center">
+              <MessageSquare className="h-14 w-14 mb-4 opacity-30" />
+              <div className="text-base font-medium text-foreground">Selecione uma conversa</div>
+              <p className="text-sm mt-1 max-w-sm">Suas conversas, canais e collabs do tenant aparecem aqui em tempo real.</p>
+            </div>
           </div>
+
         ) : (
           <>
             <header className="h-[60px] flex items-center gap-3 px-4 shrink-0 border-b border-white/10" style={{ background: "hsl(var(--sidebar-primary))" }}>
