@@ -526,15 +526,16 @@ export default function Collabs() {
                   "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(245,243,255,0.98) 100%)",
               }}
             >
-              {[
-                { icon: Users, title: "Bate-papo em grupo", desc: "Discussões em grupo", color: "#6366f1" },
-                { icon: Sparkles, title: "Conversar com o CoPilot", desc: "Resolução de problemas assistida por IA", color: "#a855f7" },
-                { icon: Megaphone, title: "Canal", desc: "Notícias, comunicados, comentários", color: "#f59e0b" },
-                { icon: Handshake, title: "Collab", desc: "Colabore com equipes externas e convidados", color: "#10b981", highlight: true },
-                { icon: Video, title: "Videoconferência", desc: "Organize videoconferências com convidados", color: "#ef4444" },
-              ].map((opt) => (
+              {([
+                { kind: "group",   icon: Users,     title: "Bate-papo em grupo",        desc: "Discussões em grupo",                       color: "#6366f1" },
+                { kind: "copilot", icon: Sparkles,  title: "Conversar com o CoPilot",   desc: "Resolução de problemas assistida por IA",   color: "#a855f7" },
+                { kind: "channel", icon: Megaphone, title: "Canal",                     desc: "Notícias, comunicados, comentários",        color: "#f59e0b" },
+                { kind: "collab",  icon: Handshake, title: "Collab",                    desc: "Colabore com equipes externas e convidados",color: "#10b981" },
+                { kind: "video",   icon: Video,     title: "Videoconferência",          desc: "Organize videoconferências com convidados", color: "#ef4444" },
+              ] as const).map((opt) => (
                 <DropdownMenuItem
                   key={opt.title}
+                  onSelect={(e) => { e.preventDefault(); openCreate(opt.kind); }}
                   className="rounded-xl px-3 py-2.5 cursor-pointer focus:bg-violet-50/80 data-[highlighted]:bg-violet-50/80 gap-3"
                 >
                   <div
