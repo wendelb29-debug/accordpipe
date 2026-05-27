@@ -193,6 +193,34 @@ const EMOJI_CATEGORIES: { label: string; emojis: string[] }[] = [
 const EMOJIS = EMOJI_CATEGORIES.flatMap((c) => c.emojis);
 const MENTIONS = ["wendel","juliana","rodrigo","beatriz","mariana","thiago","patricia"];
 
+// Animated stickers (GIF/WebP from Giphy CDN)
+const STICKERS: string[] = [
+  "https://media.giphy.com/media/3o7TKr3nzbh5WgCFxe/giphy.gif", // party popper
+  "https://media.giphy.com/media/26gsspfbsXrnXLwfu/giphy.gif",  // thumbs up
+  "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif",  // clapping
+  "https://media.giphy.com/media/3oz8xAFtqoOUUrsh7W/giphy.gif", // heart
+  "https://media.giphy.com/media/l0HlBO7eyXzSZkJri/giphy.gif",  // fire
+  "https://media.giphy.com/media/l3q2K5jinAlChoCLS/giphy.gif",  // rocket
+  "https://media.giphy.com/media/3o7aD2saalBwwftBIY/giphy.gif", // 100
+  "https://media.giphy.com/media/3o7TKMt1VVNkHV2PaE/giphy.gif", // mind blown
+  "https://media.giphy.com/media/l0HlNQ03J5JxX6lva/giphy.gif",  // celebration
+  "https://media.giphy.com/media/l46Cy1rHbQ7qZHJ4I/giphy.gif",  // laughing
+  "https://media.giphy.com/media/3o7TKsQ8gqVrxZw4xy/giphy.gif", // sad
+  "https://media.giphy.com/media/3o6Zt6KHxJTbXCnSvu/giphy.gif", // wow
+  "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif",  // applause
+  "https://media.giphy.com/media/l1J9u3TZfpmeDLkD6/giphy.gif",  // love
+  "https://media.giphy.com/media/xT9IgG50Fb7Mi0prBC/giphy.gif", // good job
+  "https://media.giphy.com/media/3oz8xLd9DJq2l2VFtu/giphy.gif", // approved
+  "https://media.giphy.com/media/l4FGuhL4U2WyjdkaY/giphy.gif",  // dancing
+  "https://media.giphy.com/media/3o7abrH8o4HMgEAV9e/giphy.gif", // cat
+  "https://media.giphy.com/media/3o7TKDEq04QY1qDmJq/giphy.gif", // dog
+  "https://media.giphy.com/media/l0MYC0LajbaPoEADu/giphy.gif",  // ok
+  "https://media.giphy.com/media/3o7TKLkE9w0EkAirL2/giphy.gif", // hi
+  "https://media.giphy.com/media/3o6gE7y0c2pV3CV61i/giphy.gif", // bye
+  "https://media.giphy.com/media/l0HlGRDhBkVlIyzC0/giphy.gif",  // coffee
+  "https://media.giphy.com/media/3o6Zt481isNVuQI1l6/giphy.gif", // pizza
+];
+
 function formatBytes(b: number) {
   if (b < 1024) return `${b} B`;
   if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
