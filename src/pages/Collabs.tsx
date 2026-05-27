@@ -135,6 +135,46 @@ export default function Collabs() {
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const companyId = useActiveCompanyId();
+  const [accordOpen, setAccordOpen] = useState(false);
+  const [accordLoading, setAccordLoading] = useState(false);
+  const [accordFiles, setAccordFiles] = useState<Array<{ id: string; name: string; file_url: string | null; file_size: number | null; file_type: string | null }>>([]);
+  const [accordSearch, setAccordSearch] = useState("");
+
+  const openAccordPicker = async () => {
+    setAccordOpen(true);
+    if (!companyId) return;
+    setAccordLoading(true);
+    const { data, error } = await supabase
+      .from("drive_files")
+      .select("id,name,file_url,file_size,file_type")
+      .eq("servidor_id", companyId)
+      .eq("type", "file")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (!error) setAccordFiles((data as any) || []);
+    setAccordLoading(false);
+  };
+
+  const pickAccordFile = (f: { id: string; name: string; file_url: string | null; file_size: number | null }) => {
+    const lower = f.name.toLowerCase();
+    const isImage = /\.(png|jpe?g|gif|webp|svg)$/i.test(lower);
+    const kind: MockMessage["file"]["kind"] = isImage
+      ? "image"
+      : lower.endsWith(".pdf") ? "pdf"
+      : /\.(xls|xlsx|csv)$/i.test(lower) ? "xls"
+      : "file";
+    pushMessage({
+      id: crypto.randomUUID(),
+      sent: true,
+      time: nowTime(),
+      text: isImage && f.file_url ? <img src={f.file_url} alt={f.name} className="rounded-lg max-w-[260px] max-h-[260px] object-cover" /> : undefined,
+      file: isImage ? undefined : { kind, name: f.name, size: f.file_size ? formatBytes(f.file_size) : "—", url: f.file_url ?? undefined },
+      status: "sent",
+    });
+    setAccordOpen(false);
+  };
+
 
   const active = conversations.find((c) => c.id === activeId) ?? conversations[0];
   const filtered = conversations.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()));
