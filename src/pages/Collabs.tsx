@@ -261,6 +261,18 @@ export default function Collabs() {
   const [accordSearch, setAccordSearch] = useState("");
   const [accordPath, setAccordPath] = useState<Array<{ id: string | null; name: string }>>([{ id: null, name: "Documentos" }]);
 
+  // Create-collab + invite dialogs
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createKind, setCreateKind] = useState<"group" | "channel" | "collab" | "copilot" | "video">("group");
+  const [newName, setNewName] = useState("");
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const [memberSearch, setMemberSearch] = useState("");
+
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteTab, setInviteTab] = useState<"colab" | "guest">("guest");
+  const [inviteContact, setInviteContact] = useState("");
+  const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
+
   // Dynamic mentions from registered users (tenant scoped)
   type MentionUser = { id: string; name: string; handle: string; avatar_url: string | null };
   const [mentionUsers, setMentionUsers] = useState<MentionUser[]>([]);
