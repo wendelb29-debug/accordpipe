@@ -13,8 +13,27 @@ import {
   FileText,
   FileSpreadsheet,
   Pin,
+  Monitor,
+  HardDrive,
+  Loader2,
+  File as FileIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
+
 
 /* ──────────────────────────  MOCK DATA  ────────────────────────── */
 
