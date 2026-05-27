@@ -231,8 +231,10 @@ export default function Collabs() {
   const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
 
   // Tenant users (for mentions and member selection)
-  type MentionUser = { id: string; name: string; handle: string; avatar_url: string | null };
+  type MentionUser = { id: string; name: string; handle: string; avatar_url: string | null; department: string };
   const [tenantUsers, setTenantUsers] = useState<MentionUser[]>([]);
+  const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
+  const [typingIds, setTypingIds] = useState<Set<string>>(new Set());
   const userMap = useMemo(() => {
     const m = new Map<string, MentionUser>();
     tenantUsers.forEach((u) => m.set(u.id, u));
@@ -249,7 +251,7 @@ export default function Collabs() {
     const load = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("id, user_id, name, avatar_url, is_active, status")
+        .select("id, user_id, name, avatar_url, is_active, status, tags")
         .eq("company_id", companyId)
         .eq("is_active", true)
         .eq("status", "ativo")
@@ -262,12 +264,61 @@ export default function Collabs() {
           name: p.name as string,
           handle: slug((p.name as string).split(" ")[0] || p.name),
           avatar_url: p.avatar_url || null,
+          department: (Array.isArray(p.tags) && p.tags[0]) || "Equipe",
         }));
       setTenantUsers(list);
     };
     load();
     return () => { cancelled = true; };
   }, [companyId]);
+
+  /* ────── Presence: online users + typing indicator ────── */
+  const presenceRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  useEffect(() => {
+    if (!companyId || !user) return;
+    const ch = supabase.channel(`collab-presence-${companyId}`, { config: { presence: { key: user.id } } });
+    presenceRef.current = ch;
+    ch.on("presence", { event: "sync" }, () => {
+      const state = ch.presenceState() as Record<string, Array<{ typing_in?: string | null }>>;
+      const online = new Set<string>(Object.keys(state));
+      const typing = new Set<string>();
+      for (const [uid, metas] of Object.entries(state)) {
+        if (uid === user.id) continue;
+        if (metas?.some((m) => m.typing_in)) typing.add(uid);
+      }
+      setOnlineIds(online);
+      setTypingIds(typing);
+    }).subscribe(async (status) => {
+      if (status === "SUBSCRIBED") await ch.track({ typing_in: null });
+    });
+    return () => { supabase.removeChannel(ch); presenceRef.current = null; };
+  }, [companyId, user?.id]);
+
+  useEffect(() => {
+    const ch = presenceRef.current;
+    if (!ch || !activeId) return;
+    const isTyping = input.trim().length > 0;
+    const t = setTimeout(() => {
+      ch.track({ typing_in: isTyping ? activeId : null }).catch(() => {});
+    }, 200);
+    return () => clearTimeout(t);
+  }, [input, activeId]);
+
+  /* ────── Group users by department for right panel ────── */
+  const usersByDept = useMemo(() => {
+    const m = new Map<string, MentionUser[]>();
+    for (const u of tenantUsers) {
+      const arr = m.get(u.department) || [];
+      arr.push(u);
+      m.set(u.department, arr);
+    }
+    return Array.from(m.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [tenantUsers]);
+
+  const typingUsersInActive = useMemo(() => {
+    if (!activeId) return [] as MentionUser[];
+    return Array.from(typingIds).map((id) => userMap.get(id)).filter(Boolean) as MentionUser[];
+  }, [typingIds, activeId, userMap]);
 
   /* ────── Load conversations + realtime ────── */
   useEffect(() => {
