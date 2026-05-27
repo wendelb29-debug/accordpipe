@@ -890,23 +890,29 @@ export default function Collabs() {
                             <div className={cn("flex flex-col gap-1.5 min-w-0", isSent && "items-end")}>
                               {hasBubble && (
                                 <div
-                                  className={cn("px-3.5 py-2 rounded-2xl text-[13px] leading-snug shadow-sm break-words relative", isSent ? "text-white" : "bg-white/95 text-[#1a1a2e] backdrop-blur-sm")}
-                                  style={isSent ? { background: "linear-gradient(135deg, hsl(var(--sidebar-primary)) 0%, #6366f1 100%)" } : undefined}
+                                  className={cn(
+                                    "px-4 py-2.5 text-[13.5px] leading-snug break-words relative",
+                                    isSent
+                                      ? "text-white rounded-[22px] rounded-br-md shadow-[0_8px_24px_-10px_rgba(124,58,237,0.55)]"
+                                      : "bg-white/95 text-[#1a1a2e] rounded-[22px] rounded-bl-md backdrop-blur-sm shadow-[0_4px_16px_-6px_rgba(15,23,42,0.10),inset_0_0_0_1px_rgba(124,58,237,0.06)]"
+                                  )}
+                                  style={isSent ? { background: "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)" } : undefined}
                                 >
                                   {quote && (
-                                    <div className="border-l-[3px] pl-2 mb-1.5 rounded-r-md py-0.5" style={{ borderColor: isSent ? "rgba(255,255,255,0.7)" : "hsl(var(--sidebar-primary))", background: isSent ? "rgba(255,255,255,0.08)" : "rgba(124,58,237,0.06)" }}>
-                                      <div className="text-[11px] font-medium" style={{ color: isSent ? "rgba(255,255,255,0.95)" : "hsl(var(--sidebar-primary))" }}>
+                                    <div className="border-l-[3px] pl-2 mb-1.5 rounded-r-md py-0.5" style={{ borderColor: isSent ? "rgba(255,255,255,0.7)" : "#7c3aed", background: isSent ? "rgba(255,255,255,0.08)" : "rgba(124,58,237,0.06)" }}>
+                                      <div className="text-[11px] font-medium" style={{ color: isSent ? "rgba(255,255,255,0.95)" : "#7c3aed" }}>
                                         {quote.sender_id === user?.id ? "Você" : (userMap.get(quote.sender_id || "")?.name || "Mensagem")}
                                       </div>
-                                      <div className={cn("text-xs truncate", isSent ? "text-white/75" : "text-muted-foreground")}>
+                                      <div className={cn("text-xs truncate", isSent ? "text-white/75" : "text-gray-500")}>
                                         {messagePlainText(quote)}
                                       </div>
                                     </div>
                                   )}
                                   {m.content && <div className="whitespace-pre-wrap">{m.content}</div>}
-                                  <span className={cn("block text-right text-[10px] mt-1", isSent ? "text-white/65" : "text-black/40")}>{time}</span>
+                                  <span className={cn("block text-right text-[10px] mt-1", isSent ? "text-white/70" : "text-gray-400")}>{time}</span>
                                 </div>
                               )}
+
 
                               {allFiles.map((f, idx) => {
                                 if (f.kind === "image" && f.url) {
