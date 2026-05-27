@@ -110,7 +110,7 @@ export default function Collabs() {
       <aside className="w-[320px] min-w-[320px] flex flex-col border-r border-border bg-background">
         {/* Search */}
         <div className="h-[60px] flex items-center px-3 border-b border-border shrink-0">
-          <div className="flex items-center gap-2 bg-muted rounded-full px-3 py-2">
+          <div className="flex items-center gap-2 bg-muted rounded-full px-3 py-2 w-full">
             <Search className="h-4 w-4 text-muted-foreground shrink-0" />
             <input
               value={search}
@@ -119,6 +119,7 @@ export default function Collabs() {
               className="flex-1 bg-transparent outline-none text-[13px] text-foreground placeholder:text-muted-foreground"
             />
           </div>
+
         </div>
 
         {/* Conversation list */}
