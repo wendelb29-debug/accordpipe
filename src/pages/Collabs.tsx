@@ -48,6 +48,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { ConstellationCanvas } from "@/components/ui/constellation-canvas";
+
 
 /* ──────────────────────────  TYPES  ────────────────────────── */
 
