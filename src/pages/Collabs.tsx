@@ -519,23 +519,28 @@ export default function Collabs() {
 
   const handleFiles = (files: FileList | null, asImage: boolean) => {
     if (!files) return;
-    Array.from(files).forEach((f) => {
+    const arr = Array.from(files);
+    const attachments: FileAttachment[] = arr.map((f) => {
       const isImage = asImage || f.type.startsWith("image/");
       const url = URL.createObjectURL(f);
-      const kind: MockMessage["file"]["kind"] = isImage
+      const lower = f.name.toLowerCase();
+      const kind: FileAttachment["kind"] = isImage
         ? "image"
-        : f.name.toLowerCase().endsWith(".pdf") ? "pdf"
-        : /\.(xls|xlsx|csv)$/i.test(f.name) ? "xls"
+        : lower.endsWith(".pdf") ? "pdf"
+        : /\.(xls|xlsx|csv)$/i.test(lower) ? "xls"
+        : /\.(docx?|gdoc|odt|txt|md)$/i.test(lower) ? "doc"
         : "file";
-      pushMessage({
-        id: crypto.randomUUID(),
-        sent: true,
-        time: nowTime(),
-        text: isImage ? <img src={url} alt={f.name} className="rounded-lg max-w-[260px] max-h-[260px] object-cover" /> : undefined,
-        file: isImage ? undefined : { kind, name: f.name, size: formatBytes(f.size), url },
-        status: "sent",
-      });
+      return { kind, name: f.name, size: formatBytes(f.size), url };
     });
+    pushMessage({
+      id: crypto.randomUUID(),
+      sent: true,
+      time: nowTime(),
+      files: attachments,
+      status: "sent",
+      quote: replyTo ? { name: replyTo.name, text: replyTo.text } : undefined,
+    });
+    setReplyTo(null);
   };
 
   const insertAtCursor = (text: string) => {
