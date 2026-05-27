@@ -1045,6 +1045,260 @@ export default function Collabs() {
 
         </DialogContent>
       </Dialog>
+
+      {/* ──────────  CREATE COLLAB / GROUP / CHANNEL DIALOG  ────────── */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl border-0 shadow-2xl">
+          <div
+            className="px-6 pt-6 pb-5"
+            style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.08) 0%, rgba(99,102,241,0.04) 100%)" }}
+          >
+            <div className="flex items-center gap-3 mb-1">
+              <div
+                className="h-11 w-11 rounded-2xl flex items-center justify-center shadow-sm"
+                style={{ background: `${createKindMeta[createKind].color}18`, color: createKindMeta[createKind].color }}
+              >
+                {(() => {
+                  const I = createKindMeta[createKind].Icon;
+                  return <I className="h-5 w-5" />;
+                })()}
+              </div>
+              <div>
+                <DialogTitle className="text-[15px] font-semibold text-gray-900">
+                  {createKindMeta[createKind].title}
+                </DialogTitle>
+                <p className="text-[12px] text-gray-500 mt-0.5">{createKindMeta[createKind].desc}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-6 py-5 space-y-4 bg-white">
+            <div>
+              <label className="text-[12px] font-medium text-gray-700 mb-1.5 block">Nome</label>
+              <input
+                autoFocus
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder={createKind === "channel" ? "ex: anuncios-gerais" : "ex: Time de Produto"}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[12px] font-medium text-gray-700">Participantes</label>
+                <span className="text-[11px] text-gray-500">{selectedMemberIds.length} selecionado(s)</span>
+              </div>
+              <div className="relative mb-2">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                <input
+                  value={memberSearch}
+                  onChange={(e) => setMemberSearch(e.target.value)}
+                  placeholder="Buscar usuários do tenant..."
+                  className="w-full rounded-xl bg-gray-50 border border-transparent pl-9 pr-3 py-2 text-sm outline-none focus:border-violet-300 focus:bg-white"
+                />
+              </div>
+              <div className="max-h-[220px] overflow-y-auto rounded-xl border border-gray-100 divide-y divide-gray-50">
+                {mentionUsers.length === 0 && (
+                  <div className="text-center text-[12px] text-gray-400 py-6">Nenhum usuário do tenant encontrado.</div>
+                )}
+                {mentionUsers
+                  .filter((u) => u.name.toLowerCase().includes(memberSearch.toLowerCase()))
+                  .map((u) => {
+                    const checked = selectedMemberIds.includes(u.id);
+                    const initials = u.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
+                    return (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => toggleMember(u.id)}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2 text-left transition-colors",
+                          checked ? "bg-violet-50/70" : "hover:bg-gray-50"
+                        )}
+                      >
+                        {u.avatar_url ? (
+                          <img src={u.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover" />
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 text-white text-[11px] font-medium flex items-center justify-center">
+                            {initials}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[13px] text-gray-900 truncate">{u.name}</div>
+                          <div className="text-[11px] text-gray-500 truncate">@{u.handle}</div>
+                        </div>
+                        <div
+                          className={cn(
+                            "h-4 w-4 rounded border flex items-center justify-center transition-colors",
+                            checked ? "bg-violet-600 border-violet-600" : "border-gray-300"
+                          )}
+                        >
+                          {checked && <span className="text-white text-[10px] leading-none">✓</span>}
+                        </div>
+                      </button>
+                    );
+                  })}
+              </div>
+            </div>
+          </div>
+
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-3">
+            {createKind === "collab" && (
+              <button
+                onClick={() => { setCreateOpen(false); setInviteTab("guest"); setInviteOpen(true); }}
+                className="text-[12px] font-medium text-emerald-600 hover:underline"
+              >
+                + Convidar externos
+              </button>
+            )}
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                onClick={() => setCreateOpen(false)}
+                className="px-3.5 py-2 rounded-lg text-[13px] text-gray-600 hover:bg-gray-100"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={submitCreate}
+                disabled={!newName.trim()}
+                className="px-4 py-2 rounded-lg text-[13px] font-medium text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ background: "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)" }}
+              >
+                Criar
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ──────────  INVITE DIALOG  ────────── */}
+      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl border-0 shadow-2xl">
+          <div className="px-6 pt-6 pb-4 bg-white">
+            <DialogTitle className="text-[15px] font-semibold text-gray-900">Adicionar à collab</DialogTitle>
+            <div className="mt-4 grid grid-cols-2 gap-1 p-1 bg-gray-100 rounded-xl">
+              {([
+                { id: "colab", label: "Colaboradores" },
+                { id: "guest", label: "Convidados" },
+              ] as const).map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setInviteTab(t.id)}
+                  className={cn(
+                    "py-2 text-[12.5px] font-medium rounded-lg transition-all",
+                    inviteTab === t.id ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                  )}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {inviteTab === "colab" ? (
+            <div className="px-6 pb-5 space-y-3 bg-white">
+              <button
+                onClick={() => { setInviteOpen(false); openCreate("group"); }}
+                className="w-full text-left rounded-xl border border-dashed border-blue-300 bg-blue-50/50 hover:bg-blue-50 px-4 py-3 text-[13px] font-medium text-blue-600"
+              >
+                + Adicionar usuário
+              </button>
+              <div>
+                <div className="text-[11px] uppercase tracking-wide text-gray-400 font-medium mb-2">Usuários do tenant</div>
+                <div className="max-h-[260px] overflow-y-auto rounded-xl border border-gray-100 divide-y divide-gray-50">
+                  {mentionUsers.length === 0 && (
+                    <div className="text-center text-[12px] text-gray-400 py-6">Nenhum usuário disponível.</div>
+                  )}
+                  {mentionUsers.map((u) => {
+                    const initials = u.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
+                    return (
+                      <div key={u.id} className="flex items-center gap-3 px-3 py-2">
+                        {u.avatar_url ? (
+                          <img src={u.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover" />
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 text-white text-[11px] font-medium flex items-center justify-center">
+                            {initials}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[13px] text-gray-900 truncate">{u.name}</div>
+                          <div className="text-[11px] text-gray-500 truncate">@{u.handle}</div>
+                        </div>
+                        <button className="text-[11.5px] text-blue-600 font-medium hover:underline">Adicionar</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="px-6 pb-5 bg-white">
+              <div
+                className="rounded-2xl p-4 mb-4"
+                style={{ background: "linear-gradient(135deg, #d4f5d4 0%, #b4ebc4 100%)" }}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex-1">
+                    <div className="text-[13.5px] font-semibold text-gray-900">Convide seus convidados</div>
+                    <p className="text-[11.5px] text-gray-700 mt-1 leading-relaxed">
+                      Convidados são colaboradores externos que não fazem parte do seu tenant.
+                      Eles terão acesso <b>apenas a esta Collab</b> — nada mais.
+                    </p>
+                  </div>
+                  <div className="h-12 w-12 rounded-full bg-white/60 flex items-center justify-center text-2xl shrink-0">🎁</div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gray-100 p-4 space-y-4">
+                <div>
+                  <div className="text-[12px] font-medium text-gray-700 mb-2">Convidar via link</div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 truncate text-[11.5px] text-gray-500 bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                      {inviteLink}
+                    </div>
+                    <button
+                      onClick={copyInviteLink}
+                      className="px-3 py-2 rounded-lg text-[12px] font-medium text-white shadow-sm whitespace-nowrap"
+                      style={{ background: "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)" }}
+                    >
+                      {inviteLinkCopied ? "Copiado!" : "Copy link"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-100 pt-3">
+                  <div className="text-[12px] font-medium text-gray-700 mb-2">Convidar via e-mail ou telefone</div>
+                  <input
+                    value={inviteContact}
+                    onChange={(e) => setInviteContact(e.target.value)}
+                    placeholder="Adicionar telefone ou e-mail do convidado"
+                    className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2">
+            <button
+              onClick={() => setInviteOpen(false)}
+              className="px-3.5 py-2 rounded-lg text-[13px] text-gray-600 hover:bg-gray-100"
+            >
+              Cancelar
+            </button>
+            <button
+              disabled={inviteTab === "guest" && !inviteContact.trim()}
+              onClick={() => setInviteOpen(false)}
+              className="px-4 py-2 rounded-lg text-[13px] font-medium text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ background: "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)" }}
+            >
+              Convidar
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
