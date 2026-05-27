@@ -641,21 +641,25 @@ export default function Collabs() {
   /* ────── Render ────── */
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] bg-background overflow-hidden">
-      {/* SIDEBAR */}
-      <aside className="w-[320px] min-w-[320px] flex flex-col border-r border-border bg-background">
-        <div className="h-[60px] flex items-center gap-2 px-3 border-b border-border shrink-0">
-          <div className="flex items-center gap-2 bg-muted rounded-full px-3 py-2 flex-1 min-w-0">
-            <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden" style={{ background: "linear-gradient(180deg, #faf9ff 0%, #f4f1fb 100%)" }}>
+      {/* SIDEBAR — dark purple */}
+      <aside
+        className="w-[320px] min-w-[320px] flex flex-col shrink-0 text-white"
+        style={{ background: "linear-gradient(180deg, #1a0f3d 0%, #2a1758 55%, #1e1145 100%)" }}
+      >
+        <div className="h-[60px] flex items-center gap-2 px-3 border-b border-white/8 shrink-0">
+          <div className="flex items-center gap-2 bg-white/8 hover:bg-white/12 transition rounded-full px-3 py-2 flex-1 min-w-0 border border-white/8">
+            <Search className="h-4 w-4 text-white/60 shrink-0" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Encontrar colaborador ou bate-papo"
-              className="flex-1 bg-transparent outline-none text-[13px] text-foreground placeholder:text-muted-foreground"
+              placeholder="Buscar conversa…"
+              className="flex-1 bg-transparent outline-none text-[13px] text-white placeholder:text-white/40"
             />
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
+
               <button
                 className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center text-white shadow-[0_4px_14px_-2px_rgba(99,102,241,0.55)] hover:shadow-[0_6px_18px_-2px_rgba(99,102,241,0.7)] transition-all active:scale-95"
                 style={{ background: "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)" }}
