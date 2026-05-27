@@ -49,14 +49,9 @@ export function WelcomeHero() {
       <div className="pointer-events-none absolute -top-16 -right-10 h-48 w-48 rounded-full bg-gradient-to-br from-violet-400/40 to-fuchsia-400/30 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-16 left-1/3 h-40 w-40 rounded-full bg-gradient-to-tr from-indigo-400/30 to-purple-300/20 blur-3xl" />
 
-      <div className="relative z-10 flex w-full items-center justify-between gap-6">
-        <div className="min-w-0 flex-1">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/60 dark:bg-white/5 backdrop-blur px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-violet-700 dark:text-violet-300 border border-white/60 dark:border-white/10">
-            <span>{dateStr}</span>
-            <span aria-hidden>☀️</span>
-          </div>
-
-          <h1 className="mt-1.5 text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
+      <div className="relative z-10 flex w-full items-center justify-between gap-4">
+        <div className="min-w-0 flex-1 flex items-center gap-3">
+          <h1 className="text-lg md:text-xl font-bold tracking-tight text-slate-900 dark:text-white leading-none whitespace-nowrap">
             {greeting},{" "}
             <span className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 dark:from-violet-300 dark:via-purple-300 dark:to-fuchsia-300 bg-clip-text text-transparent">
               {firstName}!
@@ -64,10 +59,21 @@ export function WelcomeHero() {
             <span className="inline-block animate-[wave_2s_ease-in-out_infinite] origin-[70%_70%]">👋</span>
           </h1>
 
-          <p className="mt-1 text-xs md:text-sm text-slate-700/90 dark:text-slate-200/90 italic truncate">
+          <span className="hidden md:inline-block h-5 w-px bg-violet-300/40 dark:bg-violet-400/20" />
+
+          <p className="hidden md:block min-w-0 text-xs text-slate-700/90 dark:text-slate-200/90 italic truncate">
             "{current.quote}"
           </p>
         </div>
+
+        <Button
+          onClick={() => setIdx((i) => i + 1)}
+          className="shrink-0 h-8 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-[0_6px_18px_-6px_rgba(124,58,237,0.6)] border-0 gap-1.5 px-3 text-xs"
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          Inspiração
+        </Button>
+      </div>
 
         <Button
           onClick={() => setIdx((i) => i + 1)}
