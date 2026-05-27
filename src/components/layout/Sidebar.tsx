@@ -50,7 +50,7 @@ import {
 
 const navigationSections = [
   {
-    label: "Principal",
+    label: "Acesso rápido",
     items: [
       { nameKey: "nav.home", href: "/home", icon: Home, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
       { nameKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
@@ -62,13 +62,23 @@ const navigationSections = [
   {
     label: "Gestão",
     items: [
+      { nameKey: "nav.clientBase", href: "/cadastrados", icon: Users, roles: ["admin", "ceo", "administrativo"] },
       { nameKey: "nav.fintech", href: "/financeiro", icon: Receipt, roles: ["admin", "ceo", "financeiro"] },
       { nameKey: "nav.documents", href: "/documentos", icon: FileText, roles: ["admin", "ceo", "administrativo", "financeiro"] },
       { nameKey: "nav.reports", href: "/relatorios", icon: BarChart3, roles: ["admin", "leitura", "ceo", "administrativo", "financeiro"] },
-      { nameKey: "nav.clientBase", href: "/cadastrados", icon: Users, roles: ["admin", "ceo", "administrativo"] },
+    ],
+  },
+  {
+    label: "Insights",
+    items: [
       { nameKey: "nav.performance", href: "/performance", icon: TrendingUp, roles: ["admin", "ceo", "operador", "comercial"] },
       { nameKey: "nav.academy", href: "/academy", icon: GraduationCap, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
       { nameKey: "nav.accordPulse", href: "/accord-pulse", icon: Flame, roles: ["admin", "ceo", "comercial"] },
+    ],
+  },
+  {
+    label: "Outros",
+    items: [
       { nameKey: "nav.discard", href: "/descarte", icon: Trash2, roles: ["admin", "ceo"] },
     ],
   },
