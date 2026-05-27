@@ -50,25 +50,6 @@ export function WelcomeHero() {
       <div className="pointer-events-none absolute -top-24 -right-16 h-72 w-72 rounded-full bg-gradient-to-br from-violet-400/40 to-fuchsia-400/30 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-24 left-1/3 h-64 w-64 rounded-full bg-gradient-to-tr from-indigo-400/30 to-purple-300/20 blur-3xl" />
 
-      {/* Decorative "A" mark */}
-      <div className="pointer-events-none absolute right-6 md:right-12 top-1/2 -translate-y-1/2 hidden md:block">
-        <div className="relative h-40 w-40 lg:h-48 lg:w-48">
-          <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/10 blur-2xl" />
-          <svg viewBox="0 0 100 100" className="relative h-full w-full drop-shadow-[0_10px_30px_rgba(124,58,237,0.45)]">
-            <defs>
-              <linearGradient id="aGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#a78bfa" />
-                <stop offset="60%" stopColor="#7c3aed" />
-                <stop offset="100%" stopColor="#5b21b6" />
-              </linearGradient>
-            </defs>
-            <path
-              d="M50 12 L86 86 L70 86 L60 64 L40 64 L30 86 L14 86 Z M46 52 L54 52 L50 38 Z"
-              fill="url(#aGrad)"
-            />
-          </svg>
-        </div>
-      </div>
 
       <div className="relative z-10 max-w-2xl">
         <div className="inline-flex items-center gap-2 rounded-full bg-white/60 dark:bg-white/5 backdrop-blur px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-violet-700 dark:text-violet-300 border border-white/60 dark:border-white/10">
