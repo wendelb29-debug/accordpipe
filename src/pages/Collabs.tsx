@@ -584,6 +584,55 @@ export default function Collabs() {
         </div>
 
       </main>
+
+      {/* Accord file picker */}
+      <Dialog open={accordOpen} onOpenChange={setAccordOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Arquivos no Accord</DialogTitle>
+          </DialogHeader>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              value={accordSearch}
+              onChange={(e) => setAccordSearch(e.target.value)}
+              placeholder="Buscar arquivo..."
+              className="w-full bg-muted rounded-lg pl-9 pr-3 py-2 text-sm outline-none"
+            />
+          </div>
+          <div className="max-h-[360px] overflow-y-auto -mx-2">
+            {accordLoading ? (
+              <div className="flex items-center justify-center py-10 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+              </div>
+            ) : accordFiles.length === 0 ? (
+              <div className="text-center py-10 text-sm text-muted-foreground">
+                Nenhum arquivo encontrado em Documentos.
+              </div>
+            ) : (
+              accordFiles
+                .filter((f) => f.name.toLowerCase().includes(accordSearch.toLowerCase()))
+                .map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => pickAccordFile(f)}
+                    className="w-full flex items-center gap-3 px-3 py-2 hover:bg-muted rounded-lg text-left"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      <FileIcon className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{f.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {f.file_size ? formatBytes(f.file_size) : "—"}
+                      </div>
+                    </div>
+                  </button>
+                ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
