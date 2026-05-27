@@ -73,10 +73,10 @@ export function ConstellationCanvas() {
         for (let j = i + 1; j < pts.length; j++) {
           const b = pts[j];
           const dx = a.x - b.x, dy = a.y - b.y, d = Math.sqrt(dx * dx + dy * dy);
-          if (d < 150) {
+          if (d < 130) {
             const col = lerp(lerp(blue, purple, a.t), lerp(blue, purple, b.t), 0.5);
-            ctx.strokeStyle = `rgba(${col[0]},${col[1]},${col[2]},${(1 - d / 150) * lineAlpha})`;
-            ctx.lineWidth = 0.9;
+            ctx.strokeStyle = `rgba(${col[0]},${col[1]},${col[2]},${(1 - d / 130) * lineAlpha})`;
+            ctx.lineWidth = 0.7;
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
             ctx.lineTo(b.x, b.y);
