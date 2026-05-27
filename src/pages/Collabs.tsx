@@ -336,8 +336,9 @@ export default function Collabs() {
 
         {/* Input */}
         <div
-          className="px-3 py-2.5 backdrop-blur-md border-t border-white/15"
-          style={{ background: "hsl(var(--sidebar-primary) / 0.92)" }}
+          className="px-3 py-2.5 border-t border-white/10 shrink-0"
+          style={{ background: "hsl(var(--sidebar-primary))" }}
+
         >
           <div className="flex items-center gap-1.5 bg-white rounded-[24px] pl-3.5 pr-2 py-1.5">
             <div className="flex gap-0.5">
