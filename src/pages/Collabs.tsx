@@ -109,17 +109,70 @@ export default function Collabs() {
   const [activeId, setActiveId] = useState("geral");
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
+  const [allMessages, setAllMessages] = useState<Record<string, MockMessage[]>>(initialMessages);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [showMentions, setShowMentions] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const active = conversations.find((c) => c.id === activeId) ?? conversations[0];
   const filtered = conversations.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()));
+  const messages = allMessages[activeId] ?? [];
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [activeId]);
+  }, [activeId, messages.length]);
 
-  return (
-    <div className="flex h-[calc(100vh-3.5rem)] bg-background overflow-hidden">
+  const pushMessage = (msg: MockMessage) => {
+    setAllMessages((prev) => ({ ...prev, [activeId]: [...(prev[activeId] ?? []), msg] }));
+  };
+
+  const sendText = () => {
+    const t = input.trim();
+    if (!t) return;
+    pushMessage({ id: crypto.randomUUID(), sent: true, time: nowTime(), text: t, status: "sent" });
+    setInput("");
+    setShowEmoji(false);
+    setShowMentions(false);
+  };
+
+  const handleFiles = (files: FileList | null, asImage: boolean) => {
+    if (!files) return;
+    Array.from(files).forEach((f) => {
+      const isImage = asImage || f.type.startsWith("image/");
+      const url = URL.createObjectURL(f);
+      const kind: MockMessage["file"]["kind"] = isImage
+        ? "image"
+        : f.name.toLowerCase().endsWith(".pdf") ? "pdf"
+        : /\.(xls|xlsx|csv)$/i.test(f.name) ? "xls"
+        : "file";
+      pushMessage({
+        id: crypto.randomUUID(),
+        sent: true,
+        time: nowTime(),
+        text: isImage ? <img src={url} alt={f.name} className="rounded-lg max-w-[260px] max-h-[260px] object-cover" /> : undefined,
+        file: isImage ? undefined : { kind, name: f.name, size: formatBytes(f.size), url },
+        status: "sent",
+      });
+    });
+  };
+
+  const insertAtCursor = (text: string) => {
+    const el = inputRef.current;
+    if (!el) { setInput((v) => v + text); return; }
+    const start = el.selectionStart ?? input.length;
+    const end = el.selectionEnd ?? input.length;
+    const next = input.slice(0, start) + text + input.slice(end);
+    setInput(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + text.length;
+      el.setSelectionRange(pos, pos);
+    });
+  };
+
       {/* ──────────  LEFT SIDEBAR  ────────── */}
       <aside className="w-[320px] min-w-[320px] flex flex-col border-r border-border bg-background">
         {/* Search */}
