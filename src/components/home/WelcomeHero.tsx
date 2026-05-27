@@ -75,15 +75,6 @@ export function WelcomeHero() {
         </Button>
       </div>
 
-        <Button
-          onClick={() => setIdx((i) => i + 1)}
-          className="shrink-0 h-9 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-[0_8px_24px_-6px_rgba(124,58,237,0.6)] border-0 gap-2 px-4 text-sm"
-        >
-          <Sparkles className="h-4 w-4" />
-          Inspiração
-        </Button>
-      </div>
-
       <style>{`
         @keyframes wave {
           0%, 60%, 100% { transform: rotate(0deg); }
