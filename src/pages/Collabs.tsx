@@ -17,6 +17,14 @@ import {
   HardDrive,
   Loader2,
   File as FileIcon,
+  PenSquare,
+  Users,
+  Sparkles,
+  Megaphone,
+  Handshake,
+  Video,
+  UserPlus,
+  Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
