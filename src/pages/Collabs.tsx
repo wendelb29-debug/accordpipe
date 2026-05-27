@@ -17,6 +17,14 @@ import {
   HardDrive,
   Loader2,
   File as FileIcon,
+  PenSquare,
+  Users,
+  Sparkles,
+  Megaphone,
+  Handshake,
+  Video,
+  UserPlus,
+  Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -381,17 +389,77 @@ export default function Collabs() {
       {/* ──────────  LEFT SIDEBAR  ────────── */}
       <aside className="w-[320px] min-w-[320px] flex flex-col border-r border-border bg-background">
         {/* Search */}
-        <div className="h-[60px] flex items-center px-3 border-b border-border shrink-0">
-          <div className="flex items-center gap-2 bg-muted rounded-full px-3 py-2 w-full">
+        <div className="h-[60px] flex items-center gap-2 px-3 border-b border-border shrink-0">
+          <div className="flex items-center gap-2 bg-muted rounded-full px-3 py-2 flex-1 min-w-0">
             <Search className="h-4 w-4 text-muted-foreground shrink-0" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar conversas..."
+              placeholder="Encontrar colaborador ou bate-papo"
               className="flex-1 bg-transparent outline-none text-[13px] text-foreground placeholder:text-muted-foreground"
             />
           </div>
-
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center text-white shadow-[0_4px_14px_-2px_rgba(99,102,241,0.55)] hover:shadow-[0_6px_18px_-2px_rgba(99,102,241,0.7)] transition-all active:scale-95"
+                style={{ background: "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)" }}
+                title="Criar"
+                aria-label="Criar novo"
+              >
+                <PenSquare className="h-[18px] w-[18px]" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              sideOffset={10}
+              className="w-[320px] p-2 rounded-2xl border border-white/10 shadow-2xl backdrop-blur-xl"
+              style={{
+                background:
+                  "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(245,243,255,0.98) 100%)",
+              }}
+            >
+              {[
+                { icon: Users, title: "Bate-papo em grupo", desc: "Discussões em grupo", color: "#6366f1" },
+                { icon: Sparkles, title: "Conversar com o CoPilot", desc: "Resolução de problemas assistida por IA", color: "#a855f7" },
+                { icon: Megaphone, title: "Canal", desc: "Notícias, comunicados, comentários", color: "#f59e0b" },
+                { icon: Handshake, title: "Collab", desc: "Colabore com equipes externas e convidados", color: "#10b981", highlight: true },
+                { icon: Video, title: "Videoconferência", desc: "Organize videoconferências com convidados", color: "#ef4444" },
+              ].map((opt) => (
+                <DropdownMenuItem
+                  key={opt.title}
+                  className="rounded-xl px-3 py-2.5 cursor-pointer focus:bg-violet-50/80 data-[highlighted]:bg-violet-50/80 gap-3"
+                >
+                  <div
+                    className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: `${opt.color}15`, color: opt.color }}
+                  >
+                    <opt.icon className="h-[18px] w-[18px]" strokeWidth={2} />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[13px] font-semibold text-gray-900 leading-tight">{opt.title}</span>
+                    <span className="text-[11.5px] text-gray-500 leading-tight mt-0.5 truncate">{opt.desc}</span>
+                  </div>
+                </DropdownMenuItem>
+              ))}
+              <div className="my-1.5 mx-3 rounded-lg px-2.5 py-1.5 text-[11px] text-violet-700 bg-gradient-to-r from-violet-50 to-fuchsia-50 border border-violet-100">
+                Tarefas, arquivos, calendário e outras ferramentas
+              </div>
+              <DropdownMenuItem className="rounded-xl px-3 py-2.5 cursor-pointer focus:bg-blue-50/80 data-[highlighted]:bg-blue-50/80 gap-3">
+                <div className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0 bg-blue-500/10 text-blue-600">
+                  <UserPlus className="h-[18px] w-[18px]" strokeWidth={2} />
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[13px] font-semibold text-blue-600 leading-tight">Convidar usuários</span>
+                  <span className="text-[11.5px] text-gray-500 leading-tight mt-0.5 truncate">Convidar vários usuários de uma vez</span>
+                </div>
+              </DropdownMenuItem>
+              <button className="w-full mt-1 flex items-center justify-center gap-1.5 py-2 text-[12px] text-blue-600 hover:bg-blue-50/60 rounded-xl transition">
+                <Info className="h-3.5 w-3.5" />
+                O que é melhor para mim?
+              </button>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Conversation list */}
