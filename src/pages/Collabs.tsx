@@ -109,8 +109,8 @@ export default function Collabs() {
       {/* ──────────  LEFT SIDEBAR  ────────── */}
       <aside className="w-[320px] min-w-[320px] flex flex-col border-r border-border bg-background">
         {/* Search */}
-        <div className="p-3 border-b border-border">
-          <div className="flex items-center gap-2 bg-muted rounded-full px-3 py-2">
+        <div className="h-[60px] flex items-center px-3 border-b border-border shrink-0">
+          <div className="flex items-center gap-2 bg-muted rounded-full px-3 py-2 w-full">
             <Search className="h-4 w-4 text-muted-foreground shrink-0" />
             <input
               value={search}
@@ -119,6 +119,7 @@ export default function Collabs() {
               className="flex-1 bg-transparent outline-none text-[13px] text-foreground placeholder:text-muted-foreground"
             />
           </div>
+
         </div>
 
         {/* Conversation list */}
@@ -176,7 +177,7 @@ export default function Collabs() {
       {/* ──────────  CHAT MAIN  ────────── */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <header className="flex items-center gap-3 px-4 py-2.5 border-b border-white/15 backdrop-blur-md" style={{ background: "hsl(var(--sidebar-primary) / 0.92)" }}>
+        <header className="h-[60px] flex items-center gap-3 px-4 shrink-0 border-b border-white/10" style={{ background: "hsl(var(--sidebar-primary))" }}>
           <div className="w-9 h-9 rounded-full bg-white/25 flex items-center justify-center text-white text-xs font-medium">
             {active.avatar}
           </div>
@@ -335,8 +336,9 @@ export default function Collabs() {
 
         {/* Input */}
         <div
-          className="px-3 py-2.5 backdrop-blur-md border-t border-white/15"
-          style={{ background: "hsl(var(--sidebar-primary) / 0.92)" }}
+          className="px-3 py-2.5 border-t border-white/10 shrink-0"
+          style={{ background: "hsl(var(--sidebar-primary))" }}
+
         >
           <div className="flex items-center gap-1.5 bg-white rounded-[24px] pl-3.5 pr-2 py-1.5">
             <div className="flex gap-0.5">
