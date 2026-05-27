@@ -138,23 +138,46 @@ export default function Collabs() {
   const companyId = useActiveCompanyId();
   const [accordOpen, setAccordOpen] = useState(false);
   const [accordLoading, setAccordLoading] = useState(false);
-  const [accordFiles, setAccordFiles] = useState<Array<{ id: string; name: string; file_url: string | null; file_size: number | null; file_type: string | null }>>([]);
+  type AccordEntry = { id: string; name: string; type: "file" | "folder"; file_url: string | null; file_size: number | null; file_type: string | null };
+  const [accordEntries, setAccordEntries] = useState<AccordEntry[]>([]);
   const [accordSearch, setAccordSearch] = useState("");
+  const [accordPath, setAccordPath] = useState<Array<{ id: string | null; name: string }>>([{ id: null, name: "Documentos" }]);
+
+  const loadAccordFolder = async (parentId: string | null) => {
+    if (!companyId) return;
+    setAccordLoading(true);
+    let q = supabase
+      .from("drive_files")
+      .select("id,name,type,file_url,file_size,file_type")
+      .eq("servidor_id", companyId)
+      .order("type", { ascending: true })
+      .order("name", { ascending: true });
+    q = parentId ? q.eq("parent_id", parentId) : q.is("parent_id", null);
+    const { data, error } = await q;
+    if (!error) setAccordEntries((data as any) || []);
+    setAccordLoading(false);
+  };
 
   const openAccordPicker = async () => {
     setAccordOpen(true);
-    if (!companyId) return;
-    setAccordLoading(true);
-    const { data, error } = await supabase
-      .from("drive_files")
-      .select("id,name,file_url,file_size,file_type")
-      .eq("servidor_id", companyId)
-      .eq("type", "file")
-      .order("created_at", { ascending: false })
-      .limit(200);
-    if (!error) setAccordFiles((data as any) || []);
-    setAccordLoading(false);
+    setAccordPath([{ id: null, name: "Documentos" }]);
+    setAccordSearch("");
+    await loadAccordFolder(null);
   };
+
+  const enterFolder = async (f: AccordEntry) => {
+    setAccordPath((p) => [...p, { id: f.id, name: f.name }]);
+    setAccordSearch("");
+    await loadAccordFolder(f.id);
+  };
+
+  const goToPathIndex = async (idx: number) => {
+    const next = accordPath.slice(0, idx + 1);
+    setAccordPath(next);
+    setAccordSearch("");
+    await loadAccordFolder(next[next.length - 1].id);
+  };
+
 
   const pickAccordFile = (f: { id: string; name: string; file_url: string | null; file_size: number | null }) => {
     const lower = f.name.toLowerCase();
@@ -591,46 +614,77 @@ export default function Collabs() {
           <DialogHeader>
             <DialogTitle>Arquivos no Accord</DialogTitle>
           </DialogHeader>
+
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-1 text-xs text-muted-foreground flex-wrap">
+            {accordPath.map((p, i) => (
+              <span key={i} className="flex items-center gap-1">
+                {i > 0 && <span>/</span>}
+                <button
+                  onClick={() => goToPathIndex(i)}
+                  className={cn(
+                    "px-1.5 py-0.5 rounded hover:bg-muted",
+                    i === accordPath.length - 1 && "text-foreground font-medium"
+                  )}
+                >
+                  {p.name}
+                </button>
+              </span>
+            ))}
+          </div>
+
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               value={accordSearch}
               onChange={(e) => setAccordSearch(e.target.value)}
-              placeholder="Buscar arquivo..."
+              placeholder="Buscar nesta pasta..."
               className="w-full bg-muted rounded-lg pl-9 pr-3 py-2 text-sm outline-none"
             />
           </div>
+
           <div className="max-h-[360px] overflow-y-auto -mx-2">
             {accordLoading ? (
               <div className="flex items-center justify-center py-10 text-muted-foreground">
                 <Loader2 className="h-5 w-5 animate-spin" />
               </div>
-            ) : accordFiles.length === 0 ? (
+            ) : accordEntries.length === 0 ? (
               <div className="text-center py-10 text-sm text-muted-foreground">
-                Nenhum arquivo encontrado em Documentos.
+                Pasta vazia.
               </div>
             ) : (
-              accordFiles
+              accordEntries
                 .filter((f) => f.name.toLowerCase().includes(accordSearch.toLowerCase()))
-                .map((f) => (
-                  <button
-                    key={f.id}
-                    onClick={() => pickAccordFile(f)}
-                    className="w-full flex items-center gap-3 px-3 py-2 hover:bg-muted rounded-lg text-left"
-                  >
-                    <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                      <FileIcon className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate">{f.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {f.file_size ? formatBytes(f.file_size) : "—"}
+                .map((f) => {
+                  const isFolder = f.type === "folder";
+                  return (
+                    <button
+                      key={f.id}
+                      onClick={() => (isFolder ? enterFolder(f) : pickAccordFile(f))}
+                      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-muted rounded-lg text-left"
+                    >
+                      <div className={cn(
+                        "w-9 h-9 rounded-lg flex items-center justify-center shrink-0",
+                        isFolder ? "bg-primary/10" : "bg-muted"
+                      )}>
+                        {isFolder ? (
+                          <HardDrive className="h-4 w-4 text-primary" />
+                        ) : (
+                          <FileIcon className="h-4 w-4 text-muted-foreground" />
+                        )}
                       </div>
-                    </div>
-                  </button>
-                ))
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate">{f.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {isFolder ? "Pasta" : f.file_size ? formatBytes(f.file_size) : "—"}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })
             )}
           </div>
+
         </DialogContent>
       </Dialog>
     </div>
