@@ -25,6 +25,10 @@ import {
   Video,
   UserPlus,
   Info,
+  Reply,
+  SmilePlus,
+  ExternalLink,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
