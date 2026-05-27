@@ -572,6 +572,25 @@ export default function Collabs() {
         >
           {/* Emoji picker */}
           {showEmoji && (
+            <div className="absolute bottom-full left-3 mb-2 bg-white rounded-2xl shadow-xl p-3 z-20 border border-black/5 w-[360px] max-h-[360px] overflow-y-auto">
+              {EMOJI_CATEGORIES.map((cat) => (
+                <div key={cat.label} className="mb-3 last:mb-0">
+                  <div className="text-[11px] font-medium text-gray-500 px-1 mb-1.5 sticky top-0 bg-white">{cat.label}</div>
+                  <div className="grid grid-cols-8 gap-1">
+                    {cat.emojis.map((e, i) => (
+                      <button
+                        key={`${cat.label}-${i}-${e}`}
+                        onClick={() => { insertAtCursor(e); setShowEmoji(false); }}
+                        className="w-9 h-9 rounded-lg hover:bg-gray-100 text-xl flex items-center justify-center"
+                      >
+                        {e}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
             <div className="absolute bottom-full left-3 mb-2 bg-white rounded-2xl shadow-xl p-2 grid grid-cols-8 gap-1 z-20 border border-black/5">
               {EMOJIS.map((e) => (
                 <button
