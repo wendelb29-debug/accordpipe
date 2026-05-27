@@ -26,13 +26,13 @@ export function WelcomeHero() {
 
   return (
     <section
-      className="relative overflow-hidden rounded-3xl border border-white/40 dark:border-white/5
+      className="relative overflow-hidden rounded-2xl border border-white/40 dark:border-white/5
                  bg-gradient-to-br from-[#f5f1ff] via-[#ece4ff] to-[#e3d8ff]
                  dark:from-[#1b1530] dark:via-[#241a3d] dark:to-[#15102a]
-                 shadow-[0_20px_60px_-20px_rgba(124,58,237,0.35)]
-                 px-6 md:px-10 py-8 md:py-10"
+                 shadow-[0_12px_40px_-18px_rgba(124,58,237,0.35)]
+                 px-5 md:px-7 flex items-center"
+      style={{ height: "150px" }}
     >
-      {/* Geometric subtle pattern */}
       <svg
         className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.07] dark:opacity-[0.12]"
         xmlns="http://www.w3.org/2000/svg"
@@ -46,38 +46,35 @@ export function WelcomeHero() {
         <rect width="100%" height="100%" fill="url(#grid-hero)" />
       </svg>
 
-      {/* Floating gradient orbs */}
-      <div className="pointer-events-none absolute -top-24 -right-16 h-72 w-72 rounded-full bg-gradient-to-br from-violet-400/40 to-fuchsia-400/30 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-24 left-1/3 h-64 w-64 rounded-full bg-gradient-to-tr from-indigo-400/30 to-purple-300/20 blur-3xl" />
+      <div className="pointer-events-none absolute -top-16 -right-10 h-48 w-48 rounded-full bg-gradient-to-br from-violet-400/40 to-fuchsia-400/30 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-16 left-1/3 h-40 w-40 rounded-full bg-gradient-to-tr from-indigo-400/30 to-purple-300/20 blur-3xl" />
 
+      <div className="relative z-10 flex w-full items-center justify-between gap-6">
+        <div className="min-w-0 flex-1">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/60 dark:bg-white/5 backdrop-blur px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-violet-700 dark:text-violet-300 border border-white/60 dark:border-white/10">
+            <span>{dateStr}</span>
+            <span aria-hidden>☀️</span>
+          </div>
 
-      <div className="relative z-10 max-w-2xl">
-        <div className="inline-flex items-center gap-2 rounded-full bg-white/60 dark:bg-white/5 backdrop-blur px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-violet-700 dark:text-violet-300 border border-white/60 dark:border-white/10">
-          <span>{dateStr}</span>
-          <span aria-hidden>☀️</span>
+          <h1 className="mt-1.5 text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
+            {greeting},{" "}
+            <span className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 dark:from-violet-300 dark:via-purple-300 dark:to-fuchsia-300 bg-clip-text text-transparent">
+              {firstName}!
+            </span>{" "}
+            <span className="inline-block animate-[wave_2s_ease-in-out_infinite] origin-[70%_70%]">👋</span>
+          </h1>
+
+          <p className="mt-1 text-xs md:text-sm text-slate-700/90 dark:text-slate-200/90 italic truncate">
+            "{current.quote}"
+          </p>
         </div>
-
-        <h1 className="mt-4 text-3xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white">
-          {greeting},{" "}
-          <span className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 dark:from-violet-300 dark:via-purple-300 dark:to-fuchsia-300 bg-clip-text text-transparent">
-            {firstName}!
-          </span>{" "}
-          <span className="inline-block animate-[wave_2s_ease-in-out_infinite] origin-[70%_70%]">👋</span>
-        </h1>
-
-        <p className="mt-4 text-[15px] md:text-base text-slate-700/90 dark:text-slate-200/90 italic">
-          "{current.quote}"
-        </p>
-        <p className="mt-1 text-sm text-slate-600/80 dark:text-slate-300/70">
-          {current.sub}
-        </p>
 
         <Button
           onClick={() => setIdx((i) => i + 1)}
-          className="mt-6 h-10 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-[0_8px_24px_-6px_rgba(124,58,237,0.6)] border-0 gap-2"
+          className="shrink-0 h-9 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-[0_8px_24px_-6px_rgba(124,58,237,0.6)] border-0 gap-2 px-4 text-sm"
         >
           <Sparkles className="h-4 w-4" />
-          Inspiração do dia
+          Inspiração
         </Button>
       </div>
 
