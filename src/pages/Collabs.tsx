@@ -271,6 +271,8 @@ export default function Collabs() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const companyId = useActiveCompanyId();
+  const [replyTo, setReplyTo] = useState<{ id: string; name: string; text: string } | null>(null);
+  const [reactPickerFor, setReactPickerFor] = useState<string | null>(null);
   const [accordOpen, setAccordOpen] = useState(false);
   const [accordLoading, setAccordLoading] = useState(false);
   type AccordEntry = { id: string; name: string; type: "file" | "folder"; file_url: string | null; file_size: number | null; file_type: string | null };
