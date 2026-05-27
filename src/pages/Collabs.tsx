@@ -973,12 +973,40 @@ export default function Collabs() {
                     );
                   })
                 )}
+                {typingUsersInActive.length > 0 && (
+                  <div className="flex items-center gap-2 pl-2 pt-1">
+                    <div className="flex -space-x-2">
+                      {typingUsersInActive.slice(0, 3).map((u) => (
+                        u.avatar_url ? (
+                          <img key={u.id} src={u.avatar_url} alt="" className="h-6 w-6 rounded-full object-cover border-2 border-white shadow-sm" />
+                        ) : (
+                          <div key={u.id} className="h-6 w-6 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-[9px] font-semibold text-white" style={{ background: avatarColorFor(u.id) }}>
+                            {initialsOf(u.name)}
+                          </div>
+                        )
+                      ))}
+                    </div>
+                    <div className="bg-white/90 backdrop-blur rounded-full px-3 py-1.5 shadow-sm border border-violet-100 flex items-center gap-1.5">
+                      <span className="flex gap-0.5">
+                        <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+                      </span>
+                      <span className="text-[11px] text-gray-600">
+                        {typingUsersInActive.length === 1
+                          ? `${typingUsersInActive[0].name.split(" ")[0]} está digitando`
+                          : `${typingUsersInActive.length} pessoas digitando`}
+                      </span>
+                    </div>
+                  </div>
+                )}
                 <div ref={bottomRef} />
               </div>
             </div>
 
             {/* Input */}
-            <div className="px-3 py-2.5 border-t border-white/10 shrink-0 relative" style={{ background: "hsl(var(--sidebar-primary))" }}>
+            <div className="px-4 py-3 shrink-0 relative bg-white/85 backdrop-blur-xl border-t border-gray-200/70">
+
               {replyTo && (
                 <div className="mb-2 flex items-center gap-2 bg-white/95 rounded-xl px-3 py-2 shadow-sm border-l-[3px]" style={{ borderColor: "hsl(var(--sidebar-primary))" }}>
                   <Reply className="h-4 w-4 shrink-0" style={{ color: "hsl(var(--sidebar-primary))" }} />
