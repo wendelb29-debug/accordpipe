@@ -231,8 +231,10 @@ export default function Collabs() {
   const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
 
   // Tenant users (for mentions and member selection)
-  type MentionUser = { id: string; name: string; handle: string; avatar_url: string | null };
+  type MentionUser = { id: string; name: string; handle: string; avatar_url: string | null; department: string };
   const [tenantUsers, setTenantUsers] = useState<MentionUser[]>([]);
+  const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
+  const [typingIds, setTypingIds] = useState<Set<string>>(new Set());
   const userMap = useMemo(() => {
     const m = new Map<string, MentionUser>();
     tenantUsers.forEach((u) => m.set(u.id, u));
@@ -249,7 +251,7 @@ export default function Collabs() {
     const load = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("id, user_id, name, avatar_url, is_active, status")
+        .select("id, user_id, name, avatar_url, is_active, status, tags")
         .eq("company_id", companyId)
         .eq("is_active", true)
         .eq("status", "ativo")
@@ -262,12 +264,61 @@ export default function Collabs() {
           name: p.name as string,
           handle: slug((p.name as string).split(" ")[0] || p.name),
           avatar_url: p.avatar_url || null,
+          department: (Array.isArray(p.tags) && p.tags[0]) || "Equipe",
         }));
       setTenantUsers(list);
     };
     load();
     return () => { cancelled = true; };
   }, [companyId]);
+
+  /* ────── Presence: online users + typing indicator ────── */
+  const presenceRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  useEffect(() => {
+    if (!companyId || !user) return;
+    const ch = supabase.channel(`collab-presence-${companyId}`, { config: { presence: { key: user.id } } });
+    presenceRef.current = ch;
+    ch.on("presence", { event: "sync" }, () => {
+      const state = ch.presenceState() as Record<string, Array<{ typing_in?: string | null }>>;
+      const online = new Set<string>(Object.keys(state));
+      const typing = new Set<string>();
+      for (const [uid, metas] of Object.entries(state)) {
+        if (uid === user.id) continue;
+        if (metas?.some((m) => m.typing_in)) typing.add(uid);
+      }
+      setOnlineIds(online);
+      setTypingIds(typing);
+    }).subscribe(async (status) => {
+      if (status === "SUBSCRIBED") await ch.track({ typing_in: null });
+    });
+    return () => { supabase.removeChannel(ch); presenceRef.current = null; };
+  }, [companyId, user?.id]);
+
+  useEffect(() => {
+    const ch = presenceRef.current;
+    if (!ch || !activeId) return;
+    const isTyping = input.trim().length > 0;
+    const t = setTimeout(() => {
+      ch.track({ typing_in: isTyping ? activeId : null }).catch(() => {});
+    }, 200);
+    return () => clearTimeout(t);
+  }, [input, activeId]);
+
+  /* ────── Group users by department for right panel ────── */
+  const usersByDept = useMemo(() => {
+    const m = new Map<string, MentionUser[]>();
+    for (const u of tenantUsers) {
+      const arr = m.get(u.department) || [];
+      arr.push(u);
+      m.set(u.department, arr);
+    }
+    return Array.from(m.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [tenantUsers]);
+
+  const typingUsersInActive = useMemo(() => {
+    if (!activeId) return [] as MentionUser[];
+    return Array.from(typingIds).map((id) => userMap.get(id)).filter(Boolean) as MentionUser[];
+  }, [typingIds, activeId, userMap]);
 
   /* ────── Load conversations + realtime ────── */
   useEffect(() => {
@@ -590,21 +641,25 @@ export default function Collabs() {
   /* ────── Render ────── */
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] bg-background overflow-hidden">
-      {/* SIDEBAR */}
-      <aside className="w-[320px] min-w-[320px] flex flex-col border-r border-border bg-background">
-        <div className="h-[60px] flex items-center gap-2 px-3 border-b border-border shrink-0">
-          <div className="flex items-center gap-2 bg-muted rounded-full px-3 py-2 flex-1 min-w-0">
-            <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden" style={{ background: "linear-gradient(180deg, #faf9ff 0%, #f4f1fb 100%)" }}>
+      {/* SIDEBAR — dark purple */}
+      <aside
+        className="w-[320px] min-w-[320px] flex flex-col shrink-0 text-white"
+        style={{ background: "linear-gradient(180deg, #1a0f3d 0%, #2a1758 55%, #1e1145 100%)" }}
+      >
+        <div className="h-[60px] flex items-center gap-2 px-3 border-b border-white/8 shrink-0">
+          <div className="flex items-center gap-2 bg-white/8 hover:bg-white/12 transition rounded-full px-3 py-2 flex-1 min-w-0 border border-white/8">
+            <Search className="h-4 w-4 text-white/60 shrink-0" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Encontrar colaborador ou bate-papo"
-              className="flex-1 bg-transparent outline-none text-[13px] text-foreground placeholder:text-muted-foreground"
+              placeholder="Buscar conversa…"
+              className="flex-1 bg-transparent outline-none text-[13px] text-white placeholder:text-white/40"
             />
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
+
               <button
                 className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center text-white shadow-[0_4px_14px_-2px_rgba(99,102,241,0.55)] hover:shadow-[0_6px_18px_-2px_rgba(99,102,241,0.7)] transition-all active:scale-95"
                 style={{ background: "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)" }}
@@ -656,13 +711,13 @@ export default function Collabs() {
           </DropdownMenu>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-1">
+        <div className="flex-1 overflow-y-auto py-2 px-1.5 scrollbar-thin">
           {loadingConvs ? (
-            <div className="flex items-center justify-center py-10 text-muted-foreground">
+            <div className="flex items-center justify-center py-10 text-white/50">
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center px-6 py-12 text-sm text-muted-foreground">
+            <div className="text-center px-6 py-12 text-sm text-white/55">
               <MessageSquare className="h-10 w-10 mx-auto mb-3 opacity-30" />
               Nenhuma conversa ainda.<br />
               Clique no <PenSquare className="inline h-3.5 w-3.5 mx-0.5" /> para criar a primeira.
@@ -678,27 +733,32 @@ export default function Collabs() {
                 key={c.id}
                 onClick={() => setActiveId(c.id)}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2 mx-1.5 my-0.5 rounded-xl cursor-pointer transition-colors h-[64px]",
-                  isActive ? "bg-[hsl(var(--sidebar-primary))] text-white" : "hover:bg-muted",
+                  "flex items-center gap-3 px-2.5 py-2 my-0.5 rounded-2xl cursor-pointer transition-all h-[64px]",
+                  isActive
+                    ? "bg-white/12 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18),0_8px_24px_-12px_rgba(124,58,237,0.6)]"
+                    : "hover:bg-white/6",
                 )}
               >
-                <div className="w-12 h-12 min-w-12 rounded-full flex items-center justify-center text-white" style={{ background: color }}>
-                  <Icon className="h-5 w-5" />
+                <div
+                  className="w-11 h-11 min-w-11 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-md"
+                  style={{ background: `linear-gradient(135deg, ${color} 0%, ${color}cc 100%)` }}
+                >
+                  <Icon className="h-[18px] w-[18px]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1 min-w-0">
-                      {c.is_pinned && <Pin className={cn("h-3 w-3 shrink-0", isActive ? "text-white/80" : "text-muted-foreground")} />}
-                      <span className={cn("text-[13.5px] font-medium truncate", isActive ? "text-white" : "text-foreground")}>
+                      {c.is_pinned && <Pin className="h-3 w-3 shrink-0 text-white/55" />}
+                      <span className="text-[13.5px] font-medium truncate text-white">
                         {prefix}{c.name}
                       </span>
                     </div>
-                    <span className={cn("text-[11px] shrink-0", isActive ? "text-white/80" : "text-muted-foreground")}>
+                    <span className="text-[11px] shrink-0 text-white/50">
                       {formatTime(c.last_message_at)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-2 mt-0.5">
-                    <span className={cn("text-xs truncate", isActive ? "text-white/70" : "text-muted-foreground")}>
+                    <span className="text-xs truncate text-white/55">
                       {c.last_message_preview || "Sem mensagens ainda"}
                     </span>
                   </div>
@@ -709,58 +769,67 @@ export default function Collabs() {
         </div>
       </aside>
 
+
       {/* CHAT MAIN */}
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {!active ? (
-          <div className="relative flex-1 flex flex-col items-center justify-center text-center px-6 text-muted-foreground overflow-hidden">
+          <div className="relative flex-1 flex flex-col items-center justify-center text-center px-6 overflow-hidden" style={{ background: "linear-gradient(180deg, #fdfcff 0%, #f5f0fb 100%)" }}>
             <ConstellationCanvas />
             <div className="relative z-10 flex flex-col items-center">
-              <MessageSquare className="h-14 w-14 mb-4 opacity-30" />
-              <div className="text-base font-medium text-foreground">Selecione uma conversa</div>
-              <p className="text-sm mt-1 max-w-sm">Suas conversas, canais e collabs do tenant aparecem aqui em tempo real.</p>
+              <MessageSquare className="h-14 w-14 mb-4 text-violet-300" />
+              <div className="text-base font-semibold text-gray-800">Selecione uma conversa</div>
+              <p className="text-sm mt-1 max-w-sm text-gray-500">Suas conversas, canais e collabs do tenant aparecem aqui em tempo real.</p>
             </div>
           </div>
 
         ) : (
           <>
-            <header className="h-[60px] flex items-center gap-3 px-4 shrink-0 border-b border-white/10" style={{ background: "hsl(var(--sidebar-primary))" }}>
-              <div className="w-9 h-9 rounded-full bg-white/25 flex items-center justify-center text-white" style={{ background: (active.color || KIND_META[active.kind].color) + "AA" }}>
-                {(() => { const I = KIND_META[active.kind].Icon; return <I className="h-4 w-4" />; })()}
+            <header className="h-[64px] flex items-center gap-3 px-5 shrink-0 bg-white/80 backdrop-blur-xl border-b border-gray-200/70">
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-md shrink-0" style={{ background: `linear-gradient(135deg, ${active.color || KIND_META[active.kind].color} 0%, ${(active.color || KIND_META[active.kind].color)}cc 100%)` }}>
+                {(() => { const I = KIND_META[active.kind].Icon; return <I className="h-[18px] w-[18px]" />; })()}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-white leading-tight truncate">
+                <div className="text-[14px] font-semibold text-gray-900 leading-tight truncate">
                   {active.kind === "channel" ? "# " : ""}{active.name}
                 </div>
-                <div className="text-[11.5px] text-white/75">
-                  {memberCount} {memberCount === 1 ? "membro" : "membros"} · {KIND_META[active.kind].label}
+                <div className="text-[11.5px] text-gray-500 mt-0.5 flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    {onlineIds.size} online
+                  </span>
+                  <span className="opacity-40">·</span>
+                  <span>{memberCount} {memberCount === 1 ? "membro" : "membros"}</span>
+                  <span className="opacity-40">·</span>
+                  <span>{KIND_META[active.kind].label}</span>
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <button onClick={() => { setInviteTab("colab"); setInviteOpen(true); }} className="w-8 h-8 rounded-full flex items-center justify-center text-white/85 hover:bg-white/15 transition-colors" title="Adicionar membros">
+                <button onClick={() => { setInviteTab("colab"); setInviteOpen(true); }} className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors" title="Adicionar membros">
                   <UserPlus className="h-[17px] w-[17px]" />
                 </button>
-                <button className="w-8 h-8 rounded-full flex items-center justify-center text-white/85 hover:bg-white/15 transition-colors">
+                <button className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors">
                   <MoreVertical className="h-[17px] w-[17px]" />
                 </button>
               </div>
             </header>
 
             <div
-              className="flex-1 overflow-y-auto px-4 py-3 relative"
+              className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-5 relative"
               style={{
-                backgroundColor: "#8fadc8",
-                backgroundImage: "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.18) 1px, transparent 0)",
-                backgroundSize: "20px 20px",
+                background: "linear-gradient(180deg, #fdfcff 0%, #f7f4fc 100%)",
+                backgroundImage: `radial-gradient(circle at 1px 1px, rgba(124,58,237,0.07) 1px, transparent 0), linear-gradient(180deg, #fdfcff 0%, #f7f4fc 100%)`,
+                backgroundSize: "22px 22px, auto",
               }}
             >
-              <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(135deg, #a8c5da 0%, #7ba3c0 35%, #9eb8d0 60%, #6d98b8 100%)", opacity: 0.6 }} />
+              <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(900px 500px at 85% -10%, rgba(124,58,237,0.08), transparent 60%), radial-gradient(700px 400px at -10% 110%, rgba(99,102,241,0.07), transparent 60%)" }} />
+
 
               <div className="relative z-10 flex flex-col gap-1">
                 {loadingMsgs ? (
-                  <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-white" /></div>
+                  <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-violet-400" /></div>
                 ) : messages.length === 0 ? (
                   <div className="text-center my-10">
-                    <span className="text-[12px] text-white bg-black/30 px-4 py-1.5 rounded-xl inline-block">
+                    <span className="text-[12px] text-gray-500 bg-white/80 border border-violet-100 px-4 py-1.5 rounded-full inline-block shadow-sm backdrop-blur">
                       Nenhuma mensagem ainda. Diga olá 👋
                     </span>
                   </div>
@@ -768,13 +837,14 @@ export default function Collabs() {
                   messages.map((m) => {
                     if (m.is_system) {
                       return (
-                        <div key={m.id} className="text-center my-1.5">
-                          <span className="text-[11.5px] text-white bg-black/30 px-3.5 py-1 rounded-xl inline-block leading-snug">
+                        <div key={m.id} className="text-center my-2">
+                          <span className="text-[11.5px] text-gray-500 bg-white/80 border border-gray-200 px-3.5 py-1 rounded-full inline-block leading-snug shadow-sm backdrop-blur">
                             {m.content}
                           </span>
                         </div>
                       );
                     }
+
                     const isSent = m.sender_id === user?.id;
                     const sender = userMap.get(m.sender_id || "");
                     const senderName = sender?.name || "Usuário";
@@ -820,23 +890,29 @@ export default function Collabs() {
                             <div className={cn("flex flex-col gap-1.5 min-w-0", isSent && "items-end")}>
                               {hasBubble && (
                                 <div
-                                  className={cn("px-3.5 py-2 rounded-2xl text-[13px] leading-snug shadow-sm break-words relative", isSent ? "text-white" : "bg-white/95 text-[#1a1a2e] backdrop-blur-sm")}
-                                  style={isSent ? { background: "linear-gradient(135deg, hsl(var(--sidebar-primary)) 0%, #6366f1 100%)" } : undefined}
+                                  className={cn(
+                                    "px-4 py-2.5 text-[13.5px] leading-snug break-words relative",
+                                    isSent
+                                      ? "text-white rounded-[22px] rounded-br-md shadow-[0_8px_24px_-10px_rgba(124,58,237,0.55)]"
+                                      : "bg-white/95 text-[#1a1a2e] rounded-[22px] rounded-bl-md backdrop-blur-sm shadow-[0_4px_16px_-6px_rgba(15,23,42,0.10),inset_0_0_0_1px_rgba(124,58,237,0.06)]"
+                                  )}
+                                  style={isSent ? { background: "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)" } : undefined}
                                 >
                                   {quote && (
-                                    <div className="border-l-[3px] pl-2 mb-1.5 rounded-r-md py-0.5" style={{ borderColor: isSent ? "rgba(255,255,255,0.7)" : "hsl(var(--sidebar-primary))", background: isSent ? "rgba(255,255,255,0.08)" : "rgba(124,58,237,0.06)" }}>
-                                      <div className="text-[11px] font-medium" style={{ color: isSent ? "rgba(255,255,255,0.95)" : "hsl(var(--sidebar-primary))" }}>
+                                    <div className="border-l-[3px] pl-2 mb-1.5 rounded-r-md py-0.5" style={{ borderColor: isSent ? "rgba(255,255,255,0.7)" : "#7c3aed", background: isSent ? "rgba(255,255,255,0.08)" : "rgba(124,58,237,0.06)" }}>
+                                      <div className="text-[11px] font-medium" style={{ color: isSent ? "rgba(255,255,255,0.95)" : "#7c3aed" }}>
                                         {quote.sender_id === user?.id ? "Você" : (userMap.get(quote.sender_id || "")?.name || "Mensagem")}
                                       </div>
-                                      <div className={cn("text-xs truncate", isSent ? "text-white/75" : "text-muted-foreground")}>
+                                      <div className={cn("text-xs truncate", isSent ? "text-white/75" : "text-gray-500")}>
                                         {messagePlainText(quote)}
                                       </div>
                                     </div>
                                   )}
                                   {m.content && <div className="whitespace-pre-wrap">{m.content}</div>}
-                                  <span className={cn("block text-right text-[10px] mt-1", isSent ? "text-white/65" : "text-black/40")}>{time}</span>
+                                  <span className={cn("block text-right text-[10px] mt-1", isSent ? "text-white/70" : "text-gray-400")}>{time}</span>
                                 </div>
                               )}
+
 
                               {allFiles.map((f, idx) => {
                                 if (f.kind === "image" && f.url) {
@@ -897,22 +973,51 @@ export default function Collabs() {
                     );
                   })
                 )}
+                {typingUsersInActive.length > 0 && (
+                  <div className="flex items-center gap-2 pl-2 pt-1">
+                    <div className="flex -space-x-2">
+                      {typingUsersInActive.slice(0, 3).map((u) => (
+                        u.avatar_url ? (
+                          <img key={u.id} src={u.avatar_url} alt="" className="h-6 w-6 rounded-full object-cover border-2 border-white shadow-sm" />
+                        ) : (
+                          <div key={u.id} className="h-6 w-6 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-[9px] font-semibold text-white" style={{ background: avatarColorFor(u.id) }}>
+                            {initialsOf(u.name)}
+                          </div>
+                        )
+                      ))}
+                    </div>
+                    <div className="bg-white/90 backdrop-blur rounded-full px-3 py-1.5 shadow-sm border border-violet-100 flex items-center gap-1.5">
+                      <span className="flex gap-0.5">
+                        <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+                      </span>
+                      <span className="text-[11px] text-gray-600">
+                        {typingUsersInActive.length === 1
+                          ? `${typingUsersInActive[0].name.split(" ")[0]} está digitando`
+                          : `${typingUsersInActive.length} pessoas digitando`}
+                      </span>
+                    </div>
+                  </div>
+                )}
                 <div ref={bottomRef} />
               </div>
             </div>
 
             {/* Input */}
-            <div className="px-3 py-2.5 border-t border-white/10 shrink-0 relative" style={{ background: "hsl(var(--sidebar-primary))" }}>
+            <div className="px-4 py-3 shrink-0 relative bg-white/85 backdrop-blur-xl border-t border-gray-200/70">
+
               {replyTo && (
-                <div className="mb-2 flex items-center gap-2 bg-white/95 rounded-xl px-3 py-2 shadow-sm border-l-[3px]" style={{ borderColor: "hsl(var(--sidebar-primary))" }}>
-                  <Reply className="h-4 w-4 shrink-0" style={{ color: "hsl(var(--sidebar-primary))" }} />
+                <div className="mb-2 flex items-center gap-2 bg-violet-50/80 rounded-2xl px-3 py-2 shadow-sm border-l-[3px] border-violet-500">
+                  <Reply className="h-4 w-4 shrink-0 text-violet-600" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-[11.5px] font-medium" style={{ color: "hsl(var(--sidebar-primary))" }}>Respondendo a {replyTo.name}</div>
+                    <div className="text-[11.5px] font-medium text-violet-700">Respondendo a {replyTo.name}</div>
                     <div className="text-xs text-gray-600 truncate">{replyTo.text}</div>
                   </div>
-                  <button onClick={() => setReplyTo(null)} className="w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700"><X className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => setReplyTo(null)} className="w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:bg-white hover:text-gray-700"><X className="h-3.5 w-3.5" /></button>
                 </div>
               )}
+
 
               {showEmoji && (
                 <div className="absolute bottom-full left-3 mb-2 bg-white rounded-2xl shadow-xl z-20 border border-black/5 w-[380px] flex flex-col overflow-hidden">
@@ -971,18 +1076,18 @@ export default function Collabs() {
               <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => { handleFiles(e.target.files, false); e.target.value = ""; }} />
               <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { handleFiles(e.target.files, true); e.target.value = ""; }} />
 
-              <div className="flex items-center gap-1.5 bg-white rounded-[24px] pl-3.5 pr-2 py-1.5">
+              <div className="flex items-center gap-1.5 bg-white rounded-[24px] pl-3.5 pr-2 py-1.5 shadow-[0_8px_24px_-12px_rgba(124,58,237,0.35),inset_0_0_0_1px_rgba(124,58,237,0.08)]">
                 <div className="flex gap-0.5">
-                  <button onClick={() => fileInputRef.current?.click()} title="Anexar" className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100">
+                  <button onClick={() => fileInputRef.current?.click()} title="Anexar" className="w-[32px] h-[32px] rounded-full flex items-center justify-center text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition">
                     <Paperclip className="h-[17px] w-[17px]" />
                   </button>
-                  <button onClick={() => imageInputRef.current?.click()} title="Enviar imagem" className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100">
+                  <button onClick={() => imageInputRef.current?.click()} title="Enviar imagem" className="w-[32px] h-[32px] rounded-full flex items-center justify-center text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition">
                     <ImageIcon className="h-[17px] w-[17px]" />
                   </button>
-                  <button onClick={() => { setShowEmoji((v) => !v); setShowMentions(false); }} title="Emojis" className={cn("w-[30px] h-[30px] rounded-full flex items-center justify-center", showEmoji ? "bg-gray-100 text-gray-700" : "text-gray-500 hover:bg-gray-100")}>
+                  <button onClick={() => { setShowEmoji((v) => !v); setShowMentions(false); }} title="Emojis" className={cn("w-[32px] h-[32px] rounded-full flex items-center justify-center transition", showEmoji ? "bg-violet-100 text-violet-700" : "text-gray-500 hover:bg-violet-50 hover:text-violet-600")}>
                     <Smile className="h-[17px] w-[17px]" />
                   </button>
-                  <button onClick={() => { setShowMentions((v) => !v); setShowEmoji(false); }} title="Mencionar" className={cn("w-[30px] h-[30px] rounded-full flex items-center justify-center", showMentions ? "bg-gray-100 text-gray-700" : "text-gray-500 hover:bg-gray-100")}>
+                  <button onClick={() => { setShowMentions((v) => !v); setShowEmoji(false); }} title="Mencionar" className={cn("w-[32px] h-[32px] rounded-full flex items-center justify-center transition", showMentions ? "bg-violet-100 text-violet-700" : "text-gray-500 hover:bg-violet-50 hover:text-violet-600")}>
                     <AtSign className="h-[17px] w-[17px]" />
                   </button>
                 </div>
@@ -995,9 +1100,15 @@ export default function Collabs() {
                     if (e.key === "Escape") { setShowEmoji(false); setShowMentions(false); }
                   }}
                   placeholder={`Mensagem ${active.name}...`}
-                  className="flex-1 bg-transparent outline-none text-[13.5px] text-[#1a1a2e] placeholder:text-gray-400"
+                  className="flex-1 bg-transparent outline-none text-[13.5px] text-[#1a1a2e] placeholder:text-gray-400 min-w-0"
                 />
-                <button onClick={sendText} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors" style={{ background: input.trim() ? "hsl(var(--sidebar-primary))" : "transparent", color: input.trim() ? "#fff" : "#888" }}>
+                <button
+                  onClick={sendText}
+                  className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all"
+                  style={input.trim()
+                    ? { background: "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)", color: "#fff", boxShadow: "0 8px 20px -8px rgba(124,58,237,0.6)" }
+                    : { background: "transparent", color: "#888" }}
+                >
                   {input.trim() ? <Send className="h-4 w-4" /> : <Mic className="h-[18px] w-[18px]" />}
                 </button>
               </div>
@@ -1005,6 +1116,61 @@ export default function Collabs() {
           </>
         )}
       </main>
+
+      {/* RIGHT PANEL — online by department */}
+      <aside className="hidden lg:flex w-[280px] min-w-[280px] shrink-0 flex-col bg-white/70 backdrop-blur-xl border-l border-gray-200/70">
+        <div className="h-[64px] flex items-center gap-2 px-5 border-b border-gray-200/70 shrink-0">
+          <Users className="h-4 w-4 text-violet-600" />
+          <div className="flex-1">
+            <div className="text-[13px] font-semibold text-gray-900 leading-tight">Equipe online</div>
+            <div className="text-[11px] text-gray-500">{onlineIds.size} de {tenantUsers.length} ativos agora</div>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+          {usersByDept.length === 0 ? (
+            <div className="text-center text-[12px] text-gray-400 py-8">Sem colaboradores ativos.</div>
+          ) : usersByDept.map(([dept, list]) => {
+            const onlineList = list.filter((u) => onlineIds.has(u.id));
+            const offlineList = list.filter((u) => !onlineIds.has(u.id));
+            const ordered = [...onlineList, ...offlineList];
+            return (
+              <div key={dept}>
+                <div className="flex items-center justify-between px-2 mb-1.5">
+                  <span className="text-[10.5px] font-semibold tracking-wider text-gray-500 uppercase">{dept}</span>
+                  <span className="text-[10px] text-emerald-600 font-medium">{onlineList.length}/{list.length}</span>
+                </div>
+                <div className="space-y-0.5">
+                  {ordered.map((u) => {
+                    const isOnline = onlineIds.has(u.id);
+                    const isTyping = typingIds.has(u.id);
+                    const status = isTyping ? "Digitando…" : isOnline ? "Online" : "Offline";
+                    const dotColor = isOnline ? "bg-emerald-500" : "bg-gray-300";
+                    return (
+                      <div key={u.id} className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-violet-50/60 transition cursor-pointer">
+                        <div className="relative shrink-0">
+                          {u.avatar_url ? (
+                            <img src={u.avatar_url} alt="" className={cn("h-8 w-8 rounded-full object-cover", !isOnline && "grayscale opacity-70")} />
+                          ) : (
+                            <div className={cn("h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-semibold text-white", !isOnline && "opacity-60")} style={{ background: avatarColorFor(u.id) }}>
+                              {initialsOf(u.name)}
+                            </div>
+                          )}
+                          <span className={cn("absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white", dotColor)} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className={cn("text-[12.5px] font-medium truncate", isOnline ? "text-gray-900" : "text-gray-500")}>{u.name}</div>
+                          <div className={cn("text-[10.5px] truncate", isTyping ? "text-violet-600 font-medium" : isOnline ? "text-emerald-600" : "text-gray-400")}>{status}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </aside>
+
 
       {/* CREATE DIALOG */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
