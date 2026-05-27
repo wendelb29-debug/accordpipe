@@ -73,10 +73,10 @@ export function ConstellationCanvas() {
         for (let j = i + 1; j < pts.length; j++) {
           const b = pts[j];
           const dx = a.x - b.x, dy = a.y - b.y, d = Math.sqrt(dx * dx + dy * dy);
-          if (d < 120) {
+          if (d < 150) {
             const col = lerp(lerp(blue, purple, a.t), lerp(blue, purple, b.t), 0.5);
-            ctx.strokeStyle = `rgba(${col[0]},${col[1]},${col[2]},${(1 - d / 120) * lineAlpha})`;
-            ctx.lineWidth = 0.55;
+            ctx.strokeStyle = `rgba(${col[0]},${col[1]},${col[2]},${(1 - d / 150) * lineAlpha})`;
+            ctx.lineWidth = 0.9;
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
             ctx.lineTo(b.x, b.y);
@@ -89,11 +89,21 @@ export function ConstellationCanvas() {
         if (pt.x < 0 || pt.x > W) pt.vx *= -1;
         if (pt.y < 0 || pt.y > H) pt.vy *= -1;
         const col = lerp(blue, purple, pt.t);
+        // soft glow
+        const glow = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, pt.r * 4);
+        glow.addColorStop(0, `rgba(${col[0]},${col[1]},${col[2]},${pt.a * 0.55})`);
+        glow.addColorStop(1, `rgba(${col[0]},${col[1]},${col[2]},0)`);
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, pt.r * 4, 0, Math.PI * 2);
+        ctx.fill();
+        // core dot
         ctx.beginPath();
         ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${pt.a})`;
         ctx.fill();
       }
+
       animId = requestAnimationFrame(draw);
     };
     resize(); draw();
