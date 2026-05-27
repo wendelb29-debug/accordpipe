@@ -138,23 +138,46 @@ export default function Collabs() {
   const companyId = useActiveCompanyId();
   const [accordOpen, setAccordOpen] = useState(false);
   const [accordLoading, setAccordLoading] = useState(false);
-  const [accordFiles, setAccordFiles] = useState<Array<{ id: string; name: string; file_url: string | null; file_size: number | null; file_type: string | null }>>([]);
+  type AccordEntry = { id: string; name: string; type: "file" | "folder"; file_url: string | null; file_size: number | null; file_type: string | null };
+  const [accordEntries, setAccordEntries] = useState<AccordEntry[]>([]);
   const [accordSearch, setAccordSearch] = useState("");
+  const [accordPath, setAccordPath] = useState<Array<{ id: string | null; name: string }>>([{ id: null, name: "Documentos" }]);
+
+  const loadAccordFolder = async (parentId: string | null) => {
+    if (!companyId) return;
+    setAccordLoading(true);
+    let q = supabase
+      .from("drive_files")
+      .select("id,name,type,file_url,file_size,file_type")
+      .eq("servidor_id", companyId)
+      .order("type", { ascending: true })
+      .order("name", { ascending: true });
+    q = parentId ? q.eq("parent_id", parentId) : q.is("parent_id", null);
+    const { data, error } = await q;
+    if (!error) setAccordEntries((data as any) || []);
+    setAccordLoading(false);
+  };
 
   const openAccordPicker = async () => {
     setAccordOpen(true);
-    if (!companyId) return;
-    setAccordLoading(true);
-    const { data, error } = await supabase
-      .from("drive_files")
-      .select("id,name,file_url,file_size,file_type")
-      .eq("servidor_id", companyId)
-      .eq("type", "file")
-      .order("created_at", { ascending: false })
-      .limit(200);
-    if (!error) setAccordFiles((data as any) || []);
-    setAccordLoading(false);
+    setAccordPath([{ id: null, name: "Documentos" }]);
+    setAccordSearch("");
+    await loadAccordFolder(null);
   };
+
+  const enterFolder = async (f: AccordEntry) => {
+    setAccordPath((p) => [...p, { id: f.id, name: f.name }]);
+    setAccordSearch("");
+    await loadAccordFolder(f.id);
+  };
+
+  const goToPathIndex = async (idx: number) => {
+    const next = accordPath.slice(0, idx + 1);
+    setAccordPath(next);
+    setAccordSearch("");
+    await loadAccordFolder(next[next.length - 1].id);
+  };
+
 
   const pickAccordFile = (f: { id: string; name: string; file_url: string | null; file_size: number | null }) => {
     const lower = f.name.toLowerCase();
