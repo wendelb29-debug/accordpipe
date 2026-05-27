@@ -553,7 +553,10 @@ export default function Collabs() {
               <div className="my-1.5 mx-3 rounded-lg px-2.5 py-1.5 text-[11px] text-violet-700 bg-gradient-to-r from-violet-50 to-fuchsia-50 border border-violet-100">
                 Tarefas, arquivos, calendário e outras ferramentas
               </div>
-              <DropdownMenuItem className="rounded-xl px-3 py-2.5 cursor-pointer focus:bg-blue-50/80 data-[highlighted]:bg-blue-50/80 gap-3">
+              <DropdownMenuItem
+                onSelect={(e) => { e.preventDefault(); setInviteTab("guest"); setInviteOpen(true); }}
+                className="rounded-xl px-3 py-2.5 cursor-pointer focus:bg-blue-50/80 data-[highlighted]:bg-blue-50/80 gap-3"
+              >
                 <div className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0 bg-blue-500/10 text-blue-600">
                   <UserPlus className="h-[18px] w-[18px]" strokeWidth={2} />
                 </div>
