@@ -405,28 +405,104 @@ export default function Collabs() {
 
         {/* Input */}
         <div
-          className="px-3 py-2.5 border-t border-white/10 shrink-0"
+          className="px-3 py-2.5 border-t border-white/10 shrink-0 relative"
           style={{ background: "hsl(var(--sidebar-primary))" }}
-
         >
-          <div className="flex items-center gap-1.5 bg-white rounded-[24px] pl-3.5 pr-2 py-1.5">
-            <div className="flex gap-0.5">
-              {[Paperclip, ImageIcon, Smile, AtSign].map((Icon, i) => (
-                <button key={i} className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors">
-                  <Icon className="h-[17px] w-[17px]" />
+          {/* Emoji picker */}
+          {showEmoji && (
+            <div className="absolute bottom-full left-3 mb-2 bg-white rounded-2xl shadow-xl p-2 grid grid-cols-8 gap-1 z-20 border border-black/5">
+              {EMOJIS.map((e) => (
+                <button
+                  key={e}
+                  onClick={() => { insertAtCursor(e); setShowEmoji(false); }}
+                  className="w-8 h-8 rounded-lg hover:bg-gray-100 text-lg flex items-center justify-center"
+                >
+                  {e}
                 </button>
               ))}
             </div>
+          )}
+          {/* Mentions */}
+          {showMentions && (
+            <div className="absolute bottom-full left-3 mb-2 bg-white rounded-2xl shadow-xl py-2 z-20 border border-black/5 min-w-[180px]">
+              {MENTIONS.map((m) => (
+                <button
+                  key={m}
+                  onClick={() => { insertAtCursor(`@${m} `); setShowMentions(false); }}
+                  className="w-full text-left px-3 py-1.5 hover:bg-gray-100 text-[13px] text-gray-700"
+                >
+                  @{m}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(e) => { handleFiles(e.target.files, false); e.target.value = ""; }}
+          />
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => { handleFiles(e.target.files, true); e.target.value = ""; }}
+          />
+
+          <div className="flex items-center gap-1.5 bg-white rounded-[24px] pl-3.5 pr-2 py-1.5">
+            <div className="flex gap-0.5">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                title="Anexar arquivo"
+                className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
+              >
+                <Paperclip className="h-[17px] w-[17px]" />
+              </button>
+              <button
+                onClick={() => imageInputRef.current?.click()}
+                title="Enviar imagem"
+                className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
+              >
+                <ImageIcon className="h-[17px] w-[17px]" />
+              </button>
+              <button
+                onClick={() => { setShowEmoji((v) => !v); setShowMentions(false); }}
+                title="Emojis"
+                className={cn(
+                  "w-[30px] h-[30px] rounded-full flex items-center justify-center transition-colors",
+                  showEmoji ? "bg-gray-100 text-gray-700" : "text-gray-500 hover:bg-gray-100"
+                )}
+              >
+                <Smile className="h-[17px] w-[17px]" />
+              </button>
+              <button
+                onClick={() => { setShowMentions((v) => !v); setShowEmoji(false); }}
+                title="Mencionar"
+                className={cn(
+                  "w-[30px] h-[30px] rounded-full flex items-center justify-center transition-colors",
+                  showMentions ? "bg-gray-100 text-gray-700" : "text-gray-500 hover:bg-gray-100"
+                )}
+              >
+                <AtSign className="h-[17px] w-[17px]" />
+              </button>
+            </div>
             <input
+              ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && input.trim()) setInput("");
+                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendText(); }
+                if (e.key === "Escape") { setShowEmoji(false); setShowMentions(false); }
               }}
               placeholder={`Mensagem ${active.name}...`}
               className="flex-1 bg-transparent outline-none text-[13.5px] text-[#1a1a2e] placeholder:text-gray-400"
             />
             <button
+              onClick={sendText}
               className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors"
               style={{ background: input.trim() ? "hsl(var(--sidebar-primary))" : "transparent", color: input.trim() ? "#fff" : "#888" }}
             >
@@ -434,6 +510,7 @@ export default function Collabs() {
             </button>
           </div>
         </div>
+
       </main>
     </div>
   );
