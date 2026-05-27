@@ -591,18 +591,6 @@ export default function Collabs() {
               ))}
             </div>
           )}
-            <div className="absolute bottom-full left-3 mb-2 bg-white rounded-2xl shadow-xl p-2 grid grid-cols-8 gap-1 z-20 border border-black/5">
-              {EMOJIS.map((e) => (
-                <button
-                  key={e}
-                  onClick={() => { insertAtCursor(e); setShowEmoji(false); }}
-                  className="w-8 h-8 rounded-lg hover:bg-gray-100 text-lg flex items-center justify-center"
-                >
-                  {e}
-                </button>
-              ))}
-            </div>
-          )}
           {/* Mentions */}
           {showMentions && (
             <div className="absolute bottom-full left-3 mb-2 bg-white rounded-2xl shadow-xl py-2 z-20 border border-black/5 min-w-[180px]">
