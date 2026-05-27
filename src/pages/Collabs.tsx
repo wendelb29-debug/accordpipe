@@ -173,6 +173,8 @@ export default function Collabs() {
     });
   };
 
+  return (
+    <div className="flex h-[calc(100vh-3.5rem)] bg-background overflow-hidden">
       {/* ──────────  LEFT SIDEBAR  ────────── */}
       <aside className="w-[320px] min-w-[320px] flex flex-col border-r border-border bg-background">
         {/* Search */}
