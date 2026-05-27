@@ -50,44 +50,58 @@ interface MockMessage {
   time: string;
   reactions?: { emoji: string; count: number }[];
   quote?: { name: string; text: string };
-  file?: { kind: "pdf" | "xls"; name: string; size: string };
+  file?: { kind: "pdf" | "xls" | "image" | "file"; name: string; size: string; url?: string };
   system?: React.ReactNode;
   status?: "sent" | "delivered" | "read";
 }
 
-const messages: MockMessage[] = [
-  {
-    id: "1", sent: true, time: "10:23",
-    text: <>Bom dia, equipe! 👋<br />Vamos alinhar as prioridades de hoje.</>,
-    reactions: [{ emoji: "👍", count: 7 }, { emoji: "🎉", count: 3 }, { emoji: "🔥", count: 2 }],
-    status: "read",
-  },
-  {
-    id: "2", time: "10:25",
-    sender: { name: "Juliana Martins", initials: "JM", color: "bg-[#D4537E]", nameColor: "hsl(var(--sidebar-primary))" },
-    quote: { name: "Wendel Silvério", text: "Vamos alinhar as prioridades de hoje." },
-    text: "Perfeito! Já preparei o update do projeto.",
-    file: { kind: "pdf", name: "Update_Projeto_Q2.pdf", size: "2.4 MB" },
-    reactions: [{ emoji: "👍", count: 4 }, { emoji: "✅", count: 2 }],
-  },
-  {
-    id: "3", time: "10:27",
-    sender: { name: "Rodrigo Costa", initials: "RC", color: "bg-[#1D9E75]", nameColor: "#1D9E75" },
-    text: <>Consegui ajustar os pontos levantados ontem.<br />Segue o documento com as alterações.</>,
-    file: { kind: "xls", name: "Alteracoes_Escopo.xlsx", size: "1.1 MB" },
-    reactions: [{ emoji: "👍", count: 3 }, { emoji: "💬", count: 1 }],
-  },
-  {
-    id: "sys1", time: "",
-    system: <>🔔 <b className="font-medium">Lembrete:</b> Reunião de alinhamento às 15:00 — Sala 3 - Accord.</>,
-  },
-  {
-    id: "4", time: "10:32",
-    sender: { name: "Beatriz Lima", initials: "BL", color: "bg-[#378ADD]", nameColor: "#378ADD" },
-    text: <>Obrigada, <span style={{ color: "hsl(var(--sidebar-primary))", fontWeight: 500 }}>@rodrigo</span>! Ficou excelente. ❤️</>,
-    reactions: [{ emoji: "❤️", count: 2 }],
-  },
-];
+const initialMessages: Record<string, MockMessage[]> = {
+  geral: [
+    {
+      id: "1", sent: true, time: "10:23",
+      text: <>Bom dia, equipe! 👋<br />Vamos alinhar as prioridades de hoje.</>,
+      reactions: [{ emoji: "👍", count: 7 }, { emoji: "🎉", count: 3 }, { emoji: "🔥", count: 2 }],
+      status: "read",
+    },
+    {
+      id: "2", time: "10:25",
+      sender: { name: "Juliana Martins", initials: "JM", color: "bg-[#D4537E]", nameColor: "hsl(var(--sidebar-primary))" },
+      quote: { name: "Wendel Silvério", text: "Vamos alinhar as prioridades de hoje." },
+      text: "Perfeito! Já preparei o update do projeto.",
+      file: { kind: "pdf", name: "Update_Projeto_Q2.pdf", size: "2.4 MB" },
+      reactions: [{ emoji: "👍", count: 4 }, { emoji: "✅", count: 2 }],
+    },
+    {
+      id: "3", time: "10:27",
+      sender: { name: "Rodrigo Costa", initials: "RC", color: "bg-[#1D9E75]", nameColor: "#1D9E75" },
+      text: <>Consegui ajustar os pontos levantados ontem.<br />Segue o documento com as alterações.</>,
+      file: { kind: "xls", name: "Alteracoes_Escopo.xlsx", size: "1.1 MB" },
+      reactions: [{ emoji: "👍", count: 3 }, { emoji: "💬", count: 1 }],
+    },
+    {
+      id: "sys1", time: "",
+      system: <>🔔 <b className="font-medium">Lembrete:</b> Reunião de alinhamento às 15:00 — Sala 3 - Accord.</>,
+    },
+    {
+      id: "4", time: "10:32",
+      sender: { name: "Beatriz Lima", initials: "BL", color: "bg-[#378ADD]", nameColor: "#378ADD" },
+      text: <>Obrigada, <span style={{ color: "hsl(var(--sidebar-primary))", fontWeight: 500 }}>@rodrigo</span>! Ficou excelente. ❤️</>,
+      reactions: [{ emoji: "❤️", count: 2 }],
+    },
+  ],
+};
+
+const EMOJIS = ["😀","😂","😍","👍","🙏","🎉","🔥","❤️","✅","💡","🚀","👏","😎","🤔","👀","💯","😅","🙌","💪","✨"];
+const MENTIONS = ["wendel","juliana","rodrigo","beatriz","mariana","thiago","patricia"];
+
+function formatBytes(b: number) {
+  if (b < 1024) return `${b} B`;
+  if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+  return `${(b / 1024 / 1024).toFixed(1)} MB`;
+}
+function nowTime() {
+  return new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
 
 /* ──────────────────────────  COMPONENT  ────────────────────────── */
 
