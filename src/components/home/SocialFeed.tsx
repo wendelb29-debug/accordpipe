@@ -17,6 +17,7 @@ import {
   Upload, Cloud, HardDrive, FileSpreadsheet, Presentation, LayoutDashboard,
   Bold, Italic, Smile, ChevronDown, BarChart3, ThumbsUp, Eye, BellOff, Bell,
   Copy, MessageSquarePlus, Pencil, ClipboardCopy, ThumbsDown, Loader2,
+  Pin, PinOff, Star, Link2, Mail, UserPlus, Edit3, EyeOff, ListChecks, Trash2,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -32,7 +33,7 @@ import { resolveSignedUrl } from "@/hooks/useSignedUrl";
 type FeedItem =
   | { kind: "event"; id: string; ts: string; event: TenantEvent }
   | { kind: "announcement"; id: string; ts: string; title: string; description: string | null; image_url: string }
-  | { kind: "post"; id: string; ts: string; content: string; image_url: string | null; tags: string[]; author_id: string; author_name: string | null; author_avatar: string | null }
+  | { kind: "post"; id: string; ts: string; content: string; image_url: string | null; tags: string[]; author_id: string; author_name: string | null; author_avatar: string | null; pinned: boolean }
   | { kind: "activity"; id: string; ts: string; title: string; type: string; created_by_name: string | null };
 
 const TYPE_GRADIENT: Record<string, string> = {
@@ -1124,8 +1125,9 @@ export function SocialFeed() {
     queryFn: async () => {
       const { data: rows, error } = await supabase
         .from("feed_posts")
-        .select("id,content,image_url,tags,author_id,created_at,servidor_id")
+        .select("id,content,image_url,tags,author_id,created_at,servidor_id,pinned")
         .eq("servidor_id", tenantId!)
+        .order("pinned", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
@@ -1178,8 +1180,14 @@ export function SocialFeed() {
       kind: "post", id: p.id, ts: p.created_at,
       content: p.content, image_url: p.image_url, tags: p.tags ?? [],
       author_id: p.author_id, author_name: p.author?.name ?? null, author_avatar: p.author?.avatar_url ?? null,
+      pinned: !!p.pinned,
     });
-    return items.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
+    return items.sort((a, b) => {
+      const ap = a.kind === "post" && a.pinned ? 1 : 0;
+      const bp = b.kind === "post" && b.pinned ? 1 : 0;
+      if (ap !== bp) return bp - ap;
+      return new Date(b.ts).getTime() - new Date(a.ts).getTime();
+    });
   }, [events, announcementsList, postsList]);
 
   const isLoading = announcementsQ.isLoading || postsQ.isLoading;
