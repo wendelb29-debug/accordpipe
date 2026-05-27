@@ -332,15 +332,30 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className={cn("flex-1 space-y-0.5 overflow-y-auto py-2", collapsed ? "px-2" : "px-3")}>
-        {!collapsed && (
-          <p className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-sidebar-foreground/20 transition-opacity duration-300">
-            Menu
-          </p>
-        )}
-        {filteredNavigation.map((item) => (
-          <NavItem key={t(item.nameKey)} item={item} isActive={location.pathname === item.href} />
-        ))}
+      <nav className={cn("flex-1 overflow-y-auto py-2", collapsed ? "px-2" : "px-3")}>
+        {navigationSections.map((section, idx) => {
+          const items = section.items.filter((item) => {
+            if (role && !item.roles.includes(role)) return false;
+            const perm = ROUTE_PERMISSIONS[item.href];
+            if (perm && !hasPermission(perm)) return false;
+            return true;
+          });
+          if (items.length === 0) return null;
+          return (
+            <div key={section.label} className={cn("space-y-0.5", idx > 0 && "mt-4")}>
+              {!collapsed ? (
+                <p className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-sidebar-foreground/20 transition-opacity duration-300">
+                  {section.label}
+                </p>
+              ) : idx > 0 ? (
+                <div className="mx-2 my-2 h-px bg-sidebar-border/40" />
+              ) : null}
+              {items.map((item) => (
+                <NavItem key={t(item.nameKey)} item={item} isActive={location.pathname === item.href} />
+              ))}
+            </div>
+          );
+        })}
       </nav>
 
       {/* Config & User */}
