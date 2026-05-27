@@ -330,6 +330,17 @@ export default function Collabs() {
     setShowMentions(false);
   };
 
+  const sendSticker = (url: string) => {
+    pushMessage({
+      id: crypto.randomUUID(),
+      sent: true,
+      time: nowTime(),
+      text: <img src={url} alt="sticker" className="w-[160px] h-[160px] object-contain" loading="lazy" />,
+      status: "sent",
+    });
+    setShowEmoji(false);
+  };
+
   const handleFiles = (files: FileList | null, asImage: boolean) => {
     if (!files) return;
     Array.from(files).forEach((f) => {
