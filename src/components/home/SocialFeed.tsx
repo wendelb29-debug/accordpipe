@@ -598,10 +598,87 @@ function QuickPostComposer({
   );
 }
 
+/* ─────────────────────────  ONLINE USERS INDICATOR  ─────────────────────── */
+function OnlineUsersIndicator() {
+  const { user, profile } = useAuth();
+  const tenantId = useActiveCompanyId();
+  const [online, setOnline] = useState<Array<{ user_id: string; name: string; avatar_url: string | null }>>([]);
+
+  useEffect(() => {
+    if (!tenantId || !user?.id) return;
+    const channel = supabase.channel(`presence:feed:${tenantId}`, {
+      config: { presence: { key: user.id } },
+    });
+
+    channel
+      .on("presence", { event: "sync" }, () => {
+        const state = channel.presenceState() as Record<string, any[]>;
+        const users: Record<string, { user_id: string; name: string; avatar_url: string | null }> = {};
+        Object.entries(state).forEach(([uid, metas]) => {
+          const m = metas?.[0] || {};
+          users[uid] = { user_id: uid, name: m.name || "Usuário", avatar_url: m.avatar_url || null };
+        });
+        setOnline(Object.values(users));
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await channel.track({
+            name: profile?.name || "Você",
+            avatar_url: profile?.avatar_url || null,
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
+
+    return () => { supabase.removeChannel(channel); };
+  }, [tenantId, user?.id, profile?.name, profile?.avatar_url]);
+
+  if (online.length === 0) return null;
+  const visible = online.slice(0, 4);
+  const extra = online.length - visible.length;
+
+  return (
+    <TooltipProvider delayDuration={150}>
+      <div className="flex items-center gap-2 px-3 h-10 rounded-full bg-card/60 ring-1 ring-white/5 backdrop-blur-md">
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+        </span>
+        <span className="text-[11px] font-semibold text-muted-foreground hidden sm:inline">
+          {online.length} online
+        </span>
+        <div className="flex -space-x-2">
+          {visible.map((u) => (
+            <Tooltip key={u.user_id}>
+              <TooltipTrigger asChild>
+                <div className="relative">
+                  <Avatar className="h-7 w-7 ring-2 ring-card hover:scale-110 transition-transform">
+                    {u.avatar_url && <AvatarImage src={u.avatar_url} />}
+                    <AvatarFallback className="text-[10px] bg-gradient-to-br from-primary to-violet-600 text-white">
+                      {initials(u.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-card" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">{u.name}</TooltipContent>
+            </Tooltip>
+          ))}
+          {extra > 0 && (
+            <div className="h-7 w-7 rounded-full bg-muted/60 ring-2 ring-card flex items-center justify-center text-[10px] font-semibold text-muted-foreground">
+              +{extra}
+            </div>
+          )}
+        </div>
+      </div>
+    </TooltipProvider>
+  );
+}
+
 /* ─────────────────────────  FEED HEADER BAR  ─────────────────────── */
 function FeedHeaderBar() {
   return (
-    <div className="flex items-center gap-4 px-1">
+    <div className="flex items-center gap-3 px-1">
       <h2 className="text-2xl font-bold tracking-tight">Feed</h2>
       <div className="flex-1 max-w-md relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
@@ -611,6 +688,7 @@ function FeedHeaderBar() {
           className="w-full h-10 pl-9 pr-3 rounded-lg bg-card/60 ring-1 ring-white/5 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-primary/40 transition"
         />
       </div>
+      <OnlineUsersIndicator />
     </div>
   );
 }
