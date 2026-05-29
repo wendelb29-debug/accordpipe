@@ -486,24 +486,24 @@ function QuickPostComposer({
         {tab === "Mais" && moreView === "document" && <DocumentTypesPanel />}
       </div>
 
-      {/* Action toolbar */}
-      <div className="px-5 pt-2 pb-3 flex flex-wrap items-center gap-1 border-t border-white/[0.04]">
+      {/* Action toolbar — labels visíveis, hover sutil, sem rounded-full genérico */}
+      <div className="px-5 pt-2 pb-3 flex flex-wrap items-center gap-1 border-t border-border/60">
         {toolbar.map((t, i) => (
           <button
             key={i}
             onClick={t.onClick}
-            className="flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[12px] font-medium text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors"
+            className="flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[12px] font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
           >
             <t.icon className={`h-4 w-4 ${t.color ?? ""}`} />
-            <span className="hidden sm:inline">{t.label}</span>
+            <span>{t.label}</span>
           </button>
         ))}
         <MentionPicker
           selectedIds={selectedIds}
           onPick={addRecipient}
           trigger={
-            <button className="flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[12px] font-medium text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors">
-              <AtSign className="h-4 w-4" /><span className="hidden sm:inline">Mencionar</span>
+            <button className="flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[12px] font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+              <AtSign className="h-4 w-4" /><span>Mencionar</span>
             </button>
           }
         />
