@@ -393,7 +393,7 @@ function QuickPostComposer({
     return (
       <button
         onClick={() => setCollapsed(false)}
-        className="group w-full text-left animate-fade-in rounded-2xl bg-card/95 backdrop-blur-xl ring-1 ring-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.25)] hover:ring-primary/30 hover:shadow-[0_8px_40px_rgba(124,58,237,0.18)] transition-all px-5 py-3.5 flex items-center gap-3"
+        className="group w-full text-left animate-fade-in rounded-xl bg-white dark:bg-card border-[0.5px] border-border shadow-sm hover:border-primary/40 hover:shadow-md transition-all px-5 py-3.5 flex items-center gap-3"
       >
         <Avatar className="h-9 w-9 ring-2 ring-primary/20 shrink-0">
           {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
