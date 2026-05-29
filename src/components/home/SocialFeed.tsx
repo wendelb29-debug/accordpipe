@@ -574,13 +574,13 @@ function QuickPostComposer({
         </div>
       )}
 
-      {/* Submit */}
+      {/* Submit — botão roxo gradiente como destaque */}
       {tab !== "Evento" && tab !== "Enquete" && (
-        <div className="px-5 py-3 flex items-center gap-2 border-t border-white/[0.04]">
+        <div className="px-5 py-3 flex items-center gap-2 border-t border-border/60">
           <Button
             onClick={handleSubmit}
             disabled={publishing}
-            className="h-9 px-5 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold tracking-wide text-[12px] uppercase disabled:opacity-60"
+            className="h-9 px-5 rounded-md bg-gradient-to-r from-primary to-violet-600 hover:opacity-90 text-white font-semibold tracking-wide text-[12px] uppercase shadow-sm shadow-primary/20 disabled:opacity-60"
           >
             {publishing ? "Enviando…" : "Enviar"}
           </Button>
