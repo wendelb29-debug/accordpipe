@@ -693,6 +693,65 @@ function FeedHeaderBar() {
 }
 
 
+/* ──────────────────  REUSABLE 3-DOT HEADER MENU  ────────────────── */
+function FeedItemHeaderMenu({
+  feedKey,
+  shareText,
+  shareUrl,
+  onHide,
+}: {
+  feedKey: string;
+  shareText?: string;
+  shareUrl?: string;
+  onHide?: () => void;
+}) {
+  const [favorited, setFavorited] = useState<boolean>(() => {
+    try { return (JSON.parse(localStorage.getItem("feed:favorites") || "[]") as string[]).includes(feedKey); } catch { return false; }
+  });
+  const toggleLocal = (key: string, on: boolean) => {
+    try {
+      const cur: string[] = JSON.parse(localStorage.getItem(key) || "[]");
+      const next = on ? Array.from(new Set([...cur, feedKey])) : cur.filter((x) => x !== feedKey);
+      localStorage.setItem(key, JSON.stringify(next));
+    } catch {}
+  };
+  const copyLink = () => {
+    const url = shareUrl || `${window.location.origin}/home#${feedKey}`;
+    navigator.clipboard?.writeText(url);
+    toast.success("Link copiado");
+  };
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          className="h-9 w-9 rounded-full hover:bg-white/5 flex items-center justify-center text-muted-foreground transition-colors"
+          aria-label="Ações"
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuItem onClick={() => { const next = !favorited; setFavorited(next); toggleLocal("feed:favorites", next); toast.success(next ? "Adicionado aos favoritos" : "Removido dos favoritos"); }}>
+          <Star className={`h-4 w-4 mr-2 ${favorited ? "fill-amber-500 text-amber-500" : ""}`} />
+          {favorited ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={copyLink}>
+          <Link2 className="h-4 w-4 mr-2" /> Copiar link
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => { if (shareText) { navigator.clipboard?.writeText(shareText); toast.success("Conteúdo copiado"); } }}>
+          <Share2 className="h-4 w-4 mr-2" /> Compartilhar
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => toast.success("Marcado como lido")}>
+          <CheckCircle2 className="h-4 w-4 mr-2" /> Marcar como lido
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => { toggleLocal("feed:hidden", true); onHide?.(); toast.success("Publicação ocultada"); }}>
+          <EyeOff className="h-4 w-4 mr-2" /> Ocultar
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 /* ───────────────────────  POST ACTIONS BAR  ─────────────────────── */
 function PostActionsBar({
   confirmed = 0,
