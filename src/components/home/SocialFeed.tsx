@@ -1427,10 +1427,10 @@ function PostFeedCard({ item, index }: { item: Extract<FeedItem, { kind: "post" 
   return (
     <article
       id={`post-${item.id}`}
-      className={`group animate-fade-in rounded-3xl backdrop-blur-xl ring-1 transition-all overflow-hidden ${
+      className={`group animate-fade-in rounded-xl border-[0.5px] transition-all overflow-hidden ${
         item.pinned
-          ? "bg-gradient-to-br from-amber-500/[0.04] to-card/70 ring-amber-500/30 shadow-[0_4px_30px_rgba(245,158,11,0.15)]"
-          : "bg-card/70 ring-white/5 hover:ring-white/10 shadow-[0_4px_30px_rgb(0,0,0,0.08)] hover:shadow-[0_8px_40px_rgb(0,0,0,0.16)]"
+          ? "bg-white dark:bg-card border-border border-l-2 border-l-amber-400 shadow-sm hover:shadow-md"
+          : "bg-white dark:bg-card border-border hover:border-primary/30 shadow-sm hover:shadow-md"
       }`}
       style={{ animationDelay: `${index * 40}ms` }}
     >
