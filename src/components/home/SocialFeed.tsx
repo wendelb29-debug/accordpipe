@@ -683,8 +683,8 @@ function FeedHeaderBar() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
         <input
           type="text"
-          placeholder="Filtro e pesquisa"
-          className="w-full h-10 pl-9 pr-3 rounded-lg bg-card/60 ring-1 ring-white/5 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-primary/40 transition"
+          placeholder="Filtrar e pesquisar no feed"
+          className="w-full h-10 pl-9 pr-3 rounded-lg bg-secondary border border-border text-sm placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition"
         />
       </div>
       <OnlineUsersIndicator />
