@@ -393,7 +393,7 @@ function QuickPostComposer({
     return (
       <button
         onClick={() => setCollapsed(false)}
-        className="group w-full text-left animate-fade-in rounded-2xl bg-card/95 backdrop-blur-xl ring-1 ring-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.25)] hover:ring-primary/30 hover:shadow-[0_8px_40px_rgba(124,58,237,0.18)] transition-all px-5 py-3.5 flex items-center gap-3"
+        className="group w-full text-left animate-fade-in rounded-xl bg-white dark:bg-card border-[0.5px] border-border shadow-sm hover:border-primary/40 hover:shadow-md transition-all px-5 py-3.5 flex items-center gap-3"
       >
         <Avatar className="h-9 w-9 ring-2 ring-primary/20 shrink-0">
           {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
@@ -413,9 +413,9 @@ function QuickPostComposer({
 
 
   return (
-    <div className="animate-fade-in rounded-2xl bg-card/95 backdrop-blur-xl ring-1 ring-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.25)] overflow-hidden">
+    <div className="animate-fade-in rounded-xl bg-white dark:bg-card border-[0.5px] border-border shadow-sm overflow-hidden">
       {/* Tabs */}
-      <div className="flex items-center gap-1 px-4 pt-3 border-b border-white/[0.06]">
+      <div className="flex items-center gap-1 px-4 pt-3 border-b border-border/60">
         {COMPOSER_TABS.map((t) => {
           const active = tab === t;
           const isMore = t === "Mais";
@@ -486,24 +486,24 @@ function QuickPostComposer({
         {tab === "Mais" && moreView === "document" && <DocumentTypesPanel />}
       </div>
 
-      {/* Action toolbar */}
-      <div className="px-5 pt-2 pb-3 flex flex-wrap items-center gap-1 border-t border-white/[0.04]">
+      {/* Action toolbar — labels visíveis, hover sutil, sem rounded-full genérico */}
+      <div className="px-5 pt-2 pb-3 flex flex-wrap items-center gap-1 border-t border-border/60">
         {toolbar.map((t, i) => (
           <button
             key={i}
             onClick={t.onClick}
-            className="flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[12px] font-medium text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors"
+            className="flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[12px] font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
           >
             <t.icon className={`h-4 w-4 ${t.color ?? ""}`} />
-            <span className="hidden sm:inline">{t.label}</span>
+            <span>{t.label}</span>
           </button>
         ))}
         <MentionPicker
           selectedIds={selectedIds}
           onPick={addRecipient}
           trigger={
-            <button className="flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[12px] font-medium text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors">
-              <AtSign className="h-4 w-4" /><span className="hidden sm:inline">Mencionar</span>
+            <button className="flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[12px] font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+              <AtSign className="h-4 w-4" /><span>Mencionar</span>
             </button>
           }
         />
@@ -574,13 +574,13 @@ function QuickPostComposer({
         </div>
       )}
 
-      {/* Submit */}
+      {/* Submit — botão roxo gradiente como destaque */}
       {tab !== "Evento" && tab !== "Enquete" && (
-        <div className="px-5 py-3 flex items-center gap-2 border-t border-white/[0.04]">
+        <div className="px-5 py-3 flex items-center gap-2 border-t border-border/60">
           <Button
             onClick={handleSubmit}
             disabled={publishing}
-            className="h-9 px-5 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold tracking-wide text-[12px] uppercase disabled:opacity-60"
+            className="h-9 px-5 rounded-md bg-gradient-to-r from-primary to-violet-600 hover:opacity-90 text-white font-semibold tracking-wide text-[12px] uppercase shadow-sm shadow-primary/20 disabled:opacity-60"
           >
             {publishing ? "Enviando…" : "Enviar"}
           </Button>
@@ -683,8 +683,8 @@ function FeedHeaderBar() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
         <input
           type="text"
-          placeholder="Filtro e pesquisa"
-          className="w-full h-10 pl-9 pr-3 rounded-lg bg-card/60 ring-1 ring-white/5 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-primary/40 transition"
+          placeholder="Filtrar e pesquisar no feed"
+          className="w-full h-10 pl-9 pr-3 rounded-lg bg-secondary border border-border text-sm placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition"
         />
       </div>
       <OnlineUsersIndicator />
@@ -1026,7 +1026,7 @@ function EventFeedCard({ event, index }: { event: TenantEvent; index: number }) 
 
   return (
     <article
-      className="group animate-fade-in rounded-3xl bg-card/70 backdrop-blur-xl ring-1 ring-white/5 hover:ring-white/10 shadow-[0_4px_30px_rgb(0,0,0,0.08)] hover:shadow-[0_8px_40px_rgb(0,0,0,0.16)] transition-all overflow-hidden"
+      className="group animate-fade-in rounded-xl bg-white dark:bg-card border-[0.5px] border-border hover:border-primary/30 shadow-sm hover:shadow-md transition-all overflow-hidden"
       style={{ animationDelay: `${index * 40}ms` }}
     >
       {/* author row */}
@@ -1118,7 +1118,7 @@ function EventFeedCard({ event, index }: { event: TenantEvent; index: number }) 
 function AnnouncementFeedCard({ item, index }: { item: Extract<FeedItem, { kind: "announcement" }>; index: number }) {
   return (
     <article
-      className="group animate-fade-in rounded-3xl bg-card/70 backdrop-blur-xl ring-1 ring-white/5 hover:ring-white/10 shadow-[0_4px_30px_rgb(0,0,0,0.08)] hover:shadow-[0_8px_40px_rgb(0,0,0,0.16)] transition-all overflow-hidden"
+      className="group animate-fade-in rounded-xl bg-white dark:bg-card border-[0.5px] border-border border-l-2 border-l-amber-400 hover:border-primary/30 hover:border-l-amber-400 shadow-sm hover:shadow-md transition-all overflow-hidden"
       style={{ animationDelay: `${index * 40}ms` }}
     >
       <div className="flex items-center gap-3 px-5 pt-5">
@@ -1427,10 +1427,10 @@ function PostFeedCard({ item, index }: { item: Extract<FeedItem, { kind: "post" 
   return (
     <article
       id={`post-${item.id}`}
-      className={`group animate-fade-in rounded-3xl backdrop-blur-xl ring-1 transition-all overflow-hidden ${
+      className={`group animate-fade-in rounded-xl border-[0.5px] transition-all overflow-hidden ${
         item.pinned
-          ? "bg-gradient-to-br from-amber-500/[0.04] to-card/70 ring-amber-500/30 shadow-[0_4px_30px_rgba(245,158,11,0.15)]"
-          : "bg-card/70 ring-white/5 hover:ring-white/10 shadow-[0_4px_30px_rgb(0,0,0,0.08)] hover:shadow-[0_8px_40px_rgb(0,0,0,0.16)]"
+          ? "bg-white dark:bg-card border-border border-l-2 border-l-amber-400 shadow-sm hover:shadow-md"
+          : "bg-white dark:bg-card border-border hover:border-primary/30 shadow-sm hover:shadow-md"
       }`}
       style={{ animationDelay: `${index * 40}ms` }}
     >
