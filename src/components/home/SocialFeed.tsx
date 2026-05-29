@@ -947,7 +947,15 @@ function PostActionsBar({
               </div>
             </PopoverContent>
           </Popover>
+        ) : (
+          <button
+            className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground/70 pr-2 h-9 cursor-default"
+            title="Visualizações"
+          >
+            <Eye className="h-3.5 w-3.5" /> Visto
+          </button>
         )}
+
       </div>
 
       {/* CoPilot inline panel */}
