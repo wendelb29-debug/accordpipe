@@ -2,6 +2,7 @@ import { SocialFeed } from "@/components/home/SocialFeed";
 import { BirthdayCard } from "@/components/home/BirthdayCard";
 import { BirthdayCelebration } from "@/components/home/BirthdayCelebration";
 import { BirthdayBanner } from "@/components/home/BirthdayBanner";
+import { QuickSummaryCard } from "@/components/home/QuickSummaryCard";
 import { ConstellationBackground } from "@/components/ui/ConstellationBackground";
 import { WelcomeHero } from "@/components/home/WelcomeHero";
 import { useState } from "react";
