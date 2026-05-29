@@ -905,7 +905,7 @@ function PostActionsBar({
         >
           <Sparkle className="h-4 w-4" /> CoPilot
         </button>
-        {isAuthor && (
+        {isAuthor ? (
           <Popover open={viewersOpen} onOpenChange={setViewersOpen}>
             <PopoverTrigger asChild>
               <button
@@ -915,6 +915,7 @@ function PostActionsBar({
                 <Eye className="h-3.5 w-3.5" /> {viewers.length}
               </button>
             </PopoverTrigger>
+
             <PopoverContent align="end" className="w-72 p-0">
               <div className="px-3 py-2 border-b border-border/50">
                 <p className="text-xs font-semibold">Visualizações</p>
