@@ -1201,9 +1201,8 @@ function AnnouncementFeedCard({ item, index }: { item: Extract<FeedItem, { kind:
             {formatDistanceToNow(new Date(item.ts), { addSuffix: true, locale: ptBR })}
           </p>
         </div>
-        <button className="h-9 w-9 rounded-full hover:bg-white/5 flex items-center justify-center text-muted-foreground transition-colors">
-          <MoreHorizontal className="h-4 w-4" />
-        </button>
+        <FeedItemHeaderMenu feedKey={`ann-${item.id}`} shareText={item.title} />
+
       </div>
 
       <div className="px-5 pt-4">
