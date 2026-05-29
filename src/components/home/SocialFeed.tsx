@@ -1026,7 +1026,7 @@ function EventFeedCard({ event, index }: { event: TenantEvent; index: number }) 
 
   return (
     <article
-      className="group animate-fade-in rounded-3xl bg-card/70 backdrop-blur-xl ring-1 ring-white/5 hover:ring-white/10 shadow-[0_4px_30px_rgb(0,0,0,0.08)] hover:shadow-[0_8px_40px_rgb(0,0,0,0.16)] transition-all overflow-hidden"
+      className="group animate-fade-in rounded-xl bg-white dark:bg-card border-[0.5px] border-border hover:border-primary/30 shadow-sm hover:shadow-md transition-all overflow-hidden"
       style={{ animationDelay: `${index * 40}ms` }}
     >
       {/* author row */}
