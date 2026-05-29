@@ -1118,7 +1118,7 @@ function EventFeedCard({ event, index }: { event: TenantEvent; index: number }) 
 function AnnouncementFeedCard({ item, index }: { item: Extract<FeedItem, { kind: "announcement" }>; index: number }) {
   return (
     <article
-      className="group animate-fade-in rounded-3xl bg-card/70 backdrop-blur-xl ring-1 ring-white/5 hover:ring-white/10 shadow-[0_4px_30px_rgb(0,0,0,0.08)] hover:shadow-[0_8px_40px_rgb(0,0,0,0.16)] transition-all overflow-hidden"
+      className="group animate-fade-in rounded-xl bg-white dark:bg-card border-[0.5px] border-border border-l-2 border-l-amber-400 hover:border-primary/30 hover:border-l-amber-400 shadow-sm hover:shadow-md transition-all overflow-hidden"
       style={{ animationDelay: `${index * 40}ms` }}
     >
       <div className="flex items-center gap-3 px-5 pt-5">
