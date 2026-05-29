@@ -34,7 +34,8 @@ export default function Home() {
           <SocialFeed />
         </main>
         <aside className="hidden lg:block">
-          <div className="sticky top-4">
+          <div className="sticky top-4 space-y-4">
+            <QuickSummaryCard />
             <BirthdayCard />
           </div>
         </aside>
