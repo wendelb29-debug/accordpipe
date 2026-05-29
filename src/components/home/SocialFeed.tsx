@@ -413,9 +413,9 @@ function QuickPostComposer({
 
 
   return (
-    <div className="animate-fade-in rounded-2xl bg-card/95 backdrop-blur-xl ring-1 ring-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.25)] overflow-hidden">
+    <div className="animate-fade-in rounded-xl bg-white dark:bg-card border-[0.5px] border-border shadow-sm overflow-hidden">
       {/* Tabs */}
-      <div className="flex items-center gap-1 px-4 pt-3 border-b border-white/[0.06]">
+      <div className="flex items-center gap-1 px-4 pt-3 border-b border-border/60">
         {COMPOSER_TABS.map((t) => {
           const active = tab === t;
           const isMore = t === "Mais";
