@@ -1111,9 +1111,8 @@ function EventFeedCard({ event, index }: { event: TenantEvent; index: number }) 
             {formatDistanceToNow(new Date(event.created_at), { addSuffix: true, locale: ptBR })}
           </p>
         </div>
-        <button className="h-9 w-9 rounded-full hover:bg-white/5 flex items-center justify-center text-muted-foreground transition-colors">
-          <MoreHorizontal className="h-4 w-4" />
-        </button>
+        <FeedItemHeaderMenu feedKey={`event-${event.id}`} shareText={event.title} />
+
       </div>
 
       {/* banner */}
