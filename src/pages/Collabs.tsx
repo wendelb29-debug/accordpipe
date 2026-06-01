@@ -826,9 +826,9 @@ export default function Collabs() {
                 </div>
               </div>
               <div className="hidden md:flex items-center mr-1">
-                <button className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900 border-r border-gray-200">Tarefas</button>
+                <button onClick={() => { setCalendarView("list"); setCalendarOpen(true); }} className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900 border-r border-gray-200">Tarefas</button>
                 <button className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900 border-r border-gray-200">Arquivos</button>
-                <button onClick={() => setCalendarOpen(true)} className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900">Calendário</button>
+                <button onClick={() => { setCalendarView("agenda"); setCalendarOpen(true); }} className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900">Calendário</button>
               </div>
               <button className="hidden md:inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[13px] font-medium text-white bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 transition shadow-sm">
                 <Video className="h-[15px] w-[15px]" />
