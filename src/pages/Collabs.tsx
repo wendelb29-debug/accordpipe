@@ -68,6 +68,8 @@ import { toast as sonnerToast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { ConstellationCanvas } from "@/components/ui/constellation-canvas";
+import { useDriveFiles } from "@/hooks/useDriveFiles";
+import { Plus, Trash2 } from "lucide-react";
 
 
 /* ──────────────────────────  TYPES  ────────────────────────── */
