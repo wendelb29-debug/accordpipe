@@ -663,26 +663,23 @@ export default function Collabs() {
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden" style={{ background: "linear-gradient(180deg, #faf9ff 0%, #f4f1fb 100%)" }}>
       {/* SIDEBAR — dark purple */}
-      <aside
-        className="w-[320px] min-w-[320px] flex flex-col shrink-0 text-white"
-        style={{ background: "linear-gradient(180deg, #1a0f3d 0%, #2a1758 55%, #1e1145 100%)" }}
-      >
-        <div className="h-[60px] flex items-center gap-2 px-3 border-b border-white/8 shrink-0">
-          <div className="flex items-center gap-2 bg-white/8 hover:bg-white/12 transition rounded-full px-3 py-2 flex-1 min-w-0 border border-white/8">
-            <Search className="h-4 w-4 text-white/60 shrink-0" />
+      <aside className="w-[320px] min-w-[320px] flex flex-col shrink-0 bg-white border-r border-gray-200">
+        <div className="h-[60px] flex items-center gap-2 px-3 border-b border-gray-200 shrink-0">
+          <div className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 transition rounded-full px-3 py-2 flex-1 min-w-0 border border-gray-200">
+            <Search className="h-4 w-4 text-gray-400 shrink-0" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar conversa…"
-              className="flex-1 bg-transparent outline-none text-[13px] text-white placeholder:text-white/40"
+              className="flex-1 bg-transparent outline-none text-[13px] text-gray-700 placeholder:text-gray-400"
             />
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
 
               <button
-                className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center text-white shadow-[0_4px_14px_-2px_rgba(99,102,241,0.55)] hover:shadow-[0_6px_18px_-2px_rgba(99,102,241,0.7)] transition-all active:scale-95"
-                style={{ background: "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)" }}
+                className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center text-white shadow-[0_4px_14px_-2px_rgba(16,185,129,0.55)] hover:shadow-[0_6px_18px_-2px_rgba(16,185,129,0.7)] transition-all active:scale-95"
+                style={{ background: "linear-gradient(135deg, #10b981 0%, #059669 100%)" }}
                 title="Criar"
               >
                 <PenSquare className="h-[18px] w-[18px]" />
@@ -733,11 +730,11 @@ export default function Collabs() {
 
         <div className="flex-1 overflow-y-auto py-2 px-1.5 scrollbar-thin">
           {loadingConvs ? (
-            <div className="flex items-center justify-center py-10 text-white/50">
+            <div className="flex items-center justify-center py-10 text-gray-400">
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center px-6 py-12 text-sm text-white/55">
+            <div className="text-center px-6 py-12 text-sm text-gray-500">
               <MessageSquare className="h-10 w-10 mx-auto mb-3 opacity-30" />
               Nenhuma conversa ainda.<br />
               Clique no <PenSquare className="inline h-3.5 w-3.5 mx-0.5" /> para criar a primeira.
@@ -753,10 +750,10 @@ export default function Collabs() {
                 key={c.id}
                 onClick={() => setActiveId(c.id)}
                 className={cn(
-                  "flex items-center gap-3 px-2.5 py-2 my-0.5 rounded-2xl cursor-pointer transition-all h-[64px]",
+                  "flex items-center gap-3 px-2.5 py-2 my-0.5 rounded-xl cursor-pointer transition-all h-[64px]",
                   isActive
-                    ? "bg-white/12 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18),0_8px_24px_-12px_rgba(124,58,237,0.6)]"
-                    : "hover:bg-white/6",
+                    ? "bg-emerald-50 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.30)]"
+                    : "hover:bg-gray-50",
                 )}
               >
                 <HexAvatar
@@ -769,17 +766,17 @@ export default function Collabs() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1 min-w-0">
-                      {c.is_pinned && <Pin className="h-3 w-3 shrink-0 text-white/55" />}
-                      <span className="text-[13.5px] font-medium truncate text-white">
+                      {c.is_pinned && <Pin className="h-3 w-3 shrink-0 text-gray-400" />}
+                      <span className="text-[13.5px] font-medium truncate text-gray-900">
                         {prefix}{c.name}
                       </span>
                     </div>
-                    <span className="text-[11px] shrink-0 text-white/50">
+                    <span className="text-[11px] shrink-0 text-gray-400">
                       {formatTime(c.last_message_at)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-2 mt-0.5">
-                    <span className="text-xs truncate text-white/55">
+                    <span className="text-xs truncate text-gray-500">
                       {c.last_message_preview || "Sem mensagens ainda"}
                     </span>
                   </div>
