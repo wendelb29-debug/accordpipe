@@ -1123,6 +1123,21 @@ export default function Collabs() {
 
 
                               {allFiles.map((f, idx) => {
+                                if (f.kind === "poll" && f.poll_id) {
+                                  return (
+                                    <PollCard
+                                      key={idx}
+                                      pollId={f.poll_id}
+                                      fallbackQuestion={f.question || f.name}
+                                      fallbackOptions={f.options || []}
+                                      fallbackShowVoters={f.show_voters !== false}
+                                      fallbackDeadline={f.deadline ?? null}
+                                      currentUserId={user?.id ?? null}
+                                      userMap={userMap}
+                                      isSent={isSent}
+                                    />
+                                  );
+                                }
                                 if (f.kind === "image" && f.url) {
                                   return (
                                     <a key={idx} href={f.url} target="_blank" rel="noreferrer" className="block max-w-[280px]">
