@@ -51,7 +51,7 @@ export default function Documentos() {
     { id: null, name: "Documentos" },
   ]);
   const currentFolderId = folderStack[folderStack.length - 1].id;
-  const { files, loading, canManage, fetchFiles, createFolder, uploadFile, renameFile, deleteFile, startSigning } = useDriveFiles(currentFolderId);
+  const { files, loading, canManage, fetchFiles, createFolder, uploadFile, renameFile, deleteFile, startSigning, moveItems, copyItems, deleteMany, fetchAllFolders } = useDriveFiles(currentFolderId);
   const { createContract, fetchSigners, fetchHistory } = usePdfContracts();
 
   const [searchTerm, setSearchTerm] = useState("");
