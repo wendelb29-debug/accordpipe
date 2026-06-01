@@ -1254,6 +1254,7 @@ export default function Collabs() {
           </>
         )}
       </aside>
+      )}
 
 
       {/* CREATE DIALOG */}
