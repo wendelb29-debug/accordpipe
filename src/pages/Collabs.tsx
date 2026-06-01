@@ -1134,7 +1134,19 @@ export default function Collabs() {
       </main>
 
       {/* RIGHT PANEL — online by department */}
-      <aside className="hidden lg:flex w-[280px] min-w-[280px] shrink-0 flex-col bg-white/70 backdrop-blur-xl border-l border-gray-200/70">
+      <aside className="hidden lg:flex w-[300px] min-w-[300px] shrink-0 flex-col bg-white border-l border-gray-200">
+        {active ? (
+          <CollabInfoPanel
+            collab={{
+              id: active.id,
+              name: active.name,
+              color: active.color,
+              avatar_url: (active as any).avatar_url ?? null,
+            }}
+            onInvite={() => { setInviteTab("colab"); setInviteOpen(true); }}
+          />
+        ) : (
+          <>
         <div className="h-[64px] flex items-center gap-2 px-5 border-b border-gray-200/70 shrink-0">
           <Users className="h-4 w-4 text-violet-600" />
           <div className="flex-1">
