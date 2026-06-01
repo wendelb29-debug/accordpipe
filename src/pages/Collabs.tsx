@@ -566,6 +566,72 @@ export default function Collabs() {
     }
   };
 
+  const openDirectWith = async (otherId: string) => {
+    if (!user || !companyId || otherId === user.id) return;
+    setOpeningDirectFor(otherId);
+    try {
+      const { data: directConvs } = await supabase
+        .from("collab_conversations")
+        .select("id")
+        .eq("servidor_id", companyId)
+        .eq("kind", "direct");
+      const ids = (directConvs || []).map((c: any) => c.id);
+      let found: string | null = null;
+      if (ids.length) {
+        const { data: mems } = await supabase
+          .from("collab_members")
+          .select("conversation_id, user_id")
+          .in("conversation_id", ids);
+        const byConv = new Map<string, Set<string>>();
+        (mems || []).forEach((m: any) => {
+          if (!byConv.has(m.conversation_id)) byConv.set(m.conversation_id, new Set());
+          byConv.get(m.conversation_id)!.add(m.user_id);
+        });
+        for (const [cid, s] of byConv) {
+          if (s.size === 2 && s.has(user.id) && s.has(otherId)) { found = cid; break; }
+        }
+      }
+      if (found) {
+        setActiveId(found);
+        setMembersOpen(false);
+        return;
+      }
+      const other = userMap.get(otherId);
+      const { data: conv, error } = await supabase
+        .from("collab_conversations")
+        .insert({
+          servidor_id: companyId,
+          kind: "direct",
+          name: other?.name || "Conversa direta",
+          color: KIND_META.direct.color,
+          created_by: user.id,
+        })
+        .select()
+        .single();
+      if (error || !conv) throw error || new Error("Falha ao criar conversa");
+      const { error: memErr } = await supabase.from("collab_members").insert([
+        { conversation_id: conv.id, user_id: user.id, role: "owner" },
+        { conversation_id: conv.id, user_id: otherId, role: "member" },
+      ]);
+      if (memErr) throw memErr;
+      await supabase.from("collab_messages").insert({
+        conversation_id: conv.id,
+        servidor_id: companyId,
+        sender_id: user.id,
+        content: `Conversa iniciada com ${other?.name || "membro"}.`,
+        is_system: true,
+        attachments: [],
+      });
+      setActiveId(conv.id);
+      setMembersOpen(false);
+      toast({ title: "Conversa iniciada", description: other?.name });
+    } catch (e: any) {
+      toast({ title: "Erro ao abrir conversa", description: e?.message || String(e), variant: "destructive" });
+    } finally {
+      setOpeningDirectFor(null);
+    }
+  };
+
   const messagePlainText = (m: DbMessage): string => {
     if (m.content) return m.content;
     if (m.attachments?.length) return `📎 ${m.attachments.length} arquivo(s)`;
