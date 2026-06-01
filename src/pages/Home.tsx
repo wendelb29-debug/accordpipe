@@ -11,16 +11,17 @@ export default function Home() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   return (
-    <div className="relative">
-      {/* Fundo ambiente estilo Bitrix (fixo atrás do conteúdo) */}
+    // Sangra para as bordas da <main> (cancela o padding) e fica ABAIXO do header.
+    // O fundo azul (absolute) preenche só a área do feed, nunca atrás/acima da barra.
+    <div className="relative z-0 -mx-3 -mt-3 -mb-3 min-h-[calc(100vh-56px)] lg:-mx-4 lg:-mt-4">
       <FeedBackground />
 
-      <div className="relative z-10 mx-auto w-full max-w-[1180px] px-1 sm:px-2">
+      <div className="relative z-10 mx-auto w-full max-w-[1180px] px-3 pt-4 pb-10 sm:px-4">
         <BirthdayCelebration />
         <BirthdayBanner key={refreshKey} onSaved={() => setRefreshKey((k) => k + 1)} />
 
         {/* Faixa de capa do feed */}
-        <div className="pt-2 pb-5">
+        <div className="pt-1 pb-5">
           <WelcomeHero />
         </div>
 
