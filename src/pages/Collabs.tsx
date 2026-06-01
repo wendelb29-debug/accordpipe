@@ -370,6 +370,7 @@ export default function Collabs() {
 
   /* ────── Load messages + members for active conversation + realtime ────── */
   useEffect(() => {
+    setChatView("chat");
     if (!activeId) { setMessages([]); setReactions([]); setMembers([]); setMemberCount(0); return; }
     let cancelled = false;
 
