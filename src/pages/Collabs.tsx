@@ -1231,7 +1231,10 @@ export default function Collabs() {
                 </button>
               </div>
             </div>
+              </>
+            )}
           </>
+
         )}
       </main>
 
