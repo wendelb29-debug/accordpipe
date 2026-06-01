@@ -1385,6 +1385,58 @@ export default function Collabs() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Calendar side panel (Agenda from Atividades) */}
+      {calendarOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+            onClick={() => { setCalendarOpen(false); setCalendarExpanded(false); }}
+          />
+          <div
+            className={cn(
+              "fixed top-0 right-0 z-50 h-screen bg-white shadow-2xl border-l border-gray-200 flex flex-col transition-[width] duration-300",
+              calendarExpanded ? "w-screen" : "w-full sm:w-[520px] md:w-[640px] lg:w-[760px]"
+            )}
+          >
+            <div className="flex items-center justify-between px-4 h-12 border-b border-gray-200 bg-gray-50">
+              <div className="flex items-center gap-2 text-[13px] font-semibold text-gray-800">
+                <Calendar className="h-4 w-4 text-emerald-600" />
+                Agenda
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => navigate("/atividades")}
+                  className="px-2.5 h-8 rounded-md text-[12px] font-medium text-gray-600 hover:bg-gray-200"
+                  title="Abrir página de Atividades"
+                >
+                  <ExternalLink className="h-3.5 w-3.5 inline mr-1" />
+                  Abrir
+                </button>
+                <button
+                  onClick={() => setCalendarExpanded((v) => !v)}
+                  className="w-8 h-8 rounded-md flex items-center justify-center text-gray-600 hover:bg-gray-200"
+                  title={calendarExpanded ? "Recolher" : "Expandir"}
+                >
+                  {calendarExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                </button>
+                <button
+                  onClick={() => { setCalendarOpen(false); setCalendarExpanded(false); }}
+                  className="w-8 h-8 rounded-md flex items-center justify-center text-gray-600 hover:bg-gray-200"
+                  title="Fechar"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            <iframe
+              src="/atividades"
+              className="flex-1 w-full border-0 bg-white"
+              title="Agenda"
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }
