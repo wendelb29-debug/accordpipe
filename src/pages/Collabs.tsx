@@ -32,6 +32,8 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { HexAvatar, hexGradientFor } from "@/components/collabs/HexAvatar";
+import { CollabInfoPanel } from "@/components/collabs/CollabInfoPanel";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -739,12 +741,13 @@ export default function Collabs() {
                     : "hover:bg-white/6",
                 )}
               >
-                <div
-                  className="w-11 h-11 min-w-11 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-md"
-                  style={{ background: `linear-gradient(135deg, ${color} 0%, ${color}cc 100%)` }}
+                <HexAvatar
+                  size={44}
+                  background={c.color ? `linear-gradient(135deg, ${c.color} 0%, ${c.color}cc 100%)` : hexGradientFor(c.id)}
+                  src={(c as any).avatar_url || null}
                 >
                   <Icon className="h-[18px] w-[18px]" />
-                </div>
+                </HexAvatar>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1 min-w-0">
@@ -785,9 +788,13 @@ export default function Collabs() {
         ) : (
           <>
             <header className="h-[64px] flex items-center gap-3 px-5 shrink-0 bg-white/80 backdrop-blur-xl border-b border-gray-200/70">
-              <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-md shrink-0" style={{ background: `linear-gradient(135deg, ${active.color || KIND_META[active.kind].color} 0%, ${(active.color || KIND_META[active.kind].color)}cc 100%)` }}>
+              <HexAvatar
+                size={40}
+                background={active.color ? `linear-gradient(135deg, ${active.color} 0%, ${active.color}cc 100%)` : hexGradientFor(active.id)}
+                src={(active as any).avatar_url || null}
+              >
                 {(() => { const I = KIND_META[active.kind].Icon; return <I className="h-[18px] w-[18px]" />; })()}
-              </div>
+              </HexAvatar>
               <div className="flex-1 min-w-0">
                 <div className="text-[14px] font-semibold text-gray-900 leading-tight truncate">
                   {active.kind === "channel" ? "# " : ""}{active.name}
@@ -803,6 +810,15 @@ export default function Collabs() {
                   <span>{KIND_META[active.kind].label}</span>
                 </div>
               </div>
+              <div className="hidden md:flex items-center mr-1">
+                <button className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900 border-r border-gray-200">Tarefas</button>
+                <button className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900 border-r border-gray-200">Arquivos</button>
+                <button className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900">Calendário</button>
+              </div>
+              <button className="hidden md:inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[13px] font-medium text-white bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 transition shadow-sm">
+                <Video className="h-[15px] w-[15px]" />
+                Chamada de vídeo
+              </button>
               <div className="flex items-center gap-1">
                 <button onClick={() => { setInviteTab("colab"); setInviteOpen(true); }} className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors" title="Adicionar membros">
                   <UserPlus className="h-[17px] w-[17px]" />
@@ -816,12 +832,12 @@ export default function Collabs() {
             <div
               className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-5 relative"
               style={{
-                background: "linear-gradient(180deg, #fdfcff 0%, #f7f4fc 100%)",
-                backgroundImage: `radial-gradient(circle at 1px 1px, rgba(124,58,237,0.07) 1px, transparent 0), linear-gradient(180deg, #fdfcff 0%, #f7f4fc 100%)`,
-                backgroundSize: "22px 22px, auto",
+                background: "linear-gradient(180deg, #d1fae5 0%, #a7f3d0 100%)",
+                backgroundImage: `radial-gradient(circle at 1px 1px, rgba(4,120,87,0.18) 1.2px, transparent 0), linear-gradient(180deg, #d1fae5 0%, #a7f3d0 100%)`,
+                backgroundSize: "26px 26px, auto",
               }}
             >
-              <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(900px 500px at 85% -10%, rgba(124,58,237,0.08), transparent 60%), radial-gradient(700px 400px at -10% 110%, rgba(99,102,241,0.07), transparent 60%)" }} />
+              <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(900px 500px at 85% -10%, rgba(16,185,129,0.10), transparent 60%), radial-gradient(700px 400px at -10% 110%, rgba(20,184,166,0.08), transparent 60%)" }} />
 
 
               <div className="relative z-10 flex flex-col gap-1">
@@ -1118,7 +1134,19 @@ export default function Collabs() {
       </main>
 
       {/* RIGHT PANEL — online by department */}
-      <aside className="hidden lg:flex w-[280px] min-w-[280px] shrink-0 flex-col bg-white/70 backdrop-blur-xl border-l border-gray-200/70">
+      <aside className="hidden lg:flex w-[300px] min-w-[300px] shrink-0 flex-col bg-white border-l border-gray-200">
+        {active ? (
+          <CollabInfoPanel
+            collab={{
+              id: active.id,
+              name: active.name,
+              color: active.color,
+              avatar_url: (active as any).avatar_url ?? null,
+            }}
+            onInvite={() => { setInviteTab("colab"); setInviteOpen(true); }}
+          />
+        ) : (
+          <>
         <div className="h-[64px] flex items-center gap-2 px-5 border-b border-gray-200/70 shrink-0">
           <Users className="h-4 w-4 text-violet-600" />
           <div className="flex-1">
@@ -1169,6 +1197,8 @@ export default function Collabs() {
             );
           })}
         </div>
+          </>
+        )}
       </aside>
 
 
