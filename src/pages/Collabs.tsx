@@ -759,6 +759,60 @@ export default function Collabs() {
     });
   };
 
+  const sendVoiceNote = async () => {
+    if (!activeId || !user || !companyId || !recorder.isRecording) return;
+    setSendingAudio(true);
+    try {
+      const result = await recorder.stop();
+      if (!result || result.duration < 0.4) {
+        setSendingAudio(false);
+        return;
+      }
+      const ext = result.mime.includes("mp4") ? "m4a" : result.mime.includes("ogg") ? "ogg" : "webm";
+      const fileName = `voz-${Date.now()}.${ext}`;
+      const path = `collabs/${companyId}/${activeId}/${user.id}/${Date.now()}-${fileName}`;
+      const file = new File([result.blob], fileName, { type: result.mime });
+      const { data, error } = await supabase.storage.from("documents").upload(path, file, {
+        upsert: false,
+        contentType: result.mime,
+      });
+      if (error) {
+        toast({ title: "Erro ao enviar áudio", description: error.message, variant: "destructive" });
+        setSendingAudio(false);
+        return;
+      }
+      const { data: signed } = await supabase.storage.from("documents").createSignedUrl(data.path, 60 * 60 * 24 * 7);
+
+      const attachment: FileAttachment = {
+        kind: "audio",
+        name: fileName,
+        size: `${Math.round(result.blob.size / 1024)} KB`,
+        url: signed?.signedUrl,
+        duration: Math.round(result.duration * 10) / 10,
+        levels: result.levels.slice(-200),
+      };
+
+      await supabase.from("collab_messages").insert({
+        conversation_id: activeId,
+        servidor_id: companyId,
+        sender_id: user.id,
+        content: null,
+        attachments: [attachment],
+      });
+    } catch (err: any) {
+      toast({ title: "Erro ao enviar áudio", description: err?.message, variant: "destructive" });
+    } finally {
+      setSendingAudio(false);
+    }
+  };
+
+  const startRecording = async () => {
+    const ok = await recorder.start();
+    if (!ok && recorder.error) {
+      toast({ title: "Microfone", description: recorder.error, variant: "destructive" });
+    }
+  };
+
   const insertAtCursor = (text: string) => {
     const el = inputRef.current;
     if (!el) { setInput((v) => v + text); return; }
