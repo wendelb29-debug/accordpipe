@@ -226,6 +226,8 @@ export default function Collabs() {
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
   const [infoOpen, setInfoOpen] = useState(true);
+  const [membersOpen, setMembersOpen] = useState(false);
+  const [openingDirectFor, setOpeningDirectFor] = useState<string | null>(null);
   const [chatView, setChatView] = useState<"chat" | "files">("chat");
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarView, setCalendarView] = useState<"list" | "agenda">("agenda");
