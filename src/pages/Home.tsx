@@ -15,7 +15,7 @@ export default function Home() {
       {/* Fundo ambiente estilo Bitrix (fixo atrás do conteúdo) */}
       <FeedBackground />
 
-      <div className="relative mx-auto w-full max-w-[1180px] px-1 sm:px-2">
+      <div className="relative z-10 mx-auto w-full max-w-[1180px] px-1 sm:px-2">
         <BirthdayCelebration />
         <BirthdayBanner key={refreshKey} onSaved={() => setRefreshKey((k) => k + 1)} />
 
