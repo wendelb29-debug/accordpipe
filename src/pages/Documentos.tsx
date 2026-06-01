@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import {
   Upload, Search, FolderPlus, FileText, Folder, File as FileIcon2, Image, MoreVertical,
   Eye, Trash2, PenTool, Download, ChevronRight, Home, Loader2, Grid, List,
-  FileSignature, Edit2, Send, ArrowLeft, X,
+  FileSignature, Edit2, Send, ArrowLeft, X, Copy as CopyIcon, FolderInput, CheckSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,9 @@ import type { PdfContractSigner, PdfContractHistory } from "@/hooks/usePdfContra
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import JSZip from "jszip";
+import { FolderPickerDialog } from "@/components/documentos/FolderPickerDialog";
+
 
 const statusConfig: Record<string, { label: string; color: string; emoji: string }> = {
   normal: { label: "Normal", color: "bg-muted text-muted-foreground", emoji: "" },
@@ -48,7 +51,7 @@ export default function Documentos() {
     { id: null, name: "Documentos" },
   ]);
   const currentFolderId = folderStack[folderStack.length - 1].id;
-  const { files, loading, canManage, fetchFiles, createFolder, uploadFile, renameFile, deleteFile, startSigning } = useDriveFiles(currentFolderId);
+  const { files, loading, canManage, fetchFiles, createFolder, uploadFile, renameFile, deleteFile, startSigning, moveItems, copyItems, deleteMany, fetchAllFolders } = useDriveFiles(currentFolderId);
   const { createContract, fetchSigners, fetchHistory } = usePdfContracts();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -81,21 +84,100 @@ export default function Documentos() {
   const [viewSigners, setViewSigners] = useState<PdfContractSigner[]>([]);
   const [viewHistory, setViewHistory] = useState<PdfContractHistory[]>([]);
 
+  // Multi-select
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [pickerMode, setPickerMode] = useState<"move" | "copy" | null>(null);
+  const [zipping, setZipping] = useState(false);
+
+  const clearSelection = () => setSelectedIds(new Set());
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length) clearSelection();
+    else setSelectedIds(new Set(filtered.map((f) => f.id)));
+  };
+
+  // Recursively gather files of a folder for zip
+  const gatherFolderFiles = async (folderId: string, prefix: string, zip: JSZip) => {
+    const { data: children } = await supabase
+      .from("drive_files")
+      .select("*")
+      .eq("parent_id", folderId);
+    for (const c of (children as DriveFile[] | null) || []) {
+      if (c.type === "folder") {
+        await gatherFolderFiles(c.id, `${prefix}${c.name}/`, zip);
+      } else if (c.file_path) {
+        const { data } = await supabase.storage.from("contract-pdfs").download(c.file_path);
+        if (data) zip.file(`${prefix}${c.name}`, data);
+      }
+    }
+  };
+
+  const handleDownloadZip = async () => {
+    if (selectedIds.size === 0) return;
+    setZipping(true);
+    try {
+      const zip = new JSZip();
+      const items = files.filter((f) => selectedIds.has(f.id));
+      // Single file shortcut
+      if (items.length === 1 && items[0].type === "file" && items[0].file_url) {
+        window.open(items[0].file_url, "_blank");
+        setZipping(false);
+        return;
+      }
+      for (const item of items) {
+        if (item.type === "folder") {
+          await gatherFolderFiles(item.id, `${item.name}/`, zip);
+        } else if (item.file_path) {
+          const { data } = await supabase.storage.from("contract-pdfs").download(item.file_path);
+          if (data) zip.file(item.name, data);
+        }
+      }
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `documentos_${Date.now()}.zip`; a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Download iniciado");
+    } catch (e: any) {
+      toast.error("Erro ao criar zip", { description: e?.message });
+    } finally {
+      setZipping(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`Excluir ${selectedIds.size} item(s)? Esta ação não pode ser desfeita.`)) return;
+    await deleteMany(Array.from(selectedIds));
+    clearSelection();
+  };
+
+
   const filtered = files.filter(f => f.name.toLowerCase().includes(searchTerm.toLowerCase()));
   const folders = filtered.filter(f => f.type === "folder");
   const docs = filtered.filter(f => f.type === "file");
 
   const navigateToFolder = (folder: DriveFile) => {
+    clearSelection();
     setFolderStack(prev => [...prev, { id: folder.id, name: folder.name }]);
   };
 
   const navigateBack = () => {
+    clearSelection();
     if (folderStack.length > 1) setFolderStack(prev => prev.slice(0, -1));
   };
 
   const navigateTo = (index: number) => {
+    clearSelection();
     setFolderStack(prev => prev.slice(0, index + 1));
   };
+
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
@@ -258,6 +340,35 @@ export default function Documentos() {
         </Button>
       )}
 
+      {/* Selection action bar (Bitrix-like) */}
+      {canManage && selectedIds.size > 0 && (
+        <div className="flex items-center gap-1 bg-card border border-border rounded-xl px-4 py-2.5 shadow-sm sticky top-0 z-10">
+          <span className="text-sm font-semibold mr-3">
+            Selecionado: <span className="text-primary">{selectedIds.size}</span>
+          </span>
+          <Button variant="ghost" size="sm" onClick={handleDownloadZip} disabled={zipping} className="gap-1.5 uppercase text-xs">
+            {zipping ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} Baixar
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setPickerMode("copy")} className="gap-1.5 uppercase text-xs">
+            <CopyIcon className="h-4 w-4" /> Copiar
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setPickerMode("move")} className="gap-1.5 uppercase text-xs">
+            <FolderInput className="h-4 w-4" /> Mover
+          </Button>
+          <Button variant="ghost" size="sm" onClick={handleBulkDelete} className="gap-1.5 uppercase text-xs text-destructive hover:text-destructive">
+            <Trash2 className="h-4 w-4" /> Excluir
+          </Button>
+          <div className="flex-1" />
+          <Button variant="ghost" size="sm" onClick={toggleSelectAll} className="gap-1.5 text-xs text-muted-foreground">
+            <CheckSquare className="h-4 w-4" />
+            {selectedIds.size === filtered.length ? "Limpar" : "Selecionar tudo"}
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={clearSelection}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
       {/* Content */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
@@ -267,12 +378,16 @@ export default function Documentos() {
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <FolderPlus className="h-16 w-16 mb-4 opacity-30" />
           <p className="text-lg font-medium">Nenhum arquivo encontrado</p>
-          <p className="text-sm">Faça upload ou crie uma pasta para começar</p>
+          <p className="text-sm">
+            {folderStack.length > 1 ? "Não há arquivos ou pastas nesta pasta" : "Faça upload ou crie uma pasta para começar"}
+          </p>
         </div>
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
           {filtered.map(file => (
             <DriveCard key={file.id} file={file} canManage={canManage}
+              selected={selectedIds.has(file.id)}
+              onToggleSelect={() => toggleSelect(file.id)}
               onDoubleClick={() => handleDoubleClick(file)}
               onRename={() => openRename(file)}
               onDelete={() => deleteFile(file.id, file.file_path)}
@@ -294,6 +409,8 @@ export default function Documentos() {
         <div className="rounded-xl border border-border bg-card divide-y divide-border">
           {filtered.map(file => (
             <DriveRow key={file.id} file={file} canManage={canManage}
+              selected={selectedIds.has(file.id)}
+              onToggleSelect={() => toggleSelect(file.id)}
               onDoubleClick={() => handleDoubleClick(file)}
               onRename={() => openRename(file)}
               onDelete={() => deleteFile(file.id, file.file_path)}
@@ -312,6 +429,25 @@ export default function Documentos() {
           ))}
         </div>
       )}
+
+      {/* Move / Copy folder picker */}
+      <FolderPickerDialog
+        open={pickerMode !== null}
+        onOpenChange={(o) => !o && setPickerMode(null)}
+        title={pickerMode === "move" ? "Mover para…" : "Copiar para…"}
+        confirmLabel={pickerMode === "move" ? "Mover aqui" : "Copiar aqui"}
+        excludeIds={Array.from(selectedIds)}
+        fetchAllFolders={fetchAllFolders}
+        onConfirm={async (targetId) => {
+          const ids = Array.from(selectedIds);
+          if (pickerMode === "move") await moveItems(ids, targetId);
+          else await copyItems(ids, targetId);
+          clearSelection();
+          setPickerMode(null);
+        }}
+      />
+
+
 
       {/* New Folder Dialog */}
       <Dialog open={newFolderOpen} onOpenChange={setNewFolderOpen}>
@@ -452,8 +588,9 @@ async function fetchFileAsBlob(url: string, name: string): Promise<File> {
 }
 
 // Grid card component
-function DriveCard({ file, canManage, onDoubleClick, onRename, onDelete, onPreview, onSign, onViewContract, onOpenBuilder }: {
+function DriveCard({ file, canManage, selected, onToggleSelect, onDoubleClick, onRename, onDelete, onPreview, onSign, onViewContract, onOpenBuilder }: {
   file: DriveFile; canManage: boolean;
+  selected: boolean; onToggleSelect: () => void;
   onDoubleClick: () => void; onRename: () => void; onDelete: () => void;
   onPreview: () => void; onSign: () => void; onViewContract: () => void; onOpenBuilder: () => void;
 }) {
@@ -461,7 +598,32 @@ function DriveCard({ file, canManage, onDoubleClick, onRename, onDelete, onPrevi
   const isPdf = file.file_type?.includes("pdf");
 
   return (
-    <Card className="group cursor-pointer hover:shadow-md transition-all" onDoubleClick={onDoubleClick}>
+    <Card
+      className={cn(
+        "group cursor-pointer hover:shadow-md transition-all relative",
+        selected && "ring-2 ring-primary bg-primary/5"
+      )}
+      onDoubleClick={onDoubleClick}
+    >
+      {canManage && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleSelect(); }}
+          onDoubleClick={(e) => e.stopPropagation()}
+          className={cn(
+            "absolute top-2 left-2 z-10 w-5 h-5 rounded border-2 flex items-center justify-center transition-all",
+            selected
+              ? "bg-primary border-primary opacity-100"
+              : "bg-background border-muted-foreground/40 opacity-0 group-hover:opacity-100 hover:border-primary"
+          )}
+          aria-label="Selecionar"
+        >
+          {selected && (
+            <svg viewBox="0 0 16 16" className="w-3 h-3 text-primary-foreground" fill="none" stroke="currentColor" strokeWidth="3">
+              <path d="M3 8l3.5 3.5L13 5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+        </button>
+      )}
       <CardContent className="p-3 flex flex-col items-center text-center space-y-2">
         <div className="relative w-full flex justify-center pt-2">
           <FileIcon type={file.type} fileType={file.file_type} />
@@ -513,9 +675,11 @@ function DriveCard({ file, canManage, onDoubleClick, onRename, onDelete, onPrevi
   );
 }
 
+
 // List row component
-function DriveRow({ file, canManage, onDoubleClick, onRename, onDelete, onPreview, onSign, onViewContract, onOpenBuilder }: {
+function DriveRow({ file, canManage, selected, onToggleSelect, onDoubleClick, onRename, onDelete, onPreview, onSign, onViewContract, onOpenBuilder }: {
   file: DriveFile; canManage: boolean;
+  selected: boolean; onToggleSelect: () => void;
   onDoubleClick: () => void; onRename: () => void; onDelete: () => void;
   onPreview: () => void; onSign: () => void; onViewContract: () => void; onOpenBuilder: () => void;
 }) {
@@ -523,8 +687,34 @@ function DriveRow({ file, canManage, onDoubleClick, onRename, onDelete, onPrevie
   const isPdf = file.file_type?.includes("pdf");
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 cursor-pointer transition-colors" onDoubleClick={onDoubleClick}>
+    <div
+      className={cn(
+        "group flex items-center gap-3 px-4 py-3 hover:bg-muted/50 cursor-pointer transition-colors",
+        selected && "bg-primary/5"
+      )}
+      onDoubleClick={onDoubleClick}
+    >
+      {canManage && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleSelect(); }}
+          onDoubleClick={(e) => e.stopPropagation()}
+          className={cn(
+            "w-5 h-5 rounded border-2 flex items-center justify-center transition shrink-0",
+            selected
+              ? "bg-primary border-primary"
+              : "border-muted-foreground/40 opacity-0 group-hover:opacity-100 hover:border-primary"
+          )}
+          aria-label="Selecionar"
+        >
+          {selected && (
+            <svg viewBox="0 0 16 16" className="w-3 h-3 text-primary-foreground" fill="none" stroke="currentColor" strokeWidth="3">
+              <path d="M3 8l3.5 3.5L13 5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+        </button>
+      )}
       <FileIcon type={file.type} fileType={file.file_type} />
+
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground truncate">{file.name}</p>
         <p className="text-xs text-muted-foreground">

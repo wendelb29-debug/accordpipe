@@ -155,6 +155,102 @@ export function useDriveFiles(parentId: string | null) {
     await fetchFiles();
   };
 
+  const moveItems = async (ids: string[], targetParentId: string | null) => {
+    if (ids.length === 0) return;
+    if (targetParentId && ids.includes(targetParentId)) {
+      toast.error("Não é possível mover para dentro da própria pasta");
+      return;
+    }
+    const { error } = await supabase
+      .from("drive_files")
+      .update({ parent_id: targetParentId } as any)
+      .in("id", ids);
+    if (error) {
+      toast.error("Erro ao mover: " + error.message);
+      return;
+    }
+    toast.success(`${ids.length} item(s) movido(s)`);
+    await fetchFiles();
+  };
+
+  // Recursively copy items (folders + nested files). Files are duplicated in storage too.
+  const copyItems = async (ids: string[], targetParentId: string | null) => {
+    if (!companyId || ids.length === 0) return;
+    const copyOne = async (id: string, newParent: string | null) => {
+      const { data: src } = await supabase.from("drive_files").select("*").eq("id", id).maybeSingle();
+      if (!src) return;
+      const row: any = {
+        servidor_id: companyId,
+        parent_id: newParent,
+        name: (src as any).type === "folder" ? `${(src as any).name}` : (src as any).name,
+        type: (src as any).type,
+        file_url: null,
+        file_path: null,
+        file_size: (src as any).file_size,
+        file_type: (src as any).file_type,
+        status: "normal",
+        created_by_user_id: profile?.user_id,
+        created_by_name: profile?.name,
+      };
+      if ((src as any).type === "file" && (src as any).file_path) {
+        const ext = (src as any).file_path.split("/").pop();
+        const newPath = `${companyId}/${Date.now()}_copy_${ext}`;
+        const { error: copyErr } = await supabase.storage.from("contract-pdfs").copy((src as any).file_path, newPath);
+        if (!copyErr) {
+          row.file_path = newPath;
+          const { data: signed } = await supabase.storage.from("contract-pdfs").createSignedUrl(newPath, 86400);
+          row.file_url = signed?.signedUrl || null;
+        }
+      }
+      const { data: inserted } = await supabase.from("drive_files").insert(row).select("id").single();
+      if (inserted && (src as any).type === "folder") {
+        const { data: children } = await supabase.from("drive_files").select("id").eq("parent_id", id);
+        for (const c of (children as any[]) || []) await copyOne(c.id, (inserted as any).id);
+      }
+    };
+    for (const id of ids) await copyOne(id, targetParentId);
+    toast.success(`${ids.length} item(s) copiado(s)`);
+    await fetchFiles();
+  };
+
+  const deleteMany = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    // Recursively collect storage paths and ids
+    const allIds: string[] = [];
+    const allPaths: string[] = [];
+    const walk = async (id: string) => {
+      const { data: node } = await supabase.from("drive_files").select("*").eq("id", id).maybeSingle();
+      if (!node) return;
+      allIds.push(id);
+      if ((node as any).file_path) allPaths.push((node as any).file_path);
+      if ((node as any).type === "folder") {
+        const { data: children } = await supabase.from("drive_files").select("id").eq("parent_id", id);
+        for (const c of (children as any[]) || []) await walk(c.id);
+      }
+    };
+    for (const id of ids) await walk(id);
+    if (allPaths.length > 0) await supabase.storage.from("contract-pdfs").remove(allPaths);
+    const { error } = await supabase.from("drive_files").delete().in("id", allIds);
+    if (error) {
+      toast.error("Erro ao excluir: " + error.message);
+      return;
+    }
+    toast.success(`${ids.length} item(s) excluído(s)`);
+    await fetchFiles();
+  };
+
+  // Fetch ALL folders in the tenant (for the move/copy picker)
+  const fetchAllFolders = async (): Promise<DriveFile[]> => {
+    if (!companyId) return [];
+    const { data } = await supabase
+      .from("drive_files")
+      .select("*")
+      .eq("servidor_id", companyId)
+      .eq("type", "folder")
+      .order("name", { ascending: true });
+    return (data as DriveFile[]) || [];
+  };
+
   return {
     files,
     loading,
@@ -165,5 +261,10 @@ export function useDriveFiles(parentId: string | null) {
     renameFile,
     deleteFile,
     startSigning,
+    moveItems,
+    copyItems,
+    deleteMany,
+    fetchAllFolders,
   };
 }
+
