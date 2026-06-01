@@ -8,6 +8,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { ROUTE_PERMISSIONS } from "@/lib/permissions";
 import {
   Home,
+  Newspaper,
   LayoutDashboard,
   Building2,
   Receipt,
@@ -52,7 +53,7 @@ const navigationSections = [
   {
     label: "Acesso rápido",
     items: [
-      { nameKey: "nav.home", href: "/home", icon: Home, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
+      { nameKey: "nav.feed", href: "/home", icon: Newspaper, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
       { nameKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
       { nameKey: "nav.accordSales", href: "/atendimento", icon: MessageSquare, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
       { nameKey: "nav.forms", href: "/formularios", icon: ClipboardList, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
