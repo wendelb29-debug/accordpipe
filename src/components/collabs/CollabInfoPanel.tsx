@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   X,
   UserPlus,
@@ -8,6 +8,8 @@ import {
   Link as LinkIcon,
   Image as ImageIcon,
   BookOpen,
+  Camera,
+  Loader2,
 } from "lucide-react";
 import { HexAvatar, hexGradientFor } from "./HexAvatar";
 
@@ -22,6 +24,10 @@ interface CollabInfoPanelProps {
   onClose?: () => void;
   /** Callback do botão "+ Adicionar" (abrir invite). */
   onInvite?: () => void;
+  /** Callback ao trocar a foto do grupo. Recebe um File, deve retornar o novo url (ou null em erro). */
+  onAvatarChange?: (file: File) => Promise<string | null>;
+  /** Se o usuário atual pode editar a foto do grupo. */
+  canEditAvatar?: boolean;
   /** Contadores opcionais. */
   counts?: {
     pinned?: number;
@@ -35,9 +41,11 @@ interface CollabInfoPanelProps {
  * Renderiza dentro do <aside> existente no Collabs.tsx, substituindo
  * o painel "Equipe online" enquanto houver uma collab ativa.
  */
-export function CollabInfoPanel({ collab, onClose, onInvite, counts }: CollabInfoPanelProps) {
+export function CollabInfoPanel({ collab, onClose, onInvite, onAvatarChange, canEditAvatar, counts }: CollabInfoPanelProps) {
   const [sound, setSound] = useState(true);
   const [autoDelete, setAutoDelete] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
   const bg =
     collab.color
       ? `linear-gradient(135deg, ${collab.color} 0%, ${collab.color}cc 100%)`
@@ -49,6 +57,16 @@ export function CollabInfoPanel({ collab, onClose, onInvite, counts }: CollabInf
     .slice(0, 2)
     .map((w) => w[0])
     .join("");
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !onAvatarChange) return;
+    if (!file.type.startsWith("image/")) return;
+    setUploading(true);
+    try { await onAvatarChange(file); } finally { setUploading(false); }
+  };
+
 
   return (
     <div className="flex h-full flex-col bg-white">
