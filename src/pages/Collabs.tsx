@@ -1745,6 +1745,7 @@ function QuickActionDialogs({ action, onClose, onSendMessage, onNavigate, member
   const [pollTitle, setPollTitle] = useState("");
   const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
   const [pollDeadline, setPollDeadline] = useState("");
+  const [pollShowVoters, setPollShowVoters] = useState(true);
 
   // Sign — PDF upload
   const signFileInput = useRef<HTMLInputElement>(null);
