@@ -879,6 +879,26 @@ export default function Collabs() {
               </div>
             </header>
 
+            {chatView === "files" ? (
+              <CollabFilesPanel
+                collab={{
+                  id: active.id,
+                  name: active.name,
+                  color: active.color,
+                  avatar_url: (active as any).avatar_url ?? null,
+                }}
+                messages={messages.map((m) => ({
+                  id: m.id,
+                  sender_id: m.sender_id,
+                  created_at: m.created_at,
+                  attachments: (m.attachments as any) ?? [],
+                }))}
+                tenantUsers={tenantUsers.map((u) => ({ id: u.id, name: u.name }))}
+                onUploadClick={() => fileInputRef.current?.click()}
+                onBack={() => setChatView("chat")}
+              />
+            ) : (
+              <>
             <div
               className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-5 relative"
               style={{
