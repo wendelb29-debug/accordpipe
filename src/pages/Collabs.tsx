@@ -92,6 +92,7 @@ interface Conversation {
   is_pinned: boolean;
   last_message_at: string | null;
   last_message_preview: string | null;
+  avatar_url?: string | null;
 }
 
 type FileAttachment = {
@@ -1561,6 +1562,39 @@ export default function Collabs() {
               }}
               onInvite={() => { setInviteTab("colab"); setInviteOpen(true); }}
               onClose={() => setInfoOpen(false)}
+              canEditAvatar={!!user && active.created_by === user.id}
+              onAvatarChange={async (file) => {
+                if (!user || !companyId) return null;
+                try {
+                  const ext = (file.name.split(".").pop() || "png").toLowerCase();
+                  const path = `collabs/${companyId}/${active.id}/avatar-${Date.now()}.${ext}`;
+                  const { data: up, error: upErr } = await supabase.storage
+                    .from("documents")
+                    .upload(path, file, { upsert: true, contentType: file.type });
+                  if (upErr) {
+                    toast({ title: "Falha no upload", description: upErr.message, variant: "destructive" });
+                    return null;
+                  }
+                  const { data: signed } = await supabase.storage
+                    .from("documents")
+                    .createSignedUrl(up.path, 60 * 60 * 24 * 365);
+                  const url = signed?.signedUrl || null;
+                  const { error: updErr } = await supabase
+                    .from("collab_conversations")
+                    .update({ avatar_url: url })
+                    .eq("id", active.id);
+                  if (updErr) {
+                    toast({ title: "Erro ao salvar foto", description: updErr.message, variant: "destructive" });
+                    return null;
+                  }
+                  setConversations((prev) => prev.map((c) => c.id === active.id ? { ...c, avatar_url: url } as Conversation : c));
+                  toast({ title: "Foto do grupo atualizada" });
+                  return url;
+                } catch (err: any) {
+                  toast({ title: "Erro", description: err?.message, variant: "destructive" });
+                  return null;
+                }
+              }}
             />
           ) : (
             <>
