@@ -1430,7 +1430,7 @@ export default function Collabs() {
               </div>
             </div>
             <iframe
-              src="/atividades"
+              src="/atividades?view=agenda"
               className="flex-1 w-full border-0 bg-white"
               title="Agenda"
             />
