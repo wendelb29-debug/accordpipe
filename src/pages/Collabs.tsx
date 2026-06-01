@@ -36,7 +36,10 @@ import {
   Clock,
   FilePen,
   BarChart3,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { HexAvatar, hexGradientFor } from "@/components/collabs/HexAvatar";
 import { CollabInfoPanel } from "@/components/collabs/CollabInfoPanel";
