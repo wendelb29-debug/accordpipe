@@ -155,7 +155,8 @@ export function AccordAIChat() {
   const needsExtraClearance =
     location.pathname.startsWith("/accord-stack") ||
     location.pathname.startsWith("/atendimento") ||
-    location.pathname.startsWith("/inbox");
+    location.pathname.startsWith("/inbox") ||
+    location.pathname.startsWith("/collabs");
 
   // Hide on mobile when virtual keyboard is open
   const [keyboardOpen, setKeyboardOpen] = useState(false);
