@@ -164,16 +164,20 @@ export default function Documentos() {
   const docs = filtered.filter(f => f.type === "file");
 
   const navigateToFolder = (folder: DriveFile) => {
+    clearSelection();
     setFolderStack(prev => [...prev, { id: folder.id, name: folder.name }]);
   };
 
   const navigateBack = () => {
+    clearSelection();
     if (folderStack.length > 1) setFolderStack(prev => prev.slice(0, -1));
   };
 
   const navigateTo = (index: number) => {
+    clearSelection();
     setFolderStack(prev => prev.slice(0, index + 1));
   };
+
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
