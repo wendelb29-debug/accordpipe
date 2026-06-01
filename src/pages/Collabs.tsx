@@ -661,7 +661,7 @@ export default function Collabs() {
   /* ────── Render ────── */
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden" style={{ background: "linear-gradient(180deg, #faf9ff 0%, #f4f1fb 100%)" }}>
+    <div className="flex h-full overflow-hidden" style={{ background: "linear-gradient(180deg, #faf9ff 0%, #f4f1fb 100%)" }}>
       {/* SIDEBAR — dark purple */}
       <aside className="w-[320px] min-w-[320px] flex flex-col shrink-0 bg-white border-r border-gray-200">
         <div className="h-[60px] flex items-center gap-2 px-3 border-b border-gray-200 shrink-0">

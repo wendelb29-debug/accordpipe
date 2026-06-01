@@ -29,6 +29,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   const isMobile = useIsMobile();
   const isAccordStack = false;
   const isAccordStackRoute = location.pathname.startsWith("/accord-stack");
+  const isCollabsRoute = location.pathname.startsWith("/collabs");
+  const isFullscreen = isAccordStackRoute || isCollabsRoute;
 
   const [sidebarExpanded, setSidebarExpanded] = useState(
     () => localStorage.getItem("sidebar-pinned") === "true"
@@ -53,7 +55,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     <BackNavigationProvider>
       <div className={cn(
         "bg-background flex flex-col",
-        isAccordStackRoute ? "h-[100dvh] overflow-hidden" : "min-h-screen"
+        isFullscreen ? "h-[100dvh] overflow-hidden" : "min-h-screen"
       )}>
         {/* Desktop sidebar (hidden on Accord Stack for full-width chat) */}
         {!isMobile && !isAccordStack && <Sidebar />}
@@ -65,7 +67,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           }}
           className={cn(
             "min-w-0 flex flex-col",
-            isAccordStackRoute ? "h-full overflow-hidden" : "min-h-screen",
+            isFullscreen ? "h-full overflow-hidden" : "min-h-screen",
           )}
         >
           {/* Tenant billing alert banner */}
@@ -96,16 +98,16 @@ export function AppLayout({ children }: AppLayoutProps) {
               Complete seu cadastro — Foto de perfil obrigatória *
             </Link>
           )}
-          {!hideHeader && !isAccordStackRoute && <Header />}
+          {!hideHeader && !isFullscreen && <Header />}
           <main
             className={cn(
               "w-full max-w-none flex-1 min-w-0 min-h-0",
-              isAccordStackRoute
+              isFullscreen
                 ? "p-0 overflow-hidden flex flex-col flex-1 min-h-0"
                 : (hideHeader ? "p-0" : "p-3 sm:p-3 lg:p-4")
             )}
             style={
-              isAccordStackRoute
+              isFullscreen
                 ? undefined
                 : {
                     paddingLeft: 'max(0.75rem, env(safe-area-inset-left, 0px))',
