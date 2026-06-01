@@ -220,6 +220,7 @@ export default function Collabs() {
   const [search, setSearch] = useState("");
   const [infoOpen, setInfoOpen] = useState(true);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarView, setCalendarView] = useState<"list" | "agenda">("agenda");
   const [calendarExpanded, setCalendarExpanded] = useState(false);
   const navigate = useNavigate();
   const [showEmoji, setShowEmoji] = useState(false);
