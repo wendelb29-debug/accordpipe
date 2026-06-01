@@ -71,6 +71,22 @@ export function CollabFilesPanel({
 }: CollabFilesPanelProps) {
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"list" | "grid">("list");
+  const navigate = useNavigate();
+  const { createFolder } = useDriveFiles(null);
+
+  const handleCreateFolder = async () => {
+    const suggested = `Collab — ${collab.name}`;
+    const name = window.prompt("Nome da nova pasta em Documentos:", suggested);
+    if (!name?.trim()) return;
+    const created = await createFolder(name.trim());
+    if (created) {
+      toast.success(`Pasta "${name.trim()}" criada em Documentos`);
+    }
+  };
+
+  const handleGoToDocumentos = () => {
+    navigate("/documentos");
+  };
 
   const allFiles = useMemo(() => {
     const flat: Array<{
