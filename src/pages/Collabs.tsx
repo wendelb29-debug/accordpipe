@@ -213,7 +213,7 @@ function initialsOf(name: string) {
 
 export default function Collabs() {
   const companyId = useActiveCompanyId();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
