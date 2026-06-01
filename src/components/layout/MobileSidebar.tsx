@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import accordLogo from "@/assets/accord-logo.png";
 import {
-  Home, LayoutDashboard, Receipt, FileText, BarChart3,
+  Home, Newspaper, LayoutDashboard, Receipt, FileText, BarChart3,
   Users, LogOut, MessageSquare, CalendarCheck, Rocket,
   ClipboardList, Trash2, Menu, Settings, ChevronDown, TrendingUp,
   Globe, Check, Crown, GraduationCap,
@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const navigation = [
-  { nameKey: "nav.home", href: "/home", icon: Home, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
+  { nameKey: "nav.feed", href: "/home", icon: Newspaper, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
   { nameKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
   { nameKey: "nav.accordSales", href: "/atendimento", icon: MessageSquare, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
   { nameKey: "nav.forms", href: "/formularios", icon: ClipboardList, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
