@@ -825,29 +825,45 @@ export default function Collabs() {
                   <span>{KIND_META[active.kind].label}</span>
                 </div>
               </div>
-              <div className="hidden md:flex items-center mr-1">
+              <div className={cn("hidden md:flex items-center mr-1", infoOpen ? "gap-0.5" : "")}>
                 <button
                   onClick={() => { setCalendarView("list"); setCalendarOpen(true); }}
-                  className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900 border-r border-gray-200"
+                  className={cn(
+                    "text-[13px] font-medium text-gray-600 hover:text-gray-900 transition-colors flex items-center justify-center",
+                    infoOpen
+                      ? "w-9 h-9 rounded-xl hover:bg-gray-100"
+                      : "px-3 py-1.5 border-r border-gray-200 gap-1.5",
+                  )}
+                  title="Tarefas"
                 >
-                  Tarefas
+                  <CheckSquare className="h-[17px] w-[17px]" />
+                  {!infoOpen && <span>Tarefas</span>}
                 </button>
                 <button
                   onClick={() => setChatView("files")}
                   className={cn(
-                    "px-3 py-1.5 text-[13px] font-medium border-r border-gray-200 transition-colors",
-                    chatView === "files"
-                      ? "text-emerald-600 font-semibold"
-                      : "text-gray-600 hover:text-gray-900",
+                    "text-[13px] font-medium transition-colors flex items-center justify-center",
+                    infoOpen
+                      ? cn("w-9 h-9 rounded-xl hover:bg-gray-100", chatView === "files" ? "bg-emerald-100 text-emerald-600 hover:bg-emerald-200" : "text-gray-600")
+                      : cn("px-3 py-1.5 border-r border-gray-200 gap-1.5", chatView === "files" ? "text-emerald-600 font-semibold" : "text-gray-600 hover:text-gray-900"),
                   )}
+                  title="Arquivos"
                 >
-                  Arquivos
+                  <FileText className="h-[17px] w-[17px]" />
+                  {!infoOpen && <span>Arquivos</span>}
                 </button>
                 <button
                   onClick={() => { setCalendarView("agenda"); setCalendarOpen(true); }}
-                  className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900"
+                  className={cn(
+                    "text-[13px] font-medium text-gray-600 hover:text-gray-900 transition-colors flex items-center justify-center",
+                    infoOpen
+                      ? "w-9 h-9 rounded-xl hover:bg-gray-100"
+                      : "px-3 py-1.5 gap-1.5",
+                  )}
+                  title="Calendário"
                 >
-                  Calendário
+                  <Calendar className="h-[17px] w-[17px]" />
+                  {!infoOpen && <span>Calendário</span>}
                 </button>
               </div>
               <button className="hidden md:inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[13px] font-medium text-white bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 transition shadow-sm">
