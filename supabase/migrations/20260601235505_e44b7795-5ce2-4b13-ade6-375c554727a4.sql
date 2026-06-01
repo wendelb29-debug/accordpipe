@@ -1,0 +1,1 @@
+ALTER TABLE public.collab_conversations ADD COLUMN IF NOT EXISTS avatar_url text;
