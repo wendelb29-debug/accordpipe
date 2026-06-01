@@ -1687,6 +1687,11 @@ export default function Collabs() {
         onNavigate={navigate}
         members={members}
         userMap={userMap}
+        companyId={companyId}
+        activeId={activeId}
+        currentUserId={user?.id ?? null}
+        currentUserName={profile?.name ?? user?.email ?? "Usuário"}
+        conversationName={active?.name ?? "Collab"}
       />
     </div>
   );
@@ -1701,9 +1706,14 @@ interface QuickActionDialogsProps {
   onNavigate: (path: string) => void;
   members: MemberRow[];
   userMap: Map<string, any>;
+  companyId: string | null;
+  activeId: string | null;
+  currentUserId: string | null;
+  currentUserName: string;
+  conversationName: string;
 }
 
-function QuickActionDialogs({ action, onClose, onSendMessage, onNavigate, members, userMap }: QuickActionDialogsProps) {
+function QuickActionDialogs({ action, onClose, onSendMessage, onNavigate, members, userMap, companyId, activeId, currentUserId, currentUserName, conversationName }: QuickActionDialogsProps) {
   // Shared
   const close = () => onClose();
 
