@@ -680,6 +680,22 @@ export default function Collabs() {
     if (error) toast({ title: "Erro ao enviar", description: error.message, variant: "destructive" });
   };
 
+  const sendCardMessage = async (content: string, attachments: FileAttachment[] = []) => {
+    if (!activeId || !user || !companyId) return;
+    const { error } = await supabase.from("collab_messages").insert({
+      conversation_id: activeId,
+      servidor_id: companyId,
+      sender_id: user.id,
+      content: content || null,
+      attachments,
+    });
+    if (error) {
+      sonnerToast.error("Erro ao publicar no chat");
+    } else {
+      sonnerToast.success("Publicado no chat");
+    }
+  };
+
   const sendSticker = async (url: string) => {
     if (!activeId || !user || !companyId) return;
     setShowEmoji(false);
