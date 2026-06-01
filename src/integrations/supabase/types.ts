@@ -920,6 +920,7 @@ export type Database = {
           id: string
           option_id: string
           poll_id: string
+          servidor_id: string | null
           user_id: string
         }
         Insert: {
@@ -927,6 +928,7 @@ export type Database = {
           id?: string
           option_id: string
           poll_id: string
+          servidor_id?: string | null
           user_id: string
         }
         Update: {
@@ -934,6 +936,7 @@ export type Database = {
           id?: string
           option_id?: string
           poll_id?: string
+          servidor_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -948,36 +951,51 @@ export type Database = {
       }
       collab_polls: {
         Row: {
+          anonymous: boolean
+          closed: boolean
           closed_at: string | null
+          closes_at: string | null
           conversation_id: string
           created_at: string
           created_by: string
           deadline: string | null
           id: string
+          message_id: string | null
+          multi: boolean
           options: Json
           question: string
           servidor_id: string
           show_voters: boolean
         }
         Insert: {
+          anonymous?: boolean
+          closed?: boolean
           closed_at?: string | null
+          closes_at?: string | null
           conversation_id: string
           created_at?: string
           created_by: string
           deadline?: string | null
           id?: string
+          message_id?: string | null
+          multi?: boolean
           options: Json
           question: string
           servidor_id: string
           show_voters?: boolean
         }
         Update: {
+          anonymous?: boolean
+          closed?: boolean
           closed_at?: string | null
+          closes_at?: string | null
           conversation_id?: string
           created_at?: string
           created_by?: string
           deadline?: string | null
           id?: string
+          message_id?: string | null
+          multi?: boolean
           options?: Json
           question?: string
           servidor_id?: string
@@ -989,6 +1007,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "collab_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collab_polls_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "collab_messages"
             referencedColumns: ["id"]
           },
         ]

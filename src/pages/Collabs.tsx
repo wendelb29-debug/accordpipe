@@ -44,6 +44,8 @@ import { cn } from "@/lib/utils";
 import { HexAvatar, hexGradientFor } from "@/components/collabs/HexAvatar";
 import { CollabInfoPanel } from "@/components/collabs/CollabInfoPanel";
 import { CollabFilesPanel } from "@/components/collabs/CollabFilesPanel";
+import { PollByMessage } from "@/components/collabs/polls/PollCard";
+import { CreatePollDialog } from "@/components/collabs/polls/CreatePollDialog";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -269,6 +271,7 @@ export default function Collabs() {
   const [inviteTab, setInviteTab] = useState<"colab" | "guest">("colab");
   const [inviteContact, setInviteContact] = useState("");
   const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
+  const [pollDialogOpen, setPollDialogOpen] = useState(false);
 
   // Tenant users (for mentions and member selection)
   type MentionUser = { id: string; name: string; handle: string; avatar_url: string | null; department: string };
@@ -880,7 +883,7 @@ export default function Collabs() {
                   </div>
                   <div className="flex items-center justify-between gap-2 mt-0.5">
                     <span className="text-xs truncate text-gray-500">
-                      {c.last_message_preview || "Sem mensagens ainda"}
+                      {c.last_message_preview === "[[poll]]" ? "📊 Enquete" : (c.last_message_preview || "Sem mensagens ainda")}
                     </span>
                   </div>
                 </div>
@@ -1116,7 +1119,16 @@ export default function Collabs() {
                                       </div>
                                     </div>
                                   )}
-                                  {m.content && <div className="whitespace-pre-wrap">{m.content}</div>}
+                                  {m.content === "[[poll]]" ? (
+                                    <PollByMessage
+                                      messageId={m.id}
+                                      currentUserId={user?.id || ""}
+                                      tenantUsers={tenantUsers}
+                                      mine={isSent}
+                                    />
+                                  ) : (
+                                    m.content && <div className="whitespace-pre-wrap">{m.content}</div>
+                                  )}
                                   <span className={cn("block text-right text-[10px] mt-1", isSent ? "text-white/70" : "text-gray-400")}>{time}</span>
                                 </div>
                               )}
@@ -1323,7 +1335,7 @@ export default function Collabs() {
                         { icon: Calendar,   label: "Evento ou reunião",        onSelect: () => setQuickAction("event") },
                         { icon: Clock,      label: "Horários disponíveis",     onSelect: () => setQuickAction("slots") },
                         { icon: FilePen,    label: "Documento para assinatura",onSelect: () => setQuickAction("sign") },
-                        { icon: BarChart3,  label: "Enquete",                  onSelect: () => setQuickAction("poll") },
+                        { icon: BarChart3,  label: "Enquete",                  onSelect: () => setPollDialogOpen(true) },
                       ] as const).map((opt) => (
                         <DropdownMenuItem
                           key={opt.label}
@@ -1715,6 +1727,16 @@ export default function Collabs() {
         currentUserName={profile?.name ?? user?.email ?? "Usuário"}
         conversationName={active?.name ?? "Collab"}
       />
+
+      {activeId && companyId && user && (
+        <CreatePollDialog
+          open={pollDialogOpen}
+          onOpenChange={setPollDialogOpen}
+          conversationId={activeId}
+          servidorId={companyId}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 }
