@@ -220,6 +220,7 @@ export default function Collabs() {
   const [search, setSearch] = useState("");
   const [infoOpen, setInfoOpen] = useState(true);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarView, setCalendarView] = useState<"list" | "agenda">("agenda");
   const [calendarExpanded, setCalendarExpanded] = useState(false);
   const navigate = useNavigate();
   const [showEmoji, setShowEmoji] = useState(false);
@@ -825,9 +826,9 @@ export default function Collabs() {
                 </div>
               </div>
               <div className="hidden md:flex items-center mr-1">
-                <button className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900 border-r border-gray-200">Tarefas</button>
+                <button onClick={() => { setCalendarView("list"); setCalendarOpen(true); }} className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900 border-r border-gray-200">Tarefas</button>
                 <button className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900 border-r border-gray-200">Arquivos</button>
-                <button onClick={() => setCalendarOpen(true)} className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900">Calendário</button>
+                <button onClick={() => { setCalendarView("agenda"); setCalendarOpen(true); }} className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900">Calendário</button>
               </div>
               <button className="hidden md:inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[13px] font-medium text-white bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 transition shadow-sm">
                 <Video className="h-[15px] w-[15px]" />
@@ -1402,11 +1403,11 @@ export default function Collabs() {
             <div className="flex items-center justify-between px-4 h-12 border-b border-gray-200 bg-gray-50">
               <div className="flex items-center gap-2 text-[13px] font-semibold text-gray-800">
                 <Calendar className="h-4 w-4 text-emerald-600" />
-                Agenda
+                {calendarView === "agenda" ? "Agenda" : "Atividades"}
               </div>
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => navigate("/atividades?view=agenda")}
+                  onClick={() => navigate(`/atividades?view=${calendarView}`)}
                   className="px-2.5 h-8 rounded-md text-[12px] font-medium text-gray-600 hover:bg-gray-200"
                   title="Abrir página de Atividades"
                 >
@@ -1430,9 +1431,10 @@ export default function Collabs() {
               </div>
             </div>
             <iframe
-              src="/atividades?view=agenda"
+              key={calendarView}
+              src={`/atividades?view=${calendarView}`}
               className="flex-1 w-full border-0 bg-white"
-              title="Agenda"
+              title={calendarView === "agenda" ? "Agenda" : "Atividades"}
             />
           </div>
         </>
