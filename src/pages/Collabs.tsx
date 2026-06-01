@@ -72,6 +72,9 @@ import { useToast } from "@/hooks/use-toast";
 import { ConstellationCanvas } from "@/components/ui/constellation-canvas";
 import { useDriveFiles } from "@/hooks/useDriveFiles";
 import { Plus, Trash2 } from "lucide-react";
+import { useAudioRecorder } from "@/hooks/useAudioRecorder";
+import { RecordingBar } from "@/components/collabs/RecordingBar";
+import { VoiceMessageBubble } from "@/components/collabs/VoiceMessageBubble";
 
 
 /* ──────────────────────────  TYPES  ────────────────────────── */
@@ -92,7 +95,7 @@ interface Conversation {
 }
 
 type FileAttachment = {
-  kind: "pdf" | "xls" | "image" | "file" | "doc" | "poll";
+  kind: "pdf" | "xls" | "image" | "file" | "doc" | "poll" | "audio";
   name: string;
   size: string;
   url?: string;
@@ -102,6 +105,9 @@ type FileAttachment = {
   options?: Array<{ id: string; text: string }>;
   show_voters?: boolean;
   deadline?: string | null;
+  // Audio fields (when kind === "audio")
+  duration?: number;
+  levels?: number[];
 };
 
 interface DbMessage {
@@ -139,6 +145,7 @@ const FILE_THEME: Record<FileAttachment["kind"], { from: string; to: string; ico
   image: { from: "#F3EBFF", to: "#E4D3FF", iconBg: "#D5BBFF", iconColor: "#7C3AED", label: "IMG" },
   file:  { from: "#F1F3F8", to: "#E4E8F1", iconBg: "#D1D7E3", iconColor: "#475569", label: "FILE" },
   poll:  { from: "#F3EBFF", to: "#E4D3FF", iconBg: "#D5BBFF", iconColor: "#7C3AED", label: "ENQUETE" },
+  audio: { from: "#ECFDF5", to: "#D1FAE5", iconBg: "#A7F3D0", iconColor: "#059669", label: "ÁUDIO" },
 };
 
 const KIND_META: Record<ConvKind, { color: string; Icon: typeof Users; label: string }> = {
@@ -224,6 +231,8 @@ export default function Collabs() {
   const companyId = useActiveCompanyId();
   const { user, profile } = useAuth();
   const { toast } = useToast();
+  const recorder = useAudioRecorder();
+  const [sendingAudio, setSendingAudio] = useState(false);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -750,6 +759,60 @@ export default function Collabs() {
     });
   };
 
+  const sendVoiceNote = async () => {
+    if (!activeId || !user || !companyId || !recorder.isRecording) return;
+    setSendingAudio(true);
+    try {
+      const result = await recorder.stop();
+      if (!result || result.duration < 0.4) {
+        setSendingAudio(false);
+        return;
+      }
+      const ext = result.mime.includes("mp4") ? "m4a" : result.mime.includes("ogg") ? "ogg" : "webm";
+      const fileName = `voz-${Date.now()}.${ext}`;
+      const path = `collabs/${companyId}/${activeId}/${user.id}/${Date.now()}-${fileName}`;
+      const file = new File([result.blob], fileName, { type: result.mime });
+      const { data, error } = await supabase.storage.from("documents").upload(path, file, {
+        upsert: false,
+        contentType: result.mime,
+      });
+      if (error) {
+        toast({ title: "Erro ao enviar áudio", description: error.message, variant: "destructive" });
+        setSendingAudio(false);
+        return;
+      }
+      const { data: signed } = await supabase.storage.from("documents").createSignedUrl(data.path, 60 * 60 * 24 * 7);
+
+      const attachment: FileAttachment = {
+        kind: "audio",
+        name: fileName,
+        size: `${Math.round(result.blob.size / 1024)} KB`,
+        url: signed?.signedUrl,
+        duration: Math.round(result.duration * 10) / 10,
+        levels: result.levels.slice(-200),
+      };
+
+      await supabase.from("collab_messages").insert({
+        conversation_id: activeId,
+        servidor_id: companyId,
+        sender_id: user.id,
+        content: null,
+        attachments: [attachment],
+      });
+    } catch (err: any) {
+      toast({ title: "Erro ao enviar áudio", description: err?.message, variant: "destructive" });
+    } finally {
+      setSendingAudio(false);
+    }
+  };
+
+  const startRecording = async () => {
+    const ok = await recorder.start();
+    if (!ok && recorder.error) {
+      toast({ title: "Microfone", description: recorder.error, variant: "destructive" });
+    }
+  };
+
   const insertAtCursor = (text: string) => {
     const el = inputRef.current;
     if (!el) { setInput((v) => v + text); return; }
@@ -1146,6 +1209,17 @@ export default function Collabs() {
                                     />
                                   );
                                 }
+                                if (f.kind === "audio" && f.url) {
+                                  return (
+                                    <VoiceMessageBubble
+                                      key={idx}
+                                      url={f.url}
+                                      duration={f.duration}
+                                      levels={f.levels}
+                                      tone={isSent ? "mine" : "other"}
+                                    />
+                                  );
+                                }
                                 if (f.kind === "image" && f.url) {
                                   return (
                                     <a key={idx} href={f.url} target="_blank" rel="noreferrer" className="block max-w-[280px]">
@@ -1307,6 +1381,17 @@ export default function Collabs() {
               <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => { handleFiles(e.target.files, false); e.target.value = ""; }} />
               <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { handleFiles(e.target.files, true); e.target.value = ""; }} />
 
+              {recorder.isRecording ? (
+                <div className="flex items-center gap-1.5 bg-white rounded-[24px] pl-3.5 pr-2 py-1.5 shadow-[0_8px_24px_-12px_rgba(220,38,38,0.35),inset_0_0_0_1px_rgba(220,38,38,0.12)]">
+                  <RecordingBar
+                    duration={recorder.duration}
+                    levels={recorder.levels}
+                    sending={sendingAudio}
+                    onCancel={() => recorder.cancel()}
+                    onSend={sendVoiceNote}
+                  />
+                </div>
+              ) : (
               <div className="flex items-center gap-1.5 bg-white rounded-[24px] pl-3.5 pr-2 py-1.5 shadow-[0_8px_24px_-12px_rgba(124,58,237,0.35),inset_0_0_0_1px_rgba(124,58,237,0.08)]">
                 <div className="flex gap-0.5">
                   <DropdownMenu>
@@ -1366,15 +1451,17 @@ export default function Collabs() {
                   className="flex-1 bg-transparent outline-none text-[13.5px] text-[#1a1a2e] placeholder:text-gray-400 min-w-0"
                 />
                 <button
-                  onClick={sendText}
+                  onClick={input.trim() ? sendText : startRecording}
                   className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all"
                   style={input.trim()
                     ? { background: "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)", color: "#fff", boxShadow: "0 8px 20px -8px rgba(124,58,237,0.6)" }
                     : { background: "transparent", color: "#888" }}
+                  title={input.trim() ? "Enviar" : "Gravar áudio"}
                 >
                   {input.trim() ? <Send className="h-4 w-4" /> : <Mic className="h-[18px] w-[18px]" />}
                 </button>
               </div>
+              )}
             </div>
               </>
             )}
