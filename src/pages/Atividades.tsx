@@ -80,7 +80,13 @@ export default function Atividades() {
   const isMobile = useIsMobile();
   const [activities, setActivities] = useState<ActivityRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"list" | "agenda">("list");
+  const [view, setView] = useState<"list" | "agenda">(() => {
+    if (typeof window !== "undefined") {
+      const p = new URLSearchParams(window.location.search);
+      if (p.get("view") === "agenda") return "agenda";
+    }
+    return "list";
+  });
   const [statusTab, setStatusTab] = useState<"planned" | "completed" | "no_show">("planned");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(20);

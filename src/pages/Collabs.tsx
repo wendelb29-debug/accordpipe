@@ -1406,7 +1406,7 @@ export default function Collabs() {
               </div>
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => navigate("/atividades")}
+                  onClick={() => navigate("/atividades?view=agenda")}
                   className="px-2.5 h-8 rounded-md text-[12px] font-medium text-gray-600 hover:bg-gray-200"
                   title="Abrir página de Atividades"
                 >
@@ -1430,7 +1430,7 @@ export default function Collabs() {
               </div>
             </div>
             <iframe
-              src="/atividades"
+              src="/atividades?view=agenda"
               className="flex-1 w-full border-0 bg-white"
               title="Agenda"
             />
