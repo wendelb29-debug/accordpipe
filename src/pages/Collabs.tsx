@@ -36,7 +36,10 @@ import {
   Clock,
   FilePen,
   BarChart3,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { HexAvatar, hexGradientFor } from "@/components/collabs/HexAvatar";
 import { CollabInfoPanel } from "@/components/collabs/CollabInfoPanel";
@@ -216,6 +219,9 @@ export default function Collabs() {
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
   const [infoOpen, setInfoOpen] = useState(true);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarExpanded, setCalendarExpanded] = useState(false);
+  const navigate = useNavigate();
   const [showEmoji, setShowEmoji] = useState(false);
   const [showMentions, setShowMentions] = useState(false);
   const [pickerTab, setPickerTab] = useState<"emoji" | "stickers">("emoji");
@@ -821,7 +827,7 @@ export default function Collabs() {
               <div className="hidden md:flex items-center mr-1">
                 <button className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900 border-r border-gray-200">Tarefas</button>
                 <button className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900 border-r border-gray-200">Arquivos</button>
-                <button className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900">Calendário</button>
+                <button onClick={() => setCalendarOpen(true)} className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900">Calendário</button>
               </div>
               <button className="hidden md:inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[13px] font-medium text-white bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 transition shadow-sm">
                 <Video className="h-[15px] w-[15px]" />
@@ -1379,6 +1385,58 @@ export default function Collabs() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Calendar side panel (Agenda from Atividades) */}
+      {calendarOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+            onClick={() => { setCalendarOpen(false); setCalendarExpanded(false); }}
+          />
+          <div
+            className={cn(
+              "fixed top-0 right-0 z-50 h-screen bg-white shadow-2xl border-l border-gray-200 flex flex-col transition-[width] duration-300",
+              calendarExpanded ? "w-screen" : "w-full sm:w-[520px] md:w-[640px] lg:w-[760px]"
+            )}
+          >
+            <div className="flex items-center justify-between px-4 h-12 border-b border-gray-200 bg-gray-50">
+              <div className="flex items-center gap-2 text-[13px] font-semibold text-gray-800">
+                <Calendar className="h-4 w-4 text-emerald-600" />
+                Agenda
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => navigate("/atividades")}
+                  className="px-2.5 h-8 rounded-md text-[12px] font-medium text-gray-600 hover:bg-gray-200"
+                  title="Abrir página de Atividades"
+                >
+                  <ExternalLink className="h-3.5 w-3.5 inline mr-1" />
+                  Abrir
+                </button>
+                <button
+                  onClick={() => setCalendarExpanded((v) => !v)}
+                  className="w-8 h-8 rounded-md flex items-center justify-center text-gray-600 hover:bg-gray-200"
+                  title={calendarExpanded ? "Recolher" : "Expandir"}
+                >
+                  {calendarExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                </button>
+                <button
+                  onClick={() => { setCalendarOpen(false); setCalendarExpanded(false); }}
+                  className="w-8 h-8 rounded-md flex items-center justify-center text-gray-600 hover:bg-gray-200"
+                  title="Fechar"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            <iframe
+              src="/atividades"
+              className="flex-1 w-full border-0 bg-white"
+              title="Agenda"
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }
