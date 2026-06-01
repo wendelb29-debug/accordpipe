@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import {
   Upload, Search, FolderPlus, FileText, Folder, File as FileIcon2, Image, MoreVertical,
   Eye, Trash2, PenTool, Download, ChevronRight, Home, Loader2, Grid, List,
-  FileSignature, Edit2, Send, ArrowLeft, X,
+  FileSignature, Edit2, Send, ArrowLeft, X, Copy as CopyIcon, FolderInput, CheckSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,9 @@ import type { PdfContractSigner, PdfContractHistory } from "@/hooks/usePdfContra
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import JSZip from "jszip";
+import { FolderPickerDialog } from "@/components/documentos/FolderPickerDialog";
+
 
 const statusConfig: Record<string, { label: string; color: string; emoji: string }> = {
   normal: { label: "Normal", color: "bg-muted text-muted-foreground", emoji: "" },
