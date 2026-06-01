@@ -217,7 +217,7 @@ export function CollabFilesPanel({
   );
 }
 
-function EmptyState({ search, onUploadClick }: { search: string; onUploadClick: () => void }) {
+function EmptyState({ search, onUploadClick, onCreateFolder }: { search: string; onUploadClick: () => void; onCreateFolder: () => void }) {
   if (search) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-16 text-gray-500">
@@ -241,12 +241,12 @@ function EmptyState({ search, onUploadClick }: { search: string; onUploadClick: 
           <div className="text-[12px] text-gray-500 mt-1">Escolha um arquivo do seu computador</div>
         </button>
         <button
-          onClick={() => toast.info("Criar pasta — em breve")}
-          className="group flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 hover:bg-gray-50 hover:border-gray-300 transition text-center"
+          onClick={onCreateFolder}
+          className="group flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 hover:bg-emerald-50 hover:border-emerald-300 transition text-center"
         >
-          <FolderPlus className="w-10 h-10 text-gray-400 mb-3 group-hover:scale-110 transition" strokeWidth={1.5} />
+          <FolderPlus className="w-10 h-10 text-gray-400 group-hover:text-emerald-500 mb-3 group-hover:scale-110 transition" strokeWidth={1.5} />
           <div className="text-[14px] font-semibold text-gray-800">Criar pasta</div>
-          <div className="text-[12px] text-gray-500 mt-1">Organize seus arquivos (em breve)</div>
+          <div className="text-[12px] text-gray-500 mt-1">Cria em Documentos do Accord</div>
         </button>
       </div>
     </div>
