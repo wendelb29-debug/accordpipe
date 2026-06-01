@@ -136,6 +136,7 @@ const FILE_THEME: Record<FileAttachment["kind"], { from: string; to: string; ico
   doc:   { from: "#E8F1FF", to: "#D2E3FF", iconBg: "#BCD3FF", iconColor: "#2563EB", label: "DOC" },
   image: { from: "#F3EBFF", to: "#E4D3FF", iconBg: "#D5BBFF", iconColor: "#7C3AED", label: "IMG" },
   file:  { from: "#F1F3F8", to: "#E4E8F1", iconBg: "#D1D7E3", iconColor: "#475569", label: "FILE" },
+  poll:  { from: "#F3EBFF", to: "#E4D3FF", iconBg: "#D5BBFF", iconColor: "#7C3AED", label: "ENQUETE" },
 };
 
 const KIND_META: Record<ConvKind, { color: string; Icon: typeof Users; label: string }> = {
