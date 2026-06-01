@@ -1381,6 +1381,17 @@ export default function Collabs() {
               <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => { handleFiles(e.target.files, false); e.target.value = ""; }} />
               <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { handleFiles(e.target.files, true); e.target.value = ""; }} />
 
+              {recorder.isRecording ? (
+                <div className="flex items-center gap-1.5 bg-white rounded-[24px] pl-3.5 pr-2 py-1.5 shadow-[0_8px_24px_-12px_rgba(220,38,38,0.35),inset_0_0_0_1px_rgba(220,38,38,0.12)]">
+                  <RecordingBar
+                    duration={recorder.duration}
+                    levels={recorder.levels}
+                    sending={sendingAudio}
+                    onCancel={() => recorder.cancel()}
+                    onSend={sendVoiceNote}
+                  />
+                </div>
+              ) : (
               <div className="flex items-center gap-1.5 bg-white rounded-[24px] pl-3.5 pr-2 py-1.5 shadow-[0_8px_24px_-12px_rgba(124,58,237,0.35),inset_0_0_0_1px_rgba(124,58,237,0.08)]">
                 <div className="flex gap-0.5">
                   <DropdownMenu>
@@ -1440,15 +1451,17 @@ export default function Collabs() {
                   className="flex-1 bg-transparent outline-none text-[13.5px] text-[#1a1a2e] placeholder:text-gray-400 min-w-0"
                 />
                 <button
-                  onClick={sendText}
+                  onClick={input.trim() ? sendText : startRecording}
                   className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all"
                   style={input.trim()
                     ? { background: "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)", color: "#fff", boxShadow: "0 8px 20px -8px rgba(124,58,237,0.6)" }
                     : { background: "transparent", color: "#888" }}
+                  title={input.trim() ? "Enviar" : "Gravar áudio"}
                 >
                   {input.trim() ? <Send className="h-4 w-4" /> : <Mic className="h-[18px] w-[18px]" />}
                 </button>
               </div>
+              )}
             </div>
               </>
             )}
