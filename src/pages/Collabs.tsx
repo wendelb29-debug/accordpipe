@@ -978,10 +978,6 @@ export default function Collabs() {
                   {!infoOpen && <span>Calendário</span>}
                 </button>
               </div>
-              <button className="hidden md:inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[13px] font-medium text-white bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 transition shadow-sm">
-                <Video className="h-[15px] w-[15px]" />
-                Chamada de vídeo
-              </button>
               <div className="flex items-center gap-1">
                 <button onClick={() => { setInviteTab("colab"); setInviteOpen(true); }} className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors" title="Adicionar membros">
                   <UserPlus className="h-[17px] w-[17px]" />
