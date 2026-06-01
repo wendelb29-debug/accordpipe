@@ -1865,17 +1865,36 @@ function QuickActionDialogs({ action, onClose, onSendMessage, onNavigate, member
     close();
   };
 
-  // ─── POLL
+  // ─── POLL (interactive)
   const submitPoll = async () => {
     const opts = pollOptions.map((o) => o.trim()).filter(Boolean);
     if (!pollTitle.trim() || opts.length < 2) { sonnerToast.error("Título e ao menos 2 opções"); return; }
-    const lines = [
-      `📊 **Enquete:** ${pollTitle.trim()}`,
-      ...opts.map((o, i) => `${i + 1}. ${o}`),
-      pollDeadline ? `\n⏳ Prazo: ${fmt(pollDeadline)}` : "",
-      `\n_Vote respondendo o número da opção._`,
-    ].filter(Boolean).join("\n");
-    await onSendMessage(lines);
+    if (!companyId || !activeId || !currentUserId) { sonnerToast.error("Sem conversa ativa"); return; }
+    const optionObjs = opts.map((text) => ({ id: crypto.randomUUID(), text }));
+    const { data: poll, error } = await supabase
+      .from("collab_polls" as any)
+      .insert({
+        conversation_id: activeId,
+        servidor_id: companyId,
+        created_by: currentUserId,
+        question: pollTitle.trim(),
+        options: optionObjs,
+        show_voters: pollShowVoters,
+        deadline: pollDeadline ? new Date(pollDeadline).toISOString() : null,
+      })
+      .select()
+      .single();
+    if (error || !poll) { sonnerToast.error("Erro ao criar enquete"); return; }
+    await onSendMessage("", [{
+      kind: "poll",
+      name: pollTitle.trim(),
+      size: "",
+      poll_id: (poll as any).id,
+      question: pollTitle.trim(),
+      options: optionObjs,
+      show_voters: pollShowVoters,
+      deadline: pollDeadline ? new Date(pollDeadline).toISOString() : null,
+    }]);
     close();
   };
 
