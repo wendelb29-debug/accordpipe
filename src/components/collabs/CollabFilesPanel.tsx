@@ -159,8 +159,8 @@ export function CollabFilesPanel({
           >
             {([
               { icon: FilePlus,   label: "Arquivo do computador", onSelect: onUploadClick },
-              { icon: FolderPlus, label: "Pasta",                  onSelect: () => toast.info("Criar pasta — em breve") },
-              { icon: HardDrive,  label: "Salvar em Documentos",   onSelect: () => toast.info("Salvar em Documentos do Accord — em breve") },
+              { icon: FolderPlus, label: "Pasta",                onSelect: handleCreateFolder },
+              { icon: HardDrive,  label: "Salvar em Documentos", onSelect: handleGoToDocumentos },
               { icon: PenSquare,  label: "Lousa",                  onSelect: () => toast.info("Lousa — em breve") },
             ] as const).map((opt) => (
               <DropdownMenuItem
