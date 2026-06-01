@@ -90,10 +90,16 @@ interface Conversation {
 }
 
 type FileAttachment = {
-  kind: "pdf" | "xls" | "image" | "file" | "doc";
+  kind: "pdf" | "xls" | "image" | "file" | "doc" | "poll";
   name: string;
   size: string;
   url?: string;
+  // Poll fields (when kind === "poll")
+  poll_id?: string;
+  question?: string;
+  options?: Array<{ id: string; text: string }>;
+  show_voters?: boolean;
+  deadline?: string | null;
 };
 
 interface DbMessage {
