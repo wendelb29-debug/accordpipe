@@ -1296,12 +1296,12 @@ export default function Collabs() {
                     >
                       {([
                         { icon: Monitor,    label: "Arquivo neste computador", onSelect: () => fileInputRef.current?.click() },
-                        { icon: HardDrive,  label: "Arquivo no Accord",        onSelect: () => sonnerToast.info("Em breve") },
-                        { icon: CheckSquare,label: "Tarefa",                   onSelect: () => sonnerToast.info("Em breve") },
-                        { icon: Calendar,   label: "Evento ou reunião",        onSelect: () => sonnerToast.info("Em breve") },
-                        { icon: Clock,      label: "Horários disponíveis",     onSelect: () => sonnerToast.info("Em breve") },
-                        { icon: FilePen,    label: "Documento para assinatura",onSelect: () => sonnerToast.info("Em breve") },
-                        { icon: BarChart3,  label: "Enquete",                  onSelect: () => sonnerToast.info("Em breve") },
+                        { icon: HardDrive,  label: "Arquivo no Accord",        onSelect: () => setQuickAction("drive") },
+                        { icon: CheckSquare,label: "Tarefa",                   onSelect: () => setQuickAction("task") },
+                        { icon: Calendar,   label: "Evento ou reunião",        onSelect: () => setQuickAction("event") },
+                        { icon: Clock,      label: "Horários disponíveis",     onSelect: () => setQuickAction("slots") },
+                        { icon: FilePen,    label: "Documento para assinatura",onSelect: () => setQuickAction("sign") },
+                        { icon: BarChart3,  label: "Enquete",                  onSelect: () => setQuickAction("poll") },
                       ] as const).map((opt) => (
                         <DropdownMenuItem
                           key={opt.label}
