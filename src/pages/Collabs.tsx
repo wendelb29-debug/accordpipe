@@ -894,7 +894,13 @@ export default function Collabs() {
                     {onlineIds.size} online
                   </span>
                   <span className="opacity-40">·</span>
-                  <span>{memberCount} {memberCount === 1 ? "membro" : "membros"}</span>
+                  <button
+                    onClick={() => setMembersOpen(true)}
+                    className="hover:text-violet-600 hover:underline underline-offset-2 transition-colors"
+                    title="Ver membros"
+                  >
+                    {memberCount} {memberCount === 1 ? "membro" : "membros"}
+                  </button>
                   <span className="opacity-40">·</span>
                   <span>{KIND_META[active.kind].label}</span>
                 </div>
