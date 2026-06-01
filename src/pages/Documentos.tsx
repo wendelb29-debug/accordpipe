@@ -677,8 +677,9 @@ function DriveCard({ file, canManage, selected, onToggleSelect, onDoubleClick, o
 
 
 // List row component
-function DriveRow({ file, canManage, onDoubleClick, onRename, onDelete, onPreview, onSign, onViewContract, onOpenBuilder }: {
+function DriveRow({ file, canManage, selected, onToggleSelect, onDoubleClick, onRename, onDelete, onPreview, onSign, onViewContract, onOpenBuilder }: {
   file: DriveFile; canManage: boolean;
+  selected: boolean; onToggleSelect: () => void;
   onDoubleClick: () => void; onRename: () => void; onDelete: () => void;
   onPreview: () => void; onSign: () => void; onViewContract: () => void; onOpenBuilder: () => void;
 }) {
@@ -686,8 +687,34 @@ function DriveRow({ file, canManage, onDoubleClick, onRename, onDelete, onPrevie
   const isPdf = file.file_type?.includes("pdf");
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 cursor-pointer transition-colors" onDoubleClick={onDoubleClick}>
+    <div
+      className={cn(
+        "group flex items-center gap-3 px-4 py-3 hover:bg-muted/50 cursor-pointer transition-colors",
+        selected && "bg-primary/5"
+      )}
+      onDoubleClick={onDoubleClick}
+    >
+      {canManage && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleSelect(); }}
+          onDoubleClick={(e) => e.stopPropagation()}
+          className={cn(
+            "w-5 h-5 rounded border-2 flex items-center justify-center transition shrink-0",
+            selected
+              ? "bg-primary border-primary"
+              : "border-muted-foreground/40 opacity-0 group-hover:opacity-100 hover:border-primary"
+          )}
+          aria-label="Selecionar"
+        >
+          {selected && (
+            <svg viewBox="0 0 16 16" className="w-3 h-3 text-primary-foreground" fill="none" stroke="currentColor" strokeWidth="3">
+              <path d="M3 8l3.5 3.5L13 5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+        </button>
+      )}
       <FileIcon type={file.type} fileType={file.file_type} />
+
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground truncate">{file.name}</p>
         <p className="text-xs text-muted-foreground">
