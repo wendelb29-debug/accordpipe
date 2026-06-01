@@ -2081,6 +2081,10 @@ function QuickActionDialogs({ action, onClose, onSendMessage, onNavigate, member
               <label className="text-[11px] font-medium text-gray-500 mb-1 block">Prazo (opcional)</label>
               <input type="datetime-local" value={pollDeadline} onChange={(e) => setPollDeadline(e.target.value)} className="w-full h-10 px-3 rounded-lg border border-gray-200 text-[13px]" />
             </div>
+            <label className="flex items-center gap-2 text-[12px] text-gray-700 cursor-pointer select-none">
+              <input type="checkbox" checked={pollShowVoters} onChange={(e) => setPollShowVoters(e.target.checked)} className="rounded" />
+              Mostrar quem votou
+            </label>
             <div className="flex justify-end gap-2 pt-2">
               <button onClick={close} className="h-9 px-4 rounded-lg text-[12.5px] text-gray-600 hover:bg-gray-100">Cancelar</button>
               <button onClick={submitPoll} className="h-9 px-4 rounded-lg text-[12.5px] font-medium text-white bg-pink-600 hover:bg-pink-700">Publicar enquete</button>
