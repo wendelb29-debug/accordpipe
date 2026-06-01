@@ -23,6 +23,8 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { useDriveFiles } from "@/hooks/useDriveFiles";
 import { HexAvatar } from "./HexAvatar";
 
 type FileKind = "pdf" | "xls" | "image" | "file" | "doc";
