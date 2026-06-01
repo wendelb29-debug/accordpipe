@@ -1209,6 +1209,17 @@ export default function Collabs() {
                                     />
                                   );
                                 }
+                                if (f.kind === "audio" && f.url) {
+                                  return (
+                                    <VoiceMessageBubble
+                                      key={idx}
+                                      url={f.url}
+                                      duration={f.duration}
+                                      levels={f.levels}
+                                      tone={isSent ? "mine" : "other"}
+                                    />
+                                  );
+                                }
                                 if (f.kind === "image" && f.url) {
                                   return (
                                     <a key={idx} href={f.url} target="_blank" rel="noreferrer" className="block max-w-[280px]">
