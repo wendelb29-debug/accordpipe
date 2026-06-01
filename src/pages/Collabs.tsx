@@ -43,6 +43,7 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { HexAvatar, hexGradientFor } from "@/components/collabs/HexAvatar";
 import { CollabInfoPanel } from "@/components/collabs/CollabInfoPanel";
+import { CollabFilesPanel } from "@/components/collabs/CollabFilesPanel";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -219,6 +220,7 @@ export default function Collabs() {
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
   const [infoOpen, setInfoOpen] = useState(true);
+  const [chatView, setChatView] = useState<"chat" | "files">("chat");
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarView, setCalendarView] = useState<"list" | "agenda">("agenda");
   const [calendarExpanded, setCalendarExpanded] = useState(false);
@@ -370,6 +372,7 @@ export default function Collabs() {
 
   /* ────── Load messages + members for active conversation + realtime ────── */
   useEffect(() => {
+    setChatView("chat");
     if (!activeId) { setMessages([]); setReactions([]); setMembers([]); setMemberCount(0); return; }
     let cancelled = false;
 
@@ -826,9 +829,29 @@ export default function Collabs() {
                 </div>
               </div>
               <div className="hidden md:flex items-center mr-1">
-                <button onClick={() => { setCalendarView("list"); setCalendarOpen(true); }} className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900 border-r border-gray-200">Tarefas</button>
-                <button className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900 border-r border-gray-200">Arquivos</button>
-                <button onClick={() => { setCalendarView("agenda"); setCalendarOpen(true); }} className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900">Calendário</button>
+                <button
+                  onClick={() => { setCalendarView("list"); setCalendarOpen(true); }}
+                  className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900 border-r border-gray-200"
+                >
+                  Tarefas
+                </button>
+                <button
+                  onClick={() => setChatView("files")}
+                  className={cn(
+                    "px-3 py-1.5 text-[13px] font-medium border-r border-gray-200 transition-colors",
+                    chatView === "files"
+                      ? "text-emerald-600 font-semibold"
+                      : "text-gray-600 hover:text-gray-900",
+                  )}
+                >
+                  Arquivos
+                </button>
+                <button
+                  onClick={() => { setCalendarView("agenda"); setCalendarOpen(true); }}
+                  className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-gray-900"
+                >
+                  Calendário
+                </button>
               </div>
               <button className="hidden md:inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[13px] font-medium text-white bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 transition shadow-sm">
                 <Video className="h-[15px] w-[15px]" />
@@ -856,6 +879,26 @@ export default function Collabs() {
               </div>
             </header>
 
+            {chatView === "files" ? (
+              <CollabFilesPanel
+                collab={{
+                  id: active.id,
+                  name: active.name,
+                  color: active.color,
+                  avatar_url: (active as any).avatar_url ?? null,
+                }}
+                messages={messages.map((m) => ({
+                  id: m.id,
+                  sender_id: m.sender_id,
+                  created_at: m.created_at,
+                  attachments: (m.attachments as any) ?? [],
+                }))}
+                tenantUsers={tenantUsers.map((u) => ({ id: u.id, name: u.name }))}
+                onUploadClick={() => fileInputRef.current?.click()}
+                onBack={() => setChatView("chat")}
+              />
+            ) : (
+              <>
             <div
               className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-5 relative"
               style={{
@@ -1188,7 +1231,10 @@ export default function Collabs() {
                 </button>
               </div>
             </div>
+              </>
+            )}
           </>
+
         )}
       </main>
 
