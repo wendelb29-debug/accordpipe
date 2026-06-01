@@ -88,12 +88,45 @@ export function CollabInfoPanel({ collab, onClose, onInvite, onAvatarChange, can
       <div className="flex-1 overflow-y-auto px-4 py-4">
         {/* About */}
         <div className="flex flex-col items-center gap-2 pb-4 border-b border-gray-200 text-center">
-          <HexAvatar
-            size={88}
-            background={bg}
-            src={collab.avatar_url || null}
-            initials={initials}
-          />
+          <div className="relative group">
+            <HexAvatar
+              size={88}
+              background={bg}
+              src={collab.avatar_url || null}
+              initials={initials}
+            />
+            {canEditAvatar && onAvatarChange && (
+              <>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFile}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  className="absolute inset-0 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 bg-black/45 text-white transition disabled:opacity-100"
+                  title="Trocar foto do grupo"
+                  aria-label="Trocar foto do grupo"
+                >
+                  {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-md border-2 border-white flex items-center justify-center transition disabled:opacity-70"
+                  title="Trocar foto do grupo"
+                  aria-label="Trocar foto do grupo"
+                >
+                  {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                </button>
+              </>
+            )}
+          </div>
           <div className="text-[16px] font-semibold text-gray-900 mt-1">
             {collab.name}
           </div>
