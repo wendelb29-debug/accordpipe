@@ -271,6 +271,7 @@ export default function Collabs() {
   const [inviteTab, setInviteTab] = useState<"colab" | "guest">("colab");
   const [inviteContact, setInviteContact] = useState("");
   const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
+  const [pollDialogOpen, setPollDialogOpen] = useState(false);
 
   // Tenant users (for mentions and member selection)
   type MentionUser = { id: string; name: string; handle: string; avatar_url: string | null; department: string };
