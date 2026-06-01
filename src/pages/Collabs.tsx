@@ -213,7 +213,7 @@ function initialsOf(name: string) {
 
 export default function Collabs() {
   const companyId = useActiveCompanyId();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -1687,6 +1687,11 @@ export default function Collabs() {
         onNavigate={navigate}
         members={members}
         userMap={userMap}
+        companyId={companyId}
+        activeId={activeId}
+        currentUserId={user?.id ?? null}
+        currentUserName={profile?.name ?? user?.email ?? "Usuário"}
+        conversationName={active?.name ?? "Collab"}
       />
     </div>
   );
@@ -1701,9 +1706,14 @@ interface QuickActionDialogsProps {
   onNavigate: (path: string) => void;
   members: MemberRow[];
   userMap: Map<string, any>;
+  companyId: string | null;
+  activeId: string | null;
+  currentUserId: string | null;
+  currentUserName: string;
+  conversationName: string;
 }
 
-function QuickActionDialogs({ action, onClose, onSendMessage, onNavigate, members, userMap }: QuickActionDialogsProps) {
+function QuickActionDialogs({ action, onClose, onSendMessage, onNavigate, members, userMap, companyId, activeId, currentUserId, currentUserName, conversationName }: QuickActionDialogsProps) {
   // Shared
   const close = () => onClose();
 
@@ -1769,13 +1779,67 @@ function QuickActionDialogs({ action, onClose, onSendMessage, onNavigate, member
   // ─── EVENT
   const submitEvent = async () => {
     if (!evtTitle.trim() || !evtStart) { sonnerToast.error("Título e início são obrigatórios"); return; }
+    const startIso = new Date(evtStart).toISOString();
+    const endIso = evtEnd ? new Date(evtEnd).toISOString() : null;
     const lines = [
       `📅 **Evento:** ${evtTitle.trim()}`,
       evtDesc.trim() ? evtDesc.trim() : null,
       `🕒 ${fmt(evtStart)}${evtEnd ? ` → ${fmt(evtEnd)}` : ""}`,
       evtLink.trim() ? `🔗 ${evtLink.trim()}` : null,
+      `\n_Adicionado automaticamente à agenda dos participantes._`,
     ].filter(Boolean).join("\n");
     await onSendMessage(lines);
+
+    // Add to each participant's agenda + send notification
+    if (companyId && members.length > 0) {
+      const eventRef = crypto.randomUUID();
+      const agendaRows = members.map((m) => ({
+        servidor_id: companyId,
+        lead_id: null as any,
+        title: `📅 ${evtTitle.trim()}`,
+        description: evtDesc.trim() || `Evento do collab "${conversationName}"`,
+        type: "meeting",
+        status: "planned",
+        created_by_user_id: currentUserId,
+        created_by_name: currentUserName,
+        metadata: {
+          source: "collab_event",
+          collab_event_id: eventRef,
+          collab_conversation_id: activeId,
+          scheduled_at: startIso,
+          end_at: endIso,
+          meeting_url: evtLink.trim() || null,
+          activity_status: "planejada",
+          for_user_id: m.user_id,
+        } as any,
+      }));
+      const notifRows = members
+        .filter((m) => m.user_id !== currentUserId)
+        .map((m) => ({
+          user_id: m.user_id,
+          title: "Novo evento na sua agenda 📅",
+          message: `${currentUserName} marcou "${evtTitle.trim()}" em ${fmt(evtStart)}${evtLink.trim() ? " (videoconferência)" : ""}.`,
+          type: "event_invitation",
+          link: "/atividades",
+          servidor_id: companyId,
+          metadata: {
+            collab_event_id: eventRef,
+            collab_conversation_id: activeId,
+            scheduled_at: startIso,
+            meeting_url: evtLink.trim() || null,
+            play_sound: true,
+          } as any,
+        }));
+      try {
+        await Promise.all([
+          supabase.from("crm_lead_activities").insert(agendaRows as any),
+          notifRows.length ? supabase.from("notifications").insert(notifRows as any) : Promise.resolve(),
+        ]);
+        sonnerToast.success(`Evento adicionado à agenda de ${members.length} participante(s)`);
+      } catch (e: any) {
+        sonnerToast.error("Evento publicado, mas falhou ao notificar todos");
+      }
+    }
     close();
   };
 

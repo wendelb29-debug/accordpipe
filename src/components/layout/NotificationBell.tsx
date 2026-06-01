@@ -85,6 +85,32 @@ export function NotificationBell() {
     setUnreadCount(visible.filter((n) => !n.is_read).length);
   }, [user, activeCompanyId]);
 
+  const playNotificationSound = useCallback(() => {
+    try {
+      const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const now = ctx.currentTime;
+      const tones = [880, 1320];
+      tones.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        const start = now + i * 0.12;
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(0.18, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.22);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + 0.25);
+      });
+      setTimeout(() => ctx.close().catch(() => {}), 700);
+    } catch {
+      /* sound is best-effort */
+    }
+  }, []);
+
   useEffect(() => {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000);
@@ -95,14 +121,17 @@ export function NotificationBell() {
         schema: 'public',
         table: 'notifications',
         filter: `user_id=eq.${user?.id}`,
-      }, () => fetchNotifications())
+      }, () => {
+        playNotificationSound();
+        fetchNotifications();
+      })
       .subscribe();
 
     return () => {
       clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [user, activeCompanyId, fetchNotifications]);
+  }, [user, activeCompanyId, fetchNotifications, playNotificationSound]);
 
   const toggleRead = async (id: string, currentlyRead: boolean) => {
     await supabase.from("notifications").update({ is_read: !currentlyRead }).eq("id", id);
