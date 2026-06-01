@@ -30,6 +30,12 @@ import {
   ExternalLink,
   X,
   MessageSquare,
+  PanelRight,
+  CheckSquare,
+  Calendar,
+  Clock,
+  FilePen,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HexAvatar, hexGradientFor } from "@/components/collabs/HexAvatar";
@@ -48,6 +54,7 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
+import { toast as sonnerToast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { ConstellationCanvas } from "@/components/ui/constellation-canvas";
@@ -208,6 +215,7 @@ export default function Collabs() {
 
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
+  const [infoOpen, setInfoOpen] = useState(true);
   const [showEmoji, setShowEmoji] = useState(false);
   const [showMentions, setShowMentions] = useState(false);
   const [pickerTab, setPickerTab] = useState<"emoji" | "stickers">("emoji");
@@ -823,6 +831,18 @@ export default function Collabs() {
                 <button onClick={() => { setInviteTab("colab"); setInviteOpen(true); }} className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors" title="Adicionar membros">
                   <UserPlus className="h-[17px] w-[17px]" />
                 </button>
+                <button
+                  onClick={() => setInfoOpen((v) => !v)}
+                  className={cn(
+                    "w-9 h-9 rounded-xl flex items-center justify-center transition-colors",
+                    infoOpen
+                      ? "bg-emerald-100 text-emerald-600 hover:bg-emerald-200"
+                      : "text-gray-500 hover:bg-emerald-50 hover:text-emerald-600",
+                  )}
+                  title={infoOpen ? "Esconder painel" : "Mostrar painel"}
+                >
+                  <PanelRight className="h-[17px] w-[17px]" />
+                </button>
                 <button className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors">
                   <MoreVertical className="h-[17px] w-[17px]" />
                 </button>
@@ -1094,9 +1114,41 @@ export default function Collabs() {
 
               <div className="flex items-center gap-1.5 bg-white rounded-[24px] pl-3.5 pr-2 py-1.5 shadow-[0_8px_24px_-12px_rgba(124,58,237,0.35),inset_0_0_0_1px_rgba(124,58,237,0.08)]">
                 <div className="flex gap-0.5">
-                  <button onClick={() => fileInputRef.current?.click()} title="Anexar" className="w-[32px] h-[32px] rounded-full flex items-center justify-center text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition">
-                    <Paperclip className="h-[17px] w-[17px]" />
-                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        title="Anexar"
+                        className="w-[32px] h-[32px] rounded-full flex items-center justify-center text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                      >
+                        <Paperclip className="h-[17px] w-[17px]" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      side="top"
+                      align="start"
+                      sideOffset={10}
+                      className="w-[280px] p-1.5 rounded-2xl border border-gray-200 shadow-2xl bg-white"
+                    >
+                      {([
+                        { icon: Monitor,    label: "Arquivo neste computador", onSelect: () => fileInputRef.current?.click() },
+                        { icon: HardDrive,  label: "Arquivo no Accord",        onSelect: () => sonnerToast.info("Em breve") },
+                        { icon: CheckSquare,label: "Tarefa",                   onSelect: () => sonnerToast.info("Em breve") },
+                        { icon: Calendar,   label: "Evento ou reunião",        onSelect: () => sonnerToast.info("Em breve") },
+                        { icon: Clock,      label: "Horários disponíveis",     onSelect: () => sonnerToast.info("Em breve") },
+                        { icon: FilePen,    label: "Documento para assinatura",onSelect: () => sonnerToast.info("Em breve") },
+                        { icon: BarChart3,  label: "Enquete",                  onSelect: () => sonnerToast.info("Em breve") },
+                      ] as const).map((opt) => (
+                        <DropdownMenuItem
+                          key={opt.label}
+                          onSelect={(e) => { e.preventDefault(); opt.onSelect(); }}
+                          className="rounded-lg px-3 py-2.5 cursor-pointer focus:bg-emerald-50 data-[highlighted]:bg-emerald-50 gap-3"
+                        >
+                          <opt.icon className="h-[18px] w-[18px] text-gray-500 shrink-0" />
+                          <span className="text-[13px] text-gray-800">{opt.label}</span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <button onClick={() => imageInputRef.current?.click()} title="Enviar imagem" className="w-[32px] h-[32px] rounded-full flex items-center justify-center text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition">
                     <ImageIcon className="h-[17px] w-[17px]" />
                   </button>
@@ -1134,30 +1186,32 @@ export default function Collabs() {
       </main>
 
       {/* RIGHT PANEL — online by department */}
-      <aside className="hidden lg:flex w-[300px] min-w-[300px] shrink-0 flex-col bg-white border-l border-gray-200">
-        {active ? (
-          <CollabInfoPanel
-            collab={{
-              id: active.id,
-              name: active.name,
-              color: active.color,
-              avatar_url: (active as any).avatar_url ?? null,
-            }}
-            onInvite={() => { setInviteTab("colab"); setInviteOpen(true); }}
-          />
-        ) : (
-          <>
-        <div className="h-[64px] flex items-center gap-2 px-5 border-b border-gray-200/70 shrink-0">
-          <Users className="h-4 w-4 text-violet-600" />
-          <div className="flex-1">
-            <div className="text-[13px] font-semibold text-gray-900 leading-tight">Equipe online</div>
-            <div className="text-[11px] text-gray-500">{onlineIds.size} de {tenantUsers.length} ativos agora</div>
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
-          {usersByDept.length === 0 ? (
-            <div className="text-center text-[12px] text-gray-400 py-8">Sem colaboradores ativos.</div>
-          ) : usersByDept.map(([dept, list]) => {
+      {infoOpen && (
+        <aside className="hidden lg:flex w-[300px] min-w-[300px] shrink-0 flex-col bg-white border-l border-gray-200">
+          {active ? (
+            <CollabInfoPanel
+              collab={{
+                id: active.id,
+                name: active.name,
+                color: active.color,
+                avatar_url: (active as any).avatar_url ?? null,
+              }}
+              onInvite={() => { setInviteTab("colab"); setInviteOpen(true); }}
+              onClose={() => setInfoOpen(false)}
+            />
+          ) : (
+            <>
+              <div className="h-[64px] flex items-center gap-2 px-5 border-b border-gray-200/70 shrink-0">
+                <Users className="h-4 w-4 text-violet-600" />
+                <div className="flex-1">
+                  <div className="text-[13px] font-semibold text-gray-900 leading-tight">Equipe online</div>
+                  <div className="text-[11px] text-gray-500">{onlineIds.size} de {tenantUsers.length} ativos agora</div>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+                {usersByDept.length === 0 ? (
+                  <div className="text-center text-[12px] text-gray-400 py-8">Sem colaboradores ativos.</div>
+                ) : usersByDept.map(([dept, list]) => {
             const onlineList = list.filter((u) => onlineIds.has(u.id));
             const offlineList = list.filter((u) => !onlineIds.has(u.id));
             const ordered = [...onlineList, ...offlineList];
@@ -1200,6 +1254,7 @@ export default function Collabs() {
           </>
         )}
       </aside>
+      )}
 
 
       {/* CREATE DIALOG */}
