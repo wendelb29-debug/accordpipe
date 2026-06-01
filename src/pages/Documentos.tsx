@@ -340,6 +340,35 @@ export default function Documentos() {
         </Button>
       )}
 
+      {/* Selection action bar (Bitrix-like) */}
+      {canManage && selectedIds.size > 0 && (
+        <div className="flex items-center gap-1 bg-card border border-border rounded-xl px-4 py-2.5 shadow-sm sticky top-0 z-10">
+          <span className="text-sm font-semibold mr-3">
+            Selecionado: <span className="text-primary">{selectedIds.size}</span>
+          </span>
+          <Button variant="ghost" size="sm" onClick={handleDownloadZip} disabled={zipping} className="gap-1.5 uppercase text-xs">
+            {zipping ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} Baixar
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setPickerMode("copy")} className="gap-1.5 uppercase text-xs">
+            <CopyIcon className="h-4 w-4" /> Copiar
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setPickerMode("move")} className="gap-1.5 uppercase text-xs">
+            <FolderInput className="h-4 w-4" /> Mover
+          </Button>
+          <Button variant="ghost" size="sm" onClick={handleBulkDelete} className="gap-1.5 uppercase text-xs text-destructive hover:text-destructive">
+            <Trash2 className="h-4 w-4" /> Excluir
+          </Button>
+          <div className="flex-1" />
+          <Button variant="ghost" size="sm" onClick={toggleSelectAll} className="gap-1.5 text-xs text-muted-foreground">
+            <CheckSquare className="h-4 w-4" />
+            {selectedIds.size === filtered.length ? "Limpar" : "Selecionar tudo"}
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={clearSelection}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
       {/* Content */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
@@ -349,12 +378,16 @@ export default function Documentos() {
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <FolderPlus className="h-16 w-16 mb-4 opacity-30" />
           <p className="text-lg font-medium">Nenhum arquivo encontrado</p>
-          <p className="text-sm">Faça upload ou crie uma pasta para começar</p>
+          <p className="text-sm">
+            {folderStack.length > 1 ? "Não há arquivos ou pastas nesta pasta" : "Faça upload ou crie uma pasta para começar"}
+          </p>
         </div>
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
           {filtered.map(file => (
             <DriveCard key={file.id} file={file} canManage={canManage}
+              selected={selectedIds.has(file.id)}
+              onToggleSelect={() => toggleSelect(file.id)}
               onDoubleClick={() => handleDoubleClick(file)}
               onRename={() => openRename(file)}
               onDelete={() => deleteFile(file.id, file.file_path)}
@@ -376,6 +409,8 @@ export default function Documentos() {
         <div className="rounded-xl border border-border bg-card divide-y divide-border">
           {filtered.map(file => (
             <DriveRow key={file.id} file={file} canManage={canManage}
+              selected={selectedIds.has(file.id)}
+              onToggleSelect={() => toggleSelect(file.id)}
               onDoubleClick={() => handleDoubleClick(file)}
               onRename={() => openRename(file)}
               onDelete={() => deleteFile(file.id, file.file_path)}
@@ -394,6 +429,25 @@ export default function Documentos() {
           ))}
         </div>
       )}
+
+      {/* Move / Copy folder picker */}
+      <FolderPickerDialog
+        open={pickerMode !== null}
+        onOpenChange={(o) => !o && setPickerMode(null)}
+        title={pickerMode === "move" ? "Mover para…" : "Copiar para…"}
+        confirmLabel={pickerMode === "move" ? "Mover aqui" : "Copiar aqui"}
+        excludeIds={Array.from(selectedIds)}
+        fetchAllFolders={fetchAllFolders}
+        onConfirm={async (targetId) => {
+          const ids = Array.from(selectedIds);
+          if (pickerMode === "move") await moveItems(ids, targetId);
+          else await copyItems(ids, targetId);
+          clearSelection();
+          setPickerMode(null);
+        }}
+      />
+
+
 
       {/* New Folder Dialog */}
       <Dialog open={newFolderOpen} onOpenChange={setNewFolderOpen}>
