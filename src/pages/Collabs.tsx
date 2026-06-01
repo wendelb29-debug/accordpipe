@@ -43,6 +43,7 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { HexAvatar, hexGradientFor } from "@/components/collabs/HexAvatar";
 import { CollabInfoPanel } from "@/components/collabs/CollabInfoPanel";
+import { CollabFilesPanel } from "@/components/collabs/CollabFilesPanel";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
