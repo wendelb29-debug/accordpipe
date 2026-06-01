@@ -1700,7 +1700,7 @@ interface QuickActionDialogsProps {
   onSendMessage: (content: string, attachments?: FileAttachment[]) => Promise<void>;
   onNavigate: (path: string) => void;
   members: MemberRow[];
-  userMap: Map<string, { id: string; name: string; avatar_url: string | null; handle?: string; department?: string }>;
+  userMap: Map<string, any>;
 }
 
 function QuickActionDialogs({ action, onClose, onSendMessage, onNavigate, members, userMap }: QuickActionDialogsProps) {
