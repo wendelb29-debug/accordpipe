@@ -84,6 +84,81 @@ export default function Documentos() {
   const [viewSigners, setViewSigners] = useState<PdfContractSigner[]>([]);
   const [viewHistory, setViewHistory] = useState<PdfContractHistory[]>([]);
 
+  // Multi-select
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [pickerMode, setPickerMode] = useState<"move" | "copy" | null>(null);
+  const [zipping, setZipping] = useState(false);
+
+  const clearSelection = () => setSelectedIds(new Set());
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length) clearSelection();
+    else setSelectedIds(new Set(filtered.map((f) => f.id)));
+  };
+
+  // Recursively gather files of a folder for zip
+  const gatherFolderFiles = async (folderId: string, prefix: string, zip: JSZip) => {
+    const { data: children } = await supabase
+      .from("drive_files")
+      .select("*")
+      .eq("parent_id", folderId);
+    for (const c of (children as DriveFile[] | null) || []) {
+      if (c.type === "folder") {
+        await gatherFolderFiles(c.id, `${prefix}${c.name}/`, zip);
+      } else if (c.file_path) {
+        const { data } = await supabase.storage.from("contract-pdfs").download(c.file_path);
+        if (data) zip.file(`${prefix}${c.name}`, data);
+      }
+    }
+  };
+
+  const handleDownloadZip = async () => {
+    if (selectedIds.size === 0) return;
+    setZipping(true);
+    try {
+      const zip = new JSZip();
+      const items = files.filter((f) => selectedIds.has(f.id));
+      // Single file shortcut
+      if (items.length === 1 && items[0].type === "file" && items[0].file_url) {
+        window.open(items[0].file_url, "_blank");
+        setZipping(false);
+        return;
+      }
+      for (const item of items) {
+        if (item.type === "folder") {
+          await gatherFolderFiles(item.id, `${item.name}/`, zip);
+        } else if (item.file_path) {
+          const { data } = await supabase.storage.from("contract-pdfs").download(item.file_path);
+          if (data) zip.file(item.name, data);
+        }
+      }
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `documentos_${Date.now()}.zip`; a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Download iniciado");
+    } catch (e: any) {
+      toast.error("Erro ao criar zip", { description: e?.message });
+    } finally {
+      setZipping(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`Excluir ${selectedIds.size} item(s)? Esta ação não pode ser desfeita.`)) return;
+    await deleteMany(Array.from(selectedIds));
+    clearSelection();
+  };
+
+
   const filtered = files.filter(f => f.name.toLowerCase().includes(searchTerm.toLowerCase()));
   const folders = filtered.filter(f => f.type === "folder");
   const docs = filtered.filter(f => f.type === "file");
