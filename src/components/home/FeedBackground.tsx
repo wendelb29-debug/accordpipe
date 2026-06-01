@@ -13,7 +13,7 @@
  */
 export function FeedBackground() {
   return (
-    <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
       {/* Céu base — degradê azul, mais claro no topo */}
       <div
         className="absolute inset-0
