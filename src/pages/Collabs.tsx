@@ -1326,7 +1326,7 @@ export default function Collabs() {
                         { icon: Calendar,   label: "Evento ou reunião",        onSelect: () => setQuickAction("event") },
                         { icon: Clock,      label: "Horários disponíveis",     onSelect: () => setQuickAction("slots") },
                         { icon: FilePen,    label: "Documento para assinatura",onSelect: () => setQuickAction("sign") },
-                        { icon: BarChart3,  label: "Enquete",                  onSelect: () => setQuickAction("poll") },
+                        { icon: BarChart3,  label: "Enquete",                  onSelect: () => setPollDialogOpen(true) },
                       ] as const).map((opt) => (
                         <DropdownMenuItem
                           key={opt.label}
