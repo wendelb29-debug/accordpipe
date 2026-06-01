@@ -1119,7 +1119,16 @@ export default function Collabs() {
                                       </div>
                                     </div>
                                   )}
-                                  {m.content && <div className="whitespace-pre-wrap">{m.content}</div>}
+                                  {m.content === "[[poll]]" ? (
+                                    <PollByMessage
+                                      messageId={m.id}
+                                      currentUserId={user?.id || ""}
+                                      tenantUsers={tenantUsers}
+                                      mine={isSent}
+                                    />
+                                  ) : (
+                                    m.content && <div className="whitespace-pre-wrap">{m.content}</div>
+                                  )}
                                   <span className={cn("block text-right text-[10px] mt-1", isSent ? "text-white/70" : "text-gray-400")}>{time}</span>
                                 </div>
                               )}
