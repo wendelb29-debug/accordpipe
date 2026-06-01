@@ -32,6 +32,8 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { HexAvatar, hexGradientFor } from "@/components/collabs/HexAvatar";
+import { CollabInfoPanel } from "@/components/collabs/CollabInfoPanel";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
