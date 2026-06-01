@@ -1727,6 +1727,16 @@ export default function Collabs() {
         currentUserName={profile?.name ?? user?.email ?? "Usuário"}
         conversationName={active?.name ?? "Collab"}
       />
+
+      {activeId && companyId && user && (
+        <CreatePollDialog
+          open={pollDialogOpen}
+          onOpenChange={setPollDialogOpen}
+          conversationId={activeId}
+          servidorId={companyId}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 }
