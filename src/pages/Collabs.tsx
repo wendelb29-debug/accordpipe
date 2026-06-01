@@ -741,12 +741,13 @@ export default function Collabs() {
                     : "hover:bg-white/6",
                 )}
               >
-                <div
-                  className="w-11 h-11 min-w-11 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-md"
-                  style={{ background: `linear-gradient(135deg, ${color} 0%, ${color}cc 100%)` }}
+                <HexAvatar
+                  size={44}
+                  background={c.color ? `linear-gradient(135deg, ${c.color} 0%, ${c.color}cc 100%)` : hexGradientFor(c.id)}
+                  src={(c as any).avatar_url || null}
                 >
                   <Icon className="h-[18px] w-[18px]" />
-                </div>
+                </HexAvatar>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1 min-w-0">
