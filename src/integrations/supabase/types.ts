@@ -914,6 +914,85 @@ export type Database = {
           },
         ]
       }
+      collab_poll_votes: {
+        Row: {
+          created_at: string
+          id: string
+          option_id: string
+          poll_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_id: string
+          poll_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_id?: string
+          poll_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collab_poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "collab_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collab_polls: {
+        Row: {
+          closed_at: string | null
+          conversation_id: string
+          created_at: string
+          created_by: string
+          deadline: string | null
+          id: string
+          options: Json
+          question: string
+          servidor_id: string
+          show_voters: boolean
+        }
+        Insert: {
+          closed_at?: string | null
+          conversation_id: string
+          created_at?: string
+          created_by: string
+          deadline?: string | null
+          id?: string
+          options: Json
+          question: string
+          servidor_id: string
+          show_voters?: boolean
+        }
+        Update: {
+          closed_at?: string | null
+          conversation_id?: string
+          created_at?: string
+          created_by?: string
+          deadline?: string | null
+          id?: string
+          options?: Json
+          question?: string
+          servidor_id?: string
+          show_voters?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collab_polls_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "collab_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collab_reactions: {
         Row: {
           created_at: string
