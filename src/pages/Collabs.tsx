@@ -883,7 +883,7 @@ export default function Collabs() {
                   </div>
                   <div className="flex items-center justify-between gap-2 mt-0.5">
                     <span className="text-xs truncate text-gray-500">
-                      {c.last_message_preview || "Sem mensagens ainda"}
+                      {c.last_message_preview === "[[poll]]" ? "📊 Enquete" : (c.last_message_preview || "Sem mensagens ainda")}
                     </span>
                   </div>
                 </div>
