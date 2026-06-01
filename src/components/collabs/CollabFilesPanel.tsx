@@ -206,7 +206,7 @@ export function CollabFilesPanel({
 
       <div className="flex-1 overflow-y-auto p-5">
         {filtered.length === 0 ? (
-          <EmptyState search={search} onUploadClick={onUploadClick} />
+          <EmptyState search={search} onUploadClick={onUploadClick} onCreateFolder={handleCreateFolder} />
         ) : view === "list" ? (
           <ListView rows={filtered} />
         ) : (
