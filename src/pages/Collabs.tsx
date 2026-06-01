@@ -68,6 +68,8 @@ import { toast as sonnerToast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { ConstellationCanvas } from "@/components/ui/constellation-canvas";
+import { useDriveFiles } from "@/hooks/useDriveFiles";
+import { Plus, Trash2 } from "lucide-react";
 
 
 /* ──────────────────────────  TYPES  ────────────────────────── */
@@ -238,6 +240,10 @@ export default function Collabs() {
   const [pickerTab, setPickerTab] = useState<"emoji" | "stickers">("emoji");
   const [replyTo, setReplyTo] = useState<{ id: string; name: string; text: string } | null>(null);
   const [reactPickerFor, setReactPickerFor] = useState<string | null>(null);
+
+  // Quick actions (attach menu)
+  type QuickAction = null | "drive" | "task" | "event" | "slots" | "sign" | "poll";
+  const [quickAction, setQuickAction] = useState<QuickAction>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -672,6 +678,22 @@ export default function Collabs() {
       attachments: [],
     });
     if (error) toast({ title: "Erro ao enviar", description: error.message, variant: "destructive" });
+  };
+
+  const sendCardMessage = async (content: string, attachments: FileAttachment[] = []) => {
+    if (!activeId || !user || !companyId) return;
+    const { error } = await supabase.from("collab_messages").insert({
+      conversation_id: activeId,
+      servidor_id: companyId,
+      sender_id: user.id,
+      content: content || null,
+      attachments,
+    });
+    if (error) {
+      sonnerToast.error("Erro ao publicar no chat");
+    } else {
+      sonnerToast.success("Publicado no chat");
+    }
   };
 
   const sendSticker = async (url: string) => {
@@ -1274,12 +1296,12 @@ export default function Collabs() {
                     >
                       {([
                         { icon: Monitor,    label: "Arquivo neste computador", onSelect: () => fileInputRef.current?.click() },
-                        { icon: HardDrive,  label: "Arquivo no Accord",        onSelect: () => sonnerToast.info("Em breve") },
-                        { icon: CheckSquare,label: "Tarefa",                   onSelect: () => sonnerToast.info("Em breve") },
-                        { icon: Calendar,   label: "Evento ou reunião",        onSelect: () => sonnerToast.info("Em breve") },
-                        { icon: Clock,      label: "Horários disponíveis",     onSelect: () => sonnerToast.info("Em breve") },
-                        { icon: FilePen,    label: "Documento para assinatura",onSelect: () => sonnerToast.info("Em breve") },
-                        { icon: BarChart3,  label: "Enquete",                  onSelect: () => sonnerToast.info("Em breve") },
+                        { icon: HardDrive,  label: "Arquivo no Accord",        onSelect: () => setQuickAction("drive") },
+                        { icon: CheckSquare,label: "Tarefa",                   onSelect: () => setQuickAction("task") },
+                        { icon: Calendar,   label: "Evento ou reunião",        onSelect: () => setQuickAction("event") },
+                        { icon: Clock,      label: "Horários disponíveis",     onSelect: () => setQuickAction("slots") },
+                        { icon: FilePen,    label: "Documento para assinatura",onSelect: () => setQuickAction("sign") },
+                        { icon: BarChart3,  label: "Enquete",                  onSelect: () => setQuickAction("poll") },
                       ] as const).map((opt) => (
                         <DropdownMenuItem
                           key={opt.label}
@@ -1656,6 +1678,372 @@ export default function Collabs() {
           </div>
         </>
       )}
+
+      {/* QUICK ACTIONS (Tarefa / Evento / Horários / Enquete / Drive / Assinatura) */}
+      <QuickActionDialogs
+        action={quickAction}
+        onClose={() => setQuickAction(null)}
+        onSendMessage={sendCardMessage}
+        onNavigate={navigate}
+        members={members}
+        userMap={userMap}
+      />
     </div>
+  );
+}
+
+/* ──────────────────────────  QUICK ACTION DIALOGS  ────────────────────────── */
+
+interface QuickActionDialogsProps {
+  action: null | "drive" | "task" | "event" | "slots" | "sign" | "poll";
+  onClose: () => void;
+  onSendMessage: (content: string, attachments?: FileAttachment[]) => Promise<void>;
+  onNavigate: (path: string) => void;
+  members: MemberRow[];
+  userMap: Map<string, any>;
+}
+
+function QuickActionDialogs({ action, onClose, onSendMessage, onNavigate, members, userMap }: QuickActionDialogsProps) {
+  // Shared
+  const close = () => onClose();
+
+  // Task
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskDesc, setTaskDesc] = useState("");
+  const [taskDue, setTaskDue] = useState("");
+  const [taskAssignees, setTaskAssignees] = useState<string[]>([]);
+
+  // Event
+  const [evtTitle, setEvtTitle] = useState("");
+  const [evtDesc, setEvtDesc] = useState("");
+  const [evtStart, setEvtStart] = useState("");
+  const [evtEnd, setEvtEnd] = useState("");
+  const [evtLink, setEvtLink] = useState("");
+
+  // Slots
+  const [slotDate, setSlotDate] = useState("");
+  const [slotTimes, setSlotTimes] = useState("09:00, 10:00, 14:00, 15:00");
+
+  // Poll
+  const [pollTitle, setPollTitle] = useState("");
+  const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
+  const [pollDeadline, setPollDeadline] = useState("");
+
+  // Sign — PDF upload
+  const signFileInput = useRef<HTMLInputElement>(null);
+
+  const resetAll = () => {
+    setTaskTitle(""); setTaskDesc(""); setTaskDue(""); setTaskAssignees([]);
+    setEvtTitle(""); setEvtDesc(""); setEvtStart(""); setEvtEnd(""); setEvtLink("");
+    setSlotDate(""); setSlotTimes("09:00, 10:00, 14:00, 15:00");
+    setPollTitle(""); setPollOptions(["", ""]); setPollDeadline("");
+  };
+
+  useEffect(() => { if (!action) resetAll(); }, [action]);
+
+  const fmt = (iso: string) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return d.toLocaleString("pt-BR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  };
+  const fmtDateOnly = (iso: string) => {
+    if (!iso) return "";
+    const d = new Date(iso + "T12:00:00");
+    return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
+  };
+
+  // ─── TASK
+  const submitTask = async () => {
+    if (!taskTitle.trim()) { sonnerToast.error("Informe o título da tarefa"); return; }
+    const assignedNames = taskAssignees.map((id) => userMap.get(id)?.name).filter(Boolean);
+    const lines = [
+      `📋 **Tarefa:** ${taskTitle.trim()}`,
+      taskDesc.trim() ? taskDesc.trim() : null,
+      taskDue ? `📅 Entrega: ${fmt(taskDue)}` : null,
+      assignedNames.length ? `👤 Atribuído(s): ${assignedNames.join(", ")}` : null,
+    ].filter(Boolean).join("\n");
+    await onSendMessage(lines);
+    close();
+  };
+
+  // ─── EVENT
+  const submitEvent = async () => {
+    if (!evtTitle.trim() || !evtStart) { sonnerToast.error("Título e início são obrigatórios"); return; }
+    const lines = [
+      `📅 **Evento:** ${evtTitle.trim()}`,
+      evtDesc.trim() ? evtDesc.trim() : null,
+      `🕒 ${fmt(evtStart)}${evtEnd ? ` → ${fmt(evtEnd)}` : ""}`,
+      evtLink.trim() ? `🔗 ${evtLink.trim()}` : null,
+    ].filter(Boolean).join("\n");
+    await onSendMessage(lines);
+    close();
+  };
+
+  // ─── SLOTS
+  const submitSlots = async () => {
+    if (!slotDate) { sonnerToast.error("Escolha a data"); return; }
+    const times = slotTimes.split(",").map((t) => t.trim()).filter(Boolean);
+    if (times.length === 0) { sonnerToast.error("Adicione ao menos um horário"); return; }
+    const lines = [
+      `⏰ **Horários disponíveis** — ${fmtDateOnly(slotDate)}`,
+      "Escolha um horário respondendo nesta conversa:",
+      ...times.map((t) => `• ${t}`),
+    ].join("\n");
+    await onSendMessage(lines);
+    close();
+  };
+
+  // ─── POLL
+  const submitPoll = async () => {
+    const opts = pollOptions.map((o) => o.trim()).filter(Boolean);
+    if (!pollTitle.trim() || opts.length < 2) { sonnerToast.error("Título e ao menos 2 opções"); return; }
+    const lines = [
+      `📊 **Enquete:** ${pollTitle.trim()}`,
+      ...opts.map((o, i) => `${i + 1}. ${o}`),
+      pollDeadline ? `\n⏳ Prazo: ${fmt(pollDeadline)}` : "",
+      `\n_Vote respondendo o número da opção._`,
+    ].filter(Boolean).join("\n");
+    await onSendMessage(lines);
+    close();
+  };
+
+  // ─── SIGN
+  const submitSign = async (file: File) => {
+    // Upload PDF to documents bucket and post a card + redirect to /documentos
+    const { user } = (await supabase.auth.getUser()).data;
+    if (!user) return;
+    const path = `assinatura/${user.id}/${crypto.randomUUID()}-${file.name}`;
+    const { data, error } = await supabase.storage.from("documents").upload(path, file, { contentType: "application/pdf" });
+    if (error) { sonnerToast.error("Falha no upload do PDF"); return; }
+    const { data: signed } = await supabase.storage.from("documents").createSignedUrl(data.path, 60 * 60 * 24 * 7);
+    await onSendMessage(`✍️ **Documento para assinatura** enviado para configuração do fluxo de assinantes.`, [{
+      kind: "pdf", name: file.name, size: `${(file.size / 1024).toFixed(1)} KB`, url: signed?.signedUrl,
+    }]);
+    close();
+    sonnerToast.success("Configure os assinantes em Documentos");
+    onNavigate("/documentos");
+  };
+
+  return (
+    <>
+      {/* ARQUIVO NO ACCORD (Drive picker) */}
+      <DrivePickerDialog
+        open={action === "drive"}
+        onClose={close}
+        onPick={async (file) => {
+          await onSendMessage(null as any, [{
+            kind: file.file_type?.includes("pdf") ? "pdf"
+                : file.file_type?.includes("sheet") || /\.(xlsx?|csv)$/i.test(file.name) ? "xls"
+                : file.file_type?.startsWith("image/") ? "image"
+                : "file",
+            name: file.name,
+            size: file.file_size ? `${(file.file_size / 1024).toFixed(1)} KB` : "",
+            url: file.file_url ?? undefined,
+          }]);
+          close();
+        }}
+      />
+
+      {/* TAREFA */}
+      <Dialog open={action === "task"} onOpenChange={(v) => !v && close()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-[15px]">
+              <CheckSquare className="h-4 w-4 text-emerald-600" /> Nova tarefa
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <input value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} placeholder="Título *" className="w-full h-10 px-3 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-emerald-500" />
+            <textarea value={taskDesc} onChange={(e) => setTaskDesc(e.target.value)} placeholder="Descrição" rows={3} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-emerald-500 resize-none" />
+            <div>
+              <label className="text-[11px] font-medium text-gray-500 mb-1 block">Data de entrega</label>
+              <input type="datetime-local" value={taskDue} onChange={(e) => setTaskDue(e.target.value)} className="w-full h-10 px-3 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-emerald-500" />
+            </div>
+            <div>
+              <label className="text-[11px] font-medium text-gray-500 mb-1 block">Atribuir a</label>
+              <div className="max-h-32 overflow-y-auto rounded-lg border border-gray-200 p-1">
+                {members.length === 0 && <div className="text-[12px] text-gray-400 px-2 py-2">Sem membros</div>}
+                {members.map((m) => {
+                  const u = userMap.get(m.user_id);
+                  const checked = taskAssignees.includes(m.user_id);
+                  return (
+                    <label key={m.user_id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                      <input type="checkbox" checked={checked} onChange={(e) => setTaskAssignees((prev) => e.target.checked ? [...prev, m.user_id] : prev.filter((x) => x !== m.user_id))} />
+                      <span className="text-[12.5px] text-gray-800">{u?.name || "Usuário"}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button onClick={close} className="h-9 px-4 rounded-lg text-[12.5px] text-gray-600 hover:bg-gray-100">Cancelar</button>
+              <button onClick={submitTask} className="h-9 px-4 rounded-lg text-[12.5px] font-medium text-white bg-emerald-600 hover:bg-emerald-700">Criar tarefa</button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* EVENTO */}
+      <Dialog open={action === "event"} onOpenChange={(v) => !v && close()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-[15px]">
+              <Calendar className="h-4 w-4 text-violet-600" /> Novo evento / reunião
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <input value={evtTitle} onChange={(e) => setEvtTitle(e.target.value)} placeholder="Título *" className="w-full h-10 px-3 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-violet-500" />
+            <textarea value={evtDesc} onChange={(e) => setEvtDesc(e.target.value)} placeholder="Descrição" rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-violet-500 resize-none" />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[11px] font-medium text-gray-500 mb-1 block">Início *</label>
+                <input type="datetime-local" value={evtStart} onChange={(e) => setEvtStart(e.target.value)} className="w-full h-10 px-3 rounded-lg border border-gray-200 text-[13px]" />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-gray-500 mb-1 block">Fim</label>
+                <input type="datetime-local" value={evtEnd} onChange={(e) => setEvtEnd(e.target.value)} className="w-full h-10 px-3 rounded-lg border border-gray-200 text-[13px]" />
+              </div>
+            </div>
+            <input value={evtLink} onChange={(e) => setEvtLink(e.target.value)} placeholder="Link da videoconferência (opcional)" className="w-full h-10 px-3 rounded-lg border border-gray-200 text-[13px]" />
+            <div className="flex justify-end gap-2 pt-2">
+              <button onClick={close} className="h-9 px-4 rounded-lg text-[12.5px] text-gray-600 hover:bg-gray-100">Cancelar</button>
+              <button onClick={submitEvent} className="h-9 px-4 rounded-lg text-[12.5px] font-medium text-white bg-violet-600 hover:bg-violet-700">Publicar evento</button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* HORÁRIOS DISPONÍVEIS */}
+      <Dialog open={action === "slots"} onOpenChange={(v) => !v && close()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-[15px]">
+              <Clock className="h-4 w-4 text-amber-600" /> Horários disponíveis
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-[11px] font-medium text-gray-500 mb-1 block">Data</label>
+              <input type="date" value={slotDate} onChange={(e) => setSlotDate(e.target.value)} className="w-full h-10 px-3 rounded-lg border border-gray-200 text-[13px]" />
+            </div>
+            <div>
+              <label className="text-[11px] font-medium text-gray-500 mb-1 block">Horários (separados por vírgula)</label>
+              <textarea value={slotTimes} onChange={(e) => setSlotTimes(e.target.value)} rows={2} placeholder="09:00, 10:30, 14:00" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] resize-none" />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button onClick={close} className="h-9 px-4 rounded-lg text-[12.5px] text-gray-600 hover:bg-gray-100">Cancelar</button>
+              <button onClick={submitSlots} className="h-9 px-4 rounded-lg text-[12.5px] font-medium text-white bg-amber-600 hover:bg-amber-700">Compartilhar</button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* DOCUMENTO PARA ASSINATURA */}
+      <Dialog open={action === "sign"} onOpenChange={(v) => !v && close()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-[15px]">
+              <FilePen className="h-4 w-4 text-sky-600" /> Documento para assinatura
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-[12.5px] text-gray-600">Envie o PDF do documento. Em seguida você será levado(a) ao módulo <strong>Documentos</strong> para configurar os assinantes e a ordem da assinatura.</p>
+            <input ref={signFileInput} type="file" accept="application/pdf" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) submitSign(f); e.currentTarget.value = ""; }} />
+            <button onClick={() => signFileInput.current?.click()} className="w-full h-24 rounded-xl border-2 border-dashed border-sky-300 bg-sky-50 hover:bg-sky-100 text-sky-700 text-[13px] font-medium flex flex-col items-center justify-center gap-1">
+              <FilePen className="h-5 w-5" />
+              Selecionar PDF
+            </button>
+            <div className="flex justify-between items-center pt-2">
+              <button onClick={() => { close(); onNavigate("/documentos"); }} className="text-[12px] text-sky-700 hover:underline">Ir para Documentos →</button>
+              <button onClick={close} className="h-9 px-4 rounded-lg text-[12.5px] text-gray-600 hover:bg-gray-100">Cancelar</button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ENQUETE */}
+      <Dialog open={action === "poll"} onOpenChange={(v) => !v && close()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-[15px]">
+              <BarChart3 className="h-4 w-4 text-pink-600" /> Nova enquete
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <input value={pollTitle} onChange={(e) => setPollTitle(e.target.value)} placeholder="Pergunta *" className="w-full h-10 px-3 rounded-lg border border-gray-200 text-[13px]" />
+            <div className="space-y-1.5">
+              {pollOptions.map((opt, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input value={opt} onChange={(e) => { const c = [...pollOptions]; c[i] = e.target.value; setPollOptions(c); }} placeholder={`Opção ${i + 1}`} className="flex-1 h-9 px-3 rounded-lg border border-gray-200 text-[13px]" />
+                  {pollOptions.length > 2 && (
+                    <button onClick={() => setPollOptions(pollOptions.filter((_, j) => j !== i))} className="w-9 h-9 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button onClick={() => setPollOptions([...pollOptions, ""])} className="text-[12px] text-pink-600 font-medium hover:underline inline-flex items-center gap-1">
+                <Plus className="h-3.5 w-3.5" /> Adicionar opção
+              </button>
+            </div>
+            <div>
+              <label className="text-[11px] font-medium text-gray-500 mb-1 block">Prazo (opcional)</label>
+              <input type="datetime-local" value={pollDeadline} onChange={(e) => setPollDeadline(e.target.value)} className="w-full h-10 px-3 rounded-lg border border-gray-200 text-[13px]" />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button onClick={close} className="h-9 px-4 rounded-lg text-[12.5px] text-gray-600 hover:bg-gray-100">Cancelar</button>
+              <button onClick={submitPoll} className="h-9 px-4 rounded-lg text-[12.5px] font-medium text-white bg-pink-600 hover:bg-pink-700">Publicar enquete</button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+/* ──────────────────────────  DRIVE PICKER  ────────────────────────── */
+
+function DrivePickerDialog({ open, onClose, onPick }: { open: boolean; onClose: () => void; onPick: (f: any) => void }) {
+  const [parentId, setParentId] = useState<string | null>(null);
+  const { files, loading } = useDriveFiles(parentId);
+  const folders = files.filter((f) => f.type === "folder");
+  const docs = files.filter((f) => f.type === "file");
+
+  useEffect(() => { if (!open) setParentId(null); }, [open]);
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-lg p-0 overflow-hidden">
+        <DialogHeader className="px-5 py-4 border-b border-gray-100">
+          <DialogTitle className="flex items-center gap-2 text-[15px]">
+            <HardDrive className="h-4 w-4 text-emerald-600" /> Selecionar do Accord Documentos
+          </DialogTitle>
+        </DialogHeader>
+        <div className="max-h-[60vh] overflow-y-auto p-2">
+          {parentId && (
+            <button onClick={() => setParentId(null)} className="w-full text-left px-3 py-2 text-[12px] text-gray-500 hover:bg-gray-50 rounded-lg">← Voltar à raiz</button>
+          )}
+          {loading && <div className="text-center text-[12px] text-gray-400 py-8">Carregando…</div>}
+          {!loading && folders.length === 0 && docs.length === 0 && (
+            <div className="text-center text-[12.5px] text-gray-400 py-10">Nenhum arquivo nesta pasta.</div>
+          )}
+          {folders.map((f) => (
+            <button key={f.id} onClick={() => setParentId(f.id)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-emerald-50 text-left">
+              <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center text-base">📁</div>
+              <span className="flex-1 text-[13px] text-gray-800 truncate">{f.name}</span>
+            </button>
+          ))}
+          {docs.map((f) => (
+            <button key={f.id} onClick={() => onPick(f)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-emerald-50 text-left">
+              <div className="w-9 h-9 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center"><FileIcon className="h-4 w-4" /></div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] text-gray-800 truncate">{f.name}</div>
+                <div className="text-[11px] text-gray-400">{f.file_size ? `${(f.file_size / 1024).toFixed(1)} KB` : ""}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
