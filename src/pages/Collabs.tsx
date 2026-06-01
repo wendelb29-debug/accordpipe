@@ -1431,9 +1431,10 @@ export default function Collabs() {
               </div>
             </div>
             <iframe
-              src="/atividades?view=agenda"
+              key={calendarView}
+              src={`/atividades?view=${calendarView}`}
               className="flex-1 w-full border-0 bg-white"
-              title="Agenda"
+              title={calendarView === "agenda" ? "Agenda" : "Atividades"}
             />
           </div>
         </>
