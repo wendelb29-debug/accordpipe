@@ -241,6 +241,10 @@ export default function Collabs() {
   const [replyTo, setReplyTo] = useState<{ id: string; name: string; text: string } | null>(null);
   const [reactPickerFor, setReactPickerFor] = useState<string | null>(null);
 
+  // Quick actions (attach menu)
+  type QuickAction = null | "drive" | "task" | "event" | "slots" | "sign" | "poll";
+  const [quickAction, setQuickAction] = useState<QuickAction>(null);
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
