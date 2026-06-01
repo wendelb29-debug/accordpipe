@@ -219,6 +219,9 @@ export default function Collabs() {
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
   const [infoOpen, setInfoOpen] = useState(true);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarExpanded, setCalendarExpanded] = useState(false);
+  const navigate = useNavigate();
   const [showEmoji, setShowEmoji] = useState(false);
   const [showMentions, setShowMentions] = useState(false);
   const [pickerTab, setPickerTab] = useState<"emoji" | "stickers">("emoji");
