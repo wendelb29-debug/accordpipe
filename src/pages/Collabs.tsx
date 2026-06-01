@@ -231,6 +231,8 @@ export default function Collabs() {
   const companyId = useActiveCompanyId();
   const { user, profile } = useAuth();
   const { toast } = useToast();
+  const recorder = useAudioRecorder();
+  const [sendingAudio, setSendingAudio] = useState(false);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
