@@ -776,6 +776,7 @@ export type Database = {
       }
       collab_conversations: {
         Row: {
+          avatar_url: string | null
           color: string | null
           created_at: string
           created_by: string
@@ -790,6 +791,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          avatar_url?: string | null
           color?: string | null
           created_at?: string
           created_by: string
@@ -804,6 +806,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          avatar_url?: string | null
           color?: string | null
           created_at?: string
           created_by?: string

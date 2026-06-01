@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   X,
   UserPlus,
@@ -8,6 +8,8 @@ import {
   Link as LinkIcon,
   Image as ImageIcon,
   BookOpen,
+  Camera,
+  Loader2,
 } from "lucide-react";
 import { HexAvatar, hexGradientFor } from "./HexAvatar";
 
@@ -22,6 +24,10 @@ interface CollabInfoPanelProps {
   onClose?: () => void;
   /** Callback do botão "+ Adicionar" (abrir invite). */
   onInvite?: () => void;
+  /** Callback ao trocar a foto do grupo. Recebe um File, deve retornar o novo url (ou null em erro). */
+  onAvatarChange?: (file: File) => Promise<string | null>;
+  /** Se o usuário atual pode editar a foto do grupo. */
+  canEditAvatar?: boolean;
   /** Contadores opcionais. */
   counts?: {
     pinned?: number;
@@ -35,9 +41,11 @@ interface CollabInfoPanelProps {
  * Renderiza dentro do <aside> existente no Collabs.tsx, substituindo
  * o painel "Equipe online" enquanto houver uma collab ativa.
  */
-export function CollabInfoPanel({ collab, onClose, onInvite, counts }: CollabInfoPanelProps) {
+export function CollabInfoPanel({ collab, onClose, onInvite, onAvatarChange, canEditAvatar, counts }: CollabInfoPanelProps) {
   const [sound, setSound] = useState(true);
   const [autoDelete, setAutoDelete] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
   const bg =
     collab.color
       ? `linear-gradient(135deg, ${collab.color} 0%, ${collab.color}cc 100%)`
@@ -49,6 +57,16 @@ export function CollabInfoPanel({ collab, onClose, onInvite, counts }: CollabInf
     .slice(0, 2)
     .map((w) => w[0])
     .join("");
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !onAvatarChange) return;
+    if (!file.type.startsWith("image/")) return;
+    setUploading(true);
+    try { await onAvatarChange(file); } finally { setUploading(false); }
+  };
+
 
   return (
     <div className="flex h-full flex-col bg-white">
@@ -70,12 +88,45 @@ export function CollabInfoPanel({ collab, onClose, onInvite, counts }: CollabInf
       <div className="flex-1 overflow-y-auto px-4 py-4">
         {/* About */}
         <div className="flex flex-col items-center gap-2 pb-4 border-b border-gray-200 text-center">
-          <HexAvatar
-            size={88}
-            background={bg}
-            src={collab.avatar_url || null}
-            initials={initials}
-          />
+          <div className="relative group">
+            <HexAvatar
+              size={88}
+              background={bg}
+              src={collab.avatar_url || null}
+              initials={initials}
+            />
+            {canEditAvatar && onAvatarChange && (
+              <>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFile}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  className="absolute inset-0 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 bg-black/45 text-white transition disabled:opacity-100"
+                  title="Trocar foto do grupo"
+                  aria-label="Trocar foto do grupo"
+                >
+                  {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-md border-2 border-white flex items-center justify-center transition disabled:opacity-70"
+                  title="Trocar foto do grupo"
+                  aria-label="Trocar foto do grupo"
+                >
+                  {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                </button>
+              </>
+            )}
+          </div>
           <div className="text-[16px] font-semibold text-gray-900 mt-1">
             {collab.name}
           </div>
