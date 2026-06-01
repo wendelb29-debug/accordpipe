@@ -72,6 +72,9 @@ import { useToast } from "@/hooks/use-toast";
 import { ConstellationCanvas } from "@/components/ui/constellation-canvas";
 import { useDriveFiles } from "@/hooks/useDriveFiles";
 import { Plus, Trash2 } from "lucide-react";
+import { useAudioRecorder } from "@/hooks/useAudioRecorder";
+import { RecordingBar } from "@/components/collabs/RecordingBar";
+import { VoiceMessageBubble } from "@/components/collabs/VoiceMessageBubble";
 
 
 /* ──────────────────────────  TYPES  ────────────────────────── */
@@ -92,7 +95,7 @@ interface Conversation {
 }
 
 type FileAttachment = {
-  kind: "pdf" | "xls" | "image" | "file" | "doc" | "poll";
+  kind: "pdf" | "xls" | "image" | "file" | "doc" | "poll" | "audio";
   name: string;
   size: string;
   url?: string;
@@ -102,6 +105,9 @@ type FileAttachment = {
   options?: Array<{ id: string; text: string }>;
   show_voters?: boolean;
   deadline?: string | null;
+  // Audio fields (when kind === "audio")
+  duration?: number;
+  levels?: number[];
 };
 
 interface DbMessage {
@@ -139,6 +145,7 @@ const FILE_THEME: Record<FileAttachment["kind"], { from: string; to: string; ico
   image: { from: "#F3EBFF", to: "#E4D3FF", iconBg: "#D5BBFF", iconColor: "#7C3AED", label: "IMG" },
   file:  { from: "#F1F3F8", to: "#E4E8F1", iconBg: "#D1D7E3", iconColor: "#475569", label: "FILE" },
   poll:  { from: "#F3EBFF", to: "#E4D3FF", iconBg: "#D5BBFF", iconColor: "#7C3AED", label: "ENQUETE" },
+  audio: { from: "#ECFDF5", to: "#D1FAE5", iconBg: "#A7F3D0", iconColor: "#059669", label: "ÁUDIO" },
 };
 
 const KIND_META: Record<ConvKind, { color: string; Icon: typeof Users; label: string }> = {
