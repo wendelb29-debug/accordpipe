@@ -788,9 +788,13 @@ export default function Collabs() {
         ) : (
           <>
             <header className="h-[64px] flex items-center gap-3 px-5 shrink-0 bg-white/80 backdrop-blur-xl border-b border-gray-200/70">
-              <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-md shrink-0" style={{ background: `linear-gradient(135deg, ${active.color || KIND_META[active.kind].color} 0%, ${(active.color || KIND_META[active.kind].color)}cc 100%)` }}>
+              <HexAvatar
+                size={40}
+                background={active.color ? `linear-gradient(135deg, ${active.color} 0%, ${active.color}cc 100%)` : hexGradientFor(active.id)}
+                src={(active as any).avatar_url || null}
+              >
                 {(() => { const I = KIND_META[active.kind].Icon; return <I className="h-[18px] w-[18px]" />; })()}
-              </div>
+              </HexAvatar>
               <div className="flex-1 min-w-0">
                 <div className="text-[14px] font-semibold text-gray-900 leading-tight truncate">
                   {active.kind === "channel" ? "# " : ""}{active.name}
