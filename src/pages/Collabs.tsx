@@ -56,6 +56,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { toast as sonnerToast } from "sonner";
@@ -220,6 +226,8 @@ export default function Collabs() {
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
   const [infoOpen, setInfoOpen] = useState(true);
+  const [membersOpen, setMembersOpen] = useState(false);
+  const [openingDirectFor, setOpeningDirectFor] = useState<string | null>(null);
   const [chatView, setChatView] = useState<"chat" | "files">("chat");
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarView, setCalendarView] = useState<"list" | "agenda">("agenda");
@@ -558,6 +566,72 @@ export default function Collabs() {
     }
   };
 
+  const openDirectWith = async (otherId: string) => {
+    if (!user || !companyId || otherId === user.id) return;
+    setOpeningDirectFor(otherId);
+    try {
+      const { data: directConvs } = await supabase
+        .from("collab_conversations")
+        .select("id")
+        .eq("servidor_id", companyId)
+        .eq("kind", "direct");
+      const ids = (directConvs || []).map((c: any) => c.id);
+      let found: string | null = null;
+      if (ids.length) {
+        const { data: mems } = await supabase
+          .from("collab_members")
+          .select("conversation_id, user_id")
+          .in("conversation_id", ids);
+        const byConv = new Map<string, Set<string>>();
+        (mems || []).forEach((m: any) => {
+          if (!byConv.has(m.conversation_id)) byConv.set(m.conversation_id, new Set());
+          byConv.get(m.conversation_id)!.add(m.user_id);
+        });
+        for (const [cid, s] of byConv) {
+          if (s.size === 2 && s.has(user.id) && s.has(otherId)) { found = cid; break; }
+        }
+      }
+      if (found) {
+        setActiveId(found);
+        setMembersOpen(false);
+        return;
+      }
+      const other = userMap.get(otherId);
+      const { data: conv, error } = await supabase
+        .from("collab_conversations")
+        .insert({
+          servidor_id: companyId,
+          kind: "direct",
+          name: other?.name || "Conversa direta",
+          color: KIND_META.direct.color,
+          created_by: user.id,
+        })
+        .select()
+        .single();
+      if (error || !conv) throw error || new Error("Falha ao criar conversa");
+      const { error: memErr } = await supabase.from("collab_members").insert([
+        { conversation_id: conv.id, user_id: user.id, role: "owner" },
+        { conversation_id: conv.id, user_id: otherId, role: "member" },
+      ]);
+      if (memErr) throw memErr;
+      await supabase.from("collab_messages").insert({
+        conversation_id: conv.id,
+        servidor_id: companyId,
+        sender_id: user.id,
+        content: `Conversa iniciada com ${other?.name || "membro"}.`,
+        is_system: true,
+        attachments: [],
+      });
+      setActiveId(conv.id);
+      setMembersOpen(false);
+      toast({ title: "Conversa iniciada", description: other?.name });
+    } catch (e: any) {
+      toast({ title: "Erro ao abrir conversa", description: e?.message || String(e), variant: "destructive" });
+    } finally {
+      setOpeningDirectFor(null);
+    }
+  };
+
   const messagePlainText = (m: DbMessage): string => {
     if (m.content) return m.content;
     if (m.attachments?.length) return `📎 ${m.attachments.length} arquivo(s)`;
@@ -820,7 +894,13 @@ export default function Collabs() {
                     {onlineIds.size} online
                   </span>
                   <span className="opacity-40">·</span>
-                  <span>{memberCount} {memberCount === 1 ? "membro" : "membros"}</span>
+                  <button
+                    onClick={() => setMembersOpen(true)}
+                    className="hover:text-violet-600 hover:underline underline-offset-2 transition-colors"
+                    title="Ver membros"
+                  >
+                    {memberCount} {memberCount === 1 ? "membro" : "membros"}
+                  </button>
                   <span className="opacity-40">·</span>
                   <span>{KIND_META[active.kind].label}</span>
                 </div>
@@ -1250,6 +1330,84 @@ export default function Collabs() {
 
         )}
       </main>
+
+      {/* MEMBERS SIDEBAR — abre ao clicar em "X membros" no header */}
+      <Sheet open={membersOpen} onOpenChange={setMembersOpen}>
+        <SheetContent side="right" className="w-[360px] sm:w-[380px] p-0 flex flex-col bg-white">
+          <SheetHeader className="px-5 py-4 border-b border-gray-200 shrink-0">
+            <SheetTitle className="text-[15px] font-semibold text-gray-900 flex items-center gap-2">
+              <Users className="h-4 w-4 text-violet-500" />
+              Membros
+              <span className="ml-1 text-[11px] font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                {members.length}
+              </span>
+            </SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-2 py-2">
+            {members.length === 0 ? (
+              <div className="text-center text-[12.5px] text-gray-500 py-8">Nenhum membro nesta conversa.</div>
+            ) : (
+              members.map((mem) => {
+                const u = userMap.get(mem.user_id);
+                const name = u?.name || "Usuário";
+                const isMe = mem.user_id === user?.id;
+                const online = onlineIds.has(mem.user_id);
+                const loadingThis = openingDirectFor === mem.user_id;
+                return (
+                  <div
+                    key={mem.user_id}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition group"
+                  >
+                    <div className="relative shrink-0">
+                      {u?.avatar_url ? (
+                        <img src={u.avatar_url} alt={name} className="w-10 h-10 rounded-full object-cover shadow-sm" />
+                      ) : (
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-[12px] font-semibold text-white shadow-sm"
+                          style={{ background: avatarColorFor(mem.user_id) }}
+                        >
+                          {initialsOf(name)}
+                        </div>
+                      )}
+                      <span
+                        className={cn(
+                          "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white",
+                          online ? "bg-emerald-500" : "bg-gray-300",
+                        )}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-medium text-gray-900 truncate flex items-center gap-1.5">
+                        {name}
+                        {isMe && <span className="text-[10px] text-gray-500 font-normal">(você)</span>}
+                      </div>
+                      <div className="text-[11px] text-gray-500 truncate">
+                        {mem.role === "owner" ? "Proprietário" : mem.role === "admin" ? "Admin" : online ? "Online" : "Offline"}
+                      </div>
+                    </div>
+                    {!isMe && (
+                      <button
+                        onClick={() => openDirectWith(mem.user_id)}
+                        disabled={loadingThis}
+                        className="opacity-0 group-hover:opacity-100 focus:opacity-100 inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-[11.5px] font-semibold text-white bg-gradient-to-br from-violet-500 to-violet-700 hover:from-violet-600 hover:to-violet-800 disabled:opacity-60 transition shadow-sm"
+                        title={`Conversar com ${name}`}
+                      >
+                        {loadingThis ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <MessageSquare className="h-3.5 w-3.5" />
+                        )}
+                        Conversar
+                      </button>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
 
       {/* RIGHT PANEL — online by department */}
       {infoOpen && (
