@@ -90,10 +90,16 @@ interface Conversation {
 }
 
 type FileAttachment = {
-  kind: "pdf" | "xls" | "image" | "file" | "doc";
+  kind: "pdf" | "xls" | "image" | "file" | "doc" | "poll";
   name: string;
   size: string;
   url?: string;
+  // Poll fields (when kind === "poll")
+  poll_id?: string;
+  question?: string;
+  options?: Array<{ id: string; text: string }>;
+  show_voters?: boolean;
+  deadline?: string | null;
 };
 
 interface DbMessage {
@@ -130,6 +136,7 @@ const FILE_THEME: Record<FileAttachment["kind"], { from: string; to: string; ico
   doc:   { from: "#E8F1FF", to: "#D2E3FF", iconBg: "#BCD3FF", iconColor: "#2563EB", label: "DOC" },
   image: { from: "#F3EBFF", to: "#E4D3FF", iconBg: "#D5BBFF", iconColor: "#7C3AED", label: "IMG" },
   file:  { from: "#F1F3F8", to: "#E4E8F1", iconBg: "#D1D7E3", iconColor: "#475569", label: "FILE" },
+  poll:  { from: "#F3EBFF", to: "#E4D3FF", iconBg: "#D5BBFF", iconColor: "#7C3AED", label: "ENQUETE" },
 };
 
 const KIND_META: Record<ConvKind, { color: string; Icon: typeof Users; label: string }> = {
@@ -1116,6 +1123,21 @@ export default function Collabs() {
 
 
                               {allFiles.map((f, idx) => {
+                                if (f.kind === "poll" && f.poll_id) {
+                                  return (
+                                    <PollCard
+                                      key={idx}
+                                      pollId={f.poll_id}
+                                      fallbackQuestion={f.question || f.name}
+                                      fallbackOptions={f.options || []}
+                                      fallbackShowVoters={f.show_voters !== false}
+                                      fallbackDeadline={f.deadline ?? null}
+                                      currentUserId={user?.id ?? null}
+                                      userMap={userMap}
+                                      isSent={isSent}
+                                    />
+                                  );
+                                }
                                 if (f.kind === "image" && f.url) {
                                   return (
                                     <a key={idx} href={f.url} target="_blank" rel="noreferrer" className="block max-w-[280px]">
@@ -1738,6 +1760,7 @@ function QuickActionDialogs({ action, onClose, onSendMessage, onNavigate, member
   const [pollTitle, setPollTitle] = useState("");
   const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
   const [pollDeadline, setPollDeadline] = useState("");
+  const [pollShowVoters, setPollShowVoters] = useState(true);
 
   // Sign — PDF upload
   const signFileInput = useRef<HTMLInputElement>(null);
@@ -1857,17 +1880,36 @@ function QuickActionDialogs({ action, onClose, onSendMessage, onNavigate, member
     close();
   };
 
-  // ─── POLL
+  // ─── POLL (interactive)
   const submitPoll = async () => {
     const opts = pollOptions.map((o) => o.trim()).filter(Boolean);
     if (!pollTitle.trim() || opts.length < 2) { sonnerToast.error("Título e ao menos 2 opções"); return; }
-    const lines = [
-      `📊 **Enquete:** ${pollTitle.trim()}`,
-      ...opts.map((o, i) => `${i + 1}. ${o}`),
-      pollDeadline ? `\n⏳ Prazo: ${fmt(pollDeadline)}` : "",
-      `\n_Vote respondendo o número da opção._`,
-    ].filter(Boolean).join("\n");
-    await onSendMessage(lines);
+    if (!companyId || !activeId || !currentUserId) { sonnerToast.error("Sem conversa ativa"); return; }
+    const optionObjs = opts.map((text) => ({ id: crypto.randomUUID(), text }));
+    const { data: poll, error } = await supabase
+      .from("collab_polls" as any)
+      .insert({
+        conversation_id: activeId,
+        servidor_id: companyId,
+        created_by: currentUserId,
+        question: pollTitle.trim(),
+        options: optionObjs,
+        show_voters: pollShowVoters,
+        deadline: pollDeadline ? new Date(pollDeadline).toISOString() : null,
+      })
+      .select()
+      .single();
+    if (error || !poll) { sonnerToast.error("Erro ao criar enquete"); return; }
+    await onSendMessage("", [{
+      kind: "poll",
+      name: pollTitle.trim(),
+      size: "",
+      poll_id: (poll as any).id,
+      question: pollTitle.trim(),
+      options: optionObjs,
+      show_voters: pollShowVoters,
+      deadline: pollDeadline ? new Date(pollDeadline).toISOString() : null,
+    }]);
     close();
   };
 
@@ -2054,6 +2096,10 @@ function QuickActionDialogs({ action, onClose, onSendMessage, onNavigate, member
               <label className="text-[11px] font-medium text-gray-500 mb-1 block">Prazo (opcional)</label>
               <input type="datetime-local" value={pollDeadline} onChange={(e) => setPollDeadline(e.target.value)} className="w-full h-10 px-3 rounded-lg border border-gray-200 text-[13px]" />
             </div>
+            <label className="flex items-center gap-2 text-[12px] text-gray-700 cursor-pointer select-none">
+              <input type="checkbox" checked={pollShowVoters} onChange={(e) => setPollShowVoters(e.target.checked)} className="rounded" />
+              Mostrar quem votou
+            </label>
             <div className="flex justify-end gap-2 pt-2">
               <button onClick={close} className="h-9 px-4 rounded-lg text-[12.5px] text-gray-600 hover:bg-gray-100">Cancelar</button>
               <button onClick={submitPoll} className="h-9 px-4 rounded-lg text-[12.5px] font-medium text-white bg-pink-600 hover:bg-pink-700">Publicar enquete</button>
@@ -2109,5 +2155,192 @@ function DrivePickerDialog({ open, onClose, onPick }: { open: boolean; onClose: 
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/* ──────────────────────────  POLL CARD (interactive)  ────────────────────────── */
+
+interface PollCardProps {
+  pollId: string;
+  fallbackQuestion: string;
+  fallbackOptions: Array<{ id: string; text: string }>;
+  fallbackShowVoters: boolean;
+  fallbackDeadline: string | null;
+  currentUserId: string | null;
+  userMap: Map<string, any>;
+  isSent: boolean;
+}
+
+function PollCard({ pollId, fallbackQuestion, fallbackOptions, fallbackShowVoters, fallbackDeadline, currentUserId, userMap, isSent }: PollCardProps) {
+  const [poll, setPoll] = useState<{
+    question: string;
+    options: Array<{ id: string; text: string }>;
+    show_voters: boolean;
+    deadline: string | null;
+    closed_at: string | null;
+    created_by: string;
+  } | null>(null);
+  const [votes, setVotes] = useState<Array<{ option_id: string; user_id: string }>>([]);
+  const [voting, setVoting] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data } = await supabase.from("collab_polls" as any).select("*").eq("id", pollId).maybeSingle();
+      if (alive && data) {
+        const p = data as any;
+        setPoll({
+          question: p.question,
+          options: Array.isArray(p.options) ? p.options : [],
+          show_voters: p.show_voters,
+          deadline: p.deadline,
+          closed_at: p.closed_at,
+          created_by: p.created_by,
+        });
+      } else if (alive && !data) {
+        setPoll({
+          question: fallbackQuestion,
+          options: fallbackOptions,
+          show_voters: fallbackShowVoters,
+          deadline: fallbackDeadline,
+          closed_at: null,
+          created_by: "",
+        });
+      }
+      const { data: vs } = await supabase.from("collab_poll_votes" as any).select("option_id, user_id").eq("poll_id", pollId);
+      if (alive && vs) setVotes(vs as any);
+    })();
+
+    const ch = supabase
+      .channel(`poll-${pollId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "collab_poll_votes", filter: `poll_id=eq.${pollId}` }, async () => {
+        const { data: vs } = await supabase.from("collab_poll_votes" as any).select("option_id, user_id").eq("poll_id", pollId);
+        if (vs) setVotes(vs as any);
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "collab_polls", filter: `id=eq.${pollId}` }, (payload) => {
+        const p = payload.new as any;
+        setPoll((prev) => prev ? { ...prev, closed_at: p.closed_at, deadline: p.deadline } : prev);
+      })
+      .subscribe();
+    return () => { alive = false; supabase.removeChannel(ch); };
+  }, [pollId, fallbackQuestion, fallbackShowVoters]);
+
+  const myVote = votes.find((v) => v.user_id === currentUserId)?.option_id || null;
+  const total = votes.length;
+  const deadlinePassed = poll?.deadline ? new Date(poll.deadline).getTime() < Date.now() : false;
+  const closed = !!poll?.closed_at || deadlinePassed;
+
+  const vote = async (optionId: string) => {
+    if (!currentUserId || voting || closed) return;
+    setVoting(true);
+    if (myVote === optionId) {
+      // unvote
+      setVotes((prev) => prev.filter((v) => v.user_id !== currentUserId));
+      await supabase.from("collab_poll_votes" as any).delete().eq("poll_id", pollId).eq("user_id", currentUserId);
+    } else if (myVote) {
+      setVotes((prev) => prev.map((v) => v.user_id === currentUserId ? { ...v, option_id: optionId } : v));
+      await supabase.from("collab_poll_votes" as any).update({ option_id: optionId }).eq("poll_id", pollId).eq("user_id", currentUserId);
+    } else {
+      setVotes((prev) => [...prev, { option_id: optionId, user_id: currentUserId }]);
+      await supabase.from("collab_poll_votes" as any).insert({ poll_id: pollId, option_id: optionId, user_id: currentUserId });
+    }
+    setVoting(false);
+  };
+
+  const closePoll = async () => {
+    await supabase.from("collab_polls" as any).update({ closed_at: new Date().toISOString() }).eq("id", pollId);
+  };
+
+  if (!poll) {
+    return (
+      <div className="rounded-2xl px-4 py-3 min-w-[280px] max-w-[360px] bg-white/95 border border-violet-100 shadow-sm text-[12px] text-gray-500">
+        Carregando enquete…
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn(
+      "rounded-2xl px-4 py-3.5 min-w-[280px] max-w-[360px] shadow-md border",
+      isSent ? "bg-white/98 border-violet-200" : "bg-white/98 border-violet-100"
+    )}>
+      <div className="flex items-start gap-2 mb-2.5">
+        <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
+          <BarChart3 className="h-4 w-4 text-violet-600" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[10.5px] uppercase tracking-wide text-violet-600 font-semibold">Enquete{closed ? " · Encerrada" : ""}</div>
+          <div className="text-[13.5px] font-semibold text-gray-900 leading-snug break-words">{poll.question}</div>
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        {poll.options.map((opt) => {
+          const optVotes = votes.filter((v) => v.option_id === opt.id);
+          const count = optVotes.length;
+          const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+          const mine = myVote === opt.id;
+          return (
+            <button
+              key={opt.id}
+              onClick={() => vote(opt.id)}
+              disabled={closed || voting || !currentUserId}
+              className={cn(
+                "relative w-full text-left rounded-xl border px-3 py-2 overflow-hidden transition group",
+                mine ? "border-violet-500 bg-violet-50" : "border-gray-200 hover:border-violet-300 hover:bg-violet-50/40",
+                closed && "cursor-default opacity-90",
+              )}
+            >
+              <div
+                className="absolute inset-y-0 left-0 transition-all"
+                style={{ width: `${pct}%`, background: mine ? "rgba(124,58,237,0.16)" : "rgba(124,58,237,0.07)" }}
+              />
+              <div className="relative flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className={cn(
+                    "w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0",
+                    mine ? "border-violet-600 bg-violet-600" : "border-gray-300"
+                  )}>
+                    {mine && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </div>
+                  <span className={cn("text-[13px] truncate", mine ? "text-violet-900 font-medium" : "text-gray-800")}>{opt.text}</span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-[11px] font-medium text-gray-500">{pct}%</span>
+                  <span className="text-[11px] text-gray-400">·</span>
+                  <span className="text-[11px] text-gray-500">{count}</span>
+                </div>
+              </div>
+              {poll.show_voters && optVotes.length > 0 && (
+                <div className="relative mt-1.5 flex flex-wrap gap-1">
+                  {optVotes.slice(0, 6).map((v) => {
+                    const u = userMap.get(v.user_id);
+                    const name = u?.name || "Usuário";
+                    return (
+                      <span key={v.user_id} className="inline-flex items-center gap-1 text-[10.5px] bg-white/80 border border-violet-100 rounded-full pl-0.5 pr-1.5 py-0.5">
+                        {u?.avatar_url ? (
+                          <img src={u.avatar_url} alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
+                        ) : (
+                          <span className="w-3.5 h-3.5 rounded-full bg-violet-200 flex items-center justify-center text-[8px] font-semibold text-violet-700">{(name[0] || "?").toUpperCase()}</span>
+                        )}
+                        <span className="text-gray-700">{name.split(" ")[0]}</span>
+                      </span>
+                    );
+                  })}
+                  {optVotes.length > 6 && <span className="text-[10.5px] text-gray-500">+{optVotes.length - 6}</span>}
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-2.5 flex items-center justify-between text-[10.5px] text-gray-500">
+        <span>{total} {total === 1 ? "voto" : "votos"}{poll.deadline ? ` · Prazo ${new Date(poll.deadline).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}</span>
+        {!closed && currentUserId === poll.created_by && (
+          <button onClick={closePoll} className="text-violet-600 hover:underline font-medium">Encerrar</button>
+        )}
+      </div>
+    </div>
   );
 }
