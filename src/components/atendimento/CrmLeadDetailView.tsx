@@ -929,11 +929,11 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
       </div>
 
       {/* Content: Stack on mobile, side-by-side on desktop */}
-      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+      <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
         {/* Left Sidebar - Details (full width on mobile, collapsible on desktop) */}
         <div
           className={cn(
-            "shrink-0 border-b md:border-b-0 md:border-r overflow-y-auto transition-all duration-250 ease-in-out",
+            "shrink-0 min-h-0 border-b md:border-b-0 md:border-r overflow-y-auto transition-all duration-250 ease-in-out",
             sidebarCollapsed
               ? "hidden md:block md:w-10 p-0"
               : "w-full md:w-72 p-3 sm:p-4",
@@ -1131,9 +1131,9 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         </div>
 
         {/* Main Content - Tabs */}
-        <div className="flex-1 overflow-hidden flex flex-col">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <div className="overflow-x-auto scrollbar-hide border-b bg-card">
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div className="shrink-0 overflow-x-auto scrollbar-hide border-b bg-card">
               <TabsList className="w-max sm:w-full justify-start rounded-none bg-card px-3 sm:px-4 h-10">
                 <TabsTrigger value="historico" className="text-[11px] sm:text-xs gap-1">
                   <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Histórico
@@ -1367,7 +1367,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
 
             {/* Propostas */}
-            <TabsContent value="propostas" className="flex-1 overflow-y-auto overflow-x-auto p-2 sm:p-4 mt-0 w-full max-w-full">
+            <TabsContent value="propostas" className="flex-1 min-h-0 overflow-hidden p-2 sm:p-4 mt-0 w-full max-w-full data-[state=active]:flex data-[state=active]:flex-col">
               <LeadPropostasTab lead={lead} addActivity={addActivity} onUpdateLead={onUpdate} />
             </TabsContent>
 
