@@ -65,6 +65,8 @@ export function MobileSidebar() {
   const [open, setOpen] = useState(false);
   const [configOpen, setConfigOpen] = useState(true);
   const [currentLang, setCurrentLang] = useState(() => localStorage.getItem("accord-lang") || "pt-BR");
+  const overdueCount = useOverdueCount();
+  const unreadEmailCount = useUnreadEmailCount();
 
   useEffect(() => {
     if (profile?.preferred_language) {
