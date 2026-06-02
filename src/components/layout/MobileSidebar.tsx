@@ -5,7 +5,7 @@ import {
   Home, Newspaper, LayoutDashboard, Receipt, FileText, BarChart3,
   Users, LogOut, MessageSquare, CalendarCheck, Rocket,
   ClipboardList, Trash2, Menu, Settings, ChevronDown, TrendingUp,
-  Globe, Check, Crown, GraduationCap,
+  Globe, Check, Crown, GraduationCap, Mail,
   // novos
   Zap, Headset, MessagesSquare, UsersRound, CircleDollarSign,
   Files, ChartColumn, ArchiveX, Settings2, Languages,
@@ -30,6 +30,7 @@ const navigation = [
   { nameKey: "nav.feed", href: "/home", icon: Newspaper, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
   { nameKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
   { nameKey: "nav.accordSales", href: "/atendimento", icon: Headset, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
+  { nameKey: "nav.email", href: "/email", icon: Mail, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
   { nameKey: "nav.forms", href: "/formularios", icon: ClipboardList, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
   { nameKey: "nav.activities", href: "/atividades", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
   { nameKey: "nav.fintech", href: "/financeiro", icon: CircleDollarSign, roles: ["admin", "ceo", "financeiro"] },
