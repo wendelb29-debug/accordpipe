@@ -329,6 +329,18 @@ export default function Collabs() {
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [memberSearch, setMemberSearch] = useState("");
   const [creating, setCreating] = useState(false);
+  const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
+  const [newAvatarPreview, setNewAvatarPreview] = useState<string | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
+  const onPickAvatar = (file: File | null) => {
+    if (!file) { setNewAvatarFile(null); setNewAvatarPreview(null); return; }
+    if (!file.type.startsWith("image/")) { sonnerToast.error("Selecione uma imagem"); return; }
+    if (file.size > 5 * 1024 * 1024) { sonnerToast.error("Imagem muito grande (máx 5MB)"); return; }
+    setNewAvatarFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setNewAvatarPreview(String(e.target?.result || ""));
+    reader.readAsDataURL(file);
+  };
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteTab, setInviteTab] = useState<"colab" | "guest">("colab");
