@@ -1703,8 +1703,6 @@ export default function Collabs() {
                   >
                     {memberCount} {memberCount === 1 ? "membro" : "membros"}
                   </button>
-                  <span className="opacity-40">·</span>
-                  <span>{KIND_META[active.kind].label}</span>
                 </div>
               </div>
               <div className={cn("hidden md:flex items-center mr-1", infoOpen ? "gap-0.5" : "")}>
