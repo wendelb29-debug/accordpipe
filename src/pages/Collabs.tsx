@@ -48,10 +48,11 @@ import {
   ChevronRight,
   Lock,
   Settings,
-
-
-
-
+  BellOff,
+  Bell,
+  EyeOff,
+  Clock3,
+  PinOff,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
