@@ -1307,9 +1307,8 @@ export default function Collabs() {
                             </div>
                           )}
 
-                          <div className={cn("relative flex items-center gap-1.5", isSent && "flex-row-reverse")}>
                             <div className={cn(
-                              "opacity-0 group-hover/msg:opacity-100 transition-opacity flex items-center gap-0.5 bg-white/95 backdrop-blur rounded-full shadow-md border border-black/5 px-1 py-0.5 z-10",
+                              "flex items-center gap-0.5 bg-white/95 dark:bg-zinc-900/90 backdrop-blur rounded-full shadow-md border border-black/5 dark:border-white/10 px-1 py-0.5 z-10",
                               isSent ? "mr-1" : "ml-1",
                             )}>
                               <button onClick={() => setReactPickerFor(reactPickerFor === m.id ? null : m.id)} title="Reagir" className="w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-violet-600">
