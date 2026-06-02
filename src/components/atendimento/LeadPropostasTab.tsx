@@ -434,6 +434,32 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
   const [servidorData, setServidorData] = useState<ServidorData | null>(null);
 
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = async () => {
+      if (selectedBrandId) {
+        const brand = brands.find(b => b.id === selectedBrandId);
+        if (brand?.logo_url) {
+          if (!cancelled) setActiveLogoUrl(brand.logo_url);
+          return;
+        }
+      }
+      if (servidorData?.brand_logo_path) {
+        const { data } = await supabase.storage
+          .from("documents")
+          .createSignedUrl(servidorData.brand_logo_path, 60 * 60 * 24);
+        if (!cancelled && data?.signedUrl) {
+          setActiveLogoUrl(data.signedUrl);
+          return;
+        }
+      }
+      if (!cancelled) setActiveLogoUrl(servidorData?.brand_logo_url || null);
+    };
+    refresh();
+    return () => { cancelled = true; };
+  }, [selectedBrandId, servidorData?.brand_logo_path, servidorData?.brand_logo_url, brands]);
+
+
   const [lineItems, setLineItems] = useState<ProposalLineItem[]>([]);
   const [paymentFrequency, setPaymentFrequency] = useState("mensal");
 
