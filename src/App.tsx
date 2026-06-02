@@ -93,6 +93,7 @@ const App = () => (
         <AuthProvider>
           <ThemeSync />
           <Suspense fallback={<PageLoader />}>
+          <ErrorBoundary fallbackModule="route_tree">
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
@@ -421,6 +422,7 @@ const App = () => (
             <Route path="/reembolso" element={<RefundPolicy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </ErrorBoundary>
           </Suspense>
         </AuthProvider>
       </BrowserRouter>
