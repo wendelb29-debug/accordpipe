@@ -1,43 +1,70 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 
 /**
- * Counts unread emails across the current user's email accounts in the
- * active tenant. Polls every 30s and subscribes to realtime updates so the
- * sidebar badge decreases as the user opens / marks messages as read.
+ * Counts the current user's unread email messages across all connected
+ * accounts (filtered by tenant). Combines a 60s poll with Supabase realtime
+ * so the badge drops the moment a message is marked as read.
+ *
+ * Mirrors the shape of useOverdueCount so the Sidebar can consume it
+ * identically.
  */
 export function useUnreadEmailCount() {
   const { profile } = useAuth();
   const activeCompanyId = useActiveCompanyId();
-  const [count, setCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const fetchCount = useCallback(async () => {
+  const fetchUnread = useCallback(async () => {
     if (!profile?.user_id || !activeCompanyId) {
-      setCount(0);
+      setUnreadCount(0);
       return;
     }
-    const query: any = supabase
-      .from("email_messages")
-      .select("id", { count: "exact", head: true });
-    const { count: c, error } = await query
+
+    // 1) IDs das contas de email do usuário no tenant ativo
+    const { data: accounts } = await supabase
+      .from("email_accounts")
+      .select("id")
       .eq("user_id", profile.user_id)
-      .eq("servidor_id", activeCompanyId)
-      .eq("is_read", false);
-    if (!error) setCount(c || 0);
+      .eq("servidor_id", activeCompanyId);
+
+    const accountIds = (accounts || []).map((a: any) => a.id);
+    if (accountIds.length === 0) {
+      setUnreadCount(0);
+      return;
+    }
+
+    // 2) Conta mensagens não lidas em todas essas contas (apenas INBOX,
+    //    ignorando TRASH/SPAM/SENT). Folders are stored lowercase.
+    const { count, error } = await supabase
+      .from("email_messages")
+      .select("id", { count: "exact", head: true })
+      .in("account_id", accountIds)
+      .eq("is_read", false)
+      .or("folder.eq.inbox,folder.is.null");
+
+    if (error) return;
+    setUnreadCount(count || 0);
   }, [profile?.user_id, activeCompanyId]);
 
   useEffect(() => {
-    fetchCount();
-    const interval = setInterval(fetchCount, 30000);
+    fetchUnread();
+    // fallback poll caso o realtime falhe
+    const interval = setInterval(fetchUnread, 60000);
 
+    // realtime: qualquer mudança em email_messages refaz a contagem
     const channel = supabase
-      .channel("email_messages_unread_badge")
+      .channel(`unread-email:${profile?.user_id || "anon"}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "email_messages" },
-        () => fetchCount(),
+        () => fetchUnread()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "email_accounts" },
+        () => fetchUnread()
       )
       .subscribe();
 
@@ -45,7 +72,7 @@ export function useUnreadEmailCount() {
       clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [fetchCount]);
+  }, [fetchUnread, profile?.user_id]);
 
-  return count;
+  return unreadCount;
 }
