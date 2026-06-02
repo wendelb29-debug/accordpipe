@@ -916,6 +916,86 @@ export default function Collabs() {
     }
   };
 
+  const openAnotacoes = async () => {
+    if (!user || !companyId || openingNotes) return;
+    setOpeningNotes(true);
+    try {
+      // Look in already loaded conversations first
+      const existingLocal = conversations.find((c) => c.kind === "direct" && c.name === "Anotações" && c.created_by === user.id);
+      if (existingLocal) {
+        setActiveId(existingLocal.id);
+        setSearch("");
+        setSearchFocused(false);
+        return;
+      }
+      // Find a "direct" conversation where the only member is the user
+      const { data: directConvs } = await supabase
+        .from("collab_conversations")
+        .select("id, name, created_by")
+        .eq("servidor_id", companyId)
+        .eq("kind", "direct")
+        .eq("created_by", user.id)
+        .eq("name", "Anotações");
+      const ids = (directConvs || []).map((c: any) => c.id);
+      let found: string | null = null;
+      if (ids.length) {
+        const { data: mems } = await supabase
+          .from("collab_members")
+          .select("conversation_id, user_id")
+          .in("conversation_id", ids);
+        const byConv = new Map<string, Set<string>>();
+        (mems || []).forEach((m: any) => {
+          if (!byConv.has(m.conversation_id)) byConv.set(m.conversation_id, new Set());
+          byConv.get(m.conversation_id)!.add(m.user_id);
+        });
+        for (const [cid, s] of byConv) {
+          if (s.size === 1 && s.has(user.id)) { found = cid; break; }
+        }
+        // fallback: first match
+        if (!found && ids[0]) found = ids[0];
+      }
+      if (found) {
+        setActiveId(found);
+        setSearch("");
+        setSearchFocused(false);
+        return;
+      }
+      // Create it
+      const { data: conv, error } = await supabase
+        .from("collab_conversations")
+        .insert({
+          servidor_id: companyId,
+          kind: "direct",
+          name: "Anotações",
+          color: "#0ea5e9",
+          created_by: user.id,
+        })
+        .select()
+        .single();
+      if (error || !conv) throw error || new Error("Falha ao criar anotações");
+      await supabase.from("collab_members").insert([
+        { conversation_id: conv.id, user_id: user.id, role: "owner" },
+      ]);
+      await supabase.from("collab_messages").insert({
+        conversation_id: conv.id,
+        servidor_id: companyId,
+        sender_id: user.id,
+        content: "Minhas anotações — um bloco de notas para guardar mensagens, arquivos e links importantes em um só lugar.",
+        is_system: true,
+        attachments: [],
+      });
+      setActiveId(conv.id);
+      setSearch("");
+      setSearchFocused(false);
+    } catch (e: any) {
+      toast({ title: "Erro ao abrir Anotações", description: e?.message || String(e), variant: "destructive" });
+    } finally {
+      setOpeningNotes(false);
+    }
+  };
+
+
+
   const messagePlainText = (m: DbMessage): string => {
     if (m.content) return m.content;
     if (m.attachments?.length) return `📎 ${m.attachments.length} arquivo(s)`;
