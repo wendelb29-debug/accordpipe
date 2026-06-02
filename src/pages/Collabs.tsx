@@ -2829,13 +2829,15 @@ export default function Collabs() {
                   onClick={submitCreate}
                   disabled={!newName.trim() || creating}
                   className="px-5 py-2 rounded-lg text-[13px] font-semibold text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wide"
-                  style={{ background: "linear-gradient(135deg, #84cc16 0%, #65a30d 100%)" }}
+                  style={{ background: theme.grad }}
                 >
-                  {creating ? "Criando..." : "Criar bate-papo"}
+                  {creating ? "Criando..." : theme.btn}
                 </button>
               </div>
             </>
-          ) : createKind === "collab" ? (
+            );
+          })() : (
+
             <>
               {/* Header: hex icon + editable name */}
               <div className="px-6 pt-6 pb-4 bg-white">
