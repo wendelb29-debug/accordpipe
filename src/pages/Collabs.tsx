@@ -238,6 +238,7 @@ export default function Collabs() {
   const { toast } = useToast();
   const recorder = useAudioRecorder();
   const [sendingAudio, setSendingAudio] = useState(false);
+  const [forwardMsg, setForwardMsg] = useState<DbMessage | null>(null);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
