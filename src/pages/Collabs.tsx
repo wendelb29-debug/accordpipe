@@ -2103,11 +2103,20 @@ export default function Collabs() {
                 <div className="text-[12px] font-medium text-gray-700 mb-2">Link de convite</div>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 truncate text-[11.5px] text-gray-500 bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">{inviteLink}</div>
-                  <button onClick={copyInviteLink} className="px-3 py-2 rounded-lg text-[12px] font-medium text-white shadow-sm whitespace-nowrap" style={{ background: "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)" }}>
+                  <button onClick={copyInviteLink} className="px-3 py-2 rounded-lg text-[12px] font-medium text-white shadow-sm whitespace-nowrap inline-flex items-center gap-1.5" style={{ background: "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)" }}>
+                    <ExternalLink className="h-3.5 w-3.5" />
                     {inviteLinkCopied ? "Copiado!" : "Copiar link"}
                   </button>
+                  <button
+                    onClick={rotateInviteLink}
+                    disabled={rotatingInvite}
+                    title="Gerar novo link (invalida o anterior)"
+                    className="h-9 w-9 rounded-lg flex items-center justify-center text-gray-600 border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-60 transition"
+                  >
+                    <RefreshCw className={cn("h-4 w-4", rotatingInvite && "animate-spin")} />
+                  </button>
                 </div>
-                <p className="text-[11px] text-gray-500 mt-3">Envie este link a um colega para que ele entre nesta conversa.</p>
+                <p className="text-[11px] text-gray-500 mt-3">Envie este link a um colega para que ele entre nesta conversa. Toque no <RefreshCw className="inline h-3 w-3 -mt-0.5" /> para gerar um novo link e invalidar o anterior.</p>
               </div>
             </div>
           )}
