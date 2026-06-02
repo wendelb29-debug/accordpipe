@@ -184,6 +184,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
   const [brands, setBrands] = useState<ProposalBrand[]>([]);
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
   const [showBrandManager, setShowBrandManager] = useState(false);
+  const [activeLogoUrl, setActiveLogoUrl] = useState<string | null>(null);
 
   // Currency state
   const [currency, setCurrency] = useState("BRL");
