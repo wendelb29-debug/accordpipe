@@ -1967,7 +1967,7 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
           servidorId={lead.servidor_id}
           items={lineItems}
           onChange={setLineItems}
-          canManageCatalog={isCeo}
+          canManageCatalog={isCeo || isMaster || role === "administrativo"}
           canAddItem={canAddItem}
           paymentFrequency={paymentFrequency}
           onPaymentFrequencyChange={setPaymentFrequency}
