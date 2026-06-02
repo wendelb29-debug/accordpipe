@@ -2084,6 +2084,42 @@ export default function Collabs() {
         currentUserId={user?.id || ""}
         companyId={companyId || ""}
       />
+
+      <QuickTaskDialog
+        open={!!taskForMsg}
+        onOpenChange={(o) => !o && setTaskForMsg(null)}
+        conversationName={active?.name || "Conversa"}
+        senderName={taskForMsg ? (userMap.get(taskForMsg.sender_id || "")?.name || "Mensagem") : ""}
+        messageText={taskForMsg ? messagePlainText(taskForMsg) : ""}
+        members={members.map((m) => {
+          const u = userMap.get(m.user_id);
+          return { id: m.user_id, name: u?.name || "Usuário", avatar_url: u?.avatar_url };
+        })}
+        currentUserId={user?.id || ""}
+        onCreate={async ({ title, assigneeId, dueAt, description }) => {
+          if (!activeId || !user || !companyId || !taskForMsg) return;
+          const assignee = userMap.get(assigneeId);
+          const dueLabel = dueAt
+            ? new Date(dueAt).toLocaleString("pt-BR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+            : "Sem prazo";
+          const summary = [
+            `📋 **Nova tarefa:** ${title}`,
+            `👤 Responsável: ${assignee?.name || "—"}`,
+            `🗓️ Prazo: ${dueLabel}`,
+            description ? `\n> ${description.slice(0, 200)}` : "",
+          ].filter(Boolean).join("\n");
+          const { error } = await supabase.from("collab_messages").insert({
+            conversation_id: activeId,
+            servidor_id: companyId,
+            sender_id: user.id,
+            content: summary,
+            reply_to_id: taskForMsg.id,
+            attachments: [],
+          });
+          if (error) throw error;
+          sonnerToast.success("Tarefa criada e publicada na conversa");
+        }}
+      />
     </div>
   );
 }
