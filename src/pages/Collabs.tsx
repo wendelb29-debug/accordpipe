@@ -1827,7 +1827,7 @@ export default function Collabs() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendText(); }
-                    if (e.key === "Escape") { setShowEmoji(false); setShowMentions(false); }
+                    if (e.key === "Escape") { setShowEmoji(false); setShowMentions(false); if (editingMsg) cancelEdit(); }
                   }}
                   placeholder={`Mensagem ${active.name}...`}
                   className="flex-1 bg-transparent outline-none text-[13.5px] text-[#1a1a2e] placeholder:text-gray-400 min-w-0"
