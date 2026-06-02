@@ -101,6 +101,7 @@ interface Conversation {
   last_message_at: string | null;
   last_message_preview: string | null;
   avatar_url?: string | null;
+  invite_token?: string | null;
 }
 
 type FileAttachment = {
