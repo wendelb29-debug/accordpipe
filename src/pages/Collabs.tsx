@@ -802,6 +802,8 @@ export default function Collabs() {
     setPermPost("todos");
     setSelectedMemberIds([]);
     setMemberSearch("");
+    setNewAvatarFile(null);
+    setNewAvatarPreview(null);
     setCreateOpen(true);
   };
 
