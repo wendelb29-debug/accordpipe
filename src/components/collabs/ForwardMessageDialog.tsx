@@ -167,10 +167,9 @@ export function ForwardMessageDialog({
                   )}
                 >
                   <HexAvatar
-                    name={c.name}
-                    emoji={c.emoji || undefined}
-                    color={c.color || undefined}
                     src={c.avatar_url || undefined}
+                    initials={c.emoji || c.name.slice(0, 2).toUpperCase()}
+                    background={c.color || hexGradientFor(c.name)}
                     size={40}
                   />
                   <div className="flex-1 min-w-0">
