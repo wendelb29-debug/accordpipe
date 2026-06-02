@@ -1788,13 +1788,16 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
     const srvAddr = srv ? [srv.endereco, srv.numero && `${srv.numero}`, srv.bairro, srv.cidade && srv.estado ? `${srv.cidade} - ${srv.estado}` : null, srv.cep ? `CEP ${srv.cep}` : null].filter(Boolean).join(", ") : "";
 
     return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col h-full min-h-0">
+        <div className="flex items-center gap-2 shrink-0 pb-3">
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setShowForm(false); setEditingProposal(null); }}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h3 className="text-lg font-semibold">{editingProposal ? "Editar Proposta" : "Criar Proposta"}</h3>
         </div>
+
+        <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-4">
+
 
         {/* Brand selector */}
         <Card><CardContent className="p-4 space-y-2">
@@ -1986,18 +1989,17 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
           <p className="font-semibold text-sm flex items-center gap-1.5"><Edit className="h-4 w-4 text-primary" /> Observações</p>
           <Textarea className="text-xs min-h-[100px]" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Condições e termos adicionais..." />
         </CardContent></Card>
+        </div>
 
-        {/* Bottom action bar */}
-        <div className="flex items-center gap-2 sticky bottom-0 bg-background border-t pt-3 pb-1">
+        {/* Barra de ações fixa no rodapé */}
+        <div className="flex items-center gap-2 shrink-0 bg-background border-t pt-3 pb-2 mt-2">
           <Button size="sm" variant="outline" onClick={() => { setShowForm(false); setEditingProposal(null); }} className="text-xs">
             Fechar
           </Button>
           <div className="flex-1" />
           <Button size="sm" variant="outline" onClick={async () => {
             if (!form.title.trim()) { toast.error("Preencha o título da proposta"); return; }
-            // Save first (handleCreate handles create vs update)
             await handleCreate();
-            // After saving, fetch latest proposals and generate PDF from the first match
             const { data } = await supabase
               .from("crm_lead_activities")
               .select("*")
