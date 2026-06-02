@@ -34,6 +34,10 @@ interface CollabInfoPanelProps {
     links?: number;
     media?: number;
   };
+  /** Cliques nas linhas "Mensagens favoritas", "Todos os links" e "Arquivos e mídia". */
+  onOpenFavorites?: () => void;
+  onOpenLinks?: () => void;
+  onOpenMedia?: () => void;
 }
 
 /**
@@ -41,7 +45,7 @@ interface CollabInfoPanelProps {
  * Renderiza dentro do <aside> existente no Collabs.tsx, substituindo
  * o painel "Equipe online" enquanto houver uma collab ativa.
  */
-export function CollabInfoPanel({ collab, onClose, onInvite, onAvatarChange, canEditAvatar, counts }: CollabInfoPanelProps) {
+export function CollabInfoPanel({ collab, onClose, onInvite, onAvatarChange, canEditAvatar, counts, onOpenFavorites, onOpenLinks, onOpenMedia }: CollabInfoPanelProps) {
   const [sound, setSound] = useState(true);
   const [autoDelete, setAutoDelete] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -166,9 +170,9 @@ export function CollabInfoPanel({ collab, onClose, onInvite, onAvatarChange, can
               Collab
             </span>
           </div>
-          <MenuRow icon={<Star className="w-4 h-4" />} label="Mensagens favoritas" count={counts?.pinned ?? 0} />
-          <MenuRow icon={<LinkIcon className="w-4 h-4" />} label="Todos os links" count={counts?.links ?? 0} />
-          <MenuRow icon={<ImageIcon className="w-4 h-4" />} label="Arquivos e mídia" count={counts?.media ?? 0} />
+          <MenuRow icon={<Star className="w-4 h-4" />} label="Mensagens favoritas" count={counts?.pinned ?? 0} onClick={onOpenFavorites} />
+          <MenuRow icon={<LinkIcon className="w-4 h-4" />} label="Todos os links" count={counts?.links ?? 0} onClick={onOpenLinks} />
+          <MenuRow icon={<ImageIcon className="w-4 h-4" />} label="Arquivos e mídia" count={counts?.media ?? 0} onClick={onOpenMedia} />
         </div>
       </div>
 
@@ -231,13 +235,15 @@ function MenuRow({
   icon,
   label,
   count,
+  onClick,
 }: {
   icon: React.ReactNode;
   label: string;
   count: number;
+  onClick?: () => void;
 }) {
   return (
-    <button className="w-full flex items-center gap-2.5 py-2 px-1 rounded-lg hover:bg-gray-50 transition text-left">
+    <button onClick={onClick} className="w-full flex items-center gap-2.5 py-2 px-1 rounded-lg hover:bg-gray-50 transition text-left">
       <div className="w-7 h-7 flex items-center justify-center text-emerald-600 shrink-0">{icon}</div>
       <span className="flex-1 text-[13px] font-medium text-gray-800">{label}</span>
       <span className="text-[11px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{count}</span>

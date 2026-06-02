@@ -860,6 +860,41 @@ export type Database = {
           },
         ]
       }
+      collab_message_favorites: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          message_id: string
+          servidor_id: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          message_id: string
+          servidor_id: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          message_id?: string
+          servidor_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collab_message_favorites_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "collab_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collab_messages: {
         Row: {
           attachments: Json

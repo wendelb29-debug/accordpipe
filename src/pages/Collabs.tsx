@@ -38,12 +38,14 @@ import {
   BarChart3,
   Maximize2,
   Minimize2,
+  Star,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { HexAvatar, hexGradientFor } from "@/components/collabs/HexAvatar";
 import { CollabInfoPanel } from "@/components/collabs/CollabInfoPanel";
 import { CollabFilesPanel } from "@/components/collabs/CollabFilesPanel";
+import { CollabMessagesPanel } from "@/components/collabs/CollabMessagesPanel";
 import { PollByMessage } from "@/components/collabs/polls/PollCard";
 import { CreatePollDialog } from "@/components/collabs/polls/CreatePollDialog";
 import {
@@ -249,7 +251,8 @@ export default function Collabs() {
   const [infoOpen, setInfoOpen] = useState(true);
   const [membersOpen, setMembersOpen] = useState(false);
   const [openingDirectFor, setOpeningDirectFor] = useState<string | null>(null);
-  const [chatView, setChatView] = useState<"chat" | "files">("chat");
+  const [chatView, setChatView] = useState<"chat" | "files" | "favorites" | "links">("chat");
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarView, setCalendarView] = useState<"list" | "agenda">("agenda");
   const [calendarExpanded, setCalendarExpanded] = useState(false);
@@ -483,6 +486,60 @@ export default function Collabs() {
 
     return () => { cancelled = true; supabase.removeChannel(ch); };
   }, [activeId, user?.id]);
+
+  /* ────── Favorites (per-user, per-conversation) ────── */
+  useEffect(() => {
+    setFavoriteIds(new Set());
+    if (!activeId || !user) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("collab_message_favorites")
+        .select("message_id")
+        .eq("user_id", user.id)
+        .eq("conversation_id", activeId);
+      if (cancelled) return;
+      setFavoriteIds(new Set((data || []).map((r: any) => r.message_id)));
+    })();
+    const ch = supabase
+      .channel(`collab-fav-${activeId}-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "collab_message_favorites", filter: `user_id=eq.${user.id}` },
+        (payload: any) => {
+          if (payload.eventType === "INSERT" && payload.new?.conversation_id === activeId) {
+            setFavoriteIds((prev) => { const n = new Set(prev); n.add(payload.new.message_id); return n; });
+          } else if (payload.eventType === "DELETE") {
+            const mid = payload.old?.message_id;
+            if (mid) setFavoriteIds((prev) => { const n = new Set(prev); n.delete(mid); return n; });
+          }
+        }
+      )
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(ch); };
+  }, [activeId, user?.id]);
+
+  const toggleFavorite = async (messageId: string) => {
+    if (!user || !activeId || !companyId) return;
+    const isFav = favoriteIds.has(messageId);
+    // optimistic
+    setFavoriteIds((prev) => { const n = new Set(prev); isFav ? n.delete(messageId) : n.add(messageId); return n; });
+    if (isFav) {
+      await supabase
+        .from("collab_message_favorites")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("message_id", messageId);
+    } else {
+      await supabase.from("collab_message_favorites").insert({
+        user_id: user.id,
+        message_id: messageId,
+        conversation_id: activeId,
+        servidor_id: companyId,
+      });
+    }
+  };
+
 
   /* ────── Derived ────── */
   const active = conversations.find((c) => c.id === activeId) || null;
@@ -1082,6 +1139,27 @@ export default function Collabs() {
                 onUploadClick={() => fileInputRef.current?.click()}
                 onBack={() => setChatView("chat")}
               />
+            ) : chatView === "favorites" || chatView === "links" ? (
+              <CollabMessagesPanel
+                mode={chatView}
+                collab={{
+                  id: active.id,
+                  name: active.name,
+                  color: active.color,
+                  avatar_url: (active as any).avatar_url ?? null,
+                }}
+                messages={messages.map((m) => ({
+                  id: m.id,
+                  sender_id: m.sender_id,
+                  content: m.content,
+                  created_at: m.created_at,
+                  attachments: (m.attachments as any) ?? [],
+                }))}
+                tenantUsers={tenantUsers.map((u) => ({ id: u.id, name: u.name, avatar_url: u.avatar_url }))}
+                favoriteIds={favoriteIds}
+                onToggleFavorite={toggleFavorite}
+                onBack={() => setChatView("chat")}
+              />
             ) : (
               <>
             <div
@@ -1155,6 +1233,18 @@ export default function Collabs() {
                               </button>
                               <button onClick={() => startReply(m)} title="Responder" className="w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-violet-600">
                                 <Reply className="h-[15px] w-[15px]" />
+                              </button>
+                              <button
+                                onClick={() => toggleFavorite(m.id)}
+                                title={favoriteIds.has(m.id) ? "Remover dos favoritos" : "Favoritar"}
+                                className={cn(
+                                  "w-7 h-7 rounded-full flex items-center justify-center transition",
+                                  favoriteIds.has(m.id)
+                                    ? "text-amber-500 hover:bg-amber-50"
+                                    : "text-gray-500 hover:bg-gray-100 hover:text-amber-500"
+                                )}
+                              >
+                                <Star className={cn("h-[15px] w-[15px]", favoriteIds.has(m.id) && "fill-amber-400 stroke-amber-500")} />
                               </button>
                             </div>
 
@@ -1595,6 +1685,14 @@ export default function Collabs() {
                   return null;
                 }
               }}
+              counts={{
+                pinned: favoriteIds.size,
+                links: messages.reduce((acc, m) => acc + ((m.content || "").match(/(https?:\/\/[^\s<>"')]+)/gi)?.length ?? 0), 0),
+                media: messages.reduce((acc, m) => acc + ((m.attachments as any[])?.filter((a) => a?.url && a?.kind !== "poll").length ?? 0), 0),
+              }}
+              onOpenFavorites={() => setChatView("favorites")}
+              onOpenLinks={() => setChatView("links")}
+              onOpenMedia={() => setChatView("files")}
             />
           ) : (
             <>
