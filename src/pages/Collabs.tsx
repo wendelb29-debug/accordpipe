@@ -835,6 +835,22 @@ export default function Collabs() {
       ];
       const { error: memErr } = await supabase.from("collab_members").insert(memberRows);
       if (memErr) throw memErr;
+      // Upload avatar if any
+      if (newAvatarFile) {
+        try {
+          const ext = (newAvatarFile.name.split(".").pop() || "png").toLowerCase();
+          const path = `${companyId}/${conv.id}.${ext}`;
+          const { error: upErr } = await supabase.storage.from("collab-avatars").upload(path, newAvatarFile, { upsert: true, contentType: newAvatarFile.type });
+          if (!upErr) {
+            const { data: signed } = await supabase.storage.from("collab-avatars").createSignedUrl(path, 60 * 60 * 24 * 365 * 5);
+            const avatarUrl = signed?.signedUrl || null;
+            if (avatarUrl) {
+              await supabase.from("collab_conversations").update({ avatar_url: avatarUrl } as any).eq("id", conv.id);
+              (conv as any).avatar_url = avatarUrl;
+            }
+          }
+        } catch (e) { console.warn("avatar upload failed", e); }
+      }
       // System message
       await supabase.from("collab_messages").insert({
         conversation_id: conv.id,
