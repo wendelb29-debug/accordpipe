@@ -10,8 +10,21 @@ import {
   BookOpen,
   Camera,
   Loader2,
+  MoreHorizontal,
+  Pin,
+  PinOff,
+  Pencil,
+  EyeOff,
+  Trash2,
 } from "lucide-react";
 import { HexAvatar, hexGradientFor } from "./HexAvatar";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface CollabInfoPanelProps {
   collab: {
@@ -20,32 +33,28 @@ interface CollabInfoPanelProps {
     color?: string | null;
     avatar_url?: string | null;
   };
-  /** Callback do botão "X" (fechar painel). Se ausente, esconde o botão. */
   onClose?: () => void;
-  /** Callback do botão "+ Adicionar" (abrir invite). */
   onInvite?: () => void;
-  /** Callback ao trocar a foto do grupo. Recebe um File, deve retornar o novo url (ou null em erro). */
   onAvatarChange?: (file: File) => Promise<string | null>;
-  /** Se o usuário atual pode editar a foto do grupo. */
   canEditAvatar?: boolean;
-  /** Contadores opcionais. */
   counts?: {
     pinned?: number;
     links?: number;
     media?: number;
   };
-  /** Cliques nas linhas "Mensagens favoritas", "Todos os links" e "Arquivos e mídia". */
   onOpenFavorites?: () => void;
   onOpenLinks?: () => void;
   onOpenMedia?: () => void;
+  isPinned?: boolean;
+  onTogglePin?: () => void;
+  onEdit?: () => void;
+  onAddParticipants?: () => void;
+  onHide?: () => void;
+  onDelete?: () => void;
+  canManage?: boolean;
 }
 
-/**
- * CollabInfoPanel — painel lateral direito "Sobre collab" (estilo Bitrix).
- * Renderiza dentro do <aside> existente no Collabs.tsx, substituindo
- * o painel "Equipe online" enquanto houver uma collab ativa.
- */
-export function CollabInfoPanel({ collab, onClose, onInvite, onAvatarChange, canEditAvatar, counts, onOpenFavorites, onOpenLinks, onOpenMedia }: CollabInfoPanelProps) {
+export function CollabInfoPanel({ collab, onClose, onInvite, onAvatarChange, canEditAvatar, counts, onOpenFavorites, onOpenLinks, onOpenMedia, isPinned, onTogglePin, onEdit, onAddParticipants, onHide, onDelete, canManage }: CollabInfoPanelProps) {
   const [sound, setSound] = useState(true);
   const [autoDelete, setAutoDelete] = useState(false);
   const [uploading, setUploading] = useState(false);
