@@ -835,7 +835,7 @@ export default function Collabs() {
     sonnerToast.success("Conversa excluída");
   };
 
-
+  const addExistingMember = async (userId: string) => {
     if (!activeId) return;
     const { error } = await supabase.from("collab_members").insert({ conversation_id: activeId, user_id: userId, role: "member" });
     if (error) {
