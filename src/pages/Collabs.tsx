@@ -487,6 +487,60 @@ export default function Collabs() {
     return () => { cancelled = true; supabase.removeChannel(ch); };
   }, [activeId, user?.id]);
 
+  /* ────── Favorites (per-user, per-conversation) ────── */
+  useEffect(() => {
+    setFavoriteIds(new Set());
+    if (!activeId || !user) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("collab_message_favorites")
+        .select("message_id")
+        .eq("user_id", user.id)
+        .eq("conversation_id", activeId);
+      if (cancelled) return;
+      setFavoriteIds(new Set((data || []).map((r: any) => r.message_id)));
+    })();
+    const ch = supabase
+      .channel(`collab-fav-${activeId}-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "collab_message_favorites", filter: `user_id=eq.${user.id}` },
+        (payload: any) => {
+          if (payload.eventType === "INSERT" && payload.new?.conversation_id === activeId) {
+            setFavoriteIds((prev) => { const n = new Set(prev); n.add(payload.new.message_id); return n; });
+          } else if (payload.eventType === "DELETE") {
+            const mid = payload.old?.message_id;
+            if (mid) setFavoriteIds((prev) => { const n = new Set(prev); n.delete(mid); return n; });
+          }
+        }
+      )
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(ch); };
+  }, [activeId, user?.id]);
+
+  const toggleFavorite = async (messageId: string) => {
+    if (!user || !activeId || !companyId) return;
+    const isFav = favoriteIds.has(messageId);
+    // optimistic
+    setFavoriteIds((prev) => { const n = new Set(prev); isFav ? n.delete(messageId) : n.add(messageId); return n; });
+    if (isFav) {
+      await supabase
+        .from("collab_message_favorites")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("message_id", messageId);
+    } else {
+      await supabase.from("collab_message_favorites").insert({
+        user_id: user.id,
+        message_id: messageId,
+        conversation_id: activeId,
+        servidor_id: companyId,
+      });
+    }
+  };
+
+
   /* ────── Derived ────── */
   const active = conversations.find((c) => c.id === activeId) || null;
 
