@@ -25,6 +25,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useOverdueCount } from "@/hooks/useOverdueCount";
+import { useUnreadEmailCount } from "@/hooks/useUnreadEmailCount";
 
 const navigation = [
   { nameKey: "nav.feed", href: "/home", icon: Newspaper, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
@@ -63,6 +65,8 @@ export function MobileSidebar() {
   const [open, setOpen] = useState(false);
   const [configOpen, setConfigOpen] = useState(true);
   const [currentLang, setCurrentLang] = useState(() => localStorage.getItem("accord-lang") || "pt-BR");
+  const overdueCount = useOverdueCount();
+  const unreadEmailCount = useUnreadEmailCount();
 
   useEffect(() => {
     if (profile?.preferred_language) {
@@ -170,6 +174,9 @@ export function MobileSidebar() {
             </p>
             {filteredNavigation.map((item) => {
               const isActive = location.pathname === item.href;
+              let badge = 0;
+              if (item.href === "/atividades" && overdueCount > 0) badge = overdueCount;
+              else if (item.href === "/email" && unreadEmailCount > 0) badge = unreadEmailCount;
               return (
                 <Link
                   key={item.nameKey}
@@ -179,7 +186,12 @@ export function MobileSidebar() {
                 >
                   {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-sidebar-primary shadow-[0_0_8px_rgba(122,63,242,0.5)]" />}
                   <item.icon className={cn("h-[17px] w-[17px] shrink-0", isActive && "text-sidebar-primary")} />
-                  <span className="truncate">{t(item.nameKey)}</span>
+                  <span className="truncate flex-1">{t(item.nameKey)}</span>
+                  {badge > 0 && (
+                    <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
+                      {badge > 99 ? "99+" : badge}
+                    </span>
+                  )}
                 </Link>
               );
             })}
