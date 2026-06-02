@@ -329,6 +329,18 @@ export default function Collabs() {
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [memberSearch, setMemberSearch] = useState("");
   const [creating, setCreating] = useState(false);
+  const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
+  const [newAvatarPreview, setNewAvatarPreview] = useState<string | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
+  const onPickAvatar = (file: File | null) => {
+    if (!file) { setNewAvatarFile(null); setNewAvatarPreview(null); return; }
+    if (!file.type.startsWith("image/")) { sonnerToast.error("Selecione uma imagem"); return; }
+    if (file.size > 5 * 1024 * 1024) { sonnerToast.error("Imagem muito grande (máx 5MB)"); return; }
+    setNewAvatarFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setNewAvatarPreview(String(e.target?.result || ""));
+    reader.readAsDataURL(file);
+  };
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteTab, setInviteTab] = useState<"colab" | "guest">("colab");
@@ -790,6 +802,8 @@ export default function Collabs() {
     setPermPost("todos");
     setSelectedMemberIds([]);
     setMemberSearch("");
+    setNewAvatarFile(null);
+    setNewAvatarPreview(null);
     setCreateOpen(true);
   };
 
@@ -821,6 +835,22 @@ export default function Collabs() {
       ];
       const { error: memErr } = await supabase.from("collab_members").insert(memberRows);
       if (memErr) throw memErr;
+      // Upload avatar if any
+      if (newAvatarFile) {
+        try {
+          const ext = (newAvatarFile.name.split(".").pop() || "png").toLowerCase();
+          const path = `${companyId}/${conv.id}.${ext}`;
+          const { error: upErr } = await supabase.storage.from("collab-avatars").upload(path, newAvatarFile, { upsert: true, contentType: newAvatarFile.type });
+          if (!upErr) {
+            const { data: signed } = await supabase.storage.from("collab-avatars").createSignedUrl(path, 60 * 60 * 24 * 365 * 5);
+            const avatarUrl = signed?.signedUrl || null;
+            if (avatarUrl) {
+              await supabase.from("collab_conversations").update({ avatar_url: avatarUrl } as any).eq("id", conv.id);
+              (conv as any).avatar_url = avatarUrl;
+            }
+          }
+        } catch (e) { console.warn("avatar upload failed", e); }
+      }
       // System message
       await supabase.from("collab_messages").insert({
         conversation_id: conv.id,
@@ -2556,25 +2586,58 @@ export default function Collabs() {
       {/* CREATE DIALOG */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="max-w-lg p-0 overflow-hidden rounded-2xl border-0 shadow-2xl">
-          {createKind === "group" ? (
+          {(createKind === "group" || createKind === "collab") ? (() => {
+            const isCollab = createKind === "collab";
+            const theme = isCollab
+              ? { bg: "#10b98118", color: "#059669", ring: "focus:border-emerald-400", grad: "linear-gradient(135deg, #10b981 0%, #059669 100%)", label: "collab", titlePh: "Nome da collab", btn: "Criar collab" }
+              : { bg: "#dbeafe", color: "#2563eb", ring: "focus:border-blue-400", grad: "linear-gradient(135deg, #84cc16 0%, #65a30d 100%)", label: "bate-papo", titlePh: "Digite o nome do bate-papo", btn: "Criar bate-papo" };
+            return (
             <>
-              {/* Header: icon + editable name */}
+              {/* Header: avatar uploader + editable name */}
               <div className="px-6 pt-6 pb-4 bg-white">
                 <div className="flex items-start gap-4">
-                  <div className="h-14 w-14 rounded-full flex items-center justify-center shrink-0" style={{ background: "#dbeafe", color: "#2563eb" }}>
-                    <Users className="h-6 w-6" />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="relative h-14 w-14 shrink-0 group"
+                    style={isCollab ? { clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" } : undefined}
+                    title="Adicionar foto"
+                  >
+                    {newAvatarPreview ? (
+                      <img
+                        src={newAvatarPreview}
+                        alt=""
+                        className={cn("h-14 w-14 object-cover", isCollab ? "" : "rounded-full")}
+                        style={isCollab ? { clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" } : undefined}
+                      />
+                    ) : (
+                      <div className={cn("h-14 w-14 flex items-center justify-center", isCollab ? "" : "rounded-full")} style={{ background: theme.bg, color: theme.color }}>
+                        {isCollab ? <Handshake className="h-6 w-6" /> : <Users className="h-6 w-6" />}
+                      </div>
+                    )}
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-white text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity" style={isCollab ? { clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" } : { borderRadius: "9999px" }}>
+                      Foto
+                    </span>
+                  </button>
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => onPickAvatar(e.target.files?.[0] || null)}
+                  />
                   <div className="flex-1 min-w-0">
                     <input
                       autoFocus
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
-                      placeholder="Digite o nome do bate-papo"
-                      className="w-full bg-transparent border-0 border-b border-transparent focus:border-blue-400 outline-none text-[22px] font-medium text-gray-400 focus:text-gray-900 placeholder:text-gray-300 pb-1"
+                      placeholder={theme.titlePh}
+                      className={cn("w-full bg-transparent border-0 border-b border-transparent outline-none text-[22px] font-medium text-gray-400 focus:text-gray-900 placeholder:text-gray-300 pb-1", theme.ring)}
                     />
                   </div>
                 </div>
               </div>
+
 
               <div className="max-h-[55vh] overflow-y-auto">
                 {/* Members */}
@@ -2766,144 +2829,14 @@ export default function Collabs() {
                   onClick={submitCreate}
                   disabled={!newName.trim() || creating}
                   className="px-5 py-2 rounded-lg text-[13px] font-semibold text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wide"
-                  style={{ background: "linear-gradient(135deg, #84cc16 0%, #65a30d 100%)" }}
+                  style={{ background: theme.grad }}
                 >
-                  {creating ? "Criando..." : "Criar bate-papo"}
+                  {creating ? "Criando..." : theme.btn}
                 </button>
               </div>
             </>
-          ) : createKind === "collab" ? (
-            <>
-              {/* Header: hex icon + editable name */}
-              <div className="px-6 pt-6 pb-4 bg-white">
-                <div className="flex items-start gap-4">
-                  <div className="relative shrink-0">
-                    <div
-                      className="h-14 w-14 flex items-center justify-center text-emerald-600"
-                      style={{ clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)", background: "#10b98118" }}
-                    >
-                      <Handshake className="h-6 w-6" />
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <input
-                      autoFocus
-                      value={newName}
-                      onChange={(e) => setNewName(e.target.value)}
-                      placeholder="Nome da collab"
-                      className="w-full bg-transparent border-0 border-b border-transparent focus:border-emerald-400 outline-none text-[22px] font-medium text-gray-400 focus:text-gray-900 placeholder:text-gray-300 pb-1"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Green info banner */}
-              <div className="mx-6 mb-4 rounded-xl p-4 flex gap-3" style={{ background: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)" }}>
-                <div className="h-10 w-10 rounded-full bg-white/70 flex items-center justify-center shrink-0">
-                  <Handshake className="h-5 w-5 text-emerald-600" />
-                </div>
-                <div className="text-[12px] text-emerald-900 leading-relaxed">
-                  <span className="font-semibold text-emerald-700">Collab</span> é um espaço de trabalho em conjunto para colaborar com convidados externos e clientes.
-                  <br />
-                  Crie uma collab para obter resultados espetaculares. Tudo o que você precisa: bate-papo, chamadas, arquivos, tarefas e calendário.
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="px-6 pb-3">
-                <label className="text-[12px] font-medium text-gray-600 mb-1.5 block">Descrição da collab</label>
-                <textarea
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  placeholder="Conte aos outros usuários sobre o que é essa collab."
-                  rows={3}
-                  className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm outline-none resize-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-                />
-              </div>
-
-              {/* Access permissions */}
-              <div className="px-6 pb-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAccessPerms((v) => !v)}
-                  className="w-full flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50/60 hover:bg-gray-100/60 px-4 py-3 transition-colors"
-                >
-                  <span className="flex items-center gap-2.5 text-[13px] text-gray-700">
-                    <Lock className="h-4 w-4 text-gray-500" />
-                    Permissões de acesso
-                  </span>
-                  <ChevronRight className={cn("h-4 w-4 text-gray-400 transition-transform", showAccessPerms && "rotate-90")} />
-                </button>
-
-                {showAccessPerms && (
-                  <div className="mt-3 rounded-xl border border-gray-100 bg-white">
-                    <div className="px-3 py-2 border-b border-gray-100">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-                        <input
-                          value={memberSearch}
-                          onChange={(e) => setMemberSearch(e.target.value)}
-                          placeholder="Buscar usuários do tenant..."
-                          className="w-full rounded-lg bg-gray-50 border border-transparent pl-9 pr-3 py-2 text-sm outline-none focus:border-emerald-300 focus:bg-white"
-                        />
-                      </div>
-                    </div>
-                    <div className="max-h-[200px] overflow-y-auto divide-y divide-gray-50">
-                      {tenantUsers.filter((u) => u.id !== user?.id && u.name.toLowerCase().includes(memberSearch.toLowerCase())).map((u) => {
-                        const checked = selectedMemberIds.includes(u.id);
-                        return (
-                          <button key={u.id} type="button" onClick={() => toggleMemberSel(u.id)} className={cn("w-full flex items-center gap-3 px-3 py-2 text-left transition-colors", checked ? "bg-emerald-50/70" : "hover:bg-gray-50")}>
-                            {u.avatar_url ? (
-                              <img src={u.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover" />
-                            ) : (
-                              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 text-white text-[11px] font-medium flex items-center justify-center">{initialsOf(u.name)}</div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <div className="text-[13px] text-gray-900 truncate">{u.name}</div>
-                              <div className="text-[11px] text-gray-500 truncate">@{u.handle}</div>
-                            </div>
-                            <div className={cn("h-4 w-4 rounded border flex items-center justify-center", checked ? "bg-emerald-600 border-emerald-600" : "border-gray-300")}>
-                              {checked && <span className="text-white text-[10px] leading-none">✓</span>}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Auto-delete toggle */}
-              <div className="px-6 pb-5">
-                <div className="flex items-center justify-between rounded-xl px-1 py-2">
-                  <div className="flex items-center gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => setAutoDelete((v) => !v)}
-                      className={cn("relative h-5 w-9 rounded-full transition-colors", autoDelete ? "bg-emerald-500" : "bg-gray-300")}
-                    >
-                      <span className={cn("absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all", autoDelete ? "left-[18px]" : "left-0.5")} />
-                    </button>
-                    <span className="text-[13px] text-gray-700">Excluir mensagens automaticamente</span>
-                  </div>
-                  <span className="text-[11px] text-gray-400">Nunca</span>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2">
-                <button onClick={() => setCreateOpen(false)} className="px-4 py-2 rounded-lg text-[13px] font-medium text-gray-600 hover:bg-gray-100 uppercase tracking-wide">Cancelar</button>
-                <button
-                  onClick={submitCreate}
-                  disabled={!newName.trim() || creating}
-                  className="px-5 py-2 rounded-lg text-[13px] font-semibold text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wide"
-                  style={{ background: "linear-gradient(135deg, #10b981 0%, #059669 100%)" }}
-                >
-                  {creating ? "Criando..." : "Criar collab"}
-                </button>
-              </div>
-            </>
-          ) : (
+            );
+          })() : (
             <>
               <div className="px-6 pt-6 pb-5" style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.08) 0%, rgba(99,102,241,0.04) 100%)" }}>
                 <div className="flex items-center gap-3 mb-1">
