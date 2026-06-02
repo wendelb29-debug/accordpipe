@@ -1685,6 +1685,14 @@ export default function Collabs() {
                   return null;
                 }
               }}
+              counts={{
+                pinned: favoriteIds.size,
+                links: messages.reduce((acc, m) => acc + ((m.content || "").match(/(https?:\/\/[^\s<>"')]+)/gi)?.length ?? 0), 0),
+                media: messages.reduce((acc, m) => acc + ((m.attachments as any[])?.filter((a) => a?.url && a?.kind !== "poll").length ?? 0), 0),
+              }}
+              onOpenFavorites={() => setChatView("favorites")}
+              onOpenLinks={() => setChatView("links")}
+              onOpenMedia={() => setChatView("files")}
             />
           ) : (
             <>
