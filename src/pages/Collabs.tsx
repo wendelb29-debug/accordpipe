@@ -292,11 +292,14 @@ export default function Collabs() {
   const [tenantUsers, setTenantUsers] = useState<MentionUser[]>([]);
   const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
   const [typingIds, setTypingIds] = useState<Set<string>>(new Set());
+  const [memberProfiles, setMemberProfiles] = useState<Map<string, MentionUser>>(new Map());
   const userMap = useMemo(() => {
     const m = new Map<string, MentionUser>();
     tenantUsers.forEach((u) => m.set(u.id, u));
+    // Member profiles override/fill missing entries so avatars always show
+    memberProfiles.forEach((u, id) => { if (!m.has(id) || !m.get(id)?.avatar_url) m.set(id, u); });
     return m;
-  }, [tenantUsers]);
+  }, [tenantUsers, memberProfiles]);
 
   const slug = (s: string) =>
     s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "").slice(0, 24) || "user";
