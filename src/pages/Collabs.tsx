@@ -740,7 +740,7 @@ export default function Collabs() {
         is_system: true,
         attachments: [],
       });
-      if (createKind === "collab" && newDescription.trim()) {
+      if ((createKind === "collab" || createKind === "group") && newDescription.trim()) {
         await supabase.from("collab_messages").insert({
           conversation_id: conv.id,
           servidor_id: companyId,
