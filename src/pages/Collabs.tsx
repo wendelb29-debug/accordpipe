@@ -49,6 +49,7 @@ import { CollabMessagesPanel } from "@/components/collabs/CollabMessagesPanel";
 import { PollByMessage } from "@/components/collabs/polls/PollCard";
 import { MessageActionsMenu } from "@/components/collabs/MessageActionsMenu";
 import { ForwardMessageDialog } from "@/components/collabs/ForwardMessageDialog";
+import { QuickTaskDialog } from "@/components/collabs/QuickTaskDialog";
 import { CreatePollDialog } from "@/components/collabs/polls/CreatePollDialog";
 import {
   DropdownMenu,
@@ -239,6 +240,9 @@ export default function Collabs() {
   const recorder = useAudioRecorder();
   const [sendingAudio, setSendingAudio] = useState(false);
   const [forwardMsg, setForwardMsg] = useState<DbMessage | null>(null);
+  const [taskForMsg, setTaskForMsg] = useState<DbMessage | null>(null);
+  const [copilotMode, setCopilotMode] = useState(false);
+  const [askingCopilot, setAskingCopilot] = useState(false);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -775,18 +779,66 @@ export default function Collabs() {
     if (!t || !activeId || !user || !companyId) return;
     setInput("");
     const replyId = replyTo?.id || null;
+    const quotedText = replyTo?.text || "";
+    const wasCopilot = copilotMode;
     setReplyTo(null);
+    setCopilotMode(false);
     setShowEmoji(false);
     setShowMentions(false);
     const { error } = await supabase.from("collab_messages").insert({
       conversation_id: activeId,
       servidor_id: companyId,
       sender_id: user.id,
-      content: t,
+      content: wasCopilot ? `✨ ${t}` : t,
       reply_to_id: replyId,
       attachments: [],
     });
-    if (error) toast({ title: "Erro ao enviar", description: error.message, variant: "destructive" });
+    if (error) {
+      toast({ title: "Erro ao enviar", description: error.message, variant: "destructive" });
+      return;
+    }
+    if (wasCopilot) {
+      setAskingCopilot(true);
+      try {
+        const { data, error: fnError } = await supabase.functions.invoke("accord-ai-chat", {
+          body: {
+            messages: [
+              ...(quotedText ? [{ role: "user", content: `Contexto da mensagem: "${quotedText}"` }] : []),
+              { role: "user", content: t },
+            ],
+          },
+        });
+        let replyText = "";
+        if (fnError) {
+          replyText = "Não consegui responder agora. Tente novamente em instantes.";
+        } else if (typeof data === "string") {
+          // SSE stream — extract content chunks
+          const chunks = data.split("\n").filter((l) => l.startsWith("data: ")).map((l) => l.slice(6));
+          for (const c of chunks) {
+            if (c === "[DONE]") continue;
+            try {
+              const j = JSON.parse(c);
+              const delta = j?.choices?.[0]?.delta?.content || j?.choices?.[0]?.message?.content || "";
+              replyText += delta;
+            } catch {}
+          }
+        } else if (data?.choices) {
+          replyText = data.choices[0]?.message?.content || "";
+        }
+        if (!replyText) replyText = "Sem resposta da IA no momento.";
+        await supabase.from("collab_messages").insert({
+          conversation_id: activeId,
+          servidor_id: companyId,
+          sender_id: user.id,
+          content: `🤖 **CoPilot:** ${replyText}`,
+          attachments: [],
+        });
+      } catch (e: any) {
+        toast({ title: "CoPilot indisponível", description: e?.message || "Erro", variant: "destructive" });
+      } finally {
+        setAskingCopilot(false);
+      }
+    }
   };
 
   const sendCardMessage = async (content: string, attachments: FileAttachment[] = []) => {
@@ -1290,10 +1342,10 @@ export default function Collabs() {
                                 isOwn={m.sender_id === user?.id}
                                 tone={isSent ? "mine" : "other"}
                                 onReply={() => startReply(m)}
-                                onCreateTask={() => navigate(`/atividades?from=collab&messageId=${m.id}`)}
+                                onCreateTask={() => setTaskForMsg(m)}
                                 onForward={() => setForwardMsg(m)}
                                 onSelect={() => sonnerToast.info("Seleção múltipla — em breve")}
-                                onAskCopilot={() => sonnerToast.info("CoPilot — em breve")}
+                                onAskCopilot={() => { startReply(m); setCopilotMode(true); }}
                               />
                             </div>
 
@@ -1453,13 +1505,24 @@ export default function Collabs() {
             <div className="px-4 py-3 shrink-0 relative bg-white/85 backdrop-blur-xl border-t border-gray-200/70">
 
               {replyTo && (
-                <div className="mb-2 flex items-center gap-2 bg-violet-50/80 rounded-2xl px-3 py-2 shadow-sm border-l-[3px] border-violet-500">
+                <div className="mb-2 flex items-center gap-2 bg-violet-50/80 dark:bg-violet-500/10 rounded-2xl px-3 py-2 shadow-sm border-l-[3px] border-violet-500">
                   <Reply className="h-4 w-4 shrink-0 text-violet-600" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-[11.5px] font-medium text-violet-700">Respondendo a {replyTo.name}</div>
-                    <div className="text-xs text-gray-600 truncate">{replyTo.text}</div>
+                    <div className="text-[11.5px] font-medium text-violet-700 dark:text-violet-300">Respondendo a {replyTo.name}</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-300 truncate">{replyTo.text}</div>
                   </div>
-                  <button onClick={() => setReplyTo(null)} className="w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:bg-white hover:text-gray-700"><X className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => { setReplyTo(null); setCopilotMode(false); }} className="w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:bg-white hover:text-gray-700"><X className="h-3.5 w-3.5" /></button>
+                </div>
+              )}
+
+              {copilotMode && (
+                <div className="mb-2 flex items-center gap-2 bg-gradient-to-r from-violet-50 to-sky-50 dark:from-violet-500/10 dark:to-sky-500/10 rounded-2xl px-3 py-2 border border-violet-200/60 dark:border-violet-500/20">
+                  <Sparkles className="h-4 w-4 text-violet-600" />
+                  <span className="text-[12.5px] font-medium text-violet-700 dark:text-violet-300 flex-1">
+                    Pergunte ao <span className="font-semibold">CoPilot</span> sobre esta mensagem
+                  </span>
+                  {askingCopilot && <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-500" />}
+                  <button onClick={() => setCopilotMode(false)} className="w-6 h-6 rounded-full flex items-center justify-center text-violet-500 hover:bg-white/60 dark:hover:bg-white/10"><X className="h-3.5 w-3.5" /></button>
                 </div>
               )}
 
@@ -2020,6 +2083,42 @@ export default function Collabs() {
         }))}
         currentUserId={user?.id || ""}
         companyId={companyId || ""}
+      />
+
+      <QuickTaskDialog
+        open={!!taskForMsg}
+        onOpenChange={(o) => !o && setTaskForMsg(null)}
+        conversationName={active?.name || "Conversa"}
+        senderName={taskForMsg ? (userMap.get(taskForMsg.sender_id || "")?.name || "Mensagem") : ""}
+        messageText={taskForMsg ? messagePlainText(taskForMsg) : ""}
+        members={members.map((m) => {
+          const u = userMap.get(m.user_id);
+          return { id: m.user_id, name: u?.name || "Usuário", avatar_url: u?.avatar_url };
+        })}
+        currentUserId={user?.id || ""}
+        onCreate={async ({ title, assigneeId, dueAt, description }) => {
+          if (!activeId || !user || !companyId || !taskForMsg) return;
+          const assignee = userMap.get(assigneeId);
+          const dueLabel = dueAt
+            ? new Date(dueAt).toLocaleString("pt-BR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+            : "Sem prazo";
+          const summary = [
+            `📋 **Nova tarefa:** ${title}`,
+            `👤 Responsável: ${assignee?.name || "—"}`,
+            `🗓️ Prazo: ${dueLabel}`,
+            description ? `\n> ${description.slice(0, 200)}` : "",
+          ].filter(Boolean).join("\n");
+          const { error } = await supabase.from("collab_messages").insert({
+            conversation_id: activeId,
+            servidor_id: companyId,
+            sender_id: user.id,
+            content: summary,
+            reply_to_id: taskForMsg.id,
+            attachments: [],
+          });
+          if (error) throw error;
+          sonnerToast.success("Tarefa criada e publicada na conversa");
+        }}
       />
     </div>
   );
