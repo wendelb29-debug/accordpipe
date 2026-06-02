@@ -422,6 +422,7 @@ const App = () => (
             <Route path="/reembolso" element={<RefundPolicy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </ErrorBoundary>
           </Suspense>
         </AuthProvider>
       </BrowserRouter>
