@@ -2586,25 +2586,58 @@ export default function Collabs() {
       {/* CREATE DIALOG */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="max-w-lg p-0 overflow-hidden rounded-2xl border-0 shadow-2xl">
-          {createKind === "group" ? (
+          {(createKind === "group" || createKind === "collab") ? (() => {
+            const isCollab = createKind === "collab";
+            const theme = isCollab
+              ? { bg: "#10b98118", color: "#059669", ring: "focus:border-emerald-400", grad: "linear-gradient(135deg, #10b981 0%, #059669 100%)", label: "collab", titlePh: "Nome da collab", btn: "Criar collab" }
+              : { bg: "#dbeafe", color: "#2563eb", ring: "focus:border-blue-400", grad: "linear-gradient(135deg, #84cc16 0%, #65a30d 100%)", label: "bate-papo", titlePh: "Digite o nome do bate-papo", btn: "Criar bate-papo" };
+            return (
             <>
-              {/* Header: icon + editable name */}
+              {/* Header: avatar uploader + editable name */}
               <div className="px-6 pt-6 pb-4 bg-white">
                 <div className="flex items-start gap-4">
-                  <div className="h-14 w-14 rounded-full flex items-center justify-center shrink-0" style={{ background: "#dbeafe", color: "#2563eb" }}>
-                    <Users className="h-6 w-6" />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="relative h-14 w-14 shrink-0 group"
+                    style={isCollab ? { clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" } : undefined}
+                    title="Adicionar foto"
+                  >
+                    {newAvatarPreview ? (
+                      <img
+                        src={newAvatarPreview}
+                        alt=""
+                        className={cn("h-14 w-14 object-cover", isCollab ? "" : "rounded-full")}
+                        style={isCollab ? { clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" } : undefined}
+                      />
+                    ) : (
+                      <div className={cn("h-14 w-14 flex items-center justify-center", isCollab ? "" : "rounded-full")} style={{ background: theme.bg, color: theme.color }}>
+                        {isCollab ? <Handshake className="h-6 w-6" /> : <Users className="h-6 w-6" />}
+                      </div>
+                    )}
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-white text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity" style={isCollab ? { clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" } : { borderRadius: "9999px" }}>
+                      Foto
+                    </span>
+                  </button>
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => onPickAvatar(e.target.files?.[0] || null)}
+                  />
                   <div className="flex-1 min-w-0">
                     <input
                       autoFocus
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
-                      placeholder="Digite o nome do bate-papo"
-                      className="w-full bg-transparent border-0 border-b border-transparent focus:border-blue-400 outline-none text-[22px] font-medium text-gray-400 focus:text-gray-900 placeholder:text-gray-300 pb-1"
+                      placeholder={theme.titlePh}
+                      className={cn("w-full bg-transparent border-0 border-b border-transparent outline-none text-[22px] font-medium text-gray-400 focus:text-gray-900 placeholder:text-gray-300 pb-1", theme.ring)}
                     />
                   </div>
                 </div>
               </div>
+
 
               <div className="max-h-[55vh] overflow-y-auto">
                 {/* Members */}
