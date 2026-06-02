@@ -47,6 +47,8 @@ import {
   Bookmark,
   ChevronRight,
   Lock,
+  Settings,
+
 
 
 
