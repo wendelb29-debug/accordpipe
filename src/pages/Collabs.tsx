@@ -692,6 +692,12 @@ export default function Collabs() {
     setNewDescription("");
     setAutoDelete(false);
     setShowAccessPerms(false);
+    setShowChatSettings(true);
+    setGroupPrivacy("privado");
+    setPermAdd("todos");
+    setPermRemove("adminsOwner");
+    setPermTheme("todos");
+    setPermPost("todos");
     setSelectedMemberIds([]);
     setMemberSearch("");
     setCreateOpen(true);
