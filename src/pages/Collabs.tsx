@@ -39,6 +39,9 @@ import {
   Maximize2,
   Minimize2,
   Star,
+  Filter as FilterIcon,
+  Check as CheckIcon,
+  CheckCheck,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -255,6 +258,8 @@ export default function Collabs() {
 
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
+  const [convFilter, setConvFilter] = useState<"all" | "unread">("all");
+  const [userLastRead, setUserLastRead] = useState<Map<string, string | null>>(new Map());
   const [infoOpen, setInfoOpen] = useState(true);
   const [membersOpen, setMembersOpen] = useState(false);
   const [openingDirectFor, setOpeningDirectFor] = useState<string | null>(null);
@@ -416,6 +421,46 @@ export default function Collabs() {
 
     return () => { cancelled = true; supabase.removeChannel(ch); };
   }, [companyId]);
+
+  /* ────── Load current user's last_read_at across all conversations (for unread filter) ────── */
+  useEffect(() => {
+    if (!user?.id || conversations.length === 0) { setUserLastRead(new Map()); return; }
+    let cancelled = false;
+    const ids = conversations.map((c) => c.id);
+    (async () => {
+      const { data } = await supabase
+        .from("collab_members")
+        .select("conversation_id, last_read_at")
+        .eq("user_id", user.id)
+        .in("conversation_id", ids);
+      if (cancelled) return;
+      const map = new Map<string, string | null>();
+      (data || []).forEach((r: any) => map.set(r.conversation_id, r.last_read_at));
+      setUserLastRead(map);
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id, conversations]);
+
+  const markAllAsRead = async () => {
+    if (!user?.id || conversations.length === 0) return;
+    const now = new Date().toISOString();
+    const ids = conversations.map((c) => c.id);
+    const { error } = await supabase
+      .from("collab_members")
+      .update({ last_read_at: now })
+      .eq("user_id", user.id)
+      .in("conversation_id", ids);
+    if (error) {
+      sonnerToast.error("Não foi possível marcar como lido");
+      return;
+    }
+    const next = new Map(userLastRead);
+    ids.forEach((id) => next.set(id, now));
+    setUserLastRead(next);
+    sonnerToast.success("Tudo marcado como lido");
+  };
+
+
 
   /* ────── Load messages + members for active conversation + realtime ────── */
   useEffect(() => {
@@ -580,9 +625,18 @@ export default function Collabs() {
   /* ────── Derived ────── */
   const active = conversations.find((c) => c.id === activeId) || null;
 
+  const isUnread = (c: Conversation) => {
+    if (!c.last_message_at) return false;
+    const lr = userLastRead.get(c.id);
+    if (!lr) return true;
+    return new Date(c.last_message_at).getTime() > new Date(lr).getTime();
+  };
+
   const filtered = useMemo(
-    () => conversations.filter((c) => c.name.toLowerCase().includes(search.toLowerCase())),
-    [conversations, search]
+    () => conversations
+      .filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
+      .filter((c) => convFilter === "all" ? true : isUnread(c)),
+    [conversations, search, convFilter, userLastRead]
   );
 
   const reactionsByMsg = useMemo(() => {
@@ -976,6 +1030,45 @@ export default function Collabs() {
       {/* SIDEBAR — dark purple */}
       <aside className="w-[320px] min-w-[320px] flex flex-col shrink-0 bg-white border-r border-gray-200">
         <div className="h-[60px] flex items-center gap-2 px-3 border-b border-gray-200 shrink-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                title="Filtrar"
+                className={cn(
+                  "shrink-0 h-9 w-9 rounded-full flex items-center justify-center border transition",
+                  convFilter === "unread"
+                    ? "bg-violet-50 border-violet-200 text-violet-600"
+                    : "bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-500"
+                )}
+              >
+                <FilterIcon className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" sideOffset={8} className="w-[220px] p-1 rounded-xl">
+              <DropdownMenuItem
+                onClick={() => setConvFilter("all")}
+                className="flex items-center justify-between gap-2 px-3 py-2 text-[13px] cursor-pointer"
+              >
+                <span>Todos</span>
+                {convFilter === "all" && <CheckIcon className="h-4 w-4 text-violet-600" />}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setConvFilter("unread")}
+                className="flex items-center justify-between gap-2 px-3 py-2 text-[13px] cursor-pointer"
+              >
+                <span>Não lido</span>
+                {convFilter === "unread" && <CheckIcon className="h-4 w-4 text-violet-600" />}
+              </DropdownMenuItem>
+              <div className="my-1 h-px bg-gray-100" />
+              <DropdownMenuItem
+                onClick={markAllAsRead}
+                className="flex items-center justify-between gap-2 px-3 py-2 text-[13px] cursor-pointer"
+              >
+                <span>Marcar tudo como lido</span>
+                <CheckCheck className="h-4 w-4 text-gray-400" />
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <div className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 transition rounded-full px-3 py-2 flex-1 min-w-0 border border-gray-200">
             <Search className="h-4 w-4 text-gray-400 shrink-0" />
             <input
