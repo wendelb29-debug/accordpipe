@@ -42,6 +42,8 @@ import {
   Filter as FilterIcon,
   Check as CheckIcon,
   CheckCheck,
+  RefreshCw,
+  Pencil,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -101,6 +103,7 @@ interface Conversation {
   last_message_at: string | null;
   last_message_preview: string | null;
   avatar_url?: string | null;
+  invite_token?: string | null;
 }
 
 type FileAttachment = {
@@ -273,6 +276,7 @@ export default function Collabs() {
   const [showMentions, setShowMentions] = useState(false);
   const [pickerTab, setPickerTab] = useState<"emoji" | "stickers">("emoji");
   const [replyTo, setReplyTo] = useState<{ id: string; name: string; text: string } | null>(null);
+  const [editingMsg, setEditingMsg] = useState<{ id: string; preview: string } | null>(null);
   const [reactPickerFor, setReactPickerFor] = useState<string | null>(null);
 
   // Quick actions (attach menu)
@@ -716,7 +720,10 @@ export default function Collabs() {
     }
   };
 
-  const inviteLink = activeId
+  const [rotatingInvite, setRotatingInvite] = useState(false);
+  const inviteLink = active && active.invite_token
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/collabs/convite/${active.invite_token}`
+    : activeId
     ? `${typeof window !== "undefined" ? window.location.origin : ""}/collabs/convite/${activeId}`
     : "";
 
@@ -728,6 +735,38 @@ export default function Collabs() {
       setTimeout(() => setInviteLinkCopied(false), 1800);
     } catch {}
   };
+
+  const rotateInviteLink = async () => {
+    if (!activeId || !user || !companyId || rotatingInvite) return;
+    setRotatingInvite(true);
+    try {
+      const newToken = (crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`).replace(/-/g, "");
+      const { error } = await supabase
+        .from("collab_conversations")
+        .update({ invite_token: newToken } as any)
+        .eq("id", activeId);
+      if (error) {
+        sonnerToast.error("Não foi possível atualizar o link", { description: error.message });
+        return;
+      }
+      // Optimistically reflect locally so the link in the dialog updates instantly
+      setConversations((prev) => prev.map((c) => c.id === activeId ? { ...c, invite_token: newToken } : c));
+      // System message in the group informing about the rotation
+      const myName = userMap.get(user.id)?.name || "Um administrador";
+      await supabase.from("collab_messages").insert({
+        conversation_id: activeId,
+        servidor_id: companyId,
+        sender_id: user.id,
+        content: `${myName} atualizou o link de convite. Agora o link anterior é inválido.`,
+        is_system: true,
+        attachments: [],
+      });
+      sonnerToast.success("Link de convite atualizado");
+    } finally {
+      setRotatingInvite(false);
+    }
+  };
+
 
   const addExistingMember = async (userId: string) => {
     if (!activeId) return;
@@ -814,7 +853,22 @@ export default function Collabs() {
   const startReply = (m: DbMessage) => {
     const senderName = m.sender_id === user?.id ? "Você" : (userMap.get(m.sender_id || "")?.name || "Mensagem");
     setReplyTo({ id: m.id, name: senderName, text: messagePlainText(m).slice(0, 120) });
+    setEditingMsg(null);
     inputRef.current?.focus();
+  };
+
+  const startEdit = (m: DbMessage) => {
+    if (!m.content) return;
+    setEditingMsg({ id: m.id, preview: messagePlainText(m).slice(0, 120) });
+    setReplyTo(null);
+    setCopilotMode(false);
+    setInput(m.content);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const cancelEdit = () => {
+    setEditingMsg(null);
+    setInput("");
   };
 
   const toggleReaction = async (msgId: string, emoji: string) => {
@@ -831,6 +885,25 @@ export default function Collabs() {
   const sendText = async () => {
     const t = input.trim();
     if (!t || !activeId || !user || !companyId) return;
+
+    // Edit mode: update existing message instead of inserting a new one
+    if (editingMsg) {
+      const editId = editingMsg.id;
+      setInput("");
+      setEditingMsg(null);
+      const { error } = await supabase
+        .from("collab_messages")
+        .update({ content: t } as any)
+        .eq("id", editId);
+      if (error) {
+        toast({ title: "Erro ao editar", description: error.message, variant: "destructive" });
+        return;
+      }
+      setMessages((prev) => prev.map((m) => m.id === editId ? { ...m, content: t } : m));
+      sonnerToast.success("Mensagem editada");
+      return;
+    }
+
     setInput("");
     const replyId = replyTo?.id || null;
     const quotedText = replyTo?.text || "";
@@ -1439,6 +1512,7 @@ export default function Collabs() {
                                 onForward={() => setForwardMsg(m)}
                                 onSelect={() => sonnerToast.info("Seleção múltipla — em breve")}
                                 onAskCopilot={() => { startReply(m); setCopilotMode(true); }}
+                                onStartEdit={() => startEdit(m)}
                               />
                             </div>
 
@@ -1597,6 +1671,18 @@ export default function Collabs() {
             {/* Input */}
             <div className="px-4 py-3 shrink-0 relative bg-white/85 backdrop-blur-xl border-t border-gray-200/70">
 
+              {editingMsg && (
+                <div className="mb-2 flex items-center gap-2 bg-sky-50/80 rounded-2xl px-3 py-2 shadow-sm border-l-[3px] border-sky-500">
+                  <Pencil className="h-4 w-4 shrink-0 text-sky-600" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11.5px] font-medium text-sky-700">Editar mensagem</div>
+                    <div className="text-xs text-gray-600 truncate">{editingMsg.preview}</div>
+                  </div>
+                  <button onClick={cancelEdit} className="w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:bg-white hover:text-gray-700"><X className="h-3.5 w-3.5" /></button>
+                </div>
+              )}
+
+
               {replyTo && (
                 <div className="mb-2 flex items-center gap-2 bg-violet-50/80 dark:bg-violet-500/10 rounded-2xl px-3 py-2 shadow-sm border-l-[3px] border-violet-500">
                   <Reply className="h-4 w-4 shrink-0 text-violet-600" />
@@ -1741,7 +1827,7 @@ export default function Collabs() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendText(); }
-                    if (e.key === "Escape") { setShowEmoji(false); setShowMentions(false); }
+                    if (e.key === "Escape") { setShowEmoji(false); setShowMentions(false); if (editingMsg) cancelEdit(); }
                   }}
                   placeholder={`Mensagem ${active.name}...`}
                   className="flex-1 bg-transparent outline-none text-[13.5px] text-[#1a1a2e] placeholder:text-gray-400 min-w-0"
@@ -2065,11 +2151,20 @@ export default function Collabs() {
                 <div className="text-[12px] font-medium text-gray-700 mb-2">Link de convite</div>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 truncate text-[11.5px] text-gray-500 bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">{inviteLink}</div>
-                  <button onClick={copyInviteLink} className="px-3 py-2 rounded-lg text-[12px] font-medium text-white shadow-sm whitespace-nowrap" style={{ background: "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)" }}>
+                  <button onClick={copyInviteLink} className="px-3 py-2 rounded-lg text-[12px] font-medium text-white shadow-sm whitespace-nowrap inline-flex items-center gap-1.5" style={{ background: "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)" }}>
+                    <ExternalLink className="h-3.5 w-3.5" />
                     {inviteLinkCopied ? "Copiado!" : "Copiar link"}
                   </button>
+                  <button
+                    onClick={rotateInviteLink}
+                    disabled={rotatingInvite}
+                    title="Gerar novo link (invalida o anterior)"
+                    className="h-9 w-9 rounded-lg flex items-center justify-center text-gray-600 border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-60 transition"
+                  >
+                    <RefreshCw className={cn("h-4 w-4", rotatingInvite && "animate-spin")} />
+                  </button>
                 </div>
-                <p className="text-[11px] text-gray-500 mt-3">Envie este link a um colega para que ele entre nesta conversa.</p>
+                <p className="text-[11px] text-gray-500 mt-3">Envie este link a um colega para que ele entre nesta conversa. Toque no <RefreshCw className="inline h-3 w-3 -mt-0.5" /> para gerar um novo link e invalidar o anterior.</p>
               </div>
             </div>
           )}

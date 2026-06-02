@@ -55,6 +55,7 @@ export interface MessageActionsMenuProps {
   onForward?: () => void;
   onSelect?: () => void;
   onAskCopilot?: () => void;
+  onStartEdit?: () => void;
   onAfterMutation?: () => void;
 }
 
@@ -67,6 +68,7 @@ export function MessageActionsMenu({
   onForward,
   onSelect,
   onAskCopilot,
+  onStartEdit,
   onAfterMutation,
 }: MessageActionsMenuProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -213,8 +215,12 @@ export function MessageActionsMenu({
                   icon={Pencil}
                   label="Editar"
                   onSelect={() => {
-                    setEditText(plain);
-                    setEditing(true);
+                    if (onStartEdit) {
+                      onStartEdit();
+                    } else {
+                      setEditText(plain);
+                      setEditing(true);
+                    }
                   }}
                 />
               )}
