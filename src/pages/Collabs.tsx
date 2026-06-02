@@ -306,6 +306,13 @@ export default function Collabs() {
   const [newDescription, setNewDescription] = useState("");
   const [autoDelete, setAutoDelete] = useState(false);
   const [showAccessPerms, setShowAccessPerms] = useState(false);
+  const [showChatSettings, setShowChatSettings] = useState(true);
+  const [groupPrivacy, setGroupPrivacy] = useState<"privado" | "publico">("privado");
+  type PermLevel = "todos" | "adminsOwner" | "ownerOnly";
+  const [permAdd, setPermAdd] = useState<PermLevel>("todos");
+  const [permRemove, setPermRemove] = useState<PermLevel>("adminsOwner");
+  const [permTheme, setPermTheme] = useState<PermLevel>("todos");
+  const [permPost, setPermPost] = useState<PermLevel>("todos");
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [memberSearch, setMemberSearch] = useState("");
   const [creating, setCreating] = useState(false);
