@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
     url.searchParams.set("response_type", "code");
     url.searchParams.set("scope", GMAIL_SCOPES);
     url.searchParams.set("access_type", "offline");
-    url.searchParams.set("prompt", "consent");
+    url.searchParams.set("prompt", "select_account consent");
     url.searchParams.set("include_granted_scopes", "true");
     url.searchParams.set("state", state);
 
