@@ -652,16 +652,18 @@ export default function Collabs() {
           .in("user_id", memberIds);
         if (!cancelled) {
           const map = new Map<string, MentionUser>();
-          (profs || []).forEach((p: any) => {
-            if (!p.user_id) return;
-            map.set(p.user_id, {
-              id: p.user_id,
-              name: p.name || "Usuário",
-              handle: slug((p.name || "user").split(" ")[0] || p.name || "user"),
-              avatar_url: p.avatar_url || null,
-              department: (Array.isArray(p.tags) && p.tags[0]) || "Equipe",
-            });
-          });
+          const entries = await Promise.all(
+            (profs || [])
+              .filter((p: any) => p.user_id)
+              .map(async (p: any) => ({
+                id: p.user_id as string,
+                name: p.name || "Usuário",
+                handle: slug((p.name || "user").split(" ")[0] || p.name || "user"),
+                avatar_url: await resolveProfileAvatar(p.avatar_url),
+                department: (Array.isArray(p.tags) && p.tags[0]) || "Equipe",
+              }))
+          );
+          entries.forEach((e) => map.set(e.id, e));
           setMemberProfiles(map);
         }
       } else {
