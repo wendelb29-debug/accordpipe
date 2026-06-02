@@ -403,6 +403,81 @@ export default function Collabs() {
     return () => { supabase.removeChannel(ch); presenceRef.current = null; };
   }, [companyId, user?.id]);
 
+  /* ────── Per-user conversation prefs (mute / read-later / hide) ────── */
+  const prefsKey = user?.id ? `collab_prefs_${user.id}` : null;
+  useEffect(() => {
+    if (!prefsKey) return;
+    try {
+      const raw = localStorage.getItem(prefsKey);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      setMutedIds(new Set(data.muted || []));
+      setReadLaterIds(new Set(data.readLater || []));
+      setHiddenIds(new Set(data.hidden || []));
+    } catch {}
+  }, [prefsKey]);
+  const persistPrefs = (muted: Set<string>, readLater: Set<string>, hidden: Set<string>) => {
+    if (!prefsKey) return;
+    try {
+      localStorage.setItem(prefsKey, JSON.stringify({
+        muted: Array.from(muted), readLater: Array.from(readLater), hidden: Array.from(hidden),
+      }));
+    } catch {}
+  };
+  const toggleMuteConv = (id: string) => {
+    setMutedIds((prev) => {
+      const next = new Set(prev);
+      const on = !next.has(id);
+      if (on) next.add(id); else next.delete(id);
+      persistPrefs(next, readLaterIds, hiddenIds);
+      sonnerToast.success(on ? "Conversa silenciada" : "Conversa ativada");
+      return next;
+    });
+  };
+  const toggleReadLater = (id: string) => {
+    setReadLaterIds((prev) => {
+      const next = new Set(prev);
+      const on = !next.has(id);
+      if (on) next.add(id); else next.delete(id);
+      persistPrefs(mutedIds, next, hiddenIds);
+      sonnerToast.success(on ? "Marcado para ler depois" : "Removido de ler depois");
+      return next;
+    });
+  };
+  const hideConvLocal = (id: string) => {
+    setHiddenIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      persistPrefs(mutedIds, readLaterIds, next);
+      return next;
+    });
+    if (activeId === id) setActiveId(null);
+    sonnerToast.success("Conversa ocultada", {
+      action: {
+        label: "Desfazer",
+        onClick: () => setHiddenIds((prev) => {
+          const next = new Set(prev); next.delete(id);
+          persistPrefs(mutedIds, readLaterIds, next);
+          return next;
+        }),
+      },
+    });
+  };
+  const togglePinConv = async (id: string, currentlyPinned: boolean) => {
+    const next = !currentlyPinned;
+    const { error } = await supabase
+      .from("collab_conversations")
+      .update({ is_pinned: next })
+      .eq("id", id);
+    if (error) {
+      sonnerToast.error("Não foi possível " + (next ? "fixar" : "desafixar"), { description: error.message });
+      return;
+    }
+    setConversations((prev) => prev.map((c) => c.id === id ? { ...c, is_pinned: next } : c));
+    sonnerToast.success(next ? "Conversa fixada" : "Conversa desafixada");
+  };
+
+
   useEffect(() => {
     const ch = presenceRef.current;
     if (!ch || !activeId) return;
