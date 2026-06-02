@@ -39,6 +39,9 @@ import {
   Maximize2,
   Minimize2,
   Star,
+  Filter as FilterIcon,
+  Check as CheckIcon,
+  CheckCheck,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
