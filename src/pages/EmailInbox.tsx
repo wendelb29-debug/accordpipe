@@ -87,7 +87,7 @@ export default function EmailInbox() {
     setLoading(false);
   };
 
-  useEffect(() => { loadAccount(); }, [accountId]);
+  useEffect(() => { loadAccount(); loadAllAccounts(); }, [accountId]);
   useEffect(() => { loadMessages(); setSelectedId(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountId, folder]);
