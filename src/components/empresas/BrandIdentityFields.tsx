@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ProposalTemplatePremium } from "@/components/atendimento/ProposalTemplatePremium";
 import type { ProposalTemplateData } from "@/components/atendimento/ProposalTemplatePremium";
 import {
@@ -47,6 +47,25 @@ export function BrandIdentityFields({ formData, onChange }: Props) {
   const [activeContext, setActiveContext] = useState<BrandContext>("sistema");
   const [deviceView, setDeviceView] = useState<DeviceView>("desktop");
   const [useSameDocLogo, setUseSameDocLogo] = useState(true);
+  const [displayLogoUrl, setDisplayLogoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = async () => {
+      if (formData.brandLogoPath) {
+        const { data } = await supabase.storage
+          .from("documents")
+          .createSignedUrl(formData.brandLogoPath, 60 * 60 * 24);
+        if (!cancelled && data?.signedUrl) {
+          setDisplayLogoUrl(data.signedUrl);
+          return;
+        }
+      }
+      if (!cancelled) setDisplayLogoUrl(formData.brandLogoUrl || null);
+    };
+    refresh();
+    return () => { cancelled = true; };
+  }, [formData.brandLogoPath, formData.brandLogoUrl]);
 
   const handleLogoUpload = async (file: File, target: "system" | "doc" = "system") => {
     if (!file.type.startsWith("image/")) { toast.error("Selecione um arquivo de imagem"); return; }
@@ -109,9 +128,9 @@ export function BrandIdentityFields({ formData, onChange }: Props) {
         <div className="space-y-2">
           <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Logo do Sistema</p>
           <div className="flex items-center gap-4">
-            {formData.brandLogoUrl ? (
+            {(displayLogoUrl || formData.brandLogoUrl) ? (
               <div className="h-16 w-32 rounded-lg border border-border bg-background flex items-center justify-center overflow-hidden">
-                <img src={formData.brandLogoUrl} alt="Logo" className="max-h-14 max-w-28 object-contain" />
+                <img src={displayLogoUrl || formData.brandLogoUrl} alt="Logo" className="max-h-14 max-w-28 object-contain" />
               </div>
             ) : (
               <div className="h-16 w-32 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 flex items-center justify-center">

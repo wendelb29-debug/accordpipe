@@ -76,6 +76,7 @@ interface ServidorData {
   cep: string | null;
   complemento: string | null;
   brand_logo_url?: string | null;
+  brand_logo_path?: string | null;
   brand_primary_color?: string | null;
   brand_secondary_color?: string | null;
   brand_accent_color?: string | null;
@@ -183,6 +184,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
   const [brands, setBrands] = useState<ProposalBrand[]>([]);
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
   const [showBrandManager, setShowBrandManager] = useState(false);
+  const [activeLogoUrl, setActiveLogoUrl] = useState<string | null>(null);
 
   // Currency state
   const [currency, setCurrency] = useState("BRL");
@@ -432,6 +434,32 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
   const [servidorData, setServidorData] = useState<ServidorData | null>(null);
 
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = async () => {
+      if (selectedBrandId) {
+        const brand = brands.find(b => b.id === selectedBrandId);
+        if (brand?.logo_url) {
+          if (!cancelled) setActiveLogoUrl(brand.logo_url);
+          return;
+        }
+      }
+      if (servidorData?.brand_logo_path) {
+        const { data } = await supabase.storage
+          .from("documents")
+          .createSignedUrl(servidorData.brand_logo_path, 60 * 60 * 24);
+        if (!cancelled && data?.signedUrl) {
+          setActiveLogoUrl(data.signedUrl);
+          return;
+        }
+      }
+      if (!cancelled) setActiveLogoUrl(servidorData?.brand_logo_url || null);
+    };
+    refresh();
+    return () => { cancelled = true; };
+  }, [selectedBrandId, servidorData?.brand_logo_path, servidorData?.brand_logo_url, brands]);
+
+
   const [lineItems, setLineItems] = useState<ProposalLineItem[]>([]);
   const [paymentFrequency, setPaymentFrequency] = useState("mensal");
 
@@ -482,7 +510,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     if (lead.servidor_id) {
       const { data } = await supabase
         .from("companies")
-        .select("id, razao_social, nome_fantasia, cnpj, responsavel, email, telefone, endereco, numero, complemento, bairro, cidade, estado, cep, brand_logo_url, brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color")
+        .select("id, razao_social, nome_fantasia, cnpj, responsavel, email, telefone, endereco, numero, complemento, bairro, cidade, estado, cep, brand_logo_url, brand_logo_path, brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color")
         .eq("id", lead.servidor_id)
         .maybeSingle();
       if (data) setServidorData(data as ServidorData);
@@ -1829,17 +1857,14 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
             </Select>
           ) : null}
           {/* Show active logo: server logo as global default, brand logo as override */}
-          {(() => {
-            const activeLogo = (selectedBrandId && brands.find(b => b.id === selectedBrandId)?.logo_url) || servidorData?.brand_logo_url;
-            return activeLogo ? (
-              <div className="flex items-center gap-3 p-2 rounded-md bg-muted/50">
-                <img src={activeLogo} alt="Logo" className="h-10 object-contain" />
-                <span className="text-xs text-muted-foreground">Logo será exibido no canto superior esquerdo da proposta</span>
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground">Nenhuma logo configurada. Configure em Editar Servidor → Identidade Visual.</p>
-            );
-          })()}
+          {activeLogoUrl ? (
+            <div className="flex items-center gap-3 p-2 rounded-md bg-muted/50">
+              <img src={activeLogoUrl} alt="Logo" className="h-10 object-contain" />
+              <span className="text-xs text-muted-foreground">Logo será exibido no canto superior esquerdo da proposta</span>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">Nenhuma logo configurada. Configure em Editar Servidor → Identidade Visual.</p>
+          )}
         </CardContent></Card>
 
         <BrandManagerDialog
