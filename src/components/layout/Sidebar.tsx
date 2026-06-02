@@ -51,6 +51,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantLogo } from "@/hooks/useTenantLogo";
 import { useOverdueCount } from "@/hooks/useOverdueCount";
+import { useUnreadEmailCount } from "@/hooks/useUnreadEmailCount";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -156,6 +157,7 @@ export function Sidebar() {
   const activeCompanyId = useActiveCompanyId();
   const tenantLogoUrl = useTenantLogo(activeCompanyId);
   const overdueCount = useOverdueCount();
+  const unreadEmailCount = useUnreadEmailCount();
   
 
   // Auto-open Configurações when on one of its subroutes
@@ -208,7 +210,12 @@ export function Sidebar() {
     : "?";
 
   const NavItem = ({ item, isActive }: { item: typeof navigation[0]; isActive: boolean }) => {
-    const badge = item.href === "/atividades" && overdueCount > 0 ? overdueCount : 0;
+    const badge =
+      item.href === "/atividades" && overdueCount > 0
+        ? overdueCount
+        : item.href === "/email" && unreadEmailCount > 0
+        ? unreadEmailCount
+        : 0;
     const content = (
       <Link
         to={item.href}
