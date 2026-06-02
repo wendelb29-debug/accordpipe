@@ -1307,6 +1307,7 @@ export default function Collabs() {
                             </div>
                           )}
 
+                          <div className={cn("relative flex items-center gap-1.5", isSent && "flex-row-reverse")}>
                             <div className={cn(
                               "flex items-center gap-0.5 bg-white/95 dark:bg-zinc-900/90 backdrop-blur rounded-full shadow-md border border-black/5 dark:border-white/10 px-1 py-0.5 z-10",
                               isSent ? "mr-1" : "ml-1",
