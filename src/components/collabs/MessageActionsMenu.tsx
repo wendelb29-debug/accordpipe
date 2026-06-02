@@ -68,6 +68,7 @@ export function MessageActionsMenu({
   onForward,
   onSelect,
   onAskCopilot,
+  onStartEdit,
   onAfterMutation,
 }: MessageActionsMenuProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
