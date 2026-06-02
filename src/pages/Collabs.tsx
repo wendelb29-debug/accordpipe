@@ -249,7 +249,8 @@ export default function Collabs() {
   const [infoOpen, setInfoOpen] = useState(true);
   const [membersOpen, setMembersOpen] = useState(false);
   const [openingDirectFor, setOpeningDirectFor] = useState<string | null>(null);
-  const [chatView, setChatView] = useState<"chat" | "files">("chat");
+  const [chatView, setChatView] = useState<"chat" | "files" | "favorites" | "links">("chat");
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarView, setCalendarView] = useState<"list" | "agenda">("agenda");
   const [calendarExpanded, setCalendarExpanded] = useState(false);
