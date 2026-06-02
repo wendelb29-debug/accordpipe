@@ -1989,18 +1989,17 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
           <p className="font-semibold text-sm flex items-center gap-1.5"><Edit className="h-4 w-4 text-primary" /> Observações</p>
           <Textarea className="text-xs min-h-[100px]" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Condições e termos adicionais..." />
         </CardContent></Card>
+        </div>
 
-        {/* Bottom action bar */}
-        <div className="flex items-center gap-2 sticky bottom-0 bg-background border-t pt-3 pb-1">
+        {/* Barra de ações fixa no rodapé */}
+        <div className="flex items-center gap-2 shrink-0 bg-background border-t pt-3 pb-2 mt-2">
           <Button size="sm" variant="outline" onClick={() => { setShowForm(false); setEditingProposal(null); }} className="text-xs">
             Fechar
           </Button>
           <div className="flex-1" />
           <Button size="sm" variant="outline" onClick={async () => {
             if (!form.title.trim()) { toast.error("Preencha o título da proposta"); return; }
-            // Save first (handleCreate handles create vs update)
             await handleCreate();
-            // After saving, fetch latest proposals and generate PDF from the first match
             const { data } = await supabase
               .from("crm_lead_activities")
               .select("*")
