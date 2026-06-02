@@ -779,18 +779,66 @@ export default function Collabs() {
     if (!t || !activeId || !user || !companyId) return;
     setInput("");
     const replyId = replyTo?.id || null;
+    const quotedText = replyTo?.text || "";
+    const wasCopilot = copilotMode;
     setReplyTo(null);
+    setCopilotMode(false);
     setShowEmoji(false);
     setShowMentions(false);
     const { error } = await supabase.from("collab_messages").insert({
       conversation_id: activeId,
       servidor_id: companyId,
       sender_id: user.id,
-      content: t,
+      content: wasCopilot ? `✨ ${t}` : t,
       reply_to_id: replyId,
       attachments: [],
     });
-    if (error) toast({ title: "Erro ao enviar", description: error.message, variant: "destructive" });
+    if (error) {
+      toast({ title: "Erro ao enviar", description: error.message, variant: "destructive" });
+      return;
+    }
+    if (wasCopilot) {
+      setAskingCopilot(true);
+      try {
+        const { data, error: fnError } = await supabase.functions.invoke("accord-ai-chat", {
+          body: {
+            messages: [
+              ...(quotedText ? [{ role: "user", content: `Contexto da mensagem: "${quotedText}"` }] : []),
+              { role: "user", content: t },
+            ],
+          },
+        });
+        let replyText = "";
+        if (fnError) {
+          replyText = "Não consegui responder agora. Tente novamente em instantes.";
+        } else if (typeof data === "string") {
+          // SSE stream — extract content chunks
+          const chunks = data.split("\n").filter((l) => l.startsWith("data: ")).map((l) => l.slice(6));
+          for (const c of chunks) {
+            if (c === "[DONE]") continue;
+            try {
+              const j = JSON.parse(c);
+              const delta = j?.choices?.[0]?.delta?.content || j?.choices?.[0]?.message?.content || "";
+              replyText += delta;
+            } catch {}
+          }
+        } else if (data?.choices) {
+          replyText = data.choices[0]?.message?.content || "";
+        }
+        if (!replyText) replyText = "Sem resposta da IA no momento.";
+        await supabase.from("collab_messages").insert({
+          conversation_id: activeId,
+          servidor_id: companyId,
+          sender_id: user.id,
+          content: `🤖 **CoPilot:** ${replyText}`,
+          attachments: [],
+        });
+      } catch (e: any) {
+        toast({ title: "CoPilot indisponível", description: e?.message || "Erro", variant: "destructive" });
+      } finally {
+        setAskingCopilot(false);
+      }
+    }
   };
 
   const sendCardMessage = async (content: string, attachments: FileAttachment[] = []) => {
