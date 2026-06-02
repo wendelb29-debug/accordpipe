@@ -66,7 +66,7 @@ const navigationSections = [
     items: [
       { nameKey: "nav.feed", href: "/home", icon: Newspaper, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
       { nameKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
-      { nameKey: "nav.accordSales", href: "/atendimento", icon: MessageSquare, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
+      { nameKey: "nav.accordSales", href: "/atendimento", icon: Headset, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
       { nameKey: "nav.forms", href: "/formularios", icon: ClipboardList, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
       { nameKey: "nav.activities", href: "/atividades", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
       { nameKey: "Collabs", href: "/collabs", icon: MessageSquare, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
