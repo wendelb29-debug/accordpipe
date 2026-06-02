@@ -47,7 +47,7 @@ import {
   Bookmark,
   ChevronRight,
   Lock,
-  Search as SearchIcon,
+
 
 
 } from "lucide-react";
