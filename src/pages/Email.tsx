@@ -16,6 +16,7 @@ import {
   Inbox,
 } from "lucide-react";
 import { EmailProviderDialog } from "@/components/email/EmailProviderDialog";
+import { GmailLogo, OutlookLogo } from "@/components/email/ProviderLogos";
 
 interface EmailAccount {
   id: string;
@@ -29,14 +30,8 @@ interface EmailAccount {
 }
 
 const PROVIDERS = [
-  { id: "gmail",     name: "Gmail",      color: "#EA4335", iconBg: "linear-gradient(135deg, #EA4335, #FBBC04, #34A853, #4285F4)" },
-  { id: "outlook",   name: "Outlook",    color: "#0078D4", iconBg: "linear-gradient(135deg, #0078D4, #50E6FF)" },
-  { id: "icloud",    name: "iCloud",     color: "#3B82F6", iconBg: "linear-gradient(135deg, #87CEEB, #4682B4)" },
-  { id: "office365", name: "Office 365", color: "#D83B01", iconBg: "linear-gradient(135deg, #D83B01, #F25022)" },
-  { id: "exchange",  name: "Exchange",   color: "#0078D4", iconBg: "linear-gradient(135deg, #2563EB, #0078D4)" },
-  { id: "yahoo",     name: "Yahoo!",     color: "#6001D2", iconBg: "linear-gradient(135deg, #6001D2, #410093)" },
-  { id: "aol",       name: "AOL",        color: "#0066B9", iconBg: "linear-gradient(135deg, #0066B9, #003C70)" },
-  { id: "imap_smtp", name: "Caixa de correio personalizada", subtitle: "IMAP+SMTP", color: "#10B981", iconBg: "linear-gradient(135deg, #10B981, #059669)" },
+  { id: "gmail",   name: "Gmail",   Logo: GmailLogo },
+  { id: "outlook", name: "Outlook", Logo: OutlookLogo },
 ];
 
 export default function Email() {
@@ -146,11 +141,8 @@ export default function Email() {
                     key={acc.id}
                     className="rounded-xl border border-border bg-card p-4 flex items-center gap-3 hover:shadow-md transition"
                   >
-                    <div
-                      className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0"
-                      style={{ background: prov?.iconBg }}
-                    >
-                      {prov?.name.slice(0, 1) || "@"}
+                    <div className="w-11 h-11 rounded-xl bg-muted/50 flex items-center justify-center shrink-0">
+                      {prov?.Logo ? <prov.Logo className="w-7 h-7" /> : <Mail className="w-5 h-5 text-muted-foreground" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 text-[13.5px] font-semibold text-foreground truncate">
@@ -203,21 +195,17 @@ export default function Email() {
             Escolha um provedor abaixo para conectar sua conta
           </p>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
             {PROVIDERS.map((p) => (
               <button
                 key={p.id}
                 onClick={() => setDialogProvider(p.id)}
-                className="group rounded-2xl border border-border bg-card hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-lg transition p-5 flex flex-col items-center text-center"
+                className="group rounded-2xl border border-border bg-card hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-lg transition p-6 flex flex-col items-center text-center"
               >
-                <div
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-xl mb-3 group-hover:scale-105 transition"
-                  style={{ background: p.iconBg }}
-                >
-                  {p.name.slice(0, 1)}
+                <div className="w-16 h-16 rounded-2xl bg-muted/30 flex items-center justify-center mb-3 group-hover:scale-105 transition">
+                  <p.Logo className="w-10 h-10" />
                 </div>
                 <div className="text-[14px] font-semibold text-foreground">{p.name}</div>
-                {p.subtitle && <div className="text-[10.5px] text-muted-foreground mt-0.5">{p.subtitle}</div>}
                 <div className="mt-3 flex items-center gap-1 text-[11px] font-medium text-emerald-600 opacity-0 group-hover:opacity-100 transition">
                   Conectar <ArrowRight className="w-3 h-3" />
                 </div>
