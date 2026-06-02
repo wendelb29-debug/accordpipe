@@ -717,7 +717,10 @@ export default function Collabs() {
     }
   };
 
-  const inviteLink = activeId
+  const [rotatingInvite, setRotatingInvite] = useState(false);
+  const inviteLink = active && active.invite_token
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/collabs/convite/${active.invite_token}`
+    : activeId
     ? `${typeof window !== "undefined" ? window.location.origin : ""}/collabs/convite/${activeId}`
     : "";
 
@@ -729,6 +732,38 @@ export default function Collabs() {
       setTimeout(() => setInviteLinkCopied(false), 1800);
     } catch {}
   };
+
+  const rotateInviteLink = async () => {
+    if (!activeId || !user || !companyId || rotatingInvite) return;
+    setRotatingInvite(true);
+    try {
+      const newToken = (crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`).replace(/-/g, "");
+      const { error } = await supabase
+        .from("collab_conversations")
+        .update({ invite_token: newToken } as any)
+        .eq("id", activeId);
+      if (error) {
+        sonnerToast.error("Não foi possível atualizar o link", { description: error.message });
+        return;
+      }
+      // Optimistically reflect locally so the link in the dialog updates instantly
+      setConversations((prev) => prev.map((c) => c.id === activeId ? { ...c, invite_token: newToken } : c));
+      // System message in the group informing about the rotation
+      const myName = userMap.get(user.id)?.name || "Um administrador";
+      await supabase.from("collab_messages").insert({
+        conversation_id: activeId,
+        servidor_id: companyId,
+        sender_id: user.id,
+        content: `${myName} atualizou o link de convite. Agora o link anterior é inválido.`,
+        is_system: true,
+        attachments: [],
+      });
+      sonnerToast.success("Link de convite atualizado");
+    } finally {
+      setRotatingInvite(false);
+    }
+  };
+
 
   const addExistingMember = async (userId: string) => {
     if (!activeId) return;
