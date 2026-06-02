@@ -2002,6 +2002,42 @@ export default function Collabs() {
                         Conversar
                       </button>
                     )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          className="w-7 h-7 rounded-md flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition shrink-0"
+                          title="Mais opções"
+                          aria-label="Mais opções"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setMembersOpen(false);
+                            navigate(`/colaboradores/${mem.user_id}`);
+                          }}
+                        >
+                          Visualizar perfil
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setMembersOpen(false);
+                            setCalendarView("agenda");
+                            setCalendarOpen(true);
+                          }}
+                        >
+                          {isMe ? "Meu calendário" : "Ver calendário"}
+                        </DropdownMenuItem>
+                        {!isMe && (
+                          <DropdownMenuItem onClick={() => openDirectWith(mem.user_id)}>
+                            Enviar mensagem
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 );
               })
