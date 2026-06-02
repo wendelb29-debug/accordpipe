@@ -18,9 +18,10 @@ export function useUnreadEmailCount() {
       setCount(0);
       return;
     }
-    const { count: c, error } = await supabase
+    const query: any = supabase
       .from("email_messages")
-      .select("id", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true });
+    const { count: c, error } = await query
       .eq("user_id", profile.user_id)
       .eq("servidor_id", activeCompanyId)
       .eq("is_read", false);
