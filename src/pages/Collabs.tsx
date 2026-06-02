@@ -1030,6 +1030,45 @@ export default function Collabs() {
       {/* SIDEBAR — dark purple */}
       <aside className="w-[320px] min-w-[320px] flex flex-col shrink-0 bg-white border-r border-gray-200">
         <div className="h-[60px] flex items-center gap-2 px-3 border-b border-gray-200 shrink-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                title="Filtrar"
+                className={cn(
+                  "shrink-0 h-9 w-9 rounded-full flex items-center justify-center border transition",
+                  convFilter === "unread"
+                    ? "bg-violet-50 border-violet-200 text-violet-600"
+                    : "bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-500"
+                )}
+              >
+                <FilterIcon className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" sideOffset={8} className="w-[220px] p-1 rounded-xl">
+              <DropdownMenuItem
+                onClick={() => setConvFilter("all")}
+                className="flex items-center justify-between gap-2 px-3 py-2 text-[13px] cursor-pointer"
+              >
+                <span>Todos</span>
+                {convFilter === "all" && <CheckIcon className="h-4 w-4 text-violet-600" />}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setConvFilter("unread")}
+                className="flex items-center justify-between gap-2 px-3 py-2 text-[13px] cursor-pointer"
+              >
+                <span>Não lido</span>
+                {convFilter === "unread" && <CheckIcon className="h-4 w-4 text-violet-600" />}
+              </DropdownMenuItem>
+              <div className="my-1 h-px bg-gray-100" />
+              <DropdownMenuItem
+                onClick={markAllAsRead}
+                className="flex items-center justify-between gap-2 px-3 py-2 text-[13px] cursor-pointer"
+              >
+                <span>Marcar tudo como lido</span>
+                <CheckCheck className="h-4 w-4 text-gray-400" />
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <div className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 transition rounded-full px-3 py-2 flex-1 min-w-0 border border-gray-200">
             <Search className="h-4 w-4 text-gray-400 shrink-0" />
             <input
