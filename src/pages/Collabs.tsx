@@ -1419,6 +1419,18 @@ export default function Collabs() {
                 </button>
               </div>
               <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setChatSearchOpen((v) => !v)}
+                  className={cn(
+                    "w-9 h-9 rounded-xl flex items-center justify-center transition-colors",
+                    chatSearchOpen
+                      ? "bg-violet-100 text-violet-600 hover:bg-violet-200"
+                      : "text-gray-500 hover:bg-violet-50 hover:text-violet-600",
+                  )}
+                  title="Pesquisar na conversa"
+                >
+                  <Search className="h-[17px] w-[17px]" />
+                </button>
                 <button onClick={() => { setInviteTab("colab"); setInviteOpen(true); }} className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors" title="Adicionar membros">
                   <UserPlus className="h-[17px] w-[17px]" />
                 </button>
