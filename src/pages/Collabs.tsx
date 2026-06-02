@@ -1139,7 +1139,29 @@ export default function Collabs() {
                 onUploadClick={() => fileInputRef.current?.click()}
                 onBack={() => setChatView("chat")}
               />
+            ) : chatView === "favorites" || chatView === "links" ? (
+              <CollabMessagesPanel
+                mode={chatView}
+                collab={{
+                  id: active.id,
+                  name: active.name,
+                  color: active.color,
+                  avatar_url: (active as any).avatar_url ?? null,
+                }}
+                messages={messages.map((m) => ({
+                  id: m.id,
+                  sender_id: m.sender_id,
+                  content: m.content,
+                  created_at: m.created_at,
+                  attachments: (m.attachments as any) ?? [],
+                }))}
+                tenantUsers={tenantUsers.map((u) => ({ id: u.id, name: u.name, avatar_url: u.avatar_url }))}
+                favoriteIds={favoriteIds}
+                onToggleFavorite={toggleFavorite}
+                onBack={() => setChatView("chat")}
+              />
             ) : (
+              <>
               <>
             <div
               className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-5 relative"
