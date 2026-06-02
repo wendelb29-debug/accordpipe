@@ -45,6 +45,10 @@ import {
   RefreshCw,
   Pencil,
   Bookmark,
+  ChevronRight,
+  Lock,
+  Search as SearchIcon,
+
 
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
