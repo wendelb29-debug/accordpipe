@@ -1291,7 +1291,7 @@ export default function Collabs() {
                                 tone={isSent ? "mine" : "other"}
                                 onReply={() => startReply(m)}
                                 onCreateTask={() => navigate(`/atividades?from=collab&messageId=${m.id}`)}
-                                onForward={() => sonnerToast.info("Encaminhar — em breve")}
+                                onForward={() => setForwardMsg(m)}
                                 onSelect={() => sonnerToast.info("Seleção múltipla — em breve")}
                                 onAskCopilot={() => sonnerToast.info("CoPilot — em breve")}
                               />
