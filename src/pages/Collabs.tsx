@@ -723,6 +723,16 @@ export default function Collabs() {
         is_system: true,
         attachments: [],
       });
+      if (createKind === "collab" && newDescription.trim()) {
+        await supabase.from("collab_messages").insert({
+          conversation_id: conv.id,
+          servidor_id: companyId,
+          sender_id: user.id,
+          content: `📌 Sobre a collab: ${newDescription.trim()}`,
+          is_system: true,
+          attachments: [],
+        });
+      }
       setCreateOpen(false);
       setActiveId(conv.id);
       toast({ title: "Conversa criada", description: name });
