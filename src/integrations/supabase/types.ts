@@ -904,6 +904,7 @@ export type Database = {
           deleted_at: string | null
           edited_at: string | null
           id: string
+          is_pinned: boolean
           is_system: boolean
           reply_to_id: string | null
           sender_id: string | null
@@ -917,6 +918,7 @@ export type Database = {
           deleted_at?: string | null
           edited_at?: string | null
           id?: string
+          is_pinned?: boolean
           is_system?: boolean
           reply_to_id?: string | null
           sender_id?: string | null
@@ -930,6 +932,7 @@ export type Database = {
           deleted_at?: string | null
           edited_at?: string | null
           id?: string
+          is_pinned?: boolean
           is_system?: boolean
           reply_to_id?: string | null
           sender_id?: string | null
