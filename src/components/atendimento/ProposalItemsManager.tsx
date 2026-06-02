@@ -332,8 +332,28 @@ export function ProposalItemsManager({
             </div>
           )}
 
+          {/* Empty state: catálogo vazio */}
+          {!loadingCatalog && catalog.length === 0 && (canAddItem || canManageCatalog) && (
+            <div className="rounded-lg border border-dashed border-border bg-muted/30 px-4 py-6 text-center space-y-2">
+              <PackagePlus className="h-8 w-8 text-muted-foreground/60 mx-auto" />
+              <div className="text-sm font-medium text-foreground">Nenhum item no catálogo</div>
+              <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                Antes de adicionar itens à proposta, cadastre os produtos/serviços do seu catálogo. Eles ficam reutilizáveis para todas as propostas futuras.
+              </p>
+              {canManageCatalog ? (
+                <Button size="sm" className="h-8 text-xs gap-1.5 mt-2" onClick={() => setShowCreateItem(true)}>
+                  <Plus className="h-3.5 w-3.5" /> Cadastrar primeiro item
+                </Button>
+              ) : (
+                <p className="text-[11px] text-muted-foreground mt-2 italic">
+                  Peça ao administrador para cadastrar itens no catálogo.
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Add item row */}
-          {(canAddItem || canManageCatalog) && (
+          {(canAddItem || canManageCatalog) && catalog.length > 0 && (
             <div className="flex items-end gap-3 pt-2">
               {canAddItem && (
                 <div className="flex-1 space-y-1">
