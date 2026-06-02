@@ -48,6 +48,8 @@ export default function EmailInbox() {
   const { accountId } = useParams<{ accountId: string }>();
   const navigate = useNavigate();
   const [account, setAccount] = useState<EmailAccount | null>(null);
+  const [allAccounts, setAllAccounts] = useState<EmailAccount[]>([]);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [folder, setFolder] = useState<Folder>("inbox");
   const [messages, setMessages] = useState<EmailMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,6 +62,14 @@ export default function EmailInbox() {
     if (!accountId) return;
     const { data } = await supabase.from("email_accounts" as any).select("*").eq("id", accountId).maybeSingle();
     setAccount(data as any);
+  };
+
+  const loadAllAccounts = async () => {
+    const { data } = await supabase
+      .from("email_accounts" as any)
+      .select("*")
+      .order("created_at", { ascending: false });
+    setAllAccounts(((data || []) as unknown) as EmailAccount[]);
   };
 
   const loadMessages = async () => {
