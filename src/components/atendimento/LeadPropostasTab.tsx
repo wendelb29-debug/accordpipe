@@ -76,6 +76,7 @@ interface ServidorData {
   cep: string | null;
   complemento: string | null;
   brand_logo_url?: string | null;
+  brand_logo_path?: string | null;
   brand_primary_color?: string | null;
   brand_secondary_color?: string | null;
   brand_accent_color?: string | null;
