@@ -86,13 +86,6 @@ export function CollabInfoPanel({ collab, onClose, onInvite, onAvatarChange, can
       {/* Header */}
       <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 shrink-0">
         <h3 className="text-[14px] font-semibold text-gray-900">Sobre collab</h3>
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-md flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition"
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 shrink-0">
-        <h3 className="text-[14px] font-semibold text-gray-900">Sobre collab</h3>
         <div className="flex items-center gap-1">
           {(onTogglePin || onEdit || onAddParticipants || onHide || onDelete) && (
             <DropdownMenu>
