@@ -167,16 +167,82 @@ export default function EmailInbox() {
     <div className="min-h-full bg-background flex flex-col">
       {/* Header */}
       <div className="border-b border-border bg-card/50 px-4 py-2.5 flex items-center gap-3">
-        <button onClick={() => navigate("/email")} className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center">
+        <button onClick={() => navigate("/email")} className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center" title="Voltar">
           <ArrowLeft className="w-4 h-4" />
         </button>
-        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shrink-0">
           <Mail className="w-4.5 h-4.5 text-white" />
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-[14px] font-semibold truncate">{account.display_name}</div>
-          <div className="text-[11px] text-muted-foreground truncate">{account.email_address}</div>
+
+        {/* Account selector */}
+        <div className="relative flex-1 min-w-0">
+          <button
+            onClick={() => setAccountMenuOpen((v) => !v)}
+            className="w-full max-w-[320px] flex items-center gap-2 px-2.5 py-1 rounded-lg hover:bg-muted transition text-left"
+          >
+            <div className="flex-1 min-w-0">
+              <div className="text-[14px] font-semibold truncate">{account.display_name}</div>
+              <div className="text-[11px] text-muted-foreground truncate">{account.email_address}</div>
+            </div>
+            <ChevronDown className={`w-4 h-4 text-muted-foreground transition ${accountMenuOpen ? "rotate-180" : ""}`} />
+          </button>
+
+          {accountMenuOpen && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setAccountMenuOpen(false)} />
+              <div className="absolute left-0 top-full mt-1 w-[300px] z-40 rounded-xl border border-border bg-popover shadow-xl overflow-hidden animate-in fade-in-0 slide-in-from-top-2 duration-150">
+                <div className="px-3 pt-3 pb-2 text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Suas contas
+                </div>
+                <div className="max-h-[320px] overflow-y-auto">
+                  {allAccounts.map((acc) => {
+                    const isActive = acc.id === account.id;
+                    return (
+                      <button
+                        key={acc.id}
+                        onClick={() => {
+                          setAccountMenuOpen(false);
+                          if (!isActive) navigate(`/email/${acc.id}`);
+                        }}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-muted/60 transition ${
+                          isActive ? "bg-emerald-50/60 dark:bg-emerald-500/10" : ""
+                        }`}
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shrink-0">
+                          <Mail className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[13px] font-semibold truncate">{acc.display_name || acc.email_address}</div>
+                          <div className="text-[11px] text-muted-foreground truncate">{acc.email_address}</div>
+                        </div>
+                        {isActive && <Check className="w-4 h-4 text-emerald-600 shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="border-t border-border">
+                  <button
+                    onClick={() => { setAccountMenuOpen(false); navigate("/email"); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition group"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/15 group-hover:bg-emerald-500/25 flex items-center justify-center shrink-0 transition">
+                      <Plus className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-[13px] font-semibold text-emerald-700 dark:text-emerald-400">
+                        Conectar caixa de correio…
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        Adicione outra conta Gmail ou provedor
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
+
         <button onClick={() => setComposeOpen(true)}
           className="hidden sm:inline-flex h-9 px-3 rounded-lg text-[12.5px] font-semibold text-white bg-emerald-500 hover:bg-emerald-600 items-center gap-1.5">
           <PenSquare className="w-4 h-4" /> Escrever
