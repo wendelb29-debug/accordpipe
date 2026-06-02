@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   Mail, Inbox, Send, Star, RefreshCw, Loader2, X, Reply, ArrowLeft,
-  Trash2, MailOpen, MailCheck, PenSquare, Search,
+  Trash2, MailOpen, MailCheck, PenSquare, Search, ChevronDown, Plus, Check,
 } from "lucide-react";
 import DOMPurify from "dompurify";
 
