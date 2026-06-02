@@ -253,6 +253,30 @@ function initialsOf(name: string) {
   return name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
 }
 
+/** Resolves a stored avatar URL — converts public/expired storage URLs into fresh signed URLs. */
+const PROFILE_AVATAR_BUCKETS = ["avatars", "user-signatures", "signatures", "documents", "contract-pdfs"];
+async function resolveProfileAvatar(storedUrl: string | null | undefined): Promise<string | null> {
+  if (!storedUrl) return null;
+  try {
+    for (const bucket of PROFILE_AVATAR_BUCKETS) {
+      const markers = [
+        `/storage/v1/object/public/${bucket}/`,
+        `/storage/v1/object/sign/${bucket}/`,
+      ];
+      for (const marker of markers) {
+        const idx = storedUrl.indexOf(marker);
+        if (idx !== -1) {
+          const path = decodeURIComponent(storedUrl.substring(idx + marker.length).split("?")[0]);
+          const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 60);
+          if (data?.signedUrl) return data.signedUrl;
+          return storedUrl;
+        }
+      }
+    }
+  } catch { /* fallback below */ }
+  return storedUrl;
+}
+
 /* ──────────────────────────  COMPONENT  ────────────────────────── */
 
 export default function Collabs() {
@@ -378,15 +402,16 @@ export default function Collabs() {
         .eq("status", "ativo")
         .order("name", { ascending: true });
       if (cancelled) return;
-      const list: MentionUser[] = (data || [])
-        .filter((p: any) => p.name && p.user_id)
-        .map((p: any) => ({
+      const base = (data || []).filter((p: any) => p.name && p.user_id);
+      const list: MentionUser[] = await Promise.all(
+        base.map(async (p: any) => ({
           id: p.user_id as string,
           name: p.name as string,
           handle: slug((p.name as string).split(" ")[0] || p.name),
-          avatar_url: p.avatar_url || null,
+          avatar_url: await resolveProfileAvatar(p.avatar_url),
           department: (Array.isArray(p.tags) && p.tags[0]) || "Equipe",
-        }));
+        }))
+      );
       setTenantUsers(list);
     };
     load();
@@ -627,16 +652,18 @@ export default function Collabs() {
           .in("user_id", memberIds);
         if (!cancelled) {
           const map = new Map<string, MentionUser>();
-          (profs || []).forEach((p: any) => {
-            if (!p.user_id) return;
-            map.set(p.user_id, {
-              id: p.user_id,
-              name: p.name || "Usuário",
-              handle: slug((p.name || "user").split(" ")[0] || p.name || "user"),
-              avatar_url: p.avatar_url || null,
-              department: (Array.isArray(p.tags) && p.tags[0]) || "Equipe",
-            });
-          });
+          const entries = await Promise.all(
+            (profs || [])
+              .filter((p: any) => p.user_id)
+              .map(async (p: any) => ({
+                id: p.user_id as string,
+                name: p.name || "Usuário",
+                handle: slug((p.name || "user").split(" ")[0] || p.name || "user"),
+                avatar_url: await resolveProfileAvatar(p.avatar_url),
+                department: (Array.isArray(p.tags) && p.tags[0]) || "Equipe",
+              }))
+          );
+          entries.forEach((e) => map.set(e.id, e));
           setMemberProfiles(map);
         }
       } else {
