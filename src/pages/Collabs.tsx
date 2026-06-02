@@ -292,11 +292,14 @@ export default function Collabs() {
   const [tenantUsers, setTenantUsers] = useState<MentionUser[]>([]);
   const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
   const [typingIds, setTypingIds] = useState<Set<string>>(new Set());
+  const [memberProfiles, setMemberProfiles] = useState<Map<string, MentionUser>>(new Map());
   const userMap = useMemo(() => {
     const m = new Map<string, MentionUser>();
     tenantUsers.forEach((u) => m.set(u.id, u));
+    // Member profiles override/fill missing entries so avatars always show
+    memberProfiles.forEach((u, id) => { if (!m.has(id) || !m.get(id)?.avatar_url) m.set(id, u); });
     return m;
-  }, [tenantUsers]);
+  }, [tenantUsers, memberProfiles]);
 
   const slug = (s: string) =>
     s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "").slice(0, 24) || "user";
@@ -435,8 +438,34 @@ export default function Collabs() {
         attachments: Array.isArray(m.attachments) ? m.attachments : [],
       }));
       setMessages(cleanMsgs);
-      setMembers((mems as MemberRow[]) || []);
-      setMemberCount((mems || []).length);
+      const memList = (mems as MemberRow[]) || [];
+      setMembers(memList);
+      setMemberCount(memList.length);
+
+      // Always fetch profile photos for ALL members (regardless of active/status/tenant)
+      const memberIds = memList.map((mm) => mm.user_id).filter(Boolean);
+      if (memberIds.length > 0) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("user_id, name, avatar_url, tags")
+          .in("user_id", memberIds);
+        if (!cancelled) {
+          const map = new Map<string, MentionUser>();
+          (profs || []).forEach((p: any) => {
+            if (!p.user_id) return;
+            map.set(p.user_id, {
+              id: p.user_id,
+              name: p.name || "Usuário",
+              handle: slug((p.name || "user").split(" ")[0] || p.name || "user"),
+              avatar_url: p.avatar_url || null,
+              department: (Array.isArray(p.tags) && p.tags[0]) || "Equipe",
+            });
+          });
+          setMemberProfiles(map);
+        }
+      } else {
+        setMemberProfiles(new Map());
+      }
 
       const ids = cleanMsgs.map((m) => m.id);
       if (ids.length > 0) {
