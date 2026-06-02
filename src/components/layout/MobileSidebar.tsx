@@ -6,6 +6,9 @@ import {
   Users, LogOut, MessageSquare, CalendarCheck, Rocket,
   ClipboardList, Trash2, Menu, Settings, ChevronDown, TrendingUp,
   Globe, Check, Crown, GraduationCap,
+  // novos
+  Zap, Headset, MessagesSquare, UsersRound, CircleDollarSign,
+  Files, ChartColumn, ArchiveX, Settings2, Languages,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -154,7 +157,7 @@ export function MobileSidebar() {
               )}
               style={location.pathname === "/accord-stack" ? { background: 'linear-gradient(135deg, #7A3FF2, #D94FD5)' } : undefined}
             >
-              <Rocket className="h-3.5 w-3.5" />
+              <Zap className="h-3.5 w-3.5" />
               ACCORD Stack
             </Link>
           </div>
@@ -188,7 +191,7 @@ export function MobileSidebar() {
                 onClick={() => setConfigOpen(v => !v)}
                 className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-sidebar-foreground/65 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors text-xs font-semibold"
               >
-                <Settings className="h-4 w-4" />
+                <Settings2 className="h-4 w-4" />
                 <span className="flex-1 text-left">{t("nav.settings")}</span>
                 <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", configOpen && "rotate-180")} />
               </button>
@@ -218,7 +221,7 @@ export function MobileSidebar() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-sidebar-foreground/65 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors text-xs font-semibold">
-                  <Globe className="h-4 w-4" />
+                  <Languages className="h-4 w-4" />
                   <span className="flex-1 text-left">{t("common.language") || "Idioma"}</span>
                   <span className="text-[10px] text-sidebar-foreground/50">{currentLangLabel}</span>
                 </button>
