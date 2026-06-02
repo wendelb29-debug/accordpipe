@@ -276,6 +276,7 @@ export default function Collabs() {
   const [showMentions, setShowMentions] = useState(false);
   const [pickerTab, setPickerTab] = useState<"emoji" | "stickers">("emoji");
   const [replyTo, setReplyTo] = useState<{ id: string; name: string; text: string } | null>(null);
+  const [editingMsg, setEditingMsg] = useState<{ id: string; preview: string } | null>(null);
   const [reactPickerFor, setReactPickerFor] = useState<string | null>(null);
 
   // Quick actions (attach menu)
