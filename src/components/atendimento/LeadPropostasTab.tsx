@@ -483,7 +483,7 @@ export function LeadPropostasTab({ lead, addActivity, signatureMode = false, onU
     if (lead.servidor_id) {
       const { data } = await supabase
         .from("companies")
-        .select("id, razao_social, nome_fantasia, cnpj, responsavel, email, telefone, endereco, numero, complemento, bairro, cidade, estado, cep, brand_logo_url, brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color")
+        .select("id, razao_social, nome_fantasia, cnpj, responsavel, email, telefone, endereco, numero, complemento, bairro, cidade, estado, cep, brand_logo_url, brand_logo_path, brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color")
         .eq("id", lead.servidor_id)
         .maybeSingle();
       if (data) setServidorData(data as ServidorData);
