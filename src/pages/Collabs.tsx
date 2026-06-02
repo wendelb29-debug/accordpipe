@@ -47,6 +47,8 @@ import {
   Bookmark,
   ChevronRight,
   Lock,
+  Settings,
+
 
 
 
@@ -306,6 +308,13 @@ export default function Collabs() {
   const [newDescription, setNewDescription] = useState("");
   const [autoDelete, setAutoDelete] = useState(false);
   const [showAccessPerms, setShowAccessPerms] = useState(false);
+  const [showChatSettings, setShowChatSettings] = useState(true);
+  const [groupPrivacy, setGroupPrivacy] = useState<"privado" | "publico">("privado");
+  type PermLevel = "todos" | "adminsOwner" | "ownerOnly";
+  const [permAdd, setPermAdd] = useState<PermLevel>("todos");
+  const [permRemove, setPermRemove] = useState<PermLevel>("adminsOwner");
+  const [permTheme, setPermTheme] = useState<PermLevel>("todos");
+  const [permPost, setPermPost] = useState<PermLevel>("todos");
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [memberSearch, setMemberSearch] = useState("");
   const [creating, setCreating] = useState(false);
@@ -685,6 +694,12 @@ export default function Collabs() {
     setNewDescription("");
     setAutoDelete(false);
     setShowAccessPerms(false);
+    setShowChatSettings(true);
+    setGroupPrivacy("privado");
+    setPermAdd("todos");
+    setPermRemove("adminsOwner");
+    setPermTheme("todos");
+    setPermPost("todos");
     setSelectedMemberIds([]);
     setMemberSearch("");
     setCreateOpen(true);
@@ -727,12 +742,12 @@ export default function Collabs() {
         is_system: true,
         attachments: [],
       });
-      if (createKind === "collab" && newDescription.trim()) {
+      if ((createKind === "collab" || createKind === "group") && newDescription.trim()) {
         await supabase.from("collab_messages").insert({
           conversation_id: conv.id,
           servidor_id: companyId,
           sender_id: user.id,
-          content: `📌 Sobre a collab: ${newDescription.trim()}`,
+          content: createKind === "collab" ? `📌 Sobre a collab: ${newDescription.trim()}` : `📌 Sobre o grupo: ${newDescription.trim()}`,
           is_system: true,
           attachments: [],
         });
@@ -2426,7 +2441,223 @@ export default function Collabs() {
       {/* CREATE DIALOG */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="max-w-lg p-0 overflow-hidden rounded-2xl border-0 shadow-2xl">
-          {createKind === "collab" ? (
+          {createKind === "group" ? (
+            <>
+              {/* Header: icon + editable name */}
+              <div className="px-6 pt-6 pb-4 bg-white">
+                <div className="flex items-start gap-4">
+                  <div className="h-14 w-14 rounded-full flex items-center justify-center shrink-0" style={{ background: "#dbeafe", color: "#2563eb" }}>
+                    <Users className="h-6 w-6" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <input
+                      autoFocus
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      placeholder="Digite o nome do bate-papo"
+                      className="w-full bg-transparent border-0 border-b border-transparent focus:border-blue-400 outline-none text-[22px] font-medium text-gray-400 focus:text-gray-900 placeholder:text-gray-300 pb-1"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="max-h-[55vh] overflow-y-auto">
+                {/* Members */}
+                <div className="px-6 pb-4">
+                  <div className="text-[13px] text-gray-700 mb-2">
+                    <span className="font-medium">Membros</span>
+                    <span className="text-gray-400 text-[12px]"> (adicione uma pessoa ou um departamento)</span>
+                  </div>
+                  <div className="rounded-xl border border-gray-200 p-3 bg-white">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {user && (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 text-blue-700 pl-1 pr-2.5 py-1 text-[12px]">
+                          <span className="h-5 w-5 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-[10px] font-medium flex items-center justify-center">{initialsOf(profile?.name || "Eu")}</span>
+                          {profile?.name?.split(" ")[0] || "Eu"}
+                        </span>
+                      )}
+                      {selectedMemberIds.map((id) => {
+                        const u = userMap.get(id);
+                        if (!u) return null;
+                        return (
+                          <span key={id} className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 text-blue-700 pl-1 pr-1 py-1 text-[12px]">
+                            <span className="h-5 w-5 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-[10px] font-medium flex items-center justify-center">{initialsOf(u.name)}</span>
+                            {u.name.split(" ")[0]}
+                            <button onClick={() => toggleMemberSel(id)} className="ml-0.5 h-4 w-4 rounded-full hover:bg-blue-100 text-blue-500 flex items-center justify-center">
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        );
+                      })}
+                      <button
+                        type="button"
+                        onClick={() => setShowAccessPerms(false) /* noop, kept for parity */}
+                        className="text-[12px] text-blue-600 hover:text-blue-700 font-medium px-1.5"
+                      >
+                        + Adicionar
+                      </button>
+                    </div>
+                    <div className="relative mt-3">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                      <input value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} placeholder="Buscar usuários do tenant..." className="w-full rounded-lg bg-gray-50 border border-transparent pl-9 pr-3 py-2 text-sm outline-none focus:border-blue-300 focus:bg-white" />
+                    </div>
+                    {memberSearch && (
+                      <div className="mt-2 max-h-[160px] overflow-y-auto rounded-lg border border-gray-100 divide-y divide-gray-50">
+                        {tenantUsers.filter((u) => u.id !== user?.id && u.name.toLowerCase().includes(memberSearch.toLowerCase())).map((u) => {
+                          const checked = selectedMemberIds.includes(u.id);
+                          return (
+                            <button key={u.id} type="button" onClick={() => toggleMemberSel(u.id)} className={cn("w-full flex items-center gap-3 px-3 py-2 text-left transition-colors", checked ? "bg-blue-50/70" : "hover:bg-gray-50")}>
+                              {u.avatar_url ? (
+                                <img src={u.avatar_url} alt="" className="h-7 w-7 rounded-full object-cover" />
+                              ) : (
+                                <div className="h-7 w-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-[10px] font-medium flex items-center justify-center">{initialsOf(u.name)}</div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[12.5px] text-gray-900 truncate">{u.name}</div>
+                                <div className="text-[10.5px] text-gray-500 truncate">@{u.handle}</div>
+                              </div>
+                              <div className={cn("h-4 w-4 rounded border flex items-center justify-center", checked ? "bg-blue-600 border-blue-600" : "border-gray-300")}>
+                                {checked && <span className="text-white text-[10px] leading-none">✓</span>}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Configurações do bate-papo */}
+                <div className="px-6 pb-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowChatSettings((v) => !v)}
+                    className="w-full flex items-center justify-between rounded-t-xl border border-gray-200 bg-white px-4 py-3"
+                  >
+                    <span className="flex items-center gap-2.5 text-[14px] text-gray-800 font-medium">
+                      <Settings className="h-4 w-4 text-gray-500" />
+                      Configurações do bate-papo
+                    </span>
+                    <ChevronRight className={cn("h-4 w-4 text-gray-400 transition-transform", showChatSettings && "rotate-90")} />
+                  </button>
+                  {showChatSettings && (
+                    <div className="rounded-b-xl border border-t-0 border-gray-200 bg-white px-4 py-4 space-y-4">
+                      <div>
+                        <div className="text-[12px] font-medium text-gray-600 mb-2">Tipo de bate-papo</div>
+                        <div className="space-y-2.5">
+                          {([
+                            { v: "privado" as const, title: "Privado", desc: "Esta conversa não estará visível na lista de bate-papo. Participantes do bate-papo só podem ser adicionados manualmente. Perfeito para comunicações privadas." },
+                            { v: "publico" as const, title: "Público", desc: "Esta conversa fica visível para todos na lista de bate-papo. Qualquer pessoa pode participar deste bate-papo. Perfeito para comunicação interdepartamental e conversas gerais." },
+                          ]).map((opt) => (
+                            <label key={opt.v} className="flex items-start gap-2.5 cursor-pointer">
+                              <span className="mt-0.5 relative h-4 w-4 shrink-0">
+                                <input type="radio" className="sr-only" checked={groupPrivacy === opt.v} onChange={() => setGroupPrivacy(opt.v)} />
+                                <span className={cn("absolute inset-0 rounded-full border-2", groupPrivacy === opt.v ? "border-blue-600" : "border-gray-300")} />
+                                {groupPrivacy === opt.v && <span className="absolute inset-[3px] rounded-full bg-blue-600" />}
+                              </span>
+                              <div>
+                                <div className="text-[13px] text-gray-900 font-medium">{opt.title}</div>
+                                <div className="text-[11.5px] text-gray-500 leading-snug">{opt.desc}</div>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between border-t border-gray-100 pt-3">
+                        <div className="flex items-center gap-2.5">
+                          <button type="button" onClick={() => setAutoDelete((v) => !v)} className={cn("relative h-5 w-9 rounded-full transition-colors", autoDelete ? "bg-blue-500" : "bg-gray-300")}>
+                            <span className={cn("absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all", autoDelete ? "left-[18px]" : "left-0.5")} />
+                          </button>
+                          <span className="text-[13px] text-gray-700">Excluir mensagens automaticamente</span>
+                        </div>
+                        <span className="text-[11px] text-gray-400">Nunca</span>
+                      </div>
+
+                      <div>
+                        <div className="text-[12px] font-medium text-gray-600 mb-1.5">Descrição</div>
+                        <textarea
+                          value={newDescription}
+                          onChange={(e) => setNewDescription(e.target.value)}
+                          placeholder="Inserir descrição do bate-papo"
+                          rows={2}
+                          className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm outline-none resize-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Permissões de acesso */}
+                <div className="px-6 pb-5">
+                  <button
+                    type="button"
+                    onClick={() => setShowAccessPerms((v) => !v)}
+                    className="w-full flex items-center justify-between rounded-t-xl border border-gray-200 bg-white px-4 py-3"
+                  >
+                    <span className="flex items-center gap-2.5 text-[14px] text-gray-800 font-medium">
+                      <Lock className="h-4 w-4 text-gray-500" />
+                      Permissões de acesso
+                    </span>
+                    <ChevronRight className={cn("h-4 w-4 text-gray-400 transition-transform", showAccessPerms && "rotate-90")} />
+                  </button>
+                  {showAccessPerms && (
+                    <div className="rounded-b-xl border border-t-0 border-gray-200 bg-white px-4 py-4 space-y-4">
+                      <div>
+                        <div className="text-[12px] font-medium text-gray-600 mb-1.5">Proprietário</div>
+                        <div className="rounded-lg border border-gray-200 px-2 py-1.5 flex flex-wrap items-center gap-2">
+                          {user && (
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 text-blue-700 pl-1 pr-2.5 py-1 text-[12px]">
+                              <span className="h-5 w-5 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-[10px] font-medium flex items-center justify-center">{initialsOf(profile?.name || "Eu")}</span>
+                              {profile?.name?.split(" ")[0] || "Eu"}
+                            </span>
+                          )}
+                          <button type="button" className="text-[12px] text-blue-600 hover:text-blue-700 font-medium px-1.5">+ Editar</button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="text-[12px] font-medium text-gray-600 mb-1.5">Administradores</div>
+                        <button type="button" className="w-full rounded-lg border border-dashed border-gray-300 px-3 py-2 text-left text-[12.5px] text-blue-600 hover:bg-blue-50/40">+ Adicionar administrador</button>
+                      </div>
+
+                      {([
+                        { label: "Permissão para adicionar participantes ao bate-papo:", val: permAdd, set: setPermAdd },
+                        { label: "Permissão para remover participantes do bate-papo:", val: permRemove, set: setPermRemove },
+                        { label: "Permissão para alterar o tema do bate-papo:", val: permTheme, set: setPermTheme },
+                        { label: "Permissão para publicar mensagens no bate-papo:", val: permPost, set: setPermPost },
+                      ]).map((p, i) => (
+                        <div key={i}>
+                          <div className="text-[12px] text-gray-600 mb-1.5">{p.label}</div>
+                          <select
+                            value={p.val}
+                            onChange={(e) => p.set(e.target.value as PermLevel)}
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-[13px] text-gray-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                          >
+                            <option value="todos">Todos os participantes</option>
+                            <option value="adminsOwner">Proprietário e administradores</option>
+                            <option value="ownerOnly">Somente proprietário</option>
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
+                <button onClick={() => setCreateOpen(false)} className="px-3.5 py-2 rounded-lg text-[13px] font-medium text-gray-600 hover:bg-gray-100 uppercase tracking-wide">Cancelar</button>
+                <button
+                  onClick={submitCreate}
+                  disabled={!newName.trim() || creating}
+                  className="px-5 py-2 rounded-lg text-[13px] font-semibold text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wide"
+                  style={{ background: "linear-gradient(135deg, #84cc16 0%, #65a30d 100%)" }}
+                >
+                  {creating ? "Criando..." : "Criar bate-papo"}
+                </button>
+              </div>
+            </>
+          ) : createKind === "collab" ? (
             <>
               {/* Header: hex icon + editable name */}
               <div className="px-6 pt-6 pb-4 bg-white">
