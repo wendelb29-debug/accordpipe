@@ -25,6 +25,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useOverdueCount } from "@/hooks/useOverdueCount";
+import { useUnreadEmailCount } from "@/hooks/useUnreadEmailCount";
 
 const navigation = [
   { nameKey: "nav.feed", href: "/home", icon: Newspaper, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
