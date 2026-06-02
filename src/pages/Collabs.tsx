@@ -268,6 +268,9 @@ export default function Collabs() {
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [mutedIds, setMutedIds] = useState<Set<string>>(new Set());
+  const [readLaterIds, setReadLaterIds] = useState<Set<string>>(new Set());
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
   const [messages, setMessages] = useState<DbMessage[]>([]);
   const [reactions, setReactions] = useState<DbReaction[]>([]);
   const [members, setMembers] = useState<MemberRow[]>([]);
