@@ -55,6 +55,7 @@ export interface MessageActionsMenuProps {
   onForward?: () => void;
   onSelect?: () => void;
   onAskCopilot?: () => void;
+  onStartEdit?: () => void;
   onAfterMutation?: () => void;
 }
 
