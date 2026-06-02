@@ -210,7 +210,12 @@ export function Sidebar() {
     : "?";
 
   const NavItem = ({ item, isActive }: { item: typeof navigation[0]; isActive: boolean }) => {
-    const badge = item.href === "/atividades" && overdueCount > 0 ? overdueCount : 0;
+    const badge =
+      item.href === "/atividades" && overdueCount > 0
+        ? overdueCount
+        : item.href === "/email" && unreadEmailCount > 0
+        ? unreadEmailCount
+        : 0;
     const content = (
       <Link
         to={item.href}
