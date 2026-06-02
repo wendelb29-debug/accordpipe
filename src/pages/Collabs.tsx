@@ -853,7 +853,22 @@ export default function Collabs() {
   const startReply = (m: DbMessage) => {
     const senderName = m.sender_id === user?.id ? "Você" : (userMap.get(m.sender_id || "")?.name || "Mensagem");
     setReplyTo({ id: m.id, name: senderName, text: messagePlainText(m).slice(0, 120) });
+    setEditingMsg(null);
     inputRef.current?.focus();
+  };
+
+  const startEdit = (m: DbMessage) => {
+    if (!m.content) return;
+    setEditingMsg({ id: m.id, preview: messagePlainText(m).slice(0, 120) });
+    setReplyTo(null);
+    setCopilotMode(false);
+    setInput(m.content);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const cancelEdit = () => {
+    setEditingMsg(null);
+    setInput("");
   };
 
   const toggleReaction = async (msgId: string, emoji: string) => {
@@ -870,6 +885,25 @@ export default function Collabs() {
   const sendText = async () => {
     const t = input.trim();
     if (!t || !activeId || !user || !companyId) return;
+
+    // Edit mode: update existing message instead of inserting a new one
+    if (editingMsg) {
+      const editId = editingMsg.id;
+      setInput("");
+      setEditingMsg(null);
+      const { error } = await supabase
+        .from("collab_messages")
+        .update({ content: t } as any)
+        .eq("id", editId);
+      if (error) {
+        toast({ title: "Erro ao editar", description: error.message, variant: "destructive" });
+        return;
+      }
+      setMessages((prev) => prev.map((m) => m.id === editId ? { ...m, content: t } : m));
+      sonnerToast.success("Mensagem editada");
+      return;
+    }
+
     setInput("");
     const replyId = replyTo?.id || null;
     const quotedText = replyTo?.text || "";
