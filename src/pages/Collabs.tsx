@@ -402,15 +402,16 @@ export default function Collabs() {
         .eq("status", "ativo")
         .order("name", { ascending: true });
       if (cancelled) return;
-      const list: MentionUser[] = (data || [])
-        .filter((p: any) => p.name && p.user_id)
-        .map((p: any) => ({
+      const base = (data || []).filter((p: any) => p.name && p.user_id);
+      const list: MentionUser[] = await Promise.all(
+        base.map(async (p: any) => ({
           id: p.user_id as string,
           name: p.name as string,
           handle: slug((p.name as string).split(" ")[0] || p.name),
-          avatar_url: p.avatar_url || null,
+          avatar_url: await resolveProfileAvatar(p.avatar_url),
           department: (Array.isArray(p.tags) && p.tags[0]) || "Equipe",
-        }));
+        }))
+      );
       setTenantUsers(list);
     };
     load();
