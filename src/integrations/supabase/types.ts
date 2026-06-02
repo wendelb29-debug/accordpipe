@@ -2408,7 +2408,10 @@ export type Database = {
           id: string
           imap_config: Json | null
           import_since: string
+          last_history_id: string | null
           last_synced_at: string | null
+          oauth_provider_user_id: string | null
+          oauth_scopes: string | null
           oauth_tokens: Json | null
           provider: string
           sender_name: string | null
@@ -2429,7 +2432,10 @@ export type Database = {
           id?: string
           imap_config?: Json | null
           import_since?: string
+          last_history_id?: string | null
           last_synced_at?: string | null
+          oauth_provider_user_id?: string | null
+          oauth_scopes?: string | null
           oauth_tokens?: Json | null
           provider: string
           sender_name?: string | null
@@ -2450,7 +2456,10 @@ export type Database = {
           id?: string
           imap_config?: Json | null
           import_since?: string
+          last_history_id?: string | null
           last_synced_at?: string | null
+          oauth_provider_user_id?: string | null
+          oauth_scopes?: string | null
           oauth_tokens?: Json | null
           provider?: string
           sender_name?: string | null
@@ -2462,6 +2471,89 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      email_messages: {
+        Row: {
+          account_id: string
+          attachments: Json | null
+          bcc_emails: Json | null
+          body_html: string | null
+          body_text: string | null
+          cc_emails: Json | null
+          created_at: string
+          folder: string
+          from_email: string | null
+          from_name: string | null
+          has_attachments: boolean
+          id: string
+          is_read: boolean
+          is_starred: boolean
+          labels: Json | null
+          provider_msg_id: string
+          received_at: string | null
+          servidor_id: string
+          snippet: string | null
+          subject: string | null
+          thread_id: string | null
+          to_emails: Json | null
+        }
+        Insert: {
+          account_id: string
+          attachments?: Json | null
+          bcc_emails?: Json | null
+          body_html?: string | null
+          body_text?: string | null
+          cc_emails?: Json | null
+          created_at?: string
+          folder?: string
+          from_email?: string | null
+          from_name?: string | null
+          has_attachments?: boolean
+          id?: string
+          is_read?: boolean
+          is_starred?: boolean
+          labels?: Json | null
+          provider_msg_id: string
+          received_at?: string | null
+          servidor_id: string
+          snippet?: string | null
+          subject?: string | null
+          thread_id?: string | null
+          to_emails?: Json | null
+        }
+        Update: {
+          account_id?: string
+          attachments?: Json | null
+          bcc_emails?: Json | null
+          body_html?: string | null
+          body_text?: string | null
+          cc_emails?: Json | null
+          created_at?: string
+          folder?: string
+          from_email?: string | null
+          from_name?: string | null
+          has_attachments?: boolean
+          id?: string
+          is_read?: boolean
+          is_starred?: boolean
+          labels?: Json | null
+          provider_msg_id?: string
+          received_at?: string | null
+          servidor_id?: string
+          snippet?: string | null
+          subject?: string | null
+          thread_id?: string | null
+          to_emails?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_messages_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "email_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_send_log: {
         Row: {
