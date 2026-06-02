@@ -299,6 +299,9 @@ export default function Collabs() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createKind, setCreateKind] = useState<ConvKind>("group");
   const [newName, setNewName] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [autoDelete, setAutoDelete] = useState(false);
+  const [showAccessPerms, setShowAccessPerms] = useState(false);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [memberSearch, setMemberSearch] = useState("");
   const [creating, setCreating] = useState(false);
