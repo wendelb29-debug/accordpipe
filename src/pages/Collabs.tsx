@@ -1234,6 +1234,18 @@ export default function Collabs() {
                               <button onClick={() => startReply(m)} title="Responder" className="w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-violet-600">
                                 <Reply className="h-[15px] w-[15px]" />
                               </button>
+                              <button
+                                onClick={() => toggleFavorite(m.id)}
+                                title={favoriteIds.has(m.id) ? "Remover dos favoritos" : "Favoritar"}
+                                className={cn(
+                                  "w-7 h-7 rounded-full flex items-center justify-center transition",
+                                  favoriteIds.has(m.id)
+                                    ? "text-amber-500 hover:bg-amber-50"
+                                    : "text-gray-500 hover:bg-gray-100 hover:text-amber-500"
+                                )}
+                              >
+                                <Star className={cn("h-[15px] w-[15px]", favoriteIds.has(m.id) && "fill-amber-400 stroke-amber-500")} />
+                              </button>
                             </div>
 
                             <div className={cn("flex flex-col gap-1.5 min-w-0", isSent && "items-end")}>
