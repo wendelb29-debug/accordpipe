@@ -1857,17 +1857,14 @@ ${lead.cidade || "[LOCAL]"}, ${currentDate}`;
             </Select>
           ) : null}
           {/* Show active logo: server logo as global default, brand logo as override */}
-          {(() => {
-            const activeLogo = (selectedBrandId && brands.find(b => b.id === selectedBrandId)?.logo_url) || servidorData?.brand_logo_url;
-            return activeLogo ? (
-              <div className="flex items-center gap-3 p-2 rounded-md bg-muted/50">
-                <img src={activeLogo} alt="Logo" className="h-10 object-contain" />
-                <span className="text-xs text-muted-foreground">Logo será exibido no canto superior esquerdo da proposta</span>
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground">Nenhuma logo configurada. Configure em Editar Servidor → Identidade Visual.</p>
-            );
-          })()}
+          {activeLogoUrl ? (
+            <div className="flex items-center gap-3 p-2 rounded-md bg-muted/50">
+              <img src={activeLogoUrl} alt="Logo" className="h-10 object-contain" />
+              <span className="text-xs text-muted-foreground">Logo será exibido no canto superior esquerdo da proposta</span>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">Nenhuma logo configurada. Configure em Editar Servidor → Identidade Visual.</p>
+          )}
         </CardContent></Card>
 
         <BrandManagerDialog
