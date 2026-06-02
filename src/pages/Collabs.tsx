@@ -1546,9 +1546,37 @@ export default function Collabs() {
                 >
                   <Search className="h-[17px] w-[17px]" />
                 </button>
-                <button onClick={() => { setInviteTab("colab"); setInviteOpen(true); }} className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors" title="Adicionar membros">
-                  <UserPlus className="h-[17px] w-[17px]" />
-                </button>
+                <div className="relative">
+                  <button onClick={() => { setInviteTab("colab"); setInviteOpen(true); }} className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors" title="Adicionar membros">
+                    <UserPlus className="h-[17px] w-[17px]" />
+                  </button>
+                  {memberCount <= 1 && active.kind !== "direct" && !emptyHintDismissed.has(active.id) && (
+                    <div className="absolute top-full right-0 mt-2 z-30 w-[300px] rounded-2xl shadow-2xl ring-1 ring-black/5 text-white p-3.5 pr-9 flex items-start gap-3 animate-in fade-in slide-in-from-top-1" style={{ background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)" }}>
+                      <div className="absolute -top-1.5 right-4 w-3 h-3 rotate-45" style={{ background: "#2563eb" }} />
+                      <div className="relative h-9 w-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+                        <UserPlus className="h-[18px] w-[18px]" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[13px] font-semibold leading-tight">Sua collab está vazia</div>
+                        <div className="text-[11.5px] text-white/85 leading-snug mt-1">Convide seus colegas de trabalho ou parceiros externos.</div>
+                        <button
+                          onClick={() => { setInviteTab("colab"); setInviteOpen(true); }}
+                          className="mt-2 inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11.5px] font-semibold bg-white text-blue-700 hover:bg-blue-50 transition"
+                        >
+                          <UserPlus className="h-3.5 w-3.5" />
+                          Convidar agora
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => setEmptyHintDismissed((prev) => new Set(prev).add(active.id))}
+                        className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-white/15 transition"
+                        aria-label="Fechar"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={() => setInfoOpen((v) => !v)}
                   className={cn(
