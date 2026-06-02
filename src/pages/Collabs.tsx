@@ -48,10 +48,11 @@ import {
   ChevronRight,
   Lock,
   Settings,
-
-
-
-
+  BellOff,
+  Bell,
+  EyeOff,
+  Clock3,
+  PinOff,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -70,6 +71,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+} from "@/components/ui/context-menu";
 import {
   Dialog,
   DialogContent,
@@ -260,6 +268,9 @@ export default function Collabs() {
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [mutedIds, setMutedIds] = useState<Set<string>>(new Set());
+  const [readLaterIds, setReadLaterIds] = useState<Set<string>>(new Set());
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
   const [messages, setMessages] = useState<DbMessage[]>([]);
   const [reactions, setReactions] = useState<DbReaction[]>([]);
   const [members, setMembers] = useState<MemberRow[]>([]);
@@ -391,6 +402,81 @@ export default function Collabs() {
     });
     return () => { supabase.removeChannel(ch); presenceRef.current = null; };
   }, [companyId, user?.id]);
+
+  /* ────── Per-user conversation prefs (mute / read-later / hide) ────── */
+  const prefsKey = user?.id ? `collab_prefs_${user.id}` : null;
+  useEffect(() => {
+    if (!prefsKey) return;
+    try {
+      const raw = localStorage.getItem(prefsKey);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      setMutedIds(new Set(data.muted || []));
+      setReadLaterIds(new Set(data.readLater || []));
+      setHiddenIds(new Set(data.hidden || []));
+    } catch {}
+  }, [prefsKey]);
+  const persistPrefs = (muted: Set<string>, readLater: Set<string>, hidden: Set<string>) => {
+    if (!prefsKey) return;
+    try {
+      localStorage.setItem(prefsKey, JSON.stringify({
+        muted: Array.from(muted), readLater: Array.from(readLater), hidden: Array.from(hidden),
+      }));
+    } catch {}
+  };
+  const toggleMuteConv = (id: string) => {
+    setMutedIds((prev) => {
+      const next = new Set(prev);
+      const on = !next.has(id);
+      if (on) next.add(id); else next.delete(id);
+      persistPrefs(next, readLaterIds, hiddenIds);
+      sonnerToast.success(on ? "Conversa silenciada" : "Conversa ativada");
+      return next;
+    });
+  };
+  const toggleReadLater = (id: string) => {
+    setReadLaterIds((prev) => {
+      const next = new Set(prev);
+      const on = !next.has(id);
+      if (on) next.add(id); else next.delete(id);
+      persistPrefs(mutedIds, next, hiddenIds);
+      sonnerToast.success(on ? "Marcado para ler depois" : "Removido de ler depois");
+      return next;
+    });
+  };
+  const hideConvLocal = (id: string) => {
+    setHiddenIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      persistPrefs(mutedIds, readLaterIds, next);
+      return next;
+    });
+    if (activeId === id) setActiveId(null);
+    sonnerToast.success("Conversa ocultada", {
+      action: {
+        label: "Desfazer",
+        onClick: () => setHiddenIds((prev) => {
+          const next = new Set(prev); next.delete(id);
+          persistPrefs(mutedIds, readLaterIds, next);
+          return next;
+        }),
+      },
+    });
+  };
+  const togglePinConv = async (id: string, currentlyPinned: boolean) => {
+    const next = !currentlyPinned;
+    const { error } = await supabase
+      .from("collab_conversations")
+      .update({ is_pinned: next })
+      .eq("id", id);
+    if (error) {
+      sonnerToast.error("Não foi possível " + (next ? "fixar" : "desafixar"), { description: error.message });
+      return;
+    }
+    setConversations((prev) => prev.map((c) => c.id === id ? { ...c, is_pinned: next } : c));
+    sonnerToast.success(next ? "Conversa fixada" : "Conversa desafixada");
+  };
+
 
   useEffect(() => {
     const ch = presenceRef.current;
@@ -661,10 +747,12 @@ export default function Collabs() {
 
   const filtered = useMemo(
     () => conversations
+      .filter((c) => !hiddenIds.has(c.id))
       .filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
       .filter((c) => convFilter === "all" ? true : isUnread(c)),
-    [conversations, search, convFilter, userLastRead]
+    [conversations, search, convFilter, userLastRead, hiddenIds]
   );
+
 
   const reactionsByMsg = useMemo(() => {
     const map = new Map<string, { emoji: string; count: number; mine: boolean }[]>();
@@ -1441,45 +1529,72 @@ export default function Collabs() {
             const Icon = meta.Icon;
             const color = c.color || meta.color;
             const prefix = c.kind === "channel" ? "# " : "";
+            const isMuted = mutedIds.has(c.id);
+            const isReadLater = readLaterIds.has(c.id);
             return (
-              <div
-                key={c.id}
-                onClick={() => setActiveId(c.id)}
-                className={cn(
-                  "flex items-center gap-3 px-2.5 py-2 my-0.5 rounded-xl cursor-pointer transition-all h-[64px]",
-                  isActive
-                    ? "bg-emerald-50 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.30)]"
-                    : "hover:bg-gray-50",
-                )}
-              >
-                <HexAvatar
-                  size={44}
-                  background={c.color ? `linear-gradient(135deg, ${c.color} 0%, ${c.color}cc 100%)` : hexGradientFor(c.id)}
-                  src={(c as any).avatar_url || null}
-                >
-                  <Icon className="h-[18px] w-[18px]" />
-                </HexAvatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1 min-w-0">
-                      {c.is_pinned && <Pin className="h-3 w-3 shrink-0 text-gray-400" />}
-                      <span className="text-[13.5px] font-medium truncate text-gray-900">
-                        {prefix}{c.name}
-                      </span>
+              <ContextMenu key={c.id}>
+                <ContextMenuTrigger asChild>
+                  <div
+                    onClick={() => setActiveId(c.id)}
+                    className={cn(
+                      "flex items-center gap-3 px-2.5 py-2 my-0.5 rounded-xl cursor-pointer transition-all h-[64px]",
+                      isActive
+                        ? "bg-emerald-50 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.30)]"
+                        : "hover:bg-gray-50",
+                    )}
+                  >
+                    <HexAvatar
+                      size={44}
+                      background={c.color ? `linear-gradient(135deg, ${c.color} 0%, ${c.color}cc 100%)` : hexGradientFor(c.id)}
+                      src={(c as any).avatar_url || null}
+                    >
+                      <Icon className="h-[18px] w-[18px]" />
+                    </HexAvatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1 min-w-0">
+                          {c.is_pinned && <Pin className="h-3 w-3 shrink-0 text-gray-400" />}
+                          {isMuted && <BellOff className="h-3 w-3 shrink-0 text-gray-400" />}
+                          {isReadLater && <Clock3 className="h-3 w-3 shrink-0 text-amber-500" />}
+                          <span className="text-[13.5px] font-medium truncate text-gray-900">
+                            {prefix}{c.name}
+                          </span>
+                        </div>
+                        <span className="text-[11px] shrink-0 text-gray-400">
+                          {formatTime(c.last_message_at)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 mt-0.5">
+                        <span className="text-xs truncate text-gray-500">
+                          {c.last_message_preview === "[[poll]]" ? "📊 Enquete" : (c.last_message_preview || "Sem mensagens ainda")}
+                        </span>
+                      </div>
                     </div>
-                    <span className="text-[11px] shrink-0 text-gray-400">
-                      {formatTime(c.last_message_at)}
-                    </span>
                   </div>
-                  <div className="flex items-center justify-between gap-2 mt-0.5">
-                    <span className="text-xs truncate text-gray-500">
-                      {c.last_message_preview === "[[poll]]" ? "📊 Enquete" : (c.last_message_preview || "Sem mensagens ainda")}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                </ContextMenuTrigger>
+                <ContextMenuContent className="w-56">
+                  <ContextMenuItem onClick={() => toggleReadLater(c.id)}>
+                    <Clock3 className="h-4 w-4 mr-2" />
+                    {isReadLater ? "Remover de ler depois" : "Marcar para ler depois"}
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => togglePinConv(c.id, !!c.is_pinned)}>
+                    {c.is_pinned ? <PinOff className="h-4 w-4 mr-2" /> : <Pin className="h-4 w-4 mr-2" />}
+                    {c.is_pinned ? "Desafixar" : "Fixar"}
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => toggleMuteConv(c.id)}>
+                    {isMuted ? <Bell className="h-4 w-4 mr-2" /> : <BellOff className="h-4 w-4 mr-2" />}
+                    {isMuted ? "Ativar notificações" : "Silenciar"}
+                  </ContextMenuItem>
+                  <ContextMenuSeparator />
+                  <ContextMenuItem onClick={() => hideConvLocal(c.id)} className="text-red-600 focus:text-red-600">
+                    <EyeOff className="h-4 w-4 mr-2" />
+                    Ocultar
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
             );
           })}
+
         </div>
       </aside>
 
