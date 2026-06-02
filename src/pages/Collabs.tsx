@@ -2065,6 +2065,13 @@ export default function Collabs() {
               onOpenFavorites={() => setChatView("favorites")}
               onOpenLinks={() => setChatView("links")}
               onOpenMedia={() => setChatView("files")}
+              isPinned={!!active.is_pinned}
+              canManage={!!user && active.created_by === user.id}
+              onTogglePin={togglePinConversation}
+              onEdit={renameConversation}
+              onAddParticipants={() => { setInviteTab("colab"); setInviteOpen(true); }}
+              onHide={hideConversation}
+              onDelete={deleteConversation}
             />
           ) : (
             <>
