@@ -72,6 +72,13 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+} from "@/components/ui/context-menu";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
