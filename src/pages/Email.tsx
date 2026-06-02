@@ -195,21 +195,17 @@ export default function Email() {
             Escolha um provedor abaixo para conectar sua conta
           </p>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
             {PROVIDERS.map((p) => (
               <button
                 key={p.id}
                 onClick={() => setDialogProvider(p.id)}
-                className="group rounded-2xl border border-border bg-card hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-lg transition p-5 flex flex-col items-center text-center"
+                className="group rounded-2xl border border-border bg-card hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-lg transition p-6 flex flex-col items-center text-center"
               >
-                <div
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-xl mb-3 group-hover:scale-105 transition"
-                  style={{ background: p.iconBg }}
-                >
-                  {p.name.slice(0, 1)}
+                <div className="w-16 h-16 rounded-2xl bg-muted/30 flex items-center justify-center mb-3 group-hover:scale-105 transition">
+                  <p.Logo className="w-10 h-10" />
                 </div>
                 <div className="text-[14px] font-semibold text-foreground">{p.name}</div>
-                {p.subtitle && <div className="text-[10.5px] text-muted-foreground mt-0.5">{p.subtitle}</div>}
                 <div className="mt-3 flex items-center gap-1 text-[11px] font-medium text-emerald-600 opacity-0 group-hover:opacity-100 transition">
                   Conectar <ArrowRight className="w-3 h-3" />
                 </div>
