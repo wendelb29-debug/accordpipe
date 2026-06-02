@@ -2001,6 +2001,26 @@ export default function Collabs() {
           userId={user.id}
         />
       )}
+
+      <ForwardMessageDialog
+        open={!!forwardMsg}
+        onOpenChange={(o) => !o && setForwardMsg(null)}
+        message={forwardMsg ? {
+          id: forwardMsg.id,
+          content: forwardMsg.content,
+          attachments: (forwardMsg.attachments as any) || [],
+        } : null}
+        conversations={conversations.map((c) => ({
+          id: c.id,
+          name: c.name,
+          kind: c.kind,
+          emoji: c.emoji,
+          color: c.color,
+          avatar_url: c.avatar_url,
+        }))}
+        currentUserId={user?.id || ""}
+        companyId={companyId || ""}
+      />
     </div>
   );
 }
