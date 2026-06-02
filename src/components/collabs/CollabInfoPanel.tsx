@@ -90,11 +90,68 @@ export function CollabInfoPanel({ collab, onClose, onInvite, onAvatarChange, can
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-md flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition"
-            title="Fechar"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 shrink-0">
+        <h3 className="text-[14px] font-semibold text-gray-900">Sobre collab</h3>
+        <div className="flex items-center gap-1">
+          {(onTogglePin || onEdit || onAddParticipants || onHide || onDelete) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="w-8 h-8 rounded-md flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition"
+                  title="Mais opções"
+                  aria-label="Mais opções"
+                >
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                {onTogglePin && (
+                  <DropdownMenuItem onClick={onTogglePin} className="gap-2">
+                    {isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+                    {isPinned ? "Desafixar" : "Fixar"}
+                  </DropdownMenuItem>
+                )}
+                {onEdit && canManage !== false && (
+                  <DropdownMenuItem onClick={onEdit} className="gap-2">
+                    <Pencil className="w-4 h-4" />
+                    Editar
+                  </DropdownMenuItem>
+                )}
+                {onAddParticipants && (
+                  <DropdownMenuItem onClick={onAddParticipants} className="gap-2">
+                    <UserPlus className="w-4 h-4" />
+                    Adicionar participantes
+                  </DropdownMenuItem>
+                )}
+                {onHide && (
+                  <DropdownMenuItem onClick={onHide} className="gap-2">
+                    <EyeOff className="w-4 h-4" />
+                    Ocultar
+                  </DropdownMenuItem>
+                )}
+                {onDelete && canManage !== false && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={onDelete} className="gap-2 text-red-600 focus:text-red-700 focus:bg-red-50">
+                      <Trash2 className="w-4 h-4" />
+                      Excluir
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-md flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition"
+              title="Fechar"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Conteúdo rolável */}
