@@ -48,6 +48,7 @@ import { CollabFilesPanel } from "@/components/collabs/CollabFilesPanel";
 import { CollabMessagesPanel } from "@/components/collabs/CollabMessagesPanel";
 import { PollByMessage } from "@/components/collabs/polls/PollCard";
 import { MessageActionsMenu } from "@/components/collabs/MessageActionsMenu";
+import { ForwardMessageDialog } from "@/components/collabs/ForwardMessageDialog";
 import { CreatePollDialog } from "@/components/collabs/polls/CreatePollDialog";
 import {
   DropdownMenu,
@@ -237,6 +238,7 @@ export default function Collabs() {
   const { toast } = useToast();
   const recorder = useAudioRecorder();
   const [sendingAudio, setSendingAudio] = useState(false);
+  const [forwardMsg, setForwardMsg] = useState<DbMessage | null>(null);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -1289,7 +1291,7 @@ export default function Collabs() {
                                 tone={isSent ? "mine" : "other"}
                                 onReply={() => startReply(m)}
                                 onCreateTask={() => navigate(`/atividades?from=collab&messageId=${m.id}`)}
-                                onForward={() => sonnerToast.info("Encaminhar — em breve")}
+                                onForward={() => setForwardMsg(m)}
                                 onSelect={() => sonnerToast.info("Seleção múltipla — em breve")}
                                 onAskCopilot={() => sonnerToast.info("CoPilot — em breve")}
                               />
@@ -1999,6 +2001,26 @@ export default function Collabs() {
           userId={user.id}
         />
       )}
+
+      <ForwardMessageDialog
+        open={!!forwardMsg}
+        onOpenChange={(o) => !o && setForwardMsg(null)}
+        message={forwardMsg ? {
+          id: forwardMsg.id,
+          content: forwardMsg.content,
+          attachments: (forwardMsg.attachments as any) || [],
+        } : null}
+        conversations={conversations.map((c) => ({
+          id: c.id,
+          name: c.name,
+          kind: c.kind,
+          emoji: c.emoji,
+          color: c.color,
+          avatar_url: c.avatar_url,
+        }))}
+        currentUserId={user?.id || ""}
+        companyId={companyId || ""}
+      />
     </div>
   );
 }
