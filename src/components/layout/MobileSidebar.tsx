@@ -174,6 +174,9 @@ export function MobileSidebar() {
             </p>
             {filteredNavigation.map((item) => {
               const isActive = location.pathname === item.href;
+              let badge = 0;
+              if (item.href === "/atividades" && overdueCount > 0) badge = overdueCount;
+              else if (item.href === "/email" && unreadEmailCount > 0) badge = unreadEmailCount;
               return (
                 <Link
                   key={item.nameKey}
@@ -183,7 +186,12 @@ export function MobileSidebar() {
                 >
                   {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-sidebar-primary shadow-[0_0_8px_rgba(122,63,242,0.5)]" />}
                   <item.icon className={cn("h-[17px] w-[17px] shrink-0", isActive && "text-sidebar-primary")} />
-                  <span className="truncate">{t(item.nameKey)}</span>
+                  <span className="truncate flex-1">{t(item.nameKey)}</span>
+                  {badge > 0 && (
+                    <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
+                      {badge > 99 ? "99+" : badge}
+                    </span>
+                  )}
                 </Link>
               );
             })}
