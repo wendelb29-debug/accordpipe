@@ -422,6 +422,46 @@ export default function Collabs() {
     return () => { cancelled = true; supabase.removeChannel(ch); };
   }, [companyId]);
 
+  /* ────── Load current user's last_read_at across all conversations (for unread filter) ────── */
+  useEffect(() => {
+    if (!user?.id || conversations.length === 0) { setUserLastRead(new Map()); return; }
+    let cancelled = false;
+    const ids = conversations.map((c) => c.id);
+    (async () => {
+      const { data } = await supabase
+        .from("collab_members")
+        .select("conversation_id, last_read_at")
+        .eq("user_id", user.id)
+        .in("conversation_id", ids);
+      if (cancelled) return;
+      const map = new Map<string, string | null>();
+      (data || []).forEach((r: any) => map.set(r.conversation_id, r.last_read_at));
+      setUserLastRead(map);
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id, conversations]);
+
+  const markAllAsRead = async () => {
+    if (!user?.id || conversations.length === 0) return;
+    const now = new Date().toISOString();
+    const ids = conversations.map((c) => c.id);
+    const { error } = await supabase
+      .from("collab_members")
+      .update({ last_read_at: now })
+      .eq("user_id", user.id)
+      .in("conversation_id", ids);
+    if (error) {
+      sonnerToast.error("Não foi possível marcar como lido");
+      return;
+    }
+    const next = new Map(userLastRead);
+    ids.forEach((id) => next.set(id, now));
+    setUserLastRead(next);
+    sonnerToast.success("Tudo marcado como lido");
+  };
+
+
+
   /* ────── Load messages + members for active conversation + realtime ────── */
   useEffect(() => {
     setChatView("chat");
