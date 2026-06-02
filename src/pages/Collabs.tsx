@@ -1455,9 +1455,9 @@ export default function Collabs() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onFocus={() => setSearchFocused(true)}
-              onBlur={() => setTimeout(() => setSearchFocused(false), 180)}
-              placeholder="Encontrar colaborador ou bate-papo"
-              className="flex-1 bg-transparent outline-none text-[13px] text-gray-700 placeholder:text-gray-400"
+              onBlur={() => setTimeout(() => setSearchFocused(false), 220)}
+              placeholder="Buscar colaborador..."
+              className="flex-1 min-w-0 w-full bg-transparent outline-none text-[13px] text-gray-700 placeholder:text-gray-400"
             />
             {search && (
               <button
