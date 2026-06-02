@@ -16,6 +16,7 @@ import {
   Inbox,
 } from "lucide-react";
 import { EmailProviderDialog } from "@/components/email/EmailProviderDialog";
+import { GmailLogo, OutlookLogo } from "@/components/email/ProviderLogos";
 
 interface EmailAccount {
   id: string;
@@ -29,14 +30,8 @@ interface EmailAccount {
 }
 
 const PROVIDERS = [
-  { id: "gmail",     name: "Gmail",      color: "#EA4335", iconBg: "linear-gradient(135deg, #EA4335, #FBBC04, #34A853, #4285F4)" },
-  { id: "outlook",   name: "Outlook",    color: "#0078D4", iconBg: "linear-gradient(135deg, #0078D4, #50E6FF)" },
-  { id: "icloud",    name: "iCloud",     color: "#3B82F6", iconBg: "linear-gradient(135deg, #87CEEB, #4682B4)" },
-  { id: "office365", name: "Office 365", color: "#D83B01", iconBg: "linear-gradient(135deg, #D83B01, #F25022)" },
-  { id: "exchange",  name: "Exchange",   color: "#0078D4", iconBg: "linear-gradient(135deg, #2563EB, #0078D4)" },
-  { id: "yahoo",     name: "Yahoo!",     color: "#6001D2", iconBg: "linear-gradient(135deg, #6001D2, #410093)" },
-  { id: "aol",       name: "AOL",        color: "#0066B9", iconBg: "linear-gradient(135deg, #0066B9, #003C70)" },
-  { id: "imap_smtp", name: "Caixa de correio personalizada", subtitle: "IMAP+SMTP", color: "#10B981", iconBg: "linear-gradient(135deg, #10B981, #059669)" },
+  { id: "gmail",   name: "Gmail",   Logo: GmailLogo },
+  { id: "outlook", name: "Outlook", Logo: OutlookLogo },
 ];
 
 export default function Email() {
