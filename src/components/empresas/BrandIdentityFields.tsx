@@ -128,9 +128,9 @@ export function BrandIdentityFields({ formData, onChange }: Props) {
         <div className="space-y-2">
           <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Logo do Sistema</p>
           <div className="flex items-center gap-4">
-            {formData.brandLogoUrl ? (
+            {(displayLogoUrl || formData.brandLogoUrl) ? (
               <div className="h-16 w-32 rounded-lg border border-border bg-background flex items-center justify-center overflow-hidden">
-                <img src={formData.brandLogoUrl} alt="Logo" className="max-h-14 max-w-28 object-contain" />
+                <img src={displayLogoUrl || formData.brandLogoUrl} alt="Logo" className="max-h-14 max-w-28 object-contain" />
               </div>
             ) : (
               <div className="h-16 w-32 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 flex items-center justify-center">
