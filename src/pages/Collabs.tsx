@@ -38,12 +38,14 @@ import {
   BarChart3,
   Maximize2,
   Minimize2,
+  Star,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { HexAvatar, hexGradientFor } from "@/components/collabs/HexAvatar";
 import { CollabInfoPanel } from "@/components/collabs/CollabInfoPanel";
 import { CollabFilesPanel } from "@/components/collabs/CollabFilesPanel";
+import { CollabMessagesPanel } from "@/components/collabs/CollabMessagesPanel";
 import { PollByMessage } from "@/components/collabs/polls/PollCard";
 import { CreatePollDialog } from "@/components/collabs/polls/CreatePollDialog";
 import {
