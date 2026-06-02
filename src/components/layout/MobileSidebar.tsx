@@ -32,18 +32,18 @@ const navigation = [
   { nameKey: "nav.accordSales", href: "/atendimento", icon: Headset, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
   { nameKey: "nav.forms", href: "/formularios", icon: ClipboardList, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
   { nameKey: "nav.activities", href: "/atividades", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
-  { nameKey: "nav.fintech", href: "/financeiro", icon: Receipt, roles: ["admin", "ceo", "financeiro"] },
-  { nameKey: "nav.documents", href: "/documentos", icon: FileText, roles: ["admin", "ceo", "administrativo", "financeiro"] },
-  { nameKey: "nav.reports", href: "/relatorios", icon: BarChart3, roles: ["admin", "leitura", "ceo", "administrativo", "financeiro"] },
-  { nameKey: "nav.clientBase", href: "/cadastrados", icon: Users, roles: ["admin", "ceo", "administrativo"] },
+  { nameKey: "nav.fintech", href: "/financeiro", icon: CircleDollarSign, roles: ["admin", "ceo", "financeiro"] },
+  { nameKey: "nav.documents", href: "/documentos", icon: Files, roles: ["admin", "ceo", "administrativo", "financeiro"] },
+  { nameKey: "nav.reports", href: "/relatorios", icon: ChartColumn, roles: ["admin", "leitura", "ceo", "administrativo", "financeiro"] },
+  { nameKey: "nav.clientBase", href: "/cadastrados", icon: UsersRound, roles: ["admin", "ceo", "administrativo"] },
   { nameKey: "nav.performance", href: "/performance", icon: TrendingUp, roles: ["admin", "ceo", "operador", "comercial"] },
   
   { nameKey: "nav.academy", href: "/academy", icon: GraduationCap, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
-  { nameKey: "nav.discard", href: "/descarte", icon: Trash2, roles: ["admin", "ceo"] },
+  { nameKey: "nav.discard", href: "/descarte", icon: ArchiveX, roles: ["admin", "ceo"] },
 ];
 
 const configNavigation = [
-  { nameKey: "nav.users", href: "/configuracoes/usuarios", icon: Users, roles: ["admin", "ceo", "administrativo"] },
+  { nameKey: "nav.users", href: "/configuracoes/usuarios", icon: UsersRound, roles: ["admin", "ceo", "administrativo"] },
   { nameKey: "nav.tenantManagement", href: "/gestao-tenants", icon: Crown, roles: ["ceo", "master"], tenantAdminOnly: true },
 ];
 

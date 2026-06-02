@@ -69,16 +69,16 @@ const navigationSections = [
       { nameKey: "nav.accordSales", href: "/atendimento", icon: Headset, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
       { nameKey: "nav.forms", href: "/formularios", icon: ClipboardList, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
       { nameKey: "nav.activities", href: "/atividades", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
-      { nameKey: "Collabs", href: "/collabs", icon: MessageSquare, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
+      { nameKey: "Collabs", href: "/collabs", icon: MessagesSquare, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
     ],
   },
   {
     label: "Gestão",
     items: [
-      { nameKey: "nav.clientBase", href: "/cadastrados", icon: Users, roles: ["admin", "ceo", "administrativo"] },
-      { nameKey: "nav.fintech", href: "/financeiro", icon: Receipt, roles: ["admin", "ceo", "financeiro"] },
-      { nameKey: "nav.documents", href: "/documentos", icon: FileText, roles: ["admin", "ceo", "administrativo", "financeiro"] },
-      { nameKey: "nav.reports", href: "/relatorios", icon: BarChart3, roles: ["admin", "leitura", "ceo", "administrativo", "financeiro"] },
+      { nameKey: "nav.clientBase", href: "/cadastrados", icon: UsersRound, roles: ["admin", "ceo", "administrativo"] },
+      { nameKey: "nav.fintech", href: "/financeiro", icon: CircleDollarSign, roles: ["admin", "ceo", "financeiro"] },
+      { nameKey: "nav.documents", href: "/documentos", icon: Files, roles: ["admin", "ceo", "administrativo", "financeiro"] },
+      { nameKey: "nav.reports", href: "/relatorios", icon: ChartColumn, roles: ["admin", "leitura", "ceo", "administrativo", "financeiro"] },
     ],
   },
   {
@@ -92,7 +92,7 @@ const navigationSections = [
   {
     label: "Outros",
     items: [
-      { nameKey: "nav.discard", href: "/descarte", icon: Trash2, roles: ["admin", "ceo"] },
+      { nameKey: "nav.discard", href: "/descarte", icon: ArchiveX, roles: ["admin", "ceo"] },
     ],
   },
 ];
@@ -100,7 +100,7 @@ const navigationSections = [
 const navigation = navigationSections.flatMap((s) => s.items);
 
 const configNavigation = [
-  { nameKey: "nav.users", href: "/configuracoes/usuarios", icon: Users, roles: ["admin", "ceo", "administrativo"] },
+  { nameKey: "nav.users", href: "/configuracoes/usuarios", icon: UsersRound, roles: ["admin", "ceo", "administrativo"] },
   
 ];
 
