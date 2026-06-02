@@ -240,6 +240,9 @@ export default function Collabs() {
   const recorder = useAudioRecorder();
   const [sendingAudio, setSendingAudio] = useState(false);
   const [forwardMsg, setForwardMsg] = useState<DbMessage | null>(null);
+  const [taskForMsg, setTaskForMsg] = useState<DbMessage | null>(null);
+  const [copilotMode, setCopilotMode] = useState(false);
+  const [askingCopilot, setAskingCopilot] = useState(false);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
