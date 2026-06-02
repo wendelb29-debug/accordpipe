@@ -1301,9 +1301,20 @@ export default function Collabs() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar conversa…"
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setTimeout(() => setSearchFocused(false), 180)}
+              placeholder="Encontrar colaborador ou bate-papo"
               className="flex-1 bg-transparent outline-none text-[13px] text-gray-700 placeholder:text-gray-400"
             />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-200 hover:text-gray-700"
+                aria-label="Limpar"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
