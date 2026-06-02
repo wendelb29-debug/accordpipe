@@ -1247,6 +1247,23 @@ export default function Collabs() {
                               >
                                 <Star className={cn("h-[15px] w-[15px]", favoriteIds.has(m.id) && "fill-amber-400 stroke-amber-500")} />
                               </button>
+                              <MessageActionsMenu
+                                message={{
+                                  id: m.id,
+                                  sender_id: m.sender_id,
+                                  content: m.content,
+                                  attachments: (m.attachments as any) || [],
+                                  is_pinned: (m as any).is_pinned ?? false,
+                                }}
+                                currentUserId={user?.id || ""}
+                                isOwn={m.sender_id === user?.id}
+                                tone={isSent ? "mine" : "other"}
+                                onReply={() => startReply(m)}
+                                onCreateTask={() => navigate(`/atividades?from=collab&messageId=${m.id}`)}
+                                onForward={() => sonnerToast.info("Encaminhar — em breve")}
+                                onSelect={() => sonnerToast.info("Seleção múltipla — em breve")}
+                                onAskCopilot={() => sonnerToast.info("CoPilot — em breve")}
+                              />
                             </div>
 
                             <div className={cn("flex flex-col gap-1.5 min-w-0", isSent && "items-end")}>
