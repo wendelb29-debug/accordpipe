@@ -47,6 +47,7 @@ import { CollabInfoPanel } from "@/components/collabs/CollabInfoPanel";
 import { CollabFilesPanel } from "@/components/collabs/CollabFilesPanel";
 import { CollabMessagesPanel } from "@/components/collabs/CollabMessagesPanel";
 import { PollByMessage } from "@/components/collabs/polls/PollCard";
+import { MessageActionsMenu } from "@/components/collabs/MessageActionsMenu";
 import { CreatePollDialog } from "@/components/collabs/polls/CreatePollDialog";
 import {
   DropdownMenu,
