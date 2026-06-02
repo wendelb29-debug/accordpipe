@@ -1162,7 +1162,6 @@ export default function Collabs() {
               />
             ) : (
               <>
-              <>
             <div
               className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-5 relative"
               style={{
