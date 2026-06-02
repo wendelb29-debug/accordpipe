@@ -2397,6 +2397,72 @@ export type Database = {
           },
         ]
       }
+      email_accounts: {
+        Row: {
+          calendar_integration: boolean
+          created_at: string
+          crm_integration: boolean
+          daily_limit: number | null
+          display_name: string
+          email_address: string
+          id: string
+          imap_config: Json | null
+          import_since: string
+          last_synced_at: string | null
+          oauth_tokens: Json | null
+          provider: string
+          sender_name: string | null
+          servidor_id: string
+          shared_sender: boolean
+          status: string
+          status_message: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calendar_integration?: boolean
+          created_at?: string
+          crm_integration?: boolean
+          daily_limit?: number | null
+          display_name: string
+          email_address: string
+          id?: string
+          imap_config?: Json | null
+          import_since?: string
+          last_synced_at?: string | null
+          oauth_tokens?: Json | null
+          provider: string
+          sender_name?: string | null
+          servidor_id: string
+          shared_sender?: boolean
+          status?: string
+          status_message?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calendar_integration?: boolean
+          created_at?: string
+          crm_integration?: boolean
+          daily_limit?: number | null
+          display_name?: string
+          email_address?: string
+          id?: string
+          imap_config?: Json | null
+          import_since?: string
+          last_synced_at?: string | null
+          oauth_tokens?: Json | null
+          provider?: string
+          sender_name?: string | null
+          servidor_id?: string
+          shared_sender?: boolean
+          status?: string
+          status_message?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
