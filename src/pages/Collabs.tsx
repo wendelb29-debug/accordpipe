@@ -747,10 +747,12 @@ export default function Collabs() {
 
   const filtered = useMemo(
     () => conversations
+      .filter((c) => !hiddenIds.has(c.id))
       .filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
       .filter((c) => convFilter === "all" ? true : isUnread(c)),
-    [conversations, search, convFilter, userLastRead]
+    [conversations, search, convFilter, userLastRead, hiddenIds]
   );
+
 
   const reactionsByMsg = useMemo(() => {
     const map = new Map<string, { emoji: string; count: number; mine: boolean }[]>();
