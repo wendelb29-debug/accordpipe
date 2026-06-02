@@ -745,7 +745,7 @@ export default function Collabs() {
           conversation_id: conv.id,
           servidor_id: companyId,
           sender_id: user.id,
-          content: `📌 Sobre a collab: ${newDescription.trim()}`,
+          content: createKind === "collab" ? `📌 Sobre a collab: ${newDescription.trim()}` : `📌 Sobre o grupo: ${newDescription.trim()}`,
           is_system: true,
           attachments: [],
         });
