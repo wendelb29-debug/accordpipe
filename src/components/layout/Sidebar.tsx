@@ -157,6 +157,7 @@ export function Sidebar() {
   const activeCompanyId = useActiveCompanyId();
   const tenantLogoUrl = useTenantLogo(activeCompanyId);
   const overdueCount = useOverdueCount();
+  const unreadEmailCount = useUnreadEmailCount();
   
 
   // Auto-open Configurações when on one of its subroutes
