@@ -782,6 +782,7 @@ export type Database = {
           created_by: string
           emoji: string | null
           id: string
+          invite_token: string
           is_pinned: boolean
           kind: string
           last_message_at: string | null
@@ -797,6 +798,7 @@ export type Database = {
           created_by: string
           emoji?: string | null
           id?: string
+          invite_token?: string
           is_pinned?: boolean
           kind?: string
           last_message_at?: string | null
@@ -812,6 +814,7 @@ export type Database = {
           created_by?: string
           emoji?: string | null
           id?: string
+          invite_token?: string
           is_pinned?: boolean
           kind?: string
           last_message_at?: string | null
