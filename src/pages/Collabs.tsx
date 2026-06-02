@@ -253,6 +253,30 @@ function initialsOf(name: string) {
   return name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
 }
 
+/** Resolves a stored avatar URL — converts public/expired storage URLs into fresh signed URLs. */
+const PROFILE_AVATAR_BUCKETS = ["avatars", "user-signatures", "signatures", "documents", "contract-pdfs"];
+async function resolveProfileAvatar(storedUrl: string | null | undefined): Promise<string | null> {
+  if (!storedUrl) return null;
+  try {
+    for (const bucket of PROFILE_AVATAR_BUCKETS) {
+      const markers = [
+        `/storage/v1/object/public/${bucket}/`,
+        `/storage/v1/object/sign/${bucket}/`,
+      ];
+      for (const marker of markers) {
+        const idx = storedUrl.indexOf(marker);
+        if (idx !== -1) {
+          const path = decodeURIComponent(storedUrl.substring(idx + marker.length).split("?")[0]);
+          const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 60);
+          if (data?.signedUrl) return data.signedUrl;
+          return storedUrl;
+        }
+      }
+    }
+  } catch { /* fallback below */ }
+  return storedUrl;
+}
+
 /* ──────────────────────────  COMPONENT  ────────────────────────── */
 
 export default function Collabs() {
