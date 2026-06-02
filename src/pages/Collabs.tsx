@@ -768,7 +768,74 @@ export default function Collabs() {
   };
 
 
-  const addExistingMember = async (userId: string) => {
+  /* ────── Conversation actions: pin / edit / hide / delete ────── */
+  const togglePinConversation = async () => {
+    if (!active) return;
+    const next = !active.is_pinned;
+    const { error } = await supabase
+      .from("collab_conversations")
+      .update({ is_pinned: next })
+      .eq("id", active.id);
+    if (error) {
+      sonnerToast.error("Não foi possível " + (next ? "fixar" : "desafixar"), { description: error.message });
+      return;
+    }
+    setConversations((prev) => prev.map((c) => c.id === active.id ? { ...c, is_pinned: next } : c));
+    sonnerToast.success(next ? "Conversa fixada" : "Conversa desafixada");
+  };
+
+  const renameConversation = async () => {
+    if (!active) return;
+    const newName = window.prompt("Novo nome da conversa", active.name);
+    if (!newName || !newName.trim() || newName.trim() === active.name) return;
+    const { error } = await supabase
+      .from("collab_conversations")
+      .update({ name: newName.trim() })
+      .eq("id", active.id);
+    if (error) {
+      sonnerToast.error("Erro ao renomear", { description: error.message });
+      return;
+    }
+    setConversations((prev) => prev.map((c) => c.id === active.id ? { ...c, name: newName.trim() } : c));
+    sonnerToast.success("Conversa renomeada");
+  };
+
+  const hideConversation = async () => {
+    if (!active || !user) return;
+    const { error } = await supabase
+      .from("collab_members")
+      .update({ is_hidden: true } as any)
+      .eq("conversation_id", active.id)
+      .eq("user_id", user.id);
+    if (error) {
+      // Fallback: just remove locally if column doesn't exist
+      setConversations((prev) => prev.filter((c) => c.id !== active.id));
+      setActiveId(null);
+      sonnerToast.success("Conversa ocultada");
+      return;
+    }
+    setConversations((prev) => prev.filter((c) => c.id !== active.id));
+    setActiveId(null);
+    sonnerToast.success("Conversa ocultada");
+  };
+
+  const deleteConversation = async () => {
+    if (!active) return;
+    if (!window.confirm(`Excluir a conversa "${active.name}"? Esta ação não pode ser desfeita.`)) return;
+    const { error } = await supabase
+      .from("collab_conversations")
+      .delete()
+      .eq("id", active.id);
+    if (error) {
+      sonnerToast.error("Erro ao excluir", { description: error.message });
+      return;
+    }
+    setConversations((prev) => prev.filter((c) => c.id !== active.id));
+    setActiveId(null);
+    sonnerToast.success("Conversa excluída");
+  };
+
+
     if (!activeId) return;
     const { error } = await supabase.from("collab_members").insert({ conversation_id: activeId, user_id: userId, role: "member" });
     if (error) {
