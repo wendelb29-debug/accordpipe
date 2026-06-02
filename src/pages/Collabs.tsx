@@ -1512,6 +1512,7 @@ export default function Collabs() {
                                 onForward={() => setForwardMsg(m)}
                                 onSelect={() => sonnerToast.info("Seleção múltipla — em breve")}
                                 onAskCopilot={() => { startReply(m); setCopilotMode(true); }}
+                                onStartEdit={() => startEdit(m)}
                               />
                             </div>
 
