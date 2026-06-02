@@ -625,9 +625,18 @@ export default function Collabs() {
   /* ────── Derived ────── */
   const active = conversations.find((c) => c.id === activeId) || null;
 
+  const isUnread = (c: Conversation) => {
+    if (!c.last_message_at) return false;
+    const lr = userLastRead.get(c.id);
+    if (!lr) return true;
+    return new Date(c.last_message_at).getTime() > new Date(lr).getTime();
+  };
+
   const filtered = useMemo(
-    () => conversations.filter((c) => c.name.toLowerCase().includes(search.toLowerCase())),
-    [conversations, search]
+    () => conversations
+      .filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
+      .filter((c) => convFilter === "all" ? true : isUnread(c)),
+    [conversations, search, convFilter, userLastRead]
   );
 
   const reactionsByMsg = useMemo(() => {
