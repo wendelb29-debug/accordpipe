@@ -2046,6 +2046,99 @@ export default function Collabs() {
         </SheetContent>
       </Sheet>
 
+      {/* CHAT SEARCH PANEL */}
+      <Sheet open={chatSearchOpen} onOpenChange={(o) => { setChatSearchOpen(o); if (!o) setChatSearchTerm(""); }}>
+        <SheetContent side="right" className="w-[360px] sm:w-[380px] p-0 flex flex-col bg-white">
+          <SheetHeader className="px-4 py-3 border-b border-gray-200 shrink-0">
+            <SheetTitle className="sr-only">Pesquisar na conversa</SheetTitle>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+              <input
+                autoFocus
+                value={chatSearchTerm}
+                onChange={(e) => setChatSearchTerm(e.target.value)}
+                placeholder="Encontrar no bate-papo"
+                className="w-full rounded-xl bg-gray-50 border border-transparent pl-9 pr-9 py-2 text-sm outline-none focus:border-violet-300 focus:bg-white"
+              />
+              {chatSearchTerm && (
+                <button
+                  onClick={() => setChatSearchTerm("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-200 hover:text-gray-700"
+                  aria-label="Limpar"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto">
+            {chatSearchTerm.trim().length === 0 ? (
+              <div className="flex flex-col items-center justify-center text-center h-full py-16 px-6 text-gray-400">
+                <Search className="w-7 h-7 mb-3 text-gray-300" />
+                <div className="text-[12.5px]">Esta visualização mostrará mensagens encontradas.</div>
+              </div>
+            ) : (() => {
+              const term = chatSearchTerm.toLowerCase();
+              const matches = messages.filter((m) => (m.content || "").toLowerCase().includes(term));
+              if (matches.length === 0) {
+                return (
+                  <div className="flex flex-col items-center justify-center text-center h-full py-16 px-6 text-gray-400">
+                    <Search className="w-7 h-7 mb-3 text-gray-300" />
+                    <div className="text-[12.5px]">Nenhuma mensagem encontrada para "{chatSearchTerm}".</div>
+                  </div>
+                );
+              }
+              return (
+                <div className="divide-y divide-gray-100">
+                  {matches.map((m) => {
+                    const sender = userMap.get(m.sender_id);
+                    const senderName = sender?.name || "Usuário";
+                    const text = m.content || "";
+                    const idx = text.toLowerCase().indexOf(term);
+                    const before = idx >= 0 ? text.slice(Math.max(0, idx - 24), idx) : text.slice(0, 60);
+                    const match = idx >= 0 ? text.slice(idx, idx + chatSearchTerm.length) : "";
+                    const after = idx >= 0 ? text.slice(idx + chatSearchTerm.length, idx + chatSearchTerm.length + 80) : "";
+                    const date = new Date(m.created_at);
+                    const time = date.toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => {
+                          const el = document.querySelector(`[data-msg-id="${m.id}"]`);
+                          if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                        }}
+                        className="w-full text-left px-4 py-3 hover:bg-gray-50 transition"
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="text-[12px] font-semibold text-gray-800 truncate">{senderName}</div>
+                          <div className="text-[10.5px] text-gray-400 shrink-0 ml-2">{time}</div>
+                        </div>
+                        <div className="text-[12.5px] text-gray-600 leading-snug line-clamp-2">
+                          {idx >= 0 ? (
+                            <>
+                              {before && <span className="text-gray-400">…</span>}
+                              {before}
+                              <mark className="bg-yellow-200 text-gray-900 rounded px-0.5">{match}</mark>
+                              {after}
+                              {after && <span className="text-gray-400">…</span>}
+                            </>
+                          ) : (
+                            text.slice(0, 120)
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+
+
+
 
       {/* RIGHT PANEL — online by department */}
       {infoOpen && (
