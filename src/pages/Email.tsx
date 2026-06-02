@@ -141,11 +141,8 @@ export default function Email() {
                     key={acc.id}
                     className="rounded-xl border border-border bg-card p-4 flex items-center gap-3 hover:shadow-md transition"
                   >
-                    <div
-                      className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0"
-                      style={{ background: prov?.iconBg }}
-                    >
-                      {prov?.name.slice(0, 1) || "@"}
+                    <div className="w-11 h-11 rounded-xl bg-muted/50 flex items-center justify-center shrink-0">
+                      {prov?.Logo ? <prov.Logo className="w-7 h-7" /> : <Mail className="w-5 h-5 text-muted-foreground" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 text-[13.5px] font-semibold text-foreground truncate">
