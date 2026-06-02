@@ -47,6 +47,25 @@ export function BrandIdentityFields({ formData, onChange }: Props) {
   const [activeContext, setActiveContext] = useState<BrandContext>("sistema");
   const [deviceView, setDeviceView] = useState<DeviceView>("desktop");
   const [useSameDocLogo, setUseSameDocLogo] = useState(true);
+  const [displayLogoUrl, setDisplayLogoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = async () => {
+      if (formData.brandLogoPath) {
+        const { data } = await supabase.storage
+          .from("documents")
+          .createSignedUrl(formData.brandLogoPath, 60 * 60 * 24);
+        if (!cancelled && data?.signedUrl) {
+          setDisplayLogoUrl(data.signedUrl);
+          return;
+        }
+      }
+      if (!cancelled) setDisplayLogoUrl(formData.brandLogoUrl || null);
+    };
+    refresh();
+    return () => { cancelled = true; };
+  }, [formData.brandLogoPath, formData.brandLogoUrl]);
 
   const handleLogoUpload = async (file: File, target: "system" | "doc" = "system") => {
     if (!file.type.startsWith("image/")) { toast.error("Selecione um arquivo de imagem"); return; }
