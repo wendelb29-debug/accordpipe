@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,6 +13,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
+  Inbox,
 } from "lucide-react";
 import { EmailProviderDialog } from "@/components/email/EmailProviderDialog";
 
@@ -40,6 +42,8 @@ const PROVIDERS = [
 export default function Email() {
   const companyId = useActiveCompanyId();
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [accounts, setAccounts] = useState<EmailAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogProvider, setDialogProvider] = useState<string | null>(null);
@@ -65,12 +69,29 @@ export default function Email() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId, user?.id]);
 
+  // Handle OAuth callback
+  useEffect(() => {
+    const connected = searchParams.get("connected");
+    const error = searchParams.get("error");
+    if (connected) {
+      toast.success("Conta Gmail conectada!", { description: "Sincronizando suas mensagens..." });
+      setSearchParams({});
+      setTimeout(() => navigate(`/email/${connected}`), 800);
+    } else if (error) {
+      toast.error("Erro ao conectar", { description: decodeURIComponent(error) });
+      setSearchParams({});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   const handleDisconnect = async (id: string) => {
     if (!confirm("Desconectar essa conta de e-mail?")) return;
     const { error } = await supabase.from("email_accounts" as any).delete().eq("id", id);
     if (error) toast.error("Erro ao desconectar", { description: error.message });
     else toast.success("Conta desconectada");
   };
+
+  const handleOpen = (id: string) => navigate(`/email/${id}`);
 
   const hasAccounts = accounts.length > 0;
 
@@ -150,6 +171,16 @@ export default function Email() {
                               : "Desconectado"}
                       </div>
                     </div>
+                    {acc.status === "connected" && acc.provider === "gmail" && (
+                      <button
+                        onClick={() => handleOpen(acc.id)}
+                        className="h-8 px-3 rounded-lg inline-flex items-center gap-1.5 text-[12px] font-semibold text-white bg-emerald-500 hover:bg-emerald-600 transition"
+                        title="Abrir caixa de entrada"
+                      >
+                        <Inbox className="w-3.5 h-3.5" />
+                        Abrir
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDisconnect(acc.id)}
                       className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10 transition"

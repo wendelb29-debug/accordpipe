@@ -64,6 +64,7 @@ const TrialExpired = lazy(() => import("./pages/TrialExpired"));
 const AccordPulse = lazy(() => import("./pages/AccordPulse"));
 const Collabs = lazy(() => import("./pages/Collabs"));
 const Email = lazy(() => import("./pages/Email"));
+const EmailInbox = lazy(() => import("./pages/EmailInbox"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -329,6 +330,16 @@ const App = () => (
                 <ProtectedRoute allowedRoles={["admin", "operador", "ceo", "administrativo", "comercial"]}>
                   <AppLayout>
                     <Email />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/email/:accountId"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "operador", "ceo", "administrativo", "comercial"]}>
+                  <AppLayout>
+                    <EmailInbox />
                   </AppLayout>
                 </ProtectedRoute>
               }
