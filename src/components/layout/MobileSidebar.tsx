@@ -6,6 +6,9 @@ import {
   Users, LogOut, MessageSquare, CalendarCheck, Rocket,
   ClipboardList, Trash2, Menu, Settings, ChevronDown, TrendingUp,
   Globe, Check, Crown, GraduationCap,
+  // novos
+  Zap, Headset, MessagesSquare, UsersRound, CircleDollarSign,
+  Files, ChartColumn, ArchiveX, Settings2, Languages,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -26,21 +29,21 @@ import {
 const navigation = [
   { nameKey: "nav.feed", href: "/home", icon: Newspaper, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
   { nameKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
-  { nameKey: "nav.accordSales", href: "/atendimento", icon: MessageSquare, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
+  { nameKey: "nav.accordSales", href: "/atendimento", icon: Headset, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
   { nameKey: "nav.forms", href: "/formularios", icon: ClipboardList, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
   { nameKey: "nav.activities", href: "/atividades", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
-  { nameKey: "nav.fintech", href: "/financeiro", icon: Receipt, roles: ["admin", "ceo", "financeiro"] },
-  { nameKey: "nav.documents", href: "/documentos", icon: FileText, roles: ["admin", "ceo", "administrativo", "financeiro"] },
-  { nameKey: "nav.reports", href: "/relatorios", icon: BarChart3, roles: ["admin", "leitura", "ceo", "administrativo", "financeiro"] },
-  { nameKey: "nav.clientBase", href: "/cadastrados", icon: Users, roles: ["admin", "ceo", "administrativo"] },
+  { nameKey: "nav.fintech", href: "/financeiro", icon: CircleDollarSign, roles: ["admin", "ceo", "financeiro"] },
+  { nameKey: "nav.documents", href: "/documentos", icon: Files, roles: ["admin", "ceo", "administrativo", "financeiro"] },
+  { nameKey: "nav.reports", href: "/relatorios", icon: ChartColumn, roles: ["admin", "leitura", "ceo", "administrativo", "financeiro"] },
+  { nameKey: "nav.clientBase", href: "/cadastrados", icon: UsersRound, roles: ["admin", "ceo", "administrativo"] },
   { nameKey: "nav.performance", href: "/performance", icon: TrendingUp, roles: ["admin", "ceo", "operador", "comercial"] },
   
   { nameKey: "nav.academy", href: "/academy", icon: GraduationCap, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
-  { nameKey: "nav.discard", href: "/descarte", icon: Trash2, roles: ["admin", "ceo"] },
+  { nameKey: "nav.discard", href: "/descarte", icon: ArchiveX, roles: ["admin", "ceo"] },
 ];
 
 const configNavigation = [
-  { nameKey: "nav.users", href: "/configuracoes/usuarios", icon: Users, roles: ["admin", "ceo", "administrativo"] },
+  { nameKey: "nav.users", href: "/configuracoes/usuarios", icon: UsersRound, roles: ["admin", "ceo", "administrativo"] },
   { nameKey: "nav.tenantManagement", href: "/gestao-tenants", icon: Crown, roles: ["ceo", "master"], tenantAdminOnly: true },
 ];
 
@@ -154,7 +157,7 @@ export function MobileSidebar() {
               )}
               style={location.pathname === "/accord-stack" ? { background: 'linear-gradient(135deg, #7A3FF2, #D94FD5)' } : undefined}
             >
-              <Rocket className="h-3.5 w-3.5" />
+              <Zap className="h-3.5 w-3.5" />
               ACCORD Stack
             </Link>
           </div>
@@ -188,7 +191,7 @@ export function MobileSidebar() {
                 onClick={() => setConfigOpen(v => !v)}
                 className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-sidebar-foreground/65 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors text-xs font-semibold"
               >
-                <Settings className="h-4 w-4" />
+                <Settings2 className="h-4 w-4" />
                 <span className="flex-1 text-left">{t("nav.settings")}</span>
                 <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", configOpen && "rotate-180")} />
               </button>
@@ -218,7 +221,7 @@ export function MobileSidebar() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-sidebar-foreground/65 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors text-xs font-semibold">
-                  <Globe className="h-4 w-4" />
+                  <Languages className="h-4 w-4" />
                   <span className="flex-1 text-left">{t("common.language") || "Idioma"}</span>
                   <span className="text-[10px] text-sidebar-foreground/50">{currentLangLabel}</span>
                 </button>

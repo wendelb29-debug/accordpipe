@@ -32,6 +32,17 @@ import {
   GraduationCap,
   Flame,
   ShieldCheck,
+  // novos
+  Zap,
+  Headset,
+  MessagesSquare,
+  UsersRound,
+  CircleDollarSign,
+  Files,
+  ChartColumn,
+  ArchiveX,
+  Settings2,
+  Languages,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { prefetchRoute } from "@/lib/routePrefetch";
@@ -55,19 +66,19 @@ const navigationSections = [
     items: [
       { nameKey: "nav.feed", href: "/home", icon: Newspaper, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
       { nameKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
-      { nameKey: "nav.accordSales", href: "/atendimento", icon: MessageSquare, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
+      { nameKey: "nav.accordSales", href: "/atendimento", icon: Headset, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
       { nameKey: "nav.forms", href: "/formularios", icon: ClipboardList, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
       { nameKey: "nav.activities", href: "/atividades", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
-      { nameKey: "Collabs", href: "/collabs", icon: MessageSquare, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
+      { nameKey: "Collabs", href: "/collabs", icon: MessagesSquare, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
     ],
   },
   {
     label: "Gestão",
     items: [
-      { nameKey: "nav.clientBase", href: "/cadastrados", icon: Users, roles: ["admin", "ceo", "administrativo"] },
-      { nameKey: "nav.fintech", href: "/financeiro", icon: Receipt, roles: ["admin", "ceo", "financeiro"] },
-      { nameKey: "nav.documents", href: "/documentos", icon: FileText, roles: ["admin", "ceo", "administrativo", "financeiro"] },
-      { nameKey: "nav.reports", href: "/relatorios", icon: BarChart3, roles: ["admin", "leitura", "ceo", "administrativo", "financeiro"] },
+      { nameKey: "nav.clientBase", href: "/cadastrados", icon: UsersRound, roles: ["admin", "ceo", "administrativo"] },
+      { nameKey: "nav.fintech", href: "/financeiro", icon: CircleDollarSign, roles: ["admin", "ceo", "financeiro"] },
+      { nameKey: "nav.documents", href: "/documentos", icon: Files, roles: ["admin", "ceo", "administrativo", "financeiro"] },
+      { nameKey: "nav.reports", href: "/relatorios", icon: ChartColumn, roles: ["admin", "leitura", "ceo", "administrativo", "financeiro"] },
     ],
   },
   {
@@ -81,7 +92,7 @@ const navigationSections = [
   {
     label: "Outros",
     items: [
-      { nameKey: "nav.discard", href: "/descarte", icon: Trash2, roles: ["admin", "ceo"] },
+      { nameKey: "nav.discard", href: "/descarte", icon: ArchiveX, roles: ["admin", "ceo"] },
     ],
   },
 ];
@@ -89,7 +100,7 @@ const navigationSections = [
 const navigation = navigationSections.flatMap((s) => s.items);
 
 const configNavigation = [
-  { nameKey: "nav.users", href: "/configuracoes/usuarios", icon: Users, roles: ["admin", "ceo", "administrativo"] },
+  { nameKey: "nav.users", href: "/configuracoes/usuarios", icon: UsersRound, roles: ["admin", "ceo", "administrativo"] },
   
 ];
 
@@ -323,7 +334,7 @@ export function Sidebar() {
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <Link to="/accord-stack" className="flex w-full h-9 items-center justify-center rounded-xl text-sidebar-primary hover:bg-sidebar-accent transition-colors">
-                <Rocket className="h-4 w-4" />
+                <Zap className="h-4 w-4" />
               </Link>
             </TooltipTrigger>
             <TooltipContent side="right" className="font-medium text-xs">ACCORD Stack</TooltipContent>
@@ -337,7 +348,7 @@ export function Sidebar() {
             )}
             style={location.pathname === "/accord-stack" ? { background: 'linear-gradient(135deg, #7A3FF2, #D94FD5)' } : undefined}
           >
-            <Rocket className="h-3.5 w-3.5" />
+            <Zap className="h-3.5 w-3.5" />
             <span className="transition-opacity duration-300">ACCORD Stack</span>
           </Link>
         )}
@@ -381,7 +392,7 @@ export function Sidebar() {
                     onClick={() => setConfigOpen(!configOpen)}
                     className="flex justify-center w-full p-2 rounded-lg text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors"
                   >
-                    <Settings className="h-4 w-4" />
+                    <Settings2 className="h-4 w-4" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">{t("nav.settings")}</TooltipContent>
@@ -391,7 +402,7 @@ export function Sidebar() {
                 onClick={() => setConfigOpen(!configOpen)}
                 className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors text-xs font-semibold"
               >
-                <Settings className="h-4 w-4" />
+                <Settings2 className="h-4 w-4" />
                 <span className="flex-1 text-left">{t("nav.settings")}</span>
                 <ChevronDown className={cn("h-3 w-3 transition-transform", configOpen && "rotate-180")} />
               </button>
@@ -422,7 +433,7 @@ export function Sidebar() {
               <TooltipTrigger asChild>
                 <DropdownMenuTrigger asChild>
                   <button className="flex justify-center w-full p-2 rounded-lg text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors mb-1">
-                    <Globe className="h-4 w-4" />
+                    <Languages className="h-4 w-4" />
                   </button>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
@@ -446,7 +457,7 @@ export function Sidebar() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-all duration-200 text-[13px] font-medium mb-1">
-                <Globe className="h-[18px] w-[18px] shrink-0" />
+                <Languages className="h-[18px] w-[18px] shrink-0" />
                 <span className="flex-1 text-left truncate">
                   {LANGUAGES.find(l => l.code === currentLang)?.flag}{" "}
                   {LANGUAGES.find(l => l.code === currentLang)?.label}
