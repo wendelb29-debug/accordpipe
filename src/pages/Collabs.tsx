@@ -267,6 +267,9 @@ export default function Collabs() {
   const [membersOpen, setMembersOpen] = useState(false);
   const [chatSearchOpen, setChatSearchOpen] = useState(false);
   const [chatSearchTerm, setChatSearchTerm] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [openingNotes, setOpeningNotes] = useState(false);
+  const [emptyHintDismissed, setEmptyHintDismissed] = useState<Set<string>>(new Set());
   const [openingDirectFor, setOpeningDirectFor] = useState<string | null>(null);
   const [chatView, setChatView] = useState<"chat" | "files" | "favorites" | "links">("chat");
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
