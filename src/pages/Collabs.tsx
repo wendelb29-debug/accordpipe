@@ -258,6 +258,8 @@ export default function Collabs() {
 
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
+  const [convFilter, setConvFilter] = useState<"all" | "unread">("all");
+  const [userLastRead, setUserLastRead] = useState<Map<string, string | null>>(new Map());
   const [infoOpen, setInfoOpen] = useState(true);
   const [membersOpen, setMembersOpen] = useState(false);
   const [openingDirectFor, setOpeningDirectFor] = useState<string | null>(null);
