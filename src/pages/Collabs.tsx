@@ -678,6 +678,9 @@ export default function Collabs() {
   const openCreate = (kind: ConvKind) => {
     setCreateKind(kind);
     setNewName("");
+    setNewDescription("");
+    setAutoDelete(false);
+    setShowAccessPerms(false);
     setSelectedMemberIds([]);
     setMemberSearch("");
     setCreateOpen(true);
