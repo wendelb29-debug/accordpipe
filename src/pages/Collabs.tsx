@@ -45,6 +45,10 @@ import {
   RefreshCw,
   Pencil,
   Bookmark,
+  ChevronRight,
+  Lock,
+
+
 
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -299,6 +303,9 @@ export default function Collabs() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createKind, setCreateKind] = useState<ConvKind>("group");
   const [newName, setNewName] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [autoDelete, setAutoDelete] = useState(false);
+  const [showAccessPerms, setShowAccessPerms] = useState(false);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [memberSearch, setMemberSearch] = useState("");
   const [creating, setCreating] = useState(false);
@@ -675,6 +682,9 @@ export default function Collabs() {
   const openCreate = (kind: ConvKind) => {
     setCreateKind(kind);
     setNewName("");
+    setNewDescription("");
+    setAutoDelete(false);
+    setShowAccessPerms(false);
     setSelectedMemberIds([]);
     setMemberSearch("");
     setCreateOpen(true);
@@ -717,6 +727,16 @@ export default function Collabs() {
         is_system: true,
         attachments: [],
       });
+      if (createKind === "collab" && newDescription.trim()) {
+        await supabase.from("collab_messages").insert({
+          conversation_id: conv.id,
+          servidor_id: companyId,
+          sender_id: user.id,
+          content: `📌 Sobre a collab: ${newDescription.trim()}`,
+          is_system: true,
+          attachments: [],
+        });
+      }
       setCreateOpen(false);
       setActiveId(conv.id);
       toast({ title: "Conversa criada", description: name });
@@ -2405,71 +2425,206 @@ export default function Collabs() {
 
       {/* CREATE DIALOG */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl border-0 shadow-2xl">
-          <div className="px-6 pt-6 pb-5" style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.08) 0%, rgba(99,102,241,0.04) 100%)" }}>
-            <div className="flex items-center gap-3 mb-1">
-              <div className="h-11 w-11 rounded-2xl flex items-center justify-center shadow-sm" style={{ background: `${KIND_META[createKind].color}18`, color: KIND_META[createKind].color }}>
-                {(() => { const I = KIND_META[createKind].Icon; return <I className="h-5 w-5" />; })()}
+        <DialogContent className="max-w-lg p-0 overflow-hidden rounded-2xl border-0 shadow-2xl">
+          {createKind === "collab" ? (
+            <>
+              {/* Header: hex icon + editable name */}
+              <div className="px-6 pt-6 pb-4 bg-white">
+                <div className="flex items-start gap-4">
+                  <div className="relative shrink-0">
+                    <div
+                      className="h-14 w-14 flex items-center justify-center text-emerald-600"
+                      style={{ clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)", background: "#10b98118" }}
+                    >
+                      <Handshake className="h-6 w-6" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <input
+                      autoFocus
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      placeholder="Nome da collab"
+                      className="w-full bg-transparent border-0 border-b border-transparent focus:border-emerald-400 outline-none text-[22px] font-medium text-gray-400 focus:text-gray-900 placeholder:text-gray-300 pb-1"
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <DialogTitle className="text-[15px] font-semibold text-gray-900">Nova conversa · {KIND_META[createKind].label}</DialogTitle>
-                <p className="text-[12px] text-gray-500 mt-0.5">Convide membros do tenant para começar a conversar.</p>
-              </div>
-            </div>
-          </div>
 
-          <div className="px-6 py-5 space-y-4 bg-white">
-            <div>
-              <label className="text-[12px] font-medium text-gray-700 mb-1.5 block">Nome</label>
-              <input
-                autoFocus
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder={createKind === "channel" ? "ex: anuncios-gerais" : "ex: Time de Produto"}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-              />
-            </div>
+              {/* Green info banner */}
+              <div className="mx-6 mb-4 rounded-xl p-4 flex gap-3" style={{ background: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)" }}>
+                <div className="h-10 w-10 rounded-full bg-white/70 flex items-center justify-center shrink-0">
+                  <Handshake className="h-5 w-5 text-emerald-600" />
+                </div>
+                <div className="text-[12px] text-emerald-900 leading-relaxed">
+                  <span className="font-semibold text-emerald-700">Collab</span> é um espaço de trabalho em conjunto para colaborar com convidados externos e clientes.
+                  <br />
+                  Crie uma collab para obter resultados espetaculares. Tudo o que você precisa: bate-papo, chamadas, arquivos, tarefas e calendário.
+                </div>
+              </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[12px] font-medium text-gray-700">Participantes</label>
-                <span className="text-[11px] text-gray-500">{selectedMemberIds.length} selecionado(s)</span>
+              {/* Description */}
+              <div className="px-6 pb-3">
+                <label className="text-[12px] font-medium text-gray-600 mb-1.5 block">Descrição da collab</label>
+                <textarea
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  placeholder="Conte aos outros usuários sobre o que é essa collab."
+                  rows={3}
+                  className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm outline-none resize-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                />
               </div>
-              <div className="relative mb-2">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-                <input value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} placeholder="Buscar usuários do tenant..." className="w-full rounded-xl bg-gray-50 border border-transparent pl-9 pr-3 py-2 text-sm outline-none focus:border-violet-300 focus:bg-white" />
+
+              {/* Access permissions */}
+              <div className="px-6 pb-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAccessPerms((v) => !v)}
+                  className="w-full flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50/60 hover:bg-gray-100/60 px-4 py-3 transition-colors"
+                >
+                  <span className="flex items-center gap-2.5 text-[13px] text-gray-700">
+                    <Lock className="h-4 w-4 text-gray-500" />
+                    Permissões de acesso
+                  </span>
+                  <ChevronRight className={cn("h-4 w-4 text-gray-400 transition-transform", showAccessPerms && "rotate-90")} />
+                </button>
+
+                {showAccessPerms && (
+                  <div className="mt-3 rounded-xl border border-gray-100 bg-white">
+                    <div className="px-3 py-2 border-b border-gray-100">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                        <input
+                          value={memberSearch}
+                          onChange={(e) => setMemberSearch(e.target.value)}
+                          placeholder="Buscar usuários do tenant..."
+                          className="w-full rounded-lg bg-gray-50 border border-transparent pl-9 pr-3 py-2 text-sm outline-none focus:border-emerald-300 focus:bg-white"
+                        />
+                      </div>
+                    </div>
+                    <div className="max-h-[200px] overflow-y-auto divide-y divide-gray-50">
+                      {tenantUsers.filter((u) => u.id !== user?.id && u.name.toLowerCase().includes(memberSearch.toLowerCase())).map((u) => {
+                        const checked = selectedMemberIds.includes(u.id);
+                        return (
+                          <button key={u.id} type="button" onClick={() => toggleMemberSel(u.id)} className={cn("w-full flex items-center gap-3 px-3 py-2 text-left transition-colors", checked ? "bg-emerald-50/70" : "hover:bg-gray-50")}>
+                            {u.avatar_url ? (
+                              <img src={u.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover" />
+                            ) : (
+                              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 text-white text-[11px] font-medium flex items-center justify-center">{initialsOf(u.name)}</div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[13px] text-gray-900 truncate">{u.name}</div>
+                              <div className="text-[11px] text-gray-500 truncate">@{u.handle}</div>
+                            </div>
+                            <div className={cn("h-4 w-4 rounded border flex items-center justify-center", checked ? "bg-emerald-600 border-emerald-600" : "border-gray-300")}>
+                              {checked && <span className="text-white text-[10px] leading-none">✓</span>}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="max-h-[220px] overflow-y-auto rounded-xl border border-gray-100 divide-y divide-gray-50">
-                {tenantUsers.length === 0 && <div className="text-center text-[12px] text-gray-400 py-6">Nenhum usuário encontrado.</div>}
-                {tenantUsers.filter((u) => u.id !== user?.id && u.name.toLowerCase().includes(memberSearch.toLowerCase())).map((u) => {
-                  const checked = selectedMemberIds.includes(u.id);
-                  return (
-                    <button key={u.id} type="button" onClick={() => toggleMemberSel(u.id)} className={cn("w-full flex items-center gap-3 px-3 py-2 text-left transition-colors", checked ? "bg-violet-50/70" : "hover:bg-gray-50")}>
-                      {u.avatar_url ? (
-                        <img src={u.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover" />
-                      ) : (
-                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 text-white text-[11px] font-medium flex items-center justify-center">{initialsOf(u.name)}</div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[13px] text-gray-900 truncate">{u.name}</div>
-                        <div className="text-[11px] text-gray-500 truncate">@{u.handle}</div>
-                      </div>
-                      <div className={cn("h-4 w-4 rounded border flex items-center justify-center", checked ? "bg-violet-600 border-violet-600" : "border-gray-300")}>
-                        {checked && <span className="text-white text-[10px] leading-none">✓</span>}
-                      </div>
+
+              {/* Auto-delete toggle */}
+              <div className="px-6 pb-5">
+                <div className="flex items-center justify-between rounded-xl px-1 py-2">
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setAutoDelete((v) => !v)}
+                      className={cn("relative h-5 w-9 rounded-full transition-colors", autoDelete ? "bg-emerald-500" : "bg-gray-300")}
+                    >
+                      <span className={cn("absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all", autoDelete ? "left-[18px]" : "left-0.5")} />
                     </button>
-                  );
-                })}
+                    <span className="text-[13px] text-gray-700">Excluir mensagens automaticamente</span>
+                  </div>
+                  <span className="text-[11px] text-gray-400">Nunca</span>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2">
-            <button onClick={() => setCreateOpen(false)} className="px-3.5 py-2 rounded-lg text-[13px] text-gray-600 hover:bg-gray-100">Cancelar</button>
-            <button onClick={submitCreate} disabled={!newName.trim() || creating} className="px-4 py-2 rounded-lg text-[13px] font-medium text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)" }}>
-              {creating ? "Criando..." : "Criar"}
-            </button>
-          </div>
+              {/* Footer */}
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2">
+                <button onClick={() => setCreateOpen(false)} className="px-4 py-2 rounded-lg text-[13px] font-medium text-gray-600 hover:bg-gray-100 uppercase tracking-wide">Cancelar</button>
+                <button
+                  onClick={submitCreate}
+                  disabled={!newName.trim() || creating}
+                  className="px-5 py-2 rounded-lg text-[13px] font-semibold text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wide"
+                  style={{ background: "linear-gradient(135deg, #10b981 0%, #059669 100%)" }}
+                >
+                  {creating ? "Criando..." : "Criar collab"}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="px-6 pt-6 pb-5" style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.08) 0%, rgba(99,102,241,0.04) 100%)" }}>
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="h-11 w-11 rounded-2xl flex items-center justify-center shadow-sm" style={{ background: `${KIND_META[createKind].color}18`, color: KIND_META[createKind].color }}>
+                    {(() => { const I = KIND_META[createKind].Icon; return <I className="h-5 w-5" />; })()}
+                  </div>
+                  <div>
+                    <DialogTitle className="text-[15px] font-semibold text-gray-900">Nova conversa · {KIND_META[createKind].label}</DialogTitle>
+                    <p className="text-[12px] text-gray-500 mt-0.5">Convide membros do tenant para começar a conversar.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-6 py-5 space-y-4 bg-white">
+                <div>
+                  <label className="text-[12px] font-medium text-gray-700 mb-1.5 block">Nome</label>
+                  <input
+                    autoFocus
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    placeholder={createKind === "channel" ? "ex: anuncios-gerais" : "ex: Time de Produto"}
+                    className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[12px] font-medium text-gray-700">Participantes</label>
+                    <span className="text-[11px] text-gray-500">{selectedMemberIds.length} selecionado(s)</span>
+                  </div>
+                  <div className="relative mb-2">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                    <input value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} placeholder="Buscar usuários do tenant..." className="w-full rounded-xl bg-gray-50 border border-transparent pl-9 pr-3 py-2 text-sm outline-none focus:border-violet-300 focus:bg-white" />
+                  </div>
+                  <div className="max-h-[220px] overflow-y-auto rounded-xl border border-gray-100 divide-y divide-gray-50">
+                    {tenantUsers.length === 0 && <div className="text-center text-[12px] text-gray-400 py-6">Nenhum usuário encontrado.</div>}
+                    {tenantUsers.filter((u) => u.id !== user?.id && u.name.toLowerCase().includes(memberSearch.toLowerCase())).map((u) => {
+                      const checked = selectedMemberIds.includes(u.id);
+                      return (
+                        <button key={u.id} type="button" onClick={() => toggleMemberSel(u.id)} className={cn("w-full flex items-center gap-3 px-3 py-2 text-left transition-colors", checked ? "bg-violet-50/70" : "hover:bg-gray-50")}>
+                          {u.avatar_url ? (
+                            <img src={u.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover" />
+                          ) : (
+                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 text-white text-[11px] font-medium flex items-center justify-center">{initialsOf(u.name)}</div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[13px] text-gray-900 truncate">{u.name}</div>
+                            <div className="text-[11px] text-gray-500 truncate">@{u.handle}</div>
+                          </div>
+                          <div className={cn("h-4 w-4 rounded border flex items-center justify-center", checked ? "bg-violet-600 border-violet-600" : "border-gray-300")}>
+                            {checked && <span className="text-white text-[10px] leading-none">✓</span>}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2">
+                <button onClick={() => setCreateOpen(false)} className="px-3.5 py-2 rounded-lg text-[13px] text-gray-600 hover:bg-gray-100">Cancelar</button>
+                <button onClick={submitCreate} disabled={!newName.trim() || creating} className="px-4 py-2 rounded-lg text-[13px] font-medium text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)" }}>
+                  {creating ? "Criando..." : "Criar"}
+                </button>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
