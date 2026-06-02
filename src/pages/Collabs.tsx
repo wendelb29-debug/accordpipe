@@ -265,6 +265,8 @@ export default function Collabs() {
   const [userLastRead, setUserLastRead] = useState<Map<string, string | null>>(new Map());
   const [infoOpen, setInfoOpen] = useState(true);
   const [membersOpen, setMembersOpen] = useState(false);
+  const [chatSearchOpen, setChatSearchOpen] = useState(false);
+  const [chatSearchTerm, setChatSearchTerm] = useState("");
   const [openingDirectFor, setOpeningDirectFor] = useState<string | null>(null);
   const [chatView, setChatView] = useState<"chat" | "files" | "favorites" | "links">("chat");
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
@@ -767,6 +769,73 @@ export default function Collabs() {
     }
   };
 
+
+  /* ────── Conversation actions: pin / edit / hide / delete ────── */
+  const togglePinConversation = async () => {
+    if (!active) return;
+    const next = !active.is_pinned;
+    const { error } = await supabase
+      .from("collab_conversations")
+      .update({ is_pinned: next })
+      .eq("id", active.id);
+    if (error) {
+      sonnerToast.error("Não foi possível " + (next ? "fixar" : "desafixar"), { description: error.message });
+      return;
+    }
+    setConversations((prev) => prev.map((c) => c.id === active.id ? { ...c, is_pinned: next } : c));
+    sonnerToast.success(next ? "Conversa fixada" : "Conversa desafixada");
+  };
+
+  const renameConversation = async () => {
+    if (!active) return;
+    const newName = window.prompt("Novo nome da conversa", active.name);
+    if (!newName || !newName.trim() || newName.trim() === active.name) return;
+    const { error } = await supabase
+      .from("collab_conversations")
+      .update({ name: newName.trim() })
+      .eq("id", active.id);
+    if (error) {
+      sonnerToast.error("Erro ao renomear", { description: error.message });
+      return;
+    }
+    setConversations((prev) => prev.map((c) => c.id === active.id ? { ...c, name: newName.trim() } : c));
+    sonnerToast.success("Conversa renomeada");
+  };
+
+  const hideConversation = async () => {
+    if (!active || !user) return;
+    const { error } = await supabase
+      .from("collab_members")
+      .update({ is_hidden: true } as any)
+      .eq("conversation_id", active.id)
+      .eq("user_id", user.id);
+    if (error) {
+      // Fallback: just remove locally if column doesn't exist
+      setConversations((prev) => prev.filter((c) => c.id !== active.id));
+      setActiveId(null);
+      sonnerToast.success("Conversa ocultada");
+      return;
+    }
+    setConversations((prev) => prev.filter((c) => c.id !== active.id));
+    setActiveId(null);
+    sonnerToast.success("Conversa ocultada");
+  };
+
+  const deleteConversation = async () => {
+    if (!active) return;
+    if (!window.confirm(`Excluir a conversa "${active.name}"? Esta ação não pode ser desfeita.`)) return;
+    const { error } = await supabase
+      .from("collab_conversations")
+      .delete()
+      .eq("id", active.id);
+    if (error) {
+      sonnerToast.error("Erro ao excluir", { description: error.message });
+      return;
+    }
+    setConversations((prev) => prev.filter((c) => c.id !== active.id));
+    setActiveId(null);
+    sonnerToast.success("Conversa excluída");
+  };
 
   const addExistingMember = async (userId: string) => {
     if (!activeId) return;
@@ -1350,6 +1419,18 @@ export default function Collabs() {
                 </button>
               </div>
               <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setChatSearchOpen((v) => !v)}
+                  className={cn(
+                    "w-9 h-9 rounded-xl flex items-center justify-center transition-colors",
+                    chatSearchOpen
+                      ? "bg-violet-100 text-violet-600 hover:bg-violet-200"
+                      : "text-gray-500 hover:bg-violet-50 hover:text-violet-600",
+                  )}
+                  title="Pesquisar na conversa"
+                >
+                  <Search className="h-[17px] w-[17px]" />
+                </button>
                 <button onClick={() => { setInviteTab("colab"); setInviteOpen(true); }} className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors" title="Adicionar membros">
                   <UserPlus className="h-[17px] w-[17px]" />
                 </button>
@@ -1921,6 +2002,42 @@ export default function Collabs() {
                         Conversar
                       </button>
                     )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          className="w-7 h-7 rounded-md flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition shrink-0"
+                          title="Mais opções"
+                          aria-label="Mais opções"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setMembersOpen(false);
+                            navigate(`/colaboradores/${mem.user_id}`);
+                          }}
+                        >
+                          Visualizar perfil
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setMembersOpen(false);
+                            setCalendarView("agenda");
+                            setCalendarOpen(true);
+                          }}
+                        >
+                          {isMe ? "Meu calendário" : "Ver calendário"}
+                        </DropdownMenuItem>
+                        {!isMe && (
+                          <DropdownMenuItem onClick={() => openDirectWith(mem.user_id)}>
+                            Enviar mensagem
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 );
               })
@@ -1928,6 +2045,99 @@ export default function Collabs() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* CHAT SEARCH PANEL */}
+      <Sheet open={chatSearchOpen} onOpenChange={(o) => { setChatSearchOpen(o); if (!o) setChatSearchTerm(""); }}>
+        <SheetContent side="right" className="w-[360px] sm:w-[380px] p-0 flex flex-col bg-white">
+          <SheetHeader className="px-4 py-3 border-b border-gray-200 shrink-0">
+            <SheetTitle className="sr-only">Pesquisar na conversa</SheetTitle>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+              <input
+                autoFocus
+                value={chatSearchTerm}
+                onChange={(e) => setChatSearchTerm(e.target.value)}
+                placeholder="Encontrar no bate-papo"
+                className="w-full rounded-xl bg-gray-50 border border-transparent pl-9 pr-9 py-2 text-sm outline-none focus:border-violet-300 focus:bg-white"
+              />
+              {chatSearchTerm && (
+                <button
+                  onClick={() => setChatSearchTerm("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-200 hover:text-gray-700"
+                  aria-label="Limpar"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto">
+            {chatSearchTerm.trim().length === 0 ? (
+              <div className="flex flex-col items-center justify-center text-center h-full py-16 px-6 text-gray-400">
+                <Search className="w-7 h-7 mb-3 text-gray-300" />
+                <div className="text-[12.5px]">Esta visualização mostrará mensagens encontradas.</div>
+              </div>
+            ) : (() => {
+              const term = chatSearchTerm.toLowerCase();
+              const matches = messages.filter((m) => (m.content || "").toLowerCase().includes(term));
+              if (matches.length === 0) {
+                return (
+                  <div className="flex flex-col items-center justify-center text-center h-full py-16 px-6 text-gray-400">
+                    <Search className="w-7 h-7 mb-3 text-gray-300" />
+                    <div className="text-[12.5px]">Nenhuma mensagem encontrada para "{chatSearchTerm}".</div>
+                  </div>
+                );
+              }
+              return (
+                <div className="divide-y divide-gray-100">
+                  {matches.map((m) => {
+                    const sender = userMap.get(m.sender_id);
+                    const senderName = sender?.name || "Usuário";
+                    const text = m.content || "";
+                    const idx = text.toLowerCase().indexOf(term);
+                    const before = idx >= 0 ? text.slice(Math.max(0, idx - 24), idx) : text.slice(0, 60);
+                    const match = idx >= 0 ? text.slice(idx, idx + chatSearchTerm.length) : "";
+                    const after = idx >= 0 ? text.slice(idx + chatSearchTerm.length, idx + chatSearchTerm.length + 80) : "";
+                    const date = new Date(m.created_at);
+                    const time = date.toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => {
+                          const el = document.querySelector(`[data-msg-id="${m.id}"]`);
+                          if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                        }}
+                        className="w-full text-left px-4 py-3 hover:bg-gray-50 transition"
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="text-[12px] font-semibold text-gray-800 truncate">{senderName}</div>
+                          <div className="text-[10.5px] text-gray-400 shrink-0 ml-2">{time}</div>
+                        </div>
+                        <div className="text-[12.5px] text-gray-600 leading-snug line-clamp-2">
+                          {idx >= 0 ? (
+                            <>
+                              {before && <span className="text-gray-400">…</span>}
+                              {before}
+                              <mark className="bg-yellow-200 text-gray-900 rounded px-0.5">{match}</mark>
+                              {after}
+                              {after && <span className="text-gray-400">…</span>}
+                            </>
+                          ) : (
+                            text.slice(0, 120)
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+
+
 
 
       {/* RIGHT PANEL — online by department */}
@@ -1984,6 +2194,13 @@ export default function Collabs() {
               onOpenFavorites={() => setChatView("favorites")}
               onOpenLinks={() => setChatView("links")}
               onOpenMedia={() => setChatView("files")}
+              isPinned={!!active.is_pinned}
+              canManage={!!user && active.created_by === user.id}
+              onTogglePin={togglePinConversation}
+              onEdit={renameConversation}
+              onAddParticipants={() => { setInviteTab("colab"); setInviteOpen(true); }}
+              onHide={hideConversation}
+              onDelete={deleteConversation}
             />
           ) : (
             <>

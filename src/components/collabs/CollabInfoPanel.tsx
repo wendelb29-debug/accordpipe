@@ -10,8 +10,21 @@ import {
   BookOpen,
   Camera,
   Loader2,
+  MoreHorizontal,
+  Pin,
+  PinOff,
+  Pencil,
+  EyeOff,
+  Trash2,
 } from "lucide-react";
 import { HexAvatar, hexGradientFor } from "./HexAvatar";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface CollabInfoPanelProps {
   collab: {
@@ -20,32 +33,28 @@ interface CollabInfoPanelProps {
     color?: string | null;
     avatar_url?: string | null;
   };
-  /** Callback do botão "X" (fechar painel). Se ausente, esconde o botão. */
   onClose?: () => void;
-  /** Callback do botão "+ Adicionar" (abrir invite). */
   onInvite?: () => void;
-  /** Callback ao trocar a foto do grupo. Recebe um File, deve retornar o novo url (ou null em erro). */
   onAvatarChange?: (file: File) => Promise<string | null>;
-  /** Se o usuário atual pode editar a foto do grupo. */
   canEditAvatar?: boolean;
-  /** Contadores opcionais. */
   counts?: {
     pinned?: number;
     links?: number;
     media?: number;
   };
-  /** Cliques nas linhas "Mensagens favoritas", "Todos os links" e "Arquivos e mídia". */
   onOpenFavorites?: () => void;
   onOpenLinks?: () => void;
   onOpenMedia?: () => void;
+  isPinned?: boolean;
+  onTogglePin?: () => void;
+  onEdit?: () => void;
+  onAddParticipants?: () => void;
+  onHide?: () => void;
+  onDelete?: () => void;
+  canManage?: boolean;
 }
 
-/**
- * CollabInfoPanel — painel lateral direito "Sobre collab" (estilo Bitrix).
- * Renderiza dentro do <aside> existente no Collabs.tsx, substituindo
- * o painel "Equipe online" enquanto houver uma collab ativa.
- */
-export function CollabInfoPanel({ collab, onClose, onInvite, onAvatarChange, canEditAvatar, counts, onOpenFavorites, onOpenLinks, onOpenMedia }: CollabInfoPanelProps) {
+export function CollabInfoPanel({ collab, onClose, onInvite, onAvatarChange, canEditAvatar, counts, onOpenFavorites, onOpenLinks, onOpenMedia, isPinned, onTogglePin, onEdit, onAddParticipants, onHide, onDelete, canManage }: CollabInfoPanelProps) {
   const [sound, setSound] = useState(true);
   const [autoDelete, setAutoDelete] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -77,15 +86,65 @@ export function CollabInfoPanel({ collab, onClose, onInvite, onAvatarChange, can
       {/* Header */}
       <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 shrink-0">
         <h3 className="text-[14px] font-semibold text-gray-900">Sobre collab</h3>
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-md flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition"
-            title="Fechar"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          {(onTogglePin || onEdit || onAddParticipants || onHide || onDelete) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="w-8 h-8 rounded-md flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition"
+                  title="Mais opções"
+                  aria-label="Mais opções"
+                >
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                {onTogglePin && (
+                  <DropdownMenuItem onClick={onTogglePin} className="gap-2">
+                    {isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+                    {isPinned ? "Desafixar" : "Fixar"}
+                  </DropdownMenuItem>
+                )}
+                {onEdit && canManage !== false && (
+                  <DropdownMenuItem onClick={onEdit} className="gap-2">
+                    <Pencil className="w-4 h-4" />
+                    Editar
+                  </DropdownMenuItem>
+                )}
+                {onAddParticipants && (
+                  <DropdownMenuItem onClick={onAddParticipants} className="gap-2">
+                    <UserPlus className="w-4 h-4" />
+                    Adicionar participantes
+                  </DropdownMenuItem>
+                )}
+                {onHide && (
+                  <DropdownMenuItem onClick={onHide} className="gap-2">
+                    <EyeOff className="w-4 h-4" />
+                    Ocultar
+                  </DropdownMenuItem>
+                )}
+                {onDelete && canManage !== false && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={onDelete} className="gap-2 text-red-600 focus:text-red-700 focus:bg-red-50">
+                      <Trash2 className="w-4 h-4" />
+                      Excluir
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-md flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition"
+              title="Fechar"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Conteúdo rolável */}
