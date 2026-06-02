@@ -49,6 +49,7 @@ import { CollabMessagesPanel } from "@/components/collabs/CollabMessagesPanel";
 import { PollByMessage } from "@/components/collabs/polls/PollCard";
 import { MessageActionsMenu } from "@/components/collabs/MessageActionsMenu";
 import { ForwardMessageDialog } from "@/components/collabs/ForwardMessageDialog";
+import { QuickTaskDialog } from "@/components/collabs/QuickTaskDialog";
 import { CreatePollDialog } from "@/components/collabs/polls/CreatePollDialog";
 import {
   DropdownMenu,
