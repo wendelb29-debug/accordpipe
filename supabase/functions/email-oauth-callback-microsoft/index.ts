@@ -45,7 +45,7 @@ serve(async (req) => {
       client_id: requireEnv("ID_CLIENTE_OAUTH_MICROSOFT", "MICROSOFT_OAUTH_CLIENT_ID"),
       client_secret: requireEnv("SEGREDO_CLIENTE_OAUTH_MICROSOFT", "MICROSOFT_OAUTH_CLIENT_SECRET"),
       code,
-      redirect_uri: requireEnv("URI_REDIRECIONADA_OAUTH_MICROSOFT", "MICROSOFT_OAUTH_REDIRECT_URI"),
+      redirect_uri: readEnv("MICROSOFT_OAUTH_REDIRECT_URI", "URI_REDIRECIONADA_OAUTH_MICROSOFT") || `${Deno.env.get("SUPABASE_URL")}/functions/v1/email-oauth-callback-microsoft`,
       grant_type: "authorization_code",
     }),
   });
