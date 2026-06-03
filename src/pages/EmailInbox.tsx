@@ -683,7 +683,7 @@ function ComposeDialog({ accountId, defaultTo, defaultSubject, threadId, onClose
     if (!to.trim() || !subject.trim()) { toast.error("Preencha destinatário e assunto"); return; }
     setSending(true);
     try {
-      const { error } = await supabase.functions.invoke("email-gmail-send", {
+      const { error } = await supabase.functions.invoke("email-send", {
         body: { accountId, to, cc, subject, text: body, html: body.replace(/\n/g, "<br>"), threadId },
       });
       if (error) throw error;
