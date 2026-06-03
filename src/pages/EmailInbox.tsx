@@ -7,7 +7,7 @@ import {
   RefreshCw, PenSquare,
   Inbox, Star, Send, Trash2, MailOpen, Mail,
   Paperclip,
-  Reply, Forward, Target, CheckSquare, MessagesSquare,
+  Reply, Forward, Target, CheckSquare, MessagesSquare, AlertCircle,
 } from "lucide-react";
 import DOMPurify from "dompurify";
 import {
