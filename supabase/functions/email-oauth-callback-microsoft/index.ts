@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireEnv } from "../_shared/env.ts";
 
 serve(async (req) => {
   const url = new URL(req.url);
@@ -28,10 +29,10 @@ serve(async (req) => {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: Deno.env.get("MICROSOFT_OAUTH_CLIENT_ID")!,
-      client_secret: Deno.env.get("MICROSOFT_OAUTH_CLIENT_SECRET")!,
+      client_id: requireEnv("MICROSOFT_OAUTH_CLIENT_ID", "ID_CLIENTE_OAUTH_MICROSOFT"),
+      client_secret: requireEnv("MICROSOFT_OAUTH_CLIENT_SECRET", "SEGREDO_CLIENTE_OAUTH_MICROSOFT"),
       code,
-      redirect_uri: Deno.env.get("MICROSOFT_OAUTH_REDIRECT_URI")!,
+      redirect_uri: requireEnv("MICROSOFT_OAUTH_REDIRECT_URI", "URI_REDIRECIONADA_OAUTH_MICROSOFT"),
       grant_type: "authorization_code",
     }),
   });

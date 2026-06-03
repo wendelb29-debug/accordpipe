@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireEnv } from "../_shared/env.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -110,8 +111,8 @@ serve(async (req) => {
   }));
 
   const authUrl = new URL("https://login.microsoftonline.com/common/oauth2/v2.0/authorize");
-  authUrl.searchParams.set("client_id", Deno.env.get("MICROSOFT_OAUTH_CLIENT_ID")!);
-  authUrl.searchParams.set("redirect_uri", Deno.env.get("MICROSOFT_OAUTH_REDIRECT_URI")!);
+  authUrl.searchParams.set("client_id", requireEnv("MICROSOFT_OAUTH_CLIENT_ID", "ID_CLIENTE_OAUTH_MICROSOFT"));
+  authUrl.searchParams.set("redirect_uri", requireEnv("MICROSOFT_OAUTH_REDIRECT_URI", "URI_REDIRECIONADA_OAUTH_MICROSOFT"));
   authUrl.searchParams.set("response_type", "code");
   authUrl.searchParams.set("response_mode", "query");
   authUrl.searchParams.set("scope", SCOPES);

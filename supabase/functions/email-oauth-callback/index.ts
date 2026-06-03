@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { requireEnv, readEnv } from "../_shared/env.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -35,10 +36,12 @@ Deno.serve(async (req) => {
     let providerUserId: string | null = null;
 
     if (isOutlook) {
-      const clientId = Deno.env.get("MICROSOFT_OAUTH_CLIENT_ID")!;
-      const clientSecret = Deno.env.get("MICROSOFT_OAUTH_CLIENT_SECRET")!;
-      const redirectUri = Deno.env.get("MICROSOFT_OAUTH_REDIRECT_URI")!;
-      const tenant = Deno.env.get("MICROSOFT_OAUTH_TENANT") || "common";
+      const clientId = requireEnv("MICROSOFT_OAUTH_CLIENT_ID", "ID_CLIENTE_OAUTH_MICROSOFT");
+      const clientSecret = requireEnv("MICROSOFT_OAUTH_CLIENT_SECRET", "SEGREDO_CLIENTE_OAUTH_MICROSOFT");
+      const redirectUri = requireEnv("MICROSOFT_OAUTH_REDIRECT_URI", "URI_REDIRECIONADA_OAUTH_MICROSOFT");
+      const tenant = readEnv("MICROSOFT_OAUTH_TENANT", "TENANT_OAUTH_MICROSOFT") || "common";
+
+      console.log("[oauth-callback] outlook env check:", { hasClientId: !!clientId, hasSecret: !!clientSecret, redirectUri, tenant });
 
       const tokenRes = await fetch(`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`, {
         method: "POST",
@@ -70,9 +73,11 @@ Deno.serve(async (req) => {
       providerUserId = prof.id || emailAddress;
       if (!emailAddress) return redirect(`${appBaseUrl}/email?error=no_email`);
     } else {
-      const clientId = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID")!;
-      const clientSecret = Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET")!;
-      const redirectUri = Deno.env.get("GOOGLE_OAUTH_REDIRECT_URI")!;
+      const clientId = requireEnv("GOOGLE_OAUTH_CLIENT_ID", "ID_CLIENTE_OAUTH_GOOGLE");
+      const clientSecret = requireEnv("GOOGLE_OAUTH_CLIENT_SECRET", "SEGREDO_CLIENTE_OAUTH_GOOGLE");
+      const redirectUri = requireEnv("GOOGLE_OAUTH_REDIRECT_URI", "URI_REDIRECIONADA_OAUTH_GOOGLE");
+
+      console.log("[oauth-callback] google env check:", { hasClientId: !!clientId, hasSecret: !!clientSecret, redirectUri });
 
       const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST",

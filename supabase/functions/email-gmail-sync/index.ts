@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { requireEnv } from "../_shared/env.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,8 +11,8 @@ async function refreshAccessToken(refreshToken: string) {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: Deno.env.get("GOOGLE_OAUTH_CLIENT_ID")!,
-      client_secret: Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET")!,
+      client_id: requireEnv("GOOGLE_OAUTH_CLIENT_ID", "ID_CLIENTE_OAUTH_GOOGLE"),
+      client_secret: requireEnv("GOOGLE_OAUTH_CLIENT_SECRET", "SEGREDO_CLIENTE_OAUTH_GOOGLE"),
       refresh_token: refreshToken,
       grant_type: "refresh_token",
     }),
