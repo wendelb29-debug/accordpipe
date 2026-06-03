@@ -158,9 +158,10 @@ export default function Email() {
                 return (
                   <div
                     key={acc.id}
-                    className="rounded-xl border border-border bg-card p-4 flex items-center gap-3 hover:shadow-md transition"
+                    className="rounded-xl border border-border bg-card p-4 flex items-center gap-3 hover:shadow-md transition cursor-pointer group/card"
+                    onClick={() => handleOpen(acc.id)}
                   >
-                    <div className="w-11 h-11 rounded-xl bg-muted/50 flex items-center justify-center shrink-0">
+                    <div className="w-11 h-11 rounded-xl bg-muted/50 flex items-center justify-center shrink-0 group-hover/card:scale-105 transition">
                       {prov?.Logo ? <prov.Logo className="w-7 h-7" /> : <Mail className="w-5 h-5 text-muted-foreground" />}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -182,23 +183,21 @@ export default function Email() {
                               : "Desconectado"}
                       </div>
                     </div>
-                    {acc.status === "connected" && (acc.provider === "gmail" || acc.provider === "outlook") && (
+                    <div className="flex items-center gap-1">
+                      {acc.status === "connected" && (acc.provider === "gmail" || acc.provider === "outlook") && (
+                        <div className="h-8 px-3 rounded-lg inline-flex items-center gap-1.5 text-[12px] font-semibold text-white bg-emerald-500 hover:bg-emerald-600 transition shadow-sm shadow-emerald-500/10">
+                          <Inbox className="w-3.5 h-3.5" />
+                          Abrir
+                        </div>
+                      )}
                       <button
-                        onClick={() => handleOpen(acc.id)}
-                        className="h-8 px-3 rounded-lg inline-flex items-center gap-1.5 text-[12px] font-semibold text-white bg-emerald-500 hover:bg-emerald-600 transition"
-                        title="Abrir caixa de entrada"
+                        onClick={(e) => { e.stopPropagation(); handleDisconnect(acc.id); }}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10 transition"
+                        title="Desconectar"
                       >
-                        <Inbox className="w-3.5 h-3.5" />
-                        Abrir
+                        <Trash2 className="w-4 h-4" />
                       </button>
-                    )}
-                    <button
-                      onClick={() => handleDisconnect(acc.id)}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10 transition"
-                      title="Desconectar"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    </div>
                   </div>
                 );
               })}
