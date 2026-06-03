@@ -29,14 +29,16 @@ const IMPORT_OPTIONS = [
 ];
 
 const OAUTH_PROVIDERS = new Set(["gmail", "outlook", "office365", "icloud", "yahoo", "aol", "exchange"]);
-const FULLY_IMPLEMENTED_OAUTH = new Set(["gmail"]);
+const FULLY_IMPLEMENTED_OAUTH = new Set(["gmail", "outlook"]);
 
 export function EmailProviderDialog({
   open, onOpenChange, providerId, providerName, companyId, userId, onSuccess,
 }: EmailProviderDialogProps) {
   const isOAuth = OAUTH_PROVIDERS.has(providerId);
   const isImap  = providerId === "imap_smtp";
+  const isRealOAuth = FULLY_IMPLEMENTED_OAUTH.has(providerId);
   const isGmailReal = providerId === "gmail";
+  const isOutlookReal = providerId === "outlook";
 
   const [displayName, setDisplayName] = useState("");
   const [emailAddress, setEmailAddress] = useState("");
