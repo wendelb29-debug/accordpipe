@@ -17,11 +17,20 @@ serve(async (req) => {
     return Response.redirect(`${appBase}/email?error=${encodeURIComponent(errorParam || "missing_code")}`, 302);
   }
 
-  let state: { account_id: string; user_id: string; servidor_id: string };
+  let state: any;
   try {
     state = JSON.parse(atob(stateRaw));
   } catch {
     return Response.redirect(`${appBase}/email?error=invalid_state`, 302);
+  }
+
+  const userId = state.user_id || state.userId;
+  const servidorId = state.servidor_id || state.servidorId;
+  let accountId = state.account_id;
+
+  if (!userId || !servidorId) {
+    console.error("[Callback] Missing userId or servidorId in state", state);
+    return Response.redirect(`${appBase}/email?error=invalid_state_params`, 302);
   }
 
   const admin = createClient(

@@ -64,9 +64,23 @@ Deno.serve(async (req) => {
     const clientId = isOutlook
       ? requireEnv("MICROSOFT_OAUTH_CLIENT_ID", "ID_CLIENTE_OAUTH_MICROSOFT")
       : requireEnv("GOOGLE_OAUTH_CLIENT_ID", "ID_CLIENTE_OAUTH_GOOGLE");
-    const redirectUri = isOutlook
-      ? requireEnv("MICROSOFT_OAUTH_REDIRECT_URI", "URI_REDIRECIONADA_OAUTH_MICROSOFT")
-      : requireEnv("GOOGLE_OAUTH_REDIRECT_URI", "URI_REDIRECIONADA_OAUTH_GOOGLE");
+
+    // Prefer generic callback, but fallback to secret if provided. 
+    // If the secret is the "callback-microsoft" one, we transition it to the generic one.
+    let redirectUri = isOutlook
+      ? readEnv("MICROSOFT_OAUTH_REDIRECT_URI", "URI_REDIRECIONADA_OAUTH_MICROSOFT")
+      : readEnv("GOOGLE_OAUTH_REDIRECT_URI", "URI_REDIRECIONADA_OAUTH_GOOGLE");
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const genericCallback = `${supabaseUrl}/functions/v1/email-oauth-callback`;
+
+    if (isOutlook && (!redirectUri || redirectUri.includes("callback-microsoft"))) {
+      redirectUri = genericCallback;
+      console.log(`[oauth-start] Using generic callback instead of specific: ${redirectUri}`);
+    } else if (!redirectUri) {
+      redirectUri = genericCallback;
+    }
+
     if (!clientId || !redirectUri) {
       return new Response(JSON.stringify({ error: "OAuth não configurado" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
