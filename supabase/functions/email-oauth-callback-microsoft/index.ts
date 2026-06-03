@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { requireEnv } from "../_shared/env.ts";
+import { requireEnv, readEnv } from "../_shared/env.ts";
 
 serve(async (req) => {
   const url = new URL(req.url);
