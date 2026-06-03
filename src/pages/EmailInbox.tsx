@@ -622,7 +622,7 @@ export default function EmailInbox() {
         )}
       </div>
 
-      {composeOpen && (
+      {composeOpen && account?.id && (
         <ComposeDialog
           accountId={account.id}
           defaultTo={composePrefill?.to || ""}
