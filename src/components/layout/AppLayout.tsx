@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useActivityReminders } from "@/hooks/useActivityReminders";
 import { useNotificationManager } from "@/hooks/useNotificationManager";
 import { AccordAIChat } from "@/components/accord-ai/AccordAIChat";
+import { useEmailNotifications } from "@/hooks/useEmailNotifications";
 import { TenantBillingBanner } from "./TenantBillingBanner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { profile } = useAuth();
   const hasAvatar = !!(profile as any)?.avatar_url;
   useActivityReminders();
+  useEmailNotifications();
   const { bannerVisible, dismissBanner } = useNotificationManager();
   const navigate = useNavigate();
   const location = useLocation();

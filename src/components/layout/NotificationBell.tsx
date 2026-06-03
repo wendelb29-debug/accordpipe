@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Bell, Check, CheckCheck, Clock, UserPlus, Megaphone, CalendarClock, Eye, EyeOff, CircleCheck, BellOff, BellRing, TestTube, CheckCircle2, XCircle } from "lucide-react";
+import { Bell, Check, CheckCheck, Clock, UserPlus, Megaphone, CalendarClock, Eye, EyeOff, CircleCheck, BellOff, BellRing, TestTube, CheckCircle2, XCircle, Mail } from "lucide-react";
 import { useNotificationManager } from "@/hooks/useNotificationManager";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -164,6 +164,7 @@ export function NotificationBell() {
       case "user_approved": return <Check className="h-4 w-4 text-emerald-500" />;
       case "announcement": return <Megaphone className="h-4 w-4 text-primary" />;
       case "reminder": return <CalendarClock className="h-4 w-4 text-destructive" />;
+      case "email": return <Mail className="h-4 w-4 text-emerald-500" />;
       default: return <Bell className="h-4 w-4 text-muted-foreground" />;
     }
   };
