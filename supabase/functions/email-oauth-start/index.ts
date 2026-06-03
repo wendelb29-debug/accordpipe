@@ -15,6 +15,17 @@ const GMAIL_SCOPES = [
   "profile",
 ].join(" ");
 
+const OUTLOOK_SCOPES = [
+  "offline_access",
+  "openid",
+  "profile",
+  "email",
+  "User.Read",
+  "Mail.Read",
+  "Mail.ReadWrite",
+  "Mail.Send",
+].join(" ");
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
