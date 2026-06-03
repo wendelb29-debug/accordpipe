@@ -29,7 +29,7 @@ const IMPORT_OPTIONS = [
 ];
 
 const OAUTH_PROVIDERS = new Set(["gmail", "outlook", "office365", "icloud", "yahoo", "aol", "exchange"]);
-const FULLY_IMPLEMENTED_OAUTH = new Set(["gmail", "outlook"]);
+const FULLY_IMPLEMENTED_OAUTH = new Set(["gmail", "outlook", "office365", "exchange"]);
 
 export function EmailProviderDialog({
   open, onOpenChange, providerId, providerName, companyId, userId, onSuccess,
