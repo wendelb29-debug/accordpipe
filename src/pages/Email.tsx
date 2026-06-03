@@ -124,10 +124,22 @@ export default function Email() {
             </div>
           </div>
           {hasAccounts && (
-            <button className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-semibold text-white bg-emerald-500 hover:bg-emerald-600 transition shadow-sm">
-              <Plus className="w-4 h-4" />
-              Conectar várias caixas
-            </button>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => navigate("/email/inbox")}
+                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-semibold text-white bg-indigo-500 hover:bg-indigo-600 transition shadow-sm"
+              >
+                <Inbox className="w-4 h-4" />
+                Caixa Unificada
+              </button>
+              <button 
+                onClick={() => setDialogProvider("gmail")} // default to open dialog
+                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-semibold text-foreground bg-secondary hover:bg-secondary/80 transition"
+              >
+                <Plus className="w-4 h-4" />
+                Nova Conta
+              </button>
+            </div>
           )}
         </div>
 

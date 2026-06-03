@@ -30,7 +30,6 @@ serve(async (req) => {
         (accounts || []).map(async (account) => {
           console.log(`Syncing account: ${account.email_address} (${account.provider})`);
           if (account.provider === "gmail") {
-            // Chama a função de sync do gmail
             const resp = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/email-gmail-sync`, {
               method: "POST",
               headers: {
@@ -55,7 +54,7 @@ serve(async (req) => {
           processed: accounts?.length || 0,
           succeeded: results.filter(r => r.status === "fulfilled").length,
           failed: results.filter(r => r.status === "rejected").length,
-          details: results.map(r => r.status === "fulfilled" ? r.value : r.reason),
+          details: results.map(r => r.status === "fulfilled" ? (r as any).value : (r as any).reason),
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -162,42 +161,6 @@ async function syncMicrosoft(account: any, admin: any) {
       };
       await admin.from("email_messages").upsert(row, { onConflict: "account_id,provider_msg_id" });
     }
-  }
-
-  const listResp = await fetch(listUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
-  if (!listResp.ok) {
-    const err = await listResp.text();
-    await admin.from("email_accounts").update({
-      status: "error",
-      status_message: `Sync failed: ${err.slice(0, 200)}`,
-    }).eq("id", account.id);
-    return;
-  }
-  const list = await listResp.json();
-
-  for (const msg of (list.value || [])) {
-    const row = {
-      account_id: account.id,
-      servidor_id: account.servidor_id,
-      provider_msg_id: msg.id,
-      thread_id: msg.conversationId,
-      folder: "inbox",
-      subject: msg.subject,
-      from_email: msg.from?.emailAddress?.address,
-      from_name: msg.from?.emailAddress?.name,
-      to_emails: (msg.toRecipients || []).map((r: any) => ({ email: r.emailAddress?.address, name: r.emailAddress?.name })),
-      cc_emails: (msg.ccRecipients || []).map((r: any) => ({ email: r.emailAddress?.address, name: r.emailAddress?.name })),
-      bcc_emails: (msg.bccRecipients || []).map((r: any) => ({ email: r.emailAddress?.address, name: r.emailAddress?.name })),
-      snippet: msg.bodyPreview,
-      body_text: msg.body?.contentType === "text" ? msg.body?.content : null,
-      body_html: msg.body?.contentType === "html" ? msg.body?.content : null,
-      is_read: msg.isRead,
-      is_starred: msg.flag?.flagStatus === "flagged",
-      has_attachments: msg.hasAttachments,
-      labels: msg.categories || [],
-      received_at: msg.receivedDateTime,
-    };
-    await admin.from("email_messages").upsert(row, { onConflict: "account_id,provider_msg_id" });
   }
 
   await admin.from("email_accounts").update({

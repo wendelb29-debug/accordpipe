@@ -166,47 +166,61 @@ export default function EmailInbox() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [composePrefill, setComposePrefill] = useState<{ to?: string; subject?: string; threadId?: string | null } | null>(null);
 
+  const isUnified = accountId === "inbox" || !accountId;
+  const effectiveAccountId = isUnified ? null : accountId;
+
   const loadAccount = async () => {
-    if (!accountId) return;
-    const { data } = await supabase.from("email_accounts" as any).select("*").eq("id", accountId).maybeSingle();
+    if (isUnified) {
+      setAccount(null);
+      return;
+    }
+    const { data } = await supabase.from("email_accounts" as any).select("*").eq("id", effectiveAccountId).maybeSingle();
     setAccount(data as any);
   };
+
   const loadAllAccounts = async () => {
     const { data } = await supabase
       .from("email_accounts" as any).select("*").order("created_at", { ascending: false });
     setAllAccounts(((data || []) as unknown) as EmailAccount[]);
   };
+
   const loadMessages = async () => {
-    if (!accountId) return;
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from("email_messages" as any).select("*")
-      .eq("account_id", accountId).eq("folder", folder)
+      .eq("folder", folder)
       .order("received_at", { ascending: false }).limit(200);
+
+    if (effectiveAccountId) {
+      query = query.eq("account_id", effectiveAccountId);
+    }
+
+    const { data, error } = await query;
     if (error) toast.error("Erro ao carregar mensagens", { description: error.message });
     setMessages(((data || []) as unknown) as EmailMessage[]);
     setLoading(false);
   };
 
-  useEffect(() => { loadAccount(); loadAllAccounts(); /* eslint-disable-next-line */ }, [accountId]);
-  useEffect(() => { loadMessages(); setSelectedId(null); setSelectedIds(new Set());
-    /* eslint-disable-next-line */ }, [accountId, folder]);
+  useEffect(() => { loadAccount(); loadAllAccounts(); }, [accountId]);
+  useEffect(() => { loadMessages(); setSelectedId(null); setSelectedIds(new Set()); }, [accountId, folder]);
 
   useEffect(() => {
-    if (!accountId) return;
+    const channelName = effectiveAccountId ? `email_messages:${effectiveAccountId}` : "email_messages:all";
+    const filter = effectiveAccountId ? `account_id=eq.${effectiveAccountId}` : undefined;
+
     const ch = supabase
-      .channel(`email_messages:${accountId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "email_messages", filter: `account_id=eq.${accountId}` }, () => loadMessages())
+      .channel(channelName)
+      .on("postgres_changes", { event: "*", schema: "public", table: "email_messages", filter }, () => loadMessages())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-    /* eslint-disable-next-line */
-  }, [accountId, folder]);
+  }, [effectiveAccountId, folder]);
 
   const handleSync = async () => {
-    if (!accountId || !account) return;
     setSyncing(true);
     try {
-      const { error } = await supabase.functions.invoke("email-sync", { body: { accountId } });
+      const { error } = await supabase.functions.invoke("email-sync", { 
+        body: effectiveAccountId ? { accountId: effectiveAccountId } : { batch_all: true } 
+      });
       if (error) throw error;
       toast.success("Sincronização concluída");
       await loadMessages(); await loadAccount();
@@ -327,7 +341,7 @@ export default function EmailInbox() {
     toast.info("Selecione uma collab para compartilhar este e-mail");
   };
 
-  if (!account) {
+  if (loading && !messages.length) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground">
         <Loader2 className="w-5 h-5 animate-spin" />
@@ -355,21 +369,43 @@ export default function EmailInbox() {
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2.5 h-10 px-3 rounded-xl hover:bg-muted transition group">
               <div className="w-9 h-9 rounded-lg bg-muted/40 flex items-center justify-center shrink-0">
-                <ProviderLogo provider={account.provider} className="w-6 h-6" />
+                {account ? (
+                  <ProviderLogo provider={account.provider} className="w-6 h-6" />
+                ) : (
+                  <Mail className="w-6 h-6 text-emerald-500" />
+                )}
               </div>
               <div className="text-left">
-                <div className="text-[14px] font-semibold text-foreground leading-tight">{providerName(account.provider)}</div>
-                <div className="text-[11.5px] text-muted-foreground leading-tight truncate max-w-[220px]">{account.email_address}</div>
+                <div className="text-[14px] font-semibold text-foreground leading-tight">
+                  {account ? providerName(account.provider) : "Caixa Unificada"}
+                </div>
+                <div className="text-[11.5px] text-muted-foreground leading-tight truncate max-w-[220px]">
+                  {account ? account.email_address : "Todas as contas vinculadas"}
+                </div>
               </div>
               <ChevronDown className="w-4 h-4 text-muted-foreground/60 group-hover:text-foreground transition" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" sideOffset={6} className="w-[300px] p-1.5 rounded-2xl border-border bg-popover shadow-2xl">
+            <DropdownMenuItem
+              onSelect={() => navigate("/email/inbox")}
+              className={`rounded-lg px-2.5 py-2 cursor-pointer gap-2.5 ${!accountId ? "bg-emerald-500/10" : ""}`}
+            >
+              <div className="w-7 h-7 rounded-md bg-muted/40 flex items-center justify-center shrink-0">
+                <Mail className="w-4.5 h-4.5 text-emerald-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[12.5px] font-semibold text-foreground truncate">Caixa Unificada</div>
+                <div className="text-[11px] text-muted-foreground truncate">Ver todos os e-mails</div>
+              </div>
+              {!accountId && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="my-1 bg-border" />
             {allAccounts.map(acc => (
               <DropdownMenuItem
                 key={acc.id}
                 onSelect={() => navigate(`/email/${acc.id}`)}
-                className={`rounded-lg px-2.5 py-2 cursor-pointer gap-2.5 ${acc.id === account.id ? "bg-emerald-500/10" : ""}`}
+                className={`rounded-lg px-2.5 py-2 cursor-pointer gap-2.5 ${acc.id === accountId ? "bg-emerald-500/10" : ""}`}
               >
                 <div className="w-7 h-7 rounded-md bg-muted/40 flex items-center justify-center shrink-0">
                   <ProviderLogo provider={acc.provider} className="w-4.5 h-4.5" />
@@ -378,7 +414,7 @@ export default function EmailInbox() {
                   <div className="text-[12.5px] font-semibold text-foreground truncate">{providerName(acc.provider)}</div>
                   <div className="text-[11px] text-muted-foreground truncate">{acc.email_address}</div>
                 </div>
-                {acc.id === account.id && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                {acc.id === accountId && <Check className="w-3.5 h-3.5 text-emerald-600" />}
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator className="my-1 bg-border" />
