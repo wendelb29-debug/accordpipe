@@ -117,9 +117,52 @@ async function syncMicrosoft(account: any, admin: any) {
     }).eq("id", account.id);
   }
 
-  const sinceFilter = makeSinceFilter(account.import_since);
-  const filterParam = sinceFilter ? `&$filter=receivedDateTime ge ${sinceFilter}` : "";
-  const listUrl = `https://graph.microsoft.com/v1.0/me/mailFolders/Inbox/messages?$top=50&$orderby=receivedDateTime desc${filterParam}&$select=id,subject,from,toRecipients,ccRecipients,bccRecipients,bodyPreview,body,isRead,hasAttachments,receivedDateTime,conversationId,categories,flag`;
+  const folders = ["Inbox", "Archive", "DeletedItems", "JunkEmail"];
+  for (const folderName of folders) {
+    const sinceFilter = makeSinceFilter(account.import_since);
+    const filterParam = sinceFilter ? `&$filter=receivedDateTime ge ${sinceFilter}` : "";
+    const listUrl = `https://graph.microsoft.com/v1.0/me/mailFolders/${folderName}/messages?$top=50&$orderby=receivedDateTime desc${filterParam}&$select=id,subject,from,toRecipients,ccRecipients,bccRecipients,bodyPreview,body,isRead,hasAttachments,receivedDateTime,conversationId,categories,flag`;
+
+    const listResp = await fetch(listUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (!listResp.ok) {
+      console.error(`Sync for folder ${folderName} failed:`, await listResp.text());
+      continue;
+    }
+    const list = await listResp.json();
+
+    const folderMap: Record<string, string> = {
+      "Inbox": "inbox",
+      "Archive": "archive",
+      "DeletedItems": "trash",
+      "JunkEmail": "spam"
+    };
+    const dbFolder = folderMap[folderName] || "inbox";
+
+    for (const msg of (list.value || [])) {
+      const row = {
+        account_id: account.id,
+        servidor_id: account.servidor_id,
+        provider_msg_id: msg.id,
+        thread_id: msg.conversationId,
+        folder: dbFolder,
+        subject: msg.subject,
+        from_email: msg.from?.emailAddress?.address,
+        from_name: msg.from?.emailAddress?.name,
+        to_emails: (msg.toRecipients || []).map((r: any) => ({ email: r.emailAddress?.address, name: r.emailAddress?.name })),
+        cc_emails: (msg.ccRecipients || []).map((r: any) => ({ email: r.emailAddress?.address, name: r.emailAddress?.name })),
+        bcc_emails: (msg.bccRecipients || []).map((r: any) => ({ email: r.emailAddress?.address, name: r.emailAddress?.name })),
+        snippet: msg.bodyPreview,
+        body_text: msg.body?.contentType === "text" ? msg.body?.content : null,
+        body_html: msg.body?.contentType === "html" ? msg.body?.content : null,
+        is_read: msg.isRead,
+        is_starred: msg.flag?.flagStatus === "flagged",
+        has_attachments: msg.hasAttachments,
+        labels: msg.categories || [],
+        received_at: msg.receivedDateTime,
+      };
+      await admin.from("email_messages").upsert(row, { onConflict: "account_id,provider_msg_id" });
+    }
+  }
 
   const listResp = await fetch(listUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
   if (!listResp.ok) {

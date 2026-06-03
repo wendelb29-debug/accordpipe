@@ -80,9 +80,15 @@ function importSinceQuery(importSince: string): string {
   return ` after:${y}/${m}/${day}`;
 }
 
-async function syncFolder(admin: any, account: any, accessToken: string, folder: "inbox" | "sent" | "important") {
-  const labelMap: Record<string, string> = { inbox: "INBOX", sent: "SENT", important: "IMPORTANT" };
-  const q = `in:${labelMap[folder].toLowerCase()} -in:spam -in:trash -in:drafts${importSinceQuery(account.import_since)}`;
+async function syncFolder(admin: any, account: any, accessToken: string, folder: "inbox" | "sent" | "important" | "spam" | "trash") {
+  const labelMap: Record<string, string> = { 
+    inbox: "INBOX", 
+    sent: "SENT", 
+    important: "IMPORTANT",
+    spam: "SPAM",
+    trash: "TRASH"
+  };
+  const q = `label:${labelMap[folder]} ${importSinceQuery(account.import_since)}`;
   const listUrl = new URL("https://gmail.googleapis.com/gmail/v1/users/me/messages");
   listUrl.searchParams.set("q", q);
   listUrl.searchParams.set("maxResults", "30");
@@ -155,6 +161,8 @@ async function syncAccount(admin: any, accountId: string) {
   const inboxCount = await syncFolder(admin, account, accessToken, "inbox");
   const sentCount = await syncFolder(admin, account, accessToken, "sent");
   const importantCount = await syncFolder(admin, account, accessToken, "important");
+  const spamCount = await syncFolder(admin, account, accessToken, "spam");
+  const trashCount = await syncFolder(admin, account, accessToken, "trash");
 
   await admin.from("email_accounts").update({
     last_synced_at: new Date().toISOString(),
@@ -162,7 +170,7 @@ async function syncAccount(admin: any, accountId: string) {
     status_message: null,
   }).eq("id", account.id);
 
-  return { inbox: inboxCount, sent: sentCount, important: importantCount };
+  return { inbox: inboxCount, sent: sentCount, important: importantCount, spam: spamCount, trash: trashCount };
 }
 
 Deno.serve(async (req) => {

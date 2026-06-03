@@ -7,7 +7,7 @@ import {
   RefreshCw, PenSquare,
   Inbox, Star, Send, Trash2, MailOpen, Mail,
   Paperclip,
-  Reply, Forward, Target, CheckSquare, MessagesSquare,
+  Reply, Forward, Target, CheckSquare, MessagesSquare, AlertCircle,
 } from "lucide-react";
 import DOMPurify from "dompurify";
 import {
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { GmailLogo, OutlookLogo } from "@/components/email/ProviderLogos";
 
-type Folder = "inbox" | "sent" | "important";
+type Folder = "inbox" | "sent" | "important" | "spam" | "trash" | "archive";
 type FilterKey = "all" | "unread" | "starred" | "attach";
 
 interface EmailMessage {
@@ -52,6 +52,8 @@ const FOLDERS: { id: Folder; label: string; Icon: any }[] = [
   { id: "inbox",     label: "Caixa de Entrada", Icon: Inbox },
   { id: "important", label: "Importantes",      Icon: Star },
   { id: "sent",      label: "Enviados",         Icon: Send },
+  { id: "spam",      label: "Spam",             Icon: AlertCircle },
+  { id: "trash",     label: "Lixeira",          Icon: Trash2 },
 ];
 
 function providerName(p: string) {
@@ -132,6 +134,8 @@ function EmptyMailbox({ folder }: { folder: Folder }) {
     inbox: "Sua caixa de entrada está vazia",
     important: "Nenhum e-mail marcado como importante",
     sent: "Você ainda não enviou nenhum e-mail",
+    spam: "Nenhum e-mail no spam",
+    trash: "Lixeira vazia",
   };
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center px-6">
