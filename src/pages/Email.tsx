@@ -30,8 +30,8 @@ interface EmailAccount {
 }
 
 const PROVIDERS = [
-  { id: "gmail",   name: "Gmail",   Logo: GmailLogo },
-  { id: "outlook", name: "Outlook", Logo: OutlookLogo },
+  { id: "gmail",   name: "Gmail",   Logo: GmailLogo,   iconBg: "linear-gradient(135deg, #EA4335, #FBBC04)" },
+  { id: "outlook", name: "Outlook", Logo: OutlookLogo, iconBg: "linear-gradient(135deg, #0078D4, #28A8EA)" },
 ];
 
 export default function Email() {
