@@ -8,6 +8,16 @@ const Index = () => {
   const { user, loading } = useAuth();
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const state = params.get("state");
+
+    if (code && state) {
+      console.log("[Index] OAuth code detected in root URL. Redirecting to callback...");
+      window.location.href = `https://nglwgzknqgihlbkdnflu.supabase.co/functions/v1/email-oauth-callback?code=${code}&state=${state}`;
+      return;
+    }
+
     if (!loading && user) {
       navigate("/home");
     }
