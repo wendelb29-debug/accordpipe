@@ -52,11 +52,7 @@ Deno.serve(async (req) => {
       const clientId = requireEnv("MICROSOFT_OAUTH_CLIENT_ID", "ID_CLIENTE_OAUTH_MICROSOFT");
       const clientSecret = requireEnv("MICROSOFT_OAUTH_CLIENT_SECRET", "SEGREDO_CLIENTE_OAUTH_MICROSOFT");
       
-      let redirectUri = readEnv("MICROSOFT_OAUTH_REDIRECT_URI", "URI_REDIRECIONADA_OAUTH_MICROSOFT");
-      if (!redirectUri) {
-        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-        redirectUri = `${supabaseUrl}/functions/v1/email-oauth-callback`;
-      }
+      const redirectUri = "https://nglwgzknqgihlbkdnflu.supabase.co/functions/v1/email-oauth-callback";
       
       const tenant = readEnv("MICROSOFT_OAUTH_TENANT", "TENANT_OAUTH_MICROSOFT") || "common";
 
