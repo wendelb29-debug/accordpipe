@@ -95,6 +95,8 @@ Deno.serve(async (req) => {
     }));
 
     let url: URL;
+    console.log(`[oauth-start] Iniciando fluxo para ${provider}. Redirect URI: ${redirectUri}`);
+    
     if (isOutlook) {
       const tenant = readEnv("MICROSOFT_OAUTH_TENANT", "TENANT_OAUTH_MICROSOFT") || "common";
       url = new URL(`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize`);

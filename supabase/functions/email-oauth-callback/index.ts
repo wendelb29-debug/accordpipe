@@ -161,17 +161,15 @@ Deno.serve(async (req) => {
       accountId = ins.id;
     }
 
-    // Trigger initial sync (Gmail only for now; Outlook sync function chega depois)
-    if (!isOutlook) {
-      fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/email-gmail-sync`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-        },
-        body: JSON.stringify({ accountId }),
-      }).catch(() => {});
-    }
+    // Trigger initial sync using the generic sync function
+    fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/email-sync`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+      },
+      body: JSON.stringify({ accountId }),
+    }).catch(() => {});
 
     return redirect(`${appBaseUrl}/email?connected=${accountId}`);
   } catch (err) {

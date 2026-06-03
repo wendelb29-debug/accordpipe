@@ -157,23 +157,19 @@ export function EmailProviderDialog({
 
     setBusy(true);
     try {
-      // ============ GMAIL (OAuth Google) ============
-      if (isGoogleOAuth) {
+      // ============ OAuth Flow (Gmail / Outlook) ============
+      if (isGoogleOAuth || isMicrosoftOAuth) {
         const { data, error } = await supabase.functions.invoke("email-oauth-start", {
-          body: { account_draft: buildDraft() },
-        });
-        if (error) throw error;
-        if (data?.url) {
-          window.location.href = data.url;
-          return;
-        }
-        throw new Error("URL de autorização não recebida");
-      }
-
-      // ============ OUTLOOK / OFFICE 365 / EXCHANGE (OAuth Microsoft) ============
-      if (isMicrosoftOAuth) {
-        const { data, error } = await supabase.functions.invoke("email-oauth-start-microsoft", {
-          body: { provider: providerId, account_draft: buildDraft() },
+          body: {
+            provider: providerId,
+            displayName: displayName.trim() || providerName,
+            importSince,
+            sharedSender,
+            senderName: sharedSender ? senderName.trim() : null,
+            dailyLimit: dailyLimit ? Number(dailyLimit) : null,
+            crmIntegration,
+            calendarIntegration,
+          },
         });
         if (error) throw error;
         if (data?.url) {
