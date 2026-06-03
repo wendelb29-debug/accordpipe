@@ -66,14 +66,14 @@ export function EmailProviderDialog({
   const handleConnect = async () => {
     if (!companyId || !userId) { toast.error("Sessão inválida"); return; }
 
-    // Gmail OAuth real flow
-    if (isGmailReal) {
+    // Real OAuth flow (Gmail / Outlook)
+    if (isRealOAuth) {
       setBusy(true);
       try {
         const { data, error } = await supabase.functions.invoke("email-oauth-start", {
           body: {
-            provider: "gmail",
-            displayName: displayName || "Gmail",
+            provider: providerId,
+            displayName: displayName || providerName,
             importSince,
             sharedSender,
             senderName: senderName.trim(),
@@ -86,7 +86,7 @@ export function EmailProviderDialog({
         if (!data?.url) throw new Error("URL de autorização não recebida");
         window.location.href = data.url;
       } catch (err: any) {
-        toast.error("Erro ao iniciar autorização Google", { description: err?.message });
+        toast.error(`Erro ao iniciar autorização ${isOutlookReal ? "Microsoft" : "Google"}`, { description: err?.message });
         setBusy(false);
       }
       return;
