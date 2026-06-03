@@ -42,10 +42,10 @@ serve(async (req) => {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: requireEnv("MICROSOFT_OAUTH_CLIENT_ID", "ID_CLIENTE_OAUTH_MICROSOFT"),
-      client_secret: requireEnv("MICROSOFT_OAUTH_CLIENT_SECRET", "SEGREDO_CLIENTE_OAUTH_MICROSOFT"),
+      client_id: requireEnv("ID_CLIENTE_OAUTH_MICROSOFT", "MICROSOFT_OAUTH_CLIENT_ID"),
+      client_secret: requireEnv("SEGREDO_CLIENTE_OAUTH_MICROSOFT", "MICROSOFT_OAUTH_CLIENT_SECRET"),
       code,
-      redirect_uri: requireEnv("MICROSOFT_OAUTH_REDIRECT_URI", "URI_REDIRECIONADA_OAUTH_MICROSOFT"),
+      redirect_uri: requireEnv("URI_REDIRECIONADA_OAUTH_MICROSOFT", "MICROSOFT_OAUTH_REDIRECT_URI"),
       grant_type: "authorization_code",
     }),
   });
