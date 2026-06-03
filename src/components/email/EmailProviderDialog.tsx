@@ -38,7 +38,7 @@ export function EmailProviderDialog({
   const isImap  = providerId === "imap_smtp";
   const isRealOAuth = FULLY_IMPLEMENTED_OAUTH.has(providerId);
   const isGmailReal = providerId === "gmail";
-  const isOutlookReal = providerId === "outlook";
+  const isOutlookReal = ["outlook", "office365", "exchange"].includes(providerId);
 
   const [displayName, setDisplayName] = useState("");
   const [emailAddress, setEmailAddress] = useState("");
