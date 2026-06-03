@@ -50,34 +50,61 @@ serve(async (req) => {
     .from("profiles").select("company_id").eq("user_id", user.id).maybeSingle();
   const servidorId = profile?.company_id;
 
-  const { data: newAccount, error: insErr } = await adminClient
+  const { data: existingAccount } = await adminClient
     .from("email_accounts")
-    .insert({
-      user_id: user.id,
-      servidor_id: servidorId,
-      provider,
-      display_name: accountDraft.display_name || "Outlook",
-      email_address: accountDraft.email_address || "pending@pending",
-      status: "pending",
-      import_since: accountDraft.import_since || "1week",
-      crm_integration: accountDraft.crm_integration ?? true,
-      calendar_integration: accountDraft.calendar_integration ?? false,
-      shared_sender: accountDraft.shared_sender ?? false,
-      sender_name: accountDraft.sender_name,
-      daily_limit: accountDraft.daily_limit,
-    })
-    .select()
-    .single();
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("provider", provider)
+    .eq("email_address", "pending@pending")
+    .eq("status", "pending")
+    .maybeSingle();
 
-  if (insErr || !newAccount) {
-    return new Response(JSON.stringify({ error: insErr?.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  let accountId: string;
+  if (existingAccount) {
+    accountId = existingAccount.id;
+    await adminClient
+      .from("email_accounts")
+      .update({
+        display_name: accountDraft.display_name || "Outlook",
+        import_since: accountDraft.import_since || "1week",
+        crm_integration: accountDraft.crm_integration ?? true,
+        calendar_integration: accountDraft.calendar_integration ?? false,
+        shared_sender: accountDraft.shared_sender ?? false,
+        sender_name: accountDraft.sender_name,
+        daily_limit: accountDraft.daily_limit,
+      })
+      .eq("id", accountId);
+  } else {
+    const { data: newAccount, error: insErr } = await adminClient
+      .from("email_accounts")
+      .insert({
+        user_id: user.id,
+        servidor_id: servidorId,
+        provider,
+        display_name: accountDraft.display_name || "Outlook",
+        email_address: accountDraft.email_address || "pending@pending",
+        status: "pending",
+        import_since: accountDraft.import_since || "1week",
+        crm_integration: accountDraft.crm_integration ?? true,
+        calendar_integration: accountDraft.calendar_integration ?? false,
+        shared_sender: accountDraft.shared_sender ?? false,
+        sender_name: accountDraft.sender_name,
+        daily_limit: accountDraft.daily_limit,
+      })
+      .select()
+      .single();
+
+    if (insErr || !newAccount) {
+      return new Response(JSON.stringify({ error: insErr?.message }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    accountId = newAccount.id;
   }
 
   const state = btoa(JSON.stringify({
-    account_id: newAccount.id,
+    account_id: accountId,
     user_id: user.id,
     servidor_id: servidorId,
   }));
