@@ -59,6 +59,12 @@ const FOLDERS: { id: Folder; label: string; Icon: any }[] = [
 function providerName(p: string) {
   return ({ gmail: "Gmail", outlook: "Outlook" } as Record<string, string>)[p] || p;
 }
+function providerBackground(p: string) {
+  return ({ gmail: "linear-gradient(135deg, #EA4335, #FBBC04)", outlook: "linear-gradient(135deg, #0078D4, #28A8EA)" } as Record<string, string>)[p] || "hsl(var(--muted))";
+}
+function providerInitial(p: string) {
+  return p.charAt(0).toUpperCase();
+}
 function ProviderLogo({ provider, className }: { provider: string; className?: string }) {
   if (provider === "gmail")   return <GmailLogo className={className} />;
   if (provider === "outlook") return <OutlookLogo className={className} />;
