@@ -30,8 +30,8 @@ interface EmailAccount {
 }
 
 const PROVIDERS = [
-  { id: "gmail",   name: "Gmail",   Logo: GmailLogo },
-  { id: "outlook", name: "Outlook", Logo: OutlookLogo },
+  { id: "gmail",   name: "Gmail",   Logo: GmailLogo,   iconBg: "linear-gradient(135deg, #EA4335, #FBBC04)" },
+  { id: "outlook", name: "Outlook", Logo: OutlookLogo, iconBg: "linear-gradient(135deg, #0078D4, #28A8EA)" },
 ];
 
 export default function Email() {
@@ -157,43 +157,62 @@ export default function Email() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {accounts.map((acc) => {
                 const prov = PROVIDERS.find(p => p.id === acc.provider);
+                const isConnected = acc.status === "connected";
+                const isError     = acc.status === "error";
+                const isPending   = acc.status === "pending";
+
                 return (
                   <div
                     key={acc.id}
-                    className="rounded-xl border border-border bg-card p-4 flex items-center gap-3 hover:shadow-md transition cursor-pointer group/card"
-                    onClick={() => handleOpen(acc.id)}
+                    className="rounded-xl border border-border bg-card p-4 flex items-center gap-3 hover:shadow-md transition group/card"
                   >
-                    <div className="w-11 h-11 rounded-xl bg-muted/50 flex items-center justify-center shrink-0 group-hover/card:scale-105 transition">
-                      {prov?.Logo ? <prov.Logo className="w-7 h-7" /> : <Mail className="w-5 h-5 text-muted-foreground" />}
+                    {/* Avatar com gradient do provedor ou fallback */}
+                    <div 
+                      className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 group-hover/card:scale-105 transition overflow-hidden"
+                      style={{ background: prov?.iconBg || "hsl(var(--muted))" }}
+                    >
+                      {prov?.Logo ? (
+                        <div className="bg-white p-1.5 rounded-lg">
+                          <prov.Logo className="w-6 h-6" />
+                        </div>
+                      ) : (
+                        <span className="text-white font-bold text-sm">@</span>
+                      )}
                     </div>
+
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 text-[13.5px] font-semibold text-foreground truncate">
                         {acc.display_name || prov?.name || "Conta de e-mail"}
-                        {acc.status === "connected" && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
-                        {acc.status === "error" && <AlertCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
+                        {isConnected && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+                        {isError     && <AlertCircle  className="w-3.5 h-3.5 text-red-500 shrink-0" />}
+                        {isPending   && <Loader2      className="w-3.5 h-3.5 text-amber-500 shrink-0 animate-spin" />}
                       </div>
                       <div className="text-[12px] text-muted-foreground truncate">{acc.email_address}</div>
                       <div className="text-[11px] text-muted-foreground/70 mt-0.5">
-                        {acc.status === "connected"
+                        {isConnected
                           ? acc.last_synced_at
                             ? `Sincronizado ${new Date(acc.last_synced_at).toLocaleString("pt-BR")}`
                             : "Conectado · aguardando sincronização"
-                          : acc.status === "pending"
+                          : isPending
                             ? "Aguardando primeira conexão"
-                            : acc.status === "error"
-                              ? acc.status_message || "Erro na conexão"
+                            : isError
+                              ? (acc.status_message || "Erro na conexão")
                               : "Desconectado"}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      {acc.status === "connected" && (acc.provider === "gmail" || acc.provider === "outlook") && (
-                        <div className="h-8 px-3 rounded-lg inline-flex items-center gap-1.5 text-[12px] font-semibold text-white bg-emerald-500 hover:bg-emerald-600 transition shadow-sm shadow-emerald-500/10">
-                          <Inbox className="w-3.5 h-3.5" />
+
+                    <div className="flex items-center gap-1.5">
+                      {isConnected && (acc.provider === "gmail" || acc.provider === "outlook") && (
+                        <button
+                          onClick={() => handleOpen(acc.id)}
+                          className="h-9 px-3.5 rounded-lg inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-white bg-emerald-500 hover:bg-emerald-600 transition shadow-sm shadow-emerald-500/10"
+                        >
+                          <Mail className="w-3.5 h-3.5" />
                           Abrir
-                        </div>
+                        </button>
                       )}
                       <button
-                        onClick={(e) => { e.stopPropagation(); handleDisconnect(acc.id); }}
+                        onClick={() => handleDisconnect(acc.id)}
                         className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10 transition"
                         title="Desconectar"
                       >
