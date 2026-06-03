@@ -591,7 +591,7 @@ function Field({ label, children, small }: { label: string; children: React.Reac
 function ToggleCard({
   Icon, title, desc, active, onChange,
 }: {
-  Icon: React.ComponentType<{ className?: string; size?: number }>;
+  Icon: React.ComponentType<{ className?: string; size?: string | number }>;
   title: string;
   desc: string;
   active: boolean;
