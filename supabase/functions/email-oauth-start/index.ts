@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
     // Use the exact redirect URI confirmed by the user for Outlook
     let redirectUri: string;
     if (isOutlook) {
-      redirectUri = "https://nglwgzknqgihlbkdnflu.supabase.co/functions/v1/email-oauth-callback-microsoft";
+      redirectUri = "https://nglwgzknqgihlbkdnflu.supabase.co/functions/v1/email-oauth-callback";
     } else {
       redirectUri = readEnv("GOOGLE_OAUTH_REDIRECT_URI", "URI_REDIRECIONADA_OAUTH_GOOGLE");
       if (!redirectUri) {
