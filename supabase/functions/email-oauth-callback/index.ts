@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
       const genericCallback = `${supabaseUrl}/functions/v1/email-oauth-callback`;
       
       let redirectUri = readEnv("MICROSOFT_OAUTH_REDIRECT_URI", "URI_REDIRECIONADA_OAUTH_MICROSOFT");
-      if (!redirectUri || redirectUri.includes("callback-microsoft")) {
+      if (!redirectUri) {
         redirectUri = genericCallback;
       }
       

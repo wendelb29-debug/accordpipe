@@ -75,11 +75,9 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const genericCallback = `${supabaseUrl}/functions/v1/email-oauth-callback`;
 
-    if (isOutlook && (!redirectUri || redirectUri.includes("callback-microsoft"))) {
+    if (!redirectUri) {
       redirectUri = genericCallback;
-      console.log(`[oauth-start] Using generic callback instead of specific: ${redirectUri}`);
-    } else if (!redirectUri) {
-      redirectUri = genericCallback;
+      console.log(`[oauth-start] No redirect URI found in env, using generic fallback: ${redirectUri}`);
     }
 
     if (!clientId || !redirectUri) {
