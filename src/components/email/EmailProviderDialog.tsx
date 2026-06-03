@@ -159,6 +159,7 @@ export function EmailProviderDialog({
     try {
       // ============ OAuth Flow (Gmail / Outlook) ============
       if (isGoogleOAuth || isMicrosoftOAuth) {
+        console.log(`[dialog] iniciando OAuth para ${providerId}`);
         const { data, error } = await supabase.functions.invoke("email-oauth-start", {
           body: {
             provider: providerId,
@@ -171,7 +172,11 @@ export function EmailProviderDialog({
             calendarIntegration,
           },
         });
+        
+        console.log("[dialog] resposta OAuth:", { data, error });
+        
         if (error) throw error;
+        if (data?.error) throw new Error(data.error);
         if (data?.url) {
           window.location.href = data.url;
           return;

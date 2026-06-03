@@ -68,12 +68,19 @@ export default function Email() {
   useEffect(() => {
     const connected = searchParams.get("connected");
     const error = searchParams.get("error");
+    const desc = searchParams.get("desc");
+    const stage = searchParams.get("stage");
+
     if (connected) {
       toast.success("Conta de e-mail conectada!", { description: "Sincronizando suas mensagens..." });
       setSearchParams({});
       setTimeout(() => navigate(`/email/${connected}`), 800);
     } else if (error) {
-      toast.error("Erro ao conectar", { description: decodeURIComponent(error) });
+      const errorMsg = desc ? decodeURIComponent(desc) : decodeURIComponent(error);
+      toast.error(`Falha na conexão${stage ? ` (etapa: ${stage})` : ""}`, { 
+        description: errorMsg,
+        duration: 10000,
+      });
       setSearchParams({});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

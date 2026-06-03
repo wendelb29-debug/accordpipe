@@ -19,8 +19,21 @@ Deno.serve(async (req) => {
     const code = url.searchParams.get("code");
     const stateRaw = url.searchParams.get("state");
     const error = url.searchParams.get("error");
+    const errorDesc = url.searchParams.get("error_description");
 
-    if (error) return redirect(`${appBaseUrl}/email?error=${encodeURIComponent(error)}`);
+    console.log("[email-oauth-callback] callback recebido", {
+      hasCode: !!code, hasState: !!stateRaw, error: error,
+    });
+
+    if (error) {
+      console.error("[email-oauth-callback] Erro reportado:", error, errorDesc);
+      const q = new URLSearchParams({
+        error: error,
+        desc: errorDesc || "",
+        stage: "ms_authz",
+      });
+      return redirect(`${appBaseUrl}/email?${q.toString()}`);
+    }
     if (!code || !stateRaw) return redirect(`${appBaseUrl}/email?error=missing_code`);
 
     const state = JSON.parse(atob(stateRaw));
@@ -65,8 +78,13 @@ Deno.serve(async (req) => {
       });
       const tokens = await tokenRes.json();
       if (!tokenRes.ok) {
-        console.error("MS token exchange failed", tokens);
-        return redirect(`${appBaseUrl}/email?error=${encodeURIComponent(tokens.error_description || tokens.error || "token_exchange_failed")}`);
+        console.error("[email-oauth-callback] exchange falhou", tokens);
+        const q = new URLSearchParams({
+          error: tokens.error || "token_exchange",
+          desc: tokens.error_description || "",
+          stage: "ms_token",
+        });
+        return redirect(`${appBaseUrl}/email?${q.toString()}`);
       }
       access_token = tokens.access_token;
       refresh_token = tokens.refresh_token || null;
