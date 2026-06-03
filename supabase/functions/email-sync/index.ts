@@ -17,6 +17,50 @@ serve(async (req) => {
     );
     
     const body = await req.json().catch(() => ({}));
+
+    // MODO BATCH — chamado pelo cron a cada 2 min
+    if (body.batch_all === true) {
+      console.log("Starting batch email sync...");
+      const { data: accounts } = await admin
+        .from("email_accounts")
+        .select("*")
+        .eq("status", "connected");
+
+      const results = await Promise.allSettled(
+        (accounts || []).map(async (account) => {
+          console.log(`Syncing account: ${account.email_address} (${account.provider})`);
+          if (account.provider === "gmail") {
+            // Chama a função de sync do gmail
+            const resp = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/email-gmail-sync`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+              },
+              body: JSON.stringify({ accountId: account.id }),
+            });
+            if (!resp.ok) throw new Error(`Gmail sync failed for ${account.id}: ${await resp.text()}`);
+            return { accountId: account.id, provider: "gmail", ok: true };
+          }
+          if (["outlook", "office365", "exchange"].includes(account.provider)) {
+            await syncMicrosoft(account, admin);
+            return { accountId: account.id, provider: "outlook", ok: true };
+          }
+          return null;
+        })
+      );
+
+      return new Response(
+        JSON.stringify({
+          processed: accounts?.length || 0,
+          succeeded: results.filter(r => r.status === "fulfilled").length,
+          failed: results.filter(r => r.status === "rejected").length,
+          details: results.map(r => r.status === "fulfilled" ? r.value : r.reason),
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const accountId = body.accountId || body.account_id;
     
     if (!accountId) {
@@ -29,7 +73,6 @@ serve(async (req) => {
     if (error || !account) throw new Error("Account not found");
 
     if (account.provider === "gmail") {
-      // Call existing gmail sync logic (or we could inline it)
       const resp = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/email-gmail-sync`, {
         method: "POST",
         headers: {
@@ -95,7 +138,7 @@ async function syncMicrosoft(account: any, admin: any) {
       servidor_id: account.servidor_id,
       provider_msg_id: msg.id,
       thread_id: msg.conversationId,
-      folder: "inbox", // standardize to lowercase as in EmailInbox.tsx
+      folder: "inbox",
       subject: msg.subject,
       from_email: msg.from?.emailAddress?.address,
       from_name: msg.from?.emailAddress?.name,

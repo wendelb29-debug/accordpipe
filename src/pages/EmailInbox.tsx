@@ -387,14 +387,13 @@ export default function EmailInbox() {
 
         <div className="flex-1" />
 
-        <button
-          onClick={handleSync}
-          disabled={syncing}
-          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[12.5px] font-medium border border-border bg-card hover:bg-muted transition disabled:opacity-50"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
-          Sincronizar
-        </button>
+        <div className="inline-flex items-center gap-1.5 h-9 px-3 text-[11.5px] font-medium text-muted-foreground">
+          <span className="relative flex items-center justify-center">
+            <span className="absolute w-2 h-2 rounded-full bg-emerald-500/40 animate-ping" />
+            <span className="relative w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          </span>
+          Sincronização automática
+        </div>
         <button
           onClick={handleNew}
           className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-[13px] font-semibold text-white bg-emerald-500 hover:bg-emerald-600 transition shadow-sm shadow-emerald-500/20"
