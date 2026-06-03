@@ -68,11 +68,18 @@ Deno.serve(async (req) => {
 
     // Prefer generic callback, but fallback to secret if provided. 
     // If the secret is the "callback-microsoft" one, we transition it to the generic one.
-    // Force use of the generic callback for both Gmail and Outlook
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const redirectUri = `${supabaseUrl}/functions/v1/email-oauth-callback`;
-    
-    console.log(`[oauth-start] Using generic callback: ${redirectUri}`);
+    // Prefer the secret if configured, otherwise use generic fallback
+    let redirectUri = isOutlook
+      ? readEnv("MICROSOFT_OAUTH_REDIRECT_URI", "URI_REDIRECIONADA_OAUTH_MICROSOFT")
+      : readEnv("GOOGLE_OAUTH_REDIRECT_URI", "URI_REDIRECIONADA_OAUTH_GOOGLE");
+
+    if (!redirectUri) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      redirectUri = `${supabaseUrl}/functions/v1/email-oauth-callback`;
+      console.log(`[oauth-start] Using generic fallback callback: ${redirectUri}`);
+    } else {
+      console.log(`[oauth-start] Using configured redirect URI: ${redirectUri}`);
+    }
 
     if (!clientId || !redirectUri) {
       return new Response(JSON.stringify({ error: "OAuth não configurado" }), {
