@@ -70,9 +70,22 @@ export function EmailProviderDialog({
     if (isRealOAuth) {
       setBusy(true);
       try {
-        const { data, error } = await supabase.functions.invoke("email-oauth-start", {
+        const fnName = isGmailReal ? "email-oauth-start" : "email-oauth-start-microsoft";
+        const { data, error } = await supabase.functions.invoke(fnName, {
           body: {
             provider: providerId,
+            account_draft: {
+              servidor_id: companyId,
+              display_name: displayName || providerName,
+              email_address: emailAddress.trim() || null,
+              shared_sender: sharedSender,
+              sender_name: sharedSender ? senderName.trim() || null : null,
+              daily_limit: dailyLimit ? Number(dailyLimit) : null,
+              import_since: importSince,
+              crm_integration: crmIntegration,
+              calendar_integration: calendarIntegration,
+            },
+            // Legacy fields for backward compatibility with email-oauth-start (Gmail)
             displayName: displayName || providerName,
             importSince,
             sharedSender,
