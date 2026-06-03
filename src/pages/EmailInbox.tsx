@@ -216,10 +216,11 @@ export default function EmailInbox() {
   }, [accountId, folder]);
 
   const handleSync = async () => {
-    if (!accountId || !account) return;
     setSyncing(true);
     try {
-      const { error } = await supabase.functions.invoke("email-sync", { body: { accountId } });
+      const { error } = await supabase.functions.invoke("email-sync", { 
+        body: effectiveAccountId ? { accountId: effectiveAccountId } : { batch_all: true } 
+      });
       if (error) throw error;
       toast.success("Sincronização concluída");
       await loadMessages(); await loadAccount();
