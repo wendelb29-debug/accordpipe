@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { requireEnv, readEnv } from "../_shared/env.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,11 +62,11 @@ Deno.serve(async (req) => {
 
     const isOutlook = provider === "outlook";
     const clientId = isOutlook
-      ? Deno.env.get("MICROSOFT_OAUTH_CLIENT_ID")
-      : Deno.env.get("GOOGLE_OAUTH_CLIENT_ID");
+      ? requireEnv("MICROSOFT_OAUTH_CLIENT_ID", "ID_CLIENTE_OAUTH_MICROSOFT")
+      : requireEnv("GOOGLE_OAUTH_CLIENT_ID", "ID_CLIENTE_OAUTH_GOOGLE");
     const redirectUri = isOutlook
-      ? Deno.env.get("MICROSOFT_OAUTH_REDIRECT_URI")
-      : Deno.env.get("GOOGLE_OAUTH_REDIRECT_URI");
+      ? requireEnv("MICROSOFT_OAUTH_REDIRECT_URI", "URI_REDIRECIONADA_OAUTH_MICROSOFT")
+      : requireEnv("GOOGLE_OAUTH_REDIRECT_URI", "URI_REDIRECIONADA_OAUTH_GOOGLE");
     if (!clientId || !redirectUri) {
       return new Response(JSON.stringify({ error: "OAuth não configurado" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -95,7 +96,7 @@ Deno.serve(async (req) => {
 
     let url: URL;
     if (isOutlook) {
-      const tenant = Deno.env.get("MICROSOFT_OAUTH_TENANT") || "common";
+      const tenant = readEnv("MICROSOFT_OAUTH_TENANT", "TENANT_OAUTH_MICROSOFT") || "common";
       url = new URL(`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize`);
       url.searchParams.set("client_id", clientId);
       url.searchParams.set("redirect_uri", redirectUri);
