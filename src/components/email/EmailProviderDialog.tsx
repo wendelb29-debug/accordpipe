@@ -185,8 +185,8 @@ export function EmailProviderDialog({
         )}
 
         <div className="space-y-4 mt-4">
-          <div className={isGmailReal ? "" : "grid grid-cols-2 gap-3"}>
-            <div className={isGmailReal ? "col-span-2" : ""}>
+          <div className={isRealOAuth ? "" : "grid grid-cols-2 gap-3"}>
+            <div className={isRealOAuth ? "col-span-2" : ""}>
               <label className="text-[11.5px] font-semibold text-foreground/80 uppercase tracking-wider mb-1.5 block">
                 Apelido
               </label>
@@ -197,7 +197,7 @@ export function EmailProviderDialog({
                 className="w-full h-9 px-3 rounded-lg border border-border bg-background text-foreground text-[13.5px] outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900/30 transition"
               />
             </div>
-            {!isGmailReal && (
+            {!isRealOAuth && (
               <div>
                 <label className="text-[11.5px] font-semibold text-foreground/80 uppercase tracking-wider mb-1.5 block">
                   E-mail
