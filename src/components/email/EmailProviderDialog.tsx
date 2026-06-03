@@ -29,7 +29,7 @@ const IMPORT_OPTIONS = [
 ];
 
 const OAUTH_PROVIDERS = new Set(["gmail", "outlook", "office365", "icloud", "yahoo", "aol", "exchange"]);
-const FULLY_IMPLEMENTED_OAUTH = new Set(["gmail", "outlook"]);
+const FULLY_IMPLEMENTED_OAUTH = new Set(["gmail", "outlook", "office365", "exchange"]);
 
 export function EmailProviderDialog({
   open, onOpenChange, providerId, providerName, companyId, userId, onSuccess,
@@ -38,7 +38,7 @@ export function EmailProviderDialog({
   const isImap  = providerId === "imap_smtp";
   const isRealOAuth = FULLY_IMPLEMENTED_OAUTH.has(providerId);
   const isGmailReal = providerId === "gmail";
-  const isOutlookReal = providerId === "outlook";
+  const isOutlookReal = ["outlook", "office365", "exchange"].includes(providerId);
 
   const [displayName, setDisplayName] = useState("");
   const [emailAddress, setEmailAddress] = useState("");
@@ -70,9 +70,22 @@ export function EmailProviderDialog({
     if (isRealOAuth) {
       setBusy(true);
       try {
-        const { data, error } = await supabase.functions.invoke("email-oauth-start", {
+        const fnName = isGmailReal ? "email-oauth-start" : "email-oauth-start-microsoft";
+        const { data, error } = await supabase.functions.invoke(fnName, {
           body: {
             provider: providerId,
+            account_draft: {
+              servidor_id: companyId,
+              display_name: displayName || providerName,
+              email_address: emailAddress.trim() || null,
+              shared_sender: sharedSender,
+              sender_name: sharedSender ? senderName.trim() || null : null,
+              daily_limit: dailyLimit ? Number(dailyLimit) : null,
+              import_since: importSince,
+              crm_integration: crmIntegration,
+              calendar_integration: calendarIntegration,
+            },
+            // Legacy fields for backward compatibility with email-oauth-start (Gmail)
             displayName: displayName || providerName,
             importSince,
             sharedSender,
