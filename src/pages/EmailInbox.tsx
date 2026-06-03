@@ -166,12 +166,15 @@ export default function EmailInbox() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [composePrefill, setComposePrefill] = useState<{ to?: string; subject?: string; threadId?: string | null } | null>(null);
 
+  const isUnified = accountId === "inbox" || !accountId;
+  const effectiveAccountId = isUnified ? null : accountId;
+
   const loadAccount = async () => {
-    if (!accountId) {
+    if (isUnified) {
       setAccount(null);
       return;
     }
-    const { data } = await supabase.from("email_accounts" as any).select("*").eq("id", accountId).maybeSingle();
+    const { data } = await supabase.from("email_accounts" as any).select("*").eq("id", effectiveAccountId).maybeSingle();
     setAccount(data as any);
   };
 
@@ -188,8 +191,8 @@ export default function EmailInbox() {
       .eq("folder", folder)
       .order("received_at", { ascending: false }).limit(200);
 
-    if (accountId) {
-      query = query.eq("account_id", accountId);
+    if (effectiveAccountId) {
+      query = query.eq("account_id", effectiveAccountId);
     }
 
     const { data, error } = await query;
