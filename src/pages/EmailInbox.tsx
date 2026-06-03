@@ -167,39 +167,49 @@ export default function EmailInbox() {
   const [composePrefill, setComposePrefill] = useState<{ to?: string; subject?: string; threadId?: string | null } | null>(null);
 
   const loadAccount = async () => {
-    if (!accountId) return;
+    if (!accountId) {
+      setAccount(null);
+      return;
+    }
     const { data } = await supabase.from("email_accounts" as any).select("*").eq("id", accountId).maybeSingle();
     setAccount(data as any);
   };
+
   const loadAllAccounts = async () => {
     const { data } = await supabase
       .from("email_accounts" as any).select("*").order("created_at", { ascending: false });
     setAllAccounts(((data || []) as unknown) as EmailAccount[]);
   };
+
   const loadMessages = async () => {
-    if (!accountId) return;
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from("email_messages" as any).select("*")
-      .eq("account_id", accountId).eq("folder", folder)
+      .eq("folder", folder)
       .order("received_at", { ascending: false }).limit(200);
+
+    if (accountId) {
+      query = query.eq("account_id", accountId);
+    }
+
+    const { data, error } = await query;
     if (error) toast.error("Erro ao carregar mensagens", { description: error.message });
     setMessages(((data || []) as unknown) as EmailMessage[]);
     setLoading(false);
   };
 
-  useEffect(() => { loadAccount(); loadAllAccounts(); /* eslint-disable-next-line */ }, [accountId]);
-  useEffect(() => { loadMessages(); setSelectedId(null); setSelectedIds(new Set());
-    /* eslint-disable-next-line */ }, [accountId, folder]);
+  useEffect(() => { loadAccount(); loadAllAccounts(); }, [accountId]);
+  useEffect(() => { loadMessages(); setSelectedId(null); setSelectedIds(new Set()); }, [accountId, folder]);
 
   useEffect(() => {
-    if (!accountId) return;
+    const channelName = accountId ? `email_messages:${accountId}` : "email_messages:all";
+    const filter = accountId ? `account_id=eq.${accountId}` : undefined;
+
     const ch = supabase
-      .channel(`email_messages:${accountId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "email_messages", filter: `account_id=eq.${accountId}` }, () => loadMessages())
+      .channel(channelName)
+      .on("postgres_changes", { event: "*", schema: "public", table: "email_messages", filter }, () => loadMessages())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-    /* eslint-disable-next-line */
   }, [accountId, folder]);
 
   const handleSync = async () => {
