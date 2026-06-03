@@ -293,7 +293,7 @@ export function EmailProviderDialog({
           <button onClick={handleConnect} disabled={busy}
             className="h-9 px-4 rounded-lg text-[13px] font-semibold text-white bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 inline-flex items-center gap-1.5 transition">
             {busy && <Loader2 className="w-4 h-4 animate-spin" />}
-            {isGmailReal ? "Autorizar no Google" : "Salvar conta"}
+            {isRealOAuth ? `Autorizar na ${isOutlookReal ? "Microsoft" : "Google"}` : "Salvar conta"}
           </button>
         </DialogFooter>
       </DialogContent>
