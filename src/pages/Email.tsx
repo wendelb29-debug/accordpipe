@@ -46,10 +46,12 @@ export default function Email() {
   const loadAccounts = async () => {
     if (!companyId || !user) return;
     setLoading(true);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("email_accounts" as any)
       .select("*")
       .order("created_at", { ascending: false });
+
+    console.log("[Email.tsx] accounts carregadas:", data, "erro:", error);
     setAccounts(((data || []) as unknown) as EmailAccount[]);
     setLoading(false);
   };
