@@ -202,8 +202,7 @@ export default function EmailInbox() {
     if (!accountId || !account) return;
     setSyncing(true);
     try {
-      const fnName = account.provider === "outlook" ? "email-outlook-sync" : "email-gmail-sync";
-      const { error } = await supabase.functions.invoke(fnName, { body: { accountId } });
+      const { error } = await supabase.functions.invoke("email-sync", { body: { accountId } });
       if (error) throw error;
       toast.success("Sincronização concluída");
       await loadMessages(); await loadAccount();
