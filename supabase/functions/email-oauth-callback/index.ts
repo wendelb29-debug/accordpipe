@@ -25,35 +25,80 @@ Deno.serve(async (req) => {
     const state = JSON.parse(atob(stateRaw));
     const { userId, servidorId, provider, displayName, importSince, sharedSender, senderName, dailyLimit, crmIntegration, calendarIntegration } = state;
 
-    const clientId = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID")!;
-    const clientSecret = Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET")!;
-    const redirectUri = Deno.env.get("GOOGLE_OAUTH_REDIRECT_URI")!;
+    const isOutlook = provider === "outlook";
 
-    // Exchange code for tokens
-    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        code, client_id: clientId, client_secret: clientSecret,
-        redirect_uri: redirectUri, grant_type: "authorization_code",
-      }),
-    });
-    const tokens = await tokenRes.json();
-    if (!tokenRes.ok) {
-      console.error("Token exchange failed", tokens);
-      return redirect(`${appBaseUrl}/email?error=${encodeURIComponent(tokens.error || "token_exchange_failed")}`);
-    }
+    let access_token: string;
+    let refresh_token: string | null = null;
+    let expires_in = 3600;
+    let scope = "";
+    let emailAddress: string | null = null;
+    let providerUserId: string | null = null;
 
-    const { access_token, refresh_token, expires_in, scope } = tokens;
+    if (isOutlook) {
+      const clientId = Deno.env.get("MICROSOFT_OAUTH_CLIENT_ID")!;
+      const clientSecret = Deno.env.get("MICROSOFT_OAUTH_CLIENT_SECRET")!;
+      const redirectUri = Deno.env.get("MICROSOFT_OAUTH_REDIRECT_URI")!;
+      const tenant = Deno.env.get("MICROSOFT_OAUTH_TENANT") || "common";
 
-    // Get user email from Gmail profile
-    const profRes = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/profile", {
-      headers: { Authorization: `Bearer ${access_token}` },
-    });
-    const prof = await profRes.json();
-    const emailAddress = prof.emailAddress;
-    if (!emailAddress) {
-      return redirect(`${appBaseUrl}/email?error=no_email`);
+      const tokenRes = await fetch(`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          client_id: clientId,
+          client_secret: clientSecret,
+          code,
+          redirect_uri: redirectUri,
+          grant_type: "authorization_code",
+          scope: "offline_access openid profile email User.Read Mail.Read Mail.ReadWrite Mail.Send",
+        }),
+      });
+      const tokens = await tokenRes.json();
+      if (!tokenRes.ok) {
+        console.error("MS token exchange failed", tokens);
+        return redirect(`${appBaseUrl}/email?error=${encodeURIComponent(tokens.error_description || tokens.error || "token_exchange_failed")}`);
+      }
+      access_token = tokens.access_token;
+      refresh_token = tokens.refresh_token || null;
+      expires_in = tokens.expires_in || 3600;
+      scope = tokens.scope || "";
+
+      const profRes = await fetch("https://graph.microsoft.com/v1.0/me", {
+        headers: { Authorization: `Bearer ${access_token}` },
+      });
+      const prof = await profRes.json();
+      emailAddress = prof.mail || prof.userPrincipalName || null;
+      providerUserId = prof.id || emailAddress;
+      if (!emailAddress) return redirect(`${appBaseUrl}/email?error=no_email`);
+    } else {
+      const clientId = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID")!;
+      const clientSecret = Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET")!;
+      const redirectUri = Deno.env.get("GOOGLE_OAUTH_REDIRECT_URI")!;
+
+      const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          code, client_id: clientId, client_secret: clientSecret,
+          redirect_uri: redirectUri, grant_type: "authorization_code",
+        }),
+      });
+      const tokens = await tokenRes.json();
+      if (!tokenRes.ok) {
+        console.error("Token exchange failed", tokens);
+        return redirect(`${appBaseUrl}/email?error=${encodeURIComponent(tokens.error || "token_exchange_failed")}`);
+      }
+      access_token = tokens.access_token;
+      refresh_token = tokens.refresh_token || null;
+      expires_in = tokens.expires_in || 3600;
+      scope = tokens.scope || "";
+
+      const profRes = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/profile", {
+        headers: { Authorization: `Bearer ${access_token}` },
+      });
+      const prof = await profRes.json();
+      emailAddress = prof.emailAddress;
+      providerUserId = prof.emailAddress;
+      if (!emailAddress) return redirect(`${appBaseUrl}/email?error=no_email`);
     }
 
     const admin = createClient(
@@ -61,7 +106,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const expiresAt = new Date(Date.now() + (expires_in || 3600) * 1000).toISOString();
+    const expiresAt = new Date(Date.now() + expires_in * 1000).toISOString();
 
     // Upsert by (servidor_id, email_address)
     const { data: existing } = await admin
@@ -75,7 +120,7 @@ Deno.serve(async (req) => {
       servidor_id: servidorId,
       user_id: userId,
       provider,
-      display_name: displayName || "Gmail",
+      display_name: displayName || (isOutlook ? "Outlook" : "Gmail"),
       email_address: emailAddress,
       status: "connected",
       status_message: null,
@@ -91,7 +136,7 @@ Deno.serve(async (req) => {
         expires_at: expiresAt,
       },
       oauth_scopes: scope,
-      oauth_provider_user_id: prof.emailAddress,
+      oauth_provider_user_id: providerUserId,
     };
 
     let accountId: string;
@@ -111,15 +156,17 @@ Deno.serve(async (req) => {
       accountId = ins.id;
     }
 
-    // Trigger initial sync (fire and forget)
-    fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/email-gmail-sync`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-      },
-      body: JSON.stringify({ accountId }),
-    }).catch(() => {});
+    // Trigger initial sync (Gmail only for now; Outlook sync function chega depois)
+    if (!isOutlook) {
+      fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/email-gmail-sync`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({ accountId }),
+      }).catch(() => {});
+    }
 
     return redirect(`${appBaseUrl}/email?connected=${accountId}`);
   } catch (err) {
