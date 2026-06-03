@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
     }));
 
     let url: URL;
-    console.log(`[oauth-start] Iniciando fluxo para ${provider}. ClientID: ${clientId}, Redirect URI: ${redirectUri}`);
+    console.log(`[oauth-start] DEBUG - ClientID: "${clientId}", RedirectURI: "${redirectUri}"`);
     
     if (isOutlook) {
       const tenant = readEnv("MICROSOFT_OAUTH_TENANT", "TENANT_OAUTH_MICROSOFT") || "common";
