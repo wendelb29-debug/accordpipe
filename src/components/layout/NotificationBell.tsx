@@ -121,9 +121,22 @@ export function NotificationBell() {
         schema: 'public',
         table: 'notifications',
         filter: `user_id=eq.${user?.id}`,
-      }, () => {
+      }, (payload) => {
+        const newNotif = payload.new as Notification;
         playNotificationSound();
         fetchNotifications();
+        
+        // Mostrar toast para novas notificações
+        toast(newNotif.title, {
+          description: newNotif.message,
+          icon: getIcon(newNotif.type),
+          action: newNotif.link ? {
+            label: "Ver",
+            onClick: () => {
+              if (newNotif.link) navigate(newNotif.link);
+            }
+          } : undefined
+        });
       })
       .subscribe();
 
