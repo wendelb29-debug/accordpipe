@@ -492,7 +492,7 @@ export default function EmailInbox() {
         </aside>
 
         {/* LIST */}
-        <section className={`${selected ? "w-full lg:w-[420px]" : "flex-1"} shrink-0 border-r border-border flex flex-col min-h-0 transition-all ${selected ? "hidden lg:flex" : "flex"}`}>
+        <section className={`${selected ? "w-full lg:w-[420px]" : "flex-1"} shrink min-w-0 border-r border-border flex flex-col min-h-0 transition-all ${selected ? "hidden lg:flex" : "flex"}`}>
           {/* Toolbar */}
           <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border bg-card/60 backdrop-blur-sm shrink-0">
             <input
@@ -557,12 +557,12 @@ export default function EmailInbox() {
                 <button
                   key={m.id}
                   onClick={() => handleSelect(m)}
-                  className={`group w-full text-left flex gap-3 px-4 py-3 border-b border-border/60 hover:bg-muted/40 transition relative ${
+                  className={`group w-full text-left flex gap-3 px-4 py-3 border-b border-border/60 hover:bg-muted/40 transition relative overflow-hidden ${
                     selected?.id === m.id ? "bg-emerald-500/[0.08]" : ""
                   } ${!m.is_read ? "bg-blue-500/[0.03] dark:bg-blue-500/[0.04]" : ""}`}
                 >
                   {!m.is_read && (
-                    <span className="absolute left-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span className="absolute left-1.5 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                   )}
                   <input
                     type="checkbox"
@@ -577,7 +577,7 @@ export default function EmailInbox() {
                       <span className={`text-[13.5px] truncate ${!m.is_read ? "font-bold text-foreground" : "font-medium text-foreground/85"}`}>
                         {m.from_name || m.from_email}
                       </span>
-                      <span className="text-[10.5px] text-muted-foreground ml-auto shrink-0 tabular-nums">
+                      <span className="text-[10.5px] text-muted-foreground ml-auto shrink-0 tabular-nums whitespace-nowrap">
                         {formatRelative(m.received_at)}
                       </span>
                     </div>
