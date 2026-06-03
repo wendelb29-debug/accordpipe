@@ -205,15 +205,15 @@ export default function EmailInbox() {
   useEffect(() => { loadMessages(); setSelectedId(null); setSelectedIds(new Set()); }, [accountId, folder]);
 
   useEffect(() => {
-    const channelName = accountId ? `email_messages:${accountId}` : "email_messages:all";
-    const filter = accountId ? `account_id=eq.${accountId}` : undefined;
+    const channelName = effectiveAccountId ? `email_messages:${effectiveAccountId}` : "email_messages:all";
+    const filter = effectiveAccountId ? `account_id=eq.${effectiveAccountId}` : undefined;
 
     const ch = supabase
       .channel(channelName)
       .on("postgres_changes", { event: "*", schema: "public", table: "email_messages", filter }, () => loadMessages())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [accountId, folder]);
+  }, [effectiveAccountId, folder]);
 
   const handleSync = async () => {
     setSyncing(true);
