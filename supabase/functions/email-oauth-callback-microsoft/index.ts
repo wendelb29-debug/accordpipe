@@ -7,7 +7,11 @@ serve(async (req) => {
   const code = url.searchParams.get("code");
   const stateRaw = url.searchParams.get("state");
   const errorParam = url.searchParams.get("error");
+  const errorDescription = url.searchParams.get("error_description");
   const appBase = Deno.env.get("APP_BASE_URL") || "https://accordpipe.com.br";
+
+  console.log(`[Callback] Received request. Code: ${code ? "present" : "absent"}, Error: ${errorParam || "none"}`);
+  if (errorDescription) console.log(`[Callback] Error description: ${errorDescription}`);
 
   if (errorParam || !code || !stateRaw) {
     return Response.redirect(`${appBase}/email?error=${encodeURIComponent(errorParam || "missing_code")}`, 302);

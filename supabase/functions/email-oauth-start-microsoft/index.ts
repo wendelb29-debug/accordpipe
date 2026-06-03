@@ -111,8 +111,13 @@ serve(async (req) => {
   }));
 
   const authUrl = new URL("https://login.microsoftonline.com/common/oauth2/v2.0/authorize");
-  authUrl.searchParams.set("client_id", requireEnv("MICROSOFT_OAUTH_CLIENT_ID", "ID_CLIENTE_OAUTH_MICROSOFT"));
-  authUrl.searchParams.set("redirect_uri", requireEnv("MICROSOFT_OAUTH_REDIRECT_URI", "URI_REDIRECIONADA_OAUTH_MICROSOFT"));
+  const clientId = requireEnv("MICROSOFT_OAUTH_CLIENT_ID", "ID_CLIENTE_OAUTH_MICROSOFT");
+  const redirectUri = requireEnv("MICROSOFT_OAUTH_REDIRECT_URI", "URI_REDIRECIONADA_OAUTH_MICROSOFT");
+
+  console.log(`[Start] Redirecting user ${user.id} to Microsoft. ClientID: ${clientId.slice(0, 8)}..., RedirectURI: ${redirectUri}`);
+
+  authUrl.searchParams.set("client_id", clientId);
+  authUrl.searchParams.set("redirect_uri", redirectUri);
   authUrl.searchParams.set("response_type", "code");
   authUrl.searchParams.set("response_mode", "query");
   authUrl.searchParams.set("scope", SCOPES);
