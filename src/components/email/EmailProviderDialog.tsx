@@ -153,20 +153,20 @@ export function EmailProviderDialog({
           </DialogTitle>
         </DialogHeader>
 
-        {isGmailReal && (
+        {isRealOAuth && (
           <div className="mt-3 rounded-lg border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-500/10 p-3 flex gap-2.5">
             <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
             <div className="text-[11.5px] text-emerald-700 dark:text-emerald-300 leading-relaxed">
-              Você será redirecionado ao <b>Google</b> para autorizar o Accord a ler, enviar e gerenciar seus e-mails. Após autorizar, voltamos automaticamente e sincronizamos sua caixa.
+              Você será redirecionado à <b>{isOutlookReal ? "Microsoft" : "Google"}</b> para autorizar o Accord a ler, enviar e gerenciar seus e-mails. Após autorizar, voltamos automaticamente e sincronizamos sua caixa.
             </div>
           </div>
         )}
 
-        {isOAuth && !isGmailReal && (
+        {isOAuth && !isRealOAuth && (
           <div className="mt-3 rounded-lg border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-500/10 p-3 flex gap-2.5">
             <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <div className="text-[11.5px] text-amber-700 dark:text-amber-300 leading-relaxed">
-              OAuth de <b>{providerName}</b> ainda em construção. Por enquanto, apenas o <b>Gmail</b> está 100% funcional com envio e recebimento real. Você pode cadastrar a conta aqui para já preparar o ambiente.
+              OAuth de <b>{providerName}</b> ainda em construção. Por enquanto, <b>Gmail</b> e <b>Outlook</b> estão 100% funcionais.
             </div>
           </div>
         )}
