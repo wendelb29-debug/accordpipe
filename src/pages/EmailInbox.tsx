@@ -387,43 +387,53 @@ export default function EmailInbox() {
                 <ChevronDown className="w-4 h-4 text-muted-foreground/60 group-hover:text-foreground transition" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" sideOffset={6} className="w-[300px] p-1.5 rounded-2xl border-border bg-popover shadow-2xl">
-              <DropdownMenuItem
-                onSelect={() => navigate("/email/inbox")}
-                className={`rounded-lg px-2.5 py-2 cursor-pointer gap-2.5 ${!accountId ? "bg-emerald-500/10" : ""}`}
-              >
-                <div className="w-7 h-7 rounded-md bg-muted/40 flex items-center justify-center shrink-0">
-                  <Mail className="w-4.5 h-4.5 text-emerald-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[12.5px] font-semibold text-foreground truncate">Caixa Unificada</div>
-                  <div className="text-[11px] text-muted-foreground truncate">Ver todos os e-mails</div>
-                </div>
-                {!accountId && <Check className="w-3.5 h-3.5 text-emerald-600" />}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="my-1 bg-border" />
-              {allAccounts.map(acc => (
-                <DropdownMenuItem
-                  key={acc.id}
-                  onSelect={() => navigate(`/email/${acc.id}`)}
-                  className={`rounded-lg px-2.5 py-2 cursor-pointer gap-2.5 ${acc.id === accountId ? "bg-emerald-500/10" : ""}`}
-                >
-                  <div className="w-7 h-7 rounded-md bg-muted/40 flex items-center justify-center shrink-0">
-                    <ProviderLogo provider={acc.provider} className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[12.5px] font-semibold text-foreground truncate">{providerName(acc.provider)}</div>
-                    <div className="text-[11px] text-muted-foreground truncate">{acc.email_address}</div>
-                  </div>
-                  {acc.id === accountId && <Check className="w-3.5 h-3.5 text-emerald-600" />}
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator className="my-1 bg-border" />
-              <DropdownMenuItem onSelect={() => navigate("/email")} className="rounded-lg px-2.5 py-2 cursor-pointer gap-2.5 text-[13px] text-emerald-600">
-                <Plus className="w-4 h-4" />
-                Conectar outra conta
-              </DropdownMenuItem>
-            </DropdownMenuContent>
+          <DropdownMenuContent align="start" sideOffset={6} className="w-[300px] p-1.5 rounded-2xl border-border bg-popover shadow-2xl">
+            {/* CAIXA UNIFICADA — item fixo no topo */}
+            <DropdownMenuItem
+              onSelect={() => navigate("/email/inbox")}
+              className={`rounded-lg px-2.5 py-2 cursor-pointer gap-2.5 ${isUnified ? "bg-emerald-500/10" : ""}`}
+            >
+              <div className="w-7 h-7 rounded-md bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shrink-0">
+                <Mail className="w-4 h-4 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[12.5px] font-semibold text-foreground truncate">Caixa Unificada</div>
+                <div className="text-[11px] text-muted-foreground truncate">Ver todos os e-mails</div>
+              </div>
+              {isUnified && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator className="my-1 bg-border" />
+
+            {/* CONTAS CONECTADAS — iterar TODAS as contas com status connected */}
+            {allAccounts
+              .filter(acc => acc.status === "connected")
+              .map(acc => {
+                const isActive = !isUnified && acc.id === accountId;
+                return (
+                  <DropdownMenuItem
+                    key={acc.id}
+                    onSelect={() => navigate(`/email/${acc.id}`)}
+                    className={`rounded-lg px-2.5 py-2 cursor-pointer gap-2.5 ${isActive ? "bg-emerald-500/10" : ""}`}
+                  >
+                    <div className="w-7 h-7 rounded-md bg-muted/40 flex items-center justify-center shrink-0">
+                      <ProviderLogo provider={acc.provider} className="w-4.5 h-4.5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12.5px] font-semibold text-foreground truncate">{providerName(acc.provider)}</div>
+                      <div className="text-[11px] text-muted-foreground truncate">{acc.email_address}</div>
+                    </div>
+                    {isActive && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                  </DropdownMenuItem>
+                );
+              })}
+
+            <DropdownMenuSeparator className="my-1 bg-border" />
+            <DropdownMenuItem onSelect={() => navigate("/email")} className="rounded-lg px-2.5 py-2 cursor-pointer gap-2.5 text-[13px] text-emerald-600">
+              <Plus className="w-4 h-4" />
+              Conectar outra conta
+            </DropdownMenuItem>
+          </DropdownMenuContent>
           </DropdownMenu>
 
           <div className="flex items-center gap-1.5 ml-2">
