@@ -69,7 +69,7 @@ export default function Email() {
     const connected = searchParams.get("connected");
     const error = searchParams.get("error");
     if (connected) {
-      toast.success("Conta Gmail conectada!", { description: "Sincronizando suas mensagens..." });
+      toast.success("Conta de e-mail conectada!", { description: "Sincronizando suas mensagens..." });
       setSearchParams({});
       setTimeout(() => navigate(`/email/${connected}`), 800);
     } else if (error) {
