@@ -69,7 +69,7 @@ export default function Email() {
     const connected = searchParams.get("connected");
     const error = searchParams.get("error");
     if (connected) {
-      toast.success("Conta Gmail conectada!", { description: "Sincronizando suas mensagens..." });
+      toast.success("Conta de e-mail conectada!", { description: "Sincronizando suas mensagens..." });
       setSearchParams({});
       setTimeout(() => navigate(`/email/${connected}`), 800);
     } else if (error) {
@@ -163,7 +163,7 @@ export default function Email() {
                               : "Desconectado"}
                       </div>
                     </div>
-                    {acc.status === "connected" && acc.provider === "gmail" && (
+                    {acc.status === "connected" && (acc.provider === "gmail" || acc.provider === "outlook") && (
                       <button
                         onClick={() => handleOpen(acc.id)}
                         className="h-8 px-3 rounded-lg inline-flex items-center gap-1.5 text-[12px] font-semibold text-white bg-emerald-500 hover:bg-emerald-600 transition"

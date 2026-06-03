@@ -15,6 +15,17 @@ const GMAIL_SCOPES = [
   "profile",
 ].join(" ");
 
+const OUTLOOK_SCOPES = [
+  "offline_access",
+  "openid",
+  "profile",
+  "email",
+  "User.Read",
+  "Mail.Read",
+  "Mail.ReadWrite",
+  "Mail.Send",
+].join(" ");
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -42,14 +53,19 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { provider, displayName, importSince, sharedSender, senderName, dailyLimit, crmIntegration, calendarIntegration } = body;
 
-    if (provider !== "gmail") {
-      return new Response(JSON.stringify({ error: "OAuth ainda só suportado para Gmail" }), {
+    if (provider !== "gmail" && provider !== "outlook") {
+      return new Response(JSON.stringify({ error: "OAuth suportado apenas para Gmail e Outlook" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const clientId = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID");
-    const redirectUri = Deno.env.get("GOOGLE_OAUTH_REDIRECT_URI");
+    const isOutlook = provider === "outlook";
+    const clientId = isOutlook
+      ? Deno.env.get("MICROSOFT_OAUTH_CLIENT_ID")
+      : Deno.env.get("GOOGLE_OAUTH_CLIENT_ID");
+    const redirectUri = isOutlook
+      ? Deno.env.get("MICROSOFT_OAUTH_REDIRECT_URI")
+      : Deno.env.get("GOOGLE_OAUTH_REDIRECT_URI");
     if (!clientId || !redirectUri) {
       return new Response(JSON.stringify({ error: "OAuth não configurado" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -77,15 +93,28 @@ Deno.serve(async (req) => {
       nonce: crypto.randomUUID(),
     }));
 
-    const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
-    url.searchParams.set("client_id", clientId);
-    url.searchParams.set("redirect_uri", redirectUri);
-    url.searchParams.set("response_type", "code");
-    url.searchParams.set("scope", GMAIL_SCOPES);
-    url.searchParams.set("access_type", "offline");
-    url.searchParams.set("prompt", "select_account consent");
-    url.searchParams.set("include_granted_scopes", "true");
-    url.searchParams.set("state", state);
+    let url: URL;
+    if (isOutlook) {
+      const tenant = Deno.env.get("MICROSOFT_OAUTH_TENANT") || "common";
+      url = new URL(`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize`);
+      url.searchParams.set("client_id", clientId);
+      url.searchParams.set("redirect_uri", redirectUri);
+      url.searchParams.set("response_type", "code");
+      url.searchParams.set("response_mode", "query");
+      url.searchParams.set("scope", OUTLOOK_SCOPES);
+      url.searchParams.set("prompt", "select_account");
+      url.searchParams.set("state", state);
+    } else {
+      url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+      url.searchParams.set("client_id", clientId);
+      url.searchParams.set("redirect_uri", redirectUri);
+      url.searchParams.set("response_type", "code");
+      url.searchParams.set("scope", GMAIL_SCOPES);
+      url.searchParams.set("access_type", "offline");
+      url.searchParams.set("prompt", "select_account consent");
+      url.searchParams.set("include_granted_scopes", "true");
+      url.searchParams.set("state", state);
+    }
 
     return new Response(JSON.stringify({ url: url.toString() }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },

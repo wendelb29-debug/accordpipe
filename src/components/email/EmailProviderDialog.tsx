@@ -29,14 +29,16 @@ const IMPORT_OPTIONS = [
 ];
 
 const OAUTH_PROVIDERS = new Set(["gmail", "outlook", "office365", "icloud", "yahoo", "aol", "exchange"]);
-const FULLY_IMPLEMENTED_OAUTH = new Set(["gmail"]);
+const FULLY_IMPLEMENTED_OAUTH = new Set(["gmail", "outlook"]);
 
 export function EmailProviderDialog({
   open, onOpenChange, providerId, providerName, companyId, userId, onSuccess,
 }: EmailProviderDialogProps) {
   const isOAuth = OAUTH_PROVIDERS.has(providerId);
   const isImap  = providerId === "imap_smtp";
+  const isRealOAuth = FULLY_IMPLEMENTED_OAUTH.has(providerId);
   const isGmailReal = providerId === "gmail";
+  const isOutlookReal = providerId === "outlook";
 
   const [displayName, setDisplayName] = useState("");
   const [emailAddress, setEmailAddress] = useState("");
@@ -64,14 +66,14 @@ export function EmailProviderDialog({
   const handleConnect = async () => {
     if (!companyId || !userId) { toast.error("Sessão inválida"); return; }
 
-    // Gmail OAuth real flow
-    if (isGmailReal) {
+    // Real OAuth flow (Gmail / Outlook)
+    if (isRealOAuth) {
       setBusy(true);
       try {
         const { data, error } = await supabase.functions.invoke("email-oauth-start", {
           body: {
-            provider: "gmail",
-            displayName: displayName || "Gmail",
+            provider: providerId,
+            displayName: displayName || providerName,
             importSince,
             sharedSender,
             senderName: senderName.trim(),
@@ -84,7 +86,7 @@ export function EmailProviderDialog({
         if (!data?.url) throw new Error("URL de autorização não recebida");
         window.location.href = data.url;
       } catch (err: any) {
-        toast.error("Erro ao iniciar autorização Google", { description: err?.message });
+        toast.error(`Erro ao iniciar autorização ${isOutlookReal ? "Microsoft" : "Google"}`, { description: err?.message });
         setBusy(false);
       }
       return;
@@ -151,20 +153,20 @@ export function EmailProviderDialog({
           </DialogTitle>
         </DialogHeader>
 
-        {isGmailReal && (
+        {isRealOAuth && (
           <div className="mt-3 rounded-lg border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-500/10 p-3 flex gap-2.5">
             <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
             <div className="text-[11.5px] text-emerald-700 dark:text-emerald-300 leading-relaxed">
-              Você será redirecionado ao <b>Google</b> para autorizar o Accord a ler, enviar e gerenciar seus e-mails. Após autorizar, voltamos automaticamente e sincronizamos sua caixa.
+              Você será redirecionado à <b>{isOutlookReal ? "Microsoft" : "Google"}</b> para autorizar o Accord a ler, enviar e gerenciar seus e-mails. Após autorizar, voltamos automaticamente e sincronizamos sua caixa.
             </div>
           </div>
         )}
 
-        {isOAuth && !isGmailReal && (
+        {isOAuth && !isRealOAuth && (
           <div className="mt-3 rounded-lg border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-500/10 p-3 flex gap-2.5">
             <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <div className="text-[11.5px] text-amber-700 dark:text-amber-300 leading-relaxed">
-              OAuth de <b>{providerName}</b> ainda em construção. Por enquanto, apenas o <b>Gmail</b> está 100% funcional com envio e recebimento real. Você pode cadastrar a conta aqui para já preparar o ambiente.
+              OAuth de <b>{providerName}</b> ainda em construção. Por enquanto, <b>Gmail</b> e <b>Outlook</b> estão 100% funcionais.
             </div>
           </div>
         )}
@@ -183,8 +185,8 @@ export function EmailProviderDialog({
         )}
 
         <div className="space-y-4 mt-4">
-          <div className={isGmailReal ? "" : "grid grid-cols-2 gap-3"}>
-            <div className={isGmailReal ? "col-span-2" : ""}>
+          <div className={isRealOAuth ? "" : "grid grid-cols-2 gap-3"}>
+            <div className={isRealOAuth ? "col-span-2" : ""}>
               <label className="text-[11.5px] font-semibold text-foreground/80 uppercase tracking-wider mb-1.5 block">
                 Apelido
               </label>
@@ -195,7 +197,7 @@ export function EmailProviderDialog({
                 className="w-full h-9 px-3 rounded-lg border border-border bg-background text-foreground text-[13.5px] outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900/30 transition"
               />
             </div>
-            {!isGmailReal && (
+            {!isRealOAuth && (
               <div>
                 <label className="text-[11.5px] font-semibold text-foreground/80 uppercase tracking-wider mb-1.5 block">
                   E-mail
@@ -291,7 +293,7 @@ export function EmailProviderDialog({
           <button onClick={handleConnect} disabled={busy}
             className="h-9 px-4 rounded-lg text-[13px] font-semibold text-white bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 inline-flex items-center gap-1.5 transition">
             {busy && <Loader2 className="w-4 h-4 animate-spin" />}
-            {isGmailReal ? "Autorizar no Google" : "Salvar conta"}
+            {isRealOAuth ? `Autorizar na ${isOutlookReal ? "Microsoft" : "Google"}` : "Salvar conta"}
           </button>
         </DialogFooter>
       </DialogContent>
