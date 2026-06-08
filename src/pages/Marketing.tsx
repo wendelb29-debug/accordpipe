@@ -9,10 +9,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Megaphone, Plus, MessageSquare, Mail, Activity, CheckCircle2, XCircle, Pause, Loader2 } from "lucide-react";
+import { Megaphone, Plus, MessageSquare, Mail, Activity, CheckCircle2, XCircle, Pause, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { NewCampaignDialog } from "@/components/marketing/NewCampaignDialog";
 import { EmailConnectionsPanel } from "@/components/marketing/EmailConnectionsPanel";
+import { EmailTemplateManager } from "@/components/marketing/EmailTemplateManager";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -48,6 +49,7 @@ export default function Marketing() {
   const [loading, setLoading] = useState(true);
   const [openNew, setOpenNew] = useState(false);
   const [newChannel, setNewChannel] = useState<"whatsapp" | "email">("whatsapp");
+  const [templatesOpen, setTemplatesOpen] = useState(false);
 
   const loadCampaigns = async () => {
     if (!companyId) return;
@@ -117,6 +119,13 @@ export default function Marketing() {
             >
               <MessageSquare className="w-4 h-4" />
               Campanha WhatsApp
+            </button>
+            <button
+              onClick={() => setTemplatesOpen(true)}
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg border border-border bg-card hover:bg-muted text-[13px] font-semibold transition"
+            >
+              <Sparkles className="w-4 h-4 text-violet-500" />
+              Templates de e-mail
             </button>
           </div>
 
@@ -192,6 +201,12 @@ export default function Marketing() {
           setOpenNew(false);
           navigate(`/marketing/${id}`);
         }}
+      />
+
+      <EmailTemplateManager
+        open={templatesOpen}
+        onOpenChange={setTemplatesOpen}
+        mode="manage"
       />
     </PageContainer>
   );
