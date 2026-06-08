@@ -65,6 +65,8 @@ const AccordPulse = lazy(() => import("./pages/AccordPulse"));
 const Collabs = lazy(() => import("./pages/Collabs"));
 const Email = lazy(() => import("./pages/Email"));
 const EmailInbox = lazy(() => import("./pages/EmailInbox"));
+const Marketing = lazy(() => import("./pages/Marketing"));
+const MarketingCampaignDetail = lazy(() => import("./pages/MarketingCampaignDetail"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
