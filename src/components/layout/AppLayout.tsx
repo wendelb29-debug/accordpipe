@@ -56,6 +56,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <BackNavigationProvider>
+      <LoginNotifications />
       <div className={cn(
         "bg-background flex flex-col",
         isFullscreen ? "h-[100dvh] overflow-hidden" : "min-h-screen"
