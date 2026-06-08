@@ -350,8 +350,8 @@ export default function EmailInbox() {
     navigate(`/atividades?from=email&messageId=${msg.id}&title=${encodeURIComponent(msg.subject || "")}`);
   };
   const handleShareToCollab = (msg: EmailMessage) => {
-    navigate(`/collabs?share=email&messageId=${msg.id}`);
-    toast.info("Selecione uma collab para compartilhar este e-mail");
+    setDiscussMessage(msg);
+    setDiscussOpen(true);
   };
 
   if (loading && !messages.length) {
