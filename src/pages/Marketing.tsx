@@ -106,16 +106,16 @@ export default function Marketing() {
           <div className="flex flex-wrap items-center justify-center gap-3 py-2">
             <button
               onClick={() => openNewCampaign("email")}
-              className="inline-flex items-center gap-2 h-9 px-4 rounded-lg text-[13px] font-semibold text-white bg-blue-500 hover:bg-blue-600 transition shadow-sm shadow-blue-500/20"
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-[13px] font-semibold text-white bg-blue-500 hover:bg-blue-600 transition shadow-sm shadow-blue-500/20"
             >
-              <Mail className="h-4 w-4" />
+              <Mail className="w-4 h-4" />
               Campanha de e-mail
             </button>
             <button
               onClick={() => openNewCampaign("whatsapp")}
-              className="inline-flex items-center gap-2 h-9 px-4 rounded-lg text-[13px] font-semibold text-white bg-emerald-500 hover:bg-emerald-600 transition shadow-sm shadow-emerald-500/20"
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-[13px] font-semibold text-white bg-emerald-500 hover:bg-emerald-600 transition shadow-sm shadow-emerald-500/20"
             >
-              <MessageSquare className="h-4 w-4" />
+              <MessageSquare className="w-4 h-4" />
               Campanha WhatsApp
             </button>
           </div>
