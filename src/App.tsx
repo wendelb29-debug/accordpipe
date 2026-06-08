@@ -346,6 +346,22 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/marketing"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "ceo"]}>
+                  <AppLayout><Marketing /></AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/marketing/:id"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "ceo"]}>
+                  <AppLayout><MarketingCampaignDetail /></AppLayout>
+                </ProtectedRoute>
+              }
+            />
             <Route path="/assinar/:token" element={<AssinarContrato />} />
             <Route path="/assinar-pdf/:token" element={<AssinarPdf />} />
             <Route path="/assinar-documento/:token" element={<AssinarDocumento />} />
