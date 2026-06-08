@@ -104,20 +104,20 @@ export default function Marketing() {
 
         <TabsContent value="campaigns" className="mt-4 space-y-4">
           <div className="flex flex-wrap items-center justify-center gap-3 py-2">
-            <Button
+            <button
               onClick={() => openNewCampaign("email")}
-              className="bg-blue-500 hover:bg-blue-500/90 text-white"
+              className="inline-flex items-center gap-2 h-9 px-4 rounded-lg text-[13px] font-semibold text-white bg-blue-500 hover:bg-blue-600 transition shadow-sm shadow-blue-500/20"
             >
-              <Mail className="h-4 w-4 mr-2" />
+              <Mail className="h-4 w-4" />
               Campanha de e-mail
-            </Button>
-            <Button
+            </button>
+            <button
               onClick={() => openNewCampaign("whatsapp")}
-              className="bg-emerald-500 hover:bg-emerald-500/90 text-white"
+              className="inline-flex items-center gap-2 h-9 px-4 rounded-lg text-[13px] font-semibold text-white bg-emerald-500 hover:bg-emerald-600 transition shadow-sm shadow-emerald-500/20"
             >
-              <MessageSquare className="h-4 w-4 mr-2" />
+              <MessageSquare className="h-4 w-4" />
               Campanha WhatsApp
-            </Button>
+            </button>
           </div>
 
 
@@ -129,15 +129,7 @@ export default function Marketing() {
             <Card>
               <CardContent className="py-12 text-center">
                 <Megaphone className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
-                <p className="text-muted-foreground mb-4">Nenhuma campanha ainda</p>
-                <div className="flex gap-2 justify-center">
-                  <Button onClick={() => openNewCampaign("whatsapp")} variant="outline" size="sm">
-                    <Plus className="h-4 w-4 mr-1" /> Criar campanha WhatsApp
-                  </Button>
-                  <Button onClick={() => openNewCampaign("email")} size="sm">
-                    <Plus className="h-4 w-4 mr-1" /> Criar campanha E-mail
-                  </Button>
-                </div>
+                <p className="text-muted-foreground">Nenhuma campanha ainda</p>
               </CardContent>
             </Card>
           ) : (
