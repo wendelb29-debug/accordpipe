@@ -120,20 +120,6 @@ export default function Marketing() {
             </Button>
           </div>
 
-          <div className="flex flex-wrap gap-2 items-center justify-center">
-            <div className="flex gap-1">
-              {(["all", "whatsapp", "email"] as const).map(c => (
-                <Button
-                  key={c}
-                  size="sm"
-                  variant={channelFilter === c ? "default" : "outline"}
-                  onClick={() => setChannelFilter(c)}
-                >
-                  {c === "all" ? "Todas" : c === "whatsapp" ? "WhatsApp" : "E-mail"}
-                </Button>
-              ))}
-            </div>
-          </div>
 
           {loading ? (
             <div className="flex items-center justify-center py-12 text-muted-foreground">
