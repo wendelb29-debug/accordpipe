@@ -136,10 +136,15 @@ Deno.serve(async (req) => {
     // Upsert by (servidor_id, email_address)
     const { data: existing } = await admin
       .from("email_accounts")
-      .select("id, oauth_tokens")
+      .select("id, oauth_tokens, user_id, servidor_id")
       .eq("servidor_id", servidorId)
       .eq("email_address", emailAddress)
       .maybeSingle();
+
+    // If the row already exists and belongs to a different user, block hijacking
+    if (existing && (existing.user_id !== userId || existing.servidor_id !== servidorId)) {
+      return redirect(`${appBaseUrl}/email?error=state_mismatch`);
+    }
 
     const payload = {
       servidor_id: servidorId,
