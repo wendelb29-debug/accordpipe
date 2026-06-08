@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { GmailLogo, OutlookLogo } from "@/components/email/ProviderLogos";
 import { LinkEmailToLeadDialog } from "@/components/email/LinkEmailToLeadDialog";
+import { DiscussEmailDialog } from "@/components/email/DiscussEmailDialog";
 
 type Folder = "inbox" | "sent" | "important" | "spam" | "trash" | "archive";
 type FilterKey = "all" | "unread" | "starred" | "attach";
@@ -174,6 +175,8 @@ export default function EmailInbox() {
   const [composePrefill, setComposePrefill] = useState<{ to?: string; subject?: string; threadId?: string | null } | null>(null);
   const [linkLeadOpen, setLinkLeadOpen] = useState(false);
   const [linkLeadMessage, setLinkLeadMessage] = useState<EmailMessage | null>(null);
+  const [discussOpen, setDiscussOpen] = useState(false);
+  const [discussMessage, setDiscussMessage] = useState<EmailMessage | null>(null);
 
   const isUnified = accountId === "inbox" || !accountId;
   const effectiveAccountId = isUnified ? null : accountId;
@@ -347,8 +350,8 @@ export default function EmailInbox() {
     navigate(`/atividades?from=email&messageId=${msg.id}&title=${encodeURIComponent(msg.subject || "")}`);
   };
   const handleShareToCollab = (msg: EmailMessage) => {
-    navigate(`/collabs?share=email&messageId=${msg.id}`);
-    toast.info("Selecione uma collab para compartilhar este e-mail");
+    setDiscussMessage(msg);
+    setDiscussOpen(true);
   };
 
   if (loading && !messages.length) {
@@ -657,6 +660,12 @@ export default function EmailInbox() {
         open={linkLeadOpen}
         onOpenChange={setLinkLeadOpen}
         message={linkLeadMessage as any}
+      />
+
+      <DiscussEmailDialog
+        open={discussOpen}
+        onOpenChange={setDiscussOpen}
+        message={discussMessage as any}
       />
     </div>
   );
