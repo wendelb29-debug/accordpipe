@@ -100,29 +100,64 @@ export function NewCampaignDialog({ open, onOpenChange, defaultChannel, onCreate
     }
   };
 
-  const handleCsv = async (file: File) => {
-    const text = await file.text();
-    const lines = text.split(/\r?\n/).filter(Boolean);
-    const header = lines[0].split(",").map(h => h.trim().toLowerCase());
-    const contactIdx = header.findIndex(h => ["email", "telefone", "phone", "whatsapp", "contato"].includes(h));
-    const nameIdx = header.findIndex(h => ["nome", "name"].includes(h));
-    if (contactIdx < 0) {
-      toast.error("CSV precisa de coluna 'email' ou 'telefone'");
-      return;
+  const handleExcel = async (file: File) => {
+    try {
+      const XLSX = await import("xlsx");
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: "", raw: false });
+      if (!rows.length) {
+        toast.error("Planilha vazia");
+        return;
+      }
+      const keys = Object.keys(rows[0]).map(k => k.toLowerCase());
+      const contactKey = Object.keys(rows[0]).find(k => ["email", "telefone", "phone", "whatsapp", "contato"].includes(k.toLowerCase()));
+      const nameKey = Object.keys(rows[0]).find(k => ["nome", "name"].includes(k.toLowerCase()));
+      if (!contactKey) {
+        toast.error("Planilha precisa de coluna 'email' ou 'telefone'");
+        return;
+      }
+      const list: Recipient[] = [];
+      for (const row of rows) {
+        const contact = String(row[contactKey] ?? "").trim();
+        if (!contact) continue;
+        const nameVal = nameKey ? String(row[nameKey] ?? "").trim() : "";
+        const vars: Record<string, string> = {};
+        Object.entries(row).forEach(([k, v]) => {
+          const val = String(v ?? "").trim();
+          if (val) vars[k.toLowerCase()] = val;
+        });
+        list.push({ name: nameVal, contact, variables: vars });
+      }
+      setRecipients(list);
+      toast.success(`${list.length} destinatários carregados`);
+    } catch (e: any) {
+      toast.error("Erro ao ler planilha: " + (e.message || e));
     }
-    const list: Recipient[] = [];
-    for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i].split(",");
-      const contact = cols[contactIdx]?.trim();
-      if (!contact) continue;
-      const nameVal = nameIdx >= 0 ? cols[nameIdx]?.trim() : "";
-      const vars: Record<string, string> = {};
-      header.forEach((h, idx) => { if (cols[idx]) vars[h] = cols[idx].trim(); });
-      list.push({ name: nameVal || "", contact, variables: vars });
-    }
-    setRecipients(list);
-    toast.success(`${list.length} destinatários carregados`);
   };
+
+  const downloadTemplate = async () => {
+    const XLSX = await import("xlsx");
+    const headers = channel === "email"
+      ? ["nome", "email", "empresa"]
+      : ["nome", "telefone", "empresa"];
+    const examples = channel === "email"
+      ? [
+          ["João Silva", "joao@exemplo.com", "Acme"],
+          ["Maria Souza", "maria@exemplo.com", "Contoso"],
+        ]
+      : [
+          ["João Silva", "5511999990000", "Acme"],
+          ["Maria Souza", "5511988880000", "Contoso"],
+        ];
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...examples]);
+    ws["!cols"] = headers.map(() => ({ wch: 22 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Destinatários");
+    XLSX.writeFile(wb, `modelo-campanha-${channel}.xlsx`);
+  };
+
 
   const canGoStep2 = name.trim().length > 0;
   const canGoStep3 = recipients.length > 0;
