@@ -2009,7 +2009,7 @@ export default function Collabs() {
                                       mine={isSent}
                                     />
                                   ) : (
-                                    m.content && <div className="whitespace-pre-wrap">{m.content}</div>
+                                    m.content && <div className="whitespace-pre-wrap break-words">{renderWithLinks(m.content, isSent)}</div>
                                   )}
                                   <span className={cn("block text-right text-[10px] mt-1", isSent ? "text-white/70" : "text-gray-400")}>{time}</span>
                                 </div>
