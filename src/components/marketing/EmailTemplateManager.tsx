@@ -70,8 +70,7 @@ export function EmailTemplateManager({ open, onOpenChange, onSelectTemplate, mod
       .order("created_at", { ascending: false });
     setLoading(false);
     if (error) {
-      console.error(error);
-      toast.error("Erro ao carregar templates", { description: error.message });
+      captureAppError(error, { module: "marketing.templates", action: "list" }, "error");
       return;
     }
     setTemplates((data || []) as EmailTemplate[]);
