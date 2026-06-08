@@ -112,7 +112,7 @@ export function EmailTemplateManager({ open, onOpenChange, onSelectTemplate, mod
       category: t.category,
       variables: t.variables,
     });
-    if (error) toast.error("Erro ao duplicar", { description: error.message });
+    if (error) captureAppError(error, { module: "marketing.templates", action: "duplicate" }, "error");
     else { toast.success("Template duplicado"); loadTemplates(); }
   };
 
