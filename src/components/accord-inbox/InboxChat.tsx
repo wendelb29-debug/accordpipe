@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Search, ArrowLeftRight, Info, X, Paperclip, Image, Mic, Trash2,
-  Send, Play, Pause, FileText, FileSpreadsheet, FileArchive, FileImage, FileVideo, FileAudio, File as FileIcon, Download,
+  Send, Play, Pause, FileText, FileSpreadsheet, FileArchive, FileImage, FileVideo, FileAudio, File as FileIcon, Download, ExternalLink,
   MoreVertical, Users, Check, CheckCheck, ArrowLeft, Reply, Smile,
   MessageSquare, Plus, Filter, BarChart2,
 } from "lucide-react";
