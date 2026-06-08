@@ -394,7 +394,7 @@ function TemplateEditorDialog({ template, onClose, onSaved }: any) {
       navigator.clipboard.writeText(url).catch(() => {});
       toast.success("Imagem inserida no corpo!", { description: "URL copiada também" });
     } catch (err: any) {
-      toast.error("Erro no upload", { description: err.message });
+      captureAppError(err, { module: "marketing.templates", action: "image_upload" }, "error");
     } finally {
       setUploadingImg(false);
     }
