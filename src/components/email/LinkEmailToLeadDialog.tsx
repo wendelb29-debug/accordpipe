@@ -103,32 +103,32 @@ export function LinkEmailToLeadDialog({ open, onOpenChange, message, onLinked }:
   // Load workspaces for "new" mode
   useEffect(() => {
     if (!open || !companyId || mode !== "new") return;
-    supabase
-      .from("workspaces")
-      .select("id, name, pipeline_type")
-      .eq("servidor_id", companyId)
-      .order("created_at", { ascending: true })
-      .then(({ data }) => {
-        const list = data || [];
-        setWorkspaces(list);
-        if (list.length && !workspaceId) setWorkspaceId(list[0].id);
-      });
+    (async () => {
+      const { data } = await supabase
+        .from("workspaces")
+        .select("id, name")
+        .eq("servidor_id", companyId)
+        .order("created_at", { ascending: true });
+      const list = (data || []) as any[];
+      setWorkspaces(list);
+      if (list.length && !workspaceId) setWorkspaceId(list[0].id);
+    })();
   }, [open, companyId, mode]);
 
   // Load stages for selected workspace
   useEffect(() => {
     if (!workspaceId || mode !== "new") return;
-    supabase
-      .from("kanban_columns")
-      .select("id, title, order_index")
-      .eq("workspace_id", workspaceId)
-      .eq("is_active", true)
-      .order("order_index", { ascending: true })
-      .then(({ data }) => {
-        const list = data || [];
-        setStages(list);
-        if (list.length) setStageId(list[0].id);
-      });
+    (async () => {
+      const { data } = await supabase
+        .from("kanban_columns")
+        .select("id, name, position")
+        .eq("workspace_id", workspaceId)
+        .eq("active", true)
+        .order("position", { ascending: true });
+      const list = (data || []) as any[];
+      setStages(list);
+      if (list.length) setStageId(list[0].id);
+    })();
   }, [workspaceId, mode]);
 
   const logActivityAndNotes = async (leadId: string) => {
