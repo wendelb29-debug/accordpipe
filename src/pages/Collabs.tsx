@@ -1184,6 +1184,29 @@ export default function Collabs() {
     return "Mensagem";
   };
 
+  const renderWithLinks = (text: string, isSent: boolean) => {
+    const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
+    const parts = text.split(urlRegex);
+    return parts.map((part, i) => {
+      if (urlRegex.test(part)) {
+        const href = part.startsWith("http") ? part : `https://${part}`;
+        return (
+          <a
+            key={i}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn("underline break-all", isSent ? "text-white" : "text-blue-400 hover:text-blue-300")}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {part}
+          </a>
+        );
+      }
+      return <span key={i}>{part}</span>;
+    });
+  };
+
   const startReply = (m: DbMessage) => {
     const senderName = m.sender_id === user?.id ? "Você" : (userMap.get(m.sender_id || "")?.name || "Mensagem");
     setReplyTo({ id: m.id, name: senderName, text: messagePlainText(m).slice(0, 120) });
