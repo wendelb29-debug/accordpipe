@@ -3279,6 +3279,211 @@ export type Database = {
           },
         ]
       }
+      marketing_campaign_recipients: {
+        Row: {
+          campaign_id: string
+          contact: string
+          created_at: string
+          error_message: string | null
+          id: string
+          name: string | null
+          provider_message_id: string | null
+          sent_at: string | null
+          servidor_id: string
+          status: string
+          updated_at: string
+          variables: Json
+        }
+        Insert: {
+          campaign_id: string
+          contact: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          name?: string | null
+          provider_message_id?: string | null
+          sent_at?: string | null
+          servidor_id: string
+          status?: string
+          updated_at?: string
+          variables?: Json
+        }
+        Update: {
+          campaign_id?: string
+          contact?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          name?: string | null
+          provider_message_id?: string | null
+          sent_at?: string | null
+          servidor_id?: string
+          status?: string
+          updated_at?: string
+          variables?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_campaign_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_campaigns: {
+        Row: {
+          audience_filter: Json
+          audience_source: string
+          body: string
+          channel: string
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          email_connection_id: string | null
+          email_provider: string | null
+          failed_count: number
+          id: string
+          last_error: string | null
+          media_url: string | null
+          name: string
+          scheduled_at: string | null
+          sent_count: number
+          servidor_id: string
+          started_at: string | null
+          status: string
+          subject: string | null
+          throttle_max_ms: number
+          throttle_min_ms: number
+          total_recipients: number
+          updated_at: string
+          variables: Json
+        }
+        Insert: {
+          audience_filter?: Json
+          audience_source?: string
+          body?: string
+          channel: string
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          email_connection_id?: string | null
+          email_provider?: string | null
+          failed_count?: number
+          id?: string
+          last_error?: string | null
+          media_url?: string | null
+          name: string
+          scheduled_at?: string | null
+          sent_count?: number
+          servidor_id: string
+          started_at?: string | null
+          status?: string
+          subject?: string | null
+          throttle_max_ms?: number
+          throttle_min_ms?: number
+          total_recipients?: number
+          updated_at?: string
+          variables?: Json
+        }
+        Update: {
+          audience_filter?: Json
+          audience_source?: string
+          body?: string
+          channel?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          email_connection_id?: string | null
+          email_provider?: string | null
+          failed_count?: number
+          id?: string
+          last_error?: string | null
+          media_url?: string | null
+          name?: string
+          scheduled_at?: string | null
+          sent_count?: number
+          servidor_id?: string
+          started_at?: string | null
+          status?: string
+          subject?: string | null
+          throttle_max_ms?: number
+          throttle_min_ms?: number
+          total_recipients?: number
+          updated_at?: string
+          variables?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_marketing_campaigns_email_conn"
+            columns: ["email_connection_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_email_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_email_connections: {
+        Row: {
+          access_token: string | null
+          created_at: string
+          daily_send_limit: number
+          display_name: string | null
+          email_address: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          last_reset_at: string | null
+          provider: string
+          refresh_token: string | null
+          scope: string | null
+          sent_today: number
+          servidor_id: string
+          token_type: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          created_at?: string
+          daily_send_limit?: number
+          display_name?: string | null
+          email_address: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          last_reset_at?: string | null
+          provider: string
+          refresh_token?: string | null
+          scope?: string | null
+          sent_today?: number
+          servidor_id: string
+          token_type?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          created_at?: string
+          daily_send_limit?: number
+          display_name?: string | null
+          email_address?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          last_reset_at?: string | null
+          provider?: string
+          refresh_token?: string | null
+          scope?: string | null
+          sent_today?: number
+          servidor_id?: string
+          token_type?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       master_billing_history: {
         Row: {
           amount: number
