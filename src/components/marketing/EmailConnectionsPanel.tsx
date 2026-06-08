@@ -7,6 +7,23 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Mail, Loader2, ArrowRight, AlertCircle } from "lucide-react";
 
+const GmailLogo = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path fill="#4285F4" d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"/>
+    <path fill="#34A853" d="M5.455 21.003V11.73L12 16.64l6.545-4.91v9.273H5.455z"/>
+    <path fill="#FBBC05" d="M5.455 4.64v7.09L0 7.421V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64z"/>
+    <path fill="#EA4335" d="M5.455 11.73 0 7.421v11.945c0 .904.732 1.636 1.636 1.636h3.819V11.73z"/>
+    <path fill="#C5221F" d="M24 7.421v11.945c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L24 7.421z"/>
+    <path fill="#C5221F" d="M24 5.457v1.964l-5.455 4.309V4.64l1.528-1.145C21.69 2.28 24 3.434 24 5.457z"/>
+  </svg>
+);
+
+const OutlookLogo = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path fill="#0072C6" d="M14.5 3v2.4h6.7c.6 0 1 .4 1 1v11.2c0 .6-.4 1-1 1h-6.7V21L1 18.6V5.4L14.5 3zm0 4.4v2.2h2v1.5h-2v1.8h2v1.5h-2v1.8h2v1.5h-2v1.6h6.2V7.4h-6.2zM17 9.6h2.7v1.5H17V9.6zm0 3.3h2.7v1.5H17v-1.5zm0 3.3h2.7v1.5H17v-1.5zM7.7 8.3c-2.2 0-3.6 1.7-3.6 3.9 0 2.2 1.4 3.9 3.5 3.9 2.2 0 3.6-1.6 3.6-3.9 0-2.3-1.3-3.9-3.5-3.9zm0 6.3c-1.2 0-1.9-1.1-1.9-2.4 0-1.3.7-2.4 1.9-2.4s1.9 1.1 1.9 2.4c0 1.3-.7 2.4-1.9 2.4z"/>
+  </svg>
+);
+
 interface EmailAccount {
   id: string;
   provider: string;
