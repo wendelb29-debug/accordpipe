@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { GmailLogo, OutlookLogo } from "@/components/email/ProviderLogos";
 import { LinkEmailToLeadDialog } from "@/components/email/LinkEmailToLeadDialog";
+import { DiscussEmailDialog } from "@/components/email/DiscussEmailDialog";
 
 type Folder = "inbox" | "sent" | "important" | "spam" | "trash" | "archive";
 type FilterKey = "all" | "unread" | "starred" | "attach";
