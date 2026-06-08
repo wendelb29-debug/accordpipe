@@ -49,6 +49,7 @@ export default function Marketing() {
   const [loading, setLoading] = useState(true);
   const [openNew, setOpenNew] = useState(false);
   const [newChannel, setNewChannel] = useState<"whatsapp" | "email">("whatsapp");
+  const [templatesOpen, setTemplatesOpen] = useState(false);
 
   const loadCampaigns = async () => {
     if (!companyId) return;
