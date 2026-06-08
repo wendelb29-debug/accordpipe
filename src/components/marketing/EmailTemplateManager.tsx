@@ -565,7 +565,7 @@ function AIGeneratorDialog({ onClose, onGenerated }: any) {
         body_html: d.body_html,
       });
     } catch (err: any) {
-      toast.error("Erro na geração", { description: err.message });
+      captureAppError(err, { module: "marketing.templates", action: "ai_generate" }, "error");
     } finally {
       setBusy(false);
     }
