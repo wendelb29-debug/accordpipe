@@ -228,6 +228,18 @@ async function downloadFileViaBlob(url: string, filename: string) {
   }
 }
 
+const FILE_THEME: Record<string, { from: string; to: string; iconBg: string; iconColor: string; label: string; Icon: typeof FileIcon }> = {
+  pdf:     { from: "#FFF3EE", to: "#FFE2D4", iconBg: "#FFD6BF", iconColor: "#D85A30", label: "PDF",  Icon: FileText },
+  sheet:   { from: "#EEFBE2", to: "#DCF3C1", iconBg: "#C7E8A2", iconColor: "#3B6D11", label: "XLSX", Icon: FileSpreadsheet },
+  doc:     { from: "#E8F1FF", to: "#D2E3FF", iconBg: "#BCD3FF", iconColor: "#2563EB", label: "DOC",  Icon: FileText },
+  text:    { from: "#E8F1FF", to: "#D2E3FF", iconBg: "#BCD3FF", iconColor: "#2563EB", label: "TXT",  Icon: FileText },
+  image:   { from: "#F3EBFF", to: "#E4D3FF", iconBg: "#D5BBFF", iconColor: "#7C3AED", label: "IMG",  Icon: FileImage },
+  video:   { from: "#FEE2E2", to: "#FECACA", iconBg: "#FCA5A5", iconColor: "#B91C1C", label: "VÍDEO", Icon: FileVideo },
+  audio:   { from: "#ECFDF5", to: "#D1FAE5", iconBg: "#A7F3D0", iconColor: "#059669", label: "ÁUDIO", Icon: FileAudio },
+  archive: { from: "#FEF3C7", to: "#FDE68A", iconBg: "#FCD34D", iconColor: "#92400E", label: "ZIP",  Icon: FileArchive },
+  file:    { from: "#F1F3F8", to: "#E4E8F1", iconBg: "#D1D7E3", iconColor: "#475569", label: "FILE", Icon: FileIcon },
+};
+
 function AttachmentCard({
   direction, fileName, fileSize, src, mimeType,
 }: {
@@ -237,13 +249,14 @@ function AttachmentCard({
   src?: string;
   mimeType?: string;
 }) {
-  const isOut = direction === "outbound";
   const kind = classifyAttachment({ mime: mimeType, fileName, url: src });
   const ext = extensionLabel(fileName, src);
   const sizeLabel = typeof fileSize === "number"
     ? formatFileSize(fileSize)
     : (fileSize || formatFileSize(undefined));
   const safeName = fileName || (src ? `arquivo.${ext.toLowerCase()}` : "Mídia indisponível");
+  const theme = FILE_THEME[kind] || FILE_THEME.file;
+  const Icon = theme.Icon;
 
   const handleDownload = (e: React.MouseEvent) => {
     if (!src) return;
@@ -252,53 +265,50 @@ function AttachmentCard({
     downloadFileViaBlob(src, safeName);
   };
 
-  const content = (
-    <div className={cn(
-      "flex items-center gap-3 px-3 py-2.5 rounded-2xl min-w-[240px] max-w-[320px]",
-      isOut ? "bg-primary rounded-br-sm" : "bg-muted/80 dark:bg-muted/50 rounded-bl-sm border border-border/40",
-      !src && "opacity-70",
-    )}>
-      <div className={cn(
-        "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
-        isOut ? "bg-white/15" : "bg-primary/10",
-      )}>
-        <AttachmentIcon kind={kind} className={isOut ? "text-white" : "text-primary"} />
+  return (
+    <div
+      className={cn(
+        "group/file flex items-center gap-3 rounded-2xl px-3 py-2.5 min-w-[260px] max-w-[320px] border border-white/60 shadow-[0_4px_18px_-6px_rgba(15,23,42,0.18)] hover:shadow-[0_8px_24px_-6px_rgba(15,23,42,0.28)] transition-all",
+        !src && "opacity-70",
+      )}
+      style={{ background: `linear-gradient(135deg, ${theme.from} 0%, ${theme.to} 100%)` }}
+    >
+      <div
+        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+        style={{ background: theme.iconBg, color: theme.iconColor }}
+      >
+        <Icon className="h-[19px] w-[19px]" />
       </div>
-      <div className="min-w-0 flex-1">
-        <p className={cn("text-[12.5px] font-medium truncate", isOut ? "text-white" : "text-foreground")}>
-          {safeName}
-        </p>
-        <p className={cn("text-[11px] truncate", isOut ? "text-white/70" : "text-muted-foreground")}>
-          {src ? `${ext}${sizeLabel ? ` · ${sizeLabel}` : ""}` : "Arquivo não disponível para download"}
-        </p>
+      <div className="flex-1 min-w-0">
+        <div className="text-[12.5px] font-semibold text-[#1a1a2e] truncate">{safeName}</div>
+        <div className="text-[11px] text-gray-600 flex items-center gap-1.5">
+          <span className="font-medium tracking-wide" style={{ color: theme.iconColor }}>{theme.label}</span>
+          {sizeLabel && <><span className="opacity-50">·</span><span>{sizeLabel}</span></>}
+        </div>
       </div>
       {src && (
-        <button
-          type="button"
-          onClick={handleDownload}
-          aria-label="Baixar arquivo"
-          className={cn(
-            "flex-shrink-0 p-1.5 rounded-md transition hover:bg-black/10",
-            isOut ? "text-white/90 hover:bg-white/15" : "text-muted-foreground",
-          )}
-        >
-          <Download size={15} />
-        </button>
+        <div className="flex items-center gap-0.5 opacity-70 group-hover/file:opacity-100 transition">
+          <a
+            href={src}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Abrir"
+            onClick={(e) => e.stopPropagation()}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-gray-700 hover:bg-white/70"
+          >
+            <ExternalLink className="h-4 w-4" />
+          </a>
+          <button
+            type="button"
+            onClick={handleDownload}
+            title="Baixar"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-gray-700 hover:bg-white/70"
+          >
+            <Download className="h-4 w-4" />
+          </button>
+        </div>
       )}
     </div>
-  );
-
-  if (!src) return content;
-  return (
-    <a
-      href={src}
-      target="_blank"
-      rel="noopener noreferrer"
-      title={safeName}
-      className="block hover:opacity-90 transition"
-    >
-      {content}
-    </a>
   );
 }
 
