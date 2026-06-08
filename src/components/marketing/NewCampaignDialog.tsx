@@ -260,9 +260,42 @@ export function NewCampaignDialog({ open, onOpenChange, defaultChannel, onCreate
                 </Button>
               </TabsContent>
               <TabsContent value="csv" className="space-y-3 pt-3">
+                <div className="flex items-center justify-between rounded-md border border-dashed border-border bg-muted/20 p-3">
+                  <div className="text-xs">
+                    <div className="font-medium text-foreground flex items-center gap-1">
+                      <FileSpreadsheet className="h-3.5 w-3.5" /> Modelo de planilha
+                    </div>
+                    <p className="text-muted-foreground mt-0.5">
+                      Baixe o template, preencha e faça o upload abaixo.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const header = channel === "email"
+                        ? "nome,email,empresa"
+                        : "nome,telefone,empresa";
+                      const example = channel === "email"
+                        ? "João Silva,joao@exemplo.com,Acme\nMaria Souza,maria@exemplo.com,Contoso"
+                        : "João Silva,5511999990000,Acme\nMaria Souza,5511988880000,Contoso";
+                      const csv = `${header}\n${example}\n`;
+                      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `modelo-campanha-${channel}.csv`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                  >
+                    Baixar modelo
+                  </Button>
+                </div>
                 <Input type="file" accept=".csv" onChange={e => e.target.files?.[0] && handleCsv(e.target.files[0])} />
                 <p className="text-xs text-muted-foreground">
-                  Cabeçalho obrigatório: <code>nome,email</code> (e-mail) ou <code>nome,telefone</code> (WhatsApp). Outras colunas viram variáveis.
+                  Cabeçalho obrigatório: <code>nome,email</code> (e-mail) ou <code>nome,telefone</code> (WhatsApp). Outras colunas viram variáveis dinâmicas (ex: <code>{"{{empresa}}"}</code>).
                 </p>
               </TabsContent>
             </Tabs>
