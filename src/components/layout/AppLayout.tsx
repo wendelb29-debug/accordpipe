@@ -121,7 +121,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   }
             }
           >
-            {children}
+            <RouteErrorBoundary routeName={location.pathname}>{children}</RouteErrorBoundary>
           </main>
         </div>
 
