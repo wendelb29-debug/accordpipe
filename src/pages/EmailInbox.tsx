@@ -284,6 +284,7 @@ export default function EmailInbox() {
     if (!msg.is_read) {
       setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, is_read: true } : m));
       supabase.functions.invoke("email-gmail-modify", { body: { messageRowId: msg.id, action: "markRead" } });
+      window.dispatchEvent(new CustomEvent("email-unread-changed"));
     }
   };
 
@@ -291,9 +292,11 @@ export default function EmailInbox() {
     const unread = messages.filter(m => !m.is_read);
     if (!unread.length) return;
     setMessages(prev => prev.map(m => ({ ...m, is_read: true })));
+    window.dispatchEvent(new CustomEvent("email-unread-changed"));
     await Promise.all(unread.map(m =>
       supabase.functions.invoke("email-gmail-modify", { body: { messageRowId: m.id, action: "markRead" } })
     ));
+    window.dispatchEvent(new CustomEvent("email-unread-changed"));
     toast.success("Tudo marcado como lido");
   };
 
@@ -303,15 +306,18 @@ export default function EmailInbox() {
     if (action === "delete" && !confirm(`Mover ${ids.length} mensagem(ns) para a lixeira?`)) return;
     if (action === "read") {
       setMessages(prev => prev.map(m => ids.includes(m.id) ? { ...m, is_read: true } : m));
+      window.dispatchEvent(new CustomEvent("email-unread-changed"));
       await Promise.all(ids.map(id =>
         supabase.functions.invoke("email-gmail-modify", { body: { messageRowId: id, action: "markRead" } })
       ));
+      window.dispatchEvent(new CustomEvent("email-unread-changed"));
       toast.success(`${ids.length} marcadas como lidas`);
     } else if (action === "delete") {
       setMessages(prev => prev.filter(m => !ids.includes(m.id)));
       await Promise.all(ids.map(id =>
         supabase.functions.invoke("email-gmail-modify", { body: { messageRowId: id, action: "trash" } })
       ));
+      window.dispatchEvent(new CustomEvent("email-unread-changed"));
       toast.success(`${ids.length} movidas para a lixeira`);
     }
     setSelectedIds(new Set());
