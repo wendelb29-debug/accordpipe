@@ -661,6 +661,12 @@ export default function EmailInbox() {
         onOpenChange={setLinkLeadOpen}
         message={linkLeadMessage as any}
       />
+
+      <DiscussEmailDialog
+        open={discussOpen}
+        onOpenChange={setDiscussOpen}
+        message={discussMessage as any}
+      />
     </div>
   );
 }
