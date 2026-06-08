@@ -119,7 +119,7 @@ export function EmailTemplateManager({ open, onOpenChange, onSelectTemplate, mod
   const deleteTemplate = async (t: EmailTemplate) => {
     if (!confirm(`Excluir o template "${t.name}"?`)) return;
     const { error } = await db.from("email_templates").delete().eq("id", t.id);
-    if (error) toast.error("Erro ao excluir", { description: error.message });
+    if (error) captureAppError(error, { module: "marketing.templates", action: "delete" }, "error");
     else { toast.success("Template excluído"); loadTemplates(); }
   };
 
