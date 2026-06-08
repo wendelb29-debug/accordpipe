@@ -136,7 +136,7 @@ export function NewCampaignDialog({ open, onOpenChange, defaultChannel, onCreate
       setRecipients(list);
       toast.success(`${list.length} destinatários carregados`);
     } catch (e: any) {
-      toast.error("Erro ao ler planilha: " + (e.message || e));
+      captureAppError(e, { module: "marketing.campaign", action: "parse_spreadsheet" }, "error");
     }
   };
 
