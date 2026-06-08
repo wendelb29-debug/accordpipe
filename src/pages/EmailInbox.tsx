@@ -652,6 +652,12 @@ export default function EmailInbox() {
           onSent={() => { setComposeOpen(false); handleSync(); }}
         />
       )}
+
+      <LinkEmailToLeadDialog
+        open={linkLeadOpen}
+        onOpenChange={setLinkLeadOpen}
+        message={linkLeadMessage as any}
+      />
     </div>
   );
 }
