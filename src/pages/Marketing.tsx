@@ -102,7 +102,43 @@ export default function Marketing() {
           <TabsTrigger value="connections">Conexões de E-mail</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="campaigns" className="mt-4 space-y-4">
+        <TabsContent value="campaigns" className="mt-4 space-y-6">
+          <div>
+            <h3 className="text-sm font-medium text-muted-foreground mb-3">Criar Campanha</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => openNewCampaign("email")}
+                className="group relative overflow-hidden rounded-xl border border-border bg-card hover:border-blue-500/60 hover:bg-blue-500/5 transition-all p-5 text-left"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-full bg-blue-500/15 text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Mail className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-foreground">Campanha de e-mail</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Disparo em massa via Gmail ou Outlook</div>
+                  </div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => openNewCampaign("whatsapp")}
+                className="group relative overflow-hidden rounded-xl border border-border bg-card hover:border-emerald-500/60 hover:bg-emerald-500/5 transition-all p-5 text-left"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <MessageSquare className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-foreground">Campanha WhatsApp</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Disparo em massa pelo Accord Sales</div>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+
           <div className="flex flex-wrap gap-2 items-center justify-between">
             <div className="flex gap-1">
               {(["all", "whatsapp", "email"] as const).map(c => (
@@ -115,16 +151,6 @@ export default function Marketing() {
                   {c === "all" ? "Todas" : c === "whatsapp" ? "WhatsApp" : "E-mail"}
                 </Button>
               ))}
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={() => openNewCampaign("whatsapp")} variant="outline" size="sm">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Nova WhatsApp
-              </Button>
-              <Button onClick={() => openNewCampaign("email")} size="sm">
-                <Mail className="h-4 w-4 mr-2" />
-                Nova E-mail
-              </Button>
             </div>
           </div>
 
