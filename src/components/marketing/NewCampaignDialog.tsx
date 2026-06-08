@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, MessageSquare, Mail, Users, FileSpreadsheet, UsersRound, ChevronRight, ChevronLeft, Sparkles, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { captureAppError } from "@/lib/monitoring";
 import { EmailTemplateManager } from "./EmailTemplateManager";
 
 interface Props {
