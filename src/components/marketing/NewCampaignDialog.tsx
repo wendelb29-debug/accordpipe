@@ -100,29 +100,64 @@ export function NewCampaignDialog({ open, onOpenChange, defaultChannel, onCreate
     }
   };
 
-  const handleCsv = async (file: File) => {
-    const text = await file.text();
-    const lines = text.split(/\r?\n/).filter(Boolean);
-    const header = lines[0].split(",").map(h => h.trim().toLowerCase());
-    const contactIdx = header.findIndex(h => ["email", "telefone", "phone", "whatsapp", "contato"].includes(h));
-    const nameIdx = header.findIndex(h => ["nome", "name"].includes(h));
-    if (contactIdx < 0) {
-      toast.error("CSV precisa de coluna 'email' ou 'telefone'");
-      return;
+  const handleExcel = async (file: File) => {
+    try {
+      const XLSX = await import("xlsx");
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: "", raw: false });
+      if (!rows.length) {
+        toast.error("Planilha vazia");
+        return;
+      }
+      const keys = Object.keys(rows[0]).map(k => k.toLowerCase());
+      const contactKey = Object.keys(rows[0]).find(k => ["email", "telefone", "phone", "whatsapp", "contato"].includes(k.toLowerCase()));
+      const nameKey = Object.keys(rows[0]).find(k => ["nome", "name"].includes(k.toLowerCase()));
+      if (!contactKey) {
+        toast.error("Planilha precisa de coluna 'email' ou 'telefone'");
+        return;
+      }
+      const list: Recipient[] = [];
+      for (const row of rows) {
+        const contact = String(row[contactKey] ?? "").trim();
+        if (!contact) continue;
+        const nameVal = nameKey ? String(row[nameKey] ?? "").trim() : "";
+        const vars: Record<string, string> = {};
+        Object.entries(row).forEach(([k, v]) => {
+          const val = String(v ?? "").trim();
+          if (val) vars[k.toLowerCase()] = val;
+        });
+        list.push({ name: nameVal, contact, variables: vars });
+      }
+      setRecipients(list);
+      toast.success(`${list.length} destinatários carregados`);
+    } catch (e: any) {
+      toast.error("Erro ao ler planilha: " + (e.message || e));
     }
-    const list: Recipient[] = [];
-    for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i].split(",");
-      const contact = cols[contactIdx]?.trim();
-      if (!contact) continue;
-      const nameVal = nameIdx >= 0 ? cols[nameIdx]?.trim() : "";
-      const vars: Record<string, string> = {};
-      header.forEach((h, idx) => { if (cols[idx]) vars[h] = cols[idx].trim(); });
-      list.push({ name: nameVal || "", contact, variables: vars });
-    }
-    setRecipients(list);
-    toast.success(`${list.length} destinatários carregados`);
   };
+
+  const downloadTemplate = async () => {
+    const XLSX = await import("xlsx");
+    const headers = channel === "email"
+      ? ["nome", "email", "empresa"]
+      : ["nome", "telefone", "empresa"];
+    const examples = channel === "email"
+      ? [
+          ["João Silva", "joao@exemplo.com", "Acme"],
+          ["Maria Souza", "maria@exemplo.com", "Contoso"],
+        ]
+      : [
+          ["João Silva", "5511999990000", "Acme"],
+          ["Maria Souza", "5511988880000", "Contoso"],
+        ];
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...examples]);
+    ws["!cols"] = headers.map(() => ({ wch: 22 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Destinatários");
+    XLSX.writeFile(wb, `modelo-campanha-${channel}.xlsx`);
+  };
+
 
   const canGoStep2 = name.trim().length > 0;
   const canGoStep3 = recipients.length > 0;
@@ -245,7 +280,7 @@ export function NewCampaignDialog({ open, onOpenChange, defaultChannel, onCreate
               <TabsList className="grid grid-cols-3 w-full">
                 <TabsTrigger value="clients"><UsersRound className="h-4 w-4 mr-1" />Base Clientes</TabsTrigger>
                 <TabsTrigger value="leads"><Users className="h-4 w-4 mr-1" />CRM Leads</TabsTrigger>
-                <TabsTrigger value="csv"><FileSpreadsheet className="h-4 w-4 mr-1" />CSV</TabsTrigger>
+                <TabsTrigger value="csv"><FileSpreadsheet className="h-4 w-4 mr-1" />Excel</TabsTrigger>
               </TabsList>
               <TabsContent value="clients" className="space-y-3 pt-3">
                 <Button onClick={() => loadAudience("clients")} disabled={loadingAudience} size="sm">
@@ -263,39 +298,23 @@ export function NewCampaignDialog({ open, onOpenChange, defaultChannel, onCreate
                 <div className="flex items-center justify-between rounded-md border border-dashed border-border bg-muted/20 p-3">
                   <div className="text-xs">
                     <div className="font-medium text-foreground flex items-center gap-1">
-                      <FileSpreadsheet className="h-3.5 w-3.5" /> Modelo de planilha
+                      <FileSpreadsheet className="h-3.5 w-3.5" /> Modelo de planilha Excel
                     </div>
                     <p className="text-muted-foreground mt-0.5">
-                      Baixe o template, preencha e faça o upload abaixo.
+                      Baixe o template .xlsx, preencha e faça o upload abaixo.
                     </p>
                   </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      const header = channel === "email"
-                        ? "nome,email,empresa"
-                        : "nome,telefone,empresa";
-                      const example = channel === "email"
-                        ? "João Silva,joao@exemplo.com,Acme\nMaria Souza,maria@exemplo.com,Contoso"
-                        : "João Silva,5511999990000,Acme\nMaria Souza,5511988880000,Contoso";
-                      const csv = `${header}\n${example}\n`;
-                      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = `modelo-campanha-${channel}.csv`;
-                      a.click();
-                      URL.revokeObjectURL(url);
-                    }}
-                  >
-                    Baixar modelo
+                  <Button type="button" size="sm" variant="outline" onClick={downloadTemplate}>
+                    Baixar modelo .xlsx
                   </Button>
                 </div>
-                <Input type="file" accept=".csv" onChange={e => e.target.files?.[0] && handleCsv(e.target.files[0])} />
+                <Input
+                  type="file"
+                  accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                  onChange={e => e.target.files?.[0] && handleExcel(e.target.files[0])}
+                />
                 <p className="text-xs text-muted-foreground">
-                  Cabeçalho obrigatório: <code>nome,email</code> (e-mail) ou <code>nome,telefone</code> (WhatsApp). Outras colunas viram variáveis dinâmicas (ex: <code>{"{{empresa}}"}</code>).
+                  A primeira planilha do arquivo será lida. Cabeçalho obrigatório: <code>nome, email</code> (e-mail) ou <code>nome, telefone</code> (WhatsApp). Outras colunas viram variáveis dinâmicas (ex: <code>{"{{empresa}}"}</code>).
                 </p>
               </TabsContent>
             </Tabs>
