@@ -44,6 +44,7 @@ import {
   ArchiveX,
   Settings2,
   Languages,
+  Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { prefetchRoute } from "@/lib/routePrefetch";
@@ -80,6 +81,7 @@ const navigationSections = [
     items: [
       { nameKey: "nav.clientBase", href: "/cadastrados", icon: UsersRound, roles: ["admin", "ceo", "administrativo"] },
       { nameKey: "nav.fintech", href: "/financeiro", icon: CircleDollarSign, roles: ["admin", "ceo", "financeiro"] },
+      { nameKey: "Accord Marketing", href: "/marketing", icon: Megaphone, roles: ["admin", "ceo"] },
       { nameKey: "nav.documents", href: "/documentos", icon: Files, roles: ["admin", "ceo", "administrativo", "financeiro"] },
       { nameKey: "nav.reports", href: "/relatorios", icon: ChartColumn, roles: ["admin", "leitura", "ceo", "administrativo", "financeiro"] },
     ],
