@@ -1,117 +1,106 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Trash2, Plus, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { Mail, Loader2, ArrowRight, AlertCircle } from "lucide-react";
 
-interface Conn {
+interface EmailAccount {
   id: string;
-  provider: "gmail" | "outlook";
+  provider: string;
   email_address: string;
-  is_active: boolean;
-  daily_send_limit: number;
-  sent_today: number;
+  display_name: string;
+  status: string;
 }
 
 export function EmailConnectionsPanel() {
   const { user } = useAuth();
-  const [conns, setConns] = useState<Conn[]>([]);
+  const navigate = useNavigate();
+  const [accounts, setAccounts] = useState<EmailAccount[]>([]);
   const [loading, setLoading] = useState(true);
-  const [connecting, setConnecting] = useState<"gmail" | "outlook" | null>(null);
 
-  const load = async () => {
-    if (!user) return;
-    setLoading(true);
-    const { data } = await supabase
-      .from("marketing_email_connections")
-      .select("id, provider, email_address, is_active, daily_send_limit, sent_today")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-    setConns((data || []) as Conn[]);
-    setLoading(false);
-  };
-
-  useEffect(() => { load(); }, [user]);
-
-  const startOAuth = async (provider: "gmail" | "outlook") => {
-    setConnecting(provider);
-    try {
-      const { data, error } = await supabase.functions.invoke("marketing-oauth-start", {
-        body: { provider, redirect_uri: window.location.origin + "/marketing" },
-      });
-      if (error) throw error;
-      if (data?.authUrl) {
-        window.location.href = data.authUrl;
-      } else {
-        throw new Error("URL de autorização não retornada");
-      }
-    } catch (e: any) {
-      toast.error("Erro ao iniciar OAuth: " + (e.message || e));
-      setConnecting(null);
-    }
-  };
-
-  const remove = async (id: string) => {
-    if (!confirm("Remover esta conexão?")) return;
-    const { error } = await supabase.from("marketing_email_connections").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Conexão removida");
+  useEffect(() => {
+    const load = async () => {
+      if (!user) return;
+      setLoading(true);
+      const { data } = await supabase
+        .from("email_accounts")
+        .select("id, provider, email_address, display_name, status")
+        .eq("user_id", user.id)
+        .in("provider", ["gmail", "outlook"])
+        .order("created_at", { ascending: false });
+      setAccounts((data || []) as EmailAccount[]);
+      setLoading(false);
+    };
     load();
-  };
+  }, [user]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8 text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando contas conectadas…
+      </div>
+    );
+  }
+
+  const active = accounts.filter(a => a.status === "active" || a.status === "connected");
+
+  if (active.length === 0) {
+    return (
+      <Card className="border-dashed border-amber-500/30 bg-amber-500/5">
+        <CardContent className="py-8 text-center space-y-4">
+          <div className="mx-auto h-12 w-12 rounded-full bg-amber-500/15 flex items-center justify-center">
+            <AlertCircle className="h-6 w-6 text-amber-400" />
+          </div>
+          <div className="space-y-1">
+            <p className="font-medium">Nenhum e-mail conectado</p>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Para disparar campanhas, primeiro conecte um Gmail ou Outlook na aba <b>E-mail</b>.
+              As contas conectadas ali ficam disponíveis aqui automaticamente.
+            </p>
+          </div>
+          <Button onClick={() => navigate("/email")} className="gap-2">
+            Ir para aba E-mail <ArrowRight className="h-4 w-4" />
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      <div className="flex gap-2">
-        <Button onClick={() => startOAuth("gmail")} disabled={!!connecting} variant="outline">
-          {connecting === "gmail" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
-          Conectar Gmail
-        </Button>
-        <Button onClick={() => startOAuth("outlook")} disabled={!!connecting} variant="outline">
-          {connecting === "outlook" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
-          Conectar Outlook
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {active.length} {active.length === 1 ? "conta disponível" : "contas disponíveis"} para disparo. Gerencie suas conexões na aba <b>E-mail</b>.
+        </p>
+        <Button variant="outline" size="sm" onClick={() => navigate("/email")} className="gap-2">
+          Gerenciar <ArrowRight className="h-3.5 w-3.5" />
         </Button>
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-8 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando…
-        </div>
-      ) : conns.length === 0 ? (
-        <Card>
-          <CardContent className="py-10 text-center text-muted-foreground">
-            <Mail className="h-10 w-10 mx-auto mb-2 opacity-40" />
-            <p>Nenhuma conta conectada. Conecte um Gmail ou Outlook acima para disparar campanhas de e-mail em seu nome.</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-2">
-          {conns.map(c => (
-            <Card key={c.id}>
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${c.provider === "gmail" ? "bg-red-500/10 text-red-400" : "bg-blue-500/10 text-blue-400"}`}>
-                  <Mail className="h-5 w-5" />
+      <div className="grid gap-2">
+        {active.map(a => (
+          <Card key={a.id}>
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${a.provider === "gmail" ? "bg-red-500/10 text-red-400" : "bg-blue-500/10 text-blue-400"}`}>
+                <Mail className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium truncate">{a.email_address}</span>
+                  <Badge variant="outline" className="text-[10px] uppercase">{a.provider}</Badge>
+                  <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30" variant="outline">Pronta</Badge>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium truncate">{c.email_address}</span>
-                    <Badge variant="outline" className="text-[10px] uppercase">{c.provider}</Badge>
-                    {c.is_active ? <Badge className="bg-emerald-500/15 text-emerald-400" variant="outline">Ativa</Badge> : <Badge variant="outline">Inativa</Badge>}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {c.sent_today} / {c.daily_send_limit} envios hoje
-                  </div>
-                </div>
-                <Button variant="ghost" size="icon" onClick={() => remove(c.id)}>
-                  <Trash2 className="h-4 w-4 text-red-400" />
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+                {a.display_name && (
+                  <div className="text-xs text-muted-foreground mt-1">{a.display_name}</div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }
