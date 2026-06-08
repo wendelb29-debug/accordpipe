@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, MessageSquare, Mail, Users, FileSpreadsheet, UsersRound, ChevronRight, ChevronLeft, Sparkles, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { captureAppError } from "@/lib/monitoring";
 import { EmailTemplateManager } from "./EmailTemplateManager";
 
 interface Props {
@@ -135,7 +136,7 @@ export function NewCampaignDialog({ open, onOpenChange, defaultChannel, onCreate
       setRecipients(list);
       toast.success(`${list.length} destinatários carregados`);
     } catch (e: any) {
-      toast.error("Erro ao ler planilha: " + (e.message || e));
+      captureAppError(e, { module: "marketing.campaign", action: "parse_spreadsheet" }, "error");
     }
   };
 
@@ -207,7 +208,7 @@ export function NewCampaignDialog({ open, onOpenChange, defaultChannel, onCreate
       toast.success("Campanha criada e enfileirada");
       onCreated(campaign.id);
     } catch (e: any) {
-      toast.error("Erro ao criar campanha: " + (e.message || e));
+      captureAppError(e, { module: "marketing.campaign", action: "create" }, "error");
     } finally {
       setSubmitting(false);
     }

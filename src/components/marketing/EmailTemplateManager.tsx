@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { captureAppError } from "@/lib/monitoring";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -69,8 +70,7 @@ export function EmailTemplateManager({ open, onOpenChange, onSelectTemplate, mod
       .order("created_at", { ascending: false });
     setLoading(false);
     if (error) {
-      console.error(error);
-      toast.error("Erro ao carregar templates", { description: error.message });
+      captureAppError(error, { module: "marketing.templates", action: "list" }, "error");
       return;
     }
     setTemplates((data || []) as EmailTemplate[]);
@@ -112,14 +112,14 @@ export function EmailTemplateManager({ open, onOpenChange, onSelectTemplate, mod
       category: t.category,
       variables: t.variables,
     });
-    if (error) toast.error("Erro ao duplicar", { description: error.message });
+    if (error) captureAppError(error, { module: "marketing.templates", action: "duplicate" }, "error");
     else { toast.success("Template duplicado"); loadTemplates(); }
   };
 
   const deleteTemplate = async (t: EmailTemplate) => {
     if (!confirm(`Excluir o template "${t.name}"?`)) return;
     const { error } = await db.from("email_templates").delete().eq("id", t.id);
-    if (error) toast.error("Erro ao excluir", { description: error.message });
+    if (error) captureAppError(error, { module: "marketing.templates", action: "delete" }, "error");
     else { toast.success("Template excluído"); loadTemplates(); }
   };
 
@@ -370,7 +370,7 @@ function TemplateEditorDialog({ template, onClose, onSaved }: any) {
       : await db.from("email_templates").update(payload).eq("id", template.id);
     setSaving(false);
     if (error) {
-      toast.error("Erro ao salvar", { description: error.message });
+      captureAppError(error, { module: "marketing.templates", action: isNew ? "create" : "update" }, "error");
     } else {
       toast.success(isNew ? "Template criado!" : "Template atualizado");
       onSaved();
@@ -394,7 +394,7 @@ function TemplateEditorDialog({ template, onClose, onSaved }: any) {
       navigator.clipboard.writeText(url).catch(() => {});
       toast.success("Imagem inserida no corpo!", { description: "URL copiada também" });
     } catch (err: any) {
-      toast.error("Erro no upload", { description: err.message });
+      captureAppError(err, { module: "marketing.templates", action: "image_upload" }, "error");
     } finally {
       setUploadingImg(false);
     }
@@ -565,7 +565,7 @@ function AIGeneratorDialog({ onClose, onGenerated }: any) {
         body_html: d.body_html,
       });
     } catch (err: any) {
-      toast.error("Erro na geração", { description: err.message });
+      captureAppError(err, { module: "marketing.templates", action: "ai_generate" }, "error");
     } finally {
       setBusy(false);
     }
