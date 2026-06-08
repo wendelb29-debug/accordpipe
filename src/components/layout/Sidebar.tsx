@@ -44,6 +44,7 @@ import {
   ArchiveX,
   Settings2,
   Languages,
+  Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { prefetchRoute } from "@/lib/routePrefetch";
