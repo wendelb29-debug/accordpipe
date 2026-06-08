@@ -38,6 +38,21 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
+  // Validate state matches the existing account_draft row
+  if (accountId) {
+    const { data: existing } = await admin
+      .from("email_accounts")
+      .select("user_id, servidor_id")
+      .eq("id", accountId)
+      .maybeSingle();
+    if (!existing) {
+      return Response.redirect(`${appBase}/email?error=account_not_found`, 302);
+    }
+    if (existing.user_id !== userId || existing.servidor_id !== servidorId) {
+      return Response.redirect(`${appBase}/email?error=state_mismatch`, 302);
+    }
+  }
+
   const tokenResp = await fetch("https://login.microsoftonline.com/common/oauth2/v2.0/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
