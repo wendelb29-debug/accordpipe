@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Bell, Check, CheckCheck, Clock, UserPlus, Megaphone, CalendarClock, Eye, EyeOff, CircleCheck, BellOff, BellRing, TestTube, CheckCircle2, XCircle, Mail } from "lucide-react";
+import { Bell, Eye, EyeOff, CircleCheck, BellOff, BellRing, TestTube, CheckCircle2, XCircle } from "lucide-react";
+import { getNotificationStyle } from "./notificationStyles";
 import { useNotificationManager } from "@/hooks/useNotificationManager";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -125,11 +126,12 @@ export function NotificationBell() {
         const newNotif = payload.new as Notification;
         playNotificationSound();
         fetchNotifications();
-        
-        // Mostrar toast para novas notificações
+
+        const style = getNotificationStyle(newNotif.type, newNotif.metadata);
+        const ToastIcon = style.Icon;
         toast(newNotif.title, {
           description: newNotif.message,
-          icon: getIcon(newNotif.type),
+          icon: <ToastIcon className={`h-4 w-4 ${style.color}`} />,
           action: newNotif.link ? {
             label: "Ver",
             onClick: () => {
@@ -171,16 +173,6 @@ export function NotificationBell() {
     return readNotifications.length;
   }, [readNotifications]);
 
-  const getIcon = (type: string) => {
-    switch (type) {
-      case "user_pending": return <UserPlus className="h-4 w-4 text-amber-500" />;
-      case "user_approved": return <Check className="h-4 w-4 text-emerald-500" />;
-      case "announcement": return <Megaphone className="h-4 w-4 text-primary" />;
-      case "reminder": return <CalendarClock className="h-4 w-4 text-destructive" />;
-      case "email": return <Mail className="h-4 w-4 text-emerald-500" />;
-      default: return <Bell className="h-4 w-4 text-muted-foreground" />;
-    }
-  };
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -260,47 +252,59 @@ export function NotificationBell() {
 
           {/* Notification cards */}
           <div className="px-3 pb-3 space-y-2 mt-1">
-            {activeList.map((n) => (
-              <div
-                key={n.id}
-                onClick={() => {
-                  if (n.link) {
-                    if (!n.is_read) toggleRead(n.id, false);
-                    setOpen(false);
-                    navigate(n.link);
-                  }
-                }}
-                className={`rounded-lg border p-3 transition-colors cursor-pointer ${
-                  !n.is_read
-                    ? "border-emerald-300 bg-emerald-50/60 dark:border-emerald-700 dark:bg-emerald-950/30"
-                    : "border-border bg-card hover:bg-muted/50"
-                }`}
-              >
-                <div className="flex items-start gap-2">
-                  <div className="mt-0.5 shrink-0">{getIcon(n.type)}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground">{n.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-[11px] text-muted-foreground/70">{formatDate(n.created_at)}</span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleRead(n.id, n.is_read);
-                        }}
-                        className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {n.is_read ? (
-                          <><EyeOff className="h-3 w-3" /> Marcar como não lida</>
-                        ) : (
-                          <><Eye className="h-3 w-3" /> Marcar como lida</>
-                        )}
-                      </button>
+            {activeList.map((n) => {
+              const style = getNotificationStyle(n.type, n.metadata);
+              const { Icon, color, bg, bar, label, source } = style;
+              return (
+                <div
+                  key={n.id}
+                  onClick={() => {
+                    if (n.link) {
+                      if (!n.is_read) toggleRead(n.id, false);
+                      setOpen(false);
+                      navigate(n.link);
+                    }
+                  }}
+                  className={`flex rounded-lg border overflow-hidden cursor-pointer transition ${
+                    !n.is_read
+                      ? "border-emerald-300 bg-gradient-to-r from-emerald-500/[0.04] to-transparent dark:border-emerald-700"
+                      : "border-border bg-card hover:bg-muted/50"
+                  }`}
+                >
+                  <div className={`w-1 shrink-0 ${bar}`} />
+                  <div className="flex-1 flex gap-2.5 p-3 min-w-0">
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${bg}`}>
+                      <Icon className={`w-4 h-4 ${color}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className={`text-[9px] font-extrabold tracking-wider px-1.5 py-0.5 rounded ${bg} ${color}`}>
+                          {label}
+                        </span>
+                        <span className="text-[10px] font-medium text-muted-foreground truncate">
+                          {source}
+                        </span>
+                      </div>
+                      <p className="text-[13px] font-bold text-foreground truncate">{n.title}</p>
+                      <p className="text-[11.5px] text-muted-foreground line-clamp-2 mt-0.5 leading-snug">{n.message}</p>
+                      <div className="flex items-center justify-between mt-1.5">
+                        <span className="text-[10px] text-muted-foreground/70">{formatDate(n.created_at)}</span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleRead(n.id, n.is_read); }}
+                          className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground transition"
+                        >
+                          {n.is_read ? (
+                            <><EyeOff className="h-3 w-3" /> Marcar como não lida</>
+                          ) : (
+                            <><Eye className="h-3 w-3" /> Marcar como lida</>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Read section when on unread tab */}
@@ -309,38 +313,50 @@ export function NotificationBell() {
               <div className="border-t mx-3" />
               <p className="text-[11px] text-muted-foreground font-medium px-4 pt-3 pb-1">Últimas notificações lidas</p>
               <div className="px-3 pb-3 space-y-2 mt-1">
-                {readNotifications.slice(0, 3).map((n) => (
-                  <div
-                    key={n.id}
-                    onClick={() => {
-                      if (n.link) {
-                        setOpen(false);
-                        navigate(n.link);
-                      }
-                    }}
-                    className="rounded-lg border border-border bg-card p-3 transition-colors cursor-pointer hover:bg-muted/50"
-                  >
-                    <div className="flex items-start gap-2">
-                      <div className="mt-0.5 shrink-0">{getIcon(n.type)}</div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground">{n.title}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
-                        <div className="flex items-center justify-between mt-2">
-                          <span className="text-[11px] text-muted-foreground/70">{formatDate(n.created_at)}</span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleRead(n.id, true);
-                            }}
-                            className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-                          >
-                            <EyeOff className="h-3 w-3" /> Marcar como não lida
-                          </button>
+                {readNotifications.slice(0, 3).map((n) => {
+                  const style = getNotificationStyle(n.type, n.metadata);
+                  const { Icon, color, bg, bar, label, source } = style;
+                  return (
+                    <div
+                      key={n.id}
+                      onClick={() => {
+                        if (n.link) {
+                          setOpen(false);
+                          navigate(n.link);
+                        }
+                      }}
+                      className="flex rounded-lg border border-border bg-card overflow-hidden cursor-pointer transition hover:bg-muted/50"
+                    >
+                      <div className={`w-1 shrink-0 ${bar}`} />
+                      <div className="flex-1 flex gap-2.5 p-3 min-w-0">
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${bg}`}>
+                          <Icon className={`w-4 h-4 ${color}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className={`text-[9px] font-extrabold tracking-wider px-1.5 py-0.5 rounded ${bg} ${color}`}>
+                              {label}
+                            </span>
+                            <span className="text-[10px] font-medium text-muted-foreground truncate">
+                              {source}
+                            </span>
+                          </div>
+                          <p className="text-[13px] font-bold text-foreground truncate">{n.title}</p>
+                          <p className="text-[11.5px] text-muted-foreground line-clamp-2 mt-0.5 leading-snug">{n.message}</p>
+                          <div className="flex items-center justify-between mt-1.5">
+                            <span className="text-[10px] text-muted-foreground/70">{formatDate(n.created_at)}</span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleRead(n.id, true); }}
+                              className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground transition"
+                            >
+                              <EyeOff className="h-3 w-3" /> Marcar como não lida
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           )}
