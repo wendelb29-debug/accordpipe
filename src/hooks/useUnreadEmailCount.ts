@@ -53,6 +53,10 @@ export function useUnreadEmailCount() {
     // fallback poll caso o realtime falhe
     const interval = setInterval(fetchUnread, 60000);
 
+    // refresh imediato quando a página de email muda is_read em lote
+    const onLocalChange = () => fetchUnread();
+    window.addEventListener("email-unread-changed", onLocalChange);
+
     // realtime: qualquer mudança em email_messages refaz a contagem
     const channel = supabase
       .channel(`unread-email:${profile?.user_id || "anon"}`)
@@ -70,6 +74,7 @@ export function useUnreadEmailCount() {
 
     return () => {
       clearInterval(interval);
+      window.removeEventListener("email-unread-changed", onLocalChange);
       supabase.removeChannel(channel);
     };
   }, [fetchUnread, profile?.user_id]);
