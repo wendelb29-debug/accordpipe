@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Bell, Check, CheckCheck, Clock, UserPlus, Megaphone, CalendarClock, Eye, EyeOff, CircleCheck, BellOff, BellRing, TestTube, CheckCircle2, XCircle, Mail } from "lucide-react";
+import { Bell, Eye, EyeOff, CircleCheck, BellOff, BellRing, TestTube, CheckCircle2, XCircle } from "lucide-react";
+import { getNotificationStyle } from "./notificationStyles";
 import { useNotificationManager } from "@/hooks/useNotificationManager";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -125,11 +126,12 @@ export function NotificationBell() {
         const newNotif = payload.new as Notification;
         playNotificationSound();
         fetchNotifications();
-        
-        // Mostrar toast para novas notificações
+
+        const style = getNotificationStyle(newNotif.type, newNotif.metadata);
+        const ToastIcon = style.Icon;
         toast(newNotif.title, {
           description: newNotif.message,
-          icon: getIcon(newNotif.type),
+          icon: <ToastIcon className={`h-4 w-4 ${style.color}`} />,
           action: newNotif.link ? {
             label: "Ver",
             onClick: () => {
@@ -171,16 +173,6 @@ export function NotificationBell() {
     return readNotifications.length;
   }, [readNotifications]);
 
-  const getIcon = (type: string) => {
-    switch (type) {
-      case "user_pending": return <UserPlus className="h-4 w-4 text-amber-500" />;
-      case "user_approved": return <Check className="h-4 w-4 text-emerald-500" />;
-      case "announcement": return <Megaphone className="h-4 w-4 text-primary" />;
-      case "reminder": return <CalendarClock className="h-4 w-4 text-destructive" />;
-      case "email": return <Mail className="h-4 w-4 text-emerald-500" />;
-      default: return <Bell className="h-4 w-4 text-muted-foreground" />;
-    }
-  };
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
