@@ -1,7 +1,10 @@
 // Edge Function: generate-email-template
 // Gera HTML de e-mail via Lovable AI Gateway (sem necessidade de chave Anthropic).
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { withErrorHandling, jsonResponse, HttpError } from "../_shared/error-handler.ts";
+import { EdgeLogger } from "../_shared/edge-logger.ts";
+
+const logger = new EdgeLogger("generate-email-template");
 
 const SYSTEM_PROMPT = `Você é um especialista em design de e-mail marketing HTML.
 
@@ -27,41 +30,37 @@ RETORNE APENAS JSON cru (sem markdown, sem \`\`\`):
   "variables_used": ["nome", "empresa"]
 }`;
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+Deno.serve(withErrorHandling("generate-email-template", async (req) => {
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: req.headers.get("Authorization") || "" } } }
+  );
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    throw new HttpError("Não autenticado", 401, { code: "UNAUTHENTICATED" });
   }
 
+  let body: any;
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: req.headers.get("Authorization") || "" } } }
-    );
+    body = await req.json();
+  } catch {
+    throw new HttpError("JSON inválido no corpo da requisição.", 400, { code: "BAD_JSON" });
+  }
+  const { briefing, brand_color, brand_name, tone, language } = body || {};
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Não autenticado" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
+  if (!briefing || typeof briefing !== "string" || briefing.trim().length < 10) {
+    throw new HttpError("Briefing muito curto. Descreva o objetivo do e-mail.", 400, { code: "BRIEFING_TOO_SHORT" });
+  }
 
-    const { briefing, brand_color, brand_name, tone, language } = await req.json();
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) {
+    logger.error("missing_api_key", { userId: user.id }, "LOVABLE_API_KEY not configured");
+    throw new HttpError("Serviço de IA indisponível (chave não configurada).", 500, { code: "NO_API_KEY" });
+  }
 
-    if (!briefing || typeof briefing !== "string" || briefing.trim().length < 10) {
-      return new Response(JSON.stringify({ error: "Briefing muito curto. Descreva o objetivo do e-mail." }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
-
-    const userPrompt = `BRIEFING:
+  const userPrompt = `BRIEFING:
 ${briefing.trim()}
 
 CONFIGURAÇÕES:
@@ -72,7 +71,9 @@ CONFIGURAÇÕES:
 
 Gere o e-mail HTML conforme as regras. Retorne SOMENTE o JSON.`;
 
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  let resp: Response;
+  try {
+    resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -87,54 +88,40 @@ Gere o e-mail HTML conforme as regras. Retorne SOMENTE o JSON.`;
         response_format: { type: "json_object" },
       }),
     });
-
-    if (!resp.ok) {
-      const errText = await resp.text();
-      console.error("[generate-email-template] AI gateway error:", resp.status, errText);
-      if (resp.status === 429) {
-        return new Response(JSON.stringify({ error: "Limite de uso atingido. Tente novamente em alguns instantes." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
-      }
-      if (resp.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos esgotados. Adicione créditos em Workspace → Usage." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
-      }
-      return new Response(JSON.stringify({ error: `IA indisponível: ${errText.slice(0, 200)}` }), {
-        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
-
-    const data = await resp.json();
-    const rawText: string = data.choices?.[0]?.message?.content || "";
-
-    let parsed: { subject: string; preview_text?: string; body_html: string; variables_used?: string[] };
-    try {
-      const cleaned = rawText.replace(/```json|```/g, "").trim();
-      parsed = JSON.parse(cleaned);
-    } catch (e) {
-      console.error("[generate-email-template] JSON parse failed. Raw:", rawText.slice(0, 500));
-      return new Response(JSON.stringify({
-        error: "IA retornou formato inválido. Tente novamente com briefing mais claro."
-      }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
-
-    if (!parsed.body_html || !parsed.subject) {
-      return new Response(JSON.stringify({ error: "Resposta da IA incompleta. Tente novamente." }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
-
-    return new Response(JSON.stringify(parsed), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
-  } catch (err: any) {
-    console.error("[generate-email-template] ERRO:", err);
-    return new Response(JSON.stringify({ error: String(err?.message || err) }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+  } catch (netErr) {
+    logger.error("ai_gateway_network_fail", { userId: user.id }, netErr);
+    throw new HttpError("Falha de rede ao contatar a IA. Tente novamente.", 502, { code: "AI_NETWORK" });
   }
-});
+
+  if (!resp.ok) {
+    const errText = await resp.text().catch(() => "");
+    logger.error("ai_gateway_error", { status: resp.status, userId: user.id }, errText);
+    if (resp.status === 429) throw new HttpError("Limite de uso atingido. Tente novamente em alguns instantes.", 429, { code: "RATE_LIMIT" });
+    if (resp.status === 402) throw new HttpError("Créditos esgotados. Adicione créditos em Workspace → Usage.", 402, { code: "NO_CREDITS" });
+    throw new HttpError(`IA indisponível: ${errText.slice(0, 200)}`, 502, { code: "AI_UPSTREAM" });
+  }
+
+  let data: any;
+  try {
+    data = await resp.json();
+  } catch (e) {
+    logger.error("ai_gateway_invalid_json", { userId: user.id }, e);
+    throw new HttpError("IA retornou resposta inválida. Tente novamente.", 502, { code: "AI_BAD_JSON" });
+  }
+  const rawText: string = data?.choices?.[0]?.message?.content || "";
+
+  let parsed: { subject: string; preview_text?: string; body_html: string; variables_used?: string[] };
+  try {
+    const cleaned = rawText.replace(/```json|```/g, "").trim();
+    parsed = JSON.parse(cleaned);
+  } catch (e) {
+    logger.warn("ai_parse_failed", { userId: user.id, preview: rawText.slice(0, 200) }, e);
+    throw new HttpError("IA retornou formato inválido. Tente novamente com briefing mais claro.", 500, { code: "AI_PARSE" });
+  }
+
+  if (!parsed.body_html || !parsed.subject) {
+    throw new HttpError("Resposta da IA incompleta. Tente novamente.", 500, { code: "AI_INCOMPLETE" });
+  }
+
+  return jsonResponse(parsed);
+}));
