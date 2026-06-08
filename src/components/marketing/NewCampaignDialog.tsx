@@ -42,6 +42,7 @@ export function NewCampaignDialog({ open, onOpenChange, defaultChannel, onCreate
   const [throttleMin, setThrottleMin] = useState(5);
   const [throttleMax, setThrottleMax] = useState(15);
   const [submitting, setSubmitting] = useState(false);
+  const [pickTemplateOpen, setPickTemplateOpen] = useState(false);
 
   useEffect(() => {
     if (open) {
