@@ -422,11 +422,8 @@ export default function EmailInbox() {
                     onSelect={() => navigate(`/email/${acc.id}`)}
                     className={`rounded-lg px-2.5 py-2 cursor-pointer gap-2.5 ${isActive ? "bg-emerald-500/10" : ""}`}
                   >
-                    <div 
-                      className="w-7 h-7 rounded-md flex items-center justify-center text-white font-bold text-[11px] shrink-0"
-                      style={{ background: providerBackground(acc.provider) }}
-                    >
-                      {providerInitial(acc.provider)}
+                    <div className="w-7 h-7 rounded-md bg-muted/40 flex items-center justify-center shrink-0">
+                      <ProviderLogo provider={acc.provider} className="w-5 h-5" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-[12.5px] font-semibold text-foreground truncate">{providerName(acc.provider)}</div>
