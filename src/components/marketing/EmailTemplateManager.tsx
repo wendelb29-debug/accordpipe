@@ -370,7 +370,7 @@ function TemplateEditorDialog({ template, onClose, onSaved }: any) {
       : await db.from("email_templates").update(payload).eq("id", template.id);
     setSaving(false);
     if (error) {
-      toast.error("Erro ao salvar", { description: error.message });
+      captureAppError(error, { module: "marketing.templates", action: isNew ? "create" : "update" }, "error");
     } else {
       toast.success(isNew ? "Template criado!" : "Template atualizado");
       onSaved();
