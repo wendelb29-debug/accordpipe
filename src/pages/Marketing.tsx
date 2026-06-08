@@ -202,6 +202,12 @@ export default function Marketing() {
           navigate(`/marketing/${id}`);
         }}
       />
+
+      <EmailTemplateManager
+        open={templatesOpen}
+        onOpenChange={setTemplatesOpen}
+        mode="manage"
+      />
     </PageContainer>
   );
 }
