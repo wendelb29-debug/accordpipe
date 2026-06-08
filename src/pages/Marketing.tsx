@@ -9,10 +9,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Megaphone, Plus, MessageSquare, Mail, Activity, CheckCircle2, XCircle, Pause, Loader2 } from "lucide-react";
+import { Megaphone, Plus, MessageSquare, Mail, Activity, CheckCircle2, XCircle, Pause, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { NewCampaignDialog } from "@/components/marketing/NewCampaignDialog";
 import { EmailConnectionsPanel } from "@/components/marketing/EmailConnectionsPanel";
+import { EmailTemplateManager } from "@/components/marketing/EmailTemplateManager";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
