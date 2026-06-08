@@ -15,6 +15,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { BackNavigationProvider } from "@/contexts/BackNavigationContext";
 import { LoginNotifications } from "@/components/notifications/LoginNotifications";
+import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 
 interface AppLayoutProps {
   children: ReactNode;
