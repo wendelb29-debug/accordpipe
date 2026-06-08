@@ -208,7 +208,7 @@ export function NewCampaignDialog({ open, onOpenChange, defaultChannel, onCreate
       toast.success("Campanha criada e enfileirada");
       onCreated(campaign.id);
     } catch (e: any) {
-      toast.error("Erro ao criar campanha: " + (e.message || e));
+      captureAppError(e, { module: "marketing.campaign", action: "create" }, "error");
     } finally {
       setSubmitting(false);
     }
