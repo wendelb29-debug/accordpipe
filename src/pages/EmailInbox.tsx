@@ -172,6 +172,8 @@ export default function EmailInbox() {
   const [composeOpen, setComposeOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [composePrefill, setComposePrefill] = useState<{ to?: string; subject?: string; threadId?: string | null } | null>(null);
+  const [linkLeadOpen, setLinkLeadOpen] = useState(false);
+  const [linkLeadMessage, setLinkLeadMessage] = useState<EmailMessage | null>(null);
 
   const isUnified = accountId === "inbox" || !accountId;
   const effectiveAccountId = isUnified ? null : accountId;
