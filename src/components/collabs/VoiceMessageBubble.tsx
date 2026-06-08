@@ -91,8 +91,15 @@ export function VoiceMessageBubble({ url, duration, levels, tone = "other" }: Vo
   const accent = tone === "mine" ? "#10b981" : "#059669";
   const bgPlay = "#10b981";
 
+  const bubbleBg = tone === "mine"
+    ? "linear-gradient(135deg, #DCF8C6 0%, #C8F0B0 100%)"
+    : "linear-gradient(135deg, #FFFFFF 0%, #F3F4F6 100%)";
+
   return (
-    <div className="flex items-center gap-3 min-w-[240px] max-w-[300px] py-1">
+    <div
+      className="flex items-center gap-3 min-w-[240px] max-w-[300px] px-3 py-2 rounded-2xl border border-white/60 shadow-[0_4px_18px_-6px_rgba(15,23,42,0.18)]"
+      style={{ background: bubbleBg }}
+    >
       <audio ref={audioRef} src={url} preload="metadata" />
       <button
         onClick={toggle}
