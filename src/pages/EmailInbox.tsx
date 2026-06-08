@@ -340,7 +340,8 @@ export default function EmailInbox() {
   const handleNew = () => { setComposePrefill(null); setComposeOpen(true); };
 
   const handleCreateLead = (msg: EmailMessage) => {
-    navigate(`/atendimento?from=email&email=${encodeURIComponent(msg.from_email)}&name=${encodeURIComponent(msg.from_name || "")}&messageId=${msg.id}`);
+    setLinkLeadMessage(msg);
+    setLinkLeadOpen(true);
   };
   const handleCreateTask = (msg: EmailMessage) => {
     navigate(`/atividades?from=email&messageId=${msg.id}&title=${encodeURIComponent(msg.subject || "")}`);
