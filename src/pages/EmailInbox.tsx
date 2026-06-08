@@ -14,6 +14,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { GmailLogo, OutlookLogo } from "@/components/email/ProviderLogos";
+import { LinkEmailToLeadDialog } from "@/components/email/LinkEmailToLeadDialog";
 
 type Folder = "inbox" | "sent" | "important" | "spam" | "trash" | "archive";
 type FilterKey = "all" | "unread" | "starred" | "attach";
@@ -171,6 +172,8 @@ export default function EmailInbox() {
   const [composeOpen, setComposeOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [composePrefill, setComposePrefill] = useState<{ to?: string; subject?: string; threadId?: string | null } | null>(null);
+  const [linkLeadOpen, setLinkLeadOpen] = useState(false);
+  const [linkLeadMessage, setLinkLeadMessage] = useState<EmailMessage | null>(null);
 
   const isUnified = accountId === "inbox" || !accountId;
   const effectiveAccountId = isUnified ? null : accountId;
@@ -337,7 +340,8 @@ export default function EmailInbox() {
   const handleNew = () => { setComposePrefill(null); setComposeOpen(true); };
 
   const handleCreateLead = (msg: EmailMessage) => {
-    navigate(`/atendimento?from=email&email=${encodeURIComponent(msg.from_email)}&name=${encodeURIComponent(msg.from_name || "")}&messageId=${msg.id}`);
+    setLinkLeadMessage(msg);
+    setLinkLeadOpen(true);
   };
   const handleCreateTask = (msg: EmailMessage) => {
     navigate(`/atividades?from=email&messageId=${msg.id}&title=${encodeURIComponent(msg.subject || "")}`);
@@ -648,6 +652,12 @@ export default function EmailInbox() {
           onSent={() => { setComposeOpen(false); handleSync(); }}
         />
       )}
+
+      <LinkEmailToLeadDialog
+        open={linkLeadOpen}
+        onOpenChange={setLinkLeadOpen}
+        message={linkLeadMessage as any}
+      />
     </div>
   );
 }
