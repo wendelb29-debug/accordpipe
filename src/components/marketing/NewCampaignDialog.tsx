@@ -335,6 +335,36 @@ export function NewCampaignDialog({ open, onOpenChange, defaultChannel, onCreate
         {step === 3 && (
           <div className="space-y-4">
             {channel === "email" && (
+              <div className="grid grid-cols-2 gap-3 mb-2">
+                <button
+                  type="button"
+                  onClick={() => setPickTemplateOpen(true)}
+                  className="flex items-center gap-3 p-4 rounded-xl border-2 border-border hover:border-violet-400 bg-card hover:bg-violet-500/5 transition text-left"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-[13.5px] font-bold text-foreground">Escolher template</div>
+                    <div className="text-[11px] text-muted-foreground">Use um da sua biblioteca</div>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setSubject(""); setBody(""); }}
+                  className="flex items-center gap-3 p-4 rounded-xl border-2 border-border hover:border-emerald-400 bg-card hover:bg-emerald-500/5 transition text-left"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shrink-0">
+                    <FileText className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-[13.5px] font-bold text-foreground">Criar do zero</div>
+                    <div className="text-[11px] text-muted-foreground">Escreva HTML manualmente</div>
+                  </div>
+                </button>
+              </div>
+            )}
+            {channel === "email" && (
               <div>
                 <Label>Assunto</Label>
                 <Input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Assunto do e-mail" />
@@ -354,6 +384,16 @@ export function NewCampaignDialog({ open, onOpenChange, defaultChannel, onCreate
                 Variáveis disponíveis: <code>{"{{nome}}"}</code> e qualquer coluna do CSV.
               </p>
             </div>
+            <EmailTemplateManager
+              open={pickTemplateOpen}
+              onOpenChange={setPickTemplateOpen}
+              mode="pick"
+              onSelectTemplate={(t) => {
+                setSubject(t.subject);
+                setBody(t.body_html);
+                toast.success("Template aplicado! Você pode editar antes de enviar.");
+              }}
+            />
           </div>
         )}
 
