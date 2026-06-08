@@ -221,7 +221,7 @@ export function NotificationBell() {
           </button>
         </div>
 
-        <ScrollArea className="max-h-[400px]">
+        <ScrollArea className="h-[480px]">
           {/* All-read state */}
           {tab === "unread" && allRead && (
             <div className="flex flex-col items-center justify-center py-8 px-4">
