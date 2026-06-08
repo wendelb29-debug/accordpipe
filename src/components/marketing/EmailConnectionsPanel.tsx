@@ -101,8 +101,8 @@ export function EmailConnectionsPanel() {
         {active.map(a => (
           <Card key={a.id}>
             <CardContent className="p-4 flex items-center gap-3">
-              <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${a.provider === "gmail" ? "bg-red-500/10 text-red-400" : "bg-blue-500/10 text-blue-400"}`}>
-                <Mail className="h-5 w-5" />
+              <div className={`h-10 w-10 rounded-lg flex items-center justify-center bg-background border border-border/50`}>
+                {a.provider === "gmail" ? <GmailLogo className="h-5 w-5" /> : <OutlookLogo className="h-5 w-5" />}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
