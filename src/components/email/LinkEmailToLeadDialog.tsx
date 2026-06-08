@@ -302,7 +302,7 @@ export function LinkEmailToLeadDialog({ open, onOpenChange, message, onLinked }:
                 <Select value={stageId} onValueChange={setStageId}>
                   <SelectTrigger><SelectValue placeholder="Etapa" /></SelectTrigger>
                   <SelectContent>
-                    {stages.map(s => <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>)}
+                    {stages.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
