@@ -14,6 +14,7 @@ import { TenantBillingBanner } from "./TenantBillingBanner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { BackNavigationProvider } from "@/contexts/BackNavigationContext";
+import { LoginNotifications } from "@/components/notifications/LoginNotifications";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -55,6 +56,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <BackNavigationProvider>
+      <LoginNotifications />
       <div className={cn(
         "bg-background flex flex-col",
         isFullscreen ? "h-[100dvh] overflow-hidden" : "min-h-screen"
