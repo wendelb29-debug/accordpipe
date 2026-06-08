@@ -93,7 +93,7 @@ export default function Marketing() {
       <PageHeader
         title="Accord Marketing"
         description="Campanhas de disparo em massa por WhatsApp e e-mail"
-        icon={<Megaphone className="h-6 w-6" />}
+        icon={Megaphone}
       />
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="mt-4">
