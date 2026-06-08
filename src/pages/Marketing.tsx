@@ -120,6 +120,13 @@ export default function Marketing() {
               <MessageSquare className="w-4 h-4" />
               Campanha WhatsApp
             </button>
+            <button
+              onClick={() => setTemplatesOpen(true)}
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg border border-border bg-card hover:bg-muted text-[13px] font-semibold transition"
+            >
+              <Sparkles className="w-4 h-4 text-violet-500" />
+              Templates de e-mail
+            </button>
           </div>
 
 
