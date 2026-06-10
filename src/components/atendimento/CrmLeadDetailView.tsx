@@ -1407,6 +1407,26 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               <LeadWhatsAppTab lead={lead} onBack={() => setActiveTab("historico")} />
             </TabsContent>
           </Tabs>
+
+          <NewCallDialog
+            open={newCallOpen}
+            onOpenChange={setNewCallOpen}
+            leadName={lead.contact_name || lead.company_name || "Lead"}
+            onSave={async (data) => {
+              const lines = [
+                `Resultado: ${data.outcome}`,
+                data.duration ? `Duração: ${data.duration} min` : null,
+                data.notes ? `Notas: ${data.notes}` : null,
+              ].filter(Boolean).join("\n");
+              await addActivity({
+                type: "call",
+                title: `Ligação · ${data.outcome}`,
+                description: lines,
+              });
+              setNewCallOpen(false);
+              toast.success("Ligação registrada");
+            }}
+          />
         </div>
       </div>
       {/* Lost reason dialog */}
