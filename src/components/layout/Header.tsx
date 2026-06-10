@@ -1,10 +1,10 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Search, User, Moon, Sun, Clock, ChevronLeft, Building2 } from "lucide-react";
+import { User, Moon, Sun, Clock, ChevronLeft, Building2 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { MobileSidebar } from "./MobileSidebar";
+import { GlobalSearch } from "./GlobalSearch";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -128,14 +128,7 @@ export function Header() {
           </div>
         </div>
 
-        <div className="relative hidden md:block w-48 lg:w-64">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
-          <Input
-            type="search"
-            placeholder={t("header.search")}
-            className="pl-8 pr-2 bg-muted/40 border-border/40 focus-visible:ring-1 focus-visible:ring-primary/50 rounded-xl h-8 text-xs w-full"
-          />
-        </div>
+        <GlobalSearch />
 
 
         <NotificationBell />
