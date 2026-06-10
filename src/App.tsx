@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeSync } from "@/components/layout/ThemeSync";
@@ -460,6 +460,10 @@ const App = () => (
             <Route path="/termos" element={<TermsOfService />} />
             <Route path="/refund-policy" element={<RefundPolicy />} />
             <Route path="/reembolso" element={<RefundPolicy />} />
+            {/* Redirects de URLs antigas / sem subrota */}
+            <Route path="/configuracoes" element={<Navigate to="/configuracoes/usuarios" replace />} />
+            <Route path="/crm" element={<Navigate to="/atendimento" replace />} />
+            <Route path="/automacoes" element={<Navigate to="/accord-pulse" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </ErrorBoundary>

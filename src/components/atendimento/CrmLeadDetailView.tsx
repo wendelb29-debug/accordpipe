@@ -43,6 +43,7 @@ import { toast } from "sonner";
 import { WonConfirmDialog, WonCelebrationDialog } from "./WonCelebrationDialog";
 import { getOrCreateCadastroWorkspace } from "@/lib/cadastroWorkspace";
 import { KanbanStageHeader } from "./KanbanStageHeader";
+import { NewCallDialog } from "./NewCallDialog";
 
 const formatCurrency = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -195,6 +196,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const [noteText, setNoteText] = useState("");
   const [noteImage, setNoteImage] = useState<File | null>(null);
   const [noteImagePreview, setNoteImagePreview] = useState<string | null>(null);
+  const [newCallOpen, setNewCallOpen] = useState(false);
   const [savingNote, setSavingNote] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteText, setEditingNoteText] = useState("");
@@ -1362,6 +1364,21 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
             {/* Ligações - filtered */}
             <TabsContent value="ligacoes" className="flex-1 overflow-y-auto p-4 mt-0">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">Ligações registradas</h3>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Histórico de contatos telefônicos com este lead
+                  </p>
+                </div>
+                <button
+                  onClick={() => setNewCallOpen(true)}
+                  className="h-9 px-3.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[12px] font-semibold inline-flex items-center gap-1.5 transition"
+                >
+                  <PhoneCall className="w-3.5 h-3.5" />
+                  Registrar ligação
+                </button>
+              </div>
               <ActivityFilteredList activities={activities.filter((a) => a.type === "call")} loading={activitiesLoading} emptyLabel="ligações" />
             </TabsContent>
 
@@ -1390,6 +1407,26 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               <LeadWhatsAppTab lead={lead} onBack={() => setActiveTab("historico")} />
             </TabsContent>
           </Tabs>
+
+          <NewCallDialog
+            open={newCallOpen}
+            onOpenChange={setNewCallOpen}
+            leadName={lead.contact_name || lead.company_name || "Lead"}
+            onSave={async (data) => {
+              const lines = [
+                `Resultado: ${data.outcome}`,
+                data.duration ? `Duração: ${data.duration} min` : null,
+                data.notes ? `Notas: ${data.notes}` : null,
+              ].filter(Boolean).join("\n");
+              await addActivity({
+                type: "call",
+                title: `Ligação · ${data.outcome}`,
+                description: lines,
+              });
+              setNewCallOpen(false);
+              toast.success("Ligação registrada");
+            }}
+          />
         </div>
       </div>
       {/* Lost reason dialog */}

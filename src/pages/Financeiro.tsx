@@ -348,13 +348,30 @@ export default function Financeiro() {
               description={inadimplenciaRate <= 5 ? "Excelente" : inadimplenciaRate <= 15 ? "Atenção" : "Crítico"}
               accentClass={inadimplenciaRate <= 5 ? "text-emerald-500" : inadimplenciaRate <= 15 ? "text-amber-500" : "text-red-500"}
             />
-            <InsightCard
-              icon={Shield}
-              title="Saúde Financeira"
-              value={totals.pago > totals.vencido ? "Boa" : "Atenção"}
-              description={`Receita: ${fmtCur(totals.pago)} | Vencido: ${fmtCur(totals.vencido)}`}
-              accentClass={totals.pago > totals.vencido ? "text-emerald-500" : "text-amber-500"}
-            />
+            {(() => {
+              const totalMov = totals.pago + totals.vencido + totals.pendente;
+              if (totalMov === 0) {
+                return (
+                  <InsightCard
+                    icon={Shield}
+                    title="Saúde Financeira"
+                    value="Sem dados ainda"
+                    description="Nenhuma cobrança registrada"
+                    accentClass="text-muted-foreground"
+                  />
+                );
+              }
+              const healthy = totals.pago > totals.vencido;
+              return (
+                <InsightCard
+                  icon={Shield}
+                  title="Saúde Financeira"
+                  value={healthy ? "Boa" : "Atenção"}
+                  description={`Receita: ${fmtCur(totals.pago)} | Vencido: ${fmtCur(totals.vencido)}`}
+                  accentClass={healthy ? "text-emerald-500" : "text-amber-500"}
+                />
+              );
+            })()}
           </div>
 
           {/* Recent transactions */}
@@ -409,19 +426,46 @@ export default function Financeiro() {
             </div>
             <Zap className="h-4 w-4 text-primary" />
           </div>
+
+          {integrations.some((i) => i.environment !== "production") && (
+            <div className="rounded-xl border-2 border-amber-500/40 bg-amber-500/10 p-4 mb-4 flex items-start gap-3">
+              <div className="w-9 h-9 rounded-lg bg-amber-500 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[9px] font-extrabold uppercase tracking-wider bg-amber-500 text-white px-2 py-0.5 rounded">
+                    SANDBOX
+                  </span>
+                  <span className="text-[14px] font-bold text-amber-900 dark:text-amber-200">
+                    Modo de teste ativo
+                  </span>
+                </div>
+                <p className="text-[12.5px] text-amber-800 dark:text-amber-200/80 leading-relaxed">
+                  As cobranças geradas <strong>não são reais</strong> neste modo. Para começar a receber de verdade, troque as credenciais pelas de produção e atualize a integração.
+                </p>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {integrations.map((int) => {
-              const statusLabel = int.environment === "production" ? "Produção" : "Sandbox";
+              const isProd = int.environment === "production";
+              const statusLabel = isProd ? "Produção" : "Sandbox";
               return (
-                <div key={int.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-card hover:bg-accent/50 transition-colors">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <Zap className="h-4 w-4 text-primary" />
+                <div
+                  key={int.id}
+                  className={`flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors ${
+                    isProd ? "border-border/50" : "border-amber-500/40"
+                  }`}
+                >
+                  <div className={`p-2 rounded-lg ${isProd ? "bg-primary/10" : "bg-amber-500/15"}`}>
+                    <Zap className={`h-4 w-4 ${isProd ? "text-primary" : "text-amber-500"}`} />
                   </div>
                   <div>
                     <p className="text-xs font-medium text-foreground">{int.display_name || int.provider}</p>
                     <div className="flex items-center gap-1 mt-0.5">
-                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                      <span className="text-[10px] text-emerald-500 capitalize">{statusLabel}</span>
+                      <div className={`h-1.5 w-1.5 rounded-full ${isProd ? "bg-emerald-500" : "bg-amber-500"}`} />
+                      <span className={`text-[10px] capitalize ${isProd ? "text-emerald-500" : "text-amber-600 font-semibold"}`}>{statusLabel}</span>
                     </div>
                   </div>
                 </div>
