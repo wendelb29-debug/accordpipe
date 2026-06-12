@@ -659,41 +659,6 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
         </div>
       </div>
 
-      {/* Status filter chips */}
-      <div className="px-3 pt-1 pb-1.5 shrink-0">
-        <div className="flex items-center gap-1 px-1 py-1 rounded-xl bg-muted/40 border border-border w-fit">
-          {([
-            { id: "open", label: "Em aberto", color: "bg-primary text-primary-foreground", Icon: null },
-            { id: "won", label: "Ganhos", color: "bg-emerald-500 text-white", Icon: CheckCircle2 },
-            { id: "lost", label: "Perdidos", color: "bg-orange-500 text-white", Icon: XCircle },
-            { id: "trash", label: "Lixeira", color: "bg-red-500 text-white", Icon: Trash2 },
-          ] as const).map((c) => {
-            const active = statusFilter === c.id;
-            const count = (counters as any)[c.id] || 0;
-            return (
-              <button
-                key={c.id}
-                onClick={() => setStatusFilter(c.id as any)}
-                className={cn(
-                  "h-7 px-2.5 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1.5 transition",
-                  active ? `${c.color} shadow-sm` : "text-muted-foreground hover:text-foreground hover:bg-card"
-                )}
-              >
-                {c.Icon && <c.Icon className="w-3 h-3" />}
-                {c.label}
-                {count > 0 && (
-                  <span className={cn(
-                    "px-1.5 py-0.5 rounded-full text-[9.5px] font-bold tabular-nums",
-                    active ? "bg-white/20" : "bg-muted-foreground/15"
-                  )}>
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
 
       {/* Kanban Columns / Status Grid */}
       {statusFilter !== "open" ? (
