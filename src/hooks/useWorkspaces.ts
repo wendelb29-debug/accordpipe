@@ -4,6 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { useWorkspacePermissions } from "@/hooks/useWorkspacePermissions";
 import { toast } from "sonner";
+import { captureAppError } from "@/lib/monitoring";
+
 
 export interface Workspace {
   id: string;
@@ -53,8 +55,10 @@ export function useWorkspaces() {
       .order("name");
 
     if (error) {
-      console.error("Error fetching workspaces:", error);
+      captureAppError(error, { module: "workspaces", action: "fetch", tenantId: companyId });
+      toast.error("Erro ao carregar workspaces");
     } else {
+
       const ws = filterAllowedWorkspaces((data || []) as Workspace[]);
       setWorkspaces(ws);
 
@@ -98,9 +102,11 @@ export function useWorkspaces() {
       .single();
 
     if (error) {
+      captureAppError(error, { module: "workspaces", action: "create", tenantId: companyId });
       toast.error("Erro ao criar workspace");
       return null;
     }
+
 
     const ws = data as Workspace;
     setWorkspaces((prev) => [...prev, ws]);
@@ -115,9 +121,11 @@ export function useWorkspaces() {
       .eq("id", id);
 
     if (error) {
+      captureAppError(error, { module: "workspaces", action: "update", metadata: { id } });
       toast.error("Erro ao atualizar workspace");
       return;
     }
+
     setWorkspaces((prev) => prev.map((w) => (w.id === id ? { ...w, ...updates } : w)));
     toast.success("Workspace atualizado!");
   };
@@ -129,9 +137,11 @@ export function useWorkspaces() {
     }
     const { error } = await supabase.from("workspaces").delete().eq("id", id);
     if (error) {
+      captureAppError(error, { module: "workspaces", action: "delete", metadata: { id } });
       toast.error("Erro ao excluir workspace");
       return;
     }
+
     setWorkspaces((prev) => prev.filter((w) => w.id !== id));
     if (activeWorkspaceId === id) {
       const def = workspaces.find((w) => w.is_default && w.id !== id) || workspaces.find((w) => w.id !== id);

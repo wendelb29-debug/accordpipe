@@ -42,6 +42,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      const isDev = import.meta.env.DEV;
       return (
         <div className="flex flex-col items-center justify-center min-h-[400px] p-8 text-center gap-4">
           <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center">
@@ -51,9 +52,15 @@ export class ErrorBoundary extends Component<Props, State> {
             Algo deu errado
           </h2>
           <p className="text-muted-foreground max-w-md text-sm">
-            Ocorreu um erro inesperado. Nossa equipe já foi notificada. 
+            Ocorreu um erro inesperado. Nossa equipe já foi notificada.
             Tente novamente ou recarregue a página.
           </p>
+          {isDev && this.state.error && (
+            <pre className="max-w-2xl w-full overflow-auto rounded-md bg-muted/40 p-3 text-xs text-left text-destructive border border-destructive/20">
+              {this.state.error.message}
+              {this.state.error.stack ? `\n\n${this.state.error.stack}` : ""}
+            </pre>
+          )}
           <div className="flex gap-3 mt-2">
             <Button variant="outline" onClick={this.handleRetry}>
               Tentar novamente
@@ -70,3 +77,4 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
+
