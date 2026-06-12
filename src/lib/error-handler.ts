@@ -43,6 +43,7 @@ const PG_FRIENDLY_MESSAGES: Record<string, string> = {
 /** Converte erros do Supabase/Postgres em mensagens amigáveis em pt-BR. */
 export function friendlyErrorMessage(err: unknown, fallback = "Algo deu errado. Tente novamente."): string {
   if (!err) return fallback;
+  const isDev = import.meta.env.DEV;
 
   // PostgrestError
   if (typeof err === "object" && err !== null) {
@@ -62,14 +63,18 @@ export function friendlyErrorMessage(err: unknown, fallback = "Algo deu errado. 
         return "Sem conexão. Verifique sua internet.";
       }
       if (/timeout/i.test(msg)) return "A operação demorou muito. Tente novamente.";
-      // Não devolve mensagem crua do Postgres (pode vazar schema)
+      // Em dev, devolve mensagem técnica pra debug
+      if (isDev) return `[dev] ${msg.substring(0, 240)}`;
+      // Em produção, não devolve mensagem crua do Postgres (pode vazar schema)
       if (msg.length < 120 && !/postgres|pg_|relation|column/i.test(msg)) return msg;
     }
   }
 
   if (typeof err === "string" && err.length < 120) return err;
+  if (isDev && err instanceof Error) return `[dev] ${err.message}`;
   return fallback;
 }
+
 
 /**
  * Executa uma função assíncrona com tratamento de erro padronizado.
