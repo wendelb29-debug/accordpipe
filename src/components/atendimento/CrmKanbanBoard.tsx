@@ -22,6 +22,13 @@ import { CrmLeadDialog } from "./CrmLeadDialog";
 import { CrmLeadDetailView } from "./CrmLeadDetailView";
 import { FormLinkDialog } from "./FormLinkDialog";
 import { CrmSearchDialog } from "./CrmSearchDialog";
+import {
+  FilterPanel,
+  FilterState,
+  emptyFilterState,
+  countActiveFilters,
+  applyFilters,
+} from "./FilterPanel";
 import { useCrmLeads, CrmLead, STAGES } from "@/hooks/useCrmLeads";
 import { useKanbanColumns } from "@/hooks/useKanbanColumns";
 import { toast } from "sonner";
