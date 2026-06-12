@@ -749,7 +749,11 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                             </div>
                             {/* Company name */}
                             <p className="text-[10px] text-muted-foreground truncate mt-0.5">{lead.company_name}</p>
-                          </div>
+                            {isLost && (
+                              <Badge variant="destructive" className="text-[8px] h-3.5 px-1 mt-0.5 gap-0.5 font-semibold">
+                                ✕ Perdido
+                              </Badge>
+                            )}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                               <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
