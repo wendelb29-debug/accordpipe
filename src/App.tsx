@@ -37,7 +37,9 @@ const Perfil = lazy(() => import("./pages/Perfil"));
 const AccordStack = lazy(() => import("./pages/AccordStack"));
 const GestaoVendas = lazy(() => import("./pages/GestaoVendas"));
 const CrmDashboard = lazy(() => import("./pages/CrmDashboard"));
+const AuditLogs = lazy(() => import("./pages/AuditLogs"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+
 const Formularios = lazy(() => import("./pages/Formularios"));
 const FormPublico = lazy(() => import("./pages/FormPublico"));
 const Cadastrados = lazy(() => import("./pages/Cadastrados"));
@@ -205,6 +207,17 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/configuracoes/logs"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "ceo"]}>
+                  <AppLayout>
+                    <AuditLogs />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
             <Route
               path="/atendimento"
               element={
