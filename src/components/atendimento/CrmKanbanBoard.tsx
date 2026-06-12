@@ -22,6 +22,13 @@ import { CrmLeadDialog } from "./CrmLeadDialog";
 import { CrmLeadDetailView } from "./CrmLeadDetailView";
 import { FormLinkDialog } from "./FormLinkDialog";
 import { CrmSearchDialog } from "./CrmSearchDialog";
+import {
+  FilterPanel,
+  FilterState,
+  emptyFilterState,
+  countActiveFilters,
+  applyFilters,
+} from "./FilterPanel";
 import { useCrmLeads, CrmLead, STAGES } from "@/hooks/useCrmLeads";
 import { useKanbanColumns } from "@/hooks/useKanbanColumns";
 import { toast } from "sonner";
@@ -144,6 +151,9 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   const [nextActivities, setNextActivities] = useState<Record<string, string>>({});
   const [lastCompletedActivities, setLastCompletedActivities] = useState<Record<string, string>>({});
   const [signatureStatsByLead, setSignatureStatsByLead] = useState<Record<string, { signed: number; total: number; approved: boolean }>>({});
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<FilterState>(emptyFilterState);
+  const activeFilterCount = countActiveFilters(advancedFilters);
 
   // Drag-to-scroll
   const pipelineRef = useRef<HTMLDivElement>(null);
@@ -389,7 +399,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
     setTimeout(() => setLinkCopied(false), 2000);
   };
 
-  const filteredLeads = leads.filter((l) => {
+  const baseFiltered = leads.filter((l) => {
     if (selectedUserId !== "all" && l.created_by_user_id !== selectedUserId) return false;
     if (selectedTags.length > 0) {
       const leadTags = l.tags || [];
@@ -406,6 +416,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
       l.source?.toLowerCase().includes(s)
     );
   });
+  const filteredLeads = applyFilters(baseFiltered, advancedFilters);
 
   const handleDrop = async (e: React.DragEvent, targetStage: string) => {
     e.preventDefault();
@@ -544,6 +555,20 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
               </PopoverContent>
             </Popover>
           )}
+          <Button
+            size="icon"
+            variant={activeFilterCount > 0 ? "default" : "outline"}
+            className="h-8 w-8 relative rounded-lg shadow-sm border-border/50"
+            onClick={() => setFilterPanelOpen(true)}
+            title="Filtrar cards"
+          >
+            <Filter className="h-3.5 w-3.5" />
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground px-0.5">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
           <Button size="icon" variant="outline" className="h-8 w-8 rounded-lg shadow-sm border-border/50" onClick={() => setFormLinkOpen(true)}>
             <Tag className="h-3.5 w-3.5" />
           </Button>
@@ -890,6 +915,13 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
         open={globalSearchOpen}
         onOpenChange={setGlobalSearchOpen}
         onSelectLead={(lead) => openDetail(lead)}
+      />
+      <FilterPanel
+        open={filterPanelOpen}
+        onOpenChange={setFilterPanelOpen}
+        value={advancedFilters}
+        onApply={setAdvancedFilters}
+        responsaveis={teamMembers.map((m) => ({ user_id: m.user_id, name: m.name }))}
       />
     </div>
   );
