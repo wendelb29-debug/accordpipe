@@ -1043,7 +1043,13 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                               : isNaturalState ? "text-muted-foreground/60"
                               : "text-muted-foreground/50"
                           )}>
-                            {overdue && overdueByDays > 0 ? `+${overdueByDays}d atraso` : `${days}d`}
+                            {overdue && overdueByDays > 0
+                              ? `+${overdueByDays}d atraso`
+                              : days === 0
+                                ? "Hoje"
+                                : days === 1
+                                  ? "Ontem"
+                                  : `${days} dias`}
                           </span>
                         </div>
                       </div>
