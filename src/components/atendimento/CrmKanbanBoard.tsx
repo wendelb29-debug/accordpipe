@@ -117,6 +117,11 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isNew, setIsNew] = useState(false);
   const [detailLead, setDetailLead] = useState<CrmLead | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"open" | "won" | "lost" | "trash">("open");
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [lostReasonOpen, setLostReasonOpen] = useState(false);
+  const [pendingLead, setPendingLead] = useState<CrmLead | null>(null);
+  const [trashLeads, setTrashLeads] = useState<CrmLead[]>([]);
   const { pushBackHandler } = useBackNavigation();
 
   // Register back handler when lead detail is open
