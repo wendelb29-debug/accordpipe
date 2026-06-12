@@ -643,6 +643,7 @@ export default function EmailInbox() {
               onCreateTask={() => handleCreateTask(selected)}
               onCreateLead={() => handleCreateLead(selected)}
               onShareToCollab={() => handleShareToCollab(selected)}
+              onUpdated={loadMessages}
               recipientFallback={account.email_address}
             />
           </section>
