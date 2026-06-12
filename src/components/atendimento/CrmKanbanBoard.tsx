@@ -787,8 +787,15 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                   const overdue = dynCol
                     ? isLeadOverdueDynamic(lead, slaDays)
                     : isLeadOverdue(lead, stage.id);
-                  const days = Math.floor((Date.now() - new Date(lead.stage_entered_at).getTime()) / (1000 * 60 * 60 * 24));
-                  const overdueByDays = slaDays > 0 ? Math.max(0, days - slaDays) : 0;
+                  const stageEnteredAt = lead.stage_entered_at
+                    ? new Date(lead.stage_entered_at)
+                    : new Date(lead.created_at);
+                  const days = Math.max(0, Math.floor(
+                    (Date.now() - stageEnteredAt.getTime()) / (1000 * 60 * 60 * 24)
+                  ));
+                  const overdueByDays = slaDays > 0
+                    ? Math.max(0, Math.round(days - slaDays))
+                    : 0;
                   const hasActivity = leadsWithActivity.has(lead.id);
                   const hasOverdue = leadsWithOverdueActivity.has(lead.id);
                   const overdueActCount = overdueActivityCount[lead.id] || 0;
