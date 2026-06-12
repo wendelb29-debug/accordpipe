@@ -680,7 +680,15 @@ export default function EmailInbox() {
   );
 }
 
-function MessageReader({ message, onClose, onReply, onForward, onDelete, onCreateTask, onCreateLead, onShareToCollab, recipientFallback }: any) {
+function MessageReader({ message, onClose, onReply, onForward, onDelete, onCreateTask, onCreateLead, onShareToCollab, onUpdated, recipientFallback }: any) {
+  const toggleStar = async () => {
+    const { error } = await supabase
+      .from("email_messages")
+      .update({ is_starred: !message.is_starred } as any)
+      .eq("id", message.id);
+    if (error) return toast.error("Erro ao favoritar", { description: error.message });
+    onUpdated?.();
+  };
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
