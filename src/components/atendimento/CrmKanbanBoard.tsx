@@ -151,6 +151,9 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   const [nextActivities, setNextActivities] = useState<Record<string, string>>({});
   const [lastCompletedActivities, setLastCompletedActivities] = useState<Record<string, string>>({});
   const [signatureStatsByLead, setSignatureStatsByLead] = useState<Record<string, { signed: number; total: number; approved: boolean }>>({});
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<FilterState>(emptyFilterState);
+  const activeFilterCount = countActiveFilters(advancedFilters);
 
   // Drag-to-scroll
   const pipelineRef = useRef<HTMLDivElement>(null);
