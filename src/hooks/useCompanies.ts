@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { captureAppError } from "@/lib/monitoring";
+
 
 export interface CompanyRow {
   id: string;
@@ -58,12 +60,13 @@ export function useCompanies() {
       .order("created_at", { ascending: false });
 
     if (error) {
+      captureAppError(error, { module: "companies", action: "fetch" });
       toast.error("Erro ao carregar empresas");
-      console.error(error);
     } else {
       setCompanies(data || []);
     }
     setLoading(false);
+
   };
 
   useEffect(() => {
@@ -81,9 +84,10 @@ export function useCompanies() {
       } else {
         toast.error("Erro ao cadastrar empresa");
       }
-      console.error(error);
+      captureAppError(error, { module: "companies", action: "create" });
       return false;
     }
+
     toast.success("Empresa cadastrada com sucesso!");
     await fetchCompanies();
     return true;
@@ -116,10 +120,11 @@ export function useCompanies() {
       } as any)
       .eq("id", id);
     if (error) {
+      captureAppError(error, { module: "companies", action: "update", metadata: { id } });
       toast.error("Erro ao atualizar empresa");
-      console.error(error);
       return false;
     }
+
     toast.success("Empresa atualizada com sucesso!");
     await fetchCompanies();
     return true;
@@ -128,10 +133,11 @@ export function useCompanies() {
   const deleteCompany = async (id: string) => {
     const { error } = await supabase.from("companies").delete().eq("id", id);
     if (error) {
+      captureAppError(error, { module: "companies", action: "delete", metadata: { id } });
       toast.error("Erro ao excluir empresa");
-      console.error(error);
       return false;
     }
+
     toast.success("Empresa excluída com sucesso!");
     await fetchCompanies();
     return true;

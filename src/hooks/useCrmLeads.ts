@@ -4,6 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { toast } from "sonner";
 import { getOrCreateCadastroWorkspace } from "@/lib/cadastroWorkspace";
+import { captureAppError } from "@/lib/monitoring";
+
 
 export interface CrmLead {
   id: string;
@@ -123,11 +125,12 @@ export function useCrmLeads(
     const { data, error } = await query;
 
     if (error) {
-      console.error("Error fetching leads:", error);
+      captureAppError(error, { module: "crm_leads", action: "fetch", tenantId: companyId, metadata: { workspaceId, pipelineType } });
       toast.error("Erro ao carregar leads");
     } else {
       setLeads((data as CrmLead[]) || []);
     }
+
     setLoading(false);
   }, [pipelineType, canSeeAll, profile?.user_id, workspaceId, activeStages.map(s => s.id).join(",")]);
 
@@ -166,6 +169,7 @@ export function useCrmLeads(
       .select()
       .single();
     if (error) {
+      captureAppError(error, { module: "crm_leads", action: "create", tenantId: servidorId });
       toast.error("Erro ao criar lead");
       return null;
     }
@@ -177,6 +181,7 @@ export function useCrmLeads(
   const updateLead = async (id: string, updates: Partial<CrmLead>) => {
     const { error } = await supabase.from("crm_leads").update(updates as any).eq("id", id);
     if (error) {
+      captureAppError(error, { module: "crm_leads", action: "update", metadata: { id } });
       toast.error("Erro ao atualizar lead");
       return false;
     }
@@ -191,6 +196,7 @@ export function useCrmLeads(
   const deleteLead = async (id: string) => {
     const { error } = await supabase.from("crm_leads").delete().eq("id", id);
     if (error) {
+      captureAppError(error, { module: "crm_leads", action: "delete", metadata: { id } });
       toast.error("Erro ao excluir lead");
       return false;
     }
@@ -198,6 +204,7 @@ export function useCrmLeads(
     toast.success("Oportunidade excluída");
     return true;
   };
+
 
   const moveToStage = async (id: string, stage: string) => {
     const lead = leads.find((l) => l.id === id);
@@ -282,10 +289,11 @@ export function useCrmLeads(
       .eq("lead_id", lead.id);
 
     if (regErr) {
-      console.error("Error activating client:", regErr);
+      captureAppError(regErr, { module: "crm_leads", action: "activate_client", tenantId: lead.servidor_id, metadata: { lead_id: lead.id } });
       toast.error("Erro ao ativar cliente na Base de Clientes");
       return;
     }
+
 
     // Log activity
     await supabase.from("crm_lead_activities").insert({
