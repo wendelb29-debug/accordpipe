@@ -1024,7 +1024,17 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                                 </Tooltip>
                               );
                             })()}
-                            <span className="text-[9px] text-muted-foreground/50">{new Date(lead.created_at).toLocaleDateString("pt-BR")}</span>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="text-[9px] text-muted-foreground/50 cursor-help">{stageEnteredAt.toLocaleDateString("pt-BR")}</span>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom" className="text-[10px] space-y-1">
+                                <div><strong>Entrou neste estágio:</strong> {stageEnteredAt.toLocaleString("pt-BR")}</div>
+                                <div><strong>Lead criado em:</strong> {new Date(lead.created_at).toLocaleString("pt-BR")}</div>
+                                <div><strong>SLA da coluna:</strong> {slaDays > 0 ? `${slaDays} dia${slaDays > 1 ? "s" : ""}` : "sem SLA"}</div>
+                                <div><strong>Há {days} dia{days !== 1 ? "s" : ""} neste estágio</strong></div>
+                              </TooltipContent>
+                            </Tooltip>
                           </div>
                           <span className={cn(
                             "text-[9px] font-bold rounded-full px-1.5 py-0",
