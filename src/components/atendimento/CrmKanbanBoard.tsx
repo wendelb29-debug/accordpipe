@@ -555,6 +555,20 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
               </PopoverContent>
             </Popover>
           )}
+          <Button
+            size="icon"
+            variant={activeFilterCount > 0 ? "default" : "outline"}
+            className="h-8 w-8 relative rounded-lg shadow-sm border-border/50"
+            onClick={() => setFilterPanelOpen(true)}
+            title="Filtrar cards"
+          >
+            <Filter className="h-3.5 w-3.5" />
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground px-0.5">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
           <Button size="icon" variant="outline" className="h-8 w-8 rounded-lg shadow-sm border-border/50" onClick={() => setFormLinkOpen(true)}>
             <Tag className="h-3.5 w-3.5" />
           </Button>
