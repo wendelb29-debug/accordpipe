@@ -16,6 +16,8 @@ import {
 import { GmailLogo, OutlookLogo } from "@/components/email/ProviderLogos";
 import { LinkEmailToLeadDialog } from "@/components/email/LinkEmailToLeadDialog";
 import { DiscussEmailDialog } from "@/components/email/DiscussEmailDialog";
+import { EmailMessageActionsMenu } from "@/components/email/EmailMessageActionsMenu";
+import { cn } from "@/lib/utils";
 
 type Folder = "inbox" | "sent" | "important" | "spam" | "trash" | "archive";
 type FilterKey = "all" | "unread" | "starred" | "attach";
