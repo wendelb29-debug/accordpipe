@@ -112,38 +112,30 @@ export default function AuditLogs() {
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      let query = supabase
+      let query: any = supabase
         .from("audit_logs")
         .select("*", { count: "exact" })
         .order("created_at", { ascending: false })
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
-      if (actionFilter !== "all") {
-        query = query.eq("action", actionFilter);
-      }
-      if (targetFilter !== "all") {
-        query = query.eq("target_type", targetFilter);
-      }
-      if (dateFrom) {
-        query = query.gte("created_at", dateFrom.toISOString());
-      }
+      if (actionFilter !== "all") query = query.eq("action", actionFilter);
+      if (targetFilter !== "all") query = query.eq("target_type", targetFilter);
+      if (dateFrom) query = query.gte("created_at", dateFrom.toISOString());
       if (dateTo) {
         const end = new Date(dateTo);
         end.setHours(23, 59, 59, 999);
         query = query.lte("created_at", end.toISOString());
       }
-      if (pagePathFilter) {
-        query = query.eq("details->>page_path" as any, pagePathFilter);
-      }
+      if (pagePathFilter) query = query.eq("details->>page_path", pagePathFilter);
       if (search.trim()) {
         query = query.or(`user_name.ilike.%${search.trim()}%,target_id.ilike.%${search.trim()}%`);
       }
-
 
       const { data, count, error } = await query;
       if (error) throw error;
       setLogs((data || []) as AuditLog[]);
       setTotal(count || 0);
+
     } catch (err) {
       console.error("Error fetching audit logs:", err);
     } finally {
