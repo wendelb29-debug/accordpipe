@@ -1038,6 +1038,47 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
         })}
         </div>
       </div>
+      )}
+
+      <KanbanQuickActionZones
+        visible={!!draggedLead}
+        currentStatus={draggedLead?.lead_status}
+        onAction={handleQuickAction}
+      />
+
+      <LostReasonDialog
+        open={lostReasonOpen}
+        lead={pendingLead}
+        onOpenChange={setLostReasonOpen}
+        onConfirm={async (reason) => {
+          if (pendingLead) {
+            await updateLead(pendingLead.id, {
+              lead_status: "lost",
+              lost_reason: reason,
+              status_changed_at: new Date().toISOString(),
+            } as any);
+            toast.success("Marcado como perdido");
+          }
+          setLostReasonOpen(false);
+          setPendingLead(null);
+        }}
+      />
+
+      <TransferWorkspaceDialog
+        open={transferOpen}
+        lead={pendingLead}
+        currentWorkspaceId={workspaceId}
+        onOpenChange={setTransferOpen}
+        onTransfer={async (newWorkspaceId) => {
+          if (pendingLead) {
+            await updateLead(pendingLead.id, { workspace_id: newWorkspaceId } as any);
+            toast.success("Card transferido");
+          }
+          setTransferOpen(false);
+          setPendingLead(null);
+        }}
+      />
+
 
       <CrmLeadDialog
         lead={selectedLead}
