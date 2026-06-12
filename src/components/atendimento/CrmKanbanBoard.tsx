@@ -727,7 +727,8 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
           const stageLeads = filteredLeads.filter((l) => l.stage === stage.id);
           const colors = stageColors[stage.id] || { bg: "bg-muted/30", text: "text-foreground", icon: "bg-primary", border: "border-border" };
           const dynCol = kanbanCols.find(c => c.id === stage.id);
-          const slaDays = dynCol?.sla_days || (stage.daysLimit ? parseInt(stage.daysLimit) || 0 : 0);
+          const rawSla = dynCol?.sla_days ?? (stage.daysLimit ? parseInt(stage.daysLimit, 10) : 0);
+          const slaDays = Math.max(0, Math.round(Number(rawSla) || 0));
 
 
           return (
