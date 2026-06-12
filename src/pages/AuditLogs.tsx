@@ -389,7 +389,21 @@ export default function AuditLogs() {
                   <p className="text-xs text-muted-foreground">IP</p>
                   <p className="font-mono text-xs">{selectedLog.ip_address || "—"}</p>
                 </div>
+                {selectedLog.details?.page_path && (
+                  <div className="col-span-2">
+                    <p className="text-xs text-muted-foreground">Página</p>
+                    <button
+                      onClick={() => { setPagePathFilter(selectedLog.details!.page_path); setSelectedLog(null); }}
+                      className="font-mono text-xs text-primary hover:underline"
+                    >
+                      {selectedLog.details.page_path}
+                    </button>
+                  </div>
+                )}
               </div>
+              {selectedLog.details?.export_file && (
+                <AuditExportFileCard file={selectedLog.details.export_file} />
+              )}
               {selectedLog.details && Object.keys(selectedLog.details).length > 0 && (
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Detalhes (payload)</p>
@@ -400,6 +414,7 @@ export default function AuditLogs() {
               )}
             </div>
           )}
+
         </DialogContent>
       </Dialog>
     </div>

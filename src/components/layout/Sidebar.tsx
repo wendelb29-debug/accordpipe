@@ -107,8 +107,9 @@ const navigation = navigationSections.flatMap((s) => s.items);
 
 const configNavigation = [
   { nameKey: "nav.users", href: "/configuracoes/usuarios", icon: UsersRound, roles: ["admin", "ceo", "administrativo"] },
-  
+  { nameKey: "Auditoria", href: "/configuracoes/logs", icon: ShieldCheck, roles: ["admin", "ceo"] },
 ];
+
 
 const LANGUAGES = [
   { code: "pt-BR", label: "Português (Brasil)", flag: "BR" },
