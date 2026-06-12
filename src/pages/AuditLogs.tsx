@@ -404,6 +404,8 @@ export default function AuditLogs() {
     setDateFrom(undefined); setDateTo(undefined); setPagePathFilter(null); setPage(0);
   };
 
+  const uniqueUsers = useMemoTopUsers(stats);
+
   if (!hasAccess) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -416,7 +418,6 @@ export default function AuditLogs() {
     );
   }
 
-  const uniqueUsers = useMemoTopUsers(stats);
 
   return (
     <div className="audit-page relative min-h-full">
