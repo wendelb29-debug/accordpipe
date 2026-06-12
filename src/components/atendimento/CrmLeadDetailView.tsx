@@ -888,15 +888,82 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               </>
             )}
             {lead.lead_status === "lost" && (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <Badge variant="destructive" className="text-[10px]">✕ Perdido</Badge>
-                {(role === "admin" || role === "ceo" || profile?.is_master) && (
-                  <Button size="sm" variant="outline" onClick={handleReopen} disabled={saving} className="gap-1 h-7 sm:h-8 text-[11px] sm:text-xs px-2 sm:px-3">
-                    <Activity className="h-3 w-3" /> Reabrir
-                  </Button>
-                )}
-              </div>
+              <Badge variant="destructive" className="text-[10px]">✕ Perdido</Badge>
             )}
+            {/* 3-dots actions menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" disabled={saving}>
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem onClick={() => setEditing(true)} className="text-xs gap-2">
+                  <Edit className="h-3.5 w-3.5" /> Editar Card
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-xs gap-2"
+                  onClick={async () => {
+                    if (saving) return;
+                    setSaving(true);
+                    try {
+                      const { id, created_at, updated_at, stage_entered_at, lead_status, lost_reason, ...rest } = lead as any;
+                      const { data, error } = await supabase
+                        .from("crm_leads")
+                        .insert({
+                          ...rest,
+                          company_name: `${lead.company_name || "Lead"} (Cópia)`,
+                          lead_status: "open",
+                          lost_reason: null,
+                          stage_entered_at: new Date().toISOString(),
+                          created_by_user_id: profile?.user_id || lead.created_by_user_id,
+                          created_by_name: profile?.name || lead.created_by_name,
+                        } as any)
+                        .select("id")
+                        .single();
+                      if (error) throw error;
+                      await addActivity({ type: "edit", title: "Oportunidade clonada", description: `Clone criado a partir deste card (novo id: ${data?.id}).` });
+                      toast.success("Oportunidade clonada com sucesso!");
+                    } catch (err: any) {
+                      console.error("Clone error:", err);
+                      toast.error("Erro ao clonar oportunidade");
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                >
+                  <CopyPlus className="h-3.5 w-3.5" /> Clonar Oportunidade
+                </DropdownMenuItem>
+                {lead.lead_status === "lost" && (role === "admin" || role === "ceo" || role === "comercial" || profile?.is_master) && (
+                  <DropdownMenuItem onClick={handleReopen} className="text-xs gap-2">
+                    <Activity className="h-3.5 w-3.5" /> Reabrir Card
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-xs gap-2 text-destructive focus:text-destructive"
+                  onClick={async () => {
+                    if (saving) return;
+                    if (!window.confirm("Enviar este card para a Lixeira? Esta ação pode ser revertida pelo administrador.")) return;
+                    setSaving(true);
+                    try {
+                      const ok = await onDelete(lead.id);
+                      if (ok) {
+                        toast.success("Card enviado para a Lixeira");
+                        onBack();
+                      }
+                    } catch (err) {
+                      console.error("Trash error:", err);
+                      toast.error("Erro ao enviar para Lixeira");
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Enviar para Lixeira
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             {canTransferOwnership && (
               <Tooltip>
                 <TooltipTrigger asChild>

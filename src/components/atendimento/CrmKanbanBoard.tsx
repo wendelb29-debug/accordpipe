@@ -665,9 +665,12 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                   const progressColor = getProgressColor(lead, stage.id, hasActivity, hasOverdue);
                   const signatureStats = signatureStatsByLead[lead.id];
 
-                  // Priority: 1) overdue activity, 2) SLA exceeded, 3) no activity, 4) normal
-                  const isNaturalState = !hasOverdue && !noActivity && !overdue;
-                  const cardStyle = hasOverdue
+                  // Priority: 1) lost, 2) overdue activity, 3) SLA exceeded, 4) no activity, 5) normal
+                  const isLost = lead.lead_status === "lost";
+                  const isNaturalState = !isLost && !hasOverdue && !noActivity && !overdue;
+                  const cardStyle = isLost
+                    ? "bg-red-50/80 dark:bg-red-950/40 border-red-400/70 dark:border-red-700/60 ring-1 ring-red-400/30"
+                    : hasOverdue
                     ? "bg-red-50/70 dark:bg-red-950/30 border-red-300/70 dark:border-red-800/50"
                     : overdue && hasActivity
                     ? "bg-red-50/60 dark:bg-red-950/20 border-red-200/60 dark:border-red-800/40"
@@ -746,8 +749,14 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                             </div>
                             {/* Company name */}
                             <p className="text-[10px] text-muted-foreground truncate mt-0.5">{lead.company_name}</p>
+                            {isLost && (
+                              <Badge variant="destructive" className="text-[8px] h-3.5 px-1 mt-0.5 gap-0.5 font-semibold">
+                                ✕ Perdido
+                              </Badge>
+                            )}
                           </div>
                           <DropdownMenu>
+
                             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                               <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
                                 <MoreVertical className="h-3 w-3" />
