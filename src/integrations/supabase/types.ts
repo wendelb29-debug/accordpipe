@@ -2492,13 +2492,17 @@ export type Database = {
           from_name: string | null
           has_attachments: boolean
           id: string
+          is_important: boolean
           is_read: boolean
           is_starred: boolean
           labels: Json | null
           provider_msg_id: string
+          raw_eml_path: string | null
+          raw_headers: Json | null
           received_at: string | null
           servidor_id: string
           snippet: string | null
+          snoozed_until: string | null
           subject: string | null
           thread_id: string | null
           to_emails: Json | null
@@ -2516,13 +2520,17 @@ export type Database = {
           from_name?: string | null
           has_attachments?: boolean
           id?: string
+          is_important?: boolean
           is_read?: boolean
           is_starred?: boolean
           labels?: Json | null
           provider_msg_id: string
+          raw_eml_path?: string | null
+          raw_headers?: Json | null
           received_at?: string | null
           servidor_id: string
           snippet?: string | null
+          snoozed_until?: string | null
           subject?: string | null
           thread_id?: string | null
           to_emails?: Json | null
@@ -2540,13 +2548,17 @@ export type Database = {
           from_name?: string | null
           has_attachments?: boolean
           id?: string
+          is_important?: boolean
           is_read?: boolean
           is_starred?: boolean
           labels?: Json | null
           provider_msg_id?: string
+          raw_eml_path?: string | null
+          raw_headers?: Json | null
           received_at?: string | null
           servidor_id?: string
           snippet?: string | null
+          snoozed_until?: string | null
           subject?: string | null
           thread_id?: string | null
           to_emails?: Json | null
