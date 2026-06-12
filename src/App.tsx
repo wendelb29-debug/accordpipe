@@ -256,6 +256,17 @@ const App = () => (
               }
             />
             <Route
+              path="/crm-dashboard"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "operador", "ceo", "comercial", "administrativo"]}>
+                  <AppLayout>
+                    <CrmDashboard />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
               path="/formularios"
               element={
                 <ProtectedRoute allowedRoles={["admin", "operador", "administrativo", "comercial"]}>
