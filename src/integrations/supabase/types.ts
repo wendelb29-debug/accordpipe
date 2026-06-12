@@ -1940,7 +1940,9 @@ export type Database = {
           source: string
           stage: string
           stage_entered_at: string
+          status_changed_at: string | null
           tags: string[] | null
+          trash_reason: string | null
           updated_at: string
           value_mrr: number
           value_ps: number
@@ -1973,7 +1975,9 @@ export type Database = {
           source?: string
           stage?: string
           stage_entered_at?: string
+          status_changed_at?: string | null
           tags?: string[] | null
+          trash_reason?: string | null
           updated_at?: string
           value_mrr?: number
           value_ps?: number
@@ -2006,7 +2010,9 @@ export type Database = {
           source?: string
           stage?: string
           stage_entered_at?: string
+          status_changed_at?: string | null
           tags?: string[] | null
+          trash_reason?: string | null
           updated_at?: string
           value_mrr?: number
           value_ps?: number

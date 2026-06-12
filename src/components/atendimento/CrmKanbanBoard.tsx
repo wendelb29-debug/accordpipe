@@ -1,11 +1,16 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useBackNavigation } from "@/contexts/BackNavigationContext";
 import {
   Clock, Users, MessageSquare, Phone, RefreshCw, FileSignature,
   MoreVertical, Trash2, Edit, Loader2,
-  Plus, Sparkles, Link2, Check, Tag, Search, Filter, CalendarClock, AlertTriangle, CheckCircle
+  Plus, Sparkles, Link2, Check, Tag, Search, Filter, CalendarClock, AlertTriangle, CheckCircle,
+  CheckCircle2, XCircle,
 } from "lucide-react";
+import { KanbanQuickActionZones } from "./KanbanQuickActionZones";
+import { StatusFilteredGrid } from "./StatusFilteredGrid";
+import { TransferWorkspaceDialog } from "./TransferWorkspaceDialog";
+import { LostReasonDialog } from "./LostReasonDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
@@ -112,6 +117,11 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isNew, setIsNew] = useState(false);
   const [detailLead, setDetailLead] = useState<CrmLead | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"open" | "won" | "lost" | "trash">("open");
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [lostReasonOpen, setLostReasonOpen] = useState(false);
+  const [pendingLead, setPendingLead] = useState<CrmLead | null>(null);
+  const [trashLeads, setTrashLeads] = useState<CrmLead[]>([]);
   const { pushBackHandler } = useBackNavigation();
 
   // Register back handler when lead detail is open
@@ -430,6 +440,74 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
     setDragOverStage(null);
   };
 
+  const fetchTrashLeads = useCallback(async () => {
+    if (!companyId) return;
+    let q = supabase
+      .from("crm_leads")
+      .select("*")
+      .eq("lead_status", "trash")
+      .order("status_changed_at", { ascending: false, nullsFirst: false });
+    if (workspaceId) q = q.eq("workspace_id", workspaceId);
+    const { data } = await q;
+    setTrashLeads((data as CrmLead[]) || []);
+  }, [companyId, workspaceId]);
+
+  useEffect(() => {
+    if (statusFilter === "trash") fetchTrashLeads();
+  }, [statusFilter, fetchTrashLeads]);
+
+  const handleQuickAction = async (zoneId: "trash" | "lost" | "won" | "transfer") => {
+    if (!draggedLead) return;
+    const lead = draggedLead;
+    setDraggedLead(null);
+
+    switch (zoneId) {
+      case "trash": {
+        if (!window.confirm(`Mover "${lead.contact_name || lead.company_name}" para a lixeira?`)) return;
+        await updateLead(lead.id, {
+          lead_status: "trash",
+          status_changed_at: new Date().toISOString(),
+        } as any);
+        toast.success("Card movido pra lixeira", {
+          action: {
+            label: "Desfazer",
+            onClick: async () => {
+              await updateLead(lead.id, { lead_status: "open", status_changed_at: new Date().toISOString() } as any);
+              toast.success("Restaurado");
+            },
+          },
+        });
+        break;
+      }
+      case "lost": {
+        setPendingLead(lead);
+        setLostReasonOpen(true);
+        break;
+      }
+      case "won": {
+        try {
+          await markAsWonAndTransfer(lead.id);
+          toast.success(`"${lead.contact_name || lead.company_name}" marcado como ganho 🎉`);
+        } catch (err: any) {
+          toast.error(err?.message || "Erro ao marcar como ganho");
+        }
+        break;
+      }
+      case "transfer": {
+        setPendingLead(lead);
+        setTransferOpen(true);
+        break;
+      }
+    }
+  };
+
+  const counters = useMemo(() => ({
+    open: leads.filter((l) => !l.lead_status || l.lead_status === "open").length,
+    won: leads.filter((l) => l.lead_status === "won").length,
+    lost: leads.filter((l) => l.lead_status === "lost").length,
+    trash: trashLeads.length,
+  }), [leads, trashLeads]);
+
   const openNew = () => { setSelectedLead(null); setIsNew(true); setDialogOpen(true); };
   const openEdit = (lead: CrmLead) => { setSelectedLead(lead); setIsNew(false); setDialogOpen(true); };
   const openDetail = (lead: CrmLead) => { setDetailLead(lead); };
@@ -581,7 +659,59 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
         </div>
       </div>
 
-      {/* Kanban Columns */}
+      {/* Status filter chips */}
+      <div className="px-3 pt-1 pb-1.5 shrink-0">
+        <div className="flex items-center gap-1 px-1 py-1 rounded-xl bg-muted/40 border border-border w-fit">
+          {([
+            { id: "open", label: "Em aberto", color: "bg-primary text-primary-foreground", Icon: null },
+            { id: "won", label: "Ganhos", color: "bg-emerald-500 text-white", Icon: CheckCircle2 },
+            { id: "lost", label: "Perdidos", color: "bg-orange-500 text-white", Icon: XCircle },
+            { id: "trash", label: "Lixeira", color: "bg-red-500 text-white", Icon: Trash2 },
+          ] as const).map((c) => {
+            const active = statusFilter === c.id;
+            const count = (counters as any)[c.id] || 0;
+            return (
+              <button
+                key={c.id}
+                onClick={() => setStatusFilter(c.id as any)}
+                className={cn(
+                  "h-7 px-2.5 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1.5 transition",
+                  active ? `${c.color} shadow-sm` : "text-muted-foreground hover:text-foreground hover:bg-card"
+                )}
+              >
+                {c.Icon && <c.Icon className="w-3 h-3" />}
+                {c.label}
+                {count > 0 && (
+                  <span className={cn(
+                    "px-1.5 py-0.5 rounded-full text-[9.5px] font-bold tabular-nums",
+                    active ? "bg-white/20" : "bg-muted-foreground/15"
+                  )}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Kanban Columns / Status Grid */}
+      {statusFilter !== "open" ? (
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <StatusFilteredGrid
+            leads={statusFilter === "trash" ? trashLeads : filteredLeads.filter(l => l.lead_status === statusFilter)}
+            statusFilter={statusFilter as "won" | "lost" | "trash"}
+            onRestore={async (leadId) => {
+              await updateLead(leadId, { lead_status: "open", status_changed_at: new Date().toISOString() } as any);
+              if (statusFilter === "trash") {
+                setTrashLeads(prev => prev.filter(l => l.id !== leadId));
+              }
+              toast.success("Card restaurado pro pipeline");
+            }}
+            onOpenCard={openDetail}
+          />
+        </div>
+      ) : (
       <div className="flex-1 min-h-0 flex flex-col w-full max-w-full">
         <div
           ref={pipelineRef}

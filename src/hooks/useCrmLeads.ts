@@ -111,7 +111,7 @@ export function useCrmLeads(
       .from("crm_leads")
       .select("*")
       .in("stage", stageIds)
-      .neq("lead_status", "lost")
+      .not("lead_status", "in", "(trash)")
       .order("created_at", { ascending: false });
 
     if (!canSeeAll && profile?.user_id) {
