@@ -1,136 +1,9 @@
 /**
  * Accord Feed Social Premium
- * Layout do preview HTML, agora populado SOMENTE com dados reais do tenant
- * (profiles, feed_posts, tenant_events, announcements). Seções sem dados são
- * automaticamente ocultadas.
+ * Reprodução fiel do preview HTML (preview-feed-social-premium.html).
+ * Todos os estilos usam prefixo `afp-` para evitar conflito com o restante do app.
  */
-import { useEffect, useMemo, useState } from "react";
-import { format, formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
-
-const GRADIENTS = [
-  "linear-gradient(135deg,#3b82f6,#1d4ed8)",
-  "linear-gradient(135deg,#ec4899,#be185d)",
-  "linear-gradient(135deg,#f59e0b,#d97706)",
-  "linear-gradient(135deg,#06b6d4,#0891b2)",
-  "linear-gradient(135deg,#8b5cf6,#6d28d9)",
-  "linear-gradient(135deg,#10b981,#059669)",
-  "linear-gradient(135deg,#5b3fd4,#7c3aed)",
-];
-const initialsOf = (n?: string | null) =>
-  !n ? "?" : n.trim().split(/\s+/).slice(0, 2).map(s => s[0]?.toUpperCase()).join("");
-const gradientFor = (key: string) => {
-  let h = 0;
-  for (const c of key) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return GRADIENTS[h % GRADIENTS.length];
-};
-const relTime = (iso: string) => {
-  try { return formatDistanceToNow(new Date(iso), { addSuffix: true, locale: ptBR }); }
-  catch { return ""; }
-};
-
-interface ProfileRow { id: string; user_id: string; name: string | null; avatar_url: string | null; }
-interface PostRow {
-  id: string; content: string | null; image_url: string | null;
-  tags: string[] | null; pinned: boolean | null; created_at: string;
-  author_id: string | null; author?: ProfileRow | null;
-}
-interface EventRow {
-  id: string; title: string; description: string | null; event_type: string | null;
-  start_at: string; end_at: string | null; location: string | null;
-  meeting_url: string | null; banner_url: string | null;
-}
-interface AnnouncementRow { id: string; title: string; description: string | null; image_url: string | null; }
-
 export function AccordFeedPremium() {
-  const { profile } = useAuth();
-  const tenantId = useActiveCompanyId();
-
-  const [members, setMembers] = useState<ProfileRow[]>([]);
-  const [posts, setPosts] = useState<PostRow[]>([]);
-  const [events, setEvents] = useState<EventRow[]>([]);
-  const [announcements, setAnnouncements] = useState<AnnouncementRow[]>([]);
-
-  useEffect(() => {
-    if (!tenantId) return;
-    (async () => {
-      const [m, p, e, a] = await Promise.all([
-        supabase.from("profiles")
-          .select("id,user_id,name,avatar_url")
-          .eq("company_id", tenantId).eq("is_active", true)
-          .order("name", { ascending: true }).limit(50),
-        supabase.from("feed_posts")
-          .select("id,content,image_url,tags,pinned,created_at,author_id")
-          .eq("servidor_id", tenantId)
-          .order("pinned", { ascending: false })
-          .order("created_at", { ascending: false }).limit(20),
-        supabase.from("tenant_events")
-          .select("id,title,description,event_type,start_at,end_at,location,meeting_url,banner_url")
-          .eq("tenant_id", tenantId)
-          .gte("start_at", new Date(Date.now() - 86400000).toISOString())
-          .order("start_at", { ascending: true }).limit(3),
-        supabase.from("announcements")
-          .select("id,title,description,image_url")
-          .eq("servidor_id", tenantId).eq("is_active", true)
-          .order("display_order", { ascending: true }).limit(3),
-      ]);
-      const memberList = (m.data || []) as ProfileRow[];
-      setMembers(memberList);
-      const byUser = new Map(memberList.map(x => [x.user_id, x]));
-      const postRows = (p.data || []) as PostRow[];
-      setPosts(postRows.map(pr => ({ ...pr, author: pr.author_id ? byUser.get(pr.author_id) || null : null })));
-      setEvents((e.data || []) as EventRow[]);
-      setAnnouncements((a.data || []) as AnnouncementRow[]);
-    })();
-  }, [tenantId]);
-
-  const myName = profile?.name || "";
-  const myInitials = initialsOf(myName);
-  const myFirst = myName.split(/\s+/)[0] || "";
-  const greetingDate = format(new Date(), "EEEE · d 'de' MMMM", { locale: ptBR });
-
-  const stories = useMemo(() => members.slice(0, 8), [members]);
-  const onlineMembers = useMemo(
-    () => members.filter(m => m.user_id !== profile?.user_id).slice(0, 5),
-    [members, profile?.user_id]
-  );
-  const suggestions = useMemo(
-    () => members.filter(m => m.user_id !== profile?.user_id).slice(5, 10),
-    [members, profile?.user_id]
-  );
-
-  const myPostsCount = useMemo(
-    () => posts.filter(p => p.author_id === profile?.user_id).length,
-    [posts, profile?.user_id]
-  );
-
-  // Hashtags em alta — extraídas dos posts reais
-  const trendingTags = useMemo(() => {
-    const counter = new Map<string, number>();
-    posts.forEach(p => (p.tags || []).forEach(t => {
-      const tag = t.startsWith("#") ? t : `#${t}`;
-      counter.set(tag, (counter.get(tag) || 0) + 1);
-    }));
-    return [...counter.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4);
-  }, [posts]);
-
-  const Avatar = ({ name, url, size = 42, radius = 99 }: { name?: string | null; url?: string | null; size?: number; radius?: number }) => (
-    <div
-      style={{
-        width: size, height: size, borderRadius: radius, flexShrink: 0,
-        background: gradientFor(name || "?"),
-        display: "flex", alignItems: "center", justifyContent: "center",
-        color: "#fff", fontWeight: 800, fontSize: Math.max(10, size * 0.34),
-        backgroundImage: url ? `url(${url})` : undefined, backgroundSize: "cover", backgroundPosition: "center",
-      }}
-    >
-      {!url && initialsOf(name)}
-    </div>
-  );
-
   return (
     <div className="afp-root">
       <style>{CSS}</style>
@@ -146,22 +19,38 @@ export function AccordFeedPremium() {
                   <circle cx="12" cy="12" r="5" />
                   <line x1="12" y1="1" x2="12" y2="3" />
                   <line x1="12" y1="21" x2="12" y2="23" />
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
                 </svg>
-                {greetingDate}
+                Sexta-feira · 12 de junho
               </div>
-              <h1 className="afp-hero-title">Olá{myFirst ? `, ${myFirst}` : ""} 👋</h1>
+              <h1 className="afp-hero-title">Bom dia, Wendel 👋</h1>
               <p className="afp-hero-sub">
-                {members.length > 0
-                  ? <>Sua equipe tem <strong>{members.length}</strong> {members.length === 1 ? "colaborador" : "colaboradores"}. Compartilhe uma novidade.</>
-                  : "Compartilhe uma novidade com sua equipe."}
+                A equipe fechou <strong>R$ 47.5k</strong> esta semana e há 8 colegas conectados agora. Compartilhe uma novidade.
               </p>
+
+              <div className="afp-hero-actions">
+                <button className="afp-hero-btn afp-hero-btn-primary">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}>
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  Novo post
+                </button>
+                <button className="afp-hero-btn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <path d="M16 2v4M8 2v4M3 10h18" />
+                  </svg>
+                  Agendar evento
+                </button>
+              </div>
 
               <div className="afp-hero-stats">
                 {[
-                  [String(posts.length), posts.length === 1 ? "Post" : "Posts"],
-                  [String(members.length), members.length === 1 ? "Colega" : "Colegas"],
-                  [String(events.length), events.length === 1 ? "Evento" : "Eventos"],
-                  [String(announcements.length), announcements.length === 1 ? "Anúncio" : "Anúncios"],
+                  ["14", "Posts hoje"],
+                  ["8", "Online agora"],
+                  ["3", "Eventos esta semana"],
+                  ["R$ 47k", "Faturamento semana"],
                 ].map(([v, l]) => (
                   <div className="afp-hero-stat" key={l}>
                     <span className="afp-hero-stat-value">{v}</span>
@@ -172,181 +61,372 @@ export function AccordFeedPremium() {
             </div>
           </div>
 
-          {/* STORIES — pessoas reais do tenant */}
-          {stories.length > 0 && (
-            <div className="afp-stories">
-              <div className="afp-story">
-                <div className="afp-story-ring afp-create">
-                  <div className="afp-story-pic">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 5v14M5 12h14" />
-                    </svg>
-                  </div>
+          {/* STORIES */}
+          <div className="afp-stories">
+            <div className="afp-story">
+              <div className="afp-story-ring afp-create">
+                <div className="afp-story-pic">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
                 </div>
-                <span className="afp-story-name" style={{ color: "#a5b4fc", fontWeight: 600 }}>Adicionar</span>
               </div>
-
-              {stories.map((m) => (
-                <div className="afp-story" key={m.id}>
-                  <div className="afp-story-ring">
-                    <div className="afp-story-inner">
-                      <div
-                        className="afp-story-pic"
-                        style={{
-                          background: gradientFor(m.name || m.id),
-                          backgroundImage: m.avatar_url ? `url(${m.avatar_url})` : undefined,
-                          backgroundSize: "cover", backgroundPosition: "center",
-                        }}
-                      >
-                        {!m.avatar_url && initialsOf(m.name)}
-                      </div>
-                    </div>
-                  </div>
-                  <span className="afp-story-name">{(m.name || "").split(" ")[0] || "—"}</span>
-                </div>
-              ))}
+              <span className="afp-story-name" style={{ color: "#a5b4fc", fontWeight: 600 }}>Adicionar</span>
             </div>
-          )}
+
+            {[
+              { initials: "WS", cls: "", name: "Você", checked: true },
+              { initials: "MC", cls: "b", name: "Marina" },
+              { initials: "PS", cls: "p", name: "Pedro" },
+              { initials: "JP", cls: "a", name: "João" },
+              { initials: "RA", cls: "c", name: "Rafa" },
+              { initials: "LM", cls: "v", name: "Lucas", viewed: true },
+              { initials: "AT", cls: "", name: "Ana", viewed: true },
+            ].map((s) => (
+              <div className="afp-story" key={s.name}>
+                <div className={`afp-story-ring ${s.viewed ? "afp-viewed" : ""}`}>
+                  <div className="afp-story-inner">
+                    <div className={`afp-story-pic ${s.cls}`}>{s.initials}</div>
+                  </div>
+                  {s.checked && (
+                    <div className="afp-story-badge">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={3}>
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <span className="afp-story-name">{s.name}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* FILTROS */}
+          <div className="afp-filters">
+            {[
+              { label: "Tudo", count: 42, active: true, icon: <><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="4" /></> },
+              { label: "Posts", count: 28, icon: <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /> },
+              { label: "Eventos", count: 3, icon: <><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></> },
+              { label: "Conquistas", count: 7, icon: <path d="M12 2 9 9l-7 1 5 5-1 7 6-3 6 3-1-7 5-5-7-1-3-7z" /> },
+              { label: "Anúncios", count: 4, icon: <><path d="m3 11 18-5v12L3 14v-3z" /><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" /></> },
+            ].map((f) => (
+              <button key={f.label} className={`afp-filter-pill ${f.active ? "afp-active" : ""}`}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">{f.icon}</svg>
+                {f.label}
+                <span className="afp-filter-pill-count">{f.count}</span>
+              </button>
+            ))}
+          </div>
 
           {/* COMPOSER */}
           <div className="afp-composer">
             <div className="afp-composer-top">
-              <div
-                className="afp-composer-avatar"
-                style={{
-                  background: gradientFor(myName || "?"),
-                  backgroundImage: profile?.avatar_url ? `url(${profile.avatar_url})` : undefined,
-                  backgroundSize: "cover", backgroundPosition: "center",
-                }}
-              >
-                {!profile?.avatar_url && myInitials}
-              </div>
-              <div className="afp-composer-input">No que está pensando{myFirst ? `, ${myFirst}` : ""}?</div>
+              <div className="afp-composer-avatar">WS</div>
+              <div className="afp-composer-input">No que está pensando, Wendel?</div>
+            </div>
+            <div className="afp-composer-tabs">
+              <button className="afp-composer-tab">
+                <svg className="afp-t-msg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                Mensagem
+              </button>
+              <button className="afp-composer-tab">
+                <svg className="afp-t-fil" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></svg>
+                Foto
+              </button>
+              <button className="afp-composer-tab">
+                <svg className="afp-t-evt" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
+                Evento
+              </button>
+              <button className="afp-composer-tab">
+                <svg className="afp-t-pol" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18M9 17V9m4 8V5m4 12v-6" /></svg>
+                Enquete
+              </button>
+              <button className="afp-composer-tab">
+                <svg className="afp-t-vid" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" /></svg>
+                Vídeo
+              </button>
             </div>
           </div>
 
-          {/* ANÚNCIOS REAIS */}
-          {announcements.map((a) => (
-            <div className="afp-announce-card" key={a.id}>
-              <div className="afp-announce-header">
-                <div className="afp-announce-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m3 11 18-5v12L3 14v-3z" />
-                    <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
+          {/* MILESTONE */}
+          <div className="afp-milestone-card">
+            <div className="afp-milestone-header">
+              <div className="afp-milestone-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+                </svg>
+              </div>
+              <div>
+                <div className="afp-milestone-title">🎉 CONQUISTA · NOVO RECORD</div>
+                <div className="afp-milestone-headline">Marina bateu meta com 142% e fechou a maior venda do mês</div>
+              </div>
+            </div>
+
+            <div className="afp-milestone-body">
+              <div className="afp-milestone-protag">MC</div>
+              <div className="afp-milestone-protag-info">
+                <div className="afp-milestone-protag-name">Marina Costa</div>
+                <div className="afp-milestone-protag-role">Executiva de Contas · Vendas Comercial</div>
+                <div className="afp-milestone-value">R$ 47.500,00</div>
+              </div>
+            </div>
+
+            <div className="afp-milestone-celebrate">
+              <div className="afp-celebrate-stack">
+                <div className="afp-celebrate-emoji">🎉</div>
+                <div className="afp-celebrate-emoji">👏</div>
+                <div className="afp-celebrate-emoji">🔥</div>
+                <div className="afp-celebrate-emoji">🚀</div>
+              </div>
+              <span className="afp-celebrate-text">Você + 23 colegas celebraram</span>
+              <button className="afp-celebrate-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}>
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Celebrar
+              </button>
+            </div>
+          </div>
+
+          {/* ANÚNCIO */}
+          <div className="afp-announce-card">
+            <div className="afp-announce-header">
+              <div className="afp-announce-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m3 11 18-5v12L3 14v-3z" />
+                  <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
+                </svg>
+              </div>
+              <div className="afp-announce-info">
+                <span className="afp-announce-tag">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" width={9} height={9}>
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                   </svg>
-                </div>
-                <div className="afp-announce-info">
-                  <span className="afp-announce-tag">ANÚNCIO OFICIAL</span>
-                  <div className="afp-announce-title">{a.title}</div>
-                  {a.description && <div className="afp-announce-body">{a.description}</div>}
+                  ANÚNCIO OFICIAL · DIRETORIA
+                </span>
+                <div className="afp-announce-title">Festa de fim de ano confirmada para 14 de dezembro 🥂</div>
+                <div className="afp-announce-body">
+                  Reservamos o salão do <strong>Hotel Tivoli</strong> a partir das 19h. Open bar, jantar, sorteios e premiação dos colaboradores destaque de 2026. Convites individuais serão enviados por e-mail até dia 30/11.
                 </div>
               </div>
             </div>
-          ))}
+          </div>
 
-          {/* POSTS REAIS */}
-          {posts.map((p) => (
-            <div className="afp-post-card" key={p.id}>
-              <div className="afp-post-header">
-                <div className="afp-av-ring">
-                  <div className="afp-av-inner">
-                    <div
-                      className="afp-av-pic"
-                      style={{
-                        background: gradientFor(p.author?.name || p.author_id || p.id),
-                        backgroundImage: p.author?.avatar_url ? `url(${p.author.avatar_url})` : undefined,
-                        backgroundSize: "cover", backgroundPosition: "center",
-                      }}
-                    >
-                      {!p.author?.avatar_url && initialsOf(p.author?.name)}
-                    </div>
+          {/* POST com imagem */}
+          <div className="afp-post-card">
+            <div className="afp-post-header">
+              <div className="afp-av-ring afp-pink">
+                <div className="afp-av-inner"><div className="afp-av-pic afp-pink">JP</div></div>
+                <div className="afp-av-online" />
+              </div>
+              <div className="afp-post-author-info">
+                <div className="afp-post-author-line1">
+                  João Pereira
+                  <span className="afp-post-role-tag">Marketing</span>
+                </div>
+                <div className="afp-post-author-line2">
+                  <span>Para todos os colaboradores</span>
+                  <span className="afp-post-time-dot">·</span>
+                  <span>há 2 horas</span>
+                </div>
+              </div>
+              <span className="afp-post-pin">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="17" x2="12" y2="22" />
+                  <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z" />
+                </svg>
+                FIXADO
+              </span>
+              <button className="afp-post-menu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" /></svg>
+              </button>
+            </div>
+
+            <div className="afp-post-content">
+              Pessoal, lançamos a campanha de <span className="afp-hashtag">#BlackFriday2026</span> 🛍️ — material visual já disponível na pasta compartilhada do <span className="afp-mention">@time-marketing</span>. Quem puder revisar os assets até quinta às 17h, super agradecemos!
+            </div>
+
+            <div className="afp-post-media">
+              <span className="afp-post-media-watermark">BLACK FRIDAY</span>
+            </div>
+
+            <div className="afp-post-tags">
+              <span className="afp-post-tag">#BlackFriday2026</span>
+              <span className="afp-post-tag">#Marketing</span>
+              <span className="afp-post-tag">#Campanhas</span>
+            </div>
+
+            <div className="afp-post-reactions-summary">
+              <div className="afp-reactions-stack">
+                <div className="afp-reaction-pill afp-r-bg-red">❤️</div>
+                <div className="afp-reaction-pill afp-r-bg-amber">🔥</div>
+                <div className="afp-reaction-pill afp-r-bg-blue">👏</div>
+              </div>
+              <span>Você + 47 reações · 12 comentários · 5 compartilhamentos</span>
+            </div>
+
+            <div className="afp-post-actions">
+              <button className="afp-action-btn afp-liked">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+                Curtir
+                <div className="afp-reactions-popup">
+                  {["❤️","😀","🎉","👏","🔥","🚀","💯"].map(e => <div key={e} className="afp-reaction-emoji">{e}</div>)}
+                </div>
+              </button>
+              <button className="afp-action-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                Comentar
+              </button>
+              <button className="afp-action-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
+                Compartilhar
+              </button>
+              <button className="afp-action-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
+                Salvar
+              </button>
+            </div>
+
+            <div className="afp-post-comments">
+              <div className="afp-comment">
+                <div className="afp-comment-av">MC</div>
+                <div style={{ flex: 1 }}>
+                  <div className="afp-comment-bubble">
+                    <div className="afp-comment-author">Marina Costa</div>
+                    <div className="afp-comment-text">Boa! Os materiais ficaram lindos 🔥 Já comecei a revisão.</div>
+                  </div>
+                  <div className="afp-comment-actions">
+                    <span>Curtir · 4</span>
+                    <span>Responder</span>
+                    <span>há 38min</span>
                   </div>
                 </div>
-                <div className="afp-post-author-info">
-                  <div className="afp-post-author-line1">{p.author?.name || "Colaborador"}</div>
-                  <div className="afp-post-author-line2">
-                    <span>{relTime(p.created_at)}</span>
-                  </div>
-                </div>
-                {p.pinned && (
-                  <span className="afp-post-pin">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="12" y1="17" x2="12" y2="22" />
-                      <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z" />
-                    </svg>
-                    FIXADO
-                  </span>
-                )}
               </div>
 
-              {p.content && <div className="afp-post-content">{p.content}</div>}
-
-              {p.image_url && (
-                <div className="afp-post-media" style={{ background: `url(${p.image_url}) center/cover` }} />
-              )}
-
-              {p.tags && p.tags.length > 0 && (
-                <div className="afp-post-tags">
-                  {p.tags.map((t) => (
-                    <span className="afp-post-tag" key={t}>{t.startsWith("#") ? t : `#${t}`}</span>
-                  ))}
+              <div className="afp-comment">
+                <div className="afp-comment-av" style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}>PS</div>
+                <div style={{ flex: 1 }}>
+                  <div className="afp-comment-bubble">
+                    <div className="afp-comment-author">Pedro Santos</div>
+                    <div className="afp-comment-text">Mando o relatório de performance até 6ª. Boa, time!</div>
+                  </div>
+                  <div className="afp-comment-actions">
+                    <span>Curtir · 2</span>
+                    <span>Responder</span>
+                    <span>há 1h</span>
+                  </div>
                 </div>
-              )}
+              </div>
 
-              <div className="afp-post-actions">
-                <button className="afp-action-btn">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
-                  Curtir
+              <div className="afp-comment-input-row">
+                <div className="afp-comment-av" style={{ background: "linear-gradient(135deg,#10b981,#059669)", width: 30, height: 30, borderRadius: 10 }}>WS</div>
+                <input className="afp-comment-input" placeholder="Escrever comentário..." />
+              </div>
+            </div>
+          </div>
+
+          {/* EVENTO */}
+          <div className="afp-event-card">
+            <div className="afp-event-banner">
+              <div className="afp-event-date-block">
+                <div className="afp-event-date-month">Jun</div>
+                <div className="afp-event-date-day">18</div>
+                <div className="afp-event-date-time">15h</div>
+              </div>
+              <div className="afp-event-banner-text">
+                <div className="afp-event-banner-title">All Hands · Q2 2026</div>
+                <div className="afp-event-banner-sub">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" /></svg>
+                  Google Meet · 60 min
+                </div>
+              </div>
+            </div>
+
+            <div className="afp-event-body">
+              <div className="afp-event-attendees">
+                <div className="afp-attendee-stack">
+                  <div className="afp-attendee">WS</div>
+                  <div className="afp-attendee afp-g">MC</div>
+                  <div className="afp-attendee afp-b">JP</div>
+                  <div className="afp-attendee afp-p">PS</div>
+                  <div className="afp-attendee afp-more">+18</div>
+                </div>
+                <span className="afp-event-attendees-text">
+                  <strong>22 confirmados</strong> · 5 talvez · 3 não vão
+                </span>
+              </div>
+
+              <div className="afp-event-actions">
+                <button className="afp-event-btn afp-confirm">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}><polyline points="20 6 9 17 4 12" /></svg>
+                  Vou participar
                 </button>
-                <button className="afp-action-btn">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-                  Comentar
+                <button className="afp-event-btn afp-maybe">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" /></svg>
+                  Talvez
                 </button>
-                <button className="afp-action-btn">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
-                  Compartilhar
+                <button className="afp-event-btn afp-maybe">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  Não vou
                 </button>
               </div>
             </div>
-          ))}
+          </div>
 
-          {/* EVENTOS REAIS */}
-          {events.map((ev) => {
-            const start = new Date(ev.start_at);
-            const monthLabel = format(start, "MMM", { locale: ptBR });
-            const dayLabel = format(start, "dd");
-            const timeLabel = format(start, "HH'h'mm");
-            return (
-              <div className="afp-event-card" key={ev.id}>
-                <div className="afp-event-banner" style={ev.banner_url ? { backgroundImage: `url(${ev.banner_url})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}>
-                  <div className="afp-event-date-block">
-                    <div className="afp-event-date-month">{monthLabel}</div>
-                    <div className="afp-event-date-day">{dayLabel}</div>
-                    <div className="afp-event-date-time">{timeLabel}</div>
-                  </div>
-                  <div className="afp-event-banner-text">
-                    <div className="afp-event-banner-title">{ev.title}</div>
-                    {(ev.location || ev.meeting_url) && (
-                      <div className="afp-event-banner-sub">
-                        {ev.meeting_url ? "Online" : ev.location}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {ev.description && (
-                  <div className="afp-event-body">
-                    <span className="afp-event-attendees-text">{ev.description}</span>
-                  </div>
-                )}
+          {/* POST simples */}
+          <div className="afp-post-card">
+            <div className="afp-post-header">
+              <div className="afp-av-ring afp-blue">
+                <div className="afp-av-inner"><div className="afp-av-pic afp-blue">MC</div></div>
+                <div className="afp-av-online" />
               </div>
-            );
-          })}
-
-          {posts.length === 0 && events.length === 0 && announcements.length === 0 && (
-            <div className="afp-post-card" style={{ padding: 24, textAlign: "center" }}>
-              <div className="afp-post-content">Nenhuma publicação ainda. Seja o primeiro a compartilhar uma novidade.</div>
+              <div className="afp-post-author-info">
+                <div className="afp-post-author-line1">
+                  Marina Costa
+                  <span className="afp-post-role-tag" style={{ background: "rgba(16,185,129,.15)", color: "#34d399" }}>Vendas</span>
+                </div>
+                <div className="afp-post-author-line2">
+                  <span>Pra time-vendas</span>
+                  <span className="afp-post-time-dot">·</span>
+                  <span>há 4 horas</span>
+                </div>
+              </div>
+              <button className="afp-post-menu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" /></svg>
+              </button>
             </div>
-          )}
+
+            <div className="afp-post-content">
+              Galera, dica top: usem o filtro de <strong>"Sem atividade há 7 dias"</strong> no pipeline. Achei 12 leads esquecidos esta manhã e já agendei follow-up com todos. <span className="afp-mention">@equipe-comercial</span>
+            </div>
+
+            <div className="afp-post-reactions-summary">
+              <div className="afp-reactions-stack">
+                <div className="afp-reaction-pill afp-r-bg-red">💡</div>
+                <div className="afp-reaction-pill afp-r-bg-amber">🔥</div>
+              </div>
+              <span>18 reações · 4 comentários</span>
+            </div>
+
+            <div className="afp-post-actions">
+              <button className="afp-action-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+                Curtir
+              </button>
+              <button className="afp-action-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                Comentar
+              </button>
+              <button className="afp-action-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
+                Compartilhar
+              </button>
+              <button className="afp-action-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
+                Salvar
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* ═══════ SIDEBAR ═══════ */}
@@ -355,14 +435,14 @@ export function AccordFeedPremium() {
           <div className="afp-side-card">
             <div className="afp-side-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="20" x2="12" y2="10" /><line x1="18" y1="20" x2="18" y2="4" /><line x1="6" y1="20" x2="6" y2="16" /></svg>
-              Resumo do tenant
+              Você esta semana
             </div>
             <div className="afp-quick-stats">
               {[
-                [String(myPostsCount), "Seus posts"],
-                [String(posts.length), "Posts totais"],
-                [String(members.length), "Colegas"],
-                [String(events.length), "Eventos"],
+                ["12", "Posts"],
+                ["147", "Reações"],
+                ["34", "Comentários"],
+                ["8", "Compart."],
               ].map(([v, l]) => (
                 <div className="afp-quick-stat" key={l}>
                   <div className="afp-quick-stat-value">{v}</div>
@@ -372,77 +452,81 @@ export function AccordFeedPremium() {
             </div>
           </div>
 
-          {/* COLEGAS DO TENANT */}
-          {onlineMembers.length > 0 && (
-            <div className="afp-side-card">
-              <div className="afp-side-title">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /></svg>
-                Colegas · {onlineMembers.length}
-              </div>
-              {onlineMembers.map((m) => (
-                <div className="afp-online-row" key={m.id}>
-                  <div
-                    className="afp-online-av"
-                    style={{
-                      background: gradientFor(m.name || m.id),
-                      backgroundImage: m.avatar_url ? `url(${m.avatar_url})` : undefined,
-                      backgroundSize: "cover", backgroundPosition: "center",
-                    }}
-                  >
-                    {!m.avatar_url && initialsOf(m.name)}
-                  </div>
-                  <div className="afp-online-info">
-                    <div className="afp-online-name">{m.name || "Sem nome"}</div>
-                  </div>
-                </div>
-              ))}
+          {/* ONLINE AGORA */}
+          <div className="afp-side-card">
+            <div className="afp-side-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="3" fill="currentColor" /></svg>
+              Online agora · 8
             </div>
-          )}
+            {[
+              { name: "Marina Costa", initials: "MC", status: "Disponível", bg: "linear-gradient(135deg,#3b82f6,#1d4ed8)" },
+              { name: "Pedro Santos", initials: "PS", status: "Disponível", bg: "linear-gradient(135deg,#ec4899,#be185d)" },
+              { name: "João Pereira", initials: "JP", status: "Em reunião", bg: "linear-gradient(135deg,#f59e0b,#d97706)" },
+              { name: "Rafa Almeida", initials: "RA", status: "Disponível", bg: "linear-gradient(135deg,#06b6d4,#0891b2)" },
+            ].map((p) => (
+              <div className="afp-online-row" key={p.name}>
+                <div className="afp-online-av" style={{ background: p.bg }}>{p.initials}</div>
+                <div className="afp-online-info">
+                  <div className="afp-online-name">{p.name}</div>
+                  <div className="afp-online-status"><span className="afp-online-dot" /> {p.status}</div>
+                </div>
+                <button className="afp-msg-btn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                </button>
+              </div>
+            ))}
+          </div>
 
-          {/* SUGGESTIONS — restante dos colegas */}
-          {suggestions.length > 0 && (
-            <div className="afp-side-card">
-              <div className="afp-side-title">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /></svg>
-                Outros colegas
-              </div>
-              {suggestions.map((m) => (
-                <div className="afp-suggest-row" key={m.id}>
-                  <div
-                    className="afp-suggest-av"
-                    style={{
-                      background: gradientFor(m.name || m.id),
-                      backgroundImage: m.avatar_url ? `url(${m.avatar_url})` : undefined,
-                      backgroundSize: "cover", backgroundPosition: "center",
-                    }}
-                  >
-                    {!m.avatar_url && initialsOf(m.name)}
-                  </div>
-                  <div className="afp-suggest-info">
-                    <div className="afp-suggest-name">{m.name || "Sem nome"}</div>
-                  </div>
-                </div>
-              ))}
+          {/* SUGGESTIONS */}
+          <div className="afp-side-card">
+            <div className="afp-side-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><path d="M20 8v6M23 11h-6" /></svg>
+              Colegas pra conhecer
+              <span className="afp-side-title-action">Ver todos</span>
             </div>
-          )}
+            {[
+              { name: "Lucas Martins", initials: "LM", role: "Engenheiro · TI", bg: "linear-gradient(135deg,#8b5cf6,#6d28d9)" },
+              { name: "Ana Tavares", initials: "AT", role: "Design · UX", bg: "linear-gradient(135deg,#ec4899,#be185d)" },
+              { name: "Ricardo Barbosa", initials: "RB", role: "Financeiro · CFO", bg: "linear-gradient(135deg,#06b6d4,#0891b2)" },
+            ].map((p) => (
+              <div className="afp-suggest-row" key={p.name}>
+                <div className="afp-suggest-av" style={{ background: p.bg }}>{p.initials}</div>
+                <div className="afp-suggest-info">
+                  <div className="afp-suggest-name">{p.name}</div>
+                  <div className="afp-suggest-role">{p.role}</div>
+                </div>
+                <button className="afp-follow-btn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}><path d="M12 5v14M5 12h14" /></svg>
+                  Seguir
+                </button>
+              </div>
+            ))}
+          </div>
 
-          {/* TRENDING — só hashtags reais */}
-          {trendingTags.length > 0 && (
-            <div className="afp-side-card">
-              <div className="afp-side-title">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
-                Hashtags em alta
-              </div>
-              {trendingTags.map(([name, count]) => (
-                <div className="afp-tag-row" key={name}>
-                  <div className="afp-tag-info">
-                    <div className="afp-tag-name">{name}</div>
-                    <div className="afp-tag-meta">{count} {count === 1 ? "post" : "posts"}</div>
-                  </div>
-                </div>
-              ))}
+          {/* TRENDING */}
+          <div className="afp-side-card">
+            <div className="afp-side-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
+              Em alta no Accord
             </div>
-          )}
+            {[
+              ["#BlackFriday2026", "28 posts · esta semana", "+124%"],
+              ["#MetaBatida", "17 posts · esta semana", "+47%"],
+              ["#OnboardingNovo", "9 posts · esta semana", "+18%"],
+              ["#ClienteSatisfeito", "7 posts · esta semana", "+12%"],
+            ].map(([name, meta, trend]) => (
+              <div className="afp-tag-row" key={name}>
+                <div className="afp-tag-info">
+                  <div className="afp-tag-name">{name}</div>
+                  <div className="afp-tag-meta">{meta}</div>
+                </div>
+                <span className="afp-tag-trend">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}><path d="m6 9 6-6 6 6" /></svg>
+                  {trend}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
