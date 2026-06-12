@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Search, Filter, ChevronLeft, ChevronRight, Eye, Shield, Calendar } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Eye, Shield, Calendar, Download, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { AuditExportFileCard } from "@/components/audit/AuditExportFileCard";
+import { toast } from "sonner";
+
 
 interface AuditLog {
   id: string;
@@ -84,7 +87,7 @@ const TARGET_LABELS: Record<string, string> = {
 const PAGE_SIZE = 25;
 
 export default function AuditLogs() {
-  const { role, profile } = useAuth();
+  const { role, profile, session } = useAuth();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -92,15 +95,19 @@ export default function AuditLogs() {
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState("all");
   const [targetFilter, setTargetFilter] = useState("all");
+  const [pagePathFilter, setPagePathFilter] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
+  const [exportingCsv, setExportingCsv] = useState(false);
 
-  const isCeoOrMaster = role === "ceo" || role === "master" || profile?.is_master;
+  const hasAccess =
+    profile?.is_master === true || role === "admin" || role === "ceo" || role === "master";
 
   useEffect(() => {
     fetchLogs();
-  }, [page, actionFilter, targetFilter, dateFrom, dateTo]);
+  }, [page, actionFilter, targetFilter, pagePathFilter, dateFrom, dateTo]);
+
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -125,9 +132,13 @@ export default function AuditLogs() {
         end.setHours(23, 59, 59, 999);
         query = query.lte("created_at", end.toISOString());
       }
+      if (pagePathFilter) {
+        query = query.eq("details->>page_path" as any, pagePathFilter);
+      }
       if (search.trim()) {
         query = query.or(`user_name.ilike.%${search.trim()}%,target_id.ilike.%${search.trim()}%`);
       }
+
 
       const { data, count, error } = await query;
       if (error) throw error;
@@ -150,24 +161,76 @@ export default function AuditLogs() {
   const uniqueActions = Object.keys(ACTION_LABELS);
   const uniqueTargets = Object.keys(TARGET_LABELS);
 
-  if (!isCeoOrMaster) {
+  const handleExportCsv = async () => {
+    setExportingCsv(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("audit-export-csv", {
+        body: {
+          filters: {
+            from: dateFrom?.toISOString(),
+            to: dateTo?.toISOString(),
+            action: actionFilter !== "all" ? actionFilter : undefined,
+            target_type: targetFilter !== "all" ? targetFilter : undefined,
+            page_path: pagePathFilter || undefined,
+          },
+        },
+      });
+      if (error) throw error;
+      // The function returns CSV text; build a blob client-side
+      const csv = typeof data === "string" ? data : new TextDecoder().decode(data as any);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `audit-logs-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Exportação iniciada");
+    } catch (err: any) {
+      toast.error("Erro ao exportar", { description: err?.message });
+    } finally {
+      setExportingCsv(false);
+    }
+  };
+
+  if (!hasAccess) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
           <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
           <h2 className="text-xl font-semibold text-foreground mb-1">Acesso Restrito</h2>
-          <p className="text-muted-foreground text-sm">Apenas CEO e Master podem acessar os logs de auditoria.</p>
+          <p className="text-muted-foreground text-sm">Apenas Admin, CEO e Master podem acessar os logs de auditoria.</p>
         </div>
       </div>
     );
   }
 
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Logs de Auditoria</h1>
-        <p className="text-sm text-muted-foreground">Rastreabilidade de ações críticas do sistema</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Logs de Auditoria</h1>
+          <p className="text-sm text-muted-foreground">Rastreabilidade de ações críticas do sistema</p>
+        </div>
+        <Button size="sm" variant="default" onClick={handleExportCsv} disabled={exportingCsv} className="gap-1.5">
+          <Download className="h-3.5 w-3.5" />
+          {exportingCsv ? "Exportando..." : "Exportar CSV"}
+        </Button>
       </div>
+
+      {pagePathFilter && (
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg border bg-purple-500/10 border-purple-500/30">
+          <div className="flex items-center gap-2 text-xs">
+            <Badge variant="secondary" className="bg-purple-500/20 text-purple-200">FILTRO ATIVO · PÁGINA</Badge>
+            <code className="font-mono text-purple-200">{pagePathFilter}</code>
+          </div>
+          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setPagePathFilter(null)}>
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
+
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-end">
