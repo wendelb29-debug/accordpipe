@@ -399,7 +399,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
     setTimeout(() => setLinkCopied(false), 2000);
   };
 
-  const filteredLeads = leads.filter((l) => {
+  const baseFiltered = leads.filter((l) => {
     if (selectedUserId !== "all" && l.created_by_user_id !== selectedUserId) return false;
     if (selectedTags.length > 0) {
       const leadTags = l.tags || [];
@@ -416,6 +416,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
       l.source?.toLowerCase().includes(s)
     );
   });
+  const filteredLeads = applyFilters(baseFiltered, advancedFilters);
 
   const handleDrop = async (e: React.DragEvent, targetStage: string) => {
     e.preventDefault();
