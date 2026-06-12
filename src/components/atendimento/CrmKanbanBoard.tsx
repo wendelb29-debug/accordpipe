@@ -727,7 +727,8 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
           const stageLeads = filteredLeads.filter((l) => l.stage === stage.id);
           const colors = stageColors[stage.id] || { bg: "bg-muted/30", text: "text-foreground", icon: "bg-primary", border: "border-border" };
           const dynCol = kanbanCols.find(c => c.id === stage.id);
-          const slaDays = dynCol?.sla_days || (stage.daysLimit ? parseInt(stage.daysLimit) || 0 : 0);
+          const rawSla = dynCol?.sla_days ?? (stage.daysLimit ? parseInt(stage.daysLimit, 10) : 0);
+          const slaDays = Math.max(0, Math.round(Number(rawSla) || 0));
 
 
           return (
@@ -786,8 +787,15 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                   const overdue = dynCol
                     ? isLeadOverdueDynamic(lead, slaDays)
                     : isLeadOverdue(lead, stage.id);
-                  const days = Math.floor((Date.now() - new Date(lead.stage_entered_at).getTime()) / (1000 * 60 * 60 * 24));
-                  const overdueByDays = slaDays > 0 ? Math.max(0, days - slaDays) : 0;
+                  const stageEnteredAt = lead.stage_entered_at
+                    ? new Date(lead.stage_entered_at)
+                    : new Date(lead.created_at);
+                  const days = Math.max(0, Math.floor(
+                    (Date.now() - stageEnteredAt.getTime()) / (1000 * 60 * 60 * 24)
+                  ));
+                  const overdueByDays = slaDays > 0
+                    ? Math.max(0, Math.round(days - slaDays))
+                    : 0;
                   const hasActivity = leadsWithActivity.has(lead.id);
                   const hasOverdue = leadsWithOverdueActivity.has(lead.id);
                   const overdueActCount = overdueActivityCount[lead.id] || 0;
@@ -1016,7 +1024,17 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                                 </Tooltip>
                               );
                             })()}
-                            <span className="text-[9px] text-muted-foreground/50">{new Date(lead.created_at).toLocaleDateString("pt-BR")}</span>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="text-[9px] text-muted-foreground/50 cursor-help">{stageEnteredAt.toLocaleDateString("pt-BR")}</span>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom" className="text-[10px] space-y-1">
+                                <div><strong>Entrou neste estágio:</strong> {stageEnteredAt.toLocaleString("pt-BR")}</div>
+                                <div><strong>Lead criado em:</strong> {new Date(lead.created_at).toLocaleString("pt-BR")}</div>
+                                <div><strong>SLA da coluna:</strong> {slaDays > 0 ? `${slaDays} dia${slaDays > 1 ? "s" : ""}` : "sem SLA"}</div>
+                                <div><strong>Há {days} dia{days !== 1 ? "s" : ""} neste estágio</strong></div>
+                              </TooltipContent>
+                            </Tooltip>
                           </div>
                           <span className={cn(
                             "text-[9px] font-bold rounded-full px-1.5 py-0",
@@ -1025,7 +1043,13 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                               : isNaturalState ? "text-muted-foreground/60"
                               : "text-muted-foreground/50"
                           )}>
-                            {overdue && overdueByDays > 0 ? `+${overdueByDays}d atraso` : `${days}d`}
+                            {overdue && overdueByDays > 0
+                              ? `+${overdueByDays}d atraso`
+                              : days === 0
+                                ? "Hoje"
+                                : days === 1
+                                  ? "Ontem"
+                                  : `${days} dias`}
                           </span>
                         </div>
                       </div>
@@ -1038,6 +1062,47 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
         })}
         </div>
       </div>
+      )}
+
+      <KanbanQuickActionZones
+        visible={!!draggedLead}
+        currentStatus={draggedLead?.lead_status}
+        onAction={handleQuickAction}
+      />
+
+      <LostReasonDialog
+        open={lostReasonOpen}
+        lead={pendingLead}
+        onOpenChange={setLostReasonOpen}
+        onConfirm={async (reason) => {
+          if (pendingLead) {
+            await updateLead(pendingLead.id, {
+              lead_status: "lost",
+              lost_reason: reason,
+              status_changed_at: new Date().toISOString(),
+            } as any);
+            toast.success("Marcado como perdido");
+          }
+          setLostReasonOpen(false);
+          setPendingLead(null);
+        }}
+      />
+
+      <TransferWorkspaceDialog
+        open={transferOpen}
+        lead={pendingLead}
+        currentWorkspaceId={workspaceId}
+        onOpenChange={setTransferOpen}
+        onTransfer={async (newWorkspaceId) => {
+          if (pendingLead) {
+            await updateLead(pendingLead.id, { workspace_id: newWorkspaceId } as any);
+            toast.success("Card transferido");
+          }
+          setTransferOpen(false);
+          setPendingLead(null);
+        }}
+      />
+
 
       <CrmLeadDialog
         lead={selectedLead}
