@@ -440,6 +440,74 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
     setDragOverStage(null);
   };
 
+  const fetchTrashLeads = useCallback(async () => {
+    if (!companyId) return;
+    let q = supabase
+      .from("crm_leads")
+      .select("*")
+      .eq("lead_status", "trash")
+      .order("status_changed_at", { ascending: false, nullsFirst: false });
+    if (workspaceId) q = q.eq("workspace_id", workspaceId);
+    const { data } = await q;
+    setTrashLeads((data as CrmLead[]) || []);
+  }, [companyId, workspaceId]);
+
+  useEffect(() => {
+    if (statusFilter === "trash") fetchTrashLeads();
+  }, [statusFilter, fetchTrashLeads]);
+
+  const handleQuickAction = async (zoneId: "trash" | "lost" | "won" | "transfer") => {
+    if (!draggedLead) return;
+    const lead = draggedLead;
+    setDraggedLead(null);
+
+    switch (zoneId) {
+      case "trash": {
+        if (!window.confirm(`Mover "${lead.contact_name || lead.company_name}" para a lixeira?`)) return;
+        await updateLead(lead.id, {
+          lead_status: "trash",
+          status_changed_at: new Date().toISOString(),
+        } as any);
+        toast.success("Card movido pra lixeira", {
+          action: {
+            label: "Desfazer",
+            onClick: async () => {
+              await updateLead(lead.id, { lead_status: "open", status_changed_at: new Date().toISOString() } as any);
+              toast.success("Restaurado");
+            },
+          },
+        });
+        break;
+      }
+      case "lost": {
+        setPendingLead(lead);
+        setLostReasonOpen(true);
+        break;
+      }
+      case "won": {
+        try {
+          await markAsWonAndTransfer(lead.id);
+          toast.success(`"${lead.contact_name || lead.company_name}" marcado como ganho 🎉`);
+        } catch (err: any) {
+          toast.error(err?.message || "Erro ao marcar como ganho");
+        }
+        break;
+      }
+      case "transfer": {
+        setPendingLead(lead);
+        setTransferOpen(true);
+        break;
+      }
+    }
+  };
+
+  const counters = useMemo(() => ({
+    open: leads.filter((l) => !l.lead_status || l.lead_status === "open").length,
+    won: leads.filter((l) => l.lead_status === "won").length,
+    lost: leads.filter((l) => l.lead_status === "lost").length,
+    trash: trashLeads.length,
+  }), [leads, trashLeads]);
+
   const openNew = () => { setSelectedLead(null); setIsNew(true); setDialogOpen(true); };
   const openEdit = (lead: CrmLead) => { setSelectedLead(lead); setIsNew(false); setDialogOpen(true); };
   const openDetail = (lead: CrmLead) => { setDetailLead(lead); };
