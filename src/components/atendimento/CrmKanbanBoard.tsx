@@ -1,11 +1,16 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useBackNavigation } from "@/contexts/BackNavigationContext";
 import {
   Clock, Users, MessageSquare, Phone, RefreshCw, FileSignature,
   MoreVertical, Trash2, Edit, Loader2,
-  Plus, Sparkles, Link2, Check, Tag, Search, Filter, CalendarClock, AlertTriangle, CheckCircle
+  Plus, Sparkles, Link2, Check, Tag, Search, Filter, CalendarClock, AlertTriangle, CheckCircle,
+  CheckCircle2, XCircle,
 } from "lucide-react";
+import { KanbanQuickActionZones } from "./KanbanQuickActionZones";
+import { StatusFilteredGrid } from "./StatusFilteredGrid";
+import { TransferWorkspaceDialog } from "./TransferWorkspaceDialog";
+import { LostReasonDialog } from "./LostReasonDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
