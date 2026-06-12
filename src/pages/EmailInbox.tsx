@@ -714,9 +714,20 @@ function MessageReader({ message, onClose, onReply, onForward, onDelete, onCreat
         <button onClick={onShareToCollab}  title="Discutir"        className="xl:hidden w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-blue-500/10 hover:text-blue-600 transition"><MessagesSquare className="w-4 h-4" /></button>
 
         <div className="w-px h-6 bg-border mx-1" />
+        <div className="w-px h-6 bg-border mx-1" />
+        <button onClick={toggleStar} title={message.is_starred ? "Remover estrela" : "Marcar com estrela"} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition">
+          <Star className={cn("w-4 h-4 transition", message.is_starred ? "fill-amber-400 text-amber-400" : "text-muted-foreground")} />
+        </button>
         <button onClick={onReply}   title="Responder"  className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition"><Reply className="w-4 h-4" /></button>
         <button onClick={onForward} title="Encaminhar" className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition"><Forward className="w-4 h-4" /></button>
         <button onClick={onDelete}  title="Excluir"    className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-red-500/10 hover:text-red-600 transition"><Trash2 className="w-4 h-4" /></button>
+        <EmailMessageActionsMenu
+          message={message}
+          onReply={onReply}
+          onForward={onForward}
+          onDelete={onDelete}
+          onUpdated={onUpdated}
+        />
       </div>
 
       {/* Subject + meta */}
