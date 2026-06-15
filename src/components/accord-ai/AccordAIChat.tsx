@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Bot, X, Send, Sparkles, Minimize2, MessageSquare } from "lucide-react";
+import { Bot, X, Send, Sparkles, Minimize2, MessageSquare, Trash2 } from "lucide-react";
+import { useAIAssistant } from "@/contexts/AIAssistantContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
@@ -134,16 +135,27 @@ function useBottomOffset(isMobile: boolean) {
 }
 
 export function AccordAIChat() {
+  const { mode: aiMode, setMode: setAiMode, position, setPosition, isDragging, setDragging } = useAIAssistant();
   const [open, setOpen] = useState(false);
   const [assistantState, setAssistantState] = useState<AssistantState>(loadState);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [dragOverDrop, setDragOverDrop] = useState(false);
+  const fabRef = useRef<HTMLDivElement>(null);
+  const dragStart = useRef<{ x: number; y: number; offsetX: number; offsetY: number; moved: boolean } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const { profile, activeCompany, activeCompanyId } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
   const bottomOffset = useBottomOffset(isMobile);
+
+  // Sync open with AI mode for the pure-AI path
+  useEffect(() => {
+    if (aiMode === "open") setOpen(true);
+    if (aiMode === "header" || aiMode === "hidden") setOpen(false);
+  }, [aiMode]);
+
 
   // Smart launcher — inbox notifications
   const { preview, pending, totalUnread, clearPreview, dismissContact } = useInboxNotifications();
@@ -335,16 +347,20 @@ export function AccordAIChat() {
     );
   }
 
-  // ── Minimized state: show a tiny pill ──
-  if (assistantState === "minimized") {
+  // ── AI-only path is now controlled by the global AIAssistantContext ──
+  const isPureAI = launcherMode === "ai" && !hasPending;
+  if (isPureAI && aiMode !== "open") {
+    // header → ícone no header abre; hidden → totalmente oculto
+    return null;
+  }
+
+  // Legacy minimized pill (apenas para fluxo WhatsApp/quick_chat)
+  if (!isPureAI && assistantState === "minimized") {
     return (
       <button
         onClick={handleRestore}
         className="fixed z-40 flex items-center gap-1.5 rounded-full border border-border bg-background/90 backdrop-blur-sm px-2.5 py-1.5 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 group"
-        style={{
-          bottom: `${safeBottom}px`,
-          right: isMobile ? 12 : 20,
-        }}
+        style={{ bottom: `${safeBottom}px`, right: isMobile ? 12 : 20 }}
         title="Abrir assistente IA"
       >
         <div
@@ -365,16 +381,78 @@ export function AccordAIChat() {
   }
 
   const handleFabClick = () => {
-    if (preview) {
-      openQuickChat(preview);
-      return;
-    }
-    if (hasPending) {
-      openQuickChat(pending[pending.length - 1]);
-      return;
-    }
+    if (preview) { openQuickChat(preview); return; }
+    if (hasPending) { openQuickChat(pending[pending.length - 1]); return; }
     setOpen((v) => !v);
   };
+
+  // ── DRAG HANDLERS (FAB do modo AI) ──
+  const FAB_SIZE = isMobile ? 44 : 56;
+  const DROP_ZONE_SIZE = 80;
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (!isPureAI || !fabRef.current) return;
+    const rect = fabRef.current.getBoundingClientRect();
+    dragStart.current = {
+      x: e.clientX, y: e.clientY,
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top,
+      moved: false,
+    };
+    fabRef.current.setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!dragStart.current) return;
+    const dx = Math.abs(e.clientX - dragStart.current.x);
+    const dy = Math.abs(e.clientY - dragStart.current.y);
+    if (!dragStart.current.moved && (dx > 5 || dy > 5)) {
+      dragStart.current.moved = true;
+      setDragging(true);
+      setOpen(false); // esconde painel durante drag
+    }
+    if (!dragStart.current.moved) return;
+
+    const newX = e.clientX - dragStart.current.offsetX;
+    const newY = e.clientY - dragStart.current.offsetY;
+    const maxX = window.innerWidth - FAB_SIZE;
+    const maxY = window.innerHeight - FAB_SIZE;
+    const clampedX = Math.max(0, Math.min(newX, maxX));
+    const clampedY = Math.max(0, Math.min(newY, maxY));
+    setPosition({ x: clampedX, y: clampedY });
+
+    const dropX = window.innerWidth - DROP_ZONE_SIZE - 24;
+    const dropY = window.innerHeight - DROP_ZONE_SIZE - 24;
+    setDragOverDrop(clampedX + FAB_SIZE > dropX && clampedY + FAB_SIZE > dropY);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!dragStart.current) return;
+    const wasDrag = dragStart.current.moved;
+    try { fabRef.current?.releasePointerCapture(e.pointerId); } catch {}
+    dragStart.current = null;
+
+    if (!wasDrag) {
+      // click puro — toggle painel
+      handleFabClick();
+      return;
+    }
+    setDragging(false);
+    if (dragOverDrop) {
+      setAiMode("hidden");
+      setDragOverDrop(false);
+      setPosition({ x: -1, y: -1 });
+    } else {
+      setOpen(true);
+    }
+  };
+
+  // Posição computada do FAB no modo IA
+  const computedPos = isPureAI && (position.x !== -1 && position.y !== -1)
+    ? position
+    : null;
+
+
 
   // ── Expanded state ──
   return (
@@ -417,27 +495,55 @@ export function AccordAIChat() {
         </button>
       )}
 
+      {/* Drop zone (zona de descarte) — só no modo IA durante drag */}
+      {isPureAI && isDragging && (
+        <div
+          className={cn(
+            "fixed z-[100] flex items-center justify-center rounded-full transition-all duration-200",
+            "bg-red-500/90 backdrop-blur-md text-white shadow-2xl shadow-red-500/40",
+            dragOverDrop && "scale-125 bg-red-600"
+          )}
+          style={{ width: DROP_ZONE_SIZE, height: DROP_ZONE_SIZE, right: 24, bottom: 24 }}
+        >
+          <Trash2 className="w-7 h-7" strokeWidth={2.5} />
+          {dragOverDrop && (
+            <span className="absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap bg-red-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-full">
+              Solte aqui pra ocultar
+            </span>
+          )}
+        </div>
+      )}
+
       {/* FAB */}
-      <button
-        onClick={handleFabClick}
+      <div
+        ref={fabRef}
+        onPointerDown={isPureAI ? handlePointerDown : undefined}
+        onPointerMove={isPureAI ? handlePointerMove : undefined}
+        onPointerUp={isPureAI ? handlePointerUp : undefined}
+        onClick={isPureAI ? undefined : handleFabClick}
+        role="button"
         className={cn(
-          "fixed z-40 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 group",
-          "text-primary-foreground",
-          isMobile ? "h-11 w-11" : "h-12 w-12 sm:h-14 sm:w-14"
+          "fixed rounded-full shadow-lg flex items-center justify-center text-primary-foreground select-none",
+          isPureAI ? "z-[95] touch-none cursor-grab active:cursor-grabbing" : "z-40 transition-all duration-300 hover:scale-105",
+          isMobile ? "h-11 w-11" : "h-12 w-12 sm:h-14 sm:w-14",
+          isDragging && "scale-110 shadow-2xl",
+          dragOverDrop && "scale-90 opacity-60"
         )}
         style={{
-          bottom: `${safeBottom}px`,
-          right: isMobile ? 16 : 24,
+          ...(isPureAI && computedPos
+            ? { left: computedPos.x, top: computedPos.y }
+            : { bottom: `${safeBottom}px`, right: isMobile ? 16 : 24 }),
           background: showWhatsAppLook
             ? "linear-gradient(135deg, #10b981, #059669)"
             : "linear-gradient(135deg, #3B3F9C, #7A3FF2)",
+          transition: isDragging ? "none" : undefined,
         }}
         title={showWhatsAppLook ? "Nova mensagem" : "✨ Assistente IA"}
       >
-        {open ? (
-          <X className="h-5 w-5 sm:h-6 sm:w-6" />
+        {open && !isPureAI ? (
+          <X className="h-5 w-5 sm:h-6 sm:w-6 pointer-events-none" />
         ) : showWhatsAppLook ? (
-          <div className="relative">
+          <div className="relative pointer-events-none">
             <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />
             {totalUnread > 0 && (
               <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 border-2 border-background text-white text-[10px] font-bold flex items-center justify-center">
@@ -446,12 +552,13 @@ export function AccordAIChat() {
             )}
           </div>
         ) : (
-          <div className="relative">
+          <div className="relative pointer-events-none">
             <Bot className="h-5 w-5 sm:h-6 sm:w-6" />
             <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-green-400 border border-[#3B3F9C] animate-pulse" />
           </div>
         )}
-      </button>
+      </div>
+
 
 
       {/* Chat window */}
@@ -489,14 +596,14 @@ export function AccordAIChat() {
                 Limpar
               </button>
               <button
-                onClick={handleMinimize}
+                onClick={() => { if (isPureAI) setAiMode("header"); else handleMinimize(); }}
                 className="opacity-70 hover:opacity-100 bg-white/10 rounded-full p-1 transition-opacity"
                 title="Minimizar"
               >
                 <Minimize2 className="h-3.5 w-3.5" />
               </button>
               <button
-                onClick={() => setOpen(false)}
+                onClick={() => { if (isPureAI) setAiMode("header"); else setOpen(false); }}
                 className="opacity-70 hover:opacity-100 bg-white/10 rounded-full p-1 transition-opacity"
                 title="Fechar"
               >
