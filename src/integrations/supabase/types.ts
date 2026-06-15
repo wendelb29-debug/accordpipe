@@ -8277,6 +8277,14 @@ export type Database = {
           workspace_id: string
         }[]
       }
+      get_tenant_members: {
+        Args: { _tenant_id: string }
+        Returns: {
+          avatar_url: string
+          name: string
+          user_id: string
+        }[]
+      }
       get_tenant_setup_by_token: {
         Args: { p_token: string }
         Returns: {

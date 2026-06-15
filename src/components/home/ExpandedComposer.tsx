@@ -67,28 +67,23 @@ export function ExpandedComposer({ open, onClose, onPublished, initialTab = "mes
   useEffect(() => {
     if (!open || !servidorId) return;
     (async () => {
-      const { data: links } = await supabase
-        .from("user_tenants")
-        .select("user_id")
-        .eq("tenant_id", servidorId)
-        .eq("status", "ativo");
-      const ids = (links || []).map((l: any) => l.user_id).filter((id: string) => id !== userId);
-      if (ids.length === 0) {
+      const { data, error } = await supabase.rpc("get_tenant_members", { _tenant_id: servidorId });
+      if (error) {
+        console.error("[ExpandedComposer] get_tenant_members error:", error);
         setTenantUsers([]);
         return;
       }
-      const { data: profs } = await supabase
-        .from("profiles")
-        .select("user_id, name, avatar_url")
-        .in("user_id", ids);
-      const list: TenantUser[] = (profs || []).map((p: any) => ({
-        user_id: p.user_id,
-        name: p.name || "Sem nome",
-        avatar_url: p.avatar_url || null,
-      }));
+      const list: TenantUser[] = (data || [])
+        .filter((p: any) => p.user_id !== userId)
+        .map((p: any) => ({
+          user_id: p.user_id,
+          name: p.name || "Sem nome",
+          avatar_url: p.avatar_url || null,
+        }));
       setTenantUsers(list);
     })();
   }, [open, servidorId, userId]);
+
 
   useEffect(() => {
     if (open) {
