@@ -80,17 +80,18 @@ export function useSuggestedColleagues() {
     queryKey: ["feed-suggested", companyId, user?.id],
     enabled: !!companyId && !!user?.id,
     queryFn: async () => {
-      // Get profiles in same tenant, exclude self & those already followed
+      // Get all active profiles in same tenant (excluding self)
       const { data: profs } = await supabase
         .from("profiles")
         .select("user_id, name, avatar_url")
         .eq("company_id", companyId!)
         .eq("is_active", true)
         .neq("user_id", user!.id)
-        .limit(20);
+        .order("name", { ascending: true })
+        .limit(100);
 
       const all = (profs || []) as any[];
-      if (all.length === 0) return [];
+      if (all.length === 0) return [] as any[];
 
       const { data: follows } = await (supabase as any)
         .from("user_follows")
@@ -98,8 +99,11 @@ export function useSuggestedColleagues() {
         .eq("follower_id", user!.id);
       const followingSet = new Set(((follows as any[]) || []).map(f => f.following_id));
 
-      return all.filter(p => !followingSet.has(p.user_id)).slice(0, 4);
+      // Followed first (so user sees who they're already tracking), then the rest
+      return all
+        .map(p => ({ ...p, followed_by_me: followingSet.has(p.user_id) }))
+        .sort((a, b) => Number(b.followed_by_me) - Number(a.followed_by_me));
     },
-    staleTime: 60_000,
+    staleTime: 30_000,
   });
 }

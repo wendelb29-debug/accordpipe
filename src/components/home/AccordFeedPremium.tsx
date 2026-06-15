@@ -192,20 +192,28 @@ export function AccordFeedPremium() {
     qc.invalidateQueries({ queryKey: ["feed-events"] });
   }
 
-  async function handleFollow(targetUserId: string) {
+  async function handleFollow(targetUserId: string, currentlyFollowing: boolean) {
     if (!user?.id || !companyId || user.id === targetUserId) return;
-    const { error } = await (supabase as any).from("user_follows").insert({
-      follower_id: user.id, following_id: targetUserId, servidor_id: companyId,
-    });
-    if (error) {
-      if ((error as any).code === "23505") {
-        toast({ title: "Você já segue esse colega" });
-      } else {
-        toast({ title: "Erro ao seguir", description: error.message, variant: "destructive" });
+    if (currentlyFollowing) {
+      const { error } = await (supabase as any).from("user_follows")
+        .delete()
+        .eq("follower_id", user.id)
+        .eq("following_id", targetUserId);
+      if (error) {
+        toast({ title: "Erro ao deixar de seguir", description: error.message, variant: "destructive" });
+        return;
       }
-      return;
+      toast({ title: "Você deixou de seguir" });
+    } else {
+      const { error } = await (supabase as any).from("user_follows").insert({
+        follower_id: user.id, following_id: targetUserId, servidor_id: companyId,
+      });
+      if (error && (error as any).code !== "23505") {
+        toast({ title: "Erro ao seguir", description: error.message, variant: "destructive" });
+        return;
+      }
+      toast({ title: "Seguindo", description: "Você receberá notificações desta pessoa." });
     }
-    toast({ title: "Seguindo" });
     qc.invalidateQueries({ queryKey: ["feed-suggested"] });
   }
 
@@ -551,24 +559,39 @@ export function AccordFeedPremium() {
             <div className="afp-side-card">
               <div className="afp-side-title">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><path d="M20 8v6M23 11h-6" /></svg>
-                Colegas pra conhecer
+                Pessoas para seguir
               </div>
-              {(suggested as any[]).map(p => (
-                <div className="afp-suggest-row" key={p.user_id}>
-                  <div className="afp-suggest-av" style={{ background: gradientFor(p.user_id) }}>
-                    {p.avatar_url
-                      ? <img src={p.avatar_url} alt="" style={{ width: "100%", height: "100%", borderRadius: 12, objectFit: "cover" }} />
-                      : initials(p.name)}
+              <div style={{ maxHeight: 360, overflowY: "auto" }}>
+                {(suggested as any[]).map(p => (
+                  <div className="afp-suggest-row" key={p.user_id}>
+                    <div className="afp-suggest-av" style={{ background: gradientFor(p.user_id) }}>
+                      {p.avatar_url
+                        ? <img src={p.avatar_url} alt="" style={{ width: "100%", height: "100%", borderRadius: 12, objectFit: "cover" }} />
+                        : initials(p.name)}
+                    </div>
+                    <div className="afp-suggest-info">
+                      <div className="afp-suggest-name">{p.name || "Colega"}</div>
+                    </div>
+                    <button
+                      className={`afp-follow-btn ${p.followed_by_me ? "afp-liked" : ""}`}
+                      onClick={() => handleFollow(p.user_id, !!p.followed_by_me)}
+                      title={p.followed_by_me ? "Deixar de seguir" : "Seguir"}
+                    >
+                      {p.followed_by_me ? (
+                        <>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}><polyline points="20 6 9 17 4 12" /></svg>
+                          Seguindo
+                        </>
+                      ) : (
+                        <>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}><path d="M12 5v14M5 12h14" /></svg>
+                          Seguir
+                        </>
+                      )}
+                    </button>
                   </div>
-                  <div className="afp-suggest-info">
-                    <div className="afp-suggest-name">{p.name || "Colega"}</div>
-                  </div>
-                  <button className="afp-follow-btn" onClick={() => handleFollow(p.user_id)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}><path d="M12 5v14M5 12h14" /></svg>
-                    Seguir
-                  </button>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
 
