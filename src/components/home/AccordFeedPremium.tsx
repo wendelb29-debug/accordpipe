@@ -531,6 +531,7 @@ export function AccordFeedPremium() {
 
 function PostCard({
   post, currentUserId, showComments, onReact, onToggleComments, onSave, onShare,
+  onTogglePin, onOpenPost, onAddRecipients, onEdit, onHide, onCreateTask, onDelete,
 }: {
   post: FeedPost;
   currentUserId?: string;
@@ -539,10 +540,18 @@ function PostCard({
   onToggleComments: () => void;
   onSave: () => void;
   onShare: () => void;
+  onTogglePin: () => void;
+  onOpenPost: () => void;
+  onAddRecipients: () => void;
+  onEdit: () => void;
+  onHide: () => void;
+  onCreateTask: () => void;
+  onDelete: () => void;
 }) {
   const liked = post.reactions.some(r => r.byMe);
+  const isAuthor = !!currentUserId && currentUserId === post.author.user_id;
   return (
-    <div className="afp-post-card">
+    <div className="afp-post-card" id={`afp-post-${post.id}`}>
       <div className="afp-post-header">
         <div className="afp-av-ring" style={{ background: gradientFor(post.author.user_id) }}>
           <div className="afp-av-inner">
@@ -563,13 +572,66 @@ function PostCard({
         </div>
         {post.pinned && (
           <span className="afp-post-pin">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="17" x2="12" y2="22" />
-              <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z" />
-            </svg>
+            <Pin size={9} />
             FIXADO
           </span>
         )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="afp-post-menu-btn" aria-label="Mais opções">
+              <MoreHorizontal size={18} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            {isAuthor && (
+              <DropdownMenuItem onClick={onTogglePin}>
+                <Pin className="mr-2 h-4 w-4" />
+                {post.pinned ? "Desafixar" : "Fixar"}
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={onSave}>
+              <Bookmark className="mr-2 h-4 w-4" />
+              {post.saved_by_me ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onOpenPost}>
+              <ExternalLink className="mr-2 h-4 w-4" />
+              Abrir mensagem
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onShare}>
+              <Link2 className="mr-2 h-4 w-4" />
+              Copiar link
+            </DropdownMenuItem>
+            {isAuthor && (
+              <DropdownMenuItem onClick={onAddRecipients}>
+                <UserPlus className="mr-2 h-4 w-4" />
+                Adicione destinatários
+              </DropdownMenuItem>
+            )}
+            {isAuthor && (
+              <DropdownMenuItem onClick={onEdit}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Editar
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={onHide}>
+              <EyeOff className="mr-2 h-4 w-4" />
+              Ocultar
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onCreateTask}>
+              <CheckSquare className="mr-2 h-4 w-4" />
+              Criar tarefa
+            </DropdownMenuItem>
+            {isAuthor && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Excluir
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="afp-post-content" style={{ whiteSpace: "pre-wrap" }}>{post.content}</div>
