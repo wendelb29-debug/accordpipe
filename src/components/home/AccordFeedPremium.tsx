@@ -933,6 +933,10 @@ const CSS = `
 .afp-action-btn:hover{background:hsl(var(--card));color:hsl(var(--foreground))}
 .afp-action-btn svg{width:15px;height:15px}
 .afp-action-btn.afp-liked{color:#f43f5e}
+.dark .afp-post-actions{background:rgba(255,255,255,.035);border-top-color:rgba(255,255,255,.13)}
+.dark .afp-action-btn{color:rgba(255,255,255,.82);background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08)}
+.dark .afp-action-btn:hover{background:rgba(255,255,255,.10);color:#fff;border-color:rgba(255,255,255,.18)}
+.dark .afp-action-btn.afp-liked{color:#60a5fa;background:rgba(96,165,250,.14);border-color:rgba(96,165,250,.28)}
 
 .afp-reactions-popup{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(8px);background:hsl(var(--popover));backdrop-filter:blur(14px);border:1px solid hsl(var(--border));border-radius:99px;padding:5px;display:flex;align-items:center;gap:2px;opacity:0;pointer-events:none;transition:.18s;box-shadow:0 16px 40px -12px rgba(0,0,0,.5);z-index:10}
 .afp-action-btn:hover .afp-reactions-popup{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
