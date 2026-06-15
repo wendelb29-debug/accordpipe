@@ -46,8 +46,10 @@ export function relativeTime(iso: string) {
   return new Date(iso).toLocaleDateString("pt-BR");
 }
 
-export function PostComments({ postId, servidorId }: { postId: string; servidorId: string }) {
+export function PostComments({ postId, servidorId }: { postId: string; servidorId?: string }) {
   const { user, profile } = useAuth();
+  const companyId = useActiveCompanyId();
+  const tenantId = servidorId || companyId || "";
   const qc = useQueryClient();
   const [text, setText] = useState("");
   const [comments, setComments] = useState<CommentRow[]>([]);
