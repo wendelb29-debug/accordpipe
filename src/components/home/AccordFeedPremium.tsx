@@ -1498,21 +1498,48 @@ const CSS = `
 
 /* 1. Fundo cinza-azulado + ambient gradients reforçados */
 .afp-root{
-  background:#f7f8fb;
+  position:relative;
+  background:
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--afp-brand, #5b3fd4) 7%, #ffffff) 0%,
+      color-mix(in srgb, var(--afp-brand, #5b3fd4) 5%, #ffffff) 35%,
+      color-mix(in srgb, var(--afp-brand, #5b3fd4) 9%, #ffffff) 70%,
+      color-mix(in srgb, var(--afp-brand, #5b3fd4) 6%, #ffffff) 100%
+    );
 }
 .dark .afp-root{
-  background:#0a0d14;
+  background:
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--afp-brand, #5b3fd4) 14%, #07090f) 0%,
+      color-mix(in srgb, var(--afp-brand, #5b3fd4) 10%, #07090f) 35%,
+      color-mix(in srgb, var(--afp-brand, #5b3fd4) 18%, #07090f) 70%,
+      color-mix(in srgb, var(--afp-brand, #5b3fd4) 12%, #07090f) 100%
+    );
 }
 .afp-root::before{
   background:
-    radial-gradient(900px 600px at 90% 5%, rgba(91,63,212,0.08), transparent 60%),
-    radial-gradient(700px 500px at 5% 95%, rgba(91,63,212,0.05), transparent 60%);
+    radial-gradient(900px 600px at 90% 5%, color-mix(in srgb, var(--afp-brand, #5b3fd4) 12%, transparent), transparent 60%),
+    radial-gradient(700px 500px at 5% 95%, color-mix(in srgb, var(--afp-brand, #5b3fd4) 8%, transparent), transparent 60%);
 }
 .dark .afp-root::before{
   background:
-    radial-gradient(900px 600px at 90% 5%, rgba(124,58,237,0.16), transparent 60%),
-    radial-gradient(700px 500px at 5% 95%, rgba(91,63,212,0.12), transparent 60%);
+    radial-gradient(900px 600px at 90% 5%, color-mix(in srgb, var(--afp-brand, #5b3fd4) 22%, transparent), transparent 60%),
+    radial-gradient(700px 500px at 5% 95%, color-mix(in srgb, var(--afp-brand, #5b3fd4) 16%, transparent), transparent 60%);
 }
+.afp-brand-ambient{
+  position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:
+    radial-gradient(1100px 700px at 85% 0%, color-mix(in srgb, var(--afp-brand, #5b3fd4) 14%, transparent), transparent 55%),
+    radial-gradient(900px 600px at 10% 100%, color-mix(in srgb, var(--afp-brand, #5b3fd4) 10%, transparent), transparent 55%),
+    radial-gradient(600px 400px at 50% 50%, color-mix(in srgb, var(--afp-brand, #5b3fd4) 5%, transparent), transparent 60%);
+}
+.dark .afp-brand-ambient{
+  background:
+    radial-gradient(1100px 700px at 85% 0%, color-mix(in srgb, var(--afp-brand, #5b3fd4) 22%, transparent), transparent 55%),
+    radial-gradient(900px 600px at 10% 100%, color-mix(in srgb, var(--afp-brand, #5b3fd4) 16%, transparent), transparent 55%),
+    radial-gradient(600px 400px at 50% 50%, color-mix(in srgb, var(--afp-brand, #5b3fd4) 10%, transparent), transparent 60%);
+}
+.afp-root .afp-shell{ position:relative; z-index:1; }
 
 /* 2. Hero — tipografia premium + sombra colorida intensa */
 .afp-hero{
