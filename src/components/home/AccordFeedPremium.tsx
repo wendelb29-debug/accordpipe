@@ -639,6 +639,10 @@ export function AccordFeedPremium() {
             setTimeout(() => el.classList.remove("afp-post-highlight"), 2000);
           }
         }}
+        onUnfollow={() => {
+          qc.invalidateQueries({ queryKey: ["feed-suggested"] });
+          qc.invalidateQueries({ queryKey: ["feed-my-week"] });
+        }}
       />
     </div>
   );
