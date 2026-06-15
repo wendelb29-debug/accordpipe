@@ -231,6 +231,7 @@ export function useFeedPosts() {
         total_reactions: totalByPost[p.id] || 0,
         comments_count: commentsByPost[p.id] || 0,
         saved_by_me: savedSet.has(p.id),
+        followed_by_me: followedSet.has(p.id),
       }));
     },
     staleTime: 30_000,
