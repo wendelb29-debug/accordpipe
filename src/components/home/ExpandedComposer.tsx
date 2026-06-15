@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
@@ -11,6 +11,7 @@ import {
   List, ListOrdered, Link as LinkIcon, Image as ImageIcon,
   Video, Code, Smile, Sparkles, AtSign, Paperclip,
   FileText, Quote, Hash, VideoIcon, ChevronDown, X, Loader2, Send, Plus,
+  FolderOpen, Search, Upload, File as FileIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -54,6 +55,58 @@ export function ExpandedComposer({ open, onClose, onPublished, initialTab = "mes
   const [evTitle, setEvTitle] = useState("");
   const [evDate, setEvDate] = useState("");
   const [evDesc, setEvDesc] = useState("");
+
+  // File source state
+  const [fileSource, setFileSource] = useState<"upload" | "drive">("upload");
+  const [driveFiles, setDriveFiles] = useState<Array<{ id: string; name: string; file_path: string | null; file_url: string | null; file_type: string | null }>>([]);
+  const [driveLoading, setDriveLoading] = useState(false);
+  const [driveSearch, setDriveSearch] = useState("");
+
+  useEffect(() => {
+    if (!open || tab !== "file" || fileSource !== "drive" || !servidorId) return;
+    setDriveLoading(true);
+    supabase
+      .from("drive_files")
+      .select("id,name,file_path,file_url,file_type")
+      .eq("servidor_id", servidorId)
+      .eq("type", "file")
+      .eq("status", "normal")
+      .order("created_at", { ascending: false })
+      .limit(200)
+      .then(({ data }) => {
+        setDriveFiles(data || []);
+        setDriveLoading(false);
+      });
+  }, [open, tab, fileSource, servidorId]);
+
+  const filteredDriveFiles = useMemo(
+    () => driveFiles.filter((f) => f.name.toLowerCase().includes(driveSearch.toLowerCase())),
+    [driveFiles, driveSearch]
+  );
+
+  const handleAttachFromDrive = async (f: typeof driveFiles[number]) => {
+    try {
+      let url = f.file_url || "";
+      if (!url && f.file_path) {
+        const { data } = await supabase.storage.from("contract-pdfs").createSignedUrl(f.file_path, 60 * 60 * 24 * 365);
+        url = data?.signedUrl || "";
+      }
+      if (!url) {
+        toast.error("Arquivo indisponível");
+        return;
+      }
+      const isImage = (f.file_type || "").startsWith("image/");
+      if (isImage) {
+        editor?.chain().focus().setImage({ src: url }).run();
+      } else {
+        editor?.chain().focus().setLink({ href: url }).insertContent(f.name).run();
+      }
+      setTab("message");
+      toast.success(`"${f.name}" anexado`);
+    } catch (err: any) {
+      toast.error("Erro ao anexar", { description: err?.message });
+    }
+  };
 
   const editor = useEditor({
     extensions: [
@@ -326,21 +379,87 @@ export function ExpandedComposer({ open, onClose, onPublished, initialTab = "mes
           )}
 
           {tab === "file" && (
-            <div className="p-4">
-              <input
-                id="composer-file-direct"
-                type="file"
-                className="hidden"
-                onChange={(e) => e.target.files?.[0] && handleAttachFile(e.target.files[0])}
-              />
-              <div
-                onClick={() => document.getElementById("composer-file-direct")?.click()}
-                className="border-2 border-dashed border-border rounded-xl p-12 text-center cursor-pointer hover:bg-muted/30 transition"
-              >
-                <Paperclip className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-                <h3 className="text-sm font-bold text-foreground mb-1">Anexar arquivo</h3>
-                <p className="text-xs text-muted-foreground">Clique pra escolher ou arraste aqui</p>
+            <div className="p-4 space-y-3">
+              {/* Sub-tabs: upload vs drive */}
+              <div className="flex items-center gap-1 border-b border-border">
+                <button
+                  onClick={() => setFileSource("upload")}
+                  className={cn(
+                    "px-3 py-2 text-[11.5px] font-bold tracking-wider flex items-center gap-1.5 transition relative",
+                    fileSource === "upload" ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Upload className="w-3.5 h-3.5" /> DO COMPUTADOR
+                  {fileSource === "upload" && <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-full" />}
+                </button>
+                <button
+                  onClick={() => setFileSource("drive")}
+                  className={cn(
+                    "px-3 py-2 text-[11.5px] font-bold tracking-wider flex items-center gap-1.5 transition relative",
+                    fileSource === "drive" ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <FolderOpen className="w-3.5 h-3.5" /> DOCUMENTOS ACCORD
+                  {fileSource === "drive" && <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-full" />}
+                </button>
               </div>
+
+              {fileSource === "upload" && (
+                <>
+                  <input
+                    id="composer-file-direct"
+                    type="file"
+                    className="hidden"
+                    onChange={(e) => e.target.files?.[0] && handleAttachFile(e.target.files[0])}
+                  />
+                  <div
+                    onClick={() => document.getElementById("composer-file-direct")?.click()}
+                    className="border-2 border-dashed border-border rounded-xl p-12 text-center cursor-pointer hover:bg-muted/30 transition"
+                  >
+                    <Paperclip className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+                    <h3 className="text-sm font-bold text-foreground mb-1">Anexar arquivo</h3>
+                    <p className="text-xs text-muted-foreground">Clique pra escolher do seu computador</p>
+                  </div>
+                </>
+              )}
+
+              {fileSource === "drive" && (
+                <>
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      value={driveSearch}
+                      onChange={(e) => setDriveSearch(e.target.value)}
+                      placeholder="Buscar documento..."
+                      className="w-full bg-input text-foreground border border-border rounded-md pl-9 pr-3 h-9 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                  </div>
+                  <div className="max-h-[320px] overflow-y-auto border border-border rounded-lg divide-y divide-border">
+                    {driveLoading && (
+                      <div className="p-8 text-center text-xs text-muted-foreground">
+                        <Loader2 className="w-5 h-5 mx-auto animate-spin mb-2" /> Carregando...
+                      </div>
+                    )}
+                    {!driveLoading && filteredDriveFiles.length === 0 && (
+                      <div className="p-8 text-center text-xs text-muted-foreground">
+                        <FolderOpen className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                        Nenhum arquivo encontrado na pasta Documentos.
+                      </div>
+                    )}
+                    {!driveLoading && filteredDriveFiles.map((f) => (
+                      <button
+                        key={f.id}
+                        onClick={() => handleAttachFromDrive(f)}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition text-left"
+                      >
+                        <FileIcon className="w-4 h-4 text-primary shrink-0" />
+                        <span className="text-sm text-foreground truncate flex-1">{f.name}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase">{(f.file_type || "").split("/").pop()?.slice(0, 5)}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
