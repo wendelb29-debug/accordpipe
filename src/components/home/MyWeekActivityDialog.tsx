@@ -159,7 +159,7 @@ export function MyWeekActivityDialog({ open, onOpenChange, initialTab, onOpenPos
     posts: "Você ainda não publicou nada nos últimos 7 dias.",
     reactions: "Você ainda não reagiu a publicações nos últimos 7 dias.",
     comments: "Você ainda não comentou em publicações nos últimos 7 dias.",
-    follows: "Você ainda não está seguindo nenhuma publicação.",
+    follows: "Você ainda não está seguindo ninguém.",
   };
 
   return (
