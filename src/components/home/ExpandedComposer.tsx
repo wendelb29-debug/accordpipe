@@ -199,7 +199,7 @@ export function ExpandedComposer({ open, onClose, onPublished, initialTab = "mes
     const tags = extractHashtags(text);
     const { error } = await supabase.from("feed_posts").insert({
       servidor_id: servidorId!, author_id: userId!,
-      content: html, tags, post_type: "mensagem",
+      content: html, tags, post_type: "mensagem", recipients: recipientsValue,
     } as any);
     if (error) throw error;
   };
@@ -212,7 +212,7 @@ export function ExpandedComposer({ open, onClose, onPublished, initialTab = "mes
 
     const { data: post, error: ePost } = await supabase.from("feed_posts").insert({
       servidor_id: servidorId!, author_id: userId!,
-      content: pollQuestion.trim(), tags: [], post_type: "enquete",
+      content: pollQuestion.trim(), tags: [], post_type: "enquete", recipients: recipientsValue,
     } as any).select("id").single();
     if (ePost || !post) throw ePost;
 
@@ -233,7 +233,7 @@ export function ExpandedComposer({ open, onClose, onPublished, initialTab = "mes
     const { error } = await supabase.from("feed_posts").insert({
       servidor_id: servidorId!, author_id: userId!,
       content: `📅 ${evTitle.trim()}\n${evDesc.trim()}\n\nQuando: ${new Date(evDate).toLocaleString("pt-BR")}`,
-      tags: [], post_type: "mensagem",
+      tags: [], post_type: "mensagem", recipients: recipientsValue,
     } as any);
     if (error) throw error;
   };
