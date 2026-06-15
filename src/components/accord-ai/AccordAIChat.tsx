@@ -495,27 +495,55 @@ export function AccordAIChat() {
         </button>
       )}
 
+      {/* Drop zone (zona de descarte) — só no modo IA durante drag */}
+      {isPureAI && isDragging && (
+        <div
+          className={cn(
+            "fixed z-[100] flex items-center justify-center rounded-full transition-all duration-200",
+            "bg-red-500/90 backdrop-blur-md text-white shadow-2xl shadow-red-500/40",
+            dragOverDrop && "scale-125 bg-red-600"
+          )}
+          style={{ width: DROP_ZONE_SIZE, height: DROP_ZONE_SIZE, right: 24, bottom: 24 }}
+        >
+          <Trash2 className="w-7 h-7" strokeWidth={2.5} />
+          {dragOverDrop && (
+            <span className="absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap bg-red-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-full">
+              Solte aqui pra ocultar
+            </span>
+          )}
+        </div>
+      )}
+
       {/* FAB */}
-      <button
-        onClick={handleFabClick}
+      <div
+        ref={fabRef}
+        onPointerDown={isPureAI ? handlePointerDown : undefined}
+        onPointerMove={isPureAI ? handlePointerMove : undefined}
+        onPointerUp={isPureAI ? handlePointerUp : undefined}
+        onClick={isPureAI ? undefined : handleFabClick}
+        role="button"
         className={cn(
-          "fixed z-40 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 group",
-          "text-primary-foreground",
-          isMobile ? "h-11 w-11" : "h-12 w-12 sm:h-14 sm:w-14"
+          "fixed rounded-full shadow-lg flex items-center justify-center text-primary-foreground select-none",
+          isPureAI ? "z-[95] touch-none cursor-grab active:cursor-grabbing" : "z-40 transition-all duration-300 hover:scale-105",
+          isMobile ? "h-11 w-11" : "h-12 w-12 sm:h-14 sm:w-14",
+          isDragging && "scale-110 shadow-2xl",
+          dragOverDrop && "scale-90 opacity-60"
         )}
         style={{
-          bottom: `${safeBottom}px`,
-          right: isMobile ? 16 : 24,
+          ...(isPureAI && computedPos
+            ? { left: computedPos.x, top: computedPos.y }
+            : { bottom: `${safeBottom}px`, right: isMobile ? 16 : 24 }),
           background: showWhatsAppLook
             ? "linear-gradient(135deg, #10b981, #059669)"
             : "linear-gradient(135deg, #3B3F9C, #7A3FF2)",
+          transition: isDragging ? "none" : undefined,
         }}
         title={showWhatsAppLook ? "Nova mensagem" : "✨ Assistente IA"}
       >
-        {open ? (
-          <X className="h-5 w-5 sm:h-6 sm:w-6" />
+        {open && !isPureAI ? (
+          <X className="h-5 w-5 sm:h-6 sm:w-6 pointer-events-none" />
         ) : showWhatsAppLook ? (
-          <div className="relative">
+          <div className="relative pointer-events-none">
             <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />
             {totalUnread > 0 && (
               <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 border-2 border-background text-white text-[10px] font-bold flex items-center justify-center">
@@ -524,12 +552,13 @@ export function AccordAIChat() {
             )}
           </div>
         ) : (
-          <div className="relative">
+          <div className="relative pointer-events-none">
             <Bot className="h-5 w-5 sm:h-6 sm:w-6" />
             <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-green-400 border border-[#3B3F9C] animate-pulse" />
           </div>
         )}
-      </button>
+      </div>
+
 
 
       {/* Chat window */}
