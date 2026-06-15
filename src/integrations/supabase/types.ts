@@ -2660,6 +2660,41 @@ export type Database = {
         }
         Relationships: []
       }
+      feed_comment_reactions: {
+        Row: {
+          comment_id: string
+          created_at: string
+          emoji: string
+          id: string
+          servidor_id: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          emoji?: string
+          id?: string
+          servidor_id: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          emoji?: string
+          id?: string
+          servidor_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_comment_reactions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "feed_post_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feed_poll_options: {
         Row: {
           created_at: string
@@ -2771,6 +2806,8 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          mention_all: boolean
+          mentions: string[]
           parent_id: string | null
           post_id: string
           servidor_id: string
@@ -2780,6 +2817,8 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          mention_all?: boolean
+          mentions?: string[]
           parent_id?: string | null
           post_id: string
           servidor_id: string
@@ -2789,6 +2828,8 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          mention_all?: boolean
+          mentions?: string[]
           parent_id?: string | null
           post_id?: string
           servidor_id?: string
