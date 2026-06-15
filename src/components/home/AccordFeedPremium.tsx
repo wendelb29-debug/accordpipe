@@ -498,16 +498,22 @@ export function AccordFeedPremium() {
             </div>
 
             <div className="afp-quick-stats">
-              {[
-                [String(myWeek?.posts ?? 0), "Posts"],
-                [String(myWeek?.reactions ?? 0), "Reações"],
-                [String(myWeek?.comments ?? 0), "Comentários"],
-                [String(myWeek?.shares ?? 0), "Compart."],
-              ].map(([v, l]) => (
-                <div className="afp-quick-stat" key={l}>
+              {([
+                [String(myWeek?.posts ?? 0), "Posts", "posts"],
+                [String(myWeek?.reactions ?? 0), "Reações", "reactions"],
+                [String(myWeek?.comments ?? 0), "Comentários", "comments"],
+                [String(myWeek?.follows ?? 0), "Seguindo", "follows"],
+              ] as const).map(([v, l, key]) => (
+                <button
+                  type="button"
+                  className="afp-quick-stat"
+                  key={l}
+                  onClick={() => { setMyWeekTab(key as any); setMyWeekOpen(true); }}
+                  style={{ cursor: "pointer", textAlign: "left", border: "none", background: "transparent", padding: 0, font: "inherit", color: "inherit" }}
+                >
                   <div className="afp-quick-stat-value">{v}</div>
                   <div className="afp-quick-stat-label">{l}</div>
-                </div>
+                </button>
               ))}
             </div>
           </div>
