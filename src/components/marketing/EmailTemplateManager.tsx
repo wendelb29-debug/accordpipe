@@ -679,6 +679,7 @@ function AIGeneratorDialog({ onClose, onGenerated }: any) {
       });
     } catch (err: any) {
       captureAppError(err, { module: "marketing.templates", action: "ai_generate" }, "error");
+      toast.error("Falha ao gerar template", { description: err?.message || "Tente novamente" });
     } finally {
       setBusy(false);
     }
