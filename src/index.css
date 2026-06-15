@@ -199,3 +199,24 @@ input[type="date"], input[type="time"], input[type="datetime-local"] {
 input[type="number"] { -moz-appearance: textfield; }
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* Tiptap (ExpandedComposer) */
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+  height: 0;
+}
+.tiptap a { color: hsl(var(--primary)); text-decoration: underline; cursor: pointer; }
+.tiptap img { max-width: 100%; height: auto; border-radius: 8px; }
+.tiptap pre {
+  background: hsl(var(--muted));
+  padding: 12px; border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace; font-size: 12.5px; overflow-x: auto;
+}
+.tiptap ul, .tiptap ol { padding-left: 24px; margin: 8px 0; }
+.tiptap blockquote {
+  border-left: 3px solid hsl(var(--primary));
+  padding-left: 12px; color: hsl(var(--muted-foreground)); margin: 8px 0;
+}
