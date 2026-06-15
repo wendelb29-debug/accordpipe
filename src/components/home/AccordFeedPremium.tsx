@@ -5,6 +5,8 @@
  * presence realtime, user_follows.
  */
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { MoreHorizontal, Pin, Bookmark, ExternalLink, Link2, UserPlus, Pencil, EyeOff, CheckSquare, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { useQueryClient } from "@tanstack/react-query";
@@ -16,6 +18,21 @@ import { useOnlineUsers } from "@/hooks/useOnlineUsers";
 import { useTrendingTags } from "@/hooks/useTrendingTags";
 import { useHeroStats, useMyWeekStats, useSuggestedColleagues } from "@/hooks/useFeedHomeStats";
 import { PostComments, gradientFor, initials, relativeTime } from "./PostComments";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+const HIDDEN_KEY = "afp:hidden-posts";
+function getHiddenIds(): string[] {
+  try { return JSON.parse(localStorage.getItem(HIDDEN_KEY) || "[]"); } catch { return []; }
+}
+function setHiddenIds(ids: string[]) {
+  localStorage.setItem(HIDDEN_KEY, JSON.stringify(ids));
+}
 
 type FilterKey = "all" | "posts" | "events";
 
@@ -65,6 +82,8 @@ export function AccordFeedPremium() {
 
   const [filter, setFilter] = useState<FilterKey>("all");
   const [openComments, setOpenComments] = useState<Set<string>>(new Set());
+  const [hidden, setHidden] = useState<string[]>(() => getHiddenIds());
+  const navigate = useNavigate();
 
   const otherOnline = useMemo(() => onlineUsers.filter(u => u.user_id !== user?.id), [onlineUsers, user?.id]);
   const firstName = (profile?.name || "").split(" ")[0] || "colega";
@@ -75,7 +94,8 @@ export function AccordFeedPremium() {
   const eventsWeekCount = heroStats?.eventsWeek ?? 0;
   const weekRevenue = heroStats?.weekRevenue ?? 0;
 
-  const filteredPosts = filter === "events" ? [] : posts;
+  const visiblePosts = useMemo(() => posts.filter(p => !hidden.includes(p.id)), [posts, hidden]);
+  const filteredPosts = filter === "events" ? [] : visiblePosts;
   const showEvents = filter === "all" || filter === "events";
 
   // ─── Handlers ───────────────────────────────────────────
@@ -170,7 +190,96 @@ export function AccordFeedPremium() {
     });
   }
 
-  // ─── Render ───────────────────────────────────────────
+
+  async function handleTogglePin(post: FeedPost) {
+    const { error } = await supabase
+      .from("feed_posts")
+      .update({ pinned: !post.pinned })
+      .eq("id", post.id);
+    if (error) {
+      toast({ title: "Erro ao fixar", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: post.pinned ? "Publicação desafixada" : "Publicação fixada no topo" });
+    qc.invalidateQueries({ queryKey: ["feed-posts-v2"] });
+  }
+
+  function handleOpenPost(postId: string) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("post", postId);
+    window.history.replaceState({}, "", url.toString());
+    const el = document.getElementById(`afp-post-${postId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("afp-post-highlight");
+      setTimeout(() => el.classList.remove("afp-post-highlight"), 2200);
+    }
+  }
+
+  async function handleAddRecipients(post: FeedPost) {
+    const current = (post as any).recipients || "";
+    const next = window.prompt("Adicionar destinatários (separe por vírgula):", current);
+    if (next == null) return;
+    const { error } = await supabase
+      .from("feed_posts")
+      .update({ recipients: next })
+      .eq("id", post.id);
+    if (error) {
+      toast({ title: "Erro ao adicionar destinatários", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Destinatários atualizados" });
+    qc.invalidateQueries({ queryKey: ["feed-posts-v2"] });
+  }
+
+  async function handleEditPost(post: FeedPost) {
+    const next = window.prompt("Editar publicação:", post.content);
+    if (next == null || next.trim() === "") return;
+    const { error } = await supabase
+      .from("feed_posts")
+      .update({ content: next.trim() })
+      .eq("id", post.id);
+    if (error) {
+      toast({ title: "Erro ao editar", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Publicação atualizada" });
+    qc.invalidateQueries({ queryKey: ["feed-posts-v2"] });
+  }
+
+  function handleHidePost(postId: string) {
+    const next = Array.from(new Set([...hidden, postId]));
+    setHidden(next);
+    setHiddenIds(next);
+    toast({
+      title: "Publicação ocultada",
+      description: "Não vamos mais mostrar essa publicação para você.",
+    });
+  }
+
+  function handleCreateTask(post: FeedPost) {
+    try {
+      sessionStorage.setItem("atividade:from-feed", JSON.stringify({
+        title: `Tarefa: ${post.content.slice(0, 80)}`,
+        description: post.content,
+        post_id: post.id,
+      }));
+    } catch {}
+    toast({ title: "Abrindo Atividades..." });
+    navigate("/atividades?new=1");
+  }
+
+  async function handleDeletePost(post: FeedPost) {
+    if (!window.confirm("Excluir esta publicação? Essa ação não pode ser desfeita.")) return;
+    const { error } = await supabase.from("feed_posts").delete().eq("id", post.id);
+    if (error) {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Publicação excluída" });
+    qc.invalidateQueries({ queryKey: ["feed-posts-v2"] });
+  }
+
 
   return (
     <div className="afp-root">
@@ -292,6 +401,13 @@ export function AccordFeedPremium() {
               onToggleComments={() => toggleComments(post.id)}
               onSave={() => handleSave(post)}
               onShare={() => handleShare(post.id)}
+              onTogglePin={() => handleTogglePin(post)}
+              onOpenPost={() => handleOpenPost(post.id)}
+              onAddRecipients={() => handleAddRecipients(post)}
+              onEdit={() => handleEditPost(post)}
+              onHide={() => handleHidePost(post.id)}
+              onCreateTask={() => handleCreateTask(post)}
+              onDelete={() => handleDeletePost(post)}
             />
           ))}
 
@@ -415,6 +531,7 @@ export function AccordFeedPremium() {
 
 function PostCard({
   post, currentUserId, showComments, onReact, onToggleComments, onSave, onShare,
+  onTogglePin, onOpenPost, onAddRecipients, onEdit, onHide, onCreateTask, onDelete,
 }: {
   post: FeedPost;
   currentUserId?: string;
@@ -423,10 +540,18 @@ function PostCard({
   onToggleComments: () => void;
   onSave: () => void;
   onShare: () => void;
+  onTogglePin: () => void;
+  onOpenPost: () => void;
+  onAddRecipients: () => void;
+  onEdit: () => void;
+  onHide: () => void;
+  onCreateTask: () => void;
+  onDelete: () => void;
 }) {
   const liked = post.reactions.some(r => r.byMe);
+  const isAuthor = !!currentUserId && currentUserId === post.author.user_id;
   return (
-    <div className="afp-post-card">
+    <div className="afp-post-card" id={`afp-post-${post.id}`}>
       <div className="afp-post-header">
         <div className="afp-av-ring" style={{ background: gradientFor(post.author.user_id) }}>
           <div className="afp-av-inner">
@@ -447,13 +572,66 @@ function PostCard({
         </div>
         {post.pinned && (
           <span className="afp-post-pin">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="17" x2="12" y2="22" />
-              <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z" />
-            </svg>
+            <Pin size={9} />
             FIXADO
           </span>
         )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="afp-post-menu-btn" aria-label="Mais opções">
+              <MoreHorizontal size={18} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            {isAuthor && (
+              <DropdownMenuItem onClick={onTogglePin}>
+                <Pin className="mr-2 h-4 w-4" />
+                {post.pinned ? "Desafixar" : "Fixar"}
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={onSave}>
+              <Bookmark className="mr-2 h-4 w-4" />
+              {post.saved_by_me ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onOpenPost}>
+              <ExternalLink className="mr-2 h-4 w-4" />
+              Abrir mensagem
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onShare}>
+              <Link2 className="mr-2 h-4 w-4" />
+              Copiar link
+            </DropdownMenuItem>
+            {isAuthor && (
+              <DropdownMenuItem onClick={onAddRecipients}>
+                <UserPlus className="mr-2 h-4 w-4" />
+                Adicione destinatários
+              </DropdownMenuItem>
+            )}
+            {isAuthor && (
+              <DropdownMenuItem onClick={onEdit}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Editar
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={onHide}>
+              <EyeOff className="mr-2 h-4 w-4" />
+              Ocultar
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onCreateTask}>
+              <CheckSquare className="mr-2 h-4 w-4" />
+              Criar tarefa
+            </DropdownMenuItem>
+            {isAuthor && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Excluir
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="afp-post-content" style={{ whiteSpace: "pre-wrap" }}>{post.content}</div>
@@ -676,6 +854,9 @@ const CSS = `
 .afp-post-author-line2{display:flex;align-items:center;gap:5px;font-size:11px;color:hsl(var(--muted-foreground));margin-top:1px}
 .afp-post-pin{background:rgba(245,158,11,.15);color:#fbbf24;font-size:9px;font-weight:800;padding:3px 7px;border-radius:5px;display:inline-flex;align-items:center;gap:3px;letter-spacing:.05em;text-transform:uppercase}
 .afp-post-pin svg{width:9px;height:9px}
+.afp-post-menu-btn{margin-left:6px;width:32px;height:32px;border-radius:8px;background:transparent;border:none;cursor:pointer;color:hsl(var(--muted-foreground));display:inline-flex;align-items:center;justify-content:center;transition:.15s}
+.afp-post-menu-btn:hover{background:hsl(var(--muted));color:hsl(var(--foreground))}
+.afp-post-highlight{box-shadow:0 0 0 2px hsl(var(--primary)),0 16px 40px -10px hsl(var(--primary) / 0.45);transition:box-shadow .4s}
 .afp-post-content{padding:0 16px 14px;font-size:13.5px;line-height:1.6;color:hsl(var(--foreground))}
 .afp-post-tags{display:flex;flex-wrap:wrap;gap:5px;padding:0 16px 14px}
 .afp-post-tag{background:rgba(91,63,212,.12);color:hsl(var(--primary));font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:99px;cursor:pointer}
