@@ -147,13 +147,14 @@ export function MentionTextarea({
           resize: "none",
           padding: compact ? "8px 12px" : "10px 12px",
           borderRadius: 10,
-          background: "rgba(255,255,255,0.06)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          color: "inherit",
+          background: "hsl(var(--input))",
+          border: "1px solid hsl(var(--border))",
+          color: "hsl(var(--foreground))",
           fontFamily: "inherit",
           fontSize: 13,
           outline: "none",
         }}
+        className="placeholder:text-muted-foreground"
       />
       {showDropdown && (filtered.length > 0 || canMentionAll) && (
         <div
@@ -162,20 +163,21 @@ export function MentionTextarea({
             bottom: "100%",
             left: 0,
             marginBottom: 4,
-            background: "#0f0f12",
-            border: "1px solid rgba(255,255,255,0.1)",
+            background: "hsl(var(--popover))",
+            border: "1px solid hsl(var(--border))",
+            color: "hsl(var(--popover-foreground))",
             borderRadius: 10,
             zIndex: 50,
             minWidth: 200,
             maxHeight: 220,
             overflowY: "auto",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+            boxShadow: "0 8px 32px hsl(var(--foreground) / 0.16)",
           }}
         >
           {canMentionAll && "todos".includes(query) && (
             <div
               onMouseDown={(e) => { e.preventDefault(); insertMention("todos", "all"); }}
-              style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, color: "#10B981", fontWeight: 600, borderBottom: "1px solid rgba(255,255,255,0.05)" }}
+              style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, color: "hsl(var(--primary))", fontWeight: 600, borderBottom: "1px solid hsl(var(--border))" }}
             >
               @todos · notifica todo o tenant
             </div>

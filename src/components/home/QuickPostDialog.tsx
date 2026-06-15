@@ -180,32 +180,32 @@ export function QuickPostDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) resetAll(); onOpenChange(v); }}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl bg-card text-card-foreground border-border">
         <DialogHeader>
           <DialogTitle>Nova publicação</DialogTitle>
         </DialogHeader>
 
         <Tabs value={mode} onValueChange={(v) => setMode(v as Mode)}>
-          <TabsList className="grid grid-cols-4 w-full">
-            <TabsTrigger value="mensagem"><MessageSquare className="w-4 h-4 mr-1.5" />Mensagem</TabsTrigger>
-            <TabsTrigger value="enquete"><BarChart3 className="w-4 h-4 mr-1.5" />Enquete</TabsTrigger>
-            <TabsTrigger value="anuncio"><Megaphone className="w-4 h-4 mr-1.5" />Anúncio</TabsTrigger>
-            <TabsTrigger value="apreciacao"><ThumbsUp className="w-4 h-4 mr-1.5" />Apreciação</TabsTrigger>
+          <TabsList className="grid grid-cols-4 w-full bg-secondary text-secondary-foreground">
+            <TabsTrigger value="mensagem" className="data-[state=active]:bg-card data-[state=active]:text-foreground"><MessageSquare className="w-4 h-4 mr-1.5" />Mensagem</TabsTrigger>
+            <TabsTrigger value="enquete" className="data-[state=active]:bg-card data-[state=active]:text-foreground"><BarChart3 className="w-4 h-4 mr-1.5" />Enquete</TabsTrigger>
+            <TabsTrigger value="anuncio" className="data-[state=active]:bg-card data-[state=active]:text-foreground"><Megaphone className="w-4 h-4 mr-1.5" />Anúncio</TabsTrigger>
+            <TabsTrigger value="apreciacao" className="data-[state=active]:bg-card data-[state=active]:text-foreground"><ThumbsUp className="w-4 h-4 mr-1.5" />Apreciação</TabsTrigger>
           </TabsList>
 
           <TabsContent value="mensagem" className="space-y-3 mt-4">
-            <Textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="No que está pensando?" rows={5} autoFocus maxLength={5000} />
-            <Input value={tagsText} onChange={(e) => setTagsText(e.target.value)} placeholder="Tags (separadas por vírgula, opcional)" maxLength={200} />
+            <Textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="No que está pensando?" rows={5} autoFocus maxLength={5000} className="bg-input text-foreground border-border placeholder:text-muted-foreground" />
+            <Input value={tagsText} onChange={(e) => setTagsText(e.target.value)} placeholder="Tags (separadas por vírgula, opcional)" maxLength={200} className="bg-input text-foreground border-border placeholder:text-muted-foreground" />
           </TabsContent>
 
           <TabsContent value="enquete" className="space-y-3 mt-4">
-            <Input value={pollQuestion} onChange={(e) => setPollQuestion(e.target.value)} placeholder="Sua pergunta" maxLength={300} autoFocus />
+            <Input value={pollQuestion} onChange={(e) => setPollQuestion(e.target.value)} placeholder="Sua pergunta" maxLength={300} autoFocus className="bg-input text-foreground border-border placeholder:text-muted-foreground" />
             <div className="space-y-2">
               {pollOptions.map((opt, i) => (
                 <div key={i} className="flex gap-2">
                   <Input value={opt} onChange={(e) => {
                     const next = [...pollOptions]; next[i] = e.target.value; setPollOptions(next);
-                  }} placeholder={`Opção ${i + 1}`} maxLength={150} />
+                  }} placeholder={`Opção ${i + 1}`} maxLength={150} className="bg-input text-foreground border-border placeholder:text-muted-foreground" />
                   {pollOptions.length > 2 && (
                     <Button type="button" variant="ghost" size="icon" onClick={() => setPollOptions(pollOptions.filter((_, idx) => idx !== i))}>
                       <X className="w-4 h-4" />
@@ -213,7 +213,7 @@ export function QuickPostDialog({
                   )}
                 </div>
               ))}
-              <Button type="button" variant="outline" size="sm" onClick={() => setPollOptions([...pollOptions, ""])} disabled={pollOptions.length >= 10}>
+              <Button type="button" variant="outline" size="sm" onClick={() => setPollOptions([...pollOptions, ""])} disabled={pollOptions.length >= 10} className="border-border text-foreground disabled:opacity-60 disabled:text-muted-foreground">
                 <Plus className="w-4 h-4 mr-1" /> Adicionar opção
               </Button>
             </div>
@@ -224,11 +224,11 @@ export function QuickPostDialog({
           </TabsContent>
 
           <TabsContent value="anuncio" className="space-y-3 mt-4">
-            <Textarea value={announcementContent} onChange={(e) => setAnnouncementContent(e.target.value)} placeholder="Escreva o anúncio…" rows={5} autoFocus maxLength={5000} />
+            <Textarea value={announcementContent} onChange={(e) => setAnnouncementContent(e.target.value)} placeholder="Escreva o anúncio…" rows={5} autoFocus maxLength={5000} className="bg-input text-foreground border-border placeholder:text-muted-foreground" />
             <div>
               <Label className="text-sm">Duração</Label>
               <Select value={announcementDuration} onValueChange={setAnnouncementDuration}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="bg-input text-foreground border-border"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {ANNOUNCEMENT_DURATIONS.map(d => (
                     <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
@@ -242,7 +242,7 @@ export function QuickPostDialog({
             <div>
               <Label className="text-sm">Para</Label>
               <Select value={apprTo} onValueChange={setApprTo}>
-                <SelectTrigger><SelectValue placeholder="Selecione um colega" /></SelectTrigger>
+                <SelectTrigger className="bg-input text-foreground border-border"><SelectValue placeholder="Selecione um colega" /></SelectTrigger>
                 <SelectContent>
                   {colleagues.map(c => (
                     <SelectItem key={c.user_id} value={c.user_id}>{c.name || "Sem nome"}</SelectItem>
@@ -253,7 +253,7 @@ export function QuickPostDialog({
             <div>
               <Label className="text-sm">Tipo</Label>
               <Select value={apprKind} onValueChange={setApprKind}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="bg-input text-foreground border-border"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {APPRECIATION_KINDS.map(k => (
                     <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>
@@ -261,13 +261,13 @@ export function QuickPostDialog({
                 </SelectContent>
               </Select>
             </div>
-            <Textarea value={apprMessage} onChange={(e) => setApprMessage(e.target.value)} placeholder="Mensagem personalizada (opcional)" rows={4} maxLength={1000} />
+            <Textarea value={apprMessage} onChange={(e) => setApprMessage(e.target.value)} placeholder="Mensagem personalizada (opcional)" rows={4} maxLength={1000} className="bg-input text-foreground border-border placeholder:text-muted-foreground" />
           </TabsContent>
         </Tabs>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={publishing}>Cancelar</Button>
-          <Button onClick={handlePublish} disabled={publishing}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={publishing} className="border-border text-foreground disabled:opacity-60 disabled:text-muted-foreground">Cancelar</Button>
+          <Button onClick={handlePublish} disabled={publishing} className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-70 disabled:bg-primary/60 disabled:text-primary-foreground">
             {publishing ? "Publicando..." : "Publicar"}
           </Button>
         </DialogFooter>

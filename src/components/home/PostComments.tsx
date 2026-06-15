@@ -207,13 +207,22 @@ export function PostComments({ postId, servidorId }: { postId: string; servidorI
     <div key={c.id} className="afp-comment" style={{ display: "flex", gap: 8, marginLeft: isReply ? 40 : 0, marginTop: 8 }}>
       <CommentAvatar id={c.user_id} name={c.author?.name} url={c.author?.avatar_url} size={isReply ? 26 : 32} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div className="afp-comment-bubble" style={{ background: "rgba(255,255,255,0.04)", padding: "8px 12px", borderRadius: 12 }}>
+        <div
+          className="afp-comment-bubble"
+          style={{
+            background: "hsl(var(--muted))",
+            color: "hsl(var(--foreground))",
+            border: "1px solid hsl(var(--border) / 0.55)",
+            padding: "8px 12px",
+            borderRadius: 12,
+          }}
+        >
           <div className="afp-comment-author" style={{ fontSize: 12.5, fontWeight: 600 }}>{c.author?.name || "Colega"}</div>
           <div className="afp-comment-text" style={{ fontSize: 13, marginTop: 2, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
             {renderMentionContent(c.content)}
           </div>
         </div>
-        <div className="afp-comment-actions" style={{ display: "flex", gap: 12, fontSize: 11.5, color: "rgba(255,255,255,0.55)", padding: "4px 8px 0" }}>
+        <div className="afp-comment-actions" style={{ display: "flex", gap: 12, fontSize: 11.5, color: "hsl(var(--muted-foreground))", padding: "4px 8px 0" }}>
           <button
             type="button"
             onClick={() => toggleReaction(c.id, c.reacted_by_me)}
@@ -263,7 +272,7 @@ export function PostComments({ postId, servidorId }: { postId: string; servidorI
 
   return (
     <div className="afp-post-comments" style={{ padding: "12px 0 4px" }}>
-      {loading && <div style={{ fontSize: 11, opacity: 0.6 }}>Carregando comentários…</div>}
+      {loading && <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>Carregando comentários…</div>}
       {!loading && roots.length === 0 && (
         <div style={{ fontSize: 11.5, color: "hsl(var(--muted-foreground))", padding: "4px 0 8px" }}>
           Seja o primeiro a comentar.
@@ -333,7 +342,7 @@ export function PostCommentsPreview({
   if (previews.length === 0) return null;
 
   return (
-    <div style={{ padding: "8px 0 4px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+    <div style={{ padding: "8px 0 4px", borderTop: "1px solid hsl(var(--border) / 0.65)" }}>
       {count > previews.length && (
         <button
           type="button"
@@ -350,13 +359,13 @@ export function PostCommentsPreview({
         <div key={c.id} style={{ display: "flex", gap: 8, marginTop: 6 }}>
           <CommentAvatar id={c.user_id} name={c.author?.name} url={c.author?.avatar_url} size={28} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ background: "rgba(255,255,255,0.04)", padding: "6px 10px", borderRadius: 10 }}>
+            <div style={{ background: "hsl(var(--muted))", color: "hsl(var(--foreground))", border: "1px solid hsl(var(--border) / 0.55)", padding: "6px 10px", borderRadius: 10 }}>
               <div style={{ fontSize: 12, fontWeight: 600 }}>{c.author?.name || "Colega"}</div>
               <div style={{ fontSize: 12.5, marginTop: 2, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
                 {renderMentionContent(c.content)}
               </div>
             </div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", padding: "2px 8px 0" }}>{relativeTime(c.created_at)}</div>
+            <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", padding: "2px 8px 0" }}>{relativeTime(c.created_at)}</div>
           </div>
         </div>
       ))}
