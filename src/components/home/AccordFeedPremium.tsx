@@ -93,6 +93,34 @@ export function AccordFeedPremium() {
   const [myWeekOpen, setMyWeekOpen] = useState(false);
   const [myWeekTab, setMyWeekTab] = useState<MyWeekTab>("posts");
   const navigate = useNavigate();
+  const [brandColor, setBrandColor] = useState<string>("#5b3fd4");
+
+  useEffect(() => {
+    if (!companyId) { setBrandColor("#5b3fd4"); return; }
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("companies")
+        .select("brand_primary_color")
+        .eq("id", companyId)
+        .maybeSingle();
+      const c = (data?.brand_primary_color || "").trim();
+      setBrandColor(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c) ? c : "#5b3fd4");
+    })();
+    const handler = () => {
+      if (!companyId) return;
+      (supabase as any).from("companies").select("brand_primary_color").eq("id", companyId).maybeSingle()
+        .then(({ data }: any) => {
+          const c = (data?.brand_primary_color || "").trim();
+          setBrandColor(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c) ? c : "#5b3fd4");
+        });
+    };
+    window.addEventListener("brand-colors-updated", handler);
+    window.addEventListener("tenant-switched", handler);
+    return () => {
+      window.removeEventListener("brand-colors-updated", handler);
+      window.removeEventListener("tenant-switched", handler);
+    };
+  }, [companyId]);
 
   const otherOnline = useMemo(() => onlineUsers.filter(u => u.user_id !== user?.id), [onlineUsers, user?.id]);
   const firstName = (profile?.name || "").split(" ")[0] || "colega";
