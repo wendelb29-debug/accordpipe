@@ -1057,39 +1057,70 @@ const CSS = `
 }
 .afp-composer-input:hover{background:#FFFFFF;border-color:var(--b24-blue-primary)}
 
-/* FILTROS / SEARCH BAR — alto contraste em qualquer tema */
+/* FILTROS / SEARCH BAR — alto contraste em light mode */
 .afp-filters{
-  background:rgba(255,255,255,0.82);
-  border:1px solid rgba(15,82,186,0.14);
+  background:#EEF2F7;
+  border:1px solid #CBD5E1;
   border-radius:10px;
   padding:5px;
   margin-bottom:16px;
-  box-shadow:0 10px 26px rgba(15,23,42,0.08),0 1px 0 rgba(255,255,255,0.7) inset;
+  box-shadow:0 1px 2px rgba(15,23,42,0.06);
 }
 .afp-filter-pill{
-  color:#334155;
-  background:rgba(15,82,186,0.08);
-  border:1px solid rgba(15,82,186,0.10);
+  color:#1E293B;
+  background:transparent;
+  border:1px solid transparent;
   font-size:12px;
   text-transform:uppercase;
   letter-spacing:0.5px;
   font-weight:700;
 }
 .afp-filter-pill:hover{
-  background:rgba(37,99,235,0.14);
-  color:var(--b24-blue-action);
-  border-color:rgba(37,99,235,0.24);
-}
-.afp-filter-pill .afp-filter-pill-count{
-  background:rgba(15,82,186,0.14);
-  color:var(--b24-blue-action);
-}
-.afp-filter-pill.afp-active{
   background:#FFFFFF;
   color:var(--b24-blue-action);
-  box-shadow:0 2px 8px rgba(0,0,0,0.35);
+  border-color:#CBD5E1;
+}
+.afp-filter-pill .afp-filter-pill-count{
+  background:#CBD5E1;
+  color:#1E293B;
+}
+.afp-filter-pill.afp-active{
+  background:var(--b24-blue-action);
+  color:#FFFFFF;
+  border-color:var(--b24-blue-action);
+  box-shadow:0 2px 8px rgba(37,99,235,0.35);
 }
 .afp-filter-pill.afp-active .afp-filter-pill-count{
+  background:rgba(255,255,255,0.25);
+  color:#FFFFFF;
+}
+/* DARK overrides */
+.dark .afp-root .afp-filters{
+  background:rgba(255,255,255,0.08);
+  border-color:rgba(255,255,255,0.18);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.dark .afp-root .afp-filter-pill{
+  color:rgba(255,255,255,0.85);
+  background:transparent;
+  border-color:transparent;
+}
+.dark .afp-root .afp-filter-pill:hover{
+  background:rgba(255,255,255,0.10);
+  color:#fff;
+  border-color:rgba(255,255,255,0.18);
+}
+.dark .afp-root .afp-filter-pill .afp-filter-pill-count{
+  background:rgba(255,255,255,0.14);
+  color:#fff;
+}
+.dark .afp-root .afp-filter-pill.afp-active{
+  background:#FFFFFF;
+  color:var(--b24-blue-action);
+  border-color:#FFFFFF;
+  box-shadow:0 2px 8px rgba(0,0,0,0.35);
+}
+.dark .afp-root .afp-filter-pill.afp-active .afp-filter-pill-count{
   background:var(--b24-blue-action);
   color:#fff;
 }
