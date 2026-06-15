@@ -25,6 +25,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { PostReactorsDialog } from "./PostReactorsDialog";
+import { QuickPostDialog } from "./QuickPostDialog";
 
 const HIDDEN_KEY = "afp:hidden-posts";
 function getHiddenIds(): string[] {
@@ -83,6 +85,8 @@ export function AccordFeedPremium() {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [openComments, setOpenComments] = useState<Set<string>>(new Set());
   const [hidden, setHidden] = useState<string[]>(() => getHiddenIds());
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [reactorsPostId, setReactorsPostId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const otherOnline = useMemo(() => onlineUsers.filter(u => u.user_id !== user?.id), [onlineUsers, user?.id]);
@@ -326,7 +330,7 @@ export function AccordFeedPremium() {
 
           {/* STORIES — colegas online reais */}
           <div className="afp-stories">
-            <div className="afp-story">
+            <button type="button" className="afp-story" onClick={() => setComposerOpen(true)} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
               <div className="afp-story-ring afp-create">
                 <div className="afp-story-pic">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
@@ -334,8 +338,8 @@ export function AccordFeedPremium() {
                   </svg>
                 </div>
               </div>
-              <span className="afp-story-name" style={{ color: "hsl(var(--primary))", fontWeight: 600 }}>Adicionar</span>
-            </div>
+              <span className="afp-story-name" style={{ color: "hsl(var(--primary))", fontWeight: 600 }}>Publicar</span>
+            </button>
             {otherOnline.slice(0, 8).map(u => (
               <div className="afp-story" key={u.user_id}>
                 <div className="afp-story-ring">
@@ -383,7 +387,7 @@ export function AccordFeedPremium() {
                   ? <img src={profile.avatar_url} alt="" style={{ width: "100%", height: "100%", borderRadius: 14, objectFit: "cover" }} />
                   : initials(profile?.name)}
               </div>
-              <div className="afp-composer-input">No que está pensando, {firstName}?</div>
+              <button type="button" className="afp-composer-input" onClick={() => setComposerOpen(true)} style={{ textAlign: "left", cursor: "text", fontFamily: "inherit" }}>No que está pensando, {firstName}?</button>
             </div>
           </div>
 
@@ -408,6 +412,7 @@ export function AccordFeedPremium() {
               onHide={() => handleHidePost(post.id)}
               onCreateTask={() => handleCreateTask(post)}
               onDelete={() => handleDeletePost(post)}
+              onOpenReactors={() => setReactorsPostId(post.id)}
             />
           ))}
 
@@ -523,6 +528,19 @@ export function AccordFeedPremium() {
           )}
         </div>
       </div>
+
+      <QuickPostDialog
+        open={composerOpen}
+        onOpenChange={setComposerOpen}
+        userId={user?.id}
+        servidorId={companyId || undefined}
+        onPublished={() => qc.invalidateQueries({ queryKey: ["feed-posts-v2"] })}
+      />
+      <PostReactorsDialog
+        postId={reactorsPostId}
+        open={!!reactorsPostId}
+        onOpenChange={(v) => { if (!v) setReactorsPostId(null); }}
+      />
     </div>
   );
 }
@@ -531,7 +549,7 @@ export function AccordFeedPremium() {
 
 function PostCard({
   post, currentUserId, showComments, onReact, onToggleComments, onSave, onShare,
-  onTogglePin, onOpenPost, onAddRecipients, onEdit, onHide, onCreateTask, onDelete,
+  onTogglePin, onOpenPost, onAddRecipients, onEdit, onHide, onCreateTask, onDelete, onOpenReactors,
 }: {
   post: FeedPost;
   currentUserId?: string;
@@ -547,6 +565,7 @@ function PostCard({
   onHide: () => void;
   onCreateTask: () => void;
   onDelete: () => void;
+  onOpenReactors: () => void;
 }) {
   const liked = post.reactions.some(r => r.byMe);
   const isAuthor = !!currentUserId && currentUserId === post.author.user_id;
@@ -649,14 +668,14 @@ function PostCard({
       )}
 
       {post.total_reactions > 0 && (
-        <div className="afp-post-reactions-summary">
+        <button type="button" className="afp-post-reactions-summary" onClick={onOpenReactors} style={{ background: "transparent", border: "none", textAlign: "left", cursor: "pointer", fontFamily: "inherit", width: "100%" }}>
           <div className="afp-reactions-stack">
             {post.reactions.slice(0, 3).map(r => (
               <div className="afp-reaction-pill" key={r.emoji}>{r.emoji}</div>
             ))}
           </div>
           <span>{post.total_reactions} reaç{post.total_reactions > 1 ? "ões" : "ão"}{post.comments_count > 0 && <> · {post.comments_count} comentário{post.comments_count > 1 ? "s" : ""}</>}</span>
-        </div>
+        </button>
       )}
 
       <div className="afp-post-actions">

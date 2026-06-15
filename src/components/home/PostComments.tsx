@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { resolveSignedUrl } from "@/hooks/useSignedUrl";
@@ -45,8 +46,10 @@ export function relativeTime(iso: string) {
   return new Date(iso).toLocaleDateString("pt-BR");
 }
 
-export function PostComments({ postId, servidorId }: { postId: string; servidorId: string }) {
+export function PostComments({ postId, servidorId }: { postId: string; servidorId?: string }) {
   const { user, profile } = useAuth();
+  const companyId = useActiveCompanyId();
+  const tenantId = servidorId || companyId || "";
   const qc = useQueryClient();
   const [text, setText] = useState("");
   const [comments, setComments] = useState<CommentRow[]>([]);
@@ -78,14 +81,19 @@ export function PostComments({ postId, servidorId }: { postId: string; servidorI
   useEffect(() => { load(); }, [postId]);
 
   const handleSend = async () => {
-    if (!text.trim() || !user?.id) return;
+    if (!text.trim() || !user?.id || !postId) return;
+    if (!tenantId) {
+      toast({ title: "Erro ao comentar", description: "Empresa ativa não detectada", variant: "destructive" });
+      return;
+    }
     const { error } = await (supabase as any).from("feed_post_comments").insert({
       post_id: postId,
       user_id: user.id,
-      servidor_id: servidorId,
+      servidor_id: tenantId,
       content: text.trim(),
     });
     if (error) {
+      console.error("[PostComments] insert error:", error);
       toast({ title: "Erro ao comentar", description: error.message, variant: "destructive" });
       return;
     }
