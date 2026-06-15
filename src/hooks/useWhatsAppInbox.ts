@@ -556,6 +556,10 @@ export function useWhatsAppInbox() {
   }, [fetchContacts, checkConnection]);
 
   useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
     selectedContactIdRef.current = selectedContactId;
     selectedContactPhoneRef.current = contacts.find((item) => item.id === selectedContactId)?.phone ?? null;
   }, [contacts, selectedContactId]);
