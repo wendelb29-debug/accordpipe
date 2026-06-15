@@ -668,14 +668,14 @@ function PostCard({
       )}
 
       {post.total_reactions > 0 && (
-        <div className="afp-post-reactions-summary">
+        <button type="button" className="afp-post-reactions-summary" onClick={onOpenReactors} style={{ background: "transparent", border: "none", textAlign: "left", cursor: "pointer", fontFamily: "inherit", width: "100%" }}>
           <div className="afp-reactions-stack">
             {post.reactions.slice(0, 3).map(r => (
               <div className="afp-reaction-pill" key={r.emoji}>{r.emoji}</div>
             ))}
           </div>
           <span>{post.total_reactions} reaç{post.total_reactions > 1 ? "ões" : "ão"}{post.comments_count > 0 && <> · {post.comments_count} comentário{post.comments_count > 1 ? "s" : ""}</>}</span>
-        </div>
+        </button>
       )}
 
       <div className="afp-post-actions">
