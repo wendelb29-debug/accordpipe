@@ -435,7 +435,7 @@ export function useWhatsAppInbox() {
     if (error) {
       toast.error("A reação foi enviada, mas não foi possível salvar no histórico.");
     }
-  }, [messages, user?.id, companyId, profile?.name, activeIntegration?.provider_type]);
+  }, [user?.id, companyId, profile?.name, activeIntegration?.provider_type]);
 
   const assignContact = useCallback(async (contactId: string, userId: string | null) => {
     const { error } = await supabase
