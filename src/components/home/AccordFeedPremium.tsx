@@ -438,12 +438,43 @@ export function AccordFeedPremium() {
 
         {/* ═══════ SIDEBAR ═══════ */}
         <div className="afp-side-col">
+          {/* MINHAS TAREFAS — Bitrix-style widget */}
+          <div className="afp-tasks-widget">
+            <div className="afp-tasks-header">
+              <span className="afp-tasks-title">
+                <span className="afp-tasks-accent" />
+                Minhas tarefas
+              </span>
+              <button
+                className="afp-tasks-add"
+                onClick={() => navigate("/atividades?new=1")}
+                aria-label="Nova tarefa"
+              >+</button>
+            </div>
+            {[
+              { label: "Em andamento", count: 0, q: "?status=open" },
+              { label: "Auxiliando", count: 0, q: "?status=assisting" },
+              { label: "Criadas por mim", count: 0, q: "?status=mine" },
+              { label: "Seguindo", count: 0, q: "?status=following" },
+            ].map(item => (
+              <button
+                key={item.label}
+                className="afp-tasks-row"
+                onClick={() => navigate(`/atividades${item.q}`)}
+              >
+                <span className="afp-tasks-row-label">{item.label}</span>
+                <span className="afp-tasks-row-count">{item.count}</span>
+              </button>
+            ))}
+          </div>
+
           {/* QUICK STATS */}
           <div className="afp-side-card">
             <div className="afp-side-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="20" x2="12" y2="10" /><line x1="18" y1="20" x2="18" y2="4" /><line x1="6" y1="20" x2="6" y2="16" /></svg>
               Você esta semana
             </div>
+
             <div className="afp-quick-stats">
               {[
                 [String(myWeek?.posts ?? 0), "Posts"],
