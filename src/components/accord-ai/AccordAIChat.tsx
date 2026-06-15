@@ -160,6 +160,8 @@ export function AccordAIChat() {
   // Smart launcher — inbox notifications
   const { preview, pending, totalUnread, clearPreview, dismissContact } = useInboxNotifications();
   const [activeQuickChat, setActiveQuickChat] = useState<InboxNotification | null>(null);
+  const [previewAvatarError, setPreviewAvatarError] = useState(false);
+  useEffect(() => { setPreviewAvatarError(false); }, [preview?.contact_avatar]);
 
   const { pageName, quickActions } = getContextForRoute(location.pathname);
 
