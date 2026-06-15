@@ -1194,22 +1194,22 @@ const CSS = `
 }
 
 .afp-post-actions{
-  border-top:0.8px solid var(--b24-divider);
+  border-top:0.8px solid hsl(var(--border));
   padding:4px 8px;
   gap:6px;
-  background:rgba(245,247,249,0.92);
+  background:hsl(var(--secondary));
 }
 .afp-action-btn{
-  color:#334155;
-  background:#FFFFFF;
-  border:1px solid rgba(15,82,186,0.13);
+  color:hsl(var(--secondary-foreground));
+  background:hsl(var(--card));
+  border:1px solid hsl(var(--border));
   font-size:13px;
   font-weight:700;
   border-radius:6px;
   height:34px;
 }
-.afp-action-btn:hover{background:#EEF6FF;color:var(--b24-blue-primary);border-color:rgba(37,99,235,.28)}
-.afp-action-btn.afp-liked{color:var(--b24-blue-primary);font-weight:800;background:#E8F4FF;border-color:rgba(37,99,235,.30)}
+.afp-action-btn:hover{background:hsl(var(--accent));color:hsl(var(--primary));border-color:hsl(var(--primary) / .35)}
+.afp-action-btn.afp-liked{color:hsl(var(--primary));font-weight:800;background:hsl(var(--primary) / .12);border-color:hsl(var(--primary) / .35)}
 .dark .afp-root .afp-post-actions{
   background:rgba(255,255,255,.075);
   border-top:1px solid rgba(255,255,255,.22);
@@ -1237,25 +1237,29 @@ const CSS = `
 .dark .afp-root .afp-action-btn svg{color:currentColor;stroke-width:2.4}
 
 .afp-post-comments{
-  background:#FAFBFC;
-  border-top:0.8px solid var(--b24-divider);
+  background:hsl(var(--secondary));
+  color:hsl(var(--secondary-foreground));
+  border-top:0.8px solid hsl(var(--border));
   padding:12px 16px;
 }
 .afp-comment-bubble{
-  background:#F0F2F5;
-  color:var(--b24-text-primary);
+  background:hsl(var(--card));
+  color:hsl(var(--card-foreground));
+  border:1px solid hsl(var(--border));
   border-radius:14px;
   border-top-left-radius:4px;
 }
-.afp-comment-author{color:var(--b24-blue-link);font-weight:600}
-.afp-comment-text{color:var(--b24-text-primary)}
+.afp-comment-author{color:hsl(var(--primary));font-weight:600}
+.afp-comment-text{color:hsl(var(--card-foreground))}
+.afp-comment-actions{color:hsl(var(--muted-foreground))}
+.afp-comment-actions button{color:inherit}
 .afp-comment-input{
-  background:#F5F7F9;
-  border:0.8px solid var(--b24-border-input);
-  color:var(--b24-text-primary);
+  background:hsl(var(--input));
+  border:0.8px solid hsl(var(--border));
+  color:hsl(var(--foreground));
   border-radius:18px;
 }
-.afp-comment-input::placeholder{color:var(--b24-text-meta)}
+.afp-comment-input::placeholder{color:hsl(var(--muted-foreground))}
 
 /* EVENT CARD → white */
 .afp-event-card{
