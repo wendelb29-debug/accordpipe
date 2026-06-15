@@ -1053,25 +1053,34 @@ const CSS = `
 }
 .afp-composer-input:hover{background:#FFFFFF;border-color:var(--b24-blue-primary)}
 
-/* FILTROS / SEARCH BAR */
+/* FILTROS / SEARCH BAR — alto contraste no dark */
 .afp-filters{
-  background:rgba(255,255,255,0.04);
-  border:0.8px solid rgba(255,255,255,0.14);
-  border-radius:8px;
-  padding:4px;
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.18);
+  border-radius:10px;
+  padding:5px;
   margin-bottom:16px;
+  box-shadow:0 1px 0 rgba(255,255,255,0.04) inset;
 }
 .afp-filter-pill{
-  color:rgba(255,255,255,0.65);
+  color:rgba(255,255,255,0.85);
   font-size:12px;
   text-transform:uppercase;
   letter-spacing:0.5px;
-  font-weight:600;
+  font-weight:700;
+}
+.afp-filter-pill:hover{
+  background:rgba(255,255,255,0.10);
+  color:#fff;
+}
+.afp-filter-pill .afp-filter-pill-count{
+  background:rgba(255,255,255,0.18);
+  color:#fff;
 }
 .afp-filter-pill.afp-active{
-  background:rgba(255,255,255,0.96);
+  background:#FFFFFF;
   color:var(--b24-blue-action);
-  box-shadow:none;
+  box-shadow:0 2px 8px rgba(0,0,0,0.35);
 }
 .afp-filter-pill.afp-active .afp-filter-pill-count{
   background:var(--b24-blue-action);
