@@ -1057,29 +1057,32 @@ const CSS = `
 }
 .afp-composer-input:hover{background:#FFFFFF;border-color:var(--b24-blue-primary)}
 
-/* FILTROS / SEARCH BAR — alto contraste no dark */
+/* FILTROS / SEARCH BAR — alto contraste em qualquer tema */
 .afp-filters{
-  background:rgba(255,255,255,0.08);
-  border:1px solid rgba(255,255,255,0.18);
+  background:rgba(255,255,255,0.82);
+  border:1px solid rgba(15,82,186,0.14);
   border-radius:10px;
   padding:5px;
   margin-bottom:16px;
-  box-shadow:0 1px 0 rgba(255,255,255,0.04) inset;
+  box-shadow:0 10px 26px rgba(15,23,42,0.08),0 1px 0 rgba(255,255,255,0.7) inset;
 }
 .afp-filter-pill{
-  color:rgba(255,255,255,0.85);
+  color:#334155;
+  background:rgba(15,82,186,0.08);
+  border:1px solid rgba(15,82,186,0.10);
   font-size:12px;
   text-transform:uppercase;
   letter-spacing:0.5px;
   font-weight:700;
 }
 .afp-filter-pill:hover{
-  background:rgba(255,255,255,0.10);
-  color:#fff;
+  background:rgba(37,99,235,0.14);
+  color:var(--b24-blue-action);
+  border-color:rgba(37,99,235,0.24);
 }
 .afp-filter-pill .afp-filter-pill-count{
-  background:rgba(255,255,255,0.18);
-  color:#fff;
+  background:rgba(15,82,186,0.14);
+  color:var(--b24-blue-action);
 }
 .afp-filter-pill.afp-active{
   background:#FFFFFF;
@@ -1160,17 +1163,45 @@ const CSS = `
 .afp-post-actions{
   border-top:0.8px solid var(--b24-divider);
   padding:4px 8px;
-  gap:0;
+  gap:6px;
+  background:rgba(245,247,249,0.92);
 }
 .afp-action-btn{
-  color:var(--b24-text-meta);
+  color:#334155;
+  background:#FFFFFF;
+  border:1px solid rgba(15,82,186,0.13);
   font-size:13px;
-  font-weight:400;
+  font-weight:700;
   border-radius:6px;
   height:34px;
 }
-.afp-action-btn:hover{background:#F5F7F9;color:var(--b24-blue-primary)}
-.afp-action-btn.afp-liked{color:var(--b24-blue-primary);font-weight:600}
+.afp-action-btn:hover{background:#EEF6FF;color:var(--b24-blue-primary);border-color:rgba(37,99,235,.28)}
+.afp-action-btn.afp-liked{color:var(--b24-blue-primary);font-weight:800;background:#E8F4FF;border-color:rgba(37,99,235,.30)}
+.dark .afp-root .afp-post-actions{
+  background:rgba(255,255,255,.075);
+  border-top:1px solid rgba(255,255,255,.22);
+  box-shadow:0 -1px 0 rgba(255,255,255,.05) inset;
+  gap:6px;
+}
+.dark .afp-root .afp-action-btn{
+  background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.24);
+  color:#FFFFFF;
+  font-weight:700;
+  box-shadow:0 1px 2px rgba(0,0,0,.22);
+}
+.dark .afp-root .afp-action-btn:hover{
+  background:rgba(255,255,255,.20);
+  border-color:rgba(255,255,255,.36);
+  color:#FFFFFF;
+}
+.dark .afp-root .afp-action-btn.afp-liked{
+  background:rgba(37,99,235,.26);
+  border-color:rgba(96,165,250,.54);
+  color:#93C5FD;
+  font-weight:800;
+}
+.dark .afp-root .afp-action-btn svg{color:currentColor;stroke-width:2.4}
 
 .afp-post-comments{
   background:#FAFBFC;
