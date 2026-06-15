@@ -427,6 +427,7 @@ export function AccordFeedPremium() {
               onToggleComments={() => toggleComments(post.id)}
               onSave={() => handleSave(post)}
               onShare={() => handleShare(post.id)}
+              onFollow={() => handleFollowPost(post)}
               onTogglePin={() => handleTogglePin(post)}
               onOpenPost={() => handleOpenPost(post.id)}
               onAddRecipients={() => handleAddRecipients(post)}
