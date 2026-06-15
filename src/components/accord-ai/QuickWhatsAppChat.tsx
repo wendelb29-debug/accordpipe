@@ -38,7 +38,9 @@ export function QuickWhatsAppChat({
   const [loading, setLoading] = useState(true);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { setAvatarError(false); }, [notification.contact_avatar]);
 
   const fetchMessages = useCallback(async () => {
     const { data } = await supabase
