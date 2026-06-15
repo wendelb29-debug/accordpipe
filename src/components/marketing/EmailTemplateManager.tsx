@@ -872,10 +872,19 @@ function AIGeneratorDialog({ onClose, onGenerated }: any) {
           <button
             onClick={handleGenerate}
             disabled={busy}
-            className="h-10 px-5 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white text-[13px] font-bold inline-flex items-center gap-2 disabled:opacity-50 transition shadow-md"
+            className="h-10 px-5 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white text-[13px] font-bold inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-md min-w-[160px] justify-center"
           >
-            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-            {busy ? "Gerando..." : "Gerar agora"}
+            {busy ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Gerando, aguarde...</span>
+              </>
+            ) : (
+              <>
+                <Wand2 className="w-4 h-4" />
+                <span>Gerar agora</span>
+              </>
+            )}
           </button>
         </DialogFooter>
       </DialogContent>
