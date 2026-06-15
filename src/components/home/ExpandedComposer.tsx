@@ -11,6 +11,7 @@ import {
   List, ListOrdered, Link as LinkIcon, Image as ImageIcon,
   Video, Code, Smile, Sparkles, AtSign, Paperclip,
   FileText, Quote, Hash, VideoIcon, ChevronDown, X, Loader2, Send, Plus,
+  FolderOpen, Search, Upload, File as FileIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
