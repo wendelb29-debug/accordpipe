@@ -374,7 +374,7 @@ export function useWhatsAppInbox() {
   const toggleReaction = useCallback(async (messageId: string, emoji: string) => {
     if (!user?.id || !companyId) return;
 
-    const current = messages.find((m) => m.id === messageId);
+    const current = messagesRef.current.find((m) => m.id === messageId);
     if (!current) return;
 
     const existing: MessageReaction[] = Array.isArray(current.reactions)
