@@ -46,6 +46,31 @@ export function NewCampaignDialog({ open, onOpenChange, defaultChannel, onCreate
   const [submitting, setSubmitting] = useState(false);
   const [pickTemplateOpen, setPickTemplateOpen] = useState(false);
 
+  // Preview + send-config + progress state
+  const [previewDevice, setPreviewDevice] = useState<"desktop" | "mobile">("desktop");
+  const [showRaw, setShowRaw] = useState(false);
+  const [sampleVars, setSampleVars] = useState<Record<string, string>>({
+    nome: "Wendel Silva",
+    empresa: "Empresa Exemplo",
+    email: "wendel@exemplo.com",
+  });
+  const [sendConfigOpen, setSendConfigOpen] = useState(false);
+  const [campaignProgress, setCampaignProgress] = useState<{ id: string; total: number } | null>(null);
+
+  const renderPreview = (html: string): string => {
+    let rendered = html || "";
+    Object.entries(sampleVars).forEach(([key, value]) => {
+      rendered = rendered.replace(new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, "g"), value);
+    });
+    rendered = rendered.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, "[$1]");
+    return rendered;
+  };
+
+  const previewHtml = useMemo(() => `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:20px;background:#f5f5f5;font-family:Arial,sans-serif;color:#111;">
+${renderPreview(body)}
+</body></html>`, [body, sampleVars]);
+
   useEffect(() => {
     if (open) {
       setChannel(defaultChannel);
