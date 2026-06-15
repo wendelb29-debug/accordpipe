@@ -157,6 +157,25 @@ export function AccordFeedPremium() {
     );
   }
 
+  async function handleFollowPost(post: FeedPost) {
+    if (!user?.id || !companyId) return;
+    if (post.followed_by_me) {
+      await (supabase as any).from("feed_post_follows")
+        .delete().eq("post_id", post.id).eq("user_id", user.id);
+      toast({ title: "Você parou de seguir esta publicação" });
+    } else {
+      const { error } = await (supabase as any).from("feed_post_follows").insert({
+        post_id: post.id, user_id: user.id, servidor_id: companyId,
+      });
+      if (error && (error as any).code !== "23505") {
+        toast({ title: "Erro ao seguir", description: error.message, variant: "destructive" });
+        return;
+      }
+      toast({ title: "Seguindo", description: "Você receberá notificações desta publicação." });
+    }
+    qc.invalidateQueries({ queryKey: ["feed-posts-v2"] });
+  }
+
   async function handleEventRsvp(eventId: string, status: "going" | "maybe" | "not_going") {
     if (!user?.id) return;
     const { error } = await supabase
