@@ -347,7 +347,8 @@ export function AccordFeedPremium() {
 
 
   return (
-    <div className="afp-root">
+    <div className="afp-root" style={{ ["--afp-brand" as any]: brandColor }}>
+      <div className="afp-brand-ambient" aria-hidden="true" />
       <style>{CSS}</style>
 
       <div className="afp-shell">
