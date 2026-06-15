@@ -57,12 +57,12 @@ export function ExpandedComposer({ open, onClose, onPublished, initialTab = "mes
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({}),
-      Link.configure({ openOnClick: false, autolink: true }),
-      Image,
-      TextStyle,
-      Color,
-      Placeholder.configure({ placeholder: "Compartilhe uma novidade com a equipe..." }),
+      StarterKit.configure({}) as any,
+      Link.configure({ openOnClick: false, autolink: true }) as any,
+      Image as any,
+      TextStyle as any,
+      Color as any,
+      Placeholder.configure({ placeholder: "Compartilhe uma novidade com a equipe..." }) as any,
     ],
     editorProps: {
       attributes: {
