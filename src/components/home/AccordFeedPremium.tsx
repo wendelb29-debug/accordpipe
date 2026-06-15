@@ -37,7 +37,7 @@ function setHiddenIds(ids: string[]) {
   localStorage.setItem(HIDDEN_KEY, JSON.stringify(ids));
 }
 
-type FilterKey = "all" | "posts" | "events";
+type FilterKey = "all" | "posts" | "events" | "saved";
 
 const REACTION_EMOJIS = ["❤️", "😀", "🎉", "👏", "🔥", "🚀", "💯"];
 
@@ -100,7 +100,8 @@ export function AccordFeedPremium() {
   const weekRevenue = heroStats?.weekRevenue ?? 0;
 
   const visiblePosts = useMemo(() => posts.filter(p => !hidden.includes(p.id)), [posts, hidden]);
-  const filteredPosts = filter === "events" ? [] : visiblePosts;
+  const savedPosts = useMemo(() => visiblePosts.filter(p => (p as any).saved_by_me), [visiblePosts]);
+  const filteredPosts = filter === "events" ? [] : filter === "saved" ? savedPosts : visiblePosts;
   const showEvents = filter === "all" || filter === "events";
 
   // ─── Handlers ───────────────────────────────────────────
@@ -366,6 +367,7 @@ export function AccordFeedPremium() {
           <div className="afp-filters">
             {[
               { key: "all" as const, label: "Tudo", count: posts.length + events.length },
+              { key: "saved" as const, label: "Salvos", count: savedPosts.length },
               { key: "posts" as const, label: "Posts", count: posts.length },
               { key: "events" as const, label: "Eventos", count: events.length },
             ].map(f => (
