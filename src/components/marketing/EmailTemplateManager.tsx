@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   Sparkles, Plus, Search, Star, Copy, Trash2, Edit, X, Save, Eye,
-  Code, Smartphone, Monitor, Loader2, Image as ImageIcon, Wand2,
+  Code, Smartphone, Monitor, Loader2, Image as ImageIcon, Wand2, Send,
 } from "lucide-react";
 
 // Tabela ainda não tipada nos types gerados — usamos cliente sem tipos
@@ -338,6 +338,14 @@ function TemplateEditorDialog({ template, onClose, onSaved }: any) {
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [saving, setSaving] = useState(false);
   const [uploadingImg, setUploadingImg] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
+  const [previewVars, setPreviewVars] = useState<Record<string, string>>({
+    nome: "Wendel",
+    empresa: "Accord",
+    email: "wendel@accordpipe.com.br",
+    valor: "R$ 1.234,00",
+    data: new Date().toLocaleDateString("pt-BR"),
+  });
 
   const variables = useMemo(() => {
     const re = /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g;
@@ -400,7 +408,49 @@ function TemplateEditorDialog({ template, onClose, onSaved }: any) {
     }
   };
 
-  const wrappedPreview = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;background:#f5f5f5;padding:20px;font-family:Arial,sans-serif;">${bodyHtml}</body></html>`;
+  const substituteVariables = (html: string): string => {
+    return html.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_m, varName) => {
+      return previewVars[varName] ?? `[${varName}]`;
+    });
+  };
+
+  const handleSendTest = async () => {
+    if (!bodyHtml.trim() || !subject.trim()) {
+      toast.error("Preencha assunto e corpo antes de enviar teste");
+      return;
+    }
+    setSendingTest(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-template-test", {
+        body: {
+          subject: substituteVariables(subject),
+          body_html: substituteVariables(bodyHtml),
+        },
+      });
+      if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
+      toast.success(`Teste enviado pra ${(data as any).sent_to}`);
+    } catch (err: any) {
+      toast.error("Erro ao enviar teste", { description: err.message });
+    } finally {
+      setSendingTest(false);
+    }
+  };
+
+  // Ctrl+S salva
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name, subject, bodyHtml, category, isShared, previewText]);
+
+  const previewBodyHtml = substituteVariables(bodyHtml);
+  const wrappedPreview = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;padding:20px;background:#f5f5f5;font-family:Arial,sans-serif;}a:hover{opacity:0.85;}</style></head><body>${previewBodyHtml}</body></html>`;
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -505,11 +555,31 @@ function TemplateEditorDialog({ template, onClose, onSaved }: any) {
                 <Smartphone className="w-3.5 h-3.5" />
               </button>
             </div>
+            {variables.length > 0 && (
+              <details className="px-3 py-2 border-b border-border bg-card/40 text-[10.5px]">
+                <summary className="cursor-pointer text-muted-foreground hover:text-foreground select-none">
+                  Editar valores de exemplo das variáveis
+                </summary>
+                <div className="mt-2 p-2 bg-muted/40 rounded-lg space-y-1.5 max-h-40 overflow-y-auto">
+                  {variables.map((key) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <span className="text-muted-foreground w-20 font-mono shrink-0">{`{{${key}}}`}</span>
+                      <input
+                        value={previewVars[key] ?? ""}
+                        onChange={e => setPreviewVars(p => ({ ...p, [key]: e.target.value }))}
+                        placeholder={`valor para ${key}`}
+                        className="flex-1 h-6 px-2 rounded border border-border bg-card text-[11px] outline-none"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
             <div className="flex-1 overflow-y-auto p-4">
               <iframe
                 srcDoc={wrappedPreview}
                 className={`bg-white rounded-lg shadow-md border border-border mx-auto h-full ${device === "mobile" ? "w-[375px]" : "w-full max-w-2xl"}`}
-                sandbox=""
+                sandbox="allow-same-origin allow-popups"
                 title="preview"
               />
             </div>
@@ -522,9 +592,18 @@ function TemplateEditorDialog({ template, onClose, onSaved }: any) {
           </button>
           <div className="flex-1" />
           <button
+            onClick={handleSendTest}
+            disabled={sendingTest}
+            className="h-10 px-4 rounded-xl border border-border bg-card hover:bg-muted text-[13px] font-semibold inline-flex items-center gap-2 disabled:opacity-50 transition"
+          >
+            {sendingTest ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            Enviar teste pra mim
+          </button>
+          <button
             onClick={handleSave}
             disabled={saving}
             className="h-10 px-5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-[13px] font-bold inline-flex items-center gap-2 disabled:opacity-50 transition shadow-md"
+            title="Ctrl+S"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {isNew ? "Criar template" : "Salvar alterações"}
@@ -536,11 +615,36 @@ function TemplateEditorDialog({ template, onClose, onSaved }: any) {
 }
 
 function AIGeneratorDialog({ onClose, onGenerated }: any) {
+  const companyId = useActiveCompanyId();
   const [briefing, setBriefing] = useState("");
   const [brandColor, setBrandColor] = useState("#10b981");
   const [brandName, setBrandName] = useState("Accord");
   const [tone, setTone] = useState("profissional e amigável");
+  const [buttonUrl, setButtonUrl] = useState("");
+  const [buttonText, setButtonText] = useState("");
+  const [referenceImageUrl, setReferenceImageUrl] = useState<string | null>(null);
+  const [uploadingRef, setUploadingRef] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  const handleReferenceImageUpload = async (file: File) => {
+    if (!file || !companyId) return;
+    setUploadingRef(true);
+    try {
+      const ext = file.name.split(".").pop() || "png";
+      const path = `email-templates/${companyId}/reference-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("documents").upload(path, file);
+      if (error) throw error;
+      const { data } = await supabase.storage.from("documents")
+        .createSignedUrl(path, 60 * 60 * 24 * 30);
+      if (!data?.signedUrl) throw new Error("Sem URL");
+      setReferenceImageUrl(data.signedUrl);
+      toast.success("Imagem carregada — será incluída no e-mail");
+    } catch (err: any) {
+      toast.error("Erro no upload", { description: err.message });
+    } finally {
+      setUploadingRef(false);
+    }
+  };
 
   const handleGenerate = async () => {
     if (briefing.trim().length < 10) {
@@ -550,7 +654,16 @@ function AIGeneratorDialog({ onClose, onGenerated }: any) {
     setBusy(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-email-template", {
-        body: { briefing, brand_color: brandColor, brand_name: brandName, tone, language: "pt-BR" },
+        body: {
+          briefing,
+          brand_color: brandColor,
+          brand_name: brandName,
+          tone,
+          language: "pt-BR",
+          button_url: buttonUrl || undefined,
+          button_text: buttonText || undefined,
+          reference_image_url: referenceImageUrl || undefined,
+        },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -573,7 +686,7 @@ function AIGeneratorDialog({ onClose, onGenerated }: any) {
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center">
@@ -588,19 +701,89 @@ function AIGeneratorDialog({ onClose, onGenerated }: any) {
 
         <div className="space-y-4 mt-2">
           <div>
+            <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5 block">
+              Imagem pra incluir no e-mail (opcional)
+            </label>
+            {referenceImageUrl ? (
+              <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card">
+                <img src={referenceImageUrl} alt="Referência" className="w-16 h-16 rounded-lg object-cover border border-border" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] font-semibold text-foreground">Imagem carregada</p>
+                  <p className="text-[10.5px] text-muted-foreground truncate">A IA vai usar essa imagem no e-mail gerado</p>
+                </div>
+                <button
+                  onClick={() => setReferenceImageUrl(null)}
+                  className="w-7 h-7 rounded-lg hover:bg-muted text-muted-foreground hover:text-red-500 flex items-center justify-center"
+                  title="Remover imagem"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex items-center gap-3 p-3 rounded-xl border-2 border-dashed border-border hover:border-violet-400 hover:bg-violet-500/5 transition cursor-pointer">
+                {uploadingRef ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-violet-500" />
+                ) : (
+                  <ImageIcon className="w-5 h-5 text-muted-foreground" />
+                )}
+                <div className="flex-1">
+                  <p className="text-[12px] font-semibold text-foreground">
+                    {uploadingRef ? "Enviando..." : "Clique pra anexar uma imagem"}
+                  </p>
+                  <p className="text-[10.5px] text-muted-foreground">A IA vai inseri-la como banner ou destaque no e-mail</p>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingRef}
+                  onChange={e => e.target.files?.[0] && handleReferenceImageUpload(e.target.files[0])}
+                />
+              </label>
+            )}
+          </div>
+
+          <div>
             <label className="text-[11.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5 block">
               O que você quer comunicar? *
             </label>
             <textarea
               value={briefing}
               onChange={e => setBriefing(e.target.value)}
-              placeholder={`Ex: E-mail de Black Friday 2026 anunciando 50% off em todos os planos. Quero destaque pro botão "Garantir desconto" que leva pra https://accordpipe.com.br/black-friday. Mencionar que a oferta termina em 48h.`}
+              placeholder={`Ex: E-mail de Black Friday 2026 anunciando 50% off em todos os planos. Mencionar que a oferta termina em 48h.`}
               rows={5}
               className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-[13px] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-500/20 transition resize-none"
             />
             <p className="text-[10.5px] text-muted-foreground mt-1">
               Dica: quanto mais detalhe (público, tom, CTA, imagens), melhor o resultado.
             </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
+                Texto do botão CTA (opcional)
+              </label>
+              <input
+                type="text"
+                value={buttonText}
+                onChange={e => setButtonText(e.target.value)}
+                placeholder="Ex: Garantir desconto agora"
+                className="w-full h-9 px-3 rounded-lg border border-border bg-card text-[13px] outline-none focus:border-violet-400"
+              />
+            </div>
+            <div>
+              <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
+                URL do botão CTA (opcional)
+              </label>
+              <input
+                type="url"
+                value={buttonUrl}
+                onChange={e => setButtonUrl(e.target.value)}
+                placeholder="https://accordpipe.com.br/black-friday"
+                className="w-full h-9 px-3 rounded-lg border border-border bg-card text-[13px] outline-none focus:border-violet-400"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-3 gap-3">

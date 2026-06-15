@@ -48,7 +48,10 @@ Deno.serve(withErrorHandling("generate-email-template", async (req) => {
   } catch {
     throw new HttpError("JSON inválido no corpo da requisição.", 400, { code: "BAD_JSON" });
   }
-  const { briefing, brand_color, brand_name, tone, language } = body || {};
+  const {
+    briefing, brand_color, brand_name, tone, language,
+    button_url, button_text, reference_image_url,
+  } = body || {};
 
   if (!briefing || typeof briefing !== "string" || briefing.trim().length < 10) {
     throw new HttpError("Briefing muito curto. Descreva o objetivo do e-mail.", 400, { code: "BRIEFING_TOO_SHORT" });
@@ -68,6 +71,12 @@ CONFIGURAÇÕES:
 - Nome da marca: ${brand_name || "Accord"}
 - Tom: ${tone || "profissional e amigável"}
 - Idioma: ${language || "português brasileiro"}
+${button_url ? `- URL do botão CTA principal: ${button_url}` : ""}
+${button_text ? `- Texto do botão CTA: "${button_text}"` : ""}
+${reference_image_url ? `- IMAGEM PARA INCLUIR (use exatamente este src na tag <img>): ${reference_image_url}` : ""}
+
+${button_url ? "⚠️ IMPORTANTE: O botão CTA principal DEVE usar exatamente a URL acima no atributo href. Não invente outra URL." : ""}
+${reference_image_url ? `⚠️ A imagem acima DEVE ser incluída no e-mail como banner principal (logo abaixo do cabeçalho) usando <img src="${reference_image_url}" alt="..." style="max-width:100%;height:auto;display:block;border:0;" />. Não invente outras URLs de imagem nem use Unsplash.` : ""}
 
 Gere o e-mail HTML conforme as regras. Retorne SOMENTE o JSON.`;
 
