@@ -397,20 +397,114 @@ ${renderPreview(body)}
                 <Input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Assunto do e-mail" />
               </div>
             )}
-            <div>
-              <Label>{channel === "email" ? "Corpo (HTML permitido)" : "Mensagem"}</Label>
-              <Textarea
-                value={body}
-                onChange={e => setBody(e.target.value)}
-                rows={8}
-                placeholder={channel === "whatsapp"
-                  ? "Olá {{nome}}, temos uma novidade pra você…"
-                  : "<p>Olá {{nome}},</p><p>Temos uma novidade…</p>"}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Variáveis disponíveis: <code>{"{{nome}}"}</code> e qualquer coluna do CSV.
-              </p>
-            </div>
+            {channel === "email" ? (
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <Label className="mb-0">Corpo do e-mail</Label>
+                  <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setShowRaw(false)}
+                      className={`h-7 px-3 rounded-md text-[11px] font-semibold inline-flex items-center gap-1 transition ${
+                        !showRaw ? "bg-background shadow-sm text-violet-500" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Eye className="w-3 h-3" /> Pré-visualização
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowRaw(true)}
+                      className={`h-7 px-3 rounded-md text-[11px] font-semibold inline-flex items-center gap-1 transition ${
+                        showRaw ? "bg-background shadow-sm text-violet-500" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Code className="w-3 h-3" /> HTML
+                    </button>
+                  </div>
+                </div>
+
+                {showRaw ? (
+                  <Textarea
+                    value={body}
+                    onChange={e => setBody(e.target.value)}
+                    rows={12}
+                    className="font-mono text-[12px]"
+                    placeholder="<p>Olá {{nome}}, ...</p>"
+                  />
+                ) : (
+                  <div className="rounded-xl border border-border bg-muted/20 overflow-hidden">
+                    <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-card/60">
+                      <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground flex-1">
+                        Como o destinatário vai ver
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewDevice("desktop")}
+                        className={`w-7 h-7 rounded flex items-center justify-center transition ${
+                          previewDevice === "desktop" ? "bg-violet-500/15 text-violet-500" : "text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        <Monitor className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewDevice("mobile")}
+                        className={`w-7 h-7 rounded flex items-center justify-center transition ${
+                          previewDevice === "mobile" ? "bg-violet-500/15 text-violet-500" : "text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        <Smartphone className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <div className="p-4 bg-muted/30 max-h-[420px] overflow-y-auto flex justify-center">
+                      <iframe
+                        srcDoc={previewHtml}
+                        title="Pré-visualização"
+                        className={`bg-white rounded-lg shadow-md border border-border ${
+                          previewDevice === "mobile" ? "w-[375px] h-[500px]" : "w-full max-w-2xl h-[450px]"
+                        }`}
+                        sandbox="allow-same-origin"
+                      />
+                    </div>
+                    <details className="px-3 py-2 border-t border-border bg-muted/10 text-[11px]">
+                      <summary className="cursor-pointer text-muted-foreground hover:text-foreground font-semibold">
+                        Editar valores de exemplo (não afeta o envio real)
+                      </summary>
+                      <div className="mt-2 grid grid-cols-3 gap-2">
+                        {Object.entries(sampleVars).map(([key, val]) => (
+                          <div key={key}>
+                            <label className="text-[9.5px] font-mono text-muted-foreground">{`{{${key}}}`}</label>
+                            <input
+                              value={val}
+                              onChange={e => setSampleVars(p => ({ ...p, [key]: e.target.value }))}
+                              className="w-full h-7 px-2 rounded border border-border bg-card text-[10.5px] outline-none"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  </div>
+                )}
+                <p className="text-[10.5px] text-muted-foreground mt-1">
+                  Variáveis disponíveis: <code className="font-mono">{`{{nome}}`}</code>{" "}
+                  <code className="font-mono">{`{{empresa}}`}</code> + qualquer coluna do Excel.
+                </p>
+              </div>
+            ) : (
+              <div>
+                <Label>Mensagem</Label>
+                <Textarea
+                  value={body}
+                  onChange={e => setBody(e.target.value)}
+                  rows={8}
+                  placeholder="Olá {{nome}}, temos uma novidade pra você…"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Variáveis disponíveis: <code>{"{{nome}}"}</code> e qualquer coluna do Excel.
+                </p>
+              </div>
+            )}
             <EmailTemplateManager
               open={pickTemplateOpen}
               onOpenChange={setPickTemplateOpen}
