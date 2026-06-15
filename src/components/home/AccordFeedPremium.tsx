@@ -390,38 +390,6 @@ export function AccordFeedPremium() {
             </div>
           </div>
 
-          {/* STORIES — colegas online reais */}
-          <div className="afp-stories">
-            <button type="button" className="afp-story" onClick={() => setComposerOpen(true)} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
-              <div className="afp-story-ring afp-create">
-                <div className="afp-story-pic">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                </div>
-              </div>
-              <span className="afp-story-name" style={{ color: "hsl(var(--primary))", fontWeight: 600 }}>Publicar</span>
-            </button>
-            {otherOnline.slice(0, 8).map(u => (
-              <div className="afp-story" key={u.user_id}>
-                <div className="afp-story-ring">
-                  <div className="afp-story-inner">
-                    <div className="afp-story-pic" style={{ background: gradientFor(u.user_id) }}>
-                      {u.avatar_url
-                        ? <img src={u.avatar_url} alt="" style={{ width: "100%", height: "100%", borderRadius: 99, objectFit: "cover" }} />
-                        : initials(u.name)}
-                    </div>
-                  </div>
-                </div>
-                <span className="afp-story-name">{(u.name || "Colega").split(" ")[0]}</span>
-              </div>
-            ))}
-            {otherOnline.length === 0 && (
-              <div style={{ fontSize: 11.5, color: "hsl(var(--muted-foreground))", padding: "20px 8px", alignSelf: "center" }}>
-                Ninguém online agora.
-              </div>
-            )}
-          </div>
 
           {/* FILTROS */}
           <div className="afp-filters">
