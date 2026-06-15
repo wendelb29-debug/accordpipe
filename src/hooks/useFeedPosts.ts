@@ -58,6 +58,7 @@ export interface FeedPost {
   total_reactions: number;
   comments_count: number;
   saved_by_me: boolean;
+  followed_by_me: boolean;
 }
 
 export function useFeedPosts() {
@@ -127,6 +128,7 @@ export function useFeedPosts() {
 
       // Saves
       let savedSet = new Set<string>();
+      let followedSet = new Set<string>();
       if (user?.id) {
         const { data: saves } = await (supabase as any)
           .from("feed_post_saves")
@@ -134,6 +136,13 @@ export function useFeedPosts() {
           .eq("user_id", user.id)
           .in("post_id", postIds);
         savedSet = new Set(((saves as any[]) || []).map((s) => s.post_id));
+
+        const { data: follows } = await (supabase as any)
+          .from("feed_post_follows")
+          .select("post_id")
+          .eq("user_id", user.id)
+          .in("post_id", postIds);
+        followedSet = new Set(((follows as any[]) || []).map((s) => s.post_id));
       }
 
       // Polls
@@ -222,6 +231,7 @@ export function useFeedPosts() {
         total_reactions: totalByPost[p.id] || 0,
         comments_count: commentsByPost[p.id] || 0,
         saved_by_me: savedSet.has(p.id),
+        followed_by_me: followedSet.has(p.id),
       }));
     },
     staleTime: 30_000,

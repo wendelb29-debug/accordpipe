@@ -2852,6 +2852,38 @@ export type Database = {
           },
         ]
       }
+      feed_post_follows: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          servidor_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          servidor_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          servidor_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_post_follows_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "feed_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feed_post_reactions: {
         Row: {
           created_at: string
