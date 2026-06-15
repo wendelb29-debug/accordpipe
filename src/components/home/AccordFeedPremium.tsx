@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PostReactorsDialog } from "./PostReactorsDialog";
 import { QuickPostDialog } from "./QuickPostDialog";
+import { FeedPostExtras, PostTypeBadge } from "./FeedPostExtras";
 
 const HIDDEN_KEY = "afp:hidden-posts";
 function getHiddenIds(): string[] {
@@ -570,7 +571,7 @@ function PostCard({
   const liked = post.reactions.some(r => r.byMe);
   const isAuthor = !!currentUserId && currentUserId === post.author.user_id;
   return (
-    <div className={`afp-post-card${post.pinned ? " afp-post-card-pinned" : ""}`} id={`afp-post-${post.id}`}>
+    <div className={`afp-post-card${post.pinned ? " afp-post-card-pinned" : ""}${post.post_type === "anuncio" ? " afp-post-card-anuncio" : ""}`} id={`afp-post-${post.id}`}>
       <div className="afp-post-header">
         <div className="afp-av-ring" style={{ background: gradientFor(post.author.user_id) }}>
           <div className="afp-av-inner">
@@ -587,6 +588,7 @@ function PostCard({
           </div>
           <div className="afp-post-author-line2">
             <span>{relativeTime(post.created_at)}</span>
+            <PostTypeBadge post={post} />
           </div>
         </div>
         {post.pinned && (
@@ -653,7 +655,11 @@ function PostCard({
         </DropdownMenu>
       </div>
 
-      <div className="afp-post-content" style={{ whiteSpace: "pre-wrap" }}>{post.content}</div>
+      {post.post_type !== "enquete" && post.content && (
+        <div className="afp-post-content" style={{ whiteSpace: "pre-wrap" }}>{post.content}</div>
+      )}
+
+      <FeedPostExtras post={post} currentUserId={currentUserId} />
 
       {post.image_url && (
         <div style={{ width: "100%", maxHeight: 480, overflow: "hidden" }}>
@@ -865,6 +871,7 @@ const CSS = `
 /* POST */
 .afp-post-card{background:hsl(var(--card) / 0.5);border:1px solid hsl(var(--border));border-radius:20px;overflow:hidden;margin-bottom:16px;position:relative;transition:border-color .2s, box-shadow .2s}
 .afp-post-card-pinned{border-color:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.35),0 12px 32px -12px rgba(245,158,11,.35);background:linear-gradient(180deg, rgba(245,158,11,.06), transparent 120px), hsl(var(--card) / 0.5)}
+.afp-post-card-anuncio{border-left:3px solid hsl(0 80% 55%)}
 .afp-post-header{display:flex;align-items:center;gap:11px;padding:14px 16px}
 .afp-av-ring{width:42px;height:42px;border-radius:99px;padding:2px;flex-shrink:0;position:relative}
 .afp-av-inner{width:100%;height:100%;border-radius:99px;background:hsl(var(--background));padding:2px}

@@ -2660,6 +2660,112 @@ export type Database = {
         }
         Relationships: []
       }
+      feed_poll_options: {
+        Row: {
+          created_at: string
+          id: string
+          poll_id: string
+          position: number
+          text: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          poll_id: string
+          position?: number
+          text: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          poll_id?: string
+          position?: number
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_poll_options_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "feed_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feed_poll_votes: {
+        Row: {
+          created_at: string
+          id: string
+          option_id: string
+          poll_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_id: string
+          poll_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_id?: string
+          poll_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_poll_votes_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "feed_poll_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "feed_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feed_polls: {
+        Row: {
+          allow_multiple: boolean
+          created_at: string
+          id: string
+          post_id: string
+          question: string
+          servidor_id: string
+        }
+        Insert: {
+          allow_multiple?: boolean
+          created_at?: string
+          id?: string
+          post_id: string
+          question: string
+          servidor_id: string
+        }
+        Update: {
+          allow_multiple?: boolean
+          created_at?: string
+          id?: string
+          post_id?: string
+          question?: string
+          servidor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_polls_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "feed_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feed_post_comments: {
         Row: {
           content: string
@@ -2803,36 +2909,48 @@ export type Database = {
       }
       feed_posts: {
         Row: {
+          appreciation_kind: string | null
+          appreciation_to: string | null
           author_id: string
           content: string
           created_at: string
+          expires_at: string | null
           id: string
           image_url: string | null
           pinned: boolean
+          post_type: string
           recipients: string
           servidor_id: string
           tags: string[]
           updated_at: string
         }
         Insert: {
+          appreciation_kind?: string | null
+          appreciation_to?: string | null
           author_id: string
           content: string
           created_at?: string
+          expires_at?: string | null
           id?: string
           image_url?: string | null
           pinned?: boolean
+          post_type?: string
           recipients?: string
           servidor_id: string
           tags?: string[]
           updated_at?: string
         }
         Update: {
+          appreciation_kind?: string | null
+          appreciation_to?: string | null
           author_id?: string
           content?: string
           created_at?: string
+          expires_at?: string | null
           id?: string
           image_url?: string | null
           pinned?: boolean
+          post_type?: string
           recipients?: string
           servidor_id?: string
           tags?: string[]
