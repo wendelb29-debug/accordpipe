@@ -602,7 +602,7 @@ export function AccordFeedPremium() {
 // ──────────────── PostCard ────────────────
 
 function PostCard({
-  post, currentUserId, showComments, onReact, onToggleComments, onSave, onShare,
+  post, currentUserId, showComments, onReact, onToggleComments, onSave, onShare, onFollow,
   onTogglePin, onOpenPost, onAddRecipients, onEdit, onHide, onCreateTask, onDelete, onOpenReactors,
 }: {
   post: FeedPost;
@@ -612,6 +612,7 @@ function PostCard({
   onToggleComments: () => void;
   onSave: () => void;
   onShare: () => void;
+  onFollow: () => void;
   onTogglePin: () => void;
   onOpenPost: () => void;
   onAddRecipients: () => void;
