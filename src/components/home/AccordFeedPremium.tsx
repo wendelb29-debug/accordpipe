@@ -4,7 +4,7 @@
  * Conectado a feed_posts, tenant_events, feed_post_reactions/comments/saves,
  * presence realtime, user_follows.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MoreHorizontal, Pin, Bookmark, ExternalLink, Link2, UserPlus, Pencil, EyeOff, CheckSquare, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -93,6 +93,34 @@ export function AccordFeedPremium() {
   const [myWeekOpen, setMyWeekOpen] = useState(false);
   const [myWeekTab, setMyWeekTab] = useState<MyWeekTab>("posts");
   const navigate = useNavigate();
+  const [brandColor, setBrandColor] = useState<string>("#5b3fd4");
+
+  useEffect(() => {
+    if (!companyId) { setBrandColor("#5b3fd4"); return; }
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("companies")
+        .select("brand_primary_color")
+        .eq("id", companyId)
+        .maybeSingle();
+      const c = (data?.brand_primary_color || "").trim();
+      setBrandColor(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c) ? c : "#5b3fd4");
+    })();
+    const handler = () => {
+      if (!companyId) return;
+      (supabase as any).from("companies").select("brand_primary_color").eq("id", companyId).maybeSingle()
+        .then(({ data }: any) => {
+          const c = (data?.brand_primary_color || "").trim();
+          setBrandColor(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c) ? c : "#5b3fd4");
+        });
+    };
+    window.addEventListener("brand-colors-updated", handler);
+    window.addEventListener("tenant-switched", handler);
+    return () => {
+      window.removeEventListener("brand-colors-updated", handler);
+      window.removeEventListener("tenant-switched", handler);
+    };
+  }, [companyId]);
 
   const otherOnline = useMemo(() => onlineUsers.filter(u => u.user_id !== user?.id), [onlineUsers, user?.id]);
   const firstName = (profile?.name || "").split(" ")[0] || "colega";
@@ -319,7 +347,8 @@ export function AccordFeedPremium() {
 
 
   return (
-    <div className="afp-root">
+    <div className="afp-root" style={{ ["--afp-brand" as any]: brandColor }}>
+      <div className="afp-brand-ambient" aria-hidden="true" />
       <style>{CSS}</style>
 
       <div className="afp-shell">
@@ -1469,21 +1498,48 @@ const CSS = `
 
 /* 1. Fundo cinza-azulado + ambient gradients reforçados */
 .afp-root{
-  background:#f7f8fb;
+  position:relative;
+  background:
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--afp-brand, #5b3fd4) 7%, #ffffff) 0%,
+      color-mix(in srgb, var(--afp-brand, #5b3fd4) 5%, #ffffff) 35%,
+      color-mix(in srgb, var(--afp-brand, #5b3fd4) 9%, #ffffff) 70%,
+      color-mix(in srgb, var(--afp-brand, #5b3fd4) 6%, #ffffff) 100%
+    );
 }
 .dark .afp-root{
-  background:#0a0d14;
+  background:
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--afp-brand, #5b3fd4) 14%, #07090f) 0%,
+      color-mix(in srgb, var(--afp-brand, #5b3fd4) 10%, #07090f) 35%,
+      color-mix(in srgb, var(--afp-brand, #5b3fd4) 18%, #07090f) 70%,
+      color-mix(in srgb, var(--afp-brand, #5b3fd4) 12%, #07090f) 100%
+    );
 }
 .afp-root::before{
   background:
-    radial-gradient(900px 600px at 90% 5%, rgba(91,63,212,0.08), transparent 60%),
-    radial-gradient(700px 500px at 5% 95%, rgba(91,63,212,0.05), transparent 60%);
+    radial-gradient(900px 600px at 90% 5%, color-mix(in srgb, var(--afp-brand, #5b3fd4) 12%, transparent), transparent 60%),
+    radial-gradient(700px 500px at 5% 95%, color-mix(in srgb, var(--afp-brand, #5b3fd4) 8%, transparent), transparent 60%);
 }
 .dark .afp-root::before{
   background:
-    radial-gradient(900px 600px at 90% 5%, rgba(124,58,237,0.16), transparent 60%),
-    radial-gradient(700px 500px at 5% 95%, rgba(91,63,212,0.12), transparent 60%);
+    radial-gradient(900px 600px at 90% 5%, color-mix(in srgb, var(--afp-brand, #5b3fd4) 22%, transparent), transparent 60%),
+    radial-gradient(700px 500px at 5% 95%, color-mix(in srgb, var(--afp-brand, #5b3fd4) 16%, transparent), transparent 60%);
 }
+.afp-brand-ambient{
+  position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:
+    radial-gradient(1100px 700px at 85% 0%, color-mix(in srgb, var(--afp-brand, #5b3fd4) 14%, transparent), transparent 55%),
+    radial-gradient(900px 600px at 10% 100%, color-mix(in srgb, var(--afp-brand, #5b3fd4) 10%, transparent), transparent 55%),
+    radial-gradient(600px 400px at 50% 50%, color-mix(in srgb, var(--afp-brand, #5b3fd4) 5%, transparent), transparent 60%);
+}
+.dark .afp-brand-ambient{
+  background:
+    radial-gradient(1100px 700px at 85% 0%, color-mix(in srgb, var(--afp-brand, #5b3fd4) 22%, transparent), transparent 55%),
+    radial-gradient(900px 600px at 10% 100%, color-mix(in srgb, var(--afp-brand, #5b3fd4) 16%, transparent), transparent 55%),
+    radial-gradient(600px 400px at 50% 50%, color-mix(in srgb, var(--afp-brand, #5b3fd4) 10%, transparent), transparent 60%);
+}
+.afp-root .afp-shell{ position:relative; z-index:1; }
 
 /* 2. Hero — tipografia premium + sombra colorida intensa */
 .afp-hero{
