@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Bot, X, Send, Sparkles, Minimize2, MessageSquare } from "lucide-react";
+import { Bot, X, Send, Sparkles, Minimize2, MessageSquare, Trash2 } from "lucide-react";
+import { useAIAssistant } from "@/contexts/AIAssistantContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
@@ -134,16 +135,27 @@ function useBottomOffset(isMobile: boolean) {
 }
 
 export function AccordAIChat() {
+  const { mode: aiMode, setMode: setAiMode, position, setPosition, isDragging, setDragging } = useAIAssistant();
   const [open, setOpen] = useState(false);
   const [assistantState, setAssistantState] = useState<AssistantState>(loadState);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [dragOverDrop, setDragOverDrop] = useState(false);
+  const fabRef = useRef<HTMLDivElement>(null);
+  const dragStart = useRef<{ x: number; y: number; offsetX: number; offsetY: number; moved: boolean } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const { profile, activeCompany, activeCompanyId } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
   const bottomOffset = useBottomOffset(isMobile);
+
+  // Sync open with AI mode for the pure-AI path
+  useEffect(() => {
+    if (aiMode === "open") setOpen(true);
+    if (aiMode === "header" || aiMode === "hidden") setOpen(false);
+  }, [aiMode]);
+
 
   // Smart launcher — inbox notifications
   const { preview, pending, totalUnread, clearPreview, dismissContact } = useInboxNotifications();
