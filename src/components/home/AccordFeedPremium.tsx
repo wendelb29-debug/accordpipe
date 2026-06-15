@@ -571,7 +571,7 @@ function PostCard({
   const liked = post.reactions.some(r => r.byMe);
   const isAuthor = !!currentUserId && currentUserId === post.author.user_id;
   return (
-    <div className={`afp-post-card${post.pinned ? " afp-post-card-pinned" : ""}`} id={`afp-post-${post.id}`}>
+    <div className={`afp-post-card${post.pinned ? " afp-post-card-pinned" : ""}${post.post_type === "anuncio" ? " afp-post-card-anuncio" : ""}`} id={`afp-post-${post.id}`}>
       <div className="afp-post-header">
         <div className="afp-av-ring" style={{ background: gradientFor(post.author.user_id) }}>
           <div className="afp-av-inner">
