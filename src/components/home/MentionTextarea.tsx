@@ -154,6 +154,7 @@ export function MentionTextarea({
           fontSize: 13,
           outline: "none",
         }}
+        className="placeholder:text-muted-foreground"
       />
       {showDropdown && (filtered.length > 0 || canMentionAll) && (
         <div
