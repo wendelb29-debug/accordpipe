@@ -430,7 +430,47 @@ export function ExpandedComposer({ open, onClose, onPublished, initialTab = "mes
 
         {/* CONTEÚDO */}
         <div className="flex-1 overflow-y-auto min-h-[200px]">
-          {tab === "message" && <EditorContent editor={editor} />}
+          {tab === "message" && (
+            <div className="relative">
+              <EditorContent editor={editor} />
+              {mention.open && mentionSuggestions.length > 0 && (
+                <div
+                  className="absolute z-50 w-[260px] bg-popover border border-border rounded-lg shadow-2xl overflow-hidden"
+                  style={{ top: mention.top, left: Math.min(mention.left, 600) }}
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  <div className="px-3 py-1.5 text-[10px] font-bold tracking-wider text-muted-foreground bg-muted/40 border-b border-border">
+                    MARCAR · {tenantUsers.length} no tenant
+                  </div>
+                  <div className="max-h-[240px] overflow-y-auto">
+                    {mentionSuggestions.map((u) => (
+                      <button
+                        key={u.user_id}
+                        onClick={() => insertMention(u)}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-muted text-left transition"
+                      >
+                        {u.user_id === "__all__" ? (
+                          <div className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-600 flex items-center justify-center">
+                            <AtSign className="w-3.5 h-3.5" />
+                          </div>
+                        ) : u.avatar_url ? (
+                          <img src={u.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-7 h-7 rounded-full bg-primary/20 text-primary text-xs font-bold flex items-center justify-center">
+                            {u.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <span className="text-sm text-foreground flex-1 truncate">{u.name}</span>
+                      </button>
+                    ))}
+                    {mentionSuggestions.length === 1 && (
+                      <p className="px-3 py-4 text-center text-xs text-muted-foreground">Nenhum usuário encontrado</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {tab === "poll" && (
             <div className="p-4 space-y-3">
