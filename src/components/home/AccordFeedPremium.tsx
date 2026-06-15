@@ -385,7 +385,7 @@ export function AccordFeedPremium() {
                   ? <img src={profile.avatar_url} alt="" style={{ width: "100%", height: "100%", borderRadius: 14, objectFit: "cover" }} />
                   : initials(profile?.name)}
               </div>
-              <div className="afp-composer-input">No que está pensando, {firstName}?</div>
+              <button type="button" className="afp-composer-input" onClick={() => setComposerOpen(true)} style={{ textAlign: "left", cursor: "text", fontFamily: "inherit" }}>No que está pensando, {firstName}?</button>
             </div>
           </div>
 
