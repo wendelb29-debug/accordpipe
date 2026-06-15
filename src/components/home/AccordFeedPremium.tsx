@@ -89,6 +89,8 @@ export function AccordFeedPremium() {
   const [hidden, setHidden] = useState<string[]>(() => getHiddenIds());
   const [composerOpen, setComposerOpen] = useState(false);
   const [reactorsPostId, setReactorsPostId] = useState<string | null>(null);
+  const [myWeekOpen, setMyWeekOpen] = useState(false);
+  const [myWeekTab, setMyWeekTab] = useState<MyWeekTab>("posts");
   const navigate = useNavigate();
 
   const otherOnline = useMemo(() => onlineUsers.filter(u => u.user_id !== user?.id), [onlineUsers, user?.id]);
