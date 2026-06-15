@@ -38,7 +38,9 @@ export function QuickWhatsAppChat({
   const [loading, setLoading] = useState(true);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { setAvatarError(false); }, [notification.contact_avatar]);
 
   const fetchMessages = useCallback(async () => {
     const { data } = await supabase
@@ -134,8 +136,14 @@ export function QuickWhatsAppChat({
       {/* Header — verde estilo WhatsApp */}
       <div className="flex items-center gap-3 px-3 py-2.5 text-white shrink-0 bg-gradient-to-r from-emerald-600 to-emerald-500">
         <div className="h-9 w-9 rounded-full bg-white/20 flex items-center justify-center overflow-hidden shrink-0">
-          {notification.contact_avatar ? (
-            <img src={notification.contact_avatar} alt={notification.contact_name} className="h-full w-full object-cover" />
+          {notification.contact_avatar && !avatarError ? (
+            <img
+              src={notification.contact_avatar}
+              alt=""
+              referrerPolicy="no-referrer"
+              onError={() => setAvatarError(true)}
+              className="h-full w-full object-cover"
+            />
           ) : (
             <MessageSquare className="h-4 w-4" />
           )}
