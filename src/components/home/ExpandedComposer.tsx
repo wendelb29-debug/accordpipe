@@ -56,6 +56,61 @@ export function ExpandedComposer({ open, onClose, onPublished, initialTab = "mes
   const [evDate, setEvDate] = useState("");
   const [evDesc, setEvDesc] = useState("");
 
+  // Recipients picker
+  type TenantUser = { user_id: string; name: string; avatar_url: string | null };
+  const [allRecipients, setAllRecipients] = useState(true);
+  const [selectedRecipients, setSelectedRecipients] = useState<TenantUser[]>([]);
+  const [tenantUsers, setTenantUsers] = useState<TenantUser[]>([]);
+  const [recipientPickerOpen, setRecipientPickerOpen] = useState(false);
+  const [recipientSearch, setRecipientSearch] = useState("");
+
+  useEffect(() => {
+    if (!open || !servidorId) return;
+    supabase
+      .from("user_tenants")
+      .select("user_id, profiles:profiles!user_tenants_user_id_fkey(name, avatar_url)")
+      .eq("tenant_id", servidorId)
+      .eq("status", "ativo")
+      .then(({ data }) => {
+        const list: TenantUser[] = (data || [])
+          .map((r: any) => ({
+            user_id: r.user_id,
+            name: r.profiles?.name || "Sem nome",
+            avatar_url: r.profiles?.avatar_url || null,
+          }))
+          .filter((u) => u.user_id !== userId);
+        setTenantUsers(list);
+      });
+  }, [open, servidorId, userId]);
+
+  useEffect(() => {
+    if (open) {
+      setAllRecipients(true);
+      setSelectedRecipients([]);
+      setRecipientPickerOpen(false);
+      setRecipientSearch("");
+    }
+  }, [open]);
+
+  const filteredTenantUsers = useMemo(
+    () => tenantUsers.filter((u) => u.name.toLowerCase().includes(recipientSearch.toLowerCase())),
+    [tenantUsers, recipientSearch]
+  );
+
+  const toggleRecipient = (u: TenantUser) => {
+    setAllRecipients(false);
+    setSelectedRecipients((prev) =>
+      prev.find((p) => p.user_id === u.user_id)
+        ? prev.filter((p) => p.user_id !== u.user_id)
+        : [...prev, u]
+    );
+  };
+
+  const recipientsValue = useMemo(
+    () => (allRecipients || selectedRecipients.length === 0 ? "all" : selectedRecipients.map((u) => u.user_id).join(",")),
+    [allRecipients, selectedRecipients]
+  );
+
   // File source state
   const [fileSource, setFileSource] = useState<"upload" | "drive">("upload");
   const [driveFiles, setDriveFiles] = useState<Array<{ id: string; name: string; file_path: string | null; file_url: string | null; file_type: string | null }>>([]);
