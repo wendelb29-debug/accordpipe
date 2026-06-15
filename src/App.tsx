@@ -508,6 +508,7 @@ const App = () => (
           </Routes>
           </ErrorBoundary>
           </Suspense>
+          </AIAssistantProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
