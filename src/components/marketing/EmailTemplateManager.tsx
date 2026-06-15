@@ -408,7 +408,49 @@ function TemplateEditorDialog({ template, onClose, onSaved }: any) {
     }
   };
 
-  const wrappedPreview = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;background:#f5f5f5;padding:20px;font-family:Arial,sans-serif;">${bodyHtml}</body></html>`;
+  const substituteVariables = (html: string): string => {
+    return html.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_m, varName) => {
+      return previewVars[varName] ?? `[${varName}]`;
+    });
+  };
+
+  const handleSendTest = async () => {
+    if (!bodyHtml.trim() || !subject.trim()) {
+      toast.error("Preencha assunto e corpo antes de enviar teste");
+      return;
+    }
+    setSendingTest(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-template-test", {
+        body: {
+          subject: substituteVariables(subject),
+          body_html: substituteVariables(bodyHtml),
+        },
+      });
+      if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
+      toast.success(`Teste enviado pra ${(data as any).sent_to}`);
+    } catch (err: any) {
+      toast.error("Erro ao enviar teste", { description: err.message });
+    } finally {
+      setSendingTest(false);
+    }
+  };
+
+  // Ctrl+S salva
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name, subject, bodyHtml, category, isShared, previewText]);
+
+  const previewBodyHtml = substituteVariables(bodyHtml);
+  const wrappedPreview = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;padding:20px;background:#f5f5f5;font-family:Arial,sans-serif;}a:hover{opacity:0.85;}</style></head><body>${previewBodyHtml}</body></html>`;
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
