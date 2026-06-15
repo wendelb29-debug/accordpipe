@@ -70,8 +70,9 @@ export function useFeedPosts() {
     queryFn: async (): Promise<FeedPost[]> => {
       const { data: rows, error } = await supabase
         .from("feed_posts")
-        .select("id,content,image_url,tags,author_id,created_at,servidor_id,pinned")
+        .select("id,content,image_url,tags,author_id,created_at,servidor_id,pinned,post_type,expires_at,appreciation_to,appreciation_kind")
         .eq("servidor_id", companyId!)
+        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
         .order("pinned", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(50);
