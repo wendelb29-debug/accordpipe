@@ -180,6 +180,36 @@ export function MyWeekActivityDialog({ open, onOpenChange, initialTab, onOpenPos
               <div className="flex items-center justify-center py-8 text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin mr-2" /> Carregando...
               </div>
+            ) : tab === "follows" ? (
+              followedUsers.length === 0 ? (
+                <div className="text-center py-8 text-sm text-muted-foreground">{empty.follows}</div>
+              ) : followedUsers.map(u => {
+                const initials = (u.name || "?").split(" ").slice(0, 2).map(s => s[0]).join("").toUpperCase();
+                return (
+                  <div key={u.user_id} className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
+                    <div className="w-9 h-9 rounded-full bg-primary/15 text-primary text-xs font-semibold flex items-center justify-center overflow-hidden">
+                      {u.avatar_url ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" /> : initials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-foreground truncate">{u.name || "Colega"}</div>
+                      <div className="text-[11px] text-muted-foreground">Você recebe notificações dessa pessoa</div>
+                    </div>
+                    {onUnfollow && (
+                      <button
+                        onClick={async () => {
+                          await (supabase as any).from("user_follows").delete()
+                            .eq("follower_id", user!.id).eq("following_id", u.user_id);
+                          setFollowedUsers(prev => prev.filter(x => x.user_id !== u.user_id));
+                          onUnfollow(u.user_id);
+                        }}
+                        className="text-xs font-medium px-3 py-1.5 rounded-md border border-border bg-background hover:bg-accent/40 text-foreground"
+                      >
+                        Deixar de seguir
+                      </button>
+                    )}
+                  </div>
+                );
+              })
             ) : items.length === 0 ? (
               <div className="text-center py-8 text-sm text-muted-foreground">{empty[tab]}</div>
             ) : items.map(item => (
