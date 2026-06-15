@@ -80,6 +80,11 @@ function Avatar({ contact, size = 40 }: { contact: SidebarContact; size?: number
     </div>
   );
 }
+const STATUS_TABS: { key: ConversationStatusFilter; label: string; colorClass: string }[] = [
+  { key: "fila", label: "Fila", colorClass: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
+  { key: "em_atendimento", label: "Atend.", colorClass: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" },
+  { key: "encerrado", label: "Enc.", colorClass: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+];
 
 export function InboxSidebar({
   contacts, selectedId, onSelect, searchTerm, onSearchChange,
