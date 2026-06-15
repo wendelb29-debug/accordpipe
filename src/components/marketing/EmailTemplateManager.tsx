@@ -536,11 +536,36 @@ function TemplateEditorDialog({ template, onClose, onSaved }: any) {
 }
 
 function AIGeneratorDialog({ onClose, onGenerated }: any) {
+  const companyId = useActiveCompanyId();
   const [briefing, setBriefing] = useState("");
   const [brandColor, setBrandColor] = useState("#10b981");
   const [brandName, setBrandName] = useState("Accord");
   const [tone, setTone] = useState("profissional e amigável");
+  const [buttonUrl, setButtonUrl] = useState("");
+  const [buttonText, setButtonText] = useState("");
+  const [referenceImageUrl, setReferenceImageUrl] = useState<string | null>(null);
+  const [uploadingRef, setUploadingRef] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  const handleReferenceImageUpload = async (file: File) => {
+    if (!file || !companyId) return;
+    setUploadingRef(true);
+    try {
+      const ext = file.name.split(".").pop() || "png";
+      const path = `email-templates/${companyId}/reference-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("documents").upload(path, file);
+      if (error) throw error;
+      const { data } = await supabase.storage.from("documents")
+        .createSignedUrl(path, 60 * 60 * 24 * 30);
+      if (!data?.signedUrl) throw new Error("Sem URL");
+      setReferenceImageUrl(data.signedUrl);
+      toast.success("Imagem carregada — será incluída no e-mail");
+    } catch (err: any) {
+      toast.error("Erro no upload", { description: err.message });
+    } finally {
+      setUploadingRef(false);
+    }
+  };
 
   const handleGenerate = async () => {
     if (briefing.trim().length < 10) {
@@ -550,7 +575,16 @@ function AIGeneratorDialog({ onClose, onGenerated }: any) {
     setBusy(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-email-template", {
-        body: { briefing, brand_color: brandColor, brand_name: brandName, tone, language: "pt-BR" },
+        body: {
+          briefing,
+          brand_color: brandColor,
+          brand_name: brandName,
+          tone,
+          language: "pt-BR",
+          button_url: buttonUrl || undefined,
+          button_text: buttonText || undefined,
+          reference_image_url: referenceImageUrl || undefined,
+        },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -573,7 +607,7 @@ function AIGeneratorDialog({ onClose, onGenerated }: any) {
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center">
@@ -588,19 +622,89 @@ function AIGeneratorDialog({ onClose, onGenerated }: any) {
 
         <div className="space-y-4 mt-2">
           <div>
+            <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5 block">
+              Imagem pra incluir no e-mail (opcional)
+            </label>
+            {referenceImageUrl ? (
+              <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card">
+                <img src={referenceImageUrl} alt="Referência" className="w-16 h-16 rounded-lg object-cover border border-border" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] font-semibold text-foreground">Imagem carregada</p>
+                  <p className="text-[10.5px] text-muted-foreground truncate">A IA vai usar essa imagem no e-mail gerado</p>
+                </div>
+                <button
+                  onClick={() => setReferenceImageUrl(null)}
+                  className="w-7 h-7 rounded-lg hover:bg-muted text-muted-foreground hover:text-red-500 flex items-center justify-center"
+                  title="Remover imagem"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex items-center gap-3 p-3 rounded-xl border-2 border-dashed border-border hover:border-violet-400 hover:bg-violet-500/5 transition cursor-pointer">
+                {uploadingRef ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-violet-500" />
+                ) : (
+                  <ImageIcon className="w-5 h-5 text-muted-foreground" />
+                )}
+                <div className="flex-1">
+                  <p className="text-[12px] font-semibold text-foreground">
+                    {uploadingRef ? "Enviando..." : "Clique pra anexar uma imagem"}
+                  </p>
+                  <p className="text-[10.5px] text-muted-foreground">A IA vai inseri-la como banner ou destaque no e-mail</p>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingRef}
+                  onChange={e => e.target.files?.[0] && handleReferenceImageUpload(e.target.files[0])}
+                />
+              </label>
+            )}
+          </div>
+
+          <div>
             <label className="text-[11.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5 block">
               O que você quer comunicar? *
             </label>
             <textarea
               value={briefing}
               onChange={e => setBriefing(e.target.value)}
-              placeholder={`Ex: E-mail de Black Friday 2026 anunciando 50% off em todos os planos. Quero destaque pro botão "Garantir desconto" que leva pra https://accordpipe.com.br/black-friday. Mencionar que a oferta termina em 48h.`}
+              placeholder={`Ex: E-mail de Black Friday 2026 anunciando 50% off em todos os planos. Mencionar que a oferta termina em 48h.`}
               rows={5}
               className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-[13px] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-500/20 transition resize-none"
             />
             <p className="text-[10.5px] text-muted-foreground mt-1">
               Dica: quanto mais detalhe (público, tom, CTA, imagens), melhor o resultado.
             </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
+                Texto do botão CTA (opcional)
+              </label>
+              <input
+                type="text"
+                value={buttonText}
+                onChange={e => setButtonText(e.target.value)}
+                placeholder="Ex: Garantir desconto agora"
+                className="w-full h-9 px-3 rounded-lg border border-border bg-card text-[13px] outline-none focus:border-violet-400"
+              />
+            </div>
+            <div>
+              <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
+                URL do botão CTA (opcional)
+              </label>
+              <input
+                type="url"
+                value={buttonUrl}
+                onChange={e => setButtonUrl(e.target.value)}
+                placeholder="https://accordpipe.com.br/black-friday"
+                className="w-full h-9 px-3 rounded-lg border border-border bg-card text-[13px] outline-none focus:border-violet-400"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
