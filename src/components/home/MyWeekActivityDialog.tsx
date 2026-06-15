@@ -166,7 +166,7 @@ export function MyWeekActivityDialog({ open, onOpenChange, initialTab, onOpenPos
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle>Sua atividade na semana</DialogTitle>
+          <DialogTitle>{tab === "follows" ? "Pessoas que você segue" : "Sua atividade na semana"}</DialogTitle>
         </DialogHeader>
         <Tabs value={tab} onValueChange={(v) => setTab(v as MyWeekTab)}>
           <TabsList className="grid grid-cols-4 w-full">
