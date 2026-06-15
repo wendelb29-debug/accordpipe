@@ -38,6 +38,7 @@ export function MyWeekActivityDialog({ open, onOpenChange, initialTab, onOpenPos
   const [tab, setTab] = useState<MyWeekTab>(initialTab);
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<PostItem[]>([]);
+  const [followedUsers, setFollowedUsers] = useState<FollowedUser[]>([]);
 
   useEffect(() => { if (open) setTab(initialTab); }, [open, initialTab]);
 
