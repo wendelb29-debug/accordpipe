@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PostReactorsDialog } from "./PostReactorsDialog";
 import { QuickPostDialog } from "./QuickPostDialog";
+import { FeedPostExtras, PostTypeBadge } from "./FeedPostExtras";
 
 const HIDDEN_KEY = "afp:hidden-posts";
 function getHiddenIds(): string[] {
