@@ -18,6 +18,28 @@ export interface FeedReactionSummary {
   byMe: boolean;
 }
 
+export interface FeedPollOption {
+  id: string;
+  text: string;
+  position: number;
+  votes: number;
+  voted_by_me: boolean;
+}
+
+export interface FeedPoll {
+  id: string;
+  question: string;
+  allow_multiple: boolean;
+  options: FeedPollOption[];
+  total_votes: number;
+}
+
+export interface FeedAppreciationTarget {
+  user_id: string;
+  name: string | null;
+  avatar_url: string | null;
+}
+
 export interface FeedPost {
   id: string;
   content: string;
@@ -25,6 +47,12 @@ export interface FeedPost {
   tags: string[];
   pinned: boolean;
   created_at: string;
+  post_type: "mensagem" | "enquete" | "anuncio" | "apreciacao";
+  expires_at: string | null;
+  appreciation_to: string | null;
+  appreciation_kind: string | null;
+  appreciation_target?: FeedAppreciationTarget | null;
+  poll?: FeedPoll | null;
   author: FeedAuthor;
   reactions: FeedReactionSummary[];
   total_reactions: number;
