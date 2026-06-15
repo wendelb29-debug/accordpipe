@@ -154,7 +154,7 @@ export function ContractRichEditor({ content, onChange, className }: Props) {
       TableCell,
       TableHeader,
       HorizontalRule,
-      Placeholder.configure({ placeholder: "Comece a escrever seu contrato aqui ou insira um bloco pronto..." }),
+      Placeholder.configure({ placeholder: "Comece a escrever seu contrato aqui ou insira um bloco pronto..." }) as any,
     ],
     content,
     onUpdate: ({ editor: e }) => {
