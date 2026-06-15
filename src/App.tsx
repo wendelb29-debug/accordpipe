@@ -118,6 +118,17 @@ const App = () => (
               }
             />
             <Route
+              path="/salvos"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Salvos />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
               path="/dashboard"
               element={
                 <ProtectedRoute>
