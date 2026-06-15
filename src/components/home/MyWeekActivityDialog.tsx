@@ -32,7 +32,7 @@ interface Props {
   onUnfollow?: (userId: string) => void;
 }
 
-export function MyWeekActivityDialog({ open, onOpenChange, initialTab, onOpenPost }: Props) {
+export function MyWeekActivityDialog({ open, onOpenChange, initialTab, onOpenPost, onUnfollow }: Props) {
   const { user } = useAuth();
   const companyId = useActiveCompanyId();
   const [tab, setTab] = useState<MyWeekTab>(initialTab);
