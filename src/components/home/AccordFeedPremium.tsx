@@ -190,7 +190,96 @@ export function AccordFeedPremium() {
     });
   }
 
-  // ─── Render ───────────────────────────────────────────
+
+  async function handleTogglePin(post: FeedPost) {
+    const { error } = await supabase
+      .from("feed_posts")
+      .update({ pinned: !post.pinned })
+      .eq("id", post.id);
+    if (error) {
+      toast({ title: "Erro ao fixar", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: post.pinned ? "Publicação desafixada" : "Publicação fixada no topo" });
+    qc.invalidateQueries({ queryKey: ["feed-posts-v2"] });
+  }
+
+  function handleOpenPost(postId: string) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("post", postId);
+    window.history.replaceState({}, "", url.toString());
+    const el = document.getElementById(`afp-post-${postId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("afp-post-highlight");
+      setTimeout(() => el.classList.remove("afp-post-highlight"), 2200);
+    }
+  }
+
+  async function handleAddRecipients(post: FeedPost) {
+    const current = (post as any).recipients || "";
+    const next = window.prompt("Adicionar destinatários (separe por vírgula):", current);
+    if (next == null) return;
+    const { error } = await supabase
+      .from("feed_posts")
+      .update({ recipients: next })
+      .eq("id", post.id);
+    if (error) {
+      toast({ title: "Erro ao adicionar destinatários", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Destinatários atualizados" });
+    qc.invalidateQueries({ queryKey: ["feed-posts-v2"] });
+  }
+
+  async function handleEditPost(post: FeedPost) {
+    const next = window.prompt("Editar publicação:", post.content);
+    if (next == null || next.trim() === "") return;
+    const { error } = await supabase
+      .from("feed_posts")
+      .update({ content: next.trim() })
+      .eq("id", post.id);
+    if (error) {
+      toast({ title: "Erro ao editar", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Publicação atualizada" });
+    qc.invalidateQueries({ queryKey: ["feed-posts-v2"] });
+  }
+
+  function handleHidePost(postId: string) {
+    const next = Array.from(new Set([...hidden, postId]));
+    setHidden(next);
+    setHiddenIds(next);
+    toast({
+      title: "Publicação ocultada",
+      description: "Não vamos mais mostrar essa publicação para você.",
+    });
+  }
+
+  function handleCreateTask(post: FeedPost) {
+    try {
+      sessionStorage.setItem("atividade:from-feed", JSON.stringify({
+        title: `Tarefa: ${post.content.slice(0, 80)}`,
+        description: post.content,
+        post_id: post.id,
+      }));
+    } catch {}
+    toast({ title: "Abrindo Atividades..." });
+    navigate("/atividades?new=1");
+  }
+
+  async function handleDeletePost(post: FeedPost) {
+    if (!window.confirm("Excluir esta publicação? Essa ação não pode ser desfeita.")) return;
+    const { error } = await supabase.from("feed_posts").delete().eq("id", post.id);
+    if (error) {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Publicação excluída" });
+    qc.invalidateQueries({ queryKey: ["feed-posts-v2"] });
+  }
+
 
   return (
     <div className="afp-root">
