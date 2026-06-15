@@ -17,7 +17,7 @@ import { useFeedEvents, type FeedEvent } from "@/hooks/useFeedEvents";
 import { useOnlineUsers } from "@/hooks/useOnlineUsers";
 import { useTrendingTags } from "@/hooks/useTrendingTags";
 import { useHeroStats, useMyWeekStats, useSuggestedColleagues } from "@/hooks/useFeedHomeStats";
-import { PostComments, gradientFor, initials, relativeTime } from "./PostComments";
+import { PostComments, PostCommentsPreview, gradientFor, initials, relativeTime } from "./PostComments";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -741,6 +741,9 @@ function PostCard({
         </button>
       </div>
 
+      {!showComments && post.comments_count > 0 && (
+        <PostCommentsPreview postId={post.id} count={post.comments_count} onExpand={onToggleComments} />
+      )}
       {showComments && <PostComments postId={post.id} servidorId={(post as any).servidor_id || ""} />}
     </div>
   );
