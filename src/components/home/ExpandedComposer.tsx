@@ -165,6 +165,11 @@ export function ExpandedComposer({ open, onClose, onPublished, initialTab = "mes
     }
   };
 
+  // ─────────── @ MENTION INLINE ───────────
+  const [mention, setMention] = useState<{
+    open: boolean; query: string; from: number; to: number; top: number; left: number; index: number;
+  }>({ open: false, query: "", from: 0, to: 0, top: 0, left: 0, index: 0 });
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({}) as any,
@@ -172,14 +177,69 @@ export function ExpandedComposer({ open, onClose, onPublished, initialTab = "mes
       Image as any,
       TextStyle as any,
       Color as any,
-      Placeholder.configure({ placeholder: "Compartilhe uma novidade com a equipe..." }) as any,
+      Placeholder.configure({ placeholder: "Compartilhe uma novidade com a equipe... (use @ pra marcar alguém)" }) as any,
     ],
     editorProps: {
       attributes: {
         class: "tiptap prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[180px] px-4 py-3",
       },
     },
+    onUpdate: ({ editor }) => {
+      const { from } = editor.state.selection;
+      const textBefore = editor.state.doc.textBetween(Math.max(0, from - 40), from, "\n", "\0");
+      const match = /(?:^|\s)@(\w{0,30})$/.exec(textBefore);
+      if (!match) {
+        setMention((m) => (m.open ? { ...m, open: false } : m));
+        return;
+      }
+      const query = match[1] || "";
+      const atIndex = from - (query.length + 1);
+      const coords = editor.view.coordsAtPos(from);
+      const editorRect = editor.view.dom.getBoundingClientRect();
+      setMention({
+        open: true,
+        query,
+        from: atIndex,
+        to: from,
+        top: coords.bottom - editorRect.top + 4,
+        left: coords.left - editorRect.left,
+        index: 0,
+      });
+    },
+    onSelectionUpdate: ({ editor }) => {
+      const { from } = editor.state.selection;
+      const textBefore = editor.state.doc.textBetween(Math.max(0, from - 40), from, "\n", "\0");
+      if (!/(?:^|\s)@(\w{0,30})$/.test(textBefore)) {
+        setMention((m) => (m.open ? { ...m, open: false } : m));
+      }
+    },
   });
+
+  const mentionSuggestions = useMemo(() => {
+    const q = mention.query.toLowerCase();
+    const filtered = tenantUsers.filter((u) => u.name.toLowerCase().includes(q));
+    return [{ user_id: "__all__", name: "Todos os colaboradores", avatar_url: null } as TenantUser, ...filtered];
+  }, [mention.query, tenantUsers]);
+
+  const insertMention = (u: TenantUser) => {
+    if (!editor) return;
+    const label = u.user_id === "__all__" ? "todos" : u.name.replace(/\s+/g, "");
+    editor
+      .chain()
+      .focus()
+      .insertContentAt({ from: mention.from, to: mention.to }, [
+        { type: "text", text: `@${label} ` },
+      ])
+      .run();
+    if (u.user_id === "__all__") {
+      setAllRecipients(true);
+      setSelectedRecipients([]);
+    } else if (!selectedRecipients.find((s) => s.user_id === u.user_id)) {
+      setAllRecipients(false);
+      setSelectedRecipients((prev) => [...prev, u]);
+    }
+    setMention((m) => ({ ...m, open: false }));
+  };
 
   useEffect(() => {
     if (open) {
@@ -370,7 +430,47 @@ export function ExpandedComposer({ open, onClose, onPublished, initialTab = "mes
 
         {/* CONTEÚDO */}
         <div className="flex-1 overflow-y-auto min-h-[200px]">
-          {tab === "message" && <EditorContent editor={editor} />}
+          {tab === "message" && (
+            <div className="relative">
+              <EditorContent editor={editor} />
+              {mention.open && mentionSuggestions.length > 0 && (
+                <div
+                  className="absolute z-50 w-[260px] bg-popover border border-border rounded-lg shadow-2xl overflow-hidden"
+                  style={{ top: mention.top, left: Math.min(mention.left, 600) }}
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  <div className="px-3 py-1.5 text-[10px] font-bold tracking-wider text-muted-foreground bg-muted/40 border-b border-border">
+                    MARCAR · {tenantUsers.length} no tenant
+                  </div>
+                  <div className="max-h-[240px] overflow-y-auto">
+                    {mentionSuggestions.map((u) => (
+                      <button
+                        key={u.user_id}
+                        onClick={() => insertMention(u)}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-muted text-left transition"
+                      >
+                        {u.user_id === "__all__" ? (
+                          <div className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-600 flex items-center justify-center">
+                            <AtSign className="w-3.5 h-3.5" />
+                          </div>
+                        ) : u.avatar_url ? (
+                          <img src={u.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-7 h-7 rounded-full bg-primary/20 text-primary text-xs font-bold flex items-center justify-center">
+                            {u.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <span className="text-sm text-foreground flex-1 truncate">{u.name}</span>
+                      </button>
+                    ))}
+                    {mentionSuggestions.length === 1 && (
+                      <p className="px-3 py-4 text-center text-xs text-muted-foreground">Nenhum usuário encontrado</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {tab === "poll" && (
             <div className="p-4 space-y-3">
