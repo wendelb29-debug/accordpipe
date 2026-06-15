@@ -66,21 +66,28 @@ export function ExpandedComposer({ open, onClose, onPublished, initialTab = "mes
 
   useEffect(() => {
     if (!open || !servidorId) return;
-    supabase
-      .from("user_tenants")
-      .select("user_id, profiles:profiles!user_tenants_user_id_fkey(name, avatar_url)")
-      .eq("tenant_id", servidorId)
-      .eq("status", "ativo")
-      .then(({ data }) => {
-        const list: TenantUser[] = (data || [])
-          .map((r: any) => ({
-            user_id: r.user_id,
-            name: r.profiles?.name || "Sem nome",
-            avatar_url: r.profiles?.avatar_url || null,
-          }))
-          .filter((u) => u.user_id !== userId);
-        setTenantUsers(list);
-      });
+    (async () => {
+      const { data: links } = await supabase
+        .from("user_tenants")
+        .select("user_id")
+        .eq("tenant_id", servidorId)
+        .eq("status", "ativo");
+      const ids = (links || []).map((l: any) => l.user_id).filter((id: string) => id !== userId);
+      if (ids.length === 0) {
+        setTenantUsers([]);
+        return;
+      }
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("user_id, name, avatar_url")
+        .in("user_id", ids);
+      const list: TenantUser[] = (profs || []).map((p: any) => ({
+        user_id: p.user_id,
+        name: p.name || "Sem nome",
+        avatar_url: p.avatar_url || null,
+      }));
+      setTenantUsers(list);
+    })();
   }, [open, servidorId, userId]);
 
   useEffect(() => {
