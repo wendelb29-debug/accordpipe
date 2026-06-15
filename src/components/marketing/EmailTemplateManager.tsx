@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   Sparkles, Plus, Search, Star, Copy, Trash2, Edit, X, Save, Eye,
-  Code, Smartphone, Monitor, Loader2, Image as ImageIcon, Wand2,
+  Code, Smartphone, Monitor, Loader2, Image as ImageIcon, Wand2, Send,
 } from "lucide-react";
 
 // Tabela ainda não tipada nos types gerados — usamos cliente sem tipos
