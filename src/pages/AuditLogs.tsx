@@ -229,6 +229,18 @@ export default function AuditLogs() {
     if (hasAccess) fetchStats();
   }, [hasAccess]);
 
+  useEffect(() => {
+    if (!hasAccess || !companyId) return;
+    supabase
+      .from("profiles")
+      .select("user_id,name")
+      .eq("company_id", companyId)
+      .order("name")
+      .then(({ data }) => {
+        setTenantUsers(((data || []) as any[]).map(p => ({ user_id: p.user_id, name: p.name || "Usuário" })));
+      });
+  }, [hasAccess, companyId]);
+
   const fetchStats = async () => {
     try {
       const since = subDays(new Date(), 30).toISOString();
