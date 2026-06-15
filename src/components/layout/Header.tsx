@@ -1,6 +1,8 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { User, Moon, Sun, Clock, ChevronLeft, Building2 } from "lucide-react";
+import { User, Moon, Sun, Clock, ChevronLeft, Building2, Bot } from "lucide-react";
+import { useAIAssistant } from "@/contexts/AIAssistantContext";
+import { cn } from "@/lib/utils";
 import { NotificationBell } from "./NotificationBell";
 import { MobileSidebar } from "./MobileSidebar";
 import { GlobalSearch } from "./GlobalSearch";
@@ -53,6 +55,7 @@ export function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
+  const { mode: aiMode, setMode: setAiMode } = useAIAssistant();
 
   const titleKey = ROUTE_TITLE_KEYS[location.pathname];
   const pageTitle = titleKey ? (titleKey.startsWith("ACCORD") ? titleKey : t(titleKey)) : "";
