@@ -548,7 +548,7 @@ export function AccordFeedPremium() {
 
 function PostCard({
   post, currentUserId, showComments, onReact, onToggleComments, onSave, onShare,
-  onTogglePin, onOpenPost, onAddRecipients, onEdit, onHide, onCreateTask, onDelete,
+  onTogglePin, onOpenPost, onAddRecipients, onEdit, onHide, onCreateTask, onDelete, onOpenReactors,
 }: {
   post: FeedPost;
   currentUserId?: string;
@@ -564,6 +564,7 @@ function PostCard({
   onHide: () => void;
   onCreateTask: () => void;
   onDelete: () => void;
+  onOpenReactors: () => void;
 }) {
   const liked = post.reactions.some(r => r.byMe);
   const isAuthor = !!currentUserId && currentUserId === post.author.user_id;
