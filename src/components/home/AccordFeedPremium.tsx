@@ -28,6 +28,7 @@ import {
 import { PostReactorsDialog } from "./PostReactorsDialog";
 import { QuickPostDialog } from "./QuickPostDialog";
 import { FeedPostExtras, PostTypeBadge } from "./FeedPostExtras";
+import { MyWeekActivityDialog, type MyWeekTab } from "./MyWeekActivityDialog";
 
 const HIDDEN_KEY = "afp:hidden-posts";
 function getHiddenIds(): string[] {
