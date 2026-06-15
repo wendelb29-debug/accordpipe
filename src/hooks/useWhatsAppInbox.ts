@@ -290,7 +290,7 @@ export function useWhatsAppInbox() {
     // attach the new message as a real WhatsApp reply.
     let quotedExternalId: string | null = null;
     if (replyToId) {
-      const original = messages.find((m) => m.id === replyToId);
+      const original = messagesRef.current.find((m) => m.id === replyToId);
       quotedExternalId =
         original?.external_message_id ||
         (original?.metadata as any)?.external_id ||
