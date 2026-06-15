@@ -588,6 +588,7 @@ function PostCard({
           </div>
           <div className="afp-post-author-line2">
             <span>{relativeTime(post.created_at)}</span>
+            <PostTypeBadge post={post} />
           </div>
         </div>
         {post.pinned && (
