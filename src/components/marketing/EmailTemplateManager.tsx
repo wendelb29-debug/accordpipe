@@ -555,11 +555,31 @@ function TemplateEditorDialog({ template, onClose, onSaved }: any) {
                 <Smartphone className="w-3.5 h-3.5" />
               </button>
             </div>
+            {variables.length > 0 && (
+              <details className="px-3 py-2 border-b border-border bg-card/40 text-[10.5px]">
+                <summary className="cursor-pointer text-muted-foreground hover:text-foreground select-none">
+                  Editar valores de exemplo das variáveis
+                </summary>
+                <div className="mt-2 p-2 bg-muted/40 rounded-lg space-y-1.5 max-h-40 overflow-y-auto">
+                  {variables.map((key) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <span className="text-muted-foreground w-20 font-mono shrink-0">{`{{${key}}}`}</span>
+                      <input
+                        value={previewVars[key] ?? ""}
+                        onChange={e => setPreviewVars(p => ({ ...p, [key]: e.target.value }))}
+                        placeholder={`valor para ${key}`}
+                        className="flex-1 h-6 px-2 rounded border border-border bg-card text-[11px] outline-none"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
             <div className="flex-1 overflow-y-auto p-4">
               <iframe
                 srcDoc={wrappedPreview}
                 className={`bg-white rounded-lg shadow-md border border-border mx-auto h-full ${device === "mobile" ? "w-[375px]" : "w-full max-w-2xl"}`}
-                sandbox=""
+                sandbox="allow-same-origin allow-popups"
                 title="preview"
               />
             </div>
@@ -572,9 +592,18 @@ function TemplateEditorDialog({ template, onClose, onSaved }: any) {
           </button>
           <div className="flex-1" />
           <button
+            onClick={handleSendTest}
+            disabled={sendingTest}
+            className="h-10 px-4 rounded-xl border border-border bg-card hover:bg-muted text-[13px] font-semibold inline-flex items-center gap-2 disabled:opacity-50 transition"
+          >
+            {sendingTest ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            Enviar teste pra mim
+          </button>
+          <button
             onClick={handleSave}
             disabled={saving}
             className="h-10 px-5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-[13px] font-bold inline-flex items-center gap-2 disabled:opacity-50 transition shadow-md"
+            title="Ctrl+S"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {isNew ? "Criar template" : "Salvar alterações"}
