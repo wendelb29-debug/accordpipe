@@ -419,7 +419,18 @@ export default function AuditLogs() {
     setDateFrom(undefined); setDateTo(undefined); setPagePathFilter(null); setPage(0);
   };
 
-  const uniqueUsers = useMemoTopUsers(stats);
+  const uniqueUsers = useMemo(() => {
+    const m: Record<string, { user_id: string; name: string }> = {};
+    // All tenant users (from profiles) first
+    tenantUsers.forEach(u => { m[u.user_id] = u; });
+    // Plus any extra actor that already appears in audit logs (e.g. "Sistema")
+    stats.forEach(l => {
+      if (l.user_id && !m[l.user_id]) {
+        m[l.user_id] = { user_id: l.user_id, name: l.user_name || "Sistema" };
+      }
+    });
+    return Object.values(m).sort((a, b) => a.name.localeCompare(b.name));
+  }, [tenantUsers, stats]);
 
   if (!hasAccess) {
     return (
