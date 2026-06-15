@@ -18,19 +18,27 @@ interface PostItem {
   comments_count?: number;
 }
 
+interface FollowedUser {
+  user_id: string;
+  name: string | null;
+  avatar_url?: string | null;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   initialTab: MyWeekTab;
   onOpenPost?: (postId: string) => void;
+  onUnfollow?: (userId: string) => void;
 }
 
-export function MyWeekActivityDialog({ open, onOpenChange, initialTab, onOpenPost }: Props) {
+export function MyWeekActivityDialog({ open, onOpenChange, initialTab, onOpenPost, onUnfollow }: Props) {
   const { user } = useAuth();
   const companyId = useActiveCompanyId();
   const [tab, setTab] = useState<MyWeekTab>(initialTab);
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<PostItem[]>([]);
+  const [followedUsers, setFollowedUsers] = useState<FollowedUser[]>([]);
 
   useEffect(() => { if (open) setTab(initialTab); }, [open, initialTab]);
 
@@ -77,14 +85,27 @@ export function MyWeekActivityDialog({ open, onOpenChange, initialTab, onOpenPos
           postIds = Array.from(new Set(((data || []) as any[]).map(r => r.post_id)));
           await loadPostsByIds(postIds);
         } else {
-          const { data } = await (supabase as any)
-            .from("feed_post_follows")
-            .select("post_id, created_at")
-            .eq("user_id", user.id)
-            .order("created_at", { ascending: false })
-            .limit(50);
-          postIds = Array.from(new Set(((data || []) as any[]).map(r => r.post_id)));
-          await loadPostsByIds(postIds);
+          // "follows" tab: list users I follow (all-time)
+          const { data: fol } = await (supabase as any)
+            .from("user_follows")
+            .select("following_id, created_at")
+            .eq("follower_id", user.id)
+            .order("created_at", { ascending: false });
+          const ids = ((fol || []) as any[]).map(f => f.following_id);
+          if (cancelled) return;
+          if (ids.length === 0) { setFollowedUsers([]); setItems([]); }
+          else {
+            const { data: profs } = await supabase
+              .from("profiles")
+              .select("user_id,name,avatar_url")
+              .in("user_id", ids);
+            const map = new Map<string, any>(((profs || []) as any[]).map(p => [p.user_id, p]));
+            const ordered = ids
+              .map(id => map.get(id))
+              .filter(Boolean)
+              .map(p => ({ user_id: p.user_id, name: p.name, avatar_url: p.avatar_url }));
+            if (!cancelled) { setFollowedUsers(ordered); setItems([]); }
+          }
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -138,14 +159,14 @@ export function MyWeekActivityDialog({ open, onOpenChange, initialTab, onOpenPos
     posts: "Você ainda não publicou nada nos últimos 7 dias.",
     reactions: "Você ainda não reagiu a publicações nos últimos 7 dias.",
     comments: "Você ainda não comentou em publicações nos últimos 7 dias.",
-    follows: "Você ainda não está seguindo nenhuma publicação.",
+    follows: "Você ainda não está seguindo ninguém.",
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle>Sua atividade na semana</DialogTitle>
+          <DialogTitle>{tab === "follows" ? "Pessoas que você segue" : "Sua atividade na semana"}</DialogTitle>
         </DialogHeader>
         <Tabs value={tab} onValueChange={(v) => setTab(v as MyWeekTab)}>
           <TabsList className="grid grid-cols-4 w-full">
@@ -159,6 +180,36 @@ export function MyWeekActivityDialog({ open, onOpenChange, initialTab, onOpenPos
               <div className="flex items-center justify-center py-8 text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin mr-2" /> Carregando...
               </div>
+            ) : tab === "follows" ? (
+              followedUsers.length === 0 ? (
+                <div className="text-center py-8 text-sm text-muted-foreground">{empty.follows}</div>
+              ) : followedUsers.map(u => {
+                const initials = (u.name || "?").split(" ").slice(0, 2).map(s => s[0]).join("").toUpperCase();
+                return (
+                  <div key={u.user_id} className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
+                    <div className="w-9 h-9 rounded-full bg-primary/15 text-primary text-xs font-semibold flex items-center justify-center overflow-hidden">
+                      {u.avatar_url ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" /> : initials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-foreground truncate">{u.name || "Colega"}</div>
+                      <div className="text-[11px] text-muted-foreground">Você recebe notificações dessa pessoa</div>
+                    </div>
+                    {onUnfollow && (
+                      <button
+                        onClick={async () => {
+                          await (supabase as any).from("user_follows").delete()
+                            .eq("follower_id", user!.id).eq("following_id", u.user_id);
+                          setFollowedUsers(prev => prev.filter(x => x.user_id !== u.user_id));
+                          onUnfollow(u.user_id);
+                        }}
+                        className="text-xs font-medium px-3 py-1.5 rounded-md border border-border bg-background hover:bg-accent/40 text-foreground"
+                      >
+                        Deixar de seguir
+                      </button>
+                    )}
+                  </div>
+                );
+              })
             ) : items.length === 0 ? (
               <div className="text-center py-8 text-sm text-muted-foreground">{empty[tab]}</div>
             ) : items.map(item => (
