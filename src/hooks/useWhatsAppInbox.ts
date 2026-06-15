@@ -121,6 +121,12 @@ export function useWhatsAppInbox() {
   const cacheTenantRef = useRef<string | null>(null);
   const selectedContactIdRef = useRef<string | null>(null);
   const selectedContactPhoneRef = useRef<string | null>(null);
+  // Always-fresh mirror of `messages` so closures (fetchMessages background
+  // refresh, sendMessage, toggleReaction) never read a stale array from a
+  // previous conversation. Without this, switching chats fast caused
+  // messages from the OLD conversation to leak into the NEW conversation's
+  // merged state (root cause of cross-chat pollution).
+  const messagesRef = useRef<InboxMessage[]>([]);
   const originalTitleRef = useRef<string>(typeof document !== "undefined" ? document.title : "Accord Stack");
   const [activeIntegration, setActiveIntegration] = useState<{
     id?: string;
@@ -180,8 +186,6 @@ export function useWhatsAppInbox() {
     if (!companyId) return;
 
     // Strict per-chat isolation: only rows explicitly tied to this contact_id.
-    // Phone-based matching used to mix conversations whenever two contacts
-    // shared (or normalized to) the same number.
     const { data, error } = await supabase
       .from("whatsapp_messages")
       .select("*")
@@ -197,26 +201,27 @@ export function useWhatsAppInbox() {
 
     const fetched = (data || []) as unknown as InboxMessage[];
 
-    // CRITICAL: never wipe the chat on a refresh.
-    // Merge fetched rows with whatever is already cached/on-screen so that
-    // optimistic sends, realtime arrivals, or any rows the query may have
-    // missed (RLS race, phone-variant edge case, etc.) are preserved.
+    // Race guard: if user already navigated away, only update cache silently.
+    if (selectedContactIdRef.current !== contactId) {
+      const cached = messagesCacheRef.current.get(contactId) || [];
+      messagesCacheRef.current.set(contactId, mergeMessagesDedup(cached, fetched));
+      if (!opts?.background) setLoadingMessages(false);
+      return;
+    }
+
+    // User is still on this contact. Merge cache + on-screen (filtered to
+    // this contact_id only, defense-in-depth against stale state) + fetched.
     const existingCached = messagesCacheRef.current.get(contactId) || [];
-    const existingOnScreen =
-      selectedContactIdRef.current === contactId ? messages : [];
+    const existingOnScreen = messagesRef.current.filter((m) => m.contact_id === contactId);
     const merged = mergeMessagesDedup(
       mergeMessagesDedup(existingCached, existingOnScreen),
       fetched,
     );
 
     messagesCacheRef.current.set(contactId, merged);
-
-    // Only apply to UI if user is still on this contact (avoid race when switching fast)
-    if (selectedContactIdRef.current === contactId) {
-      setMessages(merged);
-    }
+    setMessages(merged);
     if (!opts?.background) setLoadingMessages(false);
-  }, [companyId, messages]);
+  }, [companyId]);
 
   const selectContact = useCallback((contactId: string | null) => {
     setSelectedContactId(contactId);
@@ -285,7 +290,7 @@ export function useWhatsAppInbox() {
     // attach the new message as a real WhatsApp reply.
     let quotedExternalId: string | null = null;
     if (replyToId) {
-      const original = messages.find((m) => m.id === replyToId);
+      const original = messagesRef.current.find((m) => m.id === replyToId);
       quotedExternalId =
         original?.external_message_id ||
         (original?.metadata as any)?.external_id ||
@@ -360,7 +365,7 @@ export function useWhatsAppInbox() {
       .from("whatsapp_contacts")
       .update(updates)
       .eq("id", selectedContactId);
-  }, [selectedContactId, companyId, contacts, messages]);
+  }, [selectedContactId, companyId, contacts]);
 
   /**
    * Toggle a reaction on a message and forward it to the connected WhatsApp
@@ -369,7 +374,7 @@ export function useWhatsAppInbox() {
   const toggleReaction = useCallback(async (messageId: string, emoji: string) => {
     if (!user?.id || !companyId) return;
 
-    const current = messages.find((m) => m.id === messageId);
+    const current = messagesRef.current.find((m) => m.id === messageId);
     if (!current) return;
 
     const existing: MessageReaction[] = Array.isArray(current.reactions)
@@ -430,7 +435,7 @@ export function useWhatsAppInbox() {
     if (error) {
       toast.error("A reação foi enviada, mas não foi possível salvar no histórico.");
     }
-  }, [messages, user?.id, companyId, profile?.name, activeIntegration?.provider_type]);
+  }, [user?.id, companyId, profile?.name, activeIntegration?.provider_type]);
 
   const assignContact = useCallback(async (contactId: string, userId: string | null) => {
     const { error } = await supabase
@@ -549,6 +554,10 @@ export function useWhatsAppInbox() {
     const interval = setInterval(checkConnection, 15000);
     return () => clearInterval(interval);
   }, [fetchContacts, checkConnection]);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   useEffect(() => {
     selectedContactIdRef.current = selectedContactId;
