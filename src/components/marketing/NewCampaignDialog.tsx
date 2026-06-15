@@ -542,7 +542,20 @@ ${renderPreview(body)}
               Continuar <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           )}
-          {step === 3 && (
+          {step === 3 && channel === "email" && (
+            <Button
+              onClick={() => {
+                if (!canSubmit) { toast.error("Preencha assunto, corpo e a conta de envio"); return; }
+                setSendConfigOpen(true);
+              }}
+              disabled={!canSubmit || submitting}
+              className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:opacity-90 text-white"
+            >
+              <Play className="h-4 w-4 mr-1.5" fill="currentColor" />
+              Configurar e iniciar envio
+            </Button>
+          )}
+          {step === 3 && channel !== "email" && (
             <Button onClick={handleCreate} disabled={!canSubmit || submitting}>
               {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Criar e enfileirar
@@ -550,6 +563,107 @@ ${renderPreview(body)}
           )}
         </DialogFooter>
       </DialogContent>
+
+      {/* Send config modal */}
+      <Dialog open={sendConfigOpen} onOpenChange={setSendConfigOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center">
+                <Settings2 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <div>Configurar envio em massa</div>
+                <div className="text-[11px] font-normal text-muted-foreground">
+                  Ritmo de disparo evita marca de spam
+                </div>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5 mt-2">
+            <div className="p-4 rounded-xl bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 border border-violet-500/20">
+              <div className="grid grid-cols-2 gap-3 text-center">
+                <div>
+                  <div className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">Destinatários</div>
+                  <div className="text-[22px] font-bold text-foreground mt-0.5">{recipients.length}</div>
+                </div>
+                <div>
+                  <div className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">Tempo estimado</div>
+                  <div className="text-[22px] font-bold text-foreground mt-0.5">
+                    ~{Math.max(1, Math.ceil((recipients.length * ((throttleMin + throttleMax) / 2)) / 60))} min
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-[12px] font-semibold mb-2 block">Pausa entre cada envio (segundos)</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Mínimo</div>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={60}
+                    value={throttleMin}
+                    onChange={e => setThrottleMin(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="font-mono"
+                  />
+                </div>
+                <div>
+                  <div className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Máximo</div>
+                  <Input
+                    type="number"
+                    min={throttleMin}
+                    max={120}
+                    value={throttleMax}
+                    onChange={e => setThrottleMax(Math.max(throttleMin, parseInt(e.target.value) || throttleMin))}
+                    className="font-mono"
+                  />
+                </div>
+              </div>
+              <p className="text-[10.5px] text-muted-foreground mt-1.5">
+                O sistema pausa um tempo aleatório entre <strong>{throttleMin}s</strong> e <strong>{throttleMax}s</strong> entre cada envio. Pausa randomizada imita comportamento humano e reduz risco de spam.
+              </p>
+            </div>
+
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <div className="text-[11px] text-foreground leading-relaxed">
+                <strong>Importante:</strong> uma vez iniciado, o envio não pode ser cancelado para e-mails que já saíram. Você pode fechar essa tela — o envio continua no servidor.
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="mt-4">
+            <Button variant="ghost" onClick={() => setSendConfigOpen(false)} disabled={submitting}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleCreate}
+              disabled={submitting}
+              className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:opacity-90 text-white"
+            >
+              {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-1.5" fill="currentColor" />}
+              Iniciar envio agora
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Progress modal */}
+      {campaignProgress && (
+        <CampaignProgressModal
+          campaignId={campaignProgress.id}
+          total={campaignProgress.total}
+          onClose={() => {
+            const id = campaignProgress.id;
+            setCampaignProgress(null);
+            onCreated(id);
+          }}
+        />
+      )}
     </Dialog>
   );
 }
