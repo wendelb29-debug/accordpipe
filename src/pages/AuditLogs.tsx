@@ -199,6 +199,7 @@ function WidgetCard({ title, children, icon: Icon }: WidgetCardProps) {
 
 export default function AuditLogs() {
   const { role, profile } = useAuth();
+  const companyId = useActiveCompanyId();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -212,6 +213,7 @@ export default function AuditLogs() {
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const [exportingCsv, setExportingCsv] = useState(false);
+  const [tenantUsers, setTenantUsers] = useState<{ user_id: string; name: string }[]>([]);
 
   // Stats data (last 30d)
   const [stats, setStats] = useState<AuditLog[]>([]);
