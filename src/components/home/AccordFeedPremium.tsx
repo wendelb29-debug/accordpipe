@@ -1462,4 +1462,140 @@ const CSS = `
 .afp-tasks-row-count{color:var(--b24-text-meta);font-size:13px;min-width:20px;text-align:right}
 
 .afp-quick-stat-label{font-size:10px;font-weight:600;color:hsl(var(--muted-foreground));margin-top:4px;display:inline-flex;align-items:center;gap:3px}
+
+/* ════════════════════════════════════════════════════════════════
+   POLISH FINAL — profundidade, identidade e respiração
+   ════════════════════════════════════════════════════════════════ */
+
+/* 1. Fundo cinza-azulado + ambient gradients reforçados */
+.afp-root{
+  background:#f7f8fb;
+}
+.dark .afp-root{
+  background:#0a0d14;
+}
+.afp-root::before{
+  background:
+    radial-gradient(900px 600px at 90% 5%, rgba(91,63,212,0.08), transparent 60%),
+    radial-gradient(700px 500px at 5% 95%, rgba(91,63,212,0.05), transparent 60%);
+}
+.dark .afp-root::before{
+  background:
+    radial-gradient(900px 600px at 90% 5%, rgba(124,58,237,0.16), transparent 60%),
+    radial-gradient(700px 500px at 5% 95%, rgba(91,63,212,0.12), transparent 60%);
+}
+
+/* 2. Hero — tipografia premium + sombra colorida intensa */
+.afp-hero{
+  border-radius:28px;
+  padding:36px 36px 32px;
+  margin-bottom:28px;
+  box-shadow:
+    0 30px 60px -20px rgba(91,63,212,.45),
+    0 18px 40px -18px rgba(91,63,212,.5);
+}
+.afp-hero-title{
+  font-size:44px;
+  font-weight:800;
+  letter-spacing:-.03em;
+  line-height:1.02;
+  margin-bottom:10px;
+}
+@media(max-width:720px){.afp-hero-title{font-size:34px}}
+.afp-hero-sub{
+  font-size:14px;
+  color:rgba(255,255,255,.82);
+  line-height:1.55;
+  max-width:520px;
+}
+.afp-hero-stats{
+  gap:42px;
+  margin-top:28px;
+  padding-top:20px;
+  border-top-color:rgba(255,255,255,.16);
+}
+.afp-hero-stat-value{
+  font-size:26px;
+  font-weight:800;
+  letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;
+  line-height:1;
+}
+.afp-hero-stat-label{
+  font-size:9.5px;
+  font-weight:700;
+  color:rgba(255,255,255,.7);
+  text-transform:uppercase;
+  letter-spacing:.10em;
+  margin-top:8px;
+  opacity:1;
+}
+
+/* 3 + 4. Sidebar — cards com 2 sombras + hover + mais respiração */
+.afp-side-card{
+  background:#ffffff;
+  border:1px solid rgba(15,23,42,0.06);
+  border-radius:18px;
+  padding:18px;
+  margin-bottom:20px;
+  box-shadow:
+    0 1px 2px rgba(15,23,42,0.04),
+    0 8px 24px -10px rgba(15,23,42,0.08);
+  transition:box-shadow .25s ease, transform .25s ease;
+}
+.afp-side-card:hover{
+  box-shadow:
+    0 2px 4px rgba(15,23,42,0.05),
+    0 16px 40px -12px rgba(91,63,212,0.18);
+  transform:translateY(-1px);
+}
+.dark .afp-side-card{
+  background:#0f1320;
+  border-color:rgba(255,255,255,0.06);
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.3),
+    0 8px 24px -10px rgba(0,0,0,0.5);
+}
+.dark .afp-side-card:hover{
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.4),
+    0 16px 40px -12px rgba(91,63,212,0.28);
+}
+
+/* 5. Composer "No que está pensando" — destaque com ring colorido + lift */
+.afp-composer{
+  background:linear-gradient(135deg,#ffffff 0%, rgba(91,63,212,0.02) 100%);
+  border:1px solid rgba(15,23,42,0.06);
+  border-radius:18px;
+  padding:14px;
+  box-shadow:
+    0 0 0 1px rgba(91,63,212,0.06),
+    0 1px 2px rgba(15,23,42,0.04),
+    0 8px 24px -10px rgba(15,23,42,0.08);
+  transition:box-shadow .25s ease, transform .25s ease;
+}
+.afp-composer:hover{
+  box-shadow:
+    0 0 0 2px rgba(91,63,212,0.18),
+    0 2px 4px rgba(15,23,42,0.05),
+    0 16px 40px -12px rgba(91,63,212,0.20);
+  transform:translateY(-1px);
+}
+.dark .afp-composer{
+  background:linear-gradient(135deg,#0f1320 0%, rgba(124,58,237,0.06) 100%);
+  border-color:rgba(255,255,255,0.06);
+  box-shadow:
+    0 0 0 1px rgba(124,58,237,0.14),
+    0 1px 2px rgba(0,0,0,0.3),
+    0 8px 24px -10px rgba(0,0,0,0.5);
+}
+.dark .afp-composer:hover{
+  box-shadow:
+    0 0 0 2px rgba(124,58,237,0.32),
+    0 2px 4px rgba(0,0,0,0.4),
+    0 16px 40px -12px rgba(124,58,237,0.30);
+}
+.afp-composer-input{
+  font-weight:500;
+}
 `;
