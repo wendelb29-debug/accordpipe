@@ -604,6 +604,19 @@ export function AccordFeedPremium() {
         open={!!reactorsPostId}
         onOpenChange={(v) => { if (!v) setReactorsPostId(null); }}
       />
+      <MyWeekActivityDialog
+        open={myWeekOpen}
+        onOpenChange={setMyWeekOpen}
+        initialTab={myWeekTab}
+        onOpenPost={(id) => {
+          const el = document.getElementById(`afp-post-${id}`);
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            el.classList.add("afp-post-highlight");
+            setTimeout(() => el.classList.remove("afp-post-highlight"), 2000);
+          }
+        }}
+      />
     </div>
   );
 }
