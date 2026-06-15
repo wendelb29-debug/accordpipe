@@ -56,6 +56,58 @@ export function ExpandedComposer({ open, onClose, onPublished, initialTab = "mes
   const [evDate, setEvDate] = useState("");
   const [evDesc, setEvDesc] = useState("");
 
+  // File source state
+  const [fileSource, setFileSource] = useState<"upload" | "drive">("upload");
+  const [driveFiles, setDriveFiles] = useState<Array<{ id: string; name: string; file_path: string | null; file_url: string | null; file_type: string | null }>>([]);
+  const [driveLoading, setDriveLoading] = useState(false);
+  const [driveSearch, setDriveSearch] = useState("");
+
+  useEffect(() => {
+    if (!open || tab !== "file" || fileSource !== "drive" || !servidorId) return;
+    setDriveLoading(true);
+    supabase
+      .from("drive_files")
+      .select("id,name,file_path,file_url,file_type")
+      .eq("servidor_id", servidorId)
+      .eq("type", "file")
+      .eq("status", "normal")
+      .order("created_at", { ascending: false })
+      .limit(200)
+      .then(({ data }) => {
+        setDriveFiles(data || []);
+        setDriveLoading(false);
+      });
+  }, [open, tab, fileSource, servidorId]);
+
+  const filteredDriveFiles = useMemo(
+    () => driveFiles.filter((f) => f.name.toLowerCase().includes(driveSearch.toLowerCase())),
+    [driveFiles, driveSearch]
+  );
+
+  const handleAttachFromDrive = async (f: typeof driveFiles[number]) => {
+    try {
+      let url = f.file_url || "";
+      if (!url && f.file_path) {
+        const { data } = await supabase.storage.from("contract-pdfs").createSignedUrl(f.file_path, 60 * 60 * 24 * 365);
+        url = data?.signedUrl || "";
+      }
+      if (!url) {
+        toast.error("Arquivo indisponível");
+        return;
+      }
+      const isImage = (f.file_type || "").startsWith("image/");
+      if (isImage) {
+        editor?.chain().focus().setImage({ src: url }).run();
+      } else {
+        editor?.chain().focus().setLink({ href: url }).insertContent(f.name).run();
+      }
+      setTab("message");
+      toast.success(`"${f.name}" anexado`);
+    } catch (err: any) {
+      toast.error("Erro ao anexar", { description: err?.message });
+    }
+  };
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({}) as any,
