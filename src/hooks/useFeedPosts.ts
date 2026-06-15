@@ -58,6 +58,7 @@ export interface FeedPost {
   total_reactions: number;
   comments_count: number;
   saved_by_me: boolean;
+  followed_by_me: boolean;
 }
 
 export function useFeedPosts() {
