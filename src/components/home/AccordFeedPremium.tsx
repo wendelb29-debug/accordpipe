@@ -1126,10 +1126,11 @@ const CSS = `
   color:#fff;
 }
 
-/* POST CARD → white, no shadow */
+/* POST CARD → theme card, no shadow */
 .afp-post-card{
-  background:#FFFFFF;
-  border:none;
+  background:hsl(var(--card));
+  color:hsl(var(--card-foreground));
+  border:1px solid hsl(var(--border));
   border-radius:10px;
   margin-bottom:15px;
   overflow:hidden;
@@ -1138,7 +1139,7 @@ const CSS = `
 .afp-post-card-pinned{
   border:2px solid #f59e0b;
   box-shadow:0 0 0 1px rgba(245,158,11,.25),0 6px 18px -6px rgba(245,158,11,.35);
-  background:linear-gradient(180deg,rgba(255,245,220,1) 0,#FFFFFF 80px);
+  background:linear-gradient(180deg,hsl(var(--secondary)) 0,hsl(var(--card)) 80px);
 }
 .afp-post-card-anuncio{border-left:4px solid var(--b24-blue-send)}
 
@@ -1148,19 +1149,19 @@ const CSS = `
 .afp-av-pic{border-radius:50%;font-size:14px}
 
 .afp-post-author-line1{
-  color:var(--b24-blue-link);
+  color:hsl(var(--primary));
   font-size:14px;
   font-weight:600;
 }
 .afp-post-author-line2{
-  color:var(--b24-text-secondary);
+  color:hsl(var(--muted-foreground));
   font-size:13px;
   margin-top:2px;
 }
-.afp-post-author-line2 span{color:var(--b24-text-secondary)}
+.afp-post-author-line2 span{color:hsl(var(--muted-foreground))}
 
-.afp-post-menu-btn{color:var(--b24-text-meta)}
-.afp-post-menu-btn:hover{background:#F5F7F9;color:var(--b24-text-primary)}
+.afp-post-menu-btn{color:hsl(var(--muted-foreground))}
+.afp-post-menu-btn:hover{background:hsl(var(--secondary));color:hsl(var(--foreground))}
 
 .afp-post-pin{
   background:#FEF3C7;
@@ -1169,27 +1170,27 @@ const CSS = `
 }
 
 .afp-post-content{
-  color:var(--b24-text-primary);
+  color:hsl(var(--card-foreground));
   font-size:14.5px;
   line-height:1.5;
   padding:0 16px 12px 78px;
 }
 .afp-post-tags{padding:0 16px 12px 78px}
 .afp-post-tag{
-  background:#E8F4FF;
-  color:var(--b24-blue-primary);
+  background:hsl(var(--primary) / 0.12);
+  color:hsl(var(--primary));
   border-radius:4px;
 }
 
 .afp-post-reactions-summary{
   padding:4px 16px 8px 78px;
-  color:var(--b24-blue-link);
+  color:hsl(var(--primary));
   font-size:13px;
 }
 .afp-reaction-pill{
-  background:#FFFFFF;
-  border-color:#FFFFFF;
-  box-shadow:0 0 0 1px var(--b24-divider);
+  background:hsl(var(--card));
+  border-color:hsl(var(--card));
+  box-shadow:0 0 0 1px hsl(var(--border));
 }
 
 .afp-post-actions{
