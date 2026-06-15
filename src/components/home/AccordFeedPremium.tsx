@@ -527,6 +527,19 @@ export function AccordFeedPremium() {
           )}
         </div>
       </div>
+
+      <QuickPostDialog
+        open={composerOpen}
+        onOpenChange={setComposerOpen}
+        userId={user?.id}
+        servidorId={companyId || undefined}
+        onPublished={() => qc.invalidateQueries({ queryKey: ["feed-posts-v2"] })}
+      />
+      <PostReactorsDialog
+        postId={reactorsPostId}
+        open={!!reactorsPostId}
+        onOpenChange={(v) => { if (!v) setReactorsPostId(null); }}
+      />
     </div>
   );
 }
