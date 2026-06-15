@@ -1037,10 +1037,11 @@ const CSS = `
   .afp-shell{grid-template-columns:1fr;max-width:560px}
 }
 
-/* COMPOSER → white card, no shadow, 10px radius */
+/* COMPOSER → theme card, no shadow, 10px radius */
 .afp-composer{
-  background:#FFFFFF;
-  border:none;
+  background:hsl(var(--card));
+  color:hsl(var(--card-foreground));
+  border:1px solid hsl(var(--border));
   border-radius:10px;
   padding:14px 16px;
   margin-bottom:16px;
@@ -1048,26 +1049,26 @@ const CSS = `
 }
 .afp-composer-avatar{border-radius:50%;width:42px;height:42px}
 .afp-composer-input{
-  background:#F5F7F9;
-  border:0.8px solid var(--b24-border-input);
+  background:hsl(var(--input));
+  border:0.8px solid hsl(var(--border));
   border-radius:18px;
-  color:var(--b24-text-meta);
+  color:hsl(var(--foreground));
   font-size:14px;
   padding:10px 14px;
 }
-.afp-composer-input:hover{background:#FFFFFF;border-color:var(--b24-blue-primary)}
+.afp-composer-input:hover{background:hsl(var(--card));border-color:hsl(var(--primary))}
 
 /* FILTROS / SEARCH BAR — alto contraste em light mode */
 .afp-filters{
-  background:#EEF2F7;
-  border:1px solid #CBD5E1;
+  background:hsl(var(--secondary));
+  border:1px solid hsl(var(--border));
   border-radius:10px;
   padding:5px;
   margin-bottom:16px;
-  box-shadow:0 1px 2px rgba(15,23,42,0.06);
+  box-shadow:0 1px 2px hsl(var(--foreground) / 0.06);
 }
 .afp-filter-pill{
-  color:#1E293B;
+  color:hsl(var(--secondary-foreground));
   background:transparent;
   border:1px solid transparent;
   font-size:12px;
@@ -1076,23 +1077,23 @@ const CSS = `
   font-weight:700;
 }
 .afp-filter-pill:hover{
-  background:#FFFFFF;
-  color:var(--b24-blue-action);
-  border-color:#CBD5E1;
+  background:hsl(var(--card));
+  color:hsl(var(--primary));
+  border-color:hsl(var(--border));
 }
 .afp-filter-pill .afp-filter-pill-count{
-  background:#CBD5E1;
-  color:#1E293B;
+  background:hsl(var(--muted));
+  color:hsl(var(--foreground));
 }
 .afp-filter-pill.afp-active{
-  background:var(--b24-blue-action);
-  color:#FFFFFF;
-  border-color:var(--b24-blue-action);
-  box-shadow:0 2px 8px rgba(37,99,235,0.35);
+  background:hsl(var(--primary));
+  color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));
+  box-shadow:0 2px 8px hsl(var(--primary) / 0.35);
 }
 .afp-filter-pill.afp-active .afp-filter-pill-count{
-  background:rgba(255,255,255,0.25);
-  color:#FFFFFF;
+  background:hsl(var(--primary-foreground) / 0.22);
+  color:hsl(var(--primary-foreground));
 }
 /* DARK overrides */
 .dark .afp-root .afp-filters{
