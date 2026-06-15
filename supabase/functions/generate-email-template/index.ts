@@ -53,7 +53,7 @@ Deno.serve(withErrorHandling("generate-email-template", async (req) => {
     button_url, button_text, reference_image_url,
   } = body || {};
 
-  if (!briefing || typeof briefing !== "string" || briefing.trim().length < 10) {
+  if (!briefing || typeof briefing !== "string" || briefing.trim().length < 3) {
     throw new HttpError("Briefing muito curto. Descreva o objetivo do e-mail.", 400, { code: "BRIEFING_TOO_SHORT" });
   }
 

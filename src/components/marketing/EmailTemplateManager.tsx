@@ -647,15 +647,39 @@ function AIGeneratorDialog({ onClose, onGenerated }: any) {
   };
 
   const handleGenerate = async () => {
-    if (briefing.trim().length < 10) {
-      toast.error("Descreva melhor o objetivo do e-mail (mín. 10 caracteres)");
+    const cleanBriefing = briefing.trim();
+
+    if (cleanBriefing.length === 0) {
+      toast.error("Digite o que você quer comunicar", {
+        description: 'Exemplo: "promoção de fim de ano" ou "boas-vindas"',
+        duration: 5000,
+      });
       return;
     }
+
+    if (cleanBriefing.length < 3) {
+      toast.error("Descreva um pouquinho mais", {
+        description: "Pelo menos 3 caracteres pra IA entender o objetivo",
+        duration: 5000,
+      });
+      return;
+    }
+
     setBusy(true);
+    console.log("[generate-email-template] iniciando geração:", {
+      briefing: cleanBriefing,
+      brand_color: brandColor,
+      brand_name: brandName,
+      tone,
+      has_button_url: !!buttonUrl,
+      has_button_text: !!buttonText,
+      has_image: !!referenceImageUrl,
+    });
+
     try {
       const { data, error } = await supabase.functions.invoke("generate-email-template", {
         body: {
-          briefing,
+          briefing: cleanBriefing,
           brand_color: brandColor,
           brand_name: brandName,
           tone,
@@ -665,21 +689,40 @@ function AIGeneratorDialog({ onClose, onGenerated }: any) {
           reference_image_url: referenceImageUrl || undefined,
         },
       });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      const d = data as any;
-      if (!d?.body_html) throw new Error("IA não retornou HTML");
 
-      toast.success("Template gerado! Revise e salve.");
+      console.log("[generate-email-template] resposta:", { data, error });
+
+      if (error) {
+        console.error("[generate-email-template] invoke error:", error);
+        throw new Error(`Falha ao chamar a IA: ${error.message || "erro desconhecido"}`);
+      }
+      if ((data as any)?.error) {
+        console.error("[generate-email-template] function error:", (data as any).error);
+        throw new Error((data as any).error);
+      }
+      const d = data as any;
+      if (!d?.body_html) {
+        console.error("[generate-email-template] resposta sem body_html:", d);
+        throw new Error("A IA não retornou o HTML do e-mail. Tente novamente.");
+      }
+
+      toast.success("✨ Template gerado!", {
+        description: "Revise e salve pra usar nas campanhas",
+        duration: 4000,
+      });
       onGenerated({
-        name: `IA — ${briefing.slice(0, 30)}...`,
+        name: `IA — ${cleanBriefing.slice(0, 40)}${cleanBriefing.length > 40 ? "..." : ""}`,
         subject: d.subject,
         preview_text: d.preview_text,
         body_html: d.body_html,
       });
     } catch (err: any) {
+      console.error("[generate-email-template] CATCH:", err);
       captureAppError(err, { module: "marketing.templates", action: "ai_generate" }, "error");
-      toast.error("Falha ao gerar template", { description: err?.message || "Tente novamente" });
+      toast.error("Erro ao gerar template", {
+        description: err?.message || "Tente novamente em alguns segundos",
+        duration: 8000,
+      });
     } finally {
       setBusy(false);
     }
@@ -829,10 +872,19 @@ function AIGeneratorDialog({ onClose, onGenerated }: any) {
           <button
             onClick={handleGenerate}
             disabled={busy}
-            className="h-10 px-5 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white text-[13px] font-bold inline-flex items-center gap-2 disabled:opacity-50 transition shadow-md"
+            className="h-10 px-5 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white text-[13px] font-bold inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-md min-w-[160px] justify-center"
           >
-            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-            {busy ? "Gerando..." : "Gerar agora"}
+            {busy ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Gerando, aguarde...</span>
+              </>
+            ) : (
+              <>
+                <Wand2 className="w-4 h-4" />
+                <span>Gerar agora</span>
+              </>
+            )}
           </button>
         </DialogFooter>
       </DialogContent>
