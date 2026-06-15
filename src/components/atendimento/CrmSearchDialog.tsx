@@ -144,7 +144,7 @@ export function CrmSearchDialog({ open, onOpenChange, onSelectLead }: CrmSearchD
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
                         <Building2 className="h-3 w-3 text-muted-foreground shrink-0" />
-                        <span className="text-xs font-semibold truncate">{lead.company_name}</span>
+                        <span className="text-xs font-semibold truncate">{lead.company_name || lead.contact_name || lead.email || lead.phone || "Lead sem nome"}</span>
                         {isBlocked && <Lock className="h-3 w-3 text-muted-foreground shrink-0" />}
                       </div>
                       {lead.contact_name && (
