@@ -4,7 +4,7 @@
  * Conectado a feed_posts, tenant_events, feed_post_reactions/comments/saves,
  * presence realtime, user_follows.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MoreHorizontal, Pin, Bookmark, ExternalLink, Link2, UserPlus, Pencil, EyeOff, CheckSquare, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
