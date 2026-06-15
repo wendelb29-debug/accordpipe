@@ -165,6 +165,11 @@ export function ExpandedComposer({ open, onClose, onPublished, initialTab = "mes
     }
   };
 
+  // ─────────── @ MENTION INLINE ───────────
+  const [mention, setMention] = useState<{
+    open: boolean; query: string; from: number; to: number; top: number; left: number; index: number;
+  }>({ open: false, query: "", from: 0, to: 0, top: 0, left: 0, index: 0 });
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({}) as any,
@@ -172,14 +177,69 @@ export function ExpandedComposer({ open, onClose, onPublished, initialTab = "mes
       Image as any,
       TextStyle as any,
       Color as any,
-      Placeholder.configure({ placeholder: "Compartilhe uma novidade com a equipe..." }) as any,
+      Placeholder.configure({ placeholder: "Compartilhe uma novidade com a equipe... (use @ pra marcar alguém)" }) as any,
     ],
     editorProps: {
       attributes: {
         class: "tiptap prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[180px] px-4 py-3",
       },
     },
+    onUpdate: ({ editor }) => {
+      const { from } = editor.state.selection;
+      const textBefore = editor.state.doc.textBetween(Math.max(0, from - 40), from, "\n", "\0");
+      const match = /(?:^|\s)@(\w{0,30})$/.exec(textBefore);
+      if (!match) {
+        setMention((m) => (m.open ? { ...m, open: false } : m));
+        return;
+      }
+      const query = match[1] || "";
+      const atIndex = from - (query.length + 1);
+      const coords = editor.view.coordsAtPos(from);
+      const editorRect = editor.view.dom.getBoundingClientRect();
+      setMention({
+        open: true,
+        query,
+        from: atIndex,
+        to: from,
+        top: coords.bottom - editorRect.top + 4,
+        left: coords.left - editorRect.left,
+        index: 0,
+      });
+    },
+    onSelectionUpdate: ({ editor }) => {
+      const { from } = editor.state.selection;
+      const textBefore = editor.state.doc.textBetween(Math.max(0, from - 40), from, "\n", "\0");
+      if (!/(?:^|\s)@(\w{0,30})$/.test(textBefore)) {
+        setMention((m) => (m.open ? { ...m, open: false } : m));
+      }
+    },
   });
+
+  const mentionSuggestions = useMemo(() => {
+    const q = mention.query.toLowerCase();
+    const filtered = tenantUsers.filter((u) => u.name.toLowerCase().includes(q));
+    return [{ user_id: "__all__", name: "Todos os colaboradores", avatar_url: null } as TenantUser, ...filtered];
+  }, [mention.query, tenantUsers]);
+
+  const insertMention = (u: TenantUser) => {
+    if (!editor) return;
+    const label = u.user_id === "__all__" ? "todos" : u.name.replace(/\s+/g, "");
+    editor
+      .chain()
+      .focus()
+      .insertContentAt({ from: mention.from, to: mention.to }, [
+        { type: "text", text: `@${label} ` },
+      ])
+      .run();
+    if (u.user_id === "__all__") {
+      setAllRecipients(true);
+      setSelectedRecipients([]);
+    } else if (!selectedRecipients.find((s) => s.user_id === u.user_id)) {
+      setAllRecipients(false);
+      setSelectedRecipients((prev) => [...prev, u]);
+    }
+    setMention((m) => ({ ...m, open: false }));
+  };
 
   useEffect(() => {
     if (open) {
