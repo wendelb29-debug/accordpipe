@@ -186,8 +186,6 @@ export function useWhatsAppInbox() {
     if (!companyId) return;
 
     // Strict per-chat isolation: only rows explicitly tied to this contact_id.
-    // Phone-based matching used to mix conversations whenever two contacts
-    // shared (or normalized to) the same number.
     const { data, error } = await supabase
       .from("whatsapp_messages")
       .select("*")
@@ -203,26 +201,27 @@ export function useWhatsAppInbox() {
 
     const fetched = (data || []) as unknown as InboxMessage[];
 
-    // CRITICAL: never wipe the chat on a refresh.
-    // Merge fetched rows with whatever is already cached/on-screen so that
-    // optimistic sends, realtime arrivals, or any rows the query may have
-    // missed (RLS race, phone-variant edge case, etc.) are preserved.
+    // Race guard: if user already navigated away, only update cache silently.
+    if (selectedContactIdRef.current !== contactId) {
+      const cached = messagesCacheRef.current.get(contactId) || [];
+      messagesCacheRef.current.set(contactId, mergeMessagesDedup(cached, fetched));
+      if (!opts?.background) setLoadingMessages(false);
+      return;
+    }
+
+    // User is still on this contact. Merge cache + on-screen (filtered to
+    // this contact_id only, defense-in-depth against stale state) + fetched.
     const existingCached = messagesCacheRef.current.get(contactId) || [];
-    const existingOnScreen =
-      selectedContactIdRef.current === contactId ? messages : [];
+    const existingOnScreen = messagesRef.current.filter((m) => m.contact_id === contactId);
     const merged = mergeMessagesDedup(
       mergeMessagesDedup(existingCached, existingOnScreen),
       fetched,
     );
 
     messagesCacheRef.current.set(contactId, merged);
-
-    // Only apply to UI if user is still on this contact (avoid race when switching fast)
-    if (selectedContactIdRef.current === contactId) {
-      setMessages(merged);
-    }
+    setMessages(merged);
     if (!opts?.background) setLoadingMessages(false);
-  }, [companyId, messages]);
+  }, [companyId]);
 
   const selectContact = useCallback((contactId: string | null) => {
     setSelectedContactId(contactId);
