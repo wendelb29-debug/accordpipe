@@ -85,14 +85,27 @@ export function MyWeekActivityDialog({ open, onOpenChange, initialTab, onOpenPos
           postIds = Array.from(new Set(((data || []) as any[]).map(r => r.post_id)));
           await loadPostsByIds(postIds);
         } else {
-          const { data } = await (supabase as any)
-            .from("feed_post_follows")
-            .select("post_id, created_at")
-            .eq("user_id", user.id)
-            .order("created_at", { ascending: false })
-            .limit(50);
-          postIds = Array.from(new Set(((data || []) as any[]).map(r => r.post_id)));
-          await loadPostsByIds(postIds);
+          // "follows" tab: list users I follow (all-time)
+          const { data: fol } = await (supabase as any)
+            .from("user_follows")
+            .select("following_id, created_at")
+            .eq("follower_id", user.id)
+            .order("created_at", { ascending: false });
+          const ids = ((fol || []) as any[]).map(f => f.following_id);
+          if (cancelled) return;
+          if (ids.length === 0) { setFollowedUsers([]); setItems([]); }
+          else {
+            const { data: profs } = await supabase
+              .from("profiles")
+              .select("user_id,name,avatar_url")
+              .in("user_id", ids);
+            const map = new Map<string, any>(((profs || []) as any[]).map(p => [p.user_id, p]));
+            const ordered = ids
+              .map(id => map.get(id))
+              .filter(Boolean)
+              .map(p => ({ user_id: p.user_id, name: p.name, avatar_url: p.avatar_url }));
+            if (!cancelled) { setFollowedUsers(ordered); setItems([]); }
+          }
         }
       } finally {
         if (!cancelled) setLoading(false);
