@@ -326,7 +326,7 @@ export function AccordFeedPremium() {
 
           {/* STORIES — colegas online reais */}
           <div className="afp-stories">
-            <div className="afp-story">
+            <button type="button" className="afp-story" onClick={() => setComposerOpen(true)} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
               <div className="afp-story-ring afp-create">
                 <div className="afp-story-pic">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
@@ -334,8 +334,8 @@ export function AccordFeedPremium() {
                   </svg>
                 </div>
               </div>
-              <span className="afp-story-name" style={{ color: "hsl(var(--primary))", fontWeight: 600 }}>Adicionar</span>
-            </div>
+              <span className="afp-story-name" style={{ color: "hsl(var(--primary))", fontWeight: 600 }}>Publicar</span>
+            </button>
             {otherOnline.slice(0, 8).map(u => (
               <div className="afp-story" key={u.user_id}>
                 <div className="afp-story-ring">
