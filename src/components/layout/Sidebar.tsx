@@ -45,6 +45,8 @@ import {
   Settings2,
   Languages,
   Megaphone,
+  Bookmark,
+
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { prefetchRoute } from "@/lib/routePrefetch";
