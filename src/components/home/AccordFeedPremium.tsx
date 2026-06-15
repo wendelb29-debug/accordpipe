@@ -25,6 +25,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { PostReactorsDialog } from "./PostReactorsDialog";
+import { QuickPostDialog } from "./QuickPostDialog";
 
 const HIDDEN_KEY = "afp:hidden-posts";
 function getHiddenIds(): string[] {
