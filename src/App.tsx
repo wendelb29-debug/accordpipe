@@ -33,6 +33,8 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const CapturaLead = lazy(() => import("./pages/CapturaLead"));
 const FormularioContato = lazy(() => import("./pages/FormularioContato"));
 const Atividades = lazy(() => import("./pages/Atividades"));
+const Salvos = lazy(() => import("./pages/Salvos"));
+
 const Perfil = lazy(() => import("./pages/Perfil"));
 const AccordStack = lazy(() => import("./pages/AccordStack"));
 const GestaoVendas = lazy(() => import("./pages/GestaoVendas"));
@@ -115,6 +117,17 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/salvos"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Salvos />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
             <Route
               path="/dashboard"
               element={

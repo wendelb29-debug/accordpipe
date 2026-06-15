@@ -45,6 +45,8 @@ import {
   Settings2,
   Languages,
   Megaphone,
+  Bookmark,
+
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { prefetchRoute } from "@/lib/routePrefetch";
@@ -68,6 +70,8 @@ const navigationSections = [
     label: "Acesso rápido",
     items: [
       { nameKey: "nav.feed", href: "/home", icon: Newspaper, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
+      { nameKey: "Salvos", href: "/salvos", icon: Bookmark, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
+
       { nameKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
       { nameKey: "Dashboard CRM", href: "/crm-dashboard", icon: BarChart3, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
       { nameKey: "nav.accordSales", href: "/atendimento", icon: Headset, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
