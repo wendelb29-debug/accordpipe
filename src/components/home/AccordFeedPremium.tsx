@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PostReactorsDialog } from "./PostReactorsDialog";
 import { QuickPostDialog } from "./QuickPostDialog";
+import { ExpandedComposer } from "./ExpandedComposer";
 import { FeedPostExtras, PostTypeBadge } from "./FeedPostExtras";
 import { MyWeekActivityDialog, type MyWeekTab } from "./MyWeekActivityDialog";
 
@@ -615,9 +616,9 @@ export function AccordFeedPremium() {
         </div>
       </div>
 
-      <QuickPostDialog
+      <ExpandedComposer
         open={composerOpen}
-        onOpenChange={setComposerOpen}
+        onClose={() => setComposerOpen(false)}
         userId={user?.id}
         servidorId={companyId || undefined}
         onPublished={() => qc.invalidateQueries({ queryKey: ["feed-posts-v2"] })}
