@@ -120,7 +120,7 @@ export function FeedPostExtras({ post, currentUserId }: { post: FeedPost; curren
                 type="button"
                 onClick={() => handleVote(opt.id)}
                 disabled={voting}
-                className="w-full text-left relative overflow-hidden rounded-lg border px-3 py-2 text-sm transition hover:border-primary disabled:opacity-50"
+                className="w-full text-left relative overflow-hidden rounded-lg border px-3 py-2 text-sm transition text-foreground hover:border-primary disabled:opacity-70 disabled:text-muted-foreground"
                 style={{
                   borderColor: opt.voted_by_me ? "hsl(var(--primary))" : "hsl(var(--border))",
                   background: "hsl(var(--background))",
