@@ -59,8 +59,8 @@ export function useMyWeekStats() {
           .eq("user_id", user!.id).gte("created_at", since),
         (supabase as any).from("feed_post_comments").select("id", { count: "exact", head: true })
           .eq("user_id", user!.id).gte("created_at", since),
-        (supabase as any).from("feed_post_follows").select("id", { count: "exact", head: true })
-          .eq("user_id", user!.id).gte("created_at", since),
+        (supabase as any).from("user_follows").select("follower_id", { count: "exact", head: true })
+          .eq("follower_id", user!.id),
       ]);
       return {
         posts: postsRes.count || 0,
