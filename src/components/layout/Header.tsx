@@ -136,6 +136,25 @@ export function Header() {
 
         <NotificationBell />
 
+        {/* Assistente IA */}
+        <button
+          onClick={() => setAiMode(aiMode === "open" ? "header" : "open")}
+          title={aiMode === "open" ? "Fechar Assistente IA" : "Abrir Assistente IA"}
+          aria-label="Assistente IA"
+          className={cn(
+            "relative h-10 w-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center transition-all active:scale-95",
+            aiMode === "open"
+              ? "bg-gradient-to-br from-primary to-violet-600 text-white shadow-md shadow-primary/40"
+              : "bg-primary/10 text-primary hover:bg-primary/15"
+          )}
+        >
+          <Bot className="h-4 w-4" />
+          {aiMode === "open" && (
+            <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-400 border-2 border-background animate-pulse" />
+          )}
+        </button>
+
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="rounded-xl h-10 sm:h-9 gap-2.5 px-1.5 sm:px-2 hover:bg-muted/60">
