@@ -81,37 +81,12 @@ function Avatar({ contact, size = 40 }: { contact: SidebarContact; size?: number
   );
 }
 
-const STATUS_TABS: { key: ConversationStatusFilter; label: string; colorClass: string }[] = [
-  { key: "fila", label: "Fila", colorClass: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
-  { key: "em_atendimento", label: "Atend.", colorClass: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" },
-  { key: "encerrado", label: "Enc.", colorClass: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
-];
-
 export function InboxSidebar({
   contacts, selectedId, onSelect, searchTerm, onSearchChange,
   filter, onFilterChange, isAdmin, loading, statusFilter, onStatusFilterChange,
   onNewConversation, tenantId, onAvatarsSynced,
 }: InboxSidebarProps) {
   const filterOpts = ["Todas", "Não lidas"];
-  const [syncingAvatars, setSyncingAvatars] = useState(false);
-
-  const handleSyncAvatars = async () => {
-    if (!tenantId || syncingAvatars) return;
-    setSyncingAvatars(true);
-    const t = toast.loading("Sincronizando fotos do WhatsApp...");
-    try {
-      const { data, error } = await supabase.functions.invoke("whatsapp-sync-all-avatars", {
-        body: { tenant_id: tenantId, limit: 200 },
-      });
-      if (error) throw error;
-      toast.success(`Fotos atualizadas: ${data?.updated ?? 0} de ${data?.total ?? 0}`, { id: t });
-      onAvatarsSynced?.();
-    } catch (e: any) {
-      toast.error(e?.message || "Falha ao sincronizar fotos", { id: t });
-    } finally {
-      setSyncingAvatars(false);
-    }
-  };
 
   const counts = {
     fila: contacts.filter((c) => c.conversationStatus === "fila" || c.conversationStatus === "aguardando").length,
@@ -138,18 +113,8 @@ export function InboxSidebar({
               onChange={(e) => onSearchChange(e.target.value)}
             />
           </div>
-          {isAdmin && tenantId && (
-            <button
-              type="button"
-              onClick={handleSyncAvatars}
-              disabled={syncingAvatars}
-              title="Atualizar fotos de perfil"
-              className="w-9 h-9 flex items-center justify-center rounded-xl border border-border/50 bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-50 transition-all"
-            >
-              <RefreshCw size={14} className={cn(syncingAvatars && "animate-spin")} />
-            </button>
-          )}
         </div>
+
 
         <div className="flex gap-1">
           {filterOpts.map((f) => (
