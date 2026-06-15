@@ -854,6 +854,9 @@ const CSS = `
 .afp-post-author-line2{display:flex;align-items:center;gap:5px;font-size:11px;color:hsl(var(--muted-foreground));margin-top:1px}
 .afp-post-pin{background:rgba(245,158,11,.15);color:#fbbf24;font-size:9px;font-weight:800;padding:3px 7px;border-radius:5px;display:inline-flex;align-items:center;gap:3px;letter-spacing:.05em;text-transform:uppercase}
 .afp-post-pin svg{width:9px;height:9px}
+.afp-post-menu-btn{margin-left:6px;width:32px;height:32px;border-radius:8px;background:transparent;border:none;cursor:pointer;color:hsl(var(--muted-foreground));display:inline-flex;align-items:center;justify-content:center;transition:.15s}
+.afp-post-menu-btn:hover{background:hsl(var(--muted));color:hsl(var(--foreground))}
+.afp-post-highlight{box-shadow:0 0 0 2px hsl(var(--primary)),0 16px 40px -10px hsl(var(--primary) / 0.45);transition:box-shadow .4s}
 .afp-post-content{padding:0 16px 14px;font-size:13.5px;line-height:1.6;color:hsl(var(--foreground))}
 .afp-post-tags{display:flex;flex-wrap:wrap;gap:5px;padding:0 16px 14px}
 .afp-post-tag{background:rgba(91,63,212,.12);color:hsl(var(--primary));font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:99px;cursor:pointer}
