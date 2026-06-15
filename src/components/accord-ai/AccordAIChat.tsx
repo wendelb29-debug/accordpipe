@@ -596,14 +596,14 @@ export function AccordAIChat() {
                 Limpar
               </button>
               <button
-                onClick={handleMinimize}
+                onClick={() => { if (isPureAI) setAiMode("header"); else handleMinimize(); }}
                 className="opacity-70 hover:opacity-100 bg-white/10 rounded-full p-1 transition-opacity"
                 title="Minimizar"
               >
                 <Minimize2 className="h-3.5 w-3.5" />
               </button>
               <button
-                onClick={() => setOpen(false)}
+                onClick={() => { if (isPureAI) setAiMode("header"); else setOpen(false); }}
                 className="opacity-70 hover:opacity-100 bg-white/10 rounded-full p-1 transition-opacity"
                 title="Fechar"
               >
