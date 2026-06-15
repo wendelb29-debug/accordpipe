@@ -18,11 +18,18 @@ interface PostItem {
   comments_count?: number;
 }
 
+interface FollowedUser {
+  user_id: string;
+  name: string | null;
+  avatar_url?: string | null;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   initialTab: MyWeekTab;
   onOpenPost?: (postId: string) => void;
+  onUnfollow?: (userId: string) => void;
 }
 
 export function MyWeekActivityDialog({ open, onOpenChange, initialTab, onOpenPost }: Props) {
