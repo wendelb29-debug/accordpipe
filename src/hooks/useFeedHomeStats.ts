@@ -51,7 +51,7 @@ export function useMyWeekStats() {
     enabled: !!companyId && !!user?.id,
     queryFn: async () => {
       const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      const [postsRes, reactsRes, commentsRes] = await Promise.all([
+      const [postsRes, reactsRes, commentsRes, followsRes] = await Promise.all([
         supabase.from("feed_posts").select("id", { count: "exact", head: true })
           .eq("servidor_id", companyId!).eq("author_id", user!.id)
           .gte("created_at", since),
@@ -59,12 +59,14 @@ export function useMyWeekStats() {
           .eq("user_id", user!.id).gte("created_at", since),
         (supabase as any).from("feed_post_comments").select("id", { count: "exact", head: true })
           .eq("user_id", user!.id).gte("created_at", since),
+        (supabase as any).from("feed_post_follows").select("id", { count: "exact", head: true })
+          .eq("user_id", user!.id).gte("created_at", since),
       ]);
       return {
         posts: postsRes.count || 0,
         reactions: reactsRes.count || 0,
         comments: commentsRes.count || 0,
-        shares: 0,
+        follows: followsRes.count || 0,
       };
     },
     staleTime: 60_000,

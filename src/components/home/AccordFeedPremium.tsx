@@ -28,6 +28,7 @@ import {
 import { PostReactorsDialog } from "./PostReactorsDialog";
 import { QuickPostDialog } from "./QuickPostDialog";
 import { FeedPostExtras, PostTypeBadge } from "./FeedPostExtras";
+import { MyWeekActivityDialog, type MyWeekTab } from "./MyWeekActivityDialog";
 
 const HIDDEN_KEY = "afp:hidden-posts";
 function getHiddenIds(): string[] {
@@ -88,6 +89,8 @@ export function AccordFeedPremium() {
   const [hidden, setHidden] = useState<string[]>(() => getHiddenIds());
   const [composerOpen, setComposerOpen] = useState(false);
   const [reactorsPostId, setReactorsPostId] = useState<string | null>(null);
+  const [myWeekOpen, setMyWeekOpen] = useState(false);
+  const [myWeekTab, setMyWeekTab] = useState<MyWeekTab>("posts");
   const navigate = useNavigate();
 
   const otherOnline = useMemo(() => onlineUsers.filter(u => u.user_id !== user?.id), [onlineUsers, user?.id]);
@@ -498,16 +501,22 @@ export function AccordFeedPremium() {
             </div>
 
             <div className="afp-quick-stats">
-              {[
-                [String(myWeek?.posts ?? 0), "Posts"],
-                [String(myWeek?.reactions ?? 0), "Reações"],
-                [String(myWeek?.comments ?? 0), "Comentários"],
-                [String(myWeek?.shares ?? 0), "Compart."],
-              ].map(([v, l]) => (
-                <div className="afp-quick-stat" key={l}>
+              {([
+                [String(myWeek?.posts ?? 0), "Posts", "posts"],
+                [String(myWeek?.reactions ?? 0), "Reações", "reactions"],
+                [String(myWeek?.comments ?? 0), "Comentários", "comments"],
+                [String(myWeek?.follows ?? 0), "Seguindo", "follows"],
+              ] as const).map(([v, l, key]) => (
+                <button
+                  type="button"
+                  className="afp-quick-stat"
+                  key={l}
+                  onClick={() => { setMyWeekTab(key as any); setMyWeekOpen(true); }}
+                  style={{ cursor: "pointer", textAlign: "left", border: "none", background: "transparent", padding: 0, font: "inherit", color: "inherit" }}
+                >
                   <div className="afp-quick-stat-value">{v}</div>
                   <div className="afp-quick-stat-label">{l}</div>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -594,6 +603,19 @@ export function AccordFeedPremium() {
         postId={reactorsPostId}
         open={!!reactorsPostId}
         onOpenChange={(v) => { if (!v) setReactorsPostId(null); }}
+      />
+      <MyWeekActivityDialog
+        open={myWeekOpen}
+        onOpenChange={setMyWeekOpen}
+        initialTab={myWeekTab}
+        onOpenPost={(id) => {
+          const el = document.getElementById(`afp-post-${id}`);
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            el.classList.add("afp-post-highlight");
+            setTimeout(() => el.classList.remove("afp-post-highlight"), 2000);
+          }
+        }}
       />
     </div>
   );
@@ -929,6 +951,7 @@ const CSS = `
 .afp-post-card{background:hsl(var(--card) / 0.5);border:1px solid hsl(var(--border));border-radius:20px;overflow:hidden;margin-bottom:16px;position:relative;transition:border-color .2s, box-shadow .2s}
 .afp-post-card-pinned{border-color:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.35),0 12px 32px -12px rgba(245,158,11,.35);background:linear-gradient(180deg, rgba(245,158,11,.06), transparent 120px), hsl(var(--card) / 0.5)}
 .afp-post-card-anuncio{border-left:3px solid hsl(0 80% 55%)}
+.afp-post-highlight{box-shadow:0 0 0 2px hsl(var(--primary)),0 12px 32px -12px hsl(var(--primary) / .5)!important;transition:box-shadow .3s}
 .afp-post-header{display:flex;align-items:center;gap:11px;padding:14px 16px}
 .afp-av-ring{width:42px;height:42px;border-radius:99px;padding:2px;flex-shrink:0;position:relative}
 .afp-av-inner{width:100%;height:100%;border-radius:99px;background:hsl(var(--background));padding:2px}
