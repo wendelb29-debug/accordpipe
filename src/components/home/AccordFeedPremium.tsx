@@ -4,7 +4,9 @@
  * Conectado a feed_posts, tenant_events, feed_post_reactions/comments/saves,
  * presence realtime, user_follows.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { MoreHorizontal, Pin, Bookmark, ExternalLink, Link2, UserPlus, Pencil, EyeOff, CheckSquare, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { useQueryClient } from "@tanstack/react-query";
@@ -16,6 +18,21 @@ import { useOnlineUsers } from "@/hooks/useOnlineUsers";
 import { useTrendingTags } from "@/hooks/useTrendingTags";
 import { useHeroStats, useMyWeekStats, useSuggestedColleagues } from "@/hooks/useFeedHomeStats";
 import { PostComments, gradientFor, initials, relativeTime } from "./PostComments";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+const HIDDEN_KEY = "afp:hidden-posts";
+function getHiddenIds(): string[] {
+  try { return JSON.parse(localStorage.getItem(HIDDEN_KEY) || "[]"); } catch { return []; }
+}
+function setHiddenIds(ids: string[]) {
+  localStorage.setItem(HIDDEN_KEY, JSON.stringify(ids));
+}
 
 type FilterKey = "all" | "posts" | "events";
 
