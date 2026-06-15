@@ -338,6 +338,14 @@ function TemplateEditorDialog({ template, onClose, onSaved }: any) {
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [saving, setSaving] = useState(false);
   const [uploadingImg, setUploadingImg] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
+  const [previewVars, setPreviewVars] = useState<Record<string, string>>({
+    nome: "Wendel",
+    empresa: "Accord",
+    email: "wendel@accordpipe.com.br",
+    valor: "R$ 1.234,00",
+    data: new Date().toLocaleDateString("pt-BR"),
+  });
 
   const variables = useMemo(() => {
     const re = /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g;
