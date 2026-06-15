@@ -121,6 +121,12 @@ export function useWhatsAppInbox() {
   const cacheTenantRef = useRef<string | null>(null);
   const selectedContactIdRef = useRef<string | null>(null);
   const selectedContactPhoneRef = useRef<string | null>(null);
+  // Always-fresh mirror of `messages` so closures (fetchMessages background
+  // refresh, sendMessage, toggleReaction) never read a stale array from a
+  // previous conversation. Without this, switching chats fast caused
+  // messages from the OLD conversation to leak into the NEW conversation's
+  // merged state (root cause of cross-chat pollution).
+  const messagesRef = useRef<InboxMessage[]>([]);
   const originalTitleRef = useRef<string>(typeof document !== "undefined" ? document.title : "Accord Stack");
   const [activeIntegration, setActiveIntegration] = useState<{
     id?: string;
