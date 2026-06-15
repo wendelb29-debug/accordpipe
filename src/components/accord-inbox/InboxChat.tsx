@@ -1053,8 +1053,12 @@ export function InboxChat({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col gap-2 px-4 py-3 relative scroll-smooth bg-muted/20 dark:bg-background/60 overscroll-contain"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 110'%3E%3Cpath fill='%237F77DD' fill-opacity='0.06' d='M60 5L110 100H80L60 55L40 100H10Z'/%3E%3Cpath fill='%237F77DD' fill-opacity='0.04' d='M35 72L85 72L80 85L40 85Z'/%3E%3C/svg%3E")`,
+          backgroundSize: "110px 100px",
+          backgroundRepeat: "repeat",
+        }}
       >
-        <AccordWatermark />
         <div className="relative z-10 max-w-4xl mx-auto w-full flex flex-col gap-2">
           <div className="flex flex-col gap-2">
             {(() => {
