@@ -1,7 +1,5 @@
-import { Search, Plus, Users, MessageSquare, RefreshCw } from "lucide-react";
+import { Search, Plus, Users, MessageSquare } from "lucide-react";
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export type ConversationStatusFilter = "fila" | "em_atendimento" | "encerrado";
