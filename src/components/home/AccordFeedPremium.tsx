@@ -1171,6 +1171,31 @@ const CSS = `
 }
 .afp-action-btn:hover{background:#F5F7F9;color:var(--b24-blue-primary)}
 .afp-action-btn.afp-liked{color:var(--b24-blue-primary);font-weight:600}
+.dark .afp-root .afp-post-actions{
+  background:rgba(255,255,255,.075);
+  border-top:1px solid rgba(255,255,255,.22);
+  box-shadow:0 -1px 0 rgba(255,255,255,.05) inset;
+  gap:6px;
+}
+.dark .afp-root .afp-action-btn{
+  background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.24);
+  color:#FFFFFF;
+  font-weight:700;
+  box-shadow:0 1px 2px rgba(0,0,0,.22);
+}
+.dark .afp-root .afp-action-btn:hover{
+  background:rgba(255,255,255,.20);
+  border-color:rgba(255,255,255,.36);
+  color:#FFFFFF;
+}
+.dark .afp-root .afp-action-btn.afp-liked{
+  background:rgba(37,99,235,.26);
+  border-color:rgba(96,165,250,.54);
+  color:#93C5FD;
+  font-weight:800;
+}
+.dark .afp-root .afp-action-btn svg{color:currentColor;stroke-width:2.4}
 
 .afp-post-comments{
   background:#FAFBFC;
