@@ -1056,32 +1056,54 @@ export function InboxChat({
       >
         <AccordWatermark />
         <div className="relative z-10 max-w-4xl mx-auto w-full flex flex-col gap-2">
-          <div className="flex items-center gap-3 my-2">
-            <div className="flex-1 h-px bg-border/40" />
-            <span className="text-[11px] text-muted-foreground/70 px-2 bg-background rounded-full border border-border/30 py-0.5">
-              Hoje, {new Date().toLocaleDateString("pt-BR", { day: "numeric", month: "long" })}
-            </span>
-            <div className="flex-1 h-px bg-border/40" />
-          </div>
           <div className="flex flex-col gap-2">
-            {messages.map((msg) => {
-              const originalForReply = msg.replyToMessageId ? messagesById[msg.replyToMessageId] : undefined;
-              return (
-                <MessageBubble
-                  key={msg.id}
-                  msg={msg}
-                  originalForReply={originalForReply}
-                  currentUserId={currentUserId || undefined}
-                  onReply={(m) => {
-                    setReplyTo(m);
-                    requestAnimationFrame(() => taRef.current?.focus());
-                  }}
-                  onReact={handleReact}
-                  onOpenImage={(m) => setLightboxMsg(m)}
-                  onJumpToOriginal={handleJumpToMessage}
-                />
-              );
-            })}
+            {(() => {
+              const now = new Date();
+              const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+              const today = startOfDay(now);
+              const yesterday = today - 86400000;
+              const formatSeparator = (ts: number) => {
+                const d = new Date(ts);
+                const dateStr = d.toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: d.getFullYear() === now.getFullYear() ? undefined : "numeric" });
+                if (ts === today) return `Hoje, ${dateStr}`;
+                if (ts === yesterday) return `Ontem, ${dateStr}`;
+                return dateStr;
+              };
+              let lastDay = -1;
+              const nodes: JSX.Element[] = [];
+              messages.forEach((msg) => {
+                const ts = msg.created_at ? startOfDay(new Date(msg.created_at)) : today;
+                if (ts !== lastDay) {
+                  lastDay = ts;
+                  nodes.push(
+                    <div key={`sep-${ts}`} className="flex items-center gap-3 my-2 sticky top-1 z-10">
+                      <div className="flex-1 h-px bg-border/40" />
+                      <span className="text-[11px] font-medium text-muted-foreground/80 px-2.5 bg-background/95 backdrop-blur rounded-full border border-border/40 py-0.5 shadow-sm">
+                        {formatSeparator(ts)}
+                      </span>
+                      <div className="flex-1 h-px bg-border/40" />
+                    </div>
+                  );
+                }
+                const originalForReply = msg.replyToMessageId ? messagesById[msg.replyToMessageId] : undefined;
+                nodes.push(
+                  <MessageBubble
+                    key={msg.id}
+                    msg={msg}
+                    originalForReply={originalForReply}
+                    currentUserId={currentUserId || undefined}
+                    onReply={(m) => {
+                      setReplyTo(m);
+                      requestAnimationFrame(() => taRef.current?.focus());
+                    }}
+                    onReact={handleReact}
+                    onOpenImage={(m) => setLightboxMsg(m)}
+                    onJumpToOriginal={handleJumpToMessage}
+                  />
+                );
+              });
+              return nodes;
+            })()}
           </div>
         </div>
         <div ref={messagesEndRef} />
