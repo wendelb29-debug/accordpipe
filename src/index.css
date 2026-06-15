@@ -110,11 +110,36 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     letter-spacing: -0.011em;
+    position: relative;
+    min-height: 100vh;
   }
+
+  /* Ambient radial gradients — subtle depth */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      radial-gradient(900px 600px at 90% 5%, hsl(var(--primary) / 0.06), transparent 60%),
+      radial-gradient(700px 500px at 5% 95%, hsl(var(--primary) / 0.04), transparent 60%);
+  }
+  .dark body::before {
+    background:
+      radial-gradient(900px 600px at 90% 5%, hsl(var(--primary) / 0.12), transparent 60%),
+      radial-gradient(700px 500px at 5% 95%, hsl(var(--primary) / 0.08), transparent 60%);
+  }
+  #root { position: relative; z-index: 1; }
 
   h1 { @apply text-2xl font-semibold tracking-tight; letter-spacing: -0.03em; }
   h2 { @apply text-xl font-semibold; letter-spacing: -0.025em; }
   h3, h4, h5, h6 { letter-spacing: -0.02em; font-weight: 600; }
+
+  .tabular-nums, [data-type="number"] {
+    font-feature-settings: "tnum", "cv11";
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 @layer utilities {
