@@ -863,7 +863,8 @@ const CSS = `
 .afp-composer-input{flex:1;background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:14px;padding:12px 14px;font-size:13.5px;color:hsl(var(--muted-foreground));cursor:text;min-height:42px;display:flex;align-items:center}
 
 /* POST */
-.afp-post-card{background:hsl(var(--card) / 0.5);border:1px solid hsl(var(--border));border-radius:20px;overflow:hidden;margin-bottom:16px}
+.afp-post-card{background:hsl(var(--card) / 0.5);border:1px solid hsl(var(--border));border-radius:20px;overflow:hidden;margin-bottom:16px;position:relative;transition:border-color .2s, box-shadow .2s}
+.afp-post-card-pinned{border-color:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.35),0 12px 32px -12px rgba(245,158,11,.35);background:linear-gradient(180deg, rgba(245,158,11,.06), transparent 120px), hsl(var(--card) / 0.5)}
 .afp-post-header{display:flex;align-items:center;gap:11px;padding:14px 16px}
 .afp-av-ring{width:42px;height:42px;border-radius:99px;padding:2px;flex-shrink:0;position:relative}
 .afp-av-inner{width:100%;height:100%;border-radius:99px;background:hsl(var(--background));padding:2px}
