@@ -83,6 +83,8 @@ export function AccordFeedPremium() {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [openComments, setOpenComments] = useState<Set<string>>(new Set());
   const [hidden, setHidden] = useState<string[]>(() => getHiddenIds());
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [reactorsPostId, setReactorsPostId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const otherOnline = useMemo(() => onlineUsers.filter(u => u.user_id !== user?.id), [onlineUsers, user?.id]);
