@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
@@ -9,10 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, MessageSquare, Mail, Users, FileSpreadsheet, UsersRound, ChevronRight, ChevronLeft, Sparkles, FileText } from "lucide-react";
+import { Loader2, MessageSquare, Mail, Users, FileSpreadsheet, UsersRound, ChevronRight, ChevronLeft, Sparkles, FileText, Eye, Code, Monitor, Smartphone, Settings2, Play, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { captureAppError } from "@/lib/monitoring";
 import { EmailTemplateManager } from "./EmailTemplateManager";
+import { CampaignProgressModal } from "./CampaignProgressModal";
 
 interface Props {
   open: boolean;
@@ -44,6 +45,31 @@ export function NewCampaignDialog({ open, onOpenChange, defaultChannel, onCreate
   const [throttleMax, setThrottleMax] = useState(15);
   const [submitting, setSubmitting] = useState(false);
   const [pickTemplateOpen, setPickTemplateOpen] = useState(false);
+
+  // Preview + send-config + progress state
+  const [previewDevice, setPreviewDevice] = useState<"desktop" | "mobile">("desktop");
+  const [showRaw, setShowRaw] = useState(false);
+  const [sampleVars, setSampleVars] = useState<Record<string, string>>({
+    nome: "Wendel Silva",
+    empresa: "Empresa Exemplo",
+    email: "wendel@exemplo.com",
+  });
+  const [sendConfigOpen, setSendConfigOpen] = useState(false);
+  const [campaignProgress, setCampaignProgress] = useState<{ id: string; total: number } | null>(null);
+
+  const renderPreview = (html: string): string => {
+    let rendered = html || "";
+    Object.entries(sampleVars).forEach(([key, value]) => {
+      rendered = rendered.replace(new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, "g"), value);
+    });
+    rendered = rendered.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, "[$1]");
+    return rendered;
+  };
+
+  const previewHtml = useMemo(() => `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:20px;background:#f5f5f5;font-family:Arial,sans-serif;color:#111;">
+${renderPreview(body)}
+</body></html>`, [body, sampleVars]);
 
   useEffect(() => {
     if (open) {
@@ -205,8 +231,18 @@ export function NewCampaignDialog({ open, onOpenChange, defaultChannel, onCreate
         if (rErr) throw rErr;
       }
 
-      toast.success("Campanha criada e enfileirada");
-      onCreated(campaign.id);
+      if (channel === "email") {
+        // Fire-and-forget processor; UI watches progress via Realtime
+        supabase.functions
+          .invoke("process-marketing-campaign", { body: { campaign_id: campaign.id } })
+          .catch((err) => console.error("[process-marketing-campaign]", err));
+        toast.success("Envio iniciado!", { description: "Acompanhe o progresso em tempo real." });
+        setCampaignProgress({ id: campaign.id, total: recipients.length });
+        setSendConfigOpen(false);
+      } else {
+        toast.success("Campanha criada e enfileirada");
+        onCreated(campaign.id);
+      }
     } catch (e: any) {
       captureAppError(e, { module: "marketing.campaign", action: "create" }, "error");
     } finally {
@@ -371,20 +407,114 @@ export function NewCampaignDialog({ open, onOpenChange, defaultChannel, onCreate
                 <Input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Assunto do e-mail" />
               </div>
             )}
-            <div>
-              <Label>{channel === "email" ? "Corpo (HTML permitido)" : "Mensagem"}</Label>
-              <Textarea
-                value={body}
-                onChange={e => setBody(e.target.value)}
-                rows={8}
-                placeholder={channel === "whatsapp"
-                  ? "Olá {{nome}}, temos uma novidade pra você…"
-                  : "<p>Olá {{nome}},</p><p>Temos uma novidade…</p>"}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Variáveis disponíveis: <code>{"{{nome}}"}</code> e qualquer coluna do CSV.
-              </p>
-            </div>
+            {channel === "email" ? (
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <Label className="mb-0">Corpo do e-mail</Label>
+                  <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setShowRaw(false)}
+                      className={`h-7 px-3 rounded-md text-[11px] font-semibold inline-flex items-center gap-1 transition ${
+                        !showRaw ? "bg-background shadow-sm text-violet-500" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Eye className="w-3 h-3" /> Pré-visualização
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowRaw(true)}
+                      className={`h-7 px-3 rounded-md text-[11px] font-semibold inline-flex items-center gap-1 transition ${
+                        showRaw ? "bg-background shadow-sm text-violet-500" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Code className="w-3 h-3" /> HTML
+                    </button>
+                  </div>
+                </div>
+
+                {showRaw ? (
+                  <Textarea
+                    value={body}
+                    onChange={e => setBody(e.target.value)}
+                    rows={12}
+                    className="font-mono text-[12px]"
+                    placeholder="<p>Olá {{nome}}, ...</p>"
+                  />
+                ) : (
+                  <div className="rounded-xl border border-border bg-muted/20 overflow-hidden">
+                    <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-card/60">
+                      <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground flex-1">
+                        Como o destinatário vai ver
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewDevice("desktop")}
+                        className={`w-7 h-7 rounded flex items-center justify-center transition ${
+                          previewDevice === "desktop" ? "bg-violet-500/15 text-violet-500" : "text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        <Monitor className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewDevice("mobile")}
+                        className={`w-7 h-7 rounded flex items-center justify-center transition ${
+                          previewDevice === "mobile" ? "bg-violet-500/15 text-violet-500" : "text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        <Smartphone className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <div className="p-4 bg-muted/30 max-h-[420px] overflow-y-auto flex justify-center">
+                      <iframe
+                        srcDoc={previewHtml}
+                        title="Pré-visualização"
+                        className={`bg-white rounded-lg shadow-md border border-border ${
+                          previewDevice === "mobile" ? "w-[375px] h-[500px]" : "w-full max-w-2xl h-[450px]"
+                        }`}
+                        sandbox="allow-same-origin"
+                      />
+                    </div>
+                    <details className="px-3 py-2 border-t border-border bg-muted/10 text-[11px]">
+                      <summary className="cursor-pointer text-muted-foreground hover:text-foreground font-semibold">
+                        Editar valores de exemplo (não afeta o envio real)
+                      </summary>
+                      <div className="mt-2 grid grid-cols-3 gap-2">
+                        {Object.entries(sampleVars).map(([key, val]) => (
+                          <div key={key}>
+                            <label className="text-[9.5px] font-mono text-muted-foreground">{`{{${key}}}`}</label>
+                            <input
+                              value={val}
+                              onChange={e => setSampleVars(p => ({ ...p, [key]: e.target.value }))}
+                              className="w-full h-7 px-2 rounded border border-border bg-card text-[10.5px] outline-none"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  </div>
+                )}
+                <p className="text-[10.5px] text-muted-foreground mt-1">
+                  Variáveis disponíveis: <code className="font-mono">{`{{nome}}`}</code>{" "}
+                  <code className="font-mono">{`{{empresa}}`}</code> + qualquer coluna do Excel.
+                </p>
+              </div>
+            ) : (
+              <div>
+                <Label>Mensagem</Label>
+                <Textarea
+                  value={body}
+                  onChange={e => setBody(e.target.value)}
+                  rows={8}
+                  placeholder="Olá {{nome}}, temos uma novidade pra você…"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Variáveis disponíveis: <code>{"{{nome}}"}</code> e qualquer coluna do Excel.
+                </p>
+              </div>
+            )}
             <EmailTemplateManager
               open={pickTemplateOpen}
               onOpenChange={setPickTemplateOpen}
@@ -412,7 +542,20 @@ export function NewCampaignDialog({ open, onOpenChange, defaultChannel, onCreate
               Continuar <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           )}
-          {step === 3 && (
+          {step === 3 && channel === "email" && (
+            <Button
+              onClick={() => {
+                if (!canSubmit) { toast.error("Preencha assunto, corpo e a conta de envio"); return; }
+                setSendConfigOpen(true);
+              }}
+              disabled={!canSubmit || submitting}
+              className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:opacity-90 text-white"
+            >
+              <Play className="h-4 w-4 mr-1.5" fill="currentColor" />
+              Configurar e iniciar envio
+            </Button>
+          )}
+          {step === 3 && channel !== "email" && (
             <Button onClick={handleCreate} disabled={!canSubmit || submitting}>
               {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Criar e enfileirar
@@ -420,6 +563,107 @@ export function NewCampaignDialog({ open, onOpenChange, defaultChannel, onCreate
           )}
         </DialogFooter>
       </DialogContent>
+
+      {/* Send config modal */}
+      <Dialog open={sendConfigOpen} onOpenChange={setSendConfigOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center">
+                <Settings2 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <div>Configurar envio em massa</div>
+                <div className="text-[11px] font-normal text-muted-foreground">
+                  Ritmo de disparo evita marca de spam
+                </div>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5 mt-2">
+            <div className="p-4 rounded-xl bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 border border-violet-500/20">
+              <div className="grid grid-cols-2 gap-3 text-center">
+                <div>
+                  <div className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">Destinatários</div>
+                  <div className="text-[22px] font-bold text-foreground mt-0.5">{recipients.length}</div>
+                </div>
+                <div>
+                  <div className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">Tempo estimado</div>
+                  <div className="text-[22px] font-bold text-foreground mt-0.5">
+                    ~{Math.max(1, Math.ceil((recipients.length * ((throttleMin + throttleMax) / 2)) / 60))} min
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-[12px] font-semibold mb-2 block">Pausa entre cada envio (segundos)</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Mínimo</div>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={60}
+                    value={throttleMin}
+                    onChange={e => setThrottleMin(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="font-mono"
+                  />
+                </div>
+                <div>
+                  <div className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Máximo</div>
+                  <Input
+                    type="number"
+                    min={throttleMin}
+                    max={120}
+                    value={throttleMax}
+                    onChange={e => setThrottleMax(Math.max(throttleMin, parseInt(e.target.value) || throttleMin))}
+                    className="font-mono"
+                  />
+                </div>
+              </div>
+              <p className="text-[10.5px] text-muted-foreground mt-1.5">
+                O sistema pausa um tempo aleatório entre <strong>{throttleMin}s</strong> e <strong>{throttleMax}s</strong> entre cada envio. Pausa randomizada imita comportamento humano e reduz risco de spam.
+              </p>
+            </div>
+
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <div className="text-[11px] text-foreground leading-relaxed">
+                <strong>Importante:</strong> uma vez iniciado, o envio não pode ser cancelado para e-mails que já saíram. Você pode fechar essa tela — o envio continua no servidor.
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="mt-4">
+            <Button variant="ghost" onClick={() => setSendConfigOpen(false)} disabled={submitting}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleCreate}
+              disabled={submitting}
+              className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:opacity-90 text-white"
+            >
+              {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-1.5" fill="currentColor" />}
+              Iniciar envio agora
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Progress modal */}
+      {campaignProgress && (
+        <CampaignProgressModal
+          campaignId={campaignProgress.id}
+          total={campaignProgress.total}
+          onClose={() => {
+            const id = campaignProgress.id;
+            setCampaignProgress(null);
+            onCreated(id);
+          }}
+        />
+      )}
     </Dialog>
   );
 }
