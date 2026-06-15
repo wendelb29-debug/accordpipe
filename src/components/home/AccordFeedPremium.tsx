@@ -412,6 +412,7 @@ export function AccordFeedPremium() {
               onHide={() => handleHidePost(post.id)}
               onCreateTask={() => handleCreateTask(post)}
               onDelete={() => handleDeletePost(post)}
+              onOpenReactors={() => setReactorsPostId(post.id)}
             />
           ))}
 
