@@ -752,9 +752,9 @@ function PostCard({
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
           Comentar
         </button>
-        <button className="afp-action-btn" onClick={onShare}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
-          Compartilhar
+        <button className={`afp-action-btn ${post.followed_by_me ? "afp-liked" : ""}`} onClick={onFollow} title={post.followed_by_me ? "Você está seguindo esta publicação" : "Seguir esta publicação e receber notificações"}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
+          {post.followed_by_me ? "Seguindo" : "Seguir"}
         </button>
         <button className={`afp-action-btn ${post.saved_by_me ? "afp-liked" : ""}`} onClick={onSave}>
           <svg viewBox="0 0 24 24" fill={post.saved_by_me ? "currentColor" : "none"} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
