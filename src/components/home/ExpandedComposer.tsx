@@ -366,7 +366,7 @@ export function ExpandedComposer({ open, onClose, onPublished, initialTab = "mes
           <BottomActionBtn icon={Paperclip} label="Arquivo" onClick={() => document.getElementById("composer-image-input")?.click()} />
           <BottomActionBtn icon={FileText} label="Criar documento" disabled />
           <BottomActionBtn icon={AtSign} label="Mencionar" onClick={() => editor?.chain().focus().insertContent("@").run()} />
-          <BottomActionBtn icon={Quote} label="Citação" onClick={() => editor?.chain().focus().toggleBlockquote().run()} />
+          <BottomActionBtn icon={Quote} label="Citação" onClick={() => (editor?.chain().focus() as any).toggleBlockquote().run()} />
           <BottomActionBtn icon={Hash} label="Adicionar marca" onClick={() => editor?.chain().focus().insertContent("#").run()} />
           <BottomActionBtn icon={VideoIcon} label="Gravar Vídeo" disabled />
         </div>
