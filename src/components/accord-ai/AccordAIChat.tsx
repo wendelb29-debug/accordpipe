@@ -473,8 +473,14 @@ export function AccordAIChat() {
           }}
         >
           <div className="h-9 w-9 rounded-full bg-emerald-500/15 flex items-center justify-center overflow-hidden shrink-0">
-            {preview.contact_avatar ? (
-              <img src={preview.contact_avatar} alt="" className="h-full w-full object-cover" />
+            {preview.contact_avatar && !previewAvatarError ? (
+              <img
+                src={preview.contact_avatar}
+                alt=""
+                referrerPolicy="no-referrer"
+                onError={() => setPreviewAvatarError(true)}
+                className="h-full w-full object-cover"
+              />
             ) : (
               <MessageSquare className="h-4 w-4 text-emerald-600" />
             )}
