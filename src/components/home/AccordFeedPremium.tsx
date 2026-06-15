@@ -192,20 +192,28 @@ export function AccordFeedPremium() {
     qc.invalidateQueries({ queryKey: ["feed-events"] });
   }
 
-  async function handleFollow(targetUserId: string) {
+  async function handleFollow(targetUserId: string, currentlyFollowing: boolean) {
     if (!user?.id || !companyId || user.id === targetUserId) return;
-    const { error } = await (supabase as any).from("user_follows").insert({
-      follower_id: user.id, following_id: targetUserId, servidor_id: companyId,
-    });
-    if (error) {
-      if ((error as any).code === "23505") {
-        toast({ title: "Você já segue esse colega" });
-      } else {
-        toast({ title: "Erro ao seguir", description: error.message, variant: "destructive" });
+    if (currentlyFollowing) {
+      const { error } = await (supabase as any).from("user_follows")
+        .delete()
+        .eq("follower_id", user.id)
+        .eq("following_id", targetUserId);
+      if (error) {
+        toast({ title: "Erro ao deixar de seguir", description: error.message, variant: "destructive" });
+        return;
       }
-      return;
+      toast({ title: "Você deixou de seguir" });
+    } else {
+      const { error } = await (supabase as any).from("user_follows").insert({
+        follower_id: user.id, following_id: targetUserId, servidor_id: companyId,
+      });
+      if (error && (error as any).code !== "23505") {
+        toast({ title: "Erro ao seguir", description: error.message, variant: "destructive" });
+        return;
+      }
+      toast({ title: "Seguindo", description: "Você receberá notificações desta pessoa." });
     }
-    toast({ title: "Seguindo" });
     qc.invalidateQueries({ queryKey: ["feed-suggested"] });
   }
 
