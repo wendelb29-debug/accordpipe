@@ -227,23 +227,23 @@ export function ExpandedComposer({ open, onClose, onPublished, initialTab = "mes
         {/* TOOLBAR (só mensagem) */}
         {tab === "message" && editor && (
           <div className="flex items-center gap-0.5 px-3 py-2 border-b border-border bg-muted/30 flex-wrap">
-            <ToolbarBtn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")}><Bold className="w-3.5 h-3.5" /></ToolbarBtn>
-            <ToolbarBtn onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive("italic")}><Italic className="w-3.5 h-3.5" /></ToolbarBtn>
-            <ToolbarBtn onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive("strike")}><Strikethrough className="w-3.5 h-3.5" /></ToolbarBtn>
-            <ToolbarBtn onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}><RemoveFormatting className="w-3.5 h-3.5" /></ToolbarBtn>
+            <ToolbarBtn onClick={() => (editor.chain().focus() as any).toggleBold().run()} active={editor.isActive("bold")}><Bold className="w-3.5 h-3.5" /></ToolbarBtn>
+            <ToolbarBtn onClick={() => (editor.chain().focus() as any).toggleItalic().run()} active={editor.isActive("italic")}><Italic className="w-3.5 h-3.5" /></ToolbarBtn>
+            <ToolbarBtn onClick={() => (editor.chain().focus() as any).toggleStrike().run()} active={editor.isActive("strike")}><Strikethrough className="w-3.5 h-3.5" /></ToolbarBtn>
+            <ToolbarBtn onClick={() => (editor.chain().focus() as any).unsetAllMarks().clearNodes().run()}><RemoveFormatting className="w-3.5 h-3.5" /></ToolbarBtn>
             <ToolbarDivider />
-            <ToolbarBtn onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive("heading", { level: 2 })}><Type className="w-3.5 h-3.5" /></ToolbarBtn>
+            <ToolbarBtn onClick={() => (editor.chain().focus() as any).toggleHeading({ level: 2 }).run()} active={editor.isActive("heading", { level: 2 })}><Type className="w-3.5 h-3.5" /></ToolbarBtn>
             <ToolbarDivider />
-            <ToolbarBtn onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive("orderedList")}><ListOrdered className="w-3.5 h-3.5" /></ToolbarBtn>
-            <ToolbarBtn onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive("bulletList")}><List className="w-3.5 h-3.5" /></ToolbarBtn>
+            <ToolbarBtn onClick={() => (editor.chain().focus() as any).toggleOrderedList().run()} active={editor.isActive("orderedList")}><ListOrdered className="w-3.5 h-3.5" /></ToolbarBtn>
+            <ToolbarBtn onClick={() => (editor.chain().focus() as any).toggleBulletList().run()} active={editor.isActive("bulletList")}><List className="w-3.5 h-3.5" /></ToolbarBtn>
             <ToolbarDivider />
             <ToolbarBtn onClick={() => {
               const url = prompt("URL do link:");
-              if (url) editor.chain().focus().setLink({ href: url }).run();
+              if (url) (editor.chain().focus() as any).setLink({ href: url }).run();
             }}><LinkIcon className="w-3.5 h-3.5" /></ToolbarBtn>
             <ToolbarBtn onClick={() => document.getElementById("composer-image-input")?.click()}><ImageIcon className="w-3.5 h-3.5" /></ToolbarBtn>
             <ToolbarBtn disabled><Video className="w-3.5 h-3.5" /></ToolbarBtn>
-            <ToolbarBtn onClick={() => editor.chain().focus().toggleCodeBlock().run()} active={editor.isActive("codeBlock")}><Code className="w-3.5 h-3.5" /></ToolbarBtn>
+            <ToolbarBtn onClick={() => (editor.chain().focus() as any).toggleCodeBlock().run()} active={editor.isActive("codeBlock")}><Code className="w-3.5 h-3.5" /></ToolbarBtn>
             <ToolbarBtn disabled><Smile className="w-3.5 h-3.5" /></ToolbarBtn>
             <div className="ml-auto">
               <button

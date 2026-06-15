@@ -219,7 +219,7 @@ export function ContractRichEditor({ content, onChange, className }: Props) {
           <ToolBtn onClick={() => editor?.chain().focus().toggleBold().run()} active={editor?.isActive("bold")} title="Negrito" disabled={!editorReady}>
             <Bold className="h-4 w-4" />
           </ToolBtn>
-          <ToolBtn onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive("italic")} title="Itálico">
+          <ToolBtn onClick={() => (editor.chain().focus() as any).toggleItalic().run()} active={editor.isActive("italic")} title="Itálico">
             <Italic className="h-4 w-4" />
           </ToolBtn>
           <ToolBtn onClick={() => editor?.chain().focus().toggleUnderline().run()} active={editor?.isActive("underline")} title="Sublinhado" disabled={!editorReady}>
