@@ -347,16 +347,20 @@ export function AccordAIChat() {
     );
   }
 
-  // ── Minimized state: show a tiny pill ──
-  if (assistantState === "minimized") {
+  // ── AI-only path is now controlled by the global AIAssistantContext ──
+  const isPureAI = launcherMode === "ai" && !hasPending;
+  if (isPureAI && aiMode !== "open") {
+    // header → ícone no header abre; hidden → totalmente oculto
+    return null;
+  }
+
+  // Legacy minimized pill (apenas para fluxo WhatsApp/quick_chat)
+  if (!isPureAI && assistantState === "minimized") {
     return (
       <button
         onClick={handleRestore}
         className="fixed z-40 flex items-center gap-1.5 rounded-full border border-border bg-background/90 backdrop-blur-sm px-2.5 py-1.5 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 group"
-        style={{
-          bottom: `${safeBottom}px`,
-          right: isMobile ? 12 : 20,
-        }}
+        style={{ bottom: `${safeBottom}px`, right: isMobile ? 12 : 20 }}
         title="Abrir assistente IA"
       >
         <div
@@ -377,16 +381,78 @@ export function AccordAIChat() {
   }
 
   const handleFabClick = () => {
-    if (preview) {
-      openQuickChat(preview);
-      return;
-    }
-    if (hasPending) {
-      openQuickChat(pending[pending.length - 1]);
-      return;
-    }
+    if (preview) { openQuickChat(preview); return; }
+    if (hasPending) { openQuickChat(pending[pending.length - 1]); return; }
     setOpen((v) => !v);
   };
+
+  // ── DRAG HANDLERS (FAB do modo AI) ──
+  const FAB_SIZE = isMobile ? 44 : 56;
+  const DROP_ZONE_SIZE = 80;
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (!isPureAI || !fabRef.current) return;
+    const rect = fabRef.current.getBoundingClientRect();
+    dragStart.current = {
+      x: e.clientX, y: e.clientY,
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top,
+      moved: false,
+    };
+    fabRef.current.setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!dragStart.current) return;
+    const dx = Math.abs(e.clientX - dragStart.current.x);
+    const dy = Math.abs(e.clientY - dragStart.current.y);
+    if (!dragStart.current.moved && (dx > 5 || dy > 5)) {
+      dragStart.current.moved = true;
+      setDragging(true);
+      setOpen(false); // esconde painel durante drag
+    }
+    if (!dragStart.current.moved) return;
+
+    const newX = e.clientX - dragStart.current.offsetX;
+    const newY = e.clientY - dragStart.current.offsetY;
+    const maxX = window.innerWidth - FAB_SIZE;
+    const maxY = window.innerHeight - FAB_SIZE;
+    const clampedX = Math.max(0, Math.min(newX, maxX));
+    const clampedY = Math.max(0, Math.min(newY, maxY));
+    setPosition({ x: clampedX, y: clampedY });
+
+    const dropX = window.innerWidth - DROP_ZONE_SIZE - 24;
+    const dropY = window.innerHeight - DROP_ZONE_SIZE - 24;
+    setDragOverDrop(clampedX + FAB_SIZE > dropX && clampedY + FAB_SIZE > dropY);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!dragStart.current) return;
+    const wasDrag = dragStart.current.moved;
+    try { fabRef.current?.releasePointerCapture(e.pointerId); } catch {}
+    dragStart.current = null;
+
+    if (!wasDrag) {
+      // click puro — toggle painel
+      handleFabClick();
+      return;
+    }
+    setDragging(false);
+    if (dragOverDrop) {
+      setAiMode("hidden");
+      setDragOverDrop(false);
+      setPosition({ x: -1, y: -1 });
+    } else {
+      setOpen(true);
+    }
+  };
+
+  // Posição computada do FAB no modo IA
+  const computedPos = isPureAI && (position.x !== -1 && position.y !== -1)
+    ? position
+    : null;
+
+
 
   // ── Expanded state ──
   return (
