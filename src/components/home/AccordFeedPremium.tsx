@@ -655,7 +655,11 @@ function PostCard({
         </DropdownMenu>
       </div>
 
-      <div className="afp-post-content" style={{ whiteSpace: "pre-wrap" }}>{post.content}</div>
+      {post.post_type !== "enquete" && post.content && (
+        <div className="afp-post-content" style={{ whiteSpace: "pre-wrap" }}>{post.content}</div>
+      )}
+
+      <FeedPostExtras post={post} currentUserId={currentUserId} />
 
       {post.image_url && (
         <div style={{ width: "100%", maxHeight: 480, overflow: "hidden" }}>
