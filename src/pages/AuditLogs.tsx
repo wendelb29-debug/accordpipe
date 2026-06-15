@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { AuditExportFileCard } from "@/components/audit/AuditExportFileCard";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -198,6 +199,7 @@ function WidgetCard({ title, children, icon: Icon }: WidgetCardProps) {
 
 export default function AuditLogs() {
   const { role, profile } = useAuth();
+  const companyId = useActiveCompanyId();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -211,6 +213,7 @@ export default function AuditLogs() {
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const [exportingCsv, setExportingCsv] = useState(false);
+  const [tenantUsers, setTenantUsers] = useState<{ user_id: string; name: string }[]>([]);
 
   // Stats data (last 30d)
   const [stats, setStats] = useState<AuditLog[]>([]);
@@ -225,6 +228,18 @@ export default function AuditLogs() {
   useEffect(() => {
     if (hasAccess) fetchStats();
   }, [hasAccess]);
+
+  useEffect(() => {
+    if (!hasAccess || !companyId) return;
+    supabase
+      .from("profiles")
+      .select("user_id,name")
+      .eq("company_id", companyId)
+      .order("name")
+      .then(({ data }) => {
+        setTenantUsers(((data || []) as any[]).map(p => ({ user_id: p.user_id, name: p.name || "Usuário" })));
+      });
+  }, [hasAccess, companyId]);
 
   const fetchStats = async () => {
     try {
@@ -404,7 +419,18 @@ export default function AuditLogs() {
     setDateFrom(undefined); setDateTo(undefined); setPagePathFilter(null); setPage(0);
   };
 
-  const uniqueUsers = useMemoTopUsers(stats);
+  const uniqueUsers = useMemo(() => {
+    const m: Record<string, { user_id: string; name: string }> = {};
+    // All tenant users (from profiles) first
+    tenantUsers.forEach(u => { m[u.user_id] = u; });
+    // Plus any extra actor that already appears in audit logs (e.g. "Sistema")
+    stats.forEach(l => {
+      if (l.user_id && !m[l.user_id]) {
+        m[l.user_id] = { user_id: l.user_id, name: l.user_name || "Sistema" };
+      }
+    });
+    return Object.values(m).sort((a, b) => a.name.localeCompare(b.name));
+  }, [tenantUsers, stats]);
 
   if (!hasAccess) {
     return (
