@@ -91,10 +91,15 @@ ${renderPreview(body)}
     if (channel === "email" && open && user) {
       supabase
         .from("marketing_email_connections")
-        .select("id, provider, email_address, is_active")
+        .select("id, provider, email_address, display_name, is_active")
         .eq("user_id", user.id)
         .eq("is_active", true)
-        .then(({ data }) => setEmailConnections(data || []));
+        .order("created_at", { ascending: false })
+        .then(({ data }) => {
+          const list = data || [];
+          setEmailConnections(list);
+          if (list.length === 1) setEmailConnId(list[0].id);
+        });
     }
   }, [channel, open, user]);
 
