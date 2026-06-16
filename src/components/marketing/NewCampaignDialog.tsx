@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, MessageSquare, Mail, Users, FileSpreadsheet, UsersRound, ChevronRight, ChevronLeft, Sparkles, FileText, Eye, Code, Monitor, Smartphone, Settings2, Play, AlertCircle } from "lucide-react";
+import { Loader2, MessageSquare, Mail, Users, FileSpreadsheet, UsersRound, ChevronRight, ChevronLeft, Sparkles, FileText, Eye, Code, Monitor, Smartphone, Settings2, Play, AlertCircle, UploadCloud, Download, CheckCircle2, X } from "lucide-react";
 import { toast } from "sonner";
 import { captureAppError } from "@/lib/monitoring";
 import { EmailTemplateManager } from "./EmailTemplateManager";
@@ -45,6 +45,9 @@ export function NewCampaignDialog({ open, onOpenChange, defaultChannel, onCreate
   const [throttleMax, setThrottleMax] = useState(15);
   const [submitting, setSubmitting] = useState(false);
   const [pickTemplateOpen, setPickTemplateOpen] = useState(false);
+  const [excelFile, setExcelFile] = useState<{ name: string; size: number } | null>(null);
+  const [excelDragging, setExcelDragging] = useState(false);
+  const [excelParsing, setExcelParsing] = useState(false);
 
   // Preview + send-config + progress state
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "mobile">("desktop");
@@ -130,6 +133,8 @@ ${renderPreview(body)}
   };
 
   const handleExcel = async (file: File) => {
+    setExcelParsing(true);
+    setExcelFile({ name: file.name, size: file.size });
     try {
       const XLSX = await import("xlsx");
       const buf = await file.arrayBuffer();
@@ -163,6 +168,9 @@ ${renderPreview(body)}
       toast.success(`${list.length} destinatários carregados`);
     } catch (e: any) {
       captureAppError(e, { module: "marketing.campaign", action: "parse_spreadsheet" }, "error");
+      toast.error("Não foi possível ler o arquivo");
+    } finally {
+      setExcelParsing(false);
     }
   };
 
@@ -334,27 +342,104 @@ ${renderPreview(body)}
                 </Button>
               </TabsContent>
               <TabsContent value="csv" className="space-y-3 pt-3">
-                <div className="flex items-center justify-between rounded-md border border-dashed border-border bg-muted/20 p-3">
-                  <div className="text-xs">
-                    <div className="font-medium text-foreground flex items-center gap-1">
-                      <FileSpreadsheet className="h-3.5 w-3.5" /> Modelo de planilha Excel
+                {/* Step 1 — Template */}
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10 shrink-0">
+                      <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
                     </div>
-                    <p className="text-muted-foreground mt-0.5">
-                      Baixe o template .xlsx, preencha e faça o upload abaixo.
-                    </p>
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-foreground">Modelo de planilha</div>
+                      <p className="text-xs text-muted-foreground truncate">
+                        Baixe o template, preencha e faça o upload abaixo.
+                      </p>
+                    </div>
                   </div>
-                  <Button type="button" size="sm" variant="outline" onClick={downloadTemplate}>
-                    Baixar modelo .xlsx
+                  <Button type="button" size="sm" variant="outline" onClick={downloadTemplate} className="gap-1.5 shrink-0">
+                    <Download className="h-3.5 w-3.5" /> Baixar .xlsx
                   </Button>
                 </div>
-                <Input
-                  type="file"
-                  accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-                  onChange={e => e.target.files?.[0] && handleExcel(e.target.files[0])}
-                />
-                <p className="text-xs text-muted-foreground">
-                  A primeira planilha do arquivo será lida. Cabeçalho obrigatório: <code>nome, email</code> (e-mail) ou <code>nome, telefone</code> (WhatsApp). Outras colunas viram variáveis dinâmicas (ex: <code>{"{{empresa}}"}</code>).
-                </p>
+
+                {/* Step 2 — Dropzone */}
+                <label
+                  htmlFor="campaign-excel-input"
+                  onDragOver={e => { e.preventDefault(); setExcelDragging(true); }}
+                  onDragLeave={() => setExcelDragging(false)}
+                  onDrop={e => {
+                    e.preventDefault();
+                    setExcelDragging(false);
+                    const f = e.dataTransfer.files?.[0];
+                    if (f) handleExcel(f);
+                  }}
+                  className={`relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 cursor-pointer transition ${
+                    excelDragging
+                      ? "border-emerald-500 bg-emerald-500/5"
+                      : excelFile
+                        ? "border-emerald-500/40 bg-emerald-500/[0.03]"
+                        : "border-border bg-muted/10 hover:border-emerald-500/60 hover:bg-muted/20"
+                  }`}
+                >
+                  <input
+                    id="campaign-excel-input"
+                    type="file"
+                    className="sr-only"
+                    accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                    onChange={e => e.target.files?.[0] && handleExcel(e.target.files[0])}
+                  />
+                  {excelParsing ? (
+                    <>
+                      <Loader2 className="h-7 w-7 text-emerald-500 animate-spin" />
+                      <p className="text-sm font-medium text-foreground">Lendo planilha…</p>
+                    </>
+                  ) : excelFile ? (
+                    <>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/15">
+                        <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                      </div>
+                      <div className="flex items-center gap-2 max-w-full">
+                        <FileSpreadsheet className="h-4 w-4 text-emerald-500 shrink-0" />
+                        <span className="text-sm font-medium text-foreground truncate max-w-[260px]">{excelFile.name}</span>
+                        <span className="text-xs text-muted-foreground shrink-0">
+                          {(excelFile.size / 1024).toFixed(1)} KB
+                        </span>
+                        <button
+                          type="button"
+                          onClick={e => { e.preventDefault(); e.stopPropagation(); setExcelFile(null); setRecipients([]); }}
+                          className="ml-1 flex h-5 w-5 items-center justify-center rounded-full hover:bg-muted text-muted-foreground hover:text-foreground"
+                          aria-label="Remover arquivo"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {recipients.length > 0
+                          ? `${recipients.length} destinatários prontos · clique para trocar`
+                          : "Clique ou arraste outro arquivo para substituir"}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className={`flex h-12 w-12 items-center justify-center rounded-full transition ${excelDragging ? "bg-emerald-500/20" : "bg-muted"}`}>
+                        <UploadCloud className={`h-6 w-6 ${excelDragging ? "text-emerald-500" : "text-muted-foreground"}`} />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-medium text-foreground">
+                          {excelDragging ? "Solte o arquivo aqui" : "Arraste o arquivo ou clique para escolher"}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Formatos suportados: .xlsx, .xls</p>
+                      </div>
+                    </>
+                  )}
+                </label>
+
+                {/* Helper */}
+                <div className="flex items-start gap-2 rounded-lg bg-muted/30 px-3 py-2">
+                  <AlertCircle className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Cabeçalho obrigatório: <code className="rounded bg-background px-1 py-0.5 text-[10px]">nome, email</code> (e-mail) ou{" "}
+                    <code className="rounded bg-background px-1 py-0.5 text-[10px]">nome, telefone</code> (WhatsApp). Outras colunas viram variáveis dinâmicas (ex: <code className="rounded bg-background px-1 py-0.5 text-[10px]">{"{{empresa}}"}</code>).
+                  </p>
+                </div>
               </TabsContent>
             </Tabs>
             {recipients.length > 0 && (
