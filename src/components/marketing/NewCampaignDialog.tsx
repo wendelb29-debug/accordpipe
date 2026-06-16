@@ -630,11 +630,15 @@ ${renderPreview(body)}
           {step === 3 && channel === "email" && (
             <Button
               onClick={() => {
-                if (!canSubmit) { toast.error("Preencha assunto, corpo e a conta de envio"); return; }
+                const missing: string[] = [];
+                if (!subject.trim()) missing.push("assunto");
+                if (!body.trim()) missing.push("corpo do e-mail");
+                if (!emailConnId) missing.push(emailConnections.length === 0 ? "conectar uma conta de e-mail" : "selecionar a conta de envio");
+                if (missing.length) { toast.error(`Faltando: ${missing.join(", ")}`); return; }
                 setSendConfigOpen(true);
               }}
-              disabled={!canSubmit || submitting}
-              className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:opacity-90 text-white"
+              disabled={submitting}
+              className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:opacity-90 text-white disabled:opacity-60"
             >
               <Play className="h-4 w-4 mr-1.5" fill="currentColor" />
               Configurar e iniciar envio
