@@ -133,6 +133,8 @@ ${renderPreview(body)}
   };
 
   const handleExcel = async (file: File) => {
+    setExcelParsing(true);
+    setExcelFile({ name: file.name, size: file.size });
     try {
       const XLSX = await import("xlsx");
       const buf = await file.arrayBuffer();
