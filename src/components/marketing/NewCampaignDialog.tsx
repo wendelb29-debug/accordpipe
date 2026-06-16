@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, MessageSquare, Mail, Users, FileSpreadsheet, UsersRound, ChevronRight, ChevronLeft, Sparkles, FileText, Eye, Code, Monitor, Smartphone, Settings2, Play, AlertCircle } from "lucide-react";
+import { Loader2, MessageSquare, Mail, Users, FileSpreadsheet, UsersRound, ChevronRight, ChevronLeft, Sparkles, FileText, Eye, Code, Monitor, Smartphone, Settings2, Play, AlertCircle, UploadCloud, Download, CheckCircle2, X } from "lucide-react";
 import { toast } from "sonner";
 import { captureAppError } from "@/lib/monitoring";
 import { EmailTemplateManager } from "./EmailTemplateManager";
