@@ -289,22 +289,55 @@ ${renderPreview(body)}
             </div>
             {channel === "email" && (
               <div>
-                <Label>Conta de envio</Label>
+                <Label>Conta de envio *</Label>
                 {emailConnections.length === 0 ? (
-                  <p className="text-xs text-amber-400 mt-2">
-                    Você precisa conectar um Gmail ou Outlook na aba "Conexões de E-mail" antes de criar campanhas por e-mail.
-                  </p>
+                  <div className="mt-2 p-3.5 rounded-xl border border-amber-300 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-500/10 flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div className="flex-1 text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                      Nenhuma conta de e-mail conectada.{" "}
+                      <a href="/marketing?tab=connections" className="font-bold underline hover:text-amber-900 dark:hover:text-amber-200">
+                        Conectar Gmail ou Outlook
+                      </a>{" "}
+                      antes de criar a campanha.
+                    </div>
+                  </div>
                 ) : (
-                  <Select value={emailConnId} onValueChange={setEmailConnId}>
-                    <SelectTrigger><SelectValue placeholder="Escolha a conta" /></SelectTrigger>
-                    <SelectContent>
-                      {emailConnections.map(c => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.provider.toUpperCase()} · {c.email_address}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="mt-2 space-y-2">
+                    {emailConnections.map((acc) => {
+                      const selected = emailConnId === acc.id;
+                      return (
+                        <button
+                          key={acc.id}
+                          type="button"
+                          onClick={() => setEmailConnId(acc.id)}
+                          className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition text-left ${
+                            selected
+                              ? "border-violet-500 bg-violet-500/5"
+                              : "border-border bg-card hover:border-violet-300 hover:bg-violet-500/[0.03]"
+                          }`}
+                        >
+                          <div
+                            className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm shrink-0"
+                            style={{ background: providerGradient(acc.provider) }}
+                          >
+                            {providerInitial(acc.provider)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[13px] font-semibold text-foreground truncate flex items-center gap-1.5">
+                              {providerLabel(acc.provider)}
+                              {selected && <CheckCircle2 className="w-3.5 h-3.5 text-violet-500" />}
+                            </div>
+                            <div className="text-[11.5px] text-muted-foreground truncate">
+                              {acc.display_name ? `${acc.display_name} · ` : ""}{acc.email_address}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                    <p className="text-[10.5px] text-muted-foreground pt-1">
+                      Os e-mails serão enviados a partir dessa conta. Respeita o limite diário do provedor (Gmail ~500/dia · Outlook ~300/dia).
+                    </p>
+                  </div>
                 )}
               </div>
             )}
