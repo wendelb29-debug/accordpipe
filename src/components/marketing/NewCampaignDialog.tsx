@@ -28,6 +28,21 @@ interface Recipient {
   variables: Record<string, string>;
 }
 
+function providerInitial(p: string): string {
+  return ({ gmail: "G", outlook: "O", office365: "O", exchange: "E" } as Record<string, string>)[p] || "@";
+}
+function providerLabel(p: string): string {
+  return ({ gmail: "Gmail", outlook: "Outlook", office365: "Office 365", exchange: "Exchange" } as Record<string, string>)[p] || p;
+}
+function providerGradient(p: string): string {
+  return ({
+    gmail: "linear-gradient(135deg, #EA4335, #FBBC04, #34A853, #4285F4)",
+    outlook: "linear-gradient(135deg, #0078D4, #50E6FF)",
+    office365: "linear-gradient(135deg, #D83B01, #F25022)",
+    exchange: "linear-gradient(135deg, #2563EB, #0078D4)",
+  } as Record<string, string>)[p] || "linear-gradient(135deg, #64748b, #334155)";
+}
+
 export function NewCampaignDialog({ open, onOpenChange, defaultChannel, onCreated }: Props) {
   const { user } = useAuth();
   const companyId = useActiveCompanyId();
