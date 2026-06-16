@@ -45,6 +45,9 @@ export function NewCampaignDialog({ open, onOpenChange, defaultChannel, onCreate
   const [throttleMax, setThrottleMax] = useState(15);
   const [submitting, setSubmitting] = useState(false);
   const [pickTemplateOpen, setPickTemplateOpen] = useState(false);
+  const [excelFile, setExcelFile] = useState<{ name: string; size: number } | null>(null);
+  const [excelDragging, setExcelDragging] = useState(false);
+  const [excelParsing, setExcelParsing] = useState(false);
 
   // Preview + send-config + progress state
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "mobile">("desktop");
