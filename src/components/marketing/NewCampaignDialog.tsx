@@ -168,6 +168,9 @@ ${renderPreview(body)}
       toast.success(`${list.length} destinatários carregados`);
     } catch (e: any) {
       captureAppError(e, { module: "marketing.campaign", action: "parse_spreadsheet" }, "error");
+      toast.error("Não foi possível ler o arquivo");
+    } finally {
+      setExcelParsing(false);
     }
   };
 
