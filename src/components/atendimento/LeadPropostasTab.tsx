@@ -14,17 +14,18 @@ export function LeadPropostasTab({
   signatureMode?: boolean;
   onUpdateLead?: (id: string, updates: Partial<CrmLead>) => Promise<boolean>;
 }) {
+  const l = lead as any;
   return (
     <ZuperProposalModule
       lead={{
-        id: lead.id,
-        name: lead.name,
-        email: (lead as any).email,
-        phone: (lead as any).phone,
-        company_name: (lead as any).company_name,
-        servidor_id: (lead as any).servidor_id,
+        id: l.id,
+        name: l.name ?? l.nome ?? l.full_name ?? null,
+        email: l.email,
+        phone: l.phone ?? l.telefone,
+        company_name: l.company_name ?? l.empresa,
+        servidor_id: l.servidor_id,
       }}
-      servidorId={(lead as any).servidor_id}
+      servidorId={l.servidor_id}
     />
   );
 }
