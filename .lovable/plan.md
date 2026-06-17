@@ -1,68 +1,139 @@
+# Módulo Nova Proposta (estilo Zuper) — plano de execução
 
-# Comentários ricos + Notificações no Feed
+Substitui o formulário atual de propostas do card de lead por um fluxo completo: modal de modelo → formulário em seções numeradas → barra inferior fixa → listagem com totalizadores → página pública de aceite. Mantém `LeadPropostasTab` como entrypoint (regra de memória), mantém `proposal_catalog_items` e o gerador `generateProposalPdf` (jsPDF), e isola tudo por `servidor_id` (multi-tenant).
 
-## 1. Banco de dados (migração)
+Combo **fica de fora** (decidido). Itens suportados: **Serviço (P&S)** e **MRR**.
 
-**`feed_post_comments` — colunas novas:**
-- `parent_id uuid` (FK → `feed_post_comments.id` ON DELETE CASCADE) — para respostas
-- `mentions uuid[]` default `'{}'` — IDs dos usuários mencionados
-- `mention_all boolean` default `false` — quando ceo/admin usa `@todos`
+---
 
-**Nova tabela `feed_comment_reactions`:**
-- `id`, `comment_id`, `user_id`, `emoji` (default `❤️`), `servidor_id`, `created_at`
-- UNIQUE (comment_id, user_id, emoji)
-- RLS: leitura por membros do tenant; insert/delete pelo próprio user
-- GRANTs padrão + service_role
+## 1. Banco de dados (migration única)
 
-**Realtime:** adicionar `feed_post_comments`, `feed_comment_reactions` à `supabase_realtime`.
+### 1.1 Cardápio: adicionar suporte a P&S
+- `proposal_catalog_items.item_type` já existe → garantir valores aceitos: `servico` | `mrr` (drop "combo" da UI, mas não força CHECK pra não quebrar dados).
+- Nenhuma nova coluna.
 
-**Trigger `notify_feed_event`** (AFTER INSERT em `feed_post_comments` e `feed_post_reactions`):
-- Comentário em post: notifica autor do post (se ≠ comentarista) — tipo `feed_comment`
-- Resposta a comentário: notifica autor do comentário pai — tipo `feed_reply`
-- Menções: notifica cada user em `mentions` — tipo `feed_mention`
-- `mention_all=true` (só efetivo se autor for ceo/admin): notifica todos profiles ativos do tenant — tipo `feed_mention`
-- Curtida em post: notifica autor do post — tipo `feed_reaction`
-- Insere em `notifications` (já tem realtime + `useNotificationManager` que toca som e dispara push do navegador)
+### 1.2 Tabela `proposals` (estender, não recriar)
+Hoje tem 15 colunas. Adicionar:
+- `version int default 1`
+- `control_code text` (ex `OP-00015`) + sequence por tenant
+- `client_oc text` (nº OC do cliente)
+- `currency text default 'BRL'`
+- `title text default 'Proposta Comercial'`
+- `created_date date default current_date`
+- `validity_days int default 30`
+- `intro_html text` (rich text)
+- `observations text`
+- `ps_payment jsonb` (`{method, mode, days_to_first, installments:[{date,number,value,method}]}`)
+- `mrr_payment jsonb` (`{method, due_day, first_date, num_installments}`)
+- `totals jsonb` (`{ps_total, mrr_monthly, mrr_contract, grand_total}`)
+- `template_id uuid` (FK opcional)
+- `public_token text unique` (link público)
+- `public_accepted_at timestamptz`, `public_accepted_ip text`, `public_accepted_name text`, `public_accepted_doc text`
+- `status text default 'aberta'` (aberta | aprovada | recusada)
 
-## 2. Hook `useFeedPosts`
+### 1.3 Tabela `proposal_items` (estender)
+Adicionar:
+- `item_type text` (servico | mrr)
+- `discount_type text default 'percent'` (percent | fixed)
+- `discount_value numeric default 0`
+- `position int default 0`
 
-- Buscar até 2 comentários mais recentes (`parent_id IS NULL`) por post para prévia + contagem de reactions por comentário
-- Expor `preview_comments: CommentPreview[]` em cada `FeedPost`
+### 1.4 Nova: `proposal_templates`
+Colunas: `id, servidor_id, name, description, intro_html, observations, default_validity_days, is_active`.
+RLS por tenant. GRANTs pra `authenticated` + `service_role`.
 
-## 3. UI
+### 1.5 Nova: `proposal_public_events` (auditoria do link público)
+Colunas: `id, proposal_id, event_type (view|accept|reject), ip, user_agent, payload jsonb, created_at`.
+RLS: tenant pode `SELECT` (proposal pertence a ele); `INSERT` permitido pra `anon` quando o token bate (via RPC `record_proposal_public_event(token, ...)`).
 
-**`PostComments.tsx` (refatorado):**
-- Suporte a threads (1 nível): comentário pai + filhos indentados
-- Botão "Curtir" por comentário (toggle ❤️) com contador
-- Botão "Responder" → abre input inline preenchido com `@nome `
-- Input com autocomplete de menção: digitar `@` → dropdown com profiles do tenant. CEO/admin veem opção `@todos` no topo
-- Parser de menção: ao enviar, extrai nomes → resolve a user_ids → grava `mentions[]` e `mention_all`
-- Renderização: tokens `@nome` viram chip azul clicável
+### 1.6 Sequence por tenant pro `control_code`
+Tabela `proposal_control_sequences (servidor_id pk, last_number int)`.
+Função `next_proposal_control_code(servidor_id)` retorna `OP-00001`, `OP-00002`...
 
-**`FeedCommentsPreview.tsx` (novo):**
-- Renderizado dentro do card do post quando `comments_count > 0` e drawer fechado
-- Mostra até 2 comentários (avatar, nome, conteúdo curto, "curtir · responder · X há")
-- Link "Ver todos os N comentários" abre o drawer/expansão completa
+### 1.7 RPC pública `get_proposal_by_public_token(token text)`
+SECURITY DEFINER, sem PII sensível além do necessário pra renderizar; retorna proposta + itens + totals + branding da empresa.
 
-**`AccordFeedPremium.tsx`:** integrar `FeedCommentsPreview` abaixo das ações de cada post.
+---
 
-## 4. Notificações
+## 2. Frontend — arquitetura
 
-Reutiliza `useNotificationManager` (já existe):
-- Som via WebAudio em qualquer notificação nova
-- Push do navegador (`Notification` API) já dispara automaticamente para inserts em `notifications` do user atual
-- `NotificationBell` mostra contador
-- Para menções, o `title` da notificação será `"@Fulano te mencionou"` → push do navegador exibe
+```
+src/components/atendimento/proposta/
+├── LeadPropostasTab.tsx         (REUTILIZA o legado — só substitui o conteúdo interno)
+├── NewProposalModal.tsx          modal "Proposta Padrão | Usar Template"
+├── ProposalFormShell.tsx         shell com scroll + barra fixa inferior
+├── sections/
+│   ├── HeaderSection.tsx         logo + fornecedor + responsável + versão + OC
+│   ├── ClientSection.tsx         pessoa + empresa + moeda/título/datas
+│   ├── IntroSection.tsx          TipTap (bold, italic, ul, ol, undo, redo)
+│   ├── ItemsSection.tsx          busca produto + tabela editável + badge tipo
+│   ├── PaymentPSSection.tsx      meio + à vista/parcelado + tabela parcelas
+│   ├── PaymentMRRSection.tsx     meio + dia venc + 1ª parcela + nº parcelas + totais
+│   └── ObservationsSection.tsx
+├── ProposalListView.tsx          tabela com totalizadores + ações
+├── ProposalBottomBar.tsx         Voltar | Template | Link Público | Gerar PDF | Salvar
+└── hooks/
+    ├── useProposalForm.ts        react-hook-form + zod
+    └── useProposalTotals.ts      memo dos cálculos (P&S/MRR separados)
+```
 
-## 5. Arquivos
+### Página pública
+- Rota nova: `/p/proposta/:token` em `src/pages/PropostaPublica.tsx`
+- Renderiza read-only + botões **Aceitar** / **Recusar** com captura de nome+CPF+IP
+- Chama RPC `accept_proposal_public(token, name, doc)` ou `reject_proposal_public(token, reason)`
 
-- **Migração:** `supabase/migrations/<ts>_feed_comments_threading_mentions.sql`
-- **Edita:** `src/hooks/useFeedPosts.ts`, `src/components/home/PostComments.tsx`, `src/components/home/AccordFeedPremium.tsx`, `src/integrations/supabase/types.ts` (regenerado)
-- **Novo:** `src/components/home/FeedCommentsPreview.tsx`, `src/components/home/MentionInput.tsx`
+---
 
-## Detalhes técnicos
+## 3. Cálculos (regras-chave)
 
-- Menção `@todos` só dispara fan-out se autor possuir role `ceo` ou `admin` (validado no trigger via `has_role`)
-- Trigger usa `create_notification` para respeitar `servidor_id`
-- Curtida só notifica se houver ≥1 reação nova do user diferente do autor (idempotência via UNIQUE)
-- Limite anti-spam: trigger ignora auto-notificação (user_id = author)
+- Item: `total = qtd * unit * (1 - disc%/100)` ou `qtd * unit - discR$`
+- `ps_total = Σ items[type=servico].total`
+- `mrr_monthly = Σ items[type=mrr].total`
+- `mrr_contract = mrr_monthly * num_installments` (frequência mensal fixa, conforme spec)
+- Parcelas P&S: gera N linhas a partir de `first_date + days_to_first`, mensais, valor = `ps_total / N` (última absorve diferença)
+- Todos os valores formatados via `Intl.NumberFormat('pt-BR', {style:'currency', currency:'BRL'})`
+
+---
+
+## 4. PDF
+
+- Reusa `src/lib/generateProposalPdf.ts` (jsPDF nativo — regra de memória diz pra manter separado de contrato de assinatura)
+- Acrescenta seções: header com versão+OC, introdução (HTML→texto), bloco P&S separado do MRR, observações
+- Emojis stripados (regra: pdf-lib/jsPDF winAnsi)
+
+---
+
+## 5. Templates
+
+- Nova aba em `Configurações > Propostas > Templates` com CRUD
+- Form: nome, descrição, introdução (rich text), observações, validade padrão
+- Ao escolher "Usar Template" no modal: pré-preenche intro + observações + validade
+
+---
+
+## 6. Listagem (substitui a atual)
+
+Tabela com: Status (badge), Sigla, Título, Data, Validade, Total itens, Dono, **P&S**, **MRR**, Ações.
+Topo: cards "P&S: X itens • R$ Y,YY" e "MRR: X itens • R$ Y,YY/mês".
+Nota: "Valores consideram apenas propostas abertas e aprovadas".
+
+---
+
+## 7. Entregas por etapa (dentro do mesmo big bang)
+
+1. Migration (tabelas/colunas/RPC/sequence) — gera tipos
+2. Hooks + form shell + sections (Header → Cliente → Intro → Itens → P&S → MRR → Obs)
+3. Bottom bar + modal de modelo + listagem nova
+4. Templates (CRUD simples)
+5. Página pública `/p/proposta/:token` + aceite
+6. Ajuste do `generateProposalPdf` pras novas seções
+7. QA visual no preview
+
+---
+
+## Pontos que precisam confirmação
+
+- **Aceite público sem login**: confirmo que cliente informa **nome + CPF/CNPJ** (sem upload de RG, sem selfie). Aceite legal = clique + IP + timestamp + nome/doc autodeclarado. Ok?
+- **Permissão pra criar/editar template**: hoje só Master? Ou Admin/CEO do tenant também?
+- **Listagem nova vs atual**: posso substituir totalmente a tabela atual da `LeadPropostasTab` por essa nova, ou quer manter a antiga em paralelo?
+- **Versão de proposta**: ao "Duplicar" eu incremento `version` automaticamente, ou duplica como v1 nova?
