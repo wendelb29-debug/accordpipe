@@ -1451,7 +1451,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
 
             {/* Propostas */}
-            <TabsContent value="propostas" className="flex-1 min-h-0 h-full overflow-hidden p-2 sm:p-4 mt-0 w-full max-w-full focus-visible:outline-none flex flex-col data-[state=inactive]:hidden" forceMount>
+            <TabsContent value="propostas" className="flex-1 min-h-0 h-full overflow-hidden p-2 sm:p-4 mt-0 w-full max-w-full focus-visible:outline-none flex flex-col">
               <div className="flex-1 min-h-0 flex flex-col">
                 <LeadPropostasTab lead={lead} addActivity={addActivity} onUpdateLead={onUpdate} />
               </div>
