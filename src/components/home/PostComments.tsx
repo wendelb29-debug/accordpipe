@@ -342,21 +342,22 @@ export function PostCommentsPreview({
   if (previews.length === 0) return null;
 
   return (
-    <div style={{ padding: "8px 0 4px", borderTop: "1px solid hsl(var(--border) / 0.65)" }}>
+    <div style={{ padding: "8px 16px 12px", borderTop: "1px solid hsl(var(--border) / 0.65)" }}>
       {count > previews.length && (
         <button
           type="button"
           onClick={onExpand}
           style={{
             background: "none", border: "none", color: "#3B82F6",
-            fontSize: 12.5, cursor: "pointer", padding: "4px 0 8px", fontFamily: "inherit", fontWeight: 500,
+            fontSize: 12.5, cursor: "pointer", padding: "4px 0 8px", fontFamily: "inherit", fontWeight: 600,
+            display: "block", textAlign: "left",
           }}
         >
           Ver todos os {count} comentários
         </button>
       )}
       {previews.map((c) => (
-        <div key={c.id} style={{ display: "flex", gap: 8, marginTop: 6 }}>
+        <div key={c.id} style={{ display: "flex", gap: 8, marginTop: 6, marginLeft: 0 }}>
           <CommentAvatar id={c.user_id} name={c.author?.name} url={c.author?.avatar_url} size={28} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ background: "hsl(var(--muted))", color: "hsl(var(--foreground))", border: "1px solid hsl(var(--border) / 0.55)", padding: "6px 10px", borderRadius: 10 }}>
