@@ -35,6 +35,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const isAccordStackRoute = location.pathname.startsWith("/accord-stack");
   const isCollabsRoute = location.pathname.startsWith("/collabs");
   const isFullscreen = isAccordStackRoute || isCollabsRoute;
+  const isFixedHeightRoute = isFullscreen || location.pathname.startsWith("/atendimento");
 
   const [sidebarExpanded, setSidebarExpanded] = useState(
     () => localStorage.getItem("sidebar-pinned") === "true"
@@ -60,7 +61,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <LoginNotifications />
       <div className={cn(
         "bg-background flex flex-col",
-        isFullscreen ? "h-[100dvh] overflow-hidden" : "min-h-screen"
+        isFixedHeightRoute ? "h-[100dvh] overflow-hidden" : "min-h-screen"
       )}>
         {/* Desktop sidebar (hidden on Accord Stack for full-width chat) */}
         {!isMobile && !isAccordStack && <Sidebar />}
@@ -72,7 +73,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           }}
           className={cn(
             "min-w-0 flex flex-col",
-            isFullscreen ? "h-full overflow-hidden" : "min-h-screen",
+            isFixedHeightRoute ? "h-full overflow-hidden" : "min-h-screen",
           )}
         >
           {/* Tenant billing alert banner */}
@@ -109,7 +110,9 @@ export function AppLayout({ children }: AppLayoutProps) {
               "w-full max-w-none flex-1 min-w-0 min-h-0",
               isFullscreen
                 ? "p-0 overflow-hidden flex flex-col flex-1 min-h-0"
-                : (hideHeader ? "p-0" : "p-3 sm:p-3 lg:p-4")
+                : location.pathname.startsWith("/atendimento")
+                  ? "p-3 sm:p-3 lg:p-4 overflow-hidden flex flex-col flex-1 min-h-0"
+                  : (hideHeader ? "p-0" : "p-3 sm:p-3 lg:p-4")
             )}
             style={
               isFullscreen
