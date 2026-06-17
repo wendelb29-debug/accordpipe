@@ -39,6 +39,7 @@ export function ZuperProposalModule({ lead, servidorId }: { lead: LeadLite; serv
           onClose={() => { setView("list"); setEditing(null); setPendingTemplate(null); setRefreshKey(k => k + 1); }}
           onSaved={(p) => { setEditing(p); setRefreshKey(k => k + 1); }}
         />
+        </div>
       )}
 
       <NewProposalModal
