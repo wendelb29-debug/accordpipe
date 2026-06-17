@@ -254,9 +254,9 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col bg-background">
-      {/* Scrollable content */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+    <div className="flex flex-col bg-background">
+      {/* Content */}
+      <div>
         <div className="mx-auto max-w-5xl space-y-5 p-4 pb-24">
 
           {/* Header section */}
@@ -601,8 +601,8 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
         </div>
       </div>
 
-      {/* Bottom fixed bar */}
-      <div className="border-t border-border bg-card/95 backdrop-blur p-3 flex items-center gap-2 flex-wrap">
+      {/* Sticky bottom bar */}
+      <div className="sticky bottom-0 z-10 border-t border-border bg-card/95 backdrop-blur p-3 flex items-center gap-2 flex-wrap">
         <Button variant="ghost" size="sm" onClick={onClose} className="gap-1">
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Button>
