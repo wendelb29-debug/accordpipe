@@ -256,7 +256,7 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
   return (
     <div className="flex flex-col bg-background">
       {/* Content */}
-      <div className="max-h-[calc(100vh-260px)] overflow-y-auto">
+      <div>
         <div className="mx-auto max-w-5xl space-y-5 p-4 pb-24">
 
           {/* Header section */}
