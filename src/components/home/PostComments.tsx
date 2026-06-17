@@ -271,7 +271,7 @@ export function PostComments({ postId, servidorId }: { postId: string; servidorI
   );
 
   return (
-    <div className="afp-post-comments" style={{ padding: "12px 0 4px" }}>
+    <div className="afp-post-comments" style={{ padding: "12px 16px 14px" }}>
       {loading && <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>Carregando comentários…</div>}
       {!loading && roots.length === 0 && (
         <div style={{ fontSize: 11.5, color: "hsl(var(--muted-foreground))", padding: "4px 0 8px" }}>
@@ -280,7 +280,7 @@ export function PostComments({ postId, servidorId }: { postId: string; servidorI
       )}
       {roots.map((c) => renderComment(c))}
 
-      <div className="afp-comment-input-row" style={{ display: "flex", gap: 8, marginTop: 12, alignItems: "flex-start" }}>
+      <div className="afp-comment-input-row" style={{ display: "flex", gap: 8, marginTop: 12, alignItems: "flex-start", marginLeft: 0 }}>
         <CommentAvatar id={user?.id} name={profile?.name} url={profile?.avatar_url} size={30} />
         <MentionTextarea
           value={text}
