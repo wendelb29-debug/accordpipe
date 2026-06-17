@@ -93,6 +93,9 @@
     --sidebar-accent-foreground: 220 15% 82%;
     --sidebar-border: 222 24% 9%;
     --sidebar-ring: 224 76% 62%;
+
+    /* LinkedIn-style feed background (soft charcoal) */
+    --feed-bg: #1B1F23;
   }
 }
 
