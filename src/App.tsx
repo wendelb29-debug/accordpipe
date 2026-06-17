@@ -58,6 +58,7 @@ const AssinarDocumento = lazy(() => import("./pages/AssinarDocumento"));
 const Performance = lazy(() => import("./pages/Performance"));
 const TenantSetupPublico = lazy(() => import("./pages/TenantSetupPublico"));
 const Eventos = lazy(() => import("./pages/Eventos"));
+const PropostaPublica = lazy(() => import("./pages/PropostaPublica"));
 const MeusTenants = lazy(() => import("./pages/MeusTenants"));
 const Academy = lazy(() => import("./pages/Academy"));
 const GestaoTenants = lazy(() => import("./pages/GestaoTenants"));
@@ -410,6 +411,7 @@ const App = () => (
             <Route path="/captura/:servidorId" element={<CapturaLead />} />
             <Route path="/contato" element={<FormularioContato />} />
             <Route path="/form/:formId" element={<FormPublico />} />
+            <Route path="/p/proposta/:token" element={<PropostaPublica />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/aceitar-convite" element={<AceitarConvite />} />
             <Route path="/primeiro-acesso" element={<ProtectedRoute><PrimeiroAcesso /></ProtectedRoute>} />

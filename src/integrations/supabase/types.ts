@@ -5100,6 +5100,29 @@ export type Database = {
           },
         ]
       }
+      proposal_control_sequences: {
+        Row: {
+          last_number: number
+          servidor_id: string
+        }
+        Insert: {
+          last_number?: number
+          servidor_id: string
+        }
+        Update: {
+          last_number?: number
+          servidor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_control_sequences_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       proposal_items: {
         Row: {
           ativo: boolean
@@ -5144,57 +5167,288 @@ export type Database = {
           },
         ]
       }
+      proposal_line_items: {
+        Row: {
+          catalog_item_id: string | null
+          created_at: string
+          description: string | null
+          discount_type: string
+          discount_value: number
+          id: string
+          item_type: string
+          name: string
+          position: number
+          proposal_id: string
+          quantity: number
+          servidor_id: string
+          total: number
+          unit_value: number
+          updated_at: string
+        }
+        Insert: {
+          catalog_item_id?: string | null
+          created_at?: string
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          item_type?: string
+          name: string
+          position?: number
+          proposal_id: string
+          quantity?: number
+          servidor_id: string
+          total?: number
+          unit_value?: number
+          updated_at?: string
+        }
+        Update: {
+          catalog_item_id?: string | null
+          created_at?: string
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          item_type?: string
+          name?: string
+          position?: number
+          proposal_id?: string
+          quantity?: number
+          servidor_id?: string
+          total?: number
+          unit_value?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_line_items_catalog_item_id_fkey"
+            columns: ["catalog_item_id"]
+            isOneToOne: false
+            referencedRelation: "proposal_catalog_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposal_line_items_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposal_line_items_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposal_public_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          ip: string | null
+          payload: Json
+          proposal_id: string
+          servidor_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          ip?: string | null
+          payload?: Json
+          proposal_id: string
+          servidor_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          ip?: string | null
+          payload?: Json
+          proposal_id?: string
+          servidor_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_public_events_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposal_public_events_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposal_templates: {
+        Row: {
+          created_at: string
+          created_by_user_id: string | null
+          default_validity_days: number
+          description: string | null
+          id: string
+          intro_html: string | null
+          is_active: boolean
+          name: string
+          observations: string | null
+          servidor_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id?: string | null
+          default_validity_days?: number
+          description?: string | null
+          id?: string
+          intro_html?: string | null
+          is_active?: boolean
+          name: string
+          observations?: string | null
+          servidor_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string | null
+          default_validity_days?: number
+          description?: string | null
+          id?: string
+          intro_html?: string | null
+          is_active?: boolean
+          name?: string
+          observations?: string | null
+          servidor_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_templates_servidor_id_fkey"
+            columns: ["servidor_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       proposals: {
         Row: {
           approved_at: string | null
           approved_by_name: string | null
+          client_oc: string | null
+          control_code: string | null
           created_at: string
           created_by_name: string | null
           created_by_user_id: string | null
+          created_date: string
+          currency: string
           descricao: string | null
           id: string
+          intro_html: string | null
           item_id: string | null
           lead_id: string
+          mrr_payment: Json
+          observations: string | null
           pdf_url: string | null
+          ps_payment: Json
+          public_accepted_at: string | null
+          public_accepted_doc: string | null
+          public_accepted_ip: string | null
+          public_accepted_name: string | null
+          public_rejected_at: string | null
+          public_rejected_reason: string | null
+          public_token: string | null
           servidor_id: string
           status: string
+          template_id: string | null
           titulo: string
+          totals: Json
           updated_at: string
+          validity_days: number
           valor: number
+          version: number
         }
         Insert: {
           approved_at?: string | null
           approved_by_name?: string | null
+          client_oc?: string | null
+          control_code?: string | null
           created_at?: string
           created_by_name?: string | null
           created_by_user_id?: string | null
+          created_date?: string
+          currency?: string
           descricao?: string | null
           id?: string
+          intro_html?: string | null
           item_id?: string | null
           lead_id: string
+          mrr_payment?: Json
+          observations?: string | null
           pdf_url?: string | null
+          ps_payment?: Json
+          public_accepted_at?: string | null
+          public_accepted_doc?: string | null
+          public_accepted_ip?: string | null
+          public_accepted_name?: string | null
+          public_rejected_at?: string | null
+          public_rejected_reason?: string | null
+          public_token?: string | null
           servidor_id: string
           status?: string
+          template_id?: string | null
           titulo: string
+          totals?: Json
           updated_at?: string
+          validity_days?: number
           valor?: number
+          version?: number
         }
         Update: {
           approved_at?: string | null
           approved_by_name?: string | null
+          client_oc?: string | null
+          control_code?: string | null
           created_at?: string
           created_by_name?: string | null
           created_by_user_id?: string | null
+          created_date?: string
+          currency?: string
           descricao?: string | null
           id?: string
+          intro_html?: string | null
           item_id?: string | null
           lead_id?: string
+          mrr_payment?: Json
+          observations?: string | null
           pdf_url?: string | null
+          ps_payment?: Json
+          public_accepted_at?: string | null
+          public_accepted_doc?: string | null
+          public_accepted_ip?: string | null
+          public_accepted_name?: string | null
+          public_rejected_at?: string | null
+          public_rejected_reason?: string | null
+          public_token?: string | null
           servidor_id?: string
           status?: string
+          template_id?: string | null
           titulo?: string
+          totals?: Json
           updated_at?: string
+          validity_days?: number
           valor?: number
+          version?: number
         }
         Relationships: [
           {
@@ -5216,6 +5470,13 @@ export type Database = {
             columns: ["servidor_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposals_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "proposal_templates"
             referencedColumns: ["id"]
           },
         ]
@@ -8099,6 +8360,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_proposal_public: {
+        Args: {
+          p_doc: string
+          p_ip: string
+          p_name: string
+          p_token: string
+          p_user_agent: string
+        }
+        Returns: boolean
+      }
       accept_user_invitation_by_token: {
         Args: { p_token: string }
         Returns: boolean
@@ -8315,6 +8586,7 @@ export type Database = {
         }[]
       }
       get_profile_company_id: { Args: { _user_id: string }; Returns: string }
+      get_proposal_by_public_token: { Args: { p_token: string }; Returns: Json }
       get_public_form_by_slug: {
         Args: { p_slug: string }
         Returns: {
@@ -8488,6 +8760,10 @@ export type Database = {
         }
         Returns: number
       }
+      next_proposal_control_code: {
+        Args: { _servidor_id: string }
+        Returns: string
+      }
       next_tenant_contract_code: {
         Args: { _servidor_id: string }
         Returns: string
@@ -8507,6 +8783,19 @@ export type Database = {
       recalc_subscription_totals: {
         Args: { _tenant_id: string }
         Returns: undefined
+      }
+      record_proposal_public_view: {
+        Args: { p_ip: string; p_token: string; p_user_agent: string }
+        Returns: undefined
+      }
+      reject_proposal_public: {
+        Args: {
+          p_ip: string
+          p_reason: string
+          p_token: string
+          p_user_agent: string
+        }
+        Returns: boolean
       }
       reseller_can_add_child: {
         Args: { _reseller_id: string }
