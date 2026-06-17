@@ -59,6 +59,9 @@
     --shadow-premium: 0 0 0 1px rgb(0 0 0 / 0.04), 0 2px 4px rgb(0 0 0 / 0.04), 0 8px 20px rgb(0 0 0 / 0.06);
     --shadow-card: 0 1px 3px rgb(0 0 0 / 0.05), 0 1px 6px rgb(0 0 0 / 0.03);
     --shadow-glow: 0 0 20px rgba(37, 99, 235, 0.12);
+
+    /* LinkedIn-style feed background (off-white warm gray) */
+    --feed-bg: #F4F2EE;
   }
 
   .dark {
