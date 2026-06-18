@@ -461,6 +461,98 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
   const servidorId = companyId || lead.servidor_id;
 
+  const externalFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingExternal, setUploadingExternal] = useState(false);
+
+  const handleUploadExternalFile = async (file: File) => {
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      toast.error("Envie um arquivo PDF");
+      return;
+    }
+    if (file.size > 25 * 1024 * 1024) {
+      toast.error("Arquivo muito grande (máx 25MB)");
+      return;
+    }
+    if (!servidorId) {
+      toast.error("Servidor não identificado");
+      return;
+    }
+
+    setUploadingExternal(true);
+    try {
+      const baseName = file.name.replace(/\.pdf$/i, "");
+      const { data: insertedDoc, error: insertErr } = await supabase
+        .from("generated_documents")
+        .insert({
+          servidor_id: servidorId,
+          lead_id: lead.id,
+          template_id: null,
+          proposal_id: null,
+          nome: baseName,
+          tipo: "contrato",
+          status: "gerado",
+          html_content: null,
+          pdf_url: null,
+          created_by_user_id: profile?.user_id,
+          created_by_name: profile?.name,
+          rendered_variables_json: {} as any,
+          generated_with_missing_fields: false,
+        } as any)
+        .select("id")
+        .maybeSingle();
+
+      if (insertErr || !insertedDoc?.id) {
+        throw insertErr || new Error("Falha ao criar documento");
+      }
+
+      const safeName = baseName
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9_\-]/g, "_")
+        .replace(/_+/g, "_")
+        .substring(0, 100);
+      const filePath = `external/${servidorId}/${insertedDoc.id}_${safeName}.pdf`;
+
+      const { error: uploadErr } = await supabase.storage
+        .from("contract-pdfs")
+        .upload(filePath, file, { contentType: "application/pdf", upsert: true });
+      if (uploadErr) throw uploadErr;
+
+      const { data: signedData } = await supabase.storage
+        .from("contract-pdfs")
+        .createSignedUrl(filePath, 86400);
+      const pdfUrl = signedData?.signedUrl || "";
+
+      const { error: updateErr } = await supabase
+        .from("generated_documents")
+        .update({ pdf_url: pdfUrl } as any)
+        .eq("id", insertedDoc.id);
+      if (updateErr) throw updateErr;
+
+      await supabase.from("document_events").insert({
+        document_id: insertedDoc.id,
+        evento: "documento_enviado",
+        descricao: `Arquivo externo "${file.name}" enviado por ${profile?.name || "Sistema"}`,
+        metadata_json: {
+          uploaded_by: profile?.name,
+          uploaded_at: new Date().toISOString(),
+          original_filename: file.name,
+          file_size: file.size,
+          source: "external_upload",
+        },
+      });
+
+      toast.success("Arquivo enviado! Já está disponível em Docs para assinatura.");
+      fetchDocuments();
+      addActivity?.({ type: "document", title: `Arquivo "${baseName}" enviado para assinatura` });
+    } catch (err: any) {
+      toast.error("Erro ao enviar arquivo: " + (err.message || ""));
+    } finally {
+      setUploadingExternal(false);
+      if (externalFileInputRef.current) externalFileInputRef.current.value = "";
+    }
+  };
+
   const fetchSignerCounts = useCallback(async (docIds: string[]) => {
     if (docIds.length === 0) return;
     const { data } = await supabase
