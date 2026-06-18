@@ -1050,7 +1050,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
           <input
             ref={externalFileInputRef}
             type="file"
-            accept="application/pdf,.pdf"
+            accept="application/pdf,.pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
