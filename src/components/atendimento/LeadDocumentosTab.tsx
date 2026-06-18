@@ -1,9 +1,9 @@
 import { COMPANY_SAFE_COLUMNS } from "@/lib/safeColumns";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Plus, Loader2, MoreVertical, Eye, Download, Trash2,
   FileText, Clock, CheckCircle2, AlertCircle, FileSignature,
-  Send, Copy, Link2, Users, XCircle, ExternalLink, UserPlus, Mail, MessageCircle,
+  Send, Copy, Link2, Users, XCircle, ExternalLink, UserPlus, Mail, MessageCircle, Upload,
 } from "lucide-react";
 import { ContractVariableAudit } from "./ContractVariableAudit";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
@@ -460,6 +460,98 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
   const [signerCounts, setSignerCounts] = useState<Record<string, { total: number; signed: number }>>({});
 
   const servidorId = companyId || lead.servidor_id;
+
+  const externalFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingExternal, setUploadingExternal] = useState(false);
+
+  const handleUploadExternalFile = async (file: File) => {
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      toast.error("Envie um arquivo PDF");
+      return;
+    }
+    if (file.size > 25 * 1024 * 1024) {
+      toast.error("Arquivo muito grande (máx 25MB)");
+      return;
+    }
+    if (!servidorId) {
+      toast.error("Servidor não identificado");
+      return;
+    }
+
+    setUploadingExternal(true);
+    try {
+      const baseName = file.name.replace(/\.pdf$/i, "");
+      const { data: insertedDoc, error: insertErr } = await supabase
+        .from("generated_documents")
+        .insert({
+          servidor_id: servidorId,
+          lead_id: lead.id,
+          template_id: null,
+          proposal_id: null,
+          nome: baseName,
+          tipo: "contrato",
+          status: "gerado",
+          html_content: null,
+          pdf_url: null,
+          created_by_user_id: profile?.user_id,
+          created_by_name: profile?.name,
+          rendered_variables_json: {} as any,
+          generated_with_missing_fields: false,
+        } as any)
+        .select("id")
+        .maybeSingle();
+
+      if (insertErr || !insertedDoc?.id) {
+        throw insertErr || new Error("Falha ao criar documento");
+      }
+
+      const safeName = baseName
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9_\-]/g, "_")
+        .replace(/_+/g, "_")
+        .substring(0, 100);
+      const filePath = `external/${servidorId}/${insertedDoc.id}_${safeName}.pdf`;
+
+      const { error: uploadErr } = await supabase.storage
+        .from("contract-pdfs")
+        .upload(filePath, file, { contentType: "application/pdf", upsert: true });
+      if (uploadErr) throw uploadErr;
+
+      const { data: signedData } = await supabase.storage
+        .from("contract-pdfs")
+        .createSignedUrl(filePath, 86400);
+      const pdfUrl = signedData?.signedUrl || "";
+
+      const { error: updateErr } = await supabase
+        .from("generated_documents")
+        .update({ pdf_url: pdfUrl } as any)
+        .eq("id", insertedDoc.id);
+      if (updateErr) throw updateErr;
+
+      await supabase.from("document_events").insert({
+        document_id: insertedDoc.id,
+        evento: "documento_enviado",
+        descricao: `Arquivo externo "${file.name}" enviado por ${profile?.name || "Sistema"}`,
+        metadata_json: {
+          uploaded_by: profile?.name,
+          uploaded_at: new Date().toISOString(),
+          original_filename: file.name,
+          file_size: file.size,
+          source: "external_upload",
+        },
+      });
+
+      toast.success("Arquivo enviado! Já está disponível em Docs para assinatura.");
+      fetchDocuments();
+      addActivity?.({ type: "document", title: `Arquivo "${baseName}" enviado para assinatura` });
+    } catch (err: any) {
+      toast.error("Erro ao enviar arquivo: " + (err.message || ""));
+    } finally {
+      setUploadingExternal(false);
+      if (externalFileInputRef.current) externalFileInputRef.current.value = "";
+    }
+  };
 
   const fetchSignerCounts = useCallback(async (docIds: string[]) => {
     if (docIds.length === 0) return;
@@ -928,32 +1020,59 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
           <h3 className="text-sm font-semibold text-foreground">Documentos Gerados</h3>
           <p className="text-xs text-muted-foreground">{documents.length} documento(s)</p>
         </div>
-        <Button size="sm" className="gap-1.5 text-xs" onClick={async () => {
-          setGenerateOpen(true);
-          setCanGenerate(true);
-          setSelectedTemplate("");
-          // Pre-fetch tenant, proposal (from activities), vendor, registration for variable preview
-          const [tenantRes, activityRes, regRes] = await Promise.all([
-            supabase.from("companies").select(COMPANY_SAFE_COLUMNS).eq("id", servidorId).maybeSingle(),
-            supabase.from("crm_lead_activities").select("*").eq("lead_id", lead.id).eq("type", "proposal").order("created_at", { ascending: false }),
-            supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
-          ]);
-          setPreviewTenant(tenantRes.data as any);
-          setPreviewRegistration(regRes.data);
-          const activities = activityRes.data || [];
-          const acceptedActivity = activities.find((a: any) => ACCEPTED_STATUSES.has(((a.metadata as any)?.status || "").toLowerCase()))
-            || activities[0] || null;
-          const p = activityToProposal(acceptedActivity);
-          setPreviewProposal(p);
-          if (acceptedActivity?.created_by_user_id) {
-            const { data: v } = await supabase.from("profiles").select("name, email, whatsapp, birth_date").eq("user_id", acceptedActivity.created_by_user_id).maybeSingle();
-            setPreviewVendor(v);
-          } else {
-            setPreviewVendor(null);
-          }
-        }}>
-          <Plus className="h-3.5 w-3.5" /> Gerar Documento
-        </Button>
+        <div className="flex items-center gap-2">
+          <input
+            ref={externalFileInputRef}
+            type="file"
+            accept="application/pdf,.pdf"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleUploadExternalFile(file);
+            }}
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 text-xs"
+            disabled={uploadingExternal}
+            onClick={() => externalFileInputRef.current?.click()}
+            title="Enviar arquivo externo (PDF) para assinatura"
+          >
+            {uploadingExternal ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Upload className="h-3.5 w-3.5" />
+            )}
+            Enviar Arquivo
+          </Button>
+          <Button size="sm" className="gap-1.5 text-xs" onClick={async () => {
+            setGenerateOpen(true);
+            setCanGenerate(true);
+            setSelectedTemplate("");
+            // Pre-fetch tenant, proposal (from activities), vendor, registration for variable preview
+            const [tenantRes, activityRes, regRes] = await Promise.all([
+              supabase.from("companies").select(COMPANY_SAFE_COLUMNS).eq("id", servidorId).maybeSingle(),
+              supabase.from("crm_lead_activities").select("*").eq("lead_id", lead.id).eq("type", "proposal").order("created_at", { ascending: false }),
+              supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
+            ]);
+            setPreviewTenant(tenantRes.data as any);
+            setPreviewRegistration(regRes.data);
+            const activities = activityRes.data || [];
+            const acceptedActivity = activities.find((a: any) => ACCEPTED_STATUSES.has(((a.metadata as any)?.status || "").toLowerCase()))
+              || activities[0] || null;
+            const p = activityToProposal(acceptedActivity);
+            setPreviewProposal(p);
+            if (acceptedActivity?.created_by_user_id) {
+              const { data: v } = await supabase.from("profiles").select("name, email, whatsapp, birth_date").eq("user_id", acceptedActivity.created_by_user_id).maybeSingle();
+              setPreviewVendor(v);
+            } else {
+              setPreviewVendor(null);
+            }
+          }}>
+            <Plus className="h-3.5 w-3.5" /> Gerar Documento
+          </Button>
+        </div>
       </div>
 
       {/* List */}
