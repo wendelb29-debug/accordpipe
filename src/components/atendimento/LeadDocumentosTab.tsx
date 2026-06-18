@@ -1020,32 +1020,59 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
           <h3 className="text-sm font-semibold text-foreground">Documentos Gerados</h3>
           <p className="text-xs text-muted-foreground">{documents.length} documento(s)</p>
         </div>
-        <Button size="sm" className="gap-1.5 text-xs" onClick={async () => {
-          setGenerateOpen(true);
-          setCanGenerate(true);
-          setSelectedTemplate("");
-          // Pre-fetch tenant, proposal (from activities), vendor, registration for variable preview
-          const [tenantRes, activityRes, regRes] = await Promise.all([
-            supabase.from("companies").select(COMPANY_SAFE_COLUMNS).eq("id", servidorId).maybeSingle(),
-            supabase.from("crm_lead_activities").select("*").eq("lead_id", lead.id).eq("type", "proposal").order("created_at", { ascending: false }),
-            supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
-          ]);
-          setPreviewTenant(tenantRes.data as any);
-          setPreviewRegistration(regRes.data);
-          const activities = activityRes.data || [];
-          const acceptedActivity = activities.find((a: any) => ACCEPTED_STATUSES.has(((a.metadata as any)?.status || "").toLowerCase()))
-            || activities[0] || null;
-          const p = activityToProposal(acceptedActivity);
-          setPreviewProposal(p);
-          if (acceptedActivity?.created_by_user_id) {
-            const { data: v } = await supabase.from("profiles").select("name, email, whatsapp, birth_date").eq("user_id", acceptedActivity.created_by_user_id).maybeSingle();
-            setPreviewVendor(v);
-          } else {
-            setPreviewVendor(null);
-          }
-        }}>
-          <Plus className="h-3.5 w-3.5" /> Gerar Documento
-        </Button>
+        <div className="flex items-center gap-2">
+          <input
+            ref={externalFileInputRef}
+            type="file"
+            accept="application/pdf,.pdf"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleUploadExternalFile(file);
+            }}
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 text-xs"
+            disabled={uploadingExternal}
+            onClick={() => externalFileInputRef.current?.click()}
+            title="Enviar arquivo externo (PDF) para assinatura"
+          >
+            {uploadingExternal ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Upload className="h-3.5 w-3.5" />
+            )}
+            Enviar Arquivo
+          </Button>
+          <Button size="sm" className="gap-1.5 text-xs" onClick={async () => {
+            setGenerateOpen(true);
+            setCanGenerate(true);
+            setSelectedTemplate("");
+            // Pre-fetch tenant, proposal (from activities), vendor, registration for variable preview
+            const [tenantRes, activityRes, regRes] = await Promise.all([
+              supabase.from("companies").select(COMPANY_SAFE_COLUMNS).eq("id", servidorId).maybeSingle(),
+              supabase.from("crm_lead_activities").select("*").eq("lead_id", lead.id).eq("type", "proposal").order("created_at", { ascending: false }),
+              supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
+            ]);
+            setPreviewTenant(tenantRes.data as any);
+            setPreviewRegistration(regRes.data);
+            const activities = activityRes.data || [];
+            const acceptedActivity = activities.find((a: any) => ACCEPTED_STATUSES.has(((a.metadata as any)?.status || "").toLowerCase()))
+              || activities[0] || null;
+            const p = activityToProposal(acceptedActivity);
+            setPreviewProposal(p);
+            if (acceptedActivity?.created_by_user_id) {
+              const { data: v } = await supabase.from("profiles").select("name, email, whatsapp, birth_date").eq("user_id", acceptedActivity.created_by_user_id).maybeSingle();
+              setPreviewVendor(v);
+            } else {
+              setPreviewVendor(null);
+            }
+          }}>
+            <Plus className="h-3.5 w-3.5" /> Gerar Documento
+          </Button>
+        </div>
       </div>
 
       {/* List */}
