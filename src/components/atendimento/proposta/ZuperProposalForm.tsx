@@ -254,10 +254,11 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
   };
 
   return (
-    <div className="flex flex-col bg-background">
+    <div className="flex flex-col bg-background h-full min-h-0">
       {/* Content */}
-      <div>
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <div className="mx-auto max-w-5xl space-y-5 p-4 pb-24">
+
 
           {/* Header section */}
           <Card>
