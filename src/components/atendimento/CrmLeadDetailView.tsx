@@ -1472,8 +1472,10 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             )}
 
             {/* Conversa WhatsApp */}
-            <TabsContent value="conversa" className="flex-1 overflow-hidden p-0 mt-0 flex flex-col">
-              <LeadWhatsAppTab lead={lead} onBack={() => setActiveTab("historico")} />
+            <TabsContent value="conversa" className="flex-1 overflow-hidden p-0 mt-0">
+              <div className="flex flex-col h-full">
+                <LeadWhatsAppTab lead={lead} onBack={() => setActiveTab("historico")} />
+              </div>
             </TabsContent>
           </Tabs>
 
