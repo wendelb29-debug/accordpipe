@@ -466,8 +466,17 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
   const handleUploadExternalFile = async (file: File) => {
     if (!file) return;
-    if (file.type !== "application/pdf") {
-      toast.error("Envie um arquivo PDF");
+
+    const lowerName = file.name.toLowerCase();
+    const isPdf = file.type === "application/pdf" || lowerName.endsWith(".pdf");
+    const isWord =
+      file.type === "application/msword" ||
+      file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      lowerName.endsWith(".doc") ||
+      lowerName.endsWith(".docx");
+
+    if (!isPdf && !isWord) {
+      toast.error("Envie um arquivo PDF ou Word (.doc, .docx)");
       return;
     }
     if (file.size > 25 * 1024 * 1024) {
@@ -481,7 +490,15 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
     setUploadingExternal(true);
     try {
-      const baseName = file.name.replace(/\.pdf$/i, "");
+      const ext = isPdf ? "pdf" : (lowerName.endsWith(".docx") ? "docx" : "doc");
+      const baseName = file.name.replace(/\.(pdf|docx?|DOCX?|PDF)$/i, "");
+      const contentType =
+        isPdf
+          ? "application/pdf"
+          : ext === "docx"
+          ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          : "application/msword";
+
       const { data: insertedDoc, error: insertErr } = await supabase
         .from("generated_documents")
         .insert({
@@ -499,7 +516,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
           rendered_variables_json: {} as any,
           generated_with_missing_fields: false,
         } as any)
-        .select("id")
+        .select("*")
         .maybeSingle();
 
       if (insertErr || !insertedDoc?.id) {
@@ -511,11 +528,11 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         .replace(/[^a-zA-Z0-9_\-]/g, "_")
         .replace(/_+/g, "_")
         .substring(0, 100);
-      const filePath = `external/${servidorId}/${insertedDoc.id}_${safeName}.pdf`;
+      const filePath = `external/${servidorId}/${insertedDoc.id}_${safeName}.${ext}`;
 
       const { error: uploadErr } = await supabase.storage
         .from("contract-pdfs")
-        .upload(filePath, file, { contentType: "application/pdf", upsert: true });
+        .upload(filePath, file, { contentType, upsert: true });
       if (uploadErr) throw uploadErr;
 
       const { data: signedData } = await supabase.storage
@@ -538,13 +555,21 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
           uploaded_at: new Date().toISOString(),
           original_filename: file.name,
           file_size: file.size,
+          file_format: ext,
           source: "external_upload",
         },
       });
 
-      toast.success("Arquivo enviado! Já está disponível em Docs para assinatura.");
-      fetchDocuments();
-      addActivity?.({ type: "document", title: `Arquivo "${baseName}" enviado para assinatura` });
+      toast.success("Arquivo enviado! Adicione os signatários para enviar à assinatura.");
+      addActivity?.({ type: "document", title: `Arquivo "${baseName}" enviado` });
+      await fetchDocuments();
+
+      // Abre direto o drawer de signatários (dono do card já entra como signatário obrigatório)
+      const fullDoc: GeneratedDoc = {
+        ...(insertedDoc as any),
+        pdf_url: pdfUrl,
+      };
+      openSignDrawer(fullDoc);
     } catch (err: any) {
       toast.error("Erro ao enviar arquivo: " + (err.message || ""));
     } finally {
@@ -552,6 +577,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
       if (externalFileInputRef.current) externalFileInputRef.current.value = "";
     }
   };
+
 
   const fetchSignerCounts = useCallback(async (docIds: string[]) => {
     if (docIds.length === 0) return;
