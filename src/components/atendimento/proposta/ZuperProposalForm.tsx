@@ -90,13 +90,19 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
     }
   );
 
-  // Load company + catalog + existing items
+  // Hide floating quick-chat while the proposal form is mounted (avoid overlap)
+  useEffect(() => {
+    document.body.dataset.editingOverlay = "true";
+    return () => { delete document.body.dataset.editingOverlay; };
+  }, []);
+
+  // Load company + catalog + existing items + full lead row (auto-fill)
   useEffect(() => {
     (async () => {
       const { data: comp } = await supabase
         .from("companies")
         .select("razao_social, nome_fantasia, cnpj, responsavel, email, telefone, logo_url")
-        .eq("id", servidorId).single();
+        .eq("id", servidorId).maybeSingle();
       setCompany(comp as any);
 
       const { data: cat } = await supabase
@@ -113,6 +119,19 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
         .order("name");
       setTemplates((tpls as any) || []);
 
+      // Auto-fill client data from the full lead record (fallback when LeadLite lacks fields)
+      if (lead.id) {
+        const { data: leadFull } = await supabase
+          .from("crm_leads")
+          .select("name, email, phone, company_name, empresa, telefone")
+          .eq("id", lead.id).maybeSingle();
+        const lf: any = leadFull || {};
+        setClientName(prev => prev || lf.name || lead.name || "");
+        setClientEmail(prev => prev || lf.email || lead.email || "");
+        setClientPhone(prev => prev || lf.phone || lf.telefone || lead.phone || "");
+        setClientCompany(prev => prev || lf.company_name || lf.empresa || lead.company_name || "");
+      }
+
       if (existingProposal?.id) {
         const { data: lines } = await supabase
           .from("proposal_line_items")
@@ -121,7 +140,7 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
         setItems((lines as any) || []);
       }
     })();
-  }, [servidorId, existingProposal?.id]);
+  }, [servidorId, existingProposal?.id, lead.id]);
 
   const totals = useMemo(() => calcTotals(items, mrrPayment), [items, mrrPayment]);
 
