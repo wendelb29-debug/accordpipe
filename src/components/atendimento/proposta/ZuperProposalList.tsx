@@ -96,6 +96,15 @@ export function ZuperProposalList({ leadId, servidorId, onNew, onOpen, refreshKe
       toast.error("Não foi possível copiar");
     }
   };
+  const handleSetStatus = async (p: ProposalRecord, status: "aprovada" | "recusada") => {
+    const label = status === "aprovada" ? "Aprovar" : "Recusar";
+    if (!confirm(`${label} esta proposta?`)) return;
+    const { error } = await supabase.from("proposals").update({ status }).eq("id", p.id);
+    if (error) { toast.error(`Erro ao ${label.toLowerCase()}`); return; }
+    toast.success(status === "aprovada" ? "Proposta aprovada — gere o contrato em Arquivos" : "Proposta recusada");
+    load();
+  };
+
 
   return (
     <div className="space-y-4">
