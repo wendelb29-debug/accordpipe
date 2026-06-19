@@ -295,6 +295,12 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
   });
   y -= 20;
 
+  // ICP-Brasil seal in the top-right corner of the proof page
+  if (signedSigners.length > 0) {
+    drawIcpSeal(proofPage, font, fontBold, pw - 70, ph - 70, 36);
+  }
+
+
   proofPage.drawText("Validade Jurídica", {
     x: 30,
     y,
