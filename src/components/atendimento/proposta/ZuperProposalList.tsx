@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Eye, Edit, CopyPlus, Trash2, Loader2, Link2 } from "lucide-react";
+import { Plus, Eye, Edit, CopyPlus, Trash2, Loader2, Link2, CheckCircle2, XCircle } from "lucide-react";
 import { randomPublicToken } from "./utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -96,6 +96,15 @@ export function ZuperProposalList({ leadId, servidorId, onNew, onOpen, refreshKe
       toast.error("Não foi possível copiar");
     }
   };
+  const handleSetStatus = async (p: ProposalRecord, status: "aprovada" | "recusada") => {
+    const label = status === "aprovada" ? "Aprovar" : "Recusar";
+    if (!confirm(`${label} esta proposta?`)) return;
+    const { error } = await supabase.from("proposals").update({ status }).eq("id", p.id);
+    if (error) { toast.error(`Erro ao ${label.toLowerCase()}`); return; }
+    toast.success(status === "aprovada" ? "Proposta aprovada — gere o contrato em Arquivos" : "Proposta recusada");
+    load();
+  };
+
 
   return (
     <div className="space-y-4">
@@ -168,6 +177,12 @@ export function ZuperProposalList({ leadId, servidorId, onNew, onOpen, refreshKe
                             <Eye className="h-3.5 w-3.5 mr-2" /> Visualizar
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleCopyLink(p)}><Link2 className="h-3.5 w-3.5 mr-2" /> Copiar link</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleSetStatus(p, "aprovada")} disabled={p.status === "aprovada"}>
+                            <CheckCircle2 className="h-3.5 w-3.5 mr-2 text-emerald-500" /> Aprovar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleSetStatus(p, "recusada")} disabled={p.status === "recusada"}>
+                            <XCircle className="h-3.5 w-3.5 mr-2 text-destructive" /> Recusar
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleDuplicate(p)}><CopyPlus className="h-3.5 w-3.5 mr-2" /> Duplicar</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleDelete(p.id)} className="text-destructive"><Trash2 className="h-3.5 w-3.5 mr-2" /> Excluir</DropdownMenuItem>
                         </DropdownMenuContent>
