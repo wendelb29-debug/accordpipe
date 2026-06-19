@@ -1467,7 +1467,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
              {/* Pós-Venda */}
             {(isAdminPipeline || role === "administrativo" || role === "admin" || role === "ceo" || profile?.is_master) && (
-              <TabsContent value="pos-venda" className="flex-1 overflow-y-auto p-4 mt-0">
+              <TabsContent value="pos-venda" className="flex-1 min-h-0 overflow-y-auto p-4 mt-0">
                 <LeadPosVendaTab lead={lead} />
               </TabsContent>
             )}
