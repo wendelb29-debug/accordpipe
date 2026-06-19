@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Plus, Loader2, MoreVertical, Eye, Download, Trash2,
   FileText, Clock, CheckCircle2, AlertCircle, FileSignature,
-  Send, Copy, Link2, Users, XCircle, ExternalLink, UserPlus, Mail, MessageCircle, Upload,
+  Send, Copy, Link2, Users, XCircle, ExternalLink, UserPlus, Mail, MessageCircle, Upload, ChevronDown, Edit,
 } from "lucide-react";
 import { ContractVariableAudit } from "./ContractVariableAudit";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
@@ -432,6 +432,12 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
   const [canGenerate, setCanGenerate] = useState(true);
   const [confirmMissingOpen, setConfirmMissingOpen] = useState(false);
 
+  // Quick-pick: blank-variables modal (lists ALL missing template variables, not just critical)
+  const [blankVarsOpen, setBlankVarsOpen] = useState(false);
+  const [blankVarsList, setBlankVarsList] = useState<string[]>([]);
+  const [blankVarsTemplateId, setBlankVarsTemplateId] = useState<string | null>(null);
+  const [quickPicking, setQuickPicking] = useState<string | null>(null);
+
   // View
   const [viewDoc, setViewDoc] = useState<GeneratedDoc | null>(null);
 
@@ -698,9 +704,10 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     }
   }, [ensureDocumentPdfUrl]);
 
-  const handleGenerate = async () => {
-    if (!selectedTemplate) return toast.error("Selecione um modelo");
-    const template = templates.find((t) => t.id === selectedTemplate);
+  const handleGenerate = async (forcedTemplateId?: string) => {
+    const tid = forcedTemplateId || selectedTemplate;
+    if (!tid) return toast.error("Selecione um modelo");
+    const template = templates.find((t) => t.id === tid);
     if (!template) return;
     setGenerating(true);
 
@@ -811,6 +818,69 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
       setGenerating(false);
     }
   };
+
+  /** Quick-pick: chosen from the "Gerar Documento" dropdown. Runs context fetch,
+   *  detects ALL missing template variables and either opens the blank-vars modal
+   *  or generates immediately. */
+  const quickPickTemplate = async (template: Template) => {
+    setQuickPicking(template.id);
+    try {
+      const [tenantRes, activityRes, regRes] = await Promise.all([
+        supabase.from("companies").select(COMPANY_SAFE_COLUMNS).eq("id", servidorId).maybeSingle(),
+        supabase.from("crm_lead_activities").select("*").eq("lead_id", lead.id).eq("type", "proposal").order("created_at", { ascending: false }),
+        supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
+      ]);
+      const tenant: any = tenantRes.data;
+      const registration = regRes.data;
+      const activities = activityRes.data || [];
+      const acceptedActivity = activities.find((a: any) =>
+        ACCEPTED_STATUSES.has(((a.metadata as any)?.status || "").toLowerCase())
+      ) || activities[0] || null;
+      const proposal = activityToProposal(acceptedActivity);
+      let vendor: any = null;
+      if (acceptedActivity?.created_by_user_id) {
+        const { data: v } = await supabase
+          .from("profiles")
+          .select("name, email, whatsapp, birth_date")
+          .eq("user_id", acceptedActivity.created_by_user_id)
+          .maybeSingle();
+        vendor = v;
+      }
+      setPreviewTenant(tenant);
+      setPreviewProposal(proposal);
+      setPreviewVendor(vendor);
+      setPreviewRegistration(registration);
+      setSelectedTemplate(template.id);
+
+      const vars = buildVariableMap(lead, tenant, proposal, vendor, registration);
+      const contentTemplate = (template as any).content_template || "";
+      const placeholderList = (template as any).placeholders_json as string[] | null;
+
+      // Collect all placeholders used in the template
+      const used = new Set<string>();
+      const regex = /\{\{([a-z0-9_]+)\}\}/gi;
+      let m: RegExpExecArray | null;
+      while ((m = regex.exec(contentTemplate)) !== null) used.add(m[1].toLowerCase());
+      (placeholderList || []).forEach((p) => used.add(p.toLowerCase()));
+
+      const missing = Array.from(used).filter(
+        (p) => !SIGNATURE_VARS.has(p) && !vars[`{{${p}}}`]
+      );
+
+      if (missing.length > 0) {
+        setBlankVarsList(missing);
+        setBlankVarsTemplateId(template.id);
+        setBlankVarsOpen(true);
+      } else {
+        await handleGenerate(template.id);
+      }
+    } catch (err: any) {
+      toast.error("Erro ao preparar documento: " + (err.message || ""));
+    } finally {
+      setQuickPicking(null);
+    }
+  };
+
 
   const handleDelete = async (doc: GeneratedDoc) => {
     const { error } = await supabase.from("generated_documents").delete().eq("id", doc.id);
@@ -1072,32 +1142,75 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
             )}
             Enviar Arquivo
           </Button>
-          <Button size="sm" className="gap-1.5 text-xs" onClick={async () => {
-            setGenerateOpen(true);
-            setCanGenerate(true);
-            setSelectedTemplate("");
-            // Pre-fetch tenant, proposal (from activities), vendor, registration for variable preview
-            const [tenantRes, activityRes, regRes] = await Promise.all([
-              supabase.from("companies").select(COMPANY_SAFE_COLUMNS).eq("id", servidorId).maybeSingle(),
-              supabase.from("crm_lead_activities").select("*").eq("lead_id", lead.id).eq("type", "proposal").order("created_at", { ascending: false }),
-              supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
-            ]);
-            setPreviewTenant(tenantRes.data as any);
-            setPreviewRegistration(regRes.data);
-            const activities = activityRes.data || [];
-            const acceptedActivity = activities.find((a: any) => ACCEPTED_STATUSES.has(((a.metadata as any)?.status || "").toLowerCase()))
-              || activities[0] || null;
-            const p = activityToProposal(acceptedActivity);
-            setPreviewProposal(p);
-            if (acceptedActivity?.created_by_user_id) {
-              const { data: v } = await supabase.from("profiles").select("name, email, whatsapp, birth_date").eq("user_id", acceptedActivity.created_by_user_id).maybeSingle();
-              setPreviewVendor(v);
-            } else {
-              setPreviewVendor(null);
-            }
-          }}>
-            <Plus className="h-3.5 w-3.5" /> Gerar Documento
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" className="gap-1.5 text-xs" disabled={!!quickPicking}>
+                {quickPicking ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Plus className="h-3.5 w-3.5" />
+                )}
+                Gerar Documento
+                <ChevronDown className="h-3 w-3 ml-0.5 opacity-70" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-72 max-h-80 overflow-y-auto">
+              {templates.length === 0 ? (
+                <div className="px-2 py-3 text-xs text-muted-foreground text-center">
+                  Nenhum modelo cadastrado
+                </div>
+              ) : (
+                <>
+                  <div className="px-2 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+                    Modelos disponíveis
+                  </div>
+                  {templates.map((t) => (
+                    <DropdownMenuItem
+                      key={t.id}
+                      onClick={() => quickPickTemplate(t)}
+                      disabled={!!quickPicking}
+                      className="flex flex-col items-start gap-0.5 py-2"
+                    >
+                      <div className="flex items-center gap-2 w-full">
+                        <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                        <span className="text-xs font-medium truncate flex-1">{t.nome}</span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground ml-5">
+                        {tipoLabels[t.tipo] || t.tipo}
+                      </span>
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={async () => {
+                  setGenerateOpen(true);
+                  setCanGenerate(true);
+                  setSelectedTemplate("");
+                  const [tenantRes, activityRes, regRes] = await Promise.all([
+                    supabase.from("companies").select(COMPANY_SAFE_COLUMNS).eq("id", servidorId).maybeSingle(),
+                    supabase.from("crm_lead_activities").select("*").eq("lead_id", lead.id).eq("type", "proposal").order("created_at", { ascending: false }),
+                    supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
+                  ]);
+                  setPreviewTenant(tenantRes.data as any);
+                  setPreviewRegistration(regRes.data);
+                  const activities = activityRes.data || [];
+                  const acceptedActivity = activities.find((a: any) => ACCEPTED_STATUSES.has(((a.metadata as any)?.status || "").toLowerCase())) || activities[0] || null;
+                  const p = activityToProposal(acceptedActivity);
+                  setPreviewProposal(p);
+                  if (acceptedActivity?.created_by_user_id) {
+                    const { data: v } = await supabase.from("profiles").select("name, email, whatsapp, birth_date").eq("user_id", acceptedActivity.created_by_user_id).maybeSingle();
+                    setPreviewVendor(v);
+                  } else {
+                    setPreviewVendor(null);
+                  }
+                }}
+              >
+                <Edit className="h-3.5 w-3.5 mr-2" /> Configuração avançada...
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -1314,7 +1427,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                 Gerar com dados ausentes
               </Button>
             ) : (
-              <Button size="sm" onClick={handleGenerate} disabled={generating || !selectedTemplate}>
+              <Button size="sm" onClick={() => handleGenerate()} disabled={generating || !selectedTemplate}>
                 {generating && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
                 Gerar Documento
               </Button>
@@ -1384,6 +1497,73 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Quick-pick: Variáveis em branco modal */}
+      <AlertDialog open={blankVarsOpen} onOpenChange={setBlankVarsOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
+              <AlertCircle className="h-5 w-5" />
+              Variáveis em branco
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>As seguintes variáveis não possuem dados:</p>
+                <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10 p-3">
+                  <div className="flex flex-wrap gap-1.5">
+                    {blankVarsList.map((v) => {
+                      const friendly: Record<string, string> = {
+                        nome_completo: "Nome do cliente",
+                        documento_contratante: "CPF/CNPJ do contratante",
+                        tenant_nome: "Nome do Tenant",
+                        tenant_cnpj: "CNPJ do Tenant",
+                        company_cnpj: "CNPJ",
+                        client_name: "Nome do cliente",
+                        client_email: "E-mail do cliente",
+                        client_phone: "Telefone do cliente",
+                        endereco: "Endereço",
+                        cep: "CEP",
+                        cidade: "Cidade",
+                        estado: "Estado",
+                      };
+                      const label = friendly[v] || v.replace(/_/g, " ");
+                      return (
+                        <code
+                          key={v}
+                          className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded"
+                        >
+                          {`{{${v}}}`} — {label}
+                        </code>
+                      );
+                    })}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Os campos em branco aparecerão vazios no documento final.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setBlankVarsOpen(false); setBlankVarsTemplateId(null); }}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-primary hover:bg-primary/90"
+              onClick={() => {
+                const tid = blankVarsTemplateId;
+                setBlankVarsOpen(false);
+                setBlankVarsTemplateId(null);
+                if (tid) handleGenerate(tid);
+              }}
+            >
+              Gerar assim mesmo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
 
       {/* View Dialog */}
       <Dialog open={!!viewDoc} onOpenChange={() => setViewDoc(null)}>

@@ -1211,7 +1211,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                   <StickyNote className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Notas
                 </TabsTrigger>
                 <TabsTrigger value="atividades" className="text-[11px] sm:text-xs gap-1">
-                  <Activity className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Atividades
+                  <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Agenda
                 </TabsTrigger>
                 <TabsTrigger value="ligacoes" className="text-[11px] sm:text-xs gap-1">
                   <PhoneCall className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Ligações
@@ -1220,7 +1220,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                   <FileSpreadsheet className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Propostas
                 </TabsTrigger>
                 <TabsTrigger value="docs" className="text-[11px] sm:text-xs gap-1">
-                  <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Docs
+                  <Paperclip className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Arquivos
                 </TabsTrigger>
                 {(isAdminPipeline || role === "administrativo" || role === "admin" || role === "ceo" || profile?.is_master) && (
                   <TabsTrigger value="pos-venda" className="text-[11px] sm:text-xs gap-1">
@@ -1311,6 +1311,9 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                     placeholder="Escreva sua nota aqui..."
                     leadContext={`Empresa: ${lead.company_name}, Contato: ${lead.contact_name || "N/A"}, Etapa: ${lead.stage}, Valor MRR: ${lead.value_mrr}, Origem: ${lead.source}`}
                   />
+                  <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                    <ImageIcon className="h-3 w-3" /> Dica: Ctrl+V para colar imagem
+                  </p>
                   {noteImagePreview && (
                     <div className="relative inline-block">
                       <img src={noteImagePreview} alt="Preview" className="max-h-32 rounded-md border" />
@@ -1834,10 +1837,20 @@ function ActivityFilteredList({ activities, loading, emptyLabel }: { activities:
     );
   }
   if (activities.length === 0) {
+    const isCalls = emptyLabel === "ligações";
     return (
-      <div className="text-center py-12 text-muted-foreground">
-        <StickyNote className="h-10 w-10 mx-auto mb-3 opacity-30" />
-        <p className="text-sm">Nenhuma {emptyLabel} registrada</p>
+      <div className="text-center py-12 text-muted-foreground max-w-md mx-auto">
+        {isCalls ? (
+          <PhoneCall className="h-10 w-10 mx-auto mb-3 opacity-30" />
+        ) : (
+          <StickyNote className="h-10 w-10 mx-auto mb-3 opacity-30" />
+        )}
+        <p className="text-sm font-medium">Nenhuma {emptyLabel} registrada</p>
+        {isCalls && (
+          <p className="text-xs mt-2 leading-relaxed">
+            Use o botão <PhoneCall className="inline h-3 w-3 mx-0.5" /> ao lado do telefone do contato para iniciar uma ligação. Ela aparecerá aqui automaticamente.
+          </p>
+        )}
       </div>
     );
   }

@@ -311,9 +311,10 @@ export function LeadAtividadesTab({
   const renderTable = (items: ActivityItem[], variant: "planned" | "completed" | "no_show") => {
     if (items.length === 0) {
       return (
-        <div className="text-center py-8 text-muted-foreground">
-          <Calendar className="h-8 w-8 mx-auto mb-2 opacity-30" />
-          <p className="text-sm">Nenhuma atividade nesta categoria</p>
+        <div className="text-center py-12 text-muted-foreground">
+          <Calendar className="h-10 w-10 mx-auto mb-3 opacity-30" />
+          <p className="text-sm font-medium">Nenhuma atividade</p>
+          <p className="text-xs mt-1">As atividades agendadas aparecerão aqui</p>
         </div>
       );
     }
@@ -427,16 +428,21 @@ export function LeadAtividadesTab({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Calendar className="h-5 w-5" /> Atividades
-        </h3>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Calendar className="h-5 w-5" /> Agenda / Compromissos
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Gerencie os compromissos e atividades deste card
+          </p>
+        </div>
         <Button
           size="sm"
           onClick={() => { resetForm(); setShowForm(!showForm); }}
           className="gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
         >
-          <Plus className="h-3.5 w-3.5" /> Criar atividade
+          <Plus className="h-3.5 w-3.5" /> Novo Compromisso
         </Button>
       </div>
 
