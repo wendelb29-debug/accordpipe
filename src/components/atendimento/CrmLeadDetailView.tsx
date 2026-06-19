@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type WheelEvent } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   ArrowLeft, Building2, User, Mail, Phone as PhoneIcon, MapPin, Calendar, Calculator,
   DollarSign, Clock, Tag, StickyNote, CheckCircle, XCircle, Plus,
@@ -202,17 +202,6 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const [editingNoteText, setEditingNoteText] = useState("");
   const [savingEditNote, setSavingEditNote] = useState(false);
   const noteFileRef = useRef<HTMLInputElement>(null);
-  const propostasScrollRef = useRef<HTMLDivElement>(null);
-
-  const handlePropostasWheel = (event: WheelEvent<HTMLDivElement>) => {
-    const panel = propostasScrollRef.current;
-    if (!panel || panel.scrollHeight <= panel.clientHeight) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-    panel.scrollTop += event.deltaY;
-  };
-
   useEffect(() => {
     if (!editing) {
       setForm({ ...lead });
