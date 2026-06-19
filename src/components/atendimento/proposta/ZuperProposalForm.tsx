@@ -45,6 +45,8 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
   const [saving, setSaving] = useState(false);
   const [company, setCompany] = useState<CompanyInfo | null>(null);
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
+  const [templates, setTemplates] = useState<ProposalTemplate[]>([]);
+  const [activeTemplateId, setActiveTemplateId] = useState<string>(existingProposal?.template_id || initialTemplate?.id || "");
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [qtyInput, setQtyInput] = useState(1);
