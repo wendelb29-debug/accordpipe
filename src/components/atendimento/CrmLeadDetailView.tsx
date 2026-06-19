@@ -1428,7 +1428,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             </TabsContent>
 
             {/* Atividades - rich tab */}
-            <TabsContent value="atividades" className="flex-1 overflow-y-auto p-4 mt-0">
+            <TabsContent value="atividades" className="flex-1 min-h-0 overflow-y-auto p-4 mt-0">
               <LeadAtividadesTab lead={lead} addActivity={addActivity} />
             </TabsContent>
 
