@@ -1454,10 +1454,8 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
             {/* Propostas */}
             <TabsContent
-              ref={propostasScrollRef}
               value="propostas"
-              onWheelCapture={handlePropostasWheel}
-              className="flex-1 h-full max-h-full min-h-0 overflow-y-scroll overscroll-contain scrollbar-visible p-0 mt-0 w-full max-w-full focus-visible:outline-none flex flex-col data-[state=inactive]:hidden"
+              className="flex-1 min-h-0 overflow-hidden p-0 mt-0 w-full max-w-full focus-visible:outline-none flex flex-col data-[state=inactive]:hidden"
             >
               <LeadPropostasTab lead={lead} addActivity={addActivity} onUpdateLead={onUpdate} />
             </TabsContent>
