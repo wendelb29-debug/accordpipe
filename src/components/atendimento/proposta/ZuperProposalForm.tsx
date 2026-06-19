@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Plus, Trash2, Link2, FileDown, Save, Loader2, Search } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Link2, FileDown, Save, Loader2, Search, FileCheck2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -61,6 +62,12 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
   const [validityDays, setValidityDays] = useState<number>(existingProposal?.validity_days || initialTemplate?.default_validity_days || 30);
   const [introHtml, setIntroHtml] = useState(existingProposal?.intro_html || initialTemplate?.intro_html || "");
   const [observations, setObservations] = useState(existingProposal?.observations || initialTemplate?.observations || "");
+  const [includesSupport, setIncludesSupport] = useState<boolean>(
+    /inclui suporte/i.test(existingProposal?.observations || "")
+  );
+  const [includesTraining, setIncludesTraining] = useState<boolean>(
+    /inclui treinamento/i.test(existingProposal?.observations || "")
+  );
 
   const [items, setItems] = useState<ProposalLineItem[]>([]);
 
@@ -163,7 +170,7 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
   const removeItem = (idx: number) => setItems(prev => prev.filter((_, i) => i !== idx));
 
   // ----- Save -----
-  const handleSave = async (): Promise<ProposalRecord | null> => {
+  const handleSave = async (overrideStatus?: "draft" | "aberta"): Promise<ProposalRecord | null> => {
     if (!title.trim()) { toast.error("Informe o título da proposta"); return null; }
     if (items.length === 0) { toast.error("Adicione pelo menos um item"); return null; }
     setSaving(true);
@@ -182,7 +189,11 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
         titulo: title,
         descricao: introHtml,
         valor: totals.grand_total,
-        status: existingProposal?.status === "aprovada" ? "aprovada" : "aberta",
+        status: overrideStatus
+          ? overrideStatus
+          : existingProposal?.status === "aprovada"
+            ? "aprovada"
+            : existingProposal?.status || "aberta",
         version,
         control_code: controlCode,
         client_oc: clientOC || null,
@@ -190,7 +201,11 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
         created_date: createdDate,
         validity_days: validityDays,
         intro_html: introHtml,
-        observations: observations || null,
+        observations: [
+          observations || "",
+          includesSupport ? "Inclui suporte técnico." : "",
+          includesTraining ? "Inclui treinamento." : "",
+        ].filter(Boolean).join("\n").trim() || null,
         ps_payment: hasPS ? psPayment : {},
         mrr_payment: hasMRR ? mrrPayment : {},
         totals,
@@ -639,12 +654,22 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
             </Card>
           )}
 
-          {/* Observações */}
+          {/* Observações + Condições */}
           <Card>
-            <CardContent className="p-4 space-y-2">
-              <p className="font-semibold text-sm">Observações</p>
+            <CardContent className="p-4 space-y-3">
+              <p className="font-semibold text-sm">Observações e condições</p>
               <Textarea value={observations} onChange={e => setObservations(e.target.value)}
                 placeholder="Condições e termos adicionais..." rows={4} className="text-xs" />
+              <div className="flex flex-wrap items-center gap-4 pt-1">
+                <label className="flex items-center gap-2 text-xs cursor-pointer">
+                  <Checkbox checked={includesSupport} onCheckedChange={(c) => setIncludesSupport(!!c)} />
+                  Inclui suporte técnico
+                </label>
+                <label className="flex items-center gap-2 text-xs cursor-pointer">
+                  <Checkbox checked={includesTraining} onCheckedChange={(c) => setIncludesTraining(!!c)} />
+                  Inclui treinamento
+                </label>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -686,9 +711,12 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
         <Button variant="outline" size="sm" onClick={handleGeneratePdf} className="gap-1">
           <FileDown className="h-4 w-4" /> Gerar PDF
         </Button>
-        <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1">
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Salvar Proposta
+        <Button variant="outline" size="sm" onClick={() => handleSave("draft")} disabled={saving} className="gap-1">
+          <Save className="h-4 w-4" /> Salvar rascunho
+        </Button>
+        <Button size="sm" onClick={() => handleSave("aberta")} disabled={saving} className="gap-1">
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck2 className="h-4 w-4" />}
+          Salvar e ativar
         </Button>
       </div>
     </div>
