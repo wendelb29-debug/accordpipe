@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { RichTextEditor } from "./RichTextEditor";
 import type { ProposalLineItem, ProposalRecord, ProposalTemplate, PSPayment, MRRPayment, ProposalItemType } from "./types";
 import { calcItemTotal, calcTotals, fmtCur, generatePSInstallments, randomPublicToken } from "./utils";
+import { generateProposalPdf } from "@/lib/generateProposalPdf";
 
 interface CatalogItem {
   id: string; name: string; value: number; description: string | null;
