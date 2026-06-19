@@ -389,6 +389,7 @@ async function buildAuditPages(
 
   for (let i = 0; i < signersList.length; i++) {
     const s = signersList[i];
+    const selfieImg = signerSelfies[i];
     const cardH = 120;
     ensure(cardH + 10);
 
@@ -412,7 +413,7 @@ async function buildAuditPages(
       ["Localizacao", s.location_text || (s.location_lat ? `${s.location_lat}, ${s.location_lng}` : "--")],
       ["E-mail", maskEmail(s.email)],
       ["Documento", maskDoc(s.cpf)],
-      ["Selfie", s.selfie_url ? "[OK] Capturada e armazenada" : "Nao capturada"],
+      ["Selfie", selfieImg ? "Capturada (foto ao lado)" : (s.selfie_url ? "Capturada e armazenada" : "Nao capturada"), selfieImg ? P.green : (s.selfie_url ? P.green : P.white)],
     ];
 
     for (const [label, value, col] of sFields) {
@@ -421,8 +422,27 @@ async function buildAuditPages(
       cy -= 12;
     }
 
+    // Draw selfie on the right side of the card
+    if (selfieImg) {
+      const photoSize = 90;
+      const photoX = M + CW - 10 - photoSize - 8;
+      const photoY = y - cardH + 14 + (cardH - photoSize) / 2;
+      // White border frame
+      drawRect(page, photoX - 2, photoY - 2, photoSize + 4, photoSize + 4, P.white);
+      page.drawImage(selfieImg, { x: photoX, y: photoY, width: photoSize, height: photoSize });
+      // Caption
+      page.drawText("Selfie do signatario", {
+        x: photoX,
+        y: photoY - 9,
+        size: 6,
+        font,
+        color: P.lightGray,
+      });
+    }
+
     y -= cardH + 14;
   }
+
 
   y -= 8;
 
