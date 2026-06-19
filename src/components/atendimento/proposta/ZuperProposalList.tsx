@@ -164,10 +164,10 @@ export function ZuperProposalList({ leadId, servidorId, onNew, onOpen, refreshKe
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => onOpen(p)}><Edit className="h-3.5 w-3.5 mr-2" /> Editar</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => window.open(`/p/proposta/${p.public_token}`, "_blank")} disabled={!p.public_token}>
+                          <DropdownMenuItem onClick={() => handleView(p)}>
                             <Eye className="h-3.5 w-3.5 mr-2" /> Visualizar
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => copyPublicLink(p.public_token)}><Link2 className="h-3.5 w-3.5 mr-2" /> Copiar link</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleCopyLink(p)}><Link2 className="h-3.5 w-3.5 mr-2" /> Copiar link</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleDuplicate(p)}><CopyPlus className="h-3.5 w-3.5 mr-2" /> Duplicar</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleDelete(p.id)} className="text-destructive"><Trash2 className="h-3.5 w-3.5 mr-2" /> Excluir</DropdownMenuItem>
                         </DropdownMenuContent>
