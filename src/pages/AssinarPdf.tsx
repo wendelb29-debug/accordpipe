@@ -462,6 +462,16 @@ export default function AssinarPdf() {
   const currentDate = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
 
   useEffect(() => {
+    if (!signed) return;
+    const code = (contract as any)?.validation_code || (contract as any)?.code;
+    if (!code) return;
+    const t = setTimeout(() => {
+      navigate(`/validar-documento/${code}`);
+    }, 2000);
+    return () => clearTimeout(t);
+  }, [signed, contract, navigate]);
+
+  useEffect(() => {
     if (!signed || !contract?.id || contract?.pdf_assinado_url) return;
 
     if (contract.pdf_assinado_url) {
