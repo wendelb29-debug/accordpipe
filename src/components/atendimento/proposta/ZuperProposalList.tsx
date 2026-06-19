@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Eye, Edit, CopyPlus, Trash2, Loader2, Link2 } from "lucide-react";
+import { randomPublicToken } from "./utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { ProposalRecord } from "./types";
