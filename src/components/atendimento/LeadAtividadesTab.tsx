@@ -427,16 +427,21 @@ export function LeadAtividadesTab({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Calendar className="h-5 w-5" /> Atividades
-        </h3>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Calendar className="h-5 w-5" /> Agenda / Compromissos
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Gerencie os compromissos e atividades deste card
+          </p>
+        </div>
         <Button
           size="sm"
           onClick={() => { resetForm(); setShowForm(!showForm); }}
           className="gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
         >
-          <Plus className="h-3.5 w-3.5" /> Criar atividade
+          <Plus className="h-3.5 w-3.5" /> Novo Compromisso
         </Button>
       </div>
 
