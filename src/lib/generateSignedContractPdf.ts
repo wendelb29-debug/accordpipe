@@ -130,16 +130,9 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
       signerPhotos.push(null);
       continue;
     }
-
-    try {
-      const resp = await fetch(signer.signature_photo_url);
-      const blob = await resp.blob();
-      const buffer = await blob.arrayBuffer();
-      signerPhotos.push(new Uint8Array(buffer));
-    } catch {
-      signerPhotos.push(null);
-    }
+    signerPhotos.push(await fetchPhotoBytes(signer.signature_photo_url));
   }
+
 
   // ── Signature page: dedicated page for all signed signers ──
   const signedSigners = data.signers.filter((signer) => Boolean(signer.signed_at));
