@@ -1,139 +1,80 @@
-# Módulo Nova Proposta (estilo Zuper) — plano de execução
 
-Substitui o formulário atual de propostas do card de lead por um fluxo completo: modal de modelo → formulário em seções numeradas → barra inferior fixa → listagem com totalizadores → página pública de aceite. Mantém `LeadPropostasTab` como entrypoint (regra de memória), mantém `proposal_catalog_items` e o gerador `generateProposalPdf` (jsPDF), e isola tudo por `servidor_id` (multi-tenant).
+# Replicar fluxo Zuper no card de vendas
 
-Combo **fica de fora** (decidido). Itens suportados: **Serviço (P&S)** e **MRR**.
+Especificação grande — vou dividir em **7 fases entregáveis**. Cada fase já fica funcional e pode ser revisada antes da próxima. Tudo dentro do componente atual `CrmLeadDetailView` (memória: mantém `LeadPropostasTab` legado como entrypoint).
 
----
-
-## 1. Banco de dados (migration única)
-
-### 1.1 Cardápio: adicionar suporte a P&S
-- `proposal_catalog_items.item_type` já existe → garantir valores aceitos: `servico` | `mrr` (drop "combo" da UI, mas não força CHECK pra não quebrar dados).
-- Nenhuma nova coluna.
-
-### 1.2 Tabela `proposals` (estender, não recriar)
-Hoje tem 15 colunas. Adicionar:
-- `version int default 1`
-- `control_code text` (ex `OP-00015`) + sequence por tenant
-- `client_oc text` (nº OC do cliente)
-- `currency text default 'BRL'`
-- `title text default 'Proposta Comercial'`
-- `created_date date default current_date`
-- `validity_days int default 30`
-- `intro_html text` (rich text)
-- `observations text`
-- `ps_payment jsonb` (`{method, mode, days_to_first, installments:[{date,number,value,method}]}`)
-- `mrr_payment jsonb` (`{method, due_day, first_date, num_installments}`)
-- `totals jsonb` (`{ps_total, mrr_monthly, mrr_contract, grand_total}`)
-- `template_id uuid` (FK opcional)
-- `public_token text unique` (link público)
-- `public_accepted_at timestamptz`, `public_accepted_ip text`, `public_accepted_name text`, `public_accepted_doc text`
-- `status text default 'aberta'` (aberta | aprovada | recusada)
-
-### 1.3 Tabela `proposal_items` (estender)
-Adicionar:
-- `item_type text` (servico | mrr)
-- `discount_type text default 'percent'` (percent | fixed)
-- `discount_value numeric default 0`
-- `position int default 0`
-
-### 1.4 Nova: `proposal_templates`
-Colunas: `id, servidor_id, name, description, intro_html, observations, default_validity_days, is_active`.
-RLS por tenant. GRANTs pra `authenticated` + `service_role`.
-
-### 1.5 Nova: `proposal_public_events` (auditoria do link público)
-Colunas: `id, proposal_id, event_type (view|accept|reject), ip, user_agent, payload jsonb, created_at`.
-RLS: tenant pode `SELECT` (proposal pertence a ele); `INSERT` permitido pra `anon` quando o token bate (via RPC `record_proposal_public_event(token, ...)`).
-
-### 1.6 Sequence por tenant pro `control_code`
-Tabela `proposal_control_sequences (servidor_id pk, last_number int)`.
-Função `next_proposal_control_code(servidor_id)` retorna `OP-00001`, `OP-00002`...
-
-### 1.7 RPC pública `get_proposal_by_public_token(token text)`
-SECURITY DEFINER, sem PII sensível além do necessário pra renderizar; retorna proposta + itens + totals + branding da empresa.
+> **Decisão importante:** mantenho o design system atual do Accord (dark theme #050505, header h-14, botão "Ganho" emerald, navegação pela seta azul). Replico **funcionalidade e fluxo** do Zuper, **não a paleta clara** dele.
 
 ---
 
-## 2. Frontend — arquitetura
+## Fase 1 — Pipeline horizontal de etapas (no topo do card)
 
-```
-src/components/atendimento/proposta/
-├── LeadPropostasTab.tsx         (REUTILIZA o legado — só substitui o conteúdo interno)
-├── NewProposalModal.tsx          modal "Proposta Padrão | Usar Template"
-├── ProposalFormShell.tsx         shell com scroll + barra fixa inferior
-├── sections/
-│   ├── HeaderSection.tsx         logo + fornecedor + responsável + versão + OC
-│   ├── ClientSection.tsx         pessoa + empresa + moeda/título/datas
-│   ├── IntroSection.tsx          TipTap (bold, italic, ul, ol, undo, redo)
-│   ├── ItemsSection.tsx          busca produto + tabela editável + badge tipo
-│   ├── PaymentPSSection.tsx      meio + à vista/parcelado + tabela parcelas
-│   ├── PaymentMRRSection.tsx     meio + dia venc + 1ª parcela + nº parcelas + totais
-│   └── ObservationsSection.tsx
-├── ProposalListView.tsx          tabela com totalizadores + ações
-├── ProposalBottomBar.tsx         Voltar | Template | Link Público | Gerar PDF | Salvar
-└── hooks/
-    ├── useProposalForm.ts        react-hook-form + zod
-    └── useProposalTotals.ts      memo dos cálculos (P&S/MRR separados)
-```
+- Adicionar barra horizontal clicável logo acima das infos do lead, dentro de `CrmLeadDetailView`.
+- Cada etapa = botão. Etapa atual em destaque (primary). Demais neutras.
+- Click muda `stage_id` do lead via `useCrmLeads.updateLead` (já existe).
+- Etapas vêm de `kanban_columns` do workspace (não hardcoded — respeita configuração do tenant).
+- Mobile: scroll horizontal com snap.
 
-### Página pública
-- Rota nova: `/p/proposta/:token` em `src/pages/PropostaPublica.tsx`
-- Renderiza read-only + botões **Aceitar** / **Recusar** com captura de nome+CPF+IP
-- Chama RPC `accept_proposal_public(token, name, doc)` ou `reject_proposal_public(token, reason)`
+## Fase 2 — Aba Propostas: modal de modelo + ajustes na tela cheia
 
----
+Já existe `ZuperProposalModule` + `NewProposalModal` + `ZuperProposalForm`. Vou:
 
-## 3. Cálculos (regras-chave)
+- **Modal "Escolha o modelo"**: já existe. Refinar copy e adicionar dropdown de templates ativos (`proposal_templates`).
+- **Tela cheia** (`ZuperProposalForm`): garantir que renderiza
+  - Header com logo do tenant + CNPJ + responsável
+  - 3 blocos: Dados da Pessoa / Empresa / Proposta (com data criação auto + validade +15d editável)
+  - Editor TipTap para Introdução (Bold/Italic/listas/undo/redo)
+  - Busca de catálogo (`proposal_catalog_items`) com qtd + "Adicionar Item"
+  - Tabela de itens com tipo (P&S / MRR), qtd, unitário, total, remover
+  - Barra inferior fixa: Voltar / Template / Link Público / Gerar PDF / Salvar
+- **Listagem**: 2 cards de resumo (P&S total + MRR total/mês com nota), tabela com Proposta/Dono/P&S/MRR/Validade/Cobrança/Status/Ações, paginação 25/pg.
 
-- Item: `total = qtd * unit * (1 - disc%/100)` ou `qtd * unit - discR$`
-- `ps_total = Σ items[type=servico].total`
-- `mrr_monthly = Σ items[type=mrr].total`
-- `mrr_contract = mrr_monthly * num_installments` (frequência mensal fixa, conforme spec)
-- Parcelas P&S: gera N linhas a partir de `first_date + days_to_first`, mensais, valor = `ps_total / N` (última absorve diferença)
-- Todos os valores formatados via `Intl.NumberFormat('pt-BR', {style:'currency', currency:'BRL'})`
+## Fase 3 — Aba Principal (resumo financeiro do card)
 
----
+- 3 cards no topo: P&S (itens + R$), MRR (itens + R$/mês), nota informativa.
+- Cálculo a partir de `proposals` + `proposal_line_items` do lead, filtrando status `aberta` ou `aprovada`.
+- Abaixo: form de criação configurável (estado vazio quando workspace não tem form vinculado).
 
-## 4. PDF
+## Fase 4 — Aba Arquivos (rename de "Docs") + dropdown "Gerar Documento" + modal "Variáveis em branco"
 
-- Reusa `src/lib/generateProposalPdf.ts` (jsPDF nativo — regra de memória diz pra manter separado de contrato de assinatura)
-- Acrescenta seções: header com versão+OC, introdução (HTML→texto), bloco P&S separado do MRR, observações
-- Emojis stripados (regra: pdf-lib/jsPDF winAnsi)
+- Renomear label da aba para "Arquivos".
+- Botão **+ Gerar Documento** vira `DropdownMenu` listando templates ativos de `document_templates` do tenant.
+- Ao escolher um template: roda o `buildVariableMap` que já existe, identifica variáveis sem dado, abre **modal "Variáveis em branco"** com lista (`{{COMPANY_CNPJ}} — CNPJ`, etc.) e botões **Cancelar / Gerar assim mesmo**.
+- Mantém botão **Enviar arquivo** (PDF/Word) já implementado e abre direto signatários com dono do card obrigatório.
+- Estado vazio com ícone de pasta + "Os arquivos do card aparecerão aqui".
 
----
+## Fase 5 — Aba Formulários em sub-abas
 
-## 5. Templates
+- Buscar formulários vinculados ao workspace (`crm_forms` filtrado por `workspace_id`).
+- Sub-tabs (Tabs aninhada) — uma por formulário.
+- Cada sub-tab: cabeçalho com **Link Público** e **Editar**, grid 2 colunas com campos preenchidos do lead (Nome, Email, WhatsApp, CPF, DoB, CNPJ, Razão Social, CEP, Rua, Número, Complemento, Bairro, Cidade, Estado).
 
-- Nova aba em `Configurações > Propostas > Templates` com CRUD
-- Form: nome, descrição, introdução (rich text), observações, validade padrão
-- Ao escolher "Usar Template" no modal: pré-preenche intro + observações + validade
+## Fase 6 — Polish nas abas Agenda / Notas / Ligações
 
----
+- **Agenda**: título "Agenda / Compromissos", subtítulo "Gerencie os compromissos e atividades deste card", botão "+ Novo Compromisso", estado vazio com ícone + textos.
+- **Notas**: adicionar hint "Ctrl+V para colar imagem" abaixo do editor.
+- **Ligações**: estado vazio com instrução "Use o botão 📞 ao lado do telefone do contato para iniciar uma ligação".
 
-## 6. Listagem (substitui a atual)
+## Fase 7 — Aba Transcrição (nova)
 
-Tabela com: Status (badge), Sigla, Título, Data, Validade, Total itens, Dono, **P&S**, **MRR**, Ações.
-Topo: cards "P&S: X itens • R$ Y,YY" e "MRR: X itens • R$ Y,YY/mês".
-Nota: "Valores consideram apenas propostas abertas e aprovadas".
+- Nova aba dedicada listando transcrições de ligações (já temos `transcription` em ligações).
+- Estado vazio adequado.
 
 ---
 
-## 7. Entregas por etapa (dentro do mesmo big bang)
+## Detalhes técnicos
 
-1. Migration (tabelas/colunas/RPC/sequence) — gera tipos
-2. Hooks + form shell + sections (Header → Cliente → Intro → Itens → P&S → MRR → Obs)
-3. Bottom bar + modal de modelo + listagem nova
-4. Templates (CRUD simples)
-5. Página pública `/p/proposta/:token` + aceite
-6. Ajuste do `generateProposalPdf` pras novas seções
-7. QA visual no preview
+- **Sem migration nova nessa rodada** — todas as tabelas já existem (`proposals`, `proposal_line_items`, `proposal_templates`, `proposal_catalog_items`, `document_templates`, `crm_forms`, `kanban_columns`).
+- **Reuso máximo**: `CrmLeadDetailView` orquestra; cada aba fica em arquivo próprio em `src/components/atendimento/tabs/` para reduzir o monstro de 1900 linhas atual.
+- **Pipeline horizontal**: novo componente `LeadStagePipeline.tsx`, usa `useKanbanColumns(workspaceId)` (já existe).
+- **Variáveis em branco**: lógica já parcialmente existe em `LeadDocumentosTab` (`buildVariableMap` + `CRITICAL_VARS`). Vou expor a lista completa de placeholders detectados no template.
+- **Editor rich text**: usa TipTap já presente em `IntroSection` (verifico se há dependência ou troco por implementação leve com `contenteditable` + comandos do form).
 
 ---
 
-## Pontos que precisam confirmação
+## Pontos para confirmar antes de começar
 
-- **Aceite público sem login**: confirmo que cliente informa **nome + CPF/CNPJ** (sem upload de RG, sem selfie). Aceite legal = clique + IP + timestamp + nome/doc autodeclarado. Ok?
-- **Permissão pra criar/editar template**: hoje só Master? Ou Admin/CEO do tenant também?
-- **Listagem nova vs atual**: posso substituir totalmente a tabela atual da `LeadPropostasTab` por essa nova, ou quer manter a antiga em paralelo?
-- **Versão de proposta**: ao "Duplicar" eu incremento `version` automaticamente, ou duplica como v1 nova?
+1. **Etapas do pipeline**: você quer que as etapas venham dinâmicas do `kanban_columns` do workspace, ou prefere fixar exatamente as 10 etapas que listou (Standby → ... → Assinatura Contrato) hardcoded?
+2. **Ordem de execução**: começo pela **Fase 1 (pipeline)** ou pela **Fase 4 (Arquivos + dropdown + modal variáveis)** que parece mais urgente pelos prints anteriores?
+3. **Aba "Transcrição" separada**: cria aba nova, ou junta dentro de Ligações como sub-seção?
+4. **Form de criação configurável (Fase 3)**: existe alguma tabela/coluna que liga formulário-de-criação ao workspace? Ou só mostro o estado vazio por enquanto?
