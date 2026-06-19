@@ -1576,8 +1576,8 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
       {/* View Dialog */}
       <Dialog open={!!viewDoc} onOpenChange={() => setViewDoc(null)}>
-        <DialogContent className="sm:max-w-3xl max-h-[85vh]">
-          <DialogHeader>
+        <DialogContent className="max-w-[95vw] w-[95vw] sm:max-w-[1200px] h-[95vh] p-4 flex flex-col gap-3">
+          <DialogHeader className="shrink-0">
             <DialogTitle className="text-base">
               {viewDoc?.nome}
               {viewDoc?.status === "signed" && viewDoc?.signed_pdf_url && (
@@ -1590,7 +1590,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
           {(() => {
             const pdfToShow = (viewDoc?.status === "signed" && viewDoc?.signed_pdf_url) ? viewDoc.signed_pdf_url : viewDoc?.pdf_url;
             return pdfToShow ? (
-              <div className="rounded-lg border overflow-hidden bg-muted/20" style={{ height: "600px" }}>
+              <div className="rounded-lg border overflow-hidden bg-muted/20 flex-1 min-h-0">
                 <iframe
                   src={`${pdfToShow}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`}
                   className="w-full h-full"
@@ -1599,13 +1599,14 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                 />
               </div>
             ) : viewDoc?.html_content ? (
-              <ScrollArea className="rounded-lg border bg-muted/20 h-[600px]">
+              <ScrollArea className="rounded-lg border bg-muted/20 flex-1 min-h-0">
                 <div className="p-6 prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(viewDoc.html_content) }} />
               </ScrollArea>
             ) : null;
           })()}
         </DialogContent>
       </Dialog>
+
 
       {/* Signature Drawer */}
       <Sheet open={signDrawerOpen} onOpenChange={setSignDrawerOpen}>
