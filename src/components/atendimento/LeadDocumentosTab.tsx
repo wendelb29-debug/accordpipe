@@ -863,6 +863,12 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
       while ((m = regex.exec(contentTemplate)) !== null) used.add(m[1].toLowerCase());
       (placeholderList || []).forEach((p) => used.add(p.toLowerCase()));
 
+      // Fallback: when template is file-based (no inline content/placeholders),
+      // still validate the critical vars before generating.
+      if (used.size === 0) {
+        CRITICAL_VARS.forEach((p) => used.add(p));
+      }
+
       const missing = Array.from(used).filter(
         (p) => !SIGNATURE_VARS.has(p) && !vars[`{{${p}}}`]
       );
