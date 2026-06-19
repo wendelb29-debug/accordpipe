@@ -18,7 +18,7 @@ export function ZuperProposalModule({ lead, servidorId }: { lead: LeadLite; serv
   const [refreshKey, setRefreshKey] = useState(0);
 
   return (
-    <div className="min-h-full w-full flex flex-col overflow-visible">
+    <div className="w-full">
       {view === "list" ? (
         <div className="p-4 w-full">
           <ZuperProposalList

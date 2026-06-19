@@ -309,10 +309,11 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
   };
 
   return (
-    <div className="flex min-h-full w-full flex-col bg-background">
+    <div className="w-full bg-background">
       {/* Content */}
-      <div className="w-full flex-1">
+      <div className="w-full">
         <div className="mx-auto max-w-5xl space-y-5 p-4 pb-24">
+
 
           {/* Resumo Financeiro */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
