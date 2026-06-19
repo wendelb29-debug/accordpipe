@@ -31,7 +31,7 @@ export function ZuperProposalModule({ lead, servidorId }: { lead: LeadLite; serv
           />
         </div>
       ) : (
-        <div className="w-full">
+        <div className="w-full flex-1 min-h-0 flex flex-col">
           <ZuperProposalForm
             lead={lead}
             servidorId={servidorId}
@@ -42,6 +42,7 @@ export function ZuperProposalModule({ lead, servidorId }: { lead: LeadLite; serv
           />
         </div>
       )}
+
 
       <NewProposalModal
         open={modalOpen}
