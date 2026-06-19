@@ -305,8 +305,10 @@ export function AccordAIChat() {
 
   const send = () => sendMessage(input);
 
-  // Hide completely when overlay is open on mobile, or when mobile keyboard is up
-  const shouldHide = (isMobile && hasOverlay) || (isMobile && keyboardOpen);
+  // Hide completely when overlay is open on mobile, mobile keyboard is up,
+  // or when an editing surface (proposal form, etc.) sets the body flag
+  const editingOverlayActive = typeof document !== "undefined" && document.body.dataset.editingOverlay === "true";
+  const shouldHide = (isMobile && hasOverlay) || (isMobile && keyboardOpen) || editingOverlayActive;
   if (shouldHide) return null;
 
   // Hide on settings routes (/configuracoes/*) UNLESS there's a WhatsApp notification
