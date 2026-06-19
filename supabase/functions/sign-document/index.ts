@@ -462,8 +462,17 @@ async function buildAuditPages(
       });
     }
 
+    // ICP-Brasil seal on each signed signer card (between text and selfie)
+    if (s.status === "signed") {
+      const sealR = 22;
+      const sealCx = M + CW - 10 - (selfieImg ? 90 + 12 : 0) - sealR - 12;
+      const sealCy = y - cardH + 14 + cardH / 2 + 4;
+      drawIcpSeal(page, sealCx, sealCy, sealR);
+    }
+
     y -= cardH + 14;
   }
+
 
 
   y -= 8;
