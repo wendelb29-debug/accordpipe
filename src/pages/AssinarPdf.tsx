@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Camera, MapPin, CheckCircle, Loader2, FileSignature, AlertCircle, Clock,
   Users, Shield, Download, Eye, ZoomIn, ZoomOut, ChevronDown, X
@@ -25,6 +25,7 @@ interface SignerInfo {
 
 export default function AssinarPdf() {
   const { token } = useParams<{ token: string }>();
+  const navigate = useNavigate();
   const [signer, setSigner] = useState<any>(null);
   const [contract, setContract] = useState<any>(null);
   const [allSigners, setAllSigners] = useState<SignerInfo[]>([]);
@@ -459,6 +460,16 @@ export default function AssinarPdf() {
   const progressPercent = allSigners.length > 0 ? (signedCount / allSigners.length) * 100 : 0;
   const companyName = companyBrand?.nome_fantasia || companyBrand?.razao_social || "Accord";
   const currentDate = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+
+  useEffect(() => {
+    if (!signed) return;
+    const code = (contract as any)?.validation_code || (contract as any)?.code;
+    if (!code) return;
+    const t = setTimeout(() => {
+      navigate(`/validar-documento/${code}`);
+    }, 2000);
+    return () => clearTimeout(t);
+  }, [signed, contract, navigate]);
 
   useEffect(() => {
     if (!signed || !contract?.id || contract?.pdf_assinado_url) return;
