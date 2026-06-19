@@ -704,9 +704,10 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     }
   }, [ensureDocumentPdfUrl]);
 
-  const handleGenerate = async () => {
-    if (!selectedTemplate) return toast.error("Selecione um modelo");
-    const template = templates.find((t) => t.id === selectedTemplate);
+  const handleGenerate = async (forcedTemplateId?: string) => {
+    const tid = forcedTemplateId || selectedTemplate;
+    if (!tid) return toast.error("Selecione um modelo");
+    const template = templates.find((t) => t.id === tid);
     if (!template) return;
     setGenerating(true);
 
