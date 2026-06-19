@@ -170,7 +170,7 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
   const removeItem = (idx: number) => setItems(prev => prev.filter((_, i) => i !== idx));
 
   // ----- Save -----
-  const handleSave = async (): Promise<ProposalRecord | null> => {
+  const handleSave = async (overrideStatus?: "draft" | "aberta"): Promise<ProposalRecord | null> => {
     if (!title.trim()) { toast.error("Informe o título da proposta"); return null; }
     if (items.length === 0) { toast.error("Adicione pelo menos um item"); return null; }
     setSaving(true);
