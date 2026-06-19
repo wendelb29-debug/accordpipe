@@ -711,9 +711,12 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
         <Button variant="outline" size="sm" onClick={handleGeneratePdf} className="gap-1">
           <FileDown className="h-4 w-4" /> Gerar PDF
         </Button>
-        <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1">
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Salvar Proposta
+        <Button variant="outline" size="sm" onClick={() => handleSave("draft")} disabled={saving} className="gap-1">
+          <Save className="h-4 w-4" /> Salvar rascunho
+        </Button>
+        <Button size="sm" onClick={() => handleSave("aberta")} disabled={saving} className="gap-1">
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck2 className="h-4 w-4" />}
+          Salvar e ativar
         </Button>
       </div>
     </div>
