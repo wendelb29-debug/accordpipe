@@ -1311,6 +1311,9 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                     placeholder="Escreva sua nota aqui..."
                     leadContext={`Empresa: ${lead.company_name}, Contato: ${lead.contact_name || "N/A"}, Etapa: ${lead.stage}, Valor MRR: ${lead.value_mrr}, Origem: ${lead.source}`}
                   />
+                  <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                    <ImageIcon className="h-3 w-3" /> Dica: Ctrl+V para colar imagem
+                  </p>
                   {noteImagePreview && (
                     <div className="relative inline-block">
                       <img src={noteImagePreview} alt="Preview" className="max-h-32 rounded-md border" />
