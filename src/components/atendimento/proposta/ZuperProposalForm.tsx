@@ -353,38 +353,52 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
             <CardContent className="p-4 space-y-3">
               <p className="font-semibold text-sm">Itens da Proposta</p>
 
-              <div className="flex items-end gap-2">
-                <div className="flex-1">
-                  <Label className="text-xs">Produto/Serviço</Label>
-                  <Select value={selectedCatalogId} onValueChange={setSelectedCatalogId}>
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder={catalog.length === 0 ? "Cadastre itens no catálogo" : "Buscar produtos/serviços..."} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredCatalog.map(c => {
-                        const tipo: ProposalItemType = (c.item_type === "mrr" || c.recurrence_type === "mensal" || c.recurrence_type === "recorrente") ? "mrr" : "servico";
-                        return (
-                          <SelectItem key={c.id} value={c.id}>
-                            <span className="flex items-center gap-2">
-                              <Badge variant="outline" className={`text-[10px] ${tipo === "mrr" ? "border-blue-500/40 text-blue-600" : "border-emerald-500/40 text-emerald-600"}`}>
-                                {tipo === "mrr" ? "MRR" : "Serviço"}
-                              </Badge>
-                              <span>{c.name}</span>
-                              <span className="text-muted-foreground">— {fmtCur(c.value)}</span>
-                            </span>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar produtos/serviços..."
+                    className="h-8 text-xs pl-8"
+                  />
                 </div>
-                <div className="w-20">
-                  <Label className="text-xs">Qtd</Label>
-                  <Input type="number" min={1} value={qtyInput} onChange={e => setQtyInput(parseInt(e.target.value) || 1)} className="h-8 text-xs" />
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <Label className="text-xs">Produto/Serviço</Label>
+                    <Select value={selectedCatalogId} onValueChange={setSelectedCatalogId}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder={catalog.length === 0 ? "Cadastre itens no catálogo" : `${filteredCatalog.length} item(ns) disponível(is)`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {filteredCatalog.length === 0 && (
+                          <div className="px-2 py-3 text-xs text-muted-foreground text-center">Nenhum item encontrado</div>
+                        )}
+                        {filteredCatalog.map(c => {
+                          const tipo: ProposalItemType = (c.item_type === "mrr" || c.recurrence_type === "mensal" || c.recurrence_type === "recorrente") ? "mrr" : "servico";
+                          return (
+                            <SelectItem key={c.id} value={c.id}>
+                              <span className="flex items-center gap-2">
+                                <Badge variant="outline" className={`text-[10px] ${tipo === "mrr" ? "border-blue-500/40 text-blue-600" : "border-emerald-500/40 text-emerald-600"}`}>
+                                  {tipo === "mrr" ? "MRR" : "Serviço"}
+                                </Badge>
+                                <span>{c.name}</span>
+                                <span className="text-muted-foreground">— {fmtCur(c.value)}</span>
+                              </span>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="w-20">
+                    <Label className="text-xs">Qtd</Label>
+                    <Input type="number" min={1} value={qtyInput} onChange={e => setQtyInput(parseInt(e.target.value) || 1)} className="h-8 text-xs" />
+                  </div>
+                  <Button size="sm" className="h-8 gap-1" onClick={addItemFromCatalog} disabled={!selectedCatalogId}>
+                    <Plus className="h-3.5 w-3.5" /> Adicionar Item
+                  </Button>
                 </div>
-                <Button size="sm" className="h-8 gap-1" onClick={addItemFromCatalog} disabled={!selectedCatalogId}>
-                  <Plus className="h-3.5 w-3.5" /> Adicionar
-                </Button>
               </div>
 
               {items.length > 0 && (
