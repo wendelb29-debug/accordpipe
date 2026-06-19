@@ -676,7 +676,7 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
       </div>
 
       {/* Sticky bottom bar */}
-      <div className="sticky bottom-0 z-10 border-t border-border bg-card/95 backdrop-blur p-3 flex items-center gap-2 flex-wrap">
+      <div className="shrink-0 border-t border-border bg-card/95 backdrop-blur p-3 flex items-center gap-2 flex-wrap">
         <Button variant="ghost" size="sm" onClick={onClose} className="gap-1">
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Button>
