@@ -655,6 +655,30 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
         <Button variant="ghost" size="sm" onClick={onClose} className="gap-1">
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Button>
+        <Select
+          value={activeTemplateId || "__none__"}
+          onValueChange={(v) => {
+            const id = v === "__none__" ? "" : v;
+            setActiveTemplateId(id);
+            const t = templates.find(t => t.id === id);
+            if (t) {
+              if (t.intro_html) setIntroHtml(t.intro_html);
+              if (t.observations) setObservations(t.observations);
+              if (t.default_validity_days) setValidityDays(t.default_validity_days);
+              toast.success(`Template "${t.name}" aplicado`);
+            }
+          }}
+        >
+          <SelectTrigger className="h-8 text-xs w-44">
+            <SelectValue placeholder="Sem template" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none__">Sem template</SelectItem>
+            {templates.map(t => (
+              <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <div className="flex-1" />
         <Button variant="outline" size="sm" onClick={handleCopyPublicLink} className="gap-1">
           <Link2 className="h-4 w-4" /> Link Público
