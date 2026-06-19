@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { RichTextEditor } from "./RichTextEditor";
 import type { ProposalLineItem, ProposalRecord, ProposalTemplate, PSPayment, MRRPayment, ProposalItemType } from "./types";
 import { calcItemTotal, calcTotals, fmtCur, generatePSInstallments, randomPublicToken } from "./utils";
+import { generateProposalPdf } from "@/lib/generateProposalPdf";
 
 interface CatalogItem {
   id: string; name: string; value: number; description: string | null;
@@ -304,8 +305,44 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
   const handleGeneratePdf = async () => {
     const saved = existingProposal || await handleSave();
     if (!saved) return;
-    toast.info("PDF: implementação básica — use a visualização pública por enquanto.");
-    window.open(`/p/proposta/${(saved as any).public_token}?print=1`, "_blank");
+    try {
+      const validUntil = new Date(
+        new Date(saved.created_date || createdDate).getTime() + (saved.validity_days || validityDays) * 86400000
+      ).toLocaleDateString("pt-BR");
+      await generateProposalPdf({
+        status: (saved.status as string) || "enviada",
+        logoUrl: company?.logo_url || null,
+        companyName: company?.nome_fantasia || company?.razao_social || "",
+        companyRazaoSocial: company?.razao_social || "",
+        companyCnpj: company?.cnpj || "",
+        companyEmail: company?.email || "",
+        companyPhone: company?.telefone || "",
+        reference: saved.control_code || "",
+        emissionDate: new Date(saved.created_date || createdDate).toLocaleDateString("pt-BR"),
+        validityDays: saved.validity_days || validityDays,
+        validUntil,
+        clientName: clientName || saved.titulo,
+        clientDocument: clientCompany || "",
+        vendorName: (profile?.name as string) || "",
+        vendorEmail: (user?.email as string) || "",
+        currency,
+        introduction: introHtml?.replace(/<[^>]*>/g, "") || "",
+        conditions: (observations || "").split("\n").filter(Boolean),
+        totalMrr: totals.mrr_monthly,
+        items: items.map(it => ({
+          name: it.name,
+          quantity: it.quantity,
+          unitValue: it.unit_value,
+          total: it.total,
+          discountValue: it.discount_value,
+          discountType: it.discount_type,
+        })),
+      }, `proposta-${saved.control_code || saved.id}.pdf`);
+      toast.success("PDF gerado!");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Erro ao gerar PDF");
+    }
   };
 
   return (
@@ -703,6 +740,28 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
               </div>
             </CardContent>
           </Card>
+
+          {/* Ações finais inline (abaixo de Observações) */}
+          <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleGeneratePdf}
+              disabled={saving}
+              className="gap-1"
+            >
+              <FileDown className="h-4 w-4" /> Baixar PDF
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => handleSave("aberta")}
+              disabled={saving}
+              className="gap-1"
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Salvar Proposta
+            </Button>
+          </div>
         </div>
       </div>
 
