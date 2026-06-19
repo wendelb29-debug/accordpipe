@@ -819,6 +819,69 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     }
   };
 
+  /** Quick-pick: chosen from the "Gerar Documento" dropdown. Runs context fetch,
+   *  detects ALL missing template variables and either opens the blank-vars modal
+   *  or generates immediately. */
+  const quickPickTemplate = async (template: Template) => {
+    setQuickPicking(template.id);
+    try {
+      const [tenantRes, activityRes, regRes] = await Promise.all([
+        supabase.from("companies").select(COMPANY_SAFE_COLUMNS).eq("id", servidorId).maybeSingle(),
+        supabase.from("crm_lead_activities").select("*").eq("lead_id", lead.id).eq("type", "proposal").order("created_at", { ascending: false }),
+        supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
+      ]);
+      const tenant: any = tenantRes.data;
+      const registration = regRes.data;
+      const activities = activityRes.data || [];
+      const acceptedActivity = activities.find((a: any) =>
+        ACCEPTED_STATUSES.has(((a.metadata as any)?.status || "").toLowerCase())
+      ) || activities[0] || null;
+      const proposal = activityToProposal(acceptedActivity);
+      let vendor: any = null;
+      if (acceptedActivity?.created_by_user_id) {
+        const { data: v } = await supabase
+          .from("profiles")
+          .select("name, email, whatsapp, birth_date")
+          .eq("user_id", acceptedActivity.created_by_user_id)
+          .maybeSingle();
+        vendor = v;
+      }
+      setPreviewTenant(tenant);
+      setPreviewProposal(proposal);
+      setPreviewVendor(vendor);
+      setPreviewRegistration(registration);
+      setSelectedTemplate(template.id);
+
+      const vars = buildVariableMap(lead, tenant, proposal, vendor, registration);
+      const contentTemplate = (template as any).content_template || "";
+      const placeholderList = (template as any).placeholders_json as string[] | null;
+
+      // Collect all placeholders used in the template
+      const used = new Set<string>();
+      const regex = /\{\{([a-z0-9_]+)\}\}/gi;
+      let m: RegExpExecArray | null;
+      while ((m = regex.exec(contentTemplate)) !== null) used.add(m[1].toLowerCase());
+      (placeholderList || []).forEach((p) => used.add(p.toLowerCase()));
+
+      const missing = Array.from(used).filter(
+        (p) => !SIGNATURE_VARS.has(p) && !vars[`{{${p}}}`]
+      );
+
+      if (missing.length > 0) {
+        setBlankVarsList(missing);
+        setBlankVarsTemplateId(template.id);
+        setBlankVarsOpen(true);
+      } else {
+        await handleGenerate(template.id);
+      }
+    } catch (err: any) {
+      toast.error("Erro ao preparar documento: " + (err.message || ""));
+    } finally {
+      setQuickPicking(null);
+    }
+  };
+
+
   const handleDelete = async (doc: GeneratedDoc) => {
     const { error } = await supabase.from("generated_documents").delete().eq("id", doc.id);
     if (error) return toast.error("Erro ao excluir documento");
