@@ -309,10 +309,10 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
   };
 
   return (
-    <div className="flex flex-col bg-background" style={{ height: "calc(100vh - 220px)" }}>
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto pr-1">
-        <div className="mx-auto max-w-5xl space-y-5 p-4 pb-4">
+    <div className="bg-background w-full">
+      {/* Content — scroll é do TabsContent pai */}
+      <div className="w-full">
+        <div className="mx-auto max-w-5xl space-y-5 p-4 pb-28">
 
 
           {/* Resumo Financeiro */}
