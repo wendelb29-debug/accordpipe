@@ -301,12 +301,33 @@ async function buildCoverPage(
 }
 
 // ─── Audit Details Pages (White Label) ───
-function buildAuditPages(
+async function buildAuditPages(
   pdfDoc: any, font: any, fontBold: any,
   doc: any, signersList: any[], events: any[],
   validationCode: string, docHash: string, publicUrl: string,
   P: BrandPalette,
 ) {
+  // Pre-fetch and embed selfies for each signer
+  const signerSelfies: (any | null)[] = [];
+  for (const s of signersList) {
+    if (!s?.selfie_url) {
+      signerSelfies.push(null);
+      continue;
+    }
+    try {
+      const r = await fetch(s.selfie_url);
+      if (!r.ok) throw new Error(`status ${r.status}`);
+      const buf = new Uint8Array(await r.arrayBuffer());
+      let img: any = null;
+      try { img = await pdfDoc.embedJpg(buf); }
+      catch { try { img = await pdfDoc.embedPng(buf); } catch { img = null; } }
+      signerSelfies.push(img);
+    } catch (e) {
+      console.error("Failed to embed selfie", e);
+      signerSelfies.push(null);
+    }
+  }
+
   let page = pdfDoc.addPage([W, H]);
   drawRect(page, 0, 0, W, H, P.darkBg);
   drawRect(page, 0, H - 4, W, 4, P.coverAccentBar);
