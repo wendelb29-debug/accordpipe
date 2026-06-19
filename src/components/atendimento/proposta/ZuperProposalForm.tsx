@@ -92,6 +92,14 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
         .eq("servidor_id", servidorId).eq("is_active", true).order("name");
       setCatalog((cat as any) || []);
 
+      const { data: tpls } = await supabase
+        .from("proposal_templates")
+        .select("*")
+        .eq("servidor_id", servidorId)
+        .eq("is_active", true)
+        .order("name");
+      setTemplates((tpls as any) || []);
+
       if (existingProposal?.id) {
         const { data: lines } = await supabase
           .from("proposal_line_items")
