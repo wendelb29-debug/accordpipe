@@ -1142,32 +1142,75 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
             )}
             Enviar Arquivo
           </Button>
-          <Button size="sm" className="gap-1.5 text-xs" onClick={async () => {
-            setGenerateOpen(true);
-            setCanGenerate(true);
-            setSelectedTemplate("");
-            // Pre-fetch tenant, proposal (from activities), vendor, registration for variable preview
-            const [tenantRes, activityRes, regRes] = await Promise.all([
-              supabase.from("companies").select(COMPANY_SAFE_COLUMNS).eq("id", servidorId).maybeSingle(),
-              supabase.from("crm_lead_activities").select("*").eq("lead_id", lead.id).eq("type", "proposal").order("created_at", { ascending: false }),
-              supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
-            ]);
-            setPreviewTenant(tenantRes.data as any);
-            setPreviewRegistration(regRes.data);
-            const activities = activityRes.data || [];
-            const acceptedActivity = activities.find((a: any) => ACCEPTED_STATUSES.has(((a.metadata as any)?.status || "").toLowerCase()))
-              || activities[0] || null;
-            const p = activityToProposal(acceptedActivity);
-            setPreviewProposal(p);
-            if (acceptedActivity?.created_by_user_id) {
-              const { data: v } = await supabase.from("profiles").select("name, email, whatsapp, birth_date").eq("user_id", acceptedActivity.created_by_user_id).maybeSingle();
-              setPreviewVendor(v);
-            } else {
-              setPreviewVendor(null);
-            }
-          }}>
-            <Plus className="h-3.5 w-3.5" /> Gerar Documento
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" className="gap-1.5 text-xs" disabled={!!quickPicking}>
+                {quickPicking ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Plus className="h-3.5 w-3.5" />
+                )}
+                Gerar Documento
+                <ChevronDown className="h-3 w-3 ml-0.5 opacity-70" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-72 max-h-80 overflow-y-auto">
+              {templates.length === 0 ? (
+                <div className="px-2 py-3 text-xs text-muted-foreground text-center">
+                  Nenhum modelo cadastrado
+                </div>
+              ) : (
+                <>
+                  <div className="px-2 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+                    Modelos disponíveis
+                  </div>
+                  {templates.map((t) => (
+                    <DropdownMenuItem
+                      key={t.id}
+                      onClick={() => quickPickTemplate(t)}
+                      disabled={!!quickPicking}
+                      className="flex flex-col items-start gap-0.5 py-2"
+                    >
+                      <div className="flex items-center gap-2 w-full">
+                        <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                        <span className="text-xs font-medium truncate flex-1">{t.nome}</span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground ml-5">
+                        {tipoLabels[t.tipo] || t.tipo}
+                      </span>
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={async () => {
+                  setGenerateOpen(true);
+                  setCanGenerate(true);
+                  setSelectedTemplate("");
+                  const [tenantRes, activityRes, regRes] = await Promise.all([
+                    supabase.from("companies").select(COMPANY_SAFE_COLUMNS).eq("id", servidorId).maybeSingle(),
+                    supabase.from("crm_lead_activities").select("*").eq("lead_id", lead.id).eq("type", "proposal").order("created_at", { ascending: false }),
+                    supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
+                  ]);
+                  setPreviewTenant(tenantRes.data as any);
+                  setPreviewRegistration(regRes.data);
+                  const activities = activityRes.data || [];
+                  const acceptedActivity = activities.find((a: any) => ACCEPTED_STATUSES.has(((a.metadata as any)?.status || "").toLowerCase())) || activities[0] || null;
+                  const p = activityToProposal(acceptedActivity);
+                  setPreviewProposal(p);
+                  if (acceptedActivity?.created_by_user_id) {
+                    const { data: v } = await supabase.from("profiles").select("name, email, whatsapp, birth_date").eq("user_id", acceptedActivity.created_by_user_id).maybeSingle();
+                    setPreviewVendor(v);
+                  } else {
+                    setPreviewVendor(null);
+                  }
+                }}
+              >
+                <Edit className="h-3.5 w-3.5 mr-2" /> Configuração avançada...
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
