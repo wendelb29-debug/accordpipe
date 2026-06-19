@@ -71,6 +71,12 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
 
   const [items, setItems] = useState<ProposalLineItem[]>([]);
 
+  // Editable client fields (auto-filled from lead, but user can override)
+  const [clientName, setClientName] = useState(lead.name || "");
+  const [clientEmail, setClientEmail] = useState(lead.email || "");
+  const [clientPhone, setClientPhone] = useState(lead.phone || "");
+  const [clientCompany, setClientCompany] = useState(lead.company_name || "");
+
   const [psPayment, setPsPayment] = useState<PSPayment>(
     (existingProposal?.ps_payment as PSPayment) || {
       method: "pix", mode: "vista", days_to_first: 0, installments: [],
