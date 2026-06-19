@@ -1211,7 +1211,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                   <StickyNote className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Notas
                 </TabsTrigger>
                 <TabsTrigger value="atividades" className="text-[11px] sm:text-xs gap-1">
-                  <Activity className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Atividades
+                  <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Agenda
                 </TabsTrigger>
                 <TabsTrigger value="ligacoes" className="text-[11px] sm:text-xs gap-1">
                   <PhoneCall className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Ligações
