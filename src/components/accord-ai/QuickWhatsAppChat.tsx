@@ -121,16 +121,29 @@ export function QuickWhatsAppChat({
     }
   };
 
+  // Hide the floating chat when an editing surface (e.g. proposal form) is active
+  const [hidden, setHidden] = useState<boolean>(
+    typeof document !== "undefined" && document.body.dataset.editingOverlay === "true"
+  );
+  useEffect(() => {
+    const check = () => setHidden(document.body.dataset.editingOverlay === "true");
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.body, { attributes: true, attributeFilter: ["data-editing-overlay"] });
+    return () => obs.disconnect();
+  }, []);
+  if (hidden) return null;
+
   return (
     <div
       className={cn(
-        "fixed z-50 rounded-2xl shadow-2xl border border-border bg-background flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300",
+        "fixed z-30 rounded-2xl shadow-2xl border border-border bg-background flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300",
         isMobile ? "inset-x-2 top-14 bottom-2" : "w-[380px] max-h-[540px]"
       )}
       style={
         !isMobile
-          ? { bottom: `${bottomOffset + 60}px`, right: 24 }
-          : { paddingBottom: "env(safe-area-inset-bottom, 0px)" }
+          ? { bottom: `${bottomOffset + 60}px`, right: 24, pointerEvents: "auto" }
+          : { paddingBottom: "env(safe-area-inset-bottom, 0px)", pointerEvents: "auto" }
       }
     >
       {/* Header — verde estilo WhatsApp */}
