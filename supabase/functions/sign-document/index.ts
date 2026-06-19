@@ -697,7 +697,7 @@ Deno.serve(async (req) => {
 
               // Build white-label certificate pages
               await buildCoverPage(pdfDoc, fontRegular, fontBoldEmb, { ...fullDoc, signed_at: signedAt }, validationCode, hashHex, publicUrl, palette, logoImage);
-              buildAuditPages(pdfDoc, fontRegular, fontBoldEmb, { ...fullDoc, signed_at: signedAt }, allSigners || [], eventsData || [], validationCode, hashHex, publicUrl, palette);
+              await buildAuditPages(pdfDoc, fontRegular, fontBoldEmb, { ...fullDoc, signed_at: signedAt }, allSigners || [], eventsData || [], validationCode, hashHex, publicUrl, palette);
 
               const finalPdfBytes = await pdfDoc.save();
               const signedPath = `signed/${signer.document_id}_${Date.now()}.pdf`;
