@@ -62,6 +62,12 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
   const [validityDays, setValidityDays] = useState<number>(existingProposal?.validity_days || initialTemplate?.default_validity_days || 30);
   const [introHtml, setIntroHtml] = useState(existingProposal?.intro_html || initialTemplate?.intro_html || "");
   const [observations, setObservations] = useState(existingProposal?.observations || initialTemplate?.observations || "");
+  const [includesSupport, setIncludesSupport] = useState<boolean>(
+    /inclui suporte/i.test(existingProposal?.observations || "")
+  );
+  const [includesTraining, setIncludesTraining] = useState<boolean>(
+    /inclui treinamento/i.test(existingProposal?.observations || "")
+  );
 
   const [items, setItems] = useState<ProposalLineItem[]>([]);
 
