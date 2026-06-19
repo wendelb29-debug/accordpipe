@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type WheelEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,7 +43,6 @@ interface Props {
 
 export function ZuperProposalForm({ lead, servidorId, existingProposal, initialTemplate, onClose, onSaved }: Props) {
   const { user, profile } = useAuth() as any;
-  const formScrollRef = useRef<HTMLDivElement>(null);
   const [saving, setSaving] = useState(false);
   const [company, setCompany] = useState<CompanyInfo | null>(null);
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
@@ -309,29 +308,10 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
     window.open(`/p/proposta/${(saved as any).public_token}?print=1`, "_blank");
   };
 
-  const handleFormWheel = (event: WheelEvent<HTMLDivElement>) => {
-    const scroller = formScrollRef.current;
-    if (!scroller) return;
-
-    const maxScrollTop = scroller.scrollHeight - scroller.clientHeight;
-    if (maxScrollTop <= 0) return;
-
-    const nextScrollTop = Math.max(0, Math.min(maxScrollTop, scroller.scrollTop + event.deltaY));
-    if (nextScrollTop !== scroller.scrollTop) {
-      event.preventDefault();
-      event.stopPropagation();
-      scroller.scrollTop = nextScrollTop;
-    }
-  };
-
   return (
-    <div className="flex flex-col bg-background h-full max-h-[calc(100dvh-150px)] min-h-0 w-full overflow-hidden">
+    <div className="flex min-h-full w-full flex-col bg-background">
       {/* Content */}
-      <div
-        ref={formScrollRef}
-        onWheelCapture={handleFormWheel}
-        className="flex-1 min-h-0 w-full overflow-y-scroll overscroll-contain scrollbar-visible"
-      >
+      <div className="w-full flex-1">
         <div className="mx-auto max-w-5xl space-y-5 p-4 pb-24">
 
           {/* Resumo Financeiro */}
@@ -726,7 +706,7 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
       </div>
 
       {/* Sticky bottom bar */}
-      <div className="shrink-0 border-t border-border bg-card/95 backdrop-blur p-3 flex items-center gap-2 flex-wrap">
+      <div className="sticky bottom-0 z-10 shrink-0 border-t border-border bg-card/95 backdrop-blur p-3 flex items-center gap-2 flex-wrap">
         <Button variant="ghost" size="sm" onClick={onClose} className="gap-1">
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Button>
