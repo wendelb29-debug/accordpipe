@@ -71,10 +71,30 @@ export function ZuperProposalList({ leadId, servidorId, onNew, onOpen, refreshKe
     load();
   };
 
-  const copyPublicLink = (token: string | null) => {
-    if (!token) { toast.error("Proposta sem link público"); return; }
-    navigator.clipboard.writeText(`${window.location.origin}/p/proposta/${token}`);
-    toast.success("Link copiado!");
+  const ensureToken = async (p: ProposalRecord): Promise<string | null> => {
+    if (p.public_token) return p.public_token;
+    const token = randomPublicToken();
+    const { error } = await supabase.from("proposals").update({ public_token: token }).eq("id", p.id);
+    if (error) { toast.error("Não foi possível gerar link"); return null; }
+    setProposals(prev => prev.map(x => x.id === p.id ? { ...x, public_token: token } as any : x));
+    return token;
+  };
+
+  const handleView = async (p: ProposalRecord) => {
+    const token = await ensureToken(p);
+    if (!token) return;
+    window.open(`${window.location.origin}/p/proposta/${token}`, "_blank");
+  };
+
+  const handleCopyLink = async (p: ProposalRecord) => {
+    const token = await ensureToken(p);
+    if (!token) return;
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/p/proposta/${token}`);
+      toast.success("Link copiado!");
+    } catch {
+      toast.error("Não foi possível copiar");
+    }
   };
 
   return (
