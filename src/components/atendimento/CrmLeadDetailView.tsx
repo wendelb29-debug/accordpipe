@@ -1837,10 +1837,20 @@ function ActivityFilteredList({ activities, loading, emptyLabel }: { activities:
     );
   }
   if (activities.length === 0) {
+    const isCalls = emptyLabel === "ligações";
     return (
-      <div className="text-center py-12 text-muted-foreground">
-        <StickyNote className="h-10 w-10 mx-auto mb-3 opacity-30" />
-        <p className="text-sm">Nenhuma {emptyLabel} registrada</p>
+      <div className="text-center py-12 text-muted-foreground max-w-md mx-auto">
+        {isCalls ? (
+          <PhoneCall className="h-10 w-10 mx-auto mb-3 opacity-30" />
+        ) : (
+          <StickyNote className="h-10 w-10 mx-auto mb-3 opacity-30" />
+        )}
+        <p className="text-sm font-medium">Nenhuma {emptyLabel} registrada</p>
+        {isCalls && (
+          <p className="text-xs mt-2 leading-relaxed">
+            Use o botão <PhoneCall className="inline h-3 w-3 mx-0.5" /> ao lado do telefone do contato para iniciar uma ligação. Ela aparecerá aqui automaticamente.
+          </p>
+        )}
       </div>
     );
   }
