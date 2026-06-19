@@ -328,10 +328,32 @@ async function buildAuditPages(
     }
   }
 
+  // ICP-Brasil seal drawing helper (circular badge)
+  function drawIcpSeal(p: any, cx: number, cy: number, r: number) {
+    const green = rgb(0.04, 0.42, 0.27);
+    const gold = rgb(0.98, 0.93, 0.78);
+    p.drawCircle({ x: cx, y: cy, size: r, color: gold, borderColor: green, borderWidth: 1.4 });
+    p.drawCircle({ x: cx, y: cy, size: r - 5, color: rgb(1, 1, 1), borderColor: green, borderWidth: 0.5 });
+    p.drawCircle({ x: cx, y: cy, size: r - 12, color: green });
+    const tw1 = fontBold.widthOfTextAtSize("ICP", 9);
+    p.drawText("ICP", { x: cx - tw1 / 2, y: cy + 1, size: 9, font: fontBold, color: rgb(1, 1, 1) });
+    const tw2 = fontBold.widthOfTextAtSize("BRASIL", 6);
+    p.drawText("BRASIL", { x: cx - tw2 / 2, y: cy - 7, size: 6, font: fontBold, color: rgb(1, 1, 1) });
+    const lbl = "Selo ICP-Brasil";
+    const lw = fontBold.widthOfTextAtSize(lbl, 6);
+    p.drawText(lbl, { x: cx - lw / 2, y: cy - r - 8, size: 6, font: fontBold, color: green });
+    const lbl2 = "Carimbo do Tempo";
+    const lw2 = font.widthOfTextAtSize(lbl2, 5);
+    p.drawText(lbl2, { x: cx - lw2 / 2, y: cy - r - 15, size: 5, font, color: P.lightGray });
+  }
+
   let page = pdfDoc.addPage([W, H]);
   drawRect(page, 0, 0, W, H, P.darkBg);
   drawRect(page, 0, H - 4, W, 4, P.coverAccentBar);
+  // ICP seal on the top-right corner of the first audit page
+  drawIcpSeal(page, W - 50, H - 55, 26);
   let y = H - 50;
+
 
   function newPage() {
     page = pdfDoc.addPage([W, H]);
