@@ -25,6 +25,7 @@ interface SignerInfo {
 
 export default function AssinarPdf() {
   const { token } = useParams<{ token: string }>();
+  const navigate = useNavigate();
   const [signer, setSigner] = useState<any>(null);
   const [contract, setContract] = useState<any>(null);
   const [allSigners, setAllSigners] = useState<SignerInfo[]>([]);
