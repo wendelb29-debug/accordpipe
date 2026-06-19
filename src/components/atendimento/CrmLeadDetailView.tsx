@@ -1220,7 +1220,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                   <FileSpreadsheet className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Propostas
                 </TabsTrigger>
                 <TabsTrigger value="docs" className="text-[11px] sm:text-xs gap-1">
-                  <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Docs
+                  <Paperclip className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Arquivos
                 </TabsTrigger>
                 {(isAdminPipeline || role === "administrativo" || role === "admin" || role === "ceo" || profile?.is_master) && (
                   <TabsTrigger value="pos-venda" className="text-[11px] sm:text-xs gap-1">
