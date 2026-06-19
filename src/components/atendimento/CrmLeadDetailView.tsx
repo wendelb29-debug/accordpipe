@@ -1234,7 +1234,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             </div>
 
             {/* Histórico - all activities */}
-            <TabsContent value="historico" className="flex-1 overflow-y-auto p-4 mt-0">
+            <TabsContent value="historico" className="flex-1 min-h-0 overflow-y-auto p-4 mt-0">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-semibold">Histórico</h3>
                 <Button size="sm" variant="outline" onClick={() => setShowActivityForm(!showActivityForm)} className="gap-1.5 text-xs">
@@ -1298,7 +1298,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             </TabsContent>
 
             {/* Notas - compose + list */}
-            <TabsContent value="notas" className="flex-1 overflow-y-auto p-4 mt-0">
+            <TabsContent value="notas" className="flex-1 min-h-0 overflow-y-auto p-4 mt-0">
               {/* Note compose area */}
               <Card className="mb-4">
                 <CardContent className="p-4 space-y-3">
@@ -1428,12 +1428,12 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             </TabsContent>
 
             {/* Atividades - rich tab */}
-            <TabsContent value="atividades" className="flex-1 overflow-y-auto p-4 mt-0">
+            <TabsContent value="atividades" className="flex-1 min-h-0 overflow-y-auto p-4 mt-0">
               <LeadAtividadesTab lead={lead} addActivity={addActivity} />
             </TabsContent>
 
             {/* Ligações - filtered */}
-            <TabsContent value="ligacoes" className="flex-1 overflow-y-auto p-4 mt-0">
+            <TabsContent value="ligacoes" className="flex-1 min-h-0 overflow-y-auto p-4 mt-0">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-sm font-semibold text-foreground">Ligações registradas</h3>
@@ -1459,7 +1459,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             </TabsContent>
 
              {/* Docs - Documentos Gerados + Arquivos */}
-            <TabsContent value="docs" className="flex-1 overflow-y-auto p-2 sm:p-4 mt-0 space-y-6">
+            <TabsContent value="docs" className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-4 mt-0 space-y-6">
               <LeadDocumentosTab lead={lead} addActivity={addActivity} />
               <LeadDocsTab lead={lead} />
             </TabsContent>
@@ -1467,13 +1467,13 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
              {/* Pós-Venda */}
             {(isAdminPipeline || role === "administrativo" || role === "admin" || role === "ceo" || profile?.is_master) && (
-              <TabsContent value="pos-venda" className="flex-1 overflow-y-auto p-4 mt-0">
+              <TabsContent value="pos-venda" className="flex-1 min-h-0 overflow-y-auto p-4 mt-0">
                 <LeadPosVendaTab lead={lead} />
               </TabsContent>
             )}
 
             {/* Conversa WhatsApp */}
-            <TabsContent value="conversa" className="flex-1 overflow-hidden p-0 mt-0">
+            <TabsContent value="conversa" className="flex-1 min-h-0 overflow-hidden p-0 mt-0">
               <div className="flex flex-col h-full">
                 <LeadWhatsAppTab lead={lead} onBack={() => setActiveTab("historico")} />
               </div>
