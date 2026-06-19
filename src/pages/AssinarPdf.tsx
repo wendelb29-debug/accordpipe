@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Camera, MapPin, CheckCircle, Loader2, FileSignature, AlertCircle, Clock,
   Users, Shield, Download, Eye, ZoomIn, ZoomOut, ChevronDown, X
