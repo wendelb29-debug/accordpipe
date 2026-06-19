@@ -189,7 +189,11 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
         titulo: title,
         descricao: introHtml,
         valor: totals.grand_total,
-        status: existingProposal?.status === "aprovada" ? "aprovada" : "aberta",
+        status: overrideStatus
+          ? overrideStatus
+          : existingProposal?.status === "aprovada"
+            ? "aprovada"
+            : existingProposal?.status || "aberta",
         version,
         control_code: controlCode,
         client_oc: clientOC || null,
@@ -197,7 +201,11 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
         created_date: createdDate,
         validity_days: validityDays,
         intro_html: introHtml,
-        observations: observations || null,
+        observations: [
+          observations || "",
+          includesSupport ? "Inclui suporte técnico." : "",
+          includesTraining ? "Inclui treinamento." : "",
+        ].filter(Boolean).join("\n").trim() || null,
         ps_payment: hasPS ? psPayment : {},
         mrr_payment: hasMRR ? mrrPayment : {},
         totals,
