@@ -30,7 +30,7 @@ export function ZuperProposalModule({ lead, servidorId }: { lead: LeadLite; serv
           />
         </div>
       ) : (
-        <div className="flex-1 min-h-0 h-full overflow-y-auto flex flex-col">
+        <div className="flex-1 min-h-0 h-full overflow-hidden flex flex-col">
           <ZuperProposalForm
             lead={lead}
             servidorId={servidorId}
