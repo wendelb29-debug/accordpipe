@@ -413,7 +413,7 @@ function buildSnapshot(vars: Record<string, string>) {
 }
 
 export function LeadDocumentosTab({ lead, addActivity }: Props) {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const companyId = useActiveCompanyId();
 
   const [documents, setDocuments] = useState<GeneratedDoc[]>([]);
@@ -534,7 +534,10 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         .replace(/[^a-zA-Z0-9_\-]/g, "_")
         .replace(/_+/g, "_")
         .substring(0, 100);
-      const filePath = `external/${servidorId}/${insertedDoc.id}_${safeName}.${ext}`;
+      // RLS exige que a primeira pasta seja auth.uid()
+      const ownerId = user?.id || profile?.user_id;
+      if (!ownerId) throw new Error("Usuário não autenticado");
+      const filePath = `${ownerId}/external/${servidorId}/${insertedDoc.id}_${safeName}.${ext}`;
 
       const { error: uploadErr } = await supabase.storage
         .from("contract-pdfs")
