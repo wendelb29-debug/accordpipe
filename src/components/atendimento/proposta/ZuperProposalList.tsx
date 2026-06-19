@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Eye, Edit, CopyPlus, Trash2, Loader2, Link2 } from "lucide-react";
+import { randomPublicToken } from "./utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { ProposalRecord } from "./types";
@@ -70,10 +71,30 @@ export function ZuperProposalList({ leadId, servidorId, onNew, onOpen, refreshKe
     load();
   };
 
-  const copyPublicLink = (token: string | null) => {
-    if (!token) { toast.error("Proposta sem link público"); return; }
-    navigator.clipboard.writeText(`${window.location.origin}/p/proposta/${token}`);
-    toast.success("Link copiado!");
+  const ensureToken = async (p: ProposalRecord): Promise<string | null> => {
+    if (p.public_token) return p.public_token;
+    const token = randomPublicToken();
+    const { error } = await supabase.from("proposals").update({ public_token: token }).eq("id", p.id);
+    if (error) { toast.error("Não foi possível gerar link"); return null; }
+    setProposals(prev => prev.map(x => x.id === p.id ? { ...x, public_token: token } as any : x));
+    return token;
+  };
+
+  const handleView = async (p: ProposalRecord) => {
+    const token = await ensureToken(p);
+    if (!token) return;
+    window.open(`${window.location.origin}/p/proposta/${token}`, "_blank");
+  };
+
+  const handleCopyLink = async (p: ProposalRecord) => {
+    const token = await ensureToken(p);
+    if (!token) return;
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/p/proposta/${token}`);
+      toast.success("Link copiado!");
+    } catch {
+      toast.error("Não foi possível copiar");
+    }
   };
 
   return (
@@ -143,10 +164,10 @@ export function ZuperProposalList({ leadId, servidorId, onNew, onOpen, refreshKe
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => onOpen(p)}><Edit className="h-3.5 w-3.5 mr-2" /> Editar</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => window.open(`/p/proposta/${p.public_token}`, "_blank")} disabled={!p.public_token}>
+                          <DropdownMenuItem onClick={() => handleView(p)}>
                             <Eye className="h-3.5 w-3.5 mr-2" /> Visualizar
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => copyPublicLink(p.public_token)}><Link2 className="h-3.5 w-3.5 mr-2" /> Copiar link</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleCopyLink(p)}><Link2 className="h-3.5 w-3.5 mr-2" /> Copiar link</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleDuplicate(p)}><CopyPlus className="h-3.5 w-3.5 mr-2" /> Duplicar</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleDelete(p.id)} className="text-destructive"><Trash2 className="h-3.5 w-3.5 mr-2" /> Excluir</DropdownMenuItem>
                         </DropdownMenuContent>
