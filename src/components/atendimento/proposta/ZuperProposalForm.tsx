@@ -45,6 +45,8 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
   const [saving, setSaving] = useState(false);
   const [company, setCompany] = useState<CompanyInfo | null>(null);
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
+  const [templates, setTemplates] = useState<ProposalTemplate[]>([]);
+  const [activeTemplateId, setActiveTemplateId] = useState<string>(existingProposal?.template_id || initialTemplate?.id || "");
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [qtyInput, setQtyInput] = useState(1);
@@ -89,6 +91,14 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
         .select("id, name, value, description, item_type, recurrence_type, is_active")
         .eq("servidor_id", servidorId).eq("is_active", true).order("name");
       setCatalog((cat as any) || []);
+
+      const { data: tpls } = await supabase
+        .from("proposal_templates")
+        .select("*")
+        .eq("servidor_id", servidorId)
+        .eq("is_active", true)
+        .order("name");
+      setTemplates((tpls as any) || []);
 
       if (existingProposal?.id) {
         const { data: lines } = await supabase
@@ -259,6 +269,30 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
       <div className="flex-1 min-h-0 overflow-y-auto">
         <div className="mx-auto max-w-5xl space-y-5 p-4 pb-24">
 
+          {/* Resumo Financeiro */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Card>
+              <CardContent className="p-3">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">P&amp;S</p>
+                <p className="text-base font-semibold mt-0.5">{fmtCur(totals.ps_total)}</p>
+                <p className="text-[11px] text-muted-foreground">{items.filter(i => i.item_type === "servico").length} item(ns)</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-3">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">MRR</p>
+                <p className="text-base font-semibold mt-0.5">{fmtCur(totals.mrr_monthly)}<span className="text-xs text-muted-foreground font-normal">/mês</span></p>
+                <p className="text-[11px] text-muted-foreground">{items.filter(i => i.item_type === "mrr").length} item(ns)</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-muted/30">
+              <CardContent className="p-3">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Total Geral</p>
+                <p className="text-base font-semibold mt-0.5">{fmtCur(totals.grand_total)}</p>
+                <p className="text-[11px] text-muted-foreground italic">Valores totais da proposta</p>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Header section */}
           <Card>
@@ -353,38 +387,52 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
             <CardContent className="p-4 space-y-3">
               <p className="font-semibold text-sm">Itens da Proposta</p>
 
-              <div className="flex items-end gap-2">
-                <div className="flex-1">
-                  <Label className="text-xs">Produto/Serviço</Label>
-                  <Select value={selectedCatalogId} onValueChange={setSelectedCatalogId}>
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder={catalog.length === 0 ? "Cadastre itens no catálogo" : "Buscar produtos/serviços..."} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredCatalog.map(c => {
-                        const tipo: ProposalItemType = (c.item_type === "mrr" || c.recurrence_type === "mensal" || c.recurrence_type === "recorrente") ? "mrr" : "servico";
-                        return (
-                          <SelectItem key={c.id} value={c.id}>
-                            <span className="flex items-center gap-2">
-                              <Badge variant="outline" className={`text-[10px] ${tipo === "mrr" ? "border-blue-500/40 text-blue-600" : "border-emerald-500/40 text-emerald-600"}`}>
-                                {tipo === "mrr" ? "MRR" : "Serviço"}
-                              </Badge>
-                              <span>{c.name}</span>
-                              <span className="text-muted-foreground">— {fmtCur(c.value)}</span>
-                            </span>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar produtos/serviços..."
+                    className="h-8 text-xs pl-8"
+                  />
                 </div>
-                <div className="w-20">
-                  <Label className="text-xs">Qtd</Label>
-                  <Input type="number" min={1} value={qtyInput} onChange={e => setQtyInput(parseInt(e.target.value) || 1)} className="h-8 text-xs" />
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <Label className="text-xs">Produto/Serviço</Label>
+                    <Select value={selectedCatalogId} onValueChange={setSelectedCatalogId}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder={catalog.length === 0 ? "Cadastre itens no catálogo" : `${filteredCatalog.length} item(ns) disponível(is)`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {filteredCatalog.length === 0 && (
+                          <div className="px-2 py-3 text-xs text-muted-foreground text-center">Nenhum item encontrado</div>
+                        )}
+                        {filteredCatalog.map(c => {
+                          const tipo: ProposalItemType = (c.item_type === "mrr" || c.recurrence_type === "mensal" || c.recurrence_type === "recorrente") ? "mrr" : "servico";
+                          return (
+                            <SelectItem key={c.id} value={c.id}>
+                              <span className="flex items-center gap-2">
+                                <Badge variant="outline" className={`text-[10px] ${tipo === "mrr" ? "border-blue-500/40 text-blue-600" : "border-emerald-500/40 text-emerald-600"}`}>
+                                  {tipo === "mrr" ? "MRR" : "Serviço"}
+                                </Badge>
+                                <span>{c.name}</span>
+                                <span className="text-muted-foreground">— {fmtCur(c.value)}</span>
+                              </span>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="w-20">
+                    <Label className="text-xs">Qtd</Label>
+                    <Input type="number" min={1} value={qtyInput} onChange={e => setQtyInput(parseInt(e.target.value) || 1)} className="h-8 text-xs" />
+                  </div>
+                  <Button size="sm" className="h-8 gap-1" onClick={addItemFromCatalog} disabled={!selectedCatalogId}>
+                    <Plus className="h-3.5 w-3.5" /> Adicionar Item
+                  </Button>
                 </div>
-                <Button size="sm" className="h-8 gap-1" onClick={addItemFromCatalog} disabled={!selectedCatalogId}>
-                  <Plus className="h-3.5 w-3.5" /> Adicionar
-                </Button>
               </div>
 
               {items.length > 0 && (
@@ -607,6 +655,30 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
         <Button variant="ghost" size="sm" onClick={onClose} className="gap-1">
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Button>
+        <Select
+          value={activeTemplateId || "__none__"}
+          onValueChange={(v) => {
+            const id = v === "__none__" ? "" : v;
+            setActiveTemplateId(id);
+            const t = templates.find(t => t.id === id);
+            if (t) {
+              if (t.intro_html) setIntroHtml(t.intro_html);
+              if (t.observations) setObservations(t.observations);
+              if (t.default_validity_days) setValidityDays(t.default_validity_days);
+              toast.success(`Template "${t.name}" aplicado`);
+            }
+          }}
+        >
+          <SelectTrigger className="h-8 text-xs w-44">
+            <SelectValue placeholder="Sem template" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none__">Sem template</SelectItem>
+            {templates.map(t => (
+              <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <div className="flex-1" />
         <Button variant="outline" size="sm" onClick={handleCopyPublicLink} className="gap-1">
           <Link2 className="h-4 w-4" /> Link Público
