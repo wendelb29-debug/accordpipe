@@ -1,4 +1,73 @@
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { PDFDocument, rgb, StandardFonts, degrees } from "pdf-lib";
+import { supabase } from "@/integrations/supabase/client";
+
+/**
+ * Try to refresh a signed Supabase storage URL (signatures bucket) when fetch fails.
+ * Extracts the path from a previously stored signed URL like:
+ *   https://<proj>.supabase.co/storage/v1/object/sign/<bucket>/<path>?token=...
+ */
+async function refreshSignedPhotoUrl(url: string): Promise<string | null> {
+  try {
+    const u = new URL(url);
+    const match = u.pathname.match(/\/storage\/v1\/object\/(?:sign|public)\/([^/]+)\/(.+)$/);
+    if (!match) return null;
+    const [, bucket, path] = match;
+    const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
+    return data?.signedUrl || null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchPhotoBytes(url: string): Promise<Uint8Array | null> {
+  const tryFetch = async (u: string) => {
+    const r = await fetch(u, { cache: "no-store" });
+    if (!r.ok) throw new Error(`status ${r.status}`);
+    return new Uint8Array(await r.arrayBuffer());
+  };
+  try {
+    return await tryFetch(url);
+  } catch (e) {
+    const fresh = await refreshSignedPhotoUrl(url);
+    if (!fresh) return null;
+    try {
+      return await tryFetch(fresh);
+    } catch {
+      return null;
+    }
+  }
+}
+
+/** Draws a circular ICP-Brasil seal centered at (cx, cy) with radius r */
+function drawIcpSeal(
+  page: any,
+  font: any,
+  fontBold: any,
+  cx: number,
+  cy: number,
+  r: number,
+) {
+  const green = rgb(0.04, 0.42, 0.27);
+  const goldBg = rgb(0.98, 0.93, 0.78);
+  // Outer ring
+  page.drawCircle({ x: cx, y: cy, size: r, color: goldBg, borderColor: green, borderWidth: 1.5 });
+  // Inner ring
+  page.drawCircle({ x: cx, y: cy, size: r - 6, borderColor: green, borderWidth: 0.6, color: rgb(1, 1, 1) });
+  // Center crest
+  page.drawCircle({ x: cx, y: cy, size: r - 14, color: green });
+  // ICP text
+  const tw1 = fontBold.widthOfTextAtSize("ICP", 10);
+  page.drawText("ICP", { x: cx - tw1 / 2, y: cy + 2, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+  const tw2 = fontBold.widthOfTextAtSize("BRASIL", 7);
+  page.drawText("BRASIL", { x: cx - tw2 / 2, y: cy - 8, size: 7, font: fontBold, color: rgb(1, 1, 1) });
+  // Bottom label outside circle
+  const lbl = "Selo ICP-Brasil";
+  const lw = fontBold.widthOfTextAtSize(lbl, 7);
+  page.drawText(lbl, { x: cx - lw / 2, y: cy - r - 9, size: 7, font: fontBold, color: green });
+  const lbl2 = "Carimbo do Tempo";
+  const lw2 = font.widthOfTextAtSize(lbl2, 6);
+  page.drawText(lbl2, { x: cx - lw2 / 2, y: cy - r - 17, size: 6, font, color: rgb(0.3, 0.3, 0.3) });
+}
 
 interface SignerData {
   id?: string;
@@ -61,16 +130,9 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
       signerPhotos.push(null);
       continue;
     }
-
-    try {
-      const resp = await fetch(signer.signature_photo_url);
-      const blob = await resp.blob();
-      const buffer = await blob.arrayBuffer();
-      signerPhotos.push(new Uint8Array(buffer));
-    } catch {
-      signerPhotos.push(null);
-    }
+    signerPhotos.push(await fetchPhotoBytes(signer.signature_photo_url));
   }
+
 
   // ── Signature page: dedicated page for all signed signers ──
   const signedSigners = data.signers.filter((signer) => Boolean(signer.signed_at));
@@ -121,7 +183,7 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
       if (signer.email) fieldCount++;
       if (signer.company_name) fieldCount++;
       if (signer.ip) fieldCount++;
-      const stampH = Math.max(100, 24 + fieldCount * 12);
+      const stampH = Math.max(110, 24 + fieldCount * 12);
 
       currentPage.drawRectangle({
         x: stampX,
@@ -152,6 +214,13 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
           // ignore
         }
       }
+
+      // ICP-Brasil seal on the right side of the stamp
+      const sealR = 28;
+      const sealCx = stampX + stampW - sealR - 14;
+      const sealCy = sy - stampH / 2 + 6;
+      drawIcpSeal(currentPage, font, fontBold, sealCx, sealCy, sealR);
+
 
       const textX = stampX + textOffsetX;
       let ty = sy;
@@ -225,6 +294,12 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
     color: rgb(0.4, 0.4, 0.4),
   });
   y -= 20;
+
+  // ICP-Brasil seal in the top-right corner of the proof page
+  if (signedSigners.length > 0) {
+    drawIcpSeal(proofPage, font, fontBold, pw - 70, ph - 70, 36);
+  }
+
 
   proofPage.drawText("Validade Jurídica", {
     x: 30,
