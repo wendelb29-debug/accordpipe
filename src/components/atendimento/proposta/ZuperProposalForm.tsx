@@ -269,6 +269,30 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
       <div className="flex-1 min-h-0 overflow-y-auto">
         <div className="mx-auto max-w-5xl space-y-5 p-4 pb-24">
 
+          {/* Resumo Financeiro */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Card>
+              <CardContent className="p-3">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">P&amp;S</p>
+                <p className="text-base font-semibold mt-0.5">{fmtCur(totals.ps_total)}</p>
+                <p className="text-[11px] text-muted-foreground">{items.filter(i => i.item_type === "servico").length} item(ns)</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-3">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">MRR</p>
+                <p className="text-base font-semibold mt-0.5">{fmtCur(totals.mrr_monthly)}<span className="text-xs text-muted-foreground font-normal">/mês</span></p>
+                <p className="text-[11px] text-muted-foreground">{items.filter(i => i.item_type === "mrr").length} item(ns)</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-muted/30">
+              <CardContent className="p-3">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Total Geral</p>
+                <p className="text-base font-semibold mt-0.5">{fmtCur(totals.grand_total)}</p>
+                <p className="text-[11px] text-muted-foreground italic">Valores totais da proposta</p>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Header section */}
           <Card>
