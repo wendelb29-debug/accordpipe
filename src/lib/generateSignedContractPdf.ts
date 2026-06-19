@@ -183,7 +183,7 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
       if (signer.email) fieldCount++;
       if (signer.company_name) fieldCount++;
       if (signer.ip) fieldCount++;
-      const stampH = Math.max(100, 24 + fieldCount * 12);
+      const stampH = Math.max(110, 24 + fieldCount * 12);
 
       currentPage.drawRectangle({
         x: stampX,
@@ -214,6 +214,13 @@ export async function generateSignedContractPdf(data: SignedContractPdfData): Pr
           // ignore
         }
       }
+
+      // ICP-Brasil seal on the right side of the stamp
+      const sealR = 28;
+      const sealCx = stampX + stampW - sealR - 14;
+      const sealCy = sy - stampH / 2 + 6;
+      drawIcpSeal(currentPage, font, fontBold, sealCx, sealCy, sealR);
+
 
       const textX = stampX + textOffsetX;
       let ty = sy;
