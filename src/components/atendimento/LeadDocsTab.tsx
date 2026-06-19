@@ -278,7 +278,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
       const documentHash = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, "0")).join("");
       const validationCode = documentHash.substring(0, 12).toUpperCase();
 
-      const [proposalActivitiesRes, tenantRes, registrationRes] = await Promise.all([
+      const [proposalActivitiesRes, tenantRes, registrationRes, zuperProposalsRes] = await Promise.all([
         supabase
           .from("crm_lead_activities")
           .select("*")
@@ -287,14 +287,54 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
           .order("created_at", { ascending: false }),
         supabase.from("companies").select(COMPANY_SAFE_COLUMNS).eq("id", lead.servidor_id).maybeSingle(),
         supabase.from("crm_client_registrations").select("*").eq("lead_id", lead.id).maybeSingle(),
+        supabase
+          .from("proposals")
+          .select("*")
+          .eq("lead_id", lead.id)
+          .order("created_at", { ascending: false }),
       ]);
 
-      const activities = proposalActivitiesRes.data || [];
-      const selectedActivity = activities.find(
-        (p: any) => ACCEPTED_STATUSES.has(String((p.metadata as any)?.status || "").toLowerCase())
-      ) || activities[0] || null;
+      // Prefer approved proposal from new Zuper proposals table
+      const zuperList = (zuperProposalsRes.data as any[]) || [];
+      const approvedZuper = zuperList.find((p) => p.status === "aprovada") || zuperList.find((p) => p.status === "aberta") || zuperList[0] || null;
 
-      const proposal = activityToProposal(selectedActivity);
+      let proposal: any = null;
+      if (approvedZuper) {
+        const { data: liData } = await supabase
+          .from("proposal_line_items")
+          .select("*")
+          .eq("proposal_id", approvedZuper.id)
+          .order("position", { ascending: true });
+        const items = (liData as any[]) || [];
+        const totals = (approvedZuper.totals as any) || {};
+        const psPay = (approvedZuper.ps_payment as any) || {};
+        const mrrPay = (approvedZuper.mrr_payment as any) || {};
+        proposal = {
+          id: approvedZuper.id,
+          titulo: approvedZuper.titulo,
+          descricao: approvedZuper.intro_html || approvedZuper.descricao || "",
+          valor: totals.grand_total || approvedZuper.valor || 0,
+          created_by_user_id: approvedZuper.created_by_user_id,
+          proposal_items: items.map((it: any) => ({
+            nome: it.name || "",
+            descricao: it.description || "",
+            quantidade: Number(it.quantity) || 1,
+            valor: Number(it.total) || 0,
+          })),
+          installments: psPay.installments || mrrPay.installments || [],
+          payment_frequency: mrrPay.frequency || psPay.frequency || "",
+          number_of_installments: psPay.installments_count || mrrPay.installments_count || 1,
+          sigla: approvedZuper.control_code || "",
+          first_payment_date: psPay.first_due_date || mrrPay.first_due_date || "",
+          payment_method: psPay.method || mrrPay.method || "",
+        };
+      } else {
+        const activities = proposalActivitiesRes.data || [];
+        const selectedActivity = activities.find(
+          (p: any) => ACCEPTED_STATUSES.has(String((p.metadata as any)?.status || "").toLowerCase())
+        ) || activities[0] || null;
+        proposal = activityToProposal(selectedActivity);
+      }
       const tenant: any = tenantRes.data;
       const registration = registrationRes.data;
 
