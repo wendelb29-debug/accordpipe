@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type WheelEvent } from "react";
 import {
   ArrowLeft, Building2, User, Mail, Phone as PhoneIcon, MapPin, Calendar, Calculator,
   DollarSign, Clock, Tag, StickyNote, CheckCircle, XCircle, Plus,
@@ -202,6 +202,16 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
   const [editingNoteText, setEditingNoteText] = useState("");
   const [savingEditNote, setSavingEditNote] = useState(false);
   const noteFileRef = useRef<HTMLInputElement>(null);
+  const propostasScrollRef = useRef<HTMLDivElement>(null);
+
+  const handlePropostasWheel = (event: WheelEvent<HTMLDivElement>) => {
+    const panel = propostasScrollRef.current;
+    if (!panel || panel.scrollHeight <= panel.clientHeight) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    panel.scrollTop += event.deltaY;
+  };
 
   useEffect(() => {
     if (!editing) {
@@ -1454,7 +1464,12 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
 
             {/* Propostas */}
-            <TabsContent value="propostas" className="flex-1 min-h-0 overflow-y-scroll overscroll-contain scrollbar-visible p-0 mt-0 w-full max-w-full focus-visible:outline-none flex flex-col data-[state=inactive]:hidden">
+            <TabsContent
+              ref={propostasScrollRef}
+              value="propostas"
+              onWheelCapture={handlePropostasWheel}
+              className="flex-1 h-full max-h-full min-h-0 overflow-y-scroll overscroll-contain scrollbar-visible p-0 mt-0 w-full max-w-full focus-visible:outline-none flex flex-col data-[state=inactive]:hidden"
+            >
               <LeadPropostasTab lead={lead} addActivity={addActivity} onUpdateLead={onUpdate} />
             </TabsContent>
 

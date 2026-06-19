@@ -309,7 +309,7 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
   };
 
   return (
-    <div className="flex flex-col bg-background min-h-full w-full">
+    <div className="flex flex-col bg-background min-h-full w-full overflow-visible">
       {/* Content */}
       <div
         className="w-full overflow-visible"
