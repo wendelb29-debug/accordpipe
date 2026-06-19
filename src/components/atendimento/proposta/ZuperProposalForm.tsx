@@ -654,12 +654,22 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
             </Card>
           )}
 
-          {/* Observações */}
+          {/* Observações + Condições */}
           <Card>
-            <CardContent className="p-4 space-y-2">
-              <p className="font-semibold text-sm">Observações</p>
+            <CardContent className="p-4 space-y-3">
+              <p className="font-semibold text-sm">Observações e condições</p>
               <Textarea value={observations} onChange={e => setObservations(e.target.value)}
                 placeholder="Condições e termos adicionais..." rows={4} className="text-xs" />
+              <div className="flex flex-wrap items-center gap-4 pt-1">
+                <label className="flex items-center gap-2 text-xs cursor-pointer">
+                  <Checkbox checked={includesSupport} onCheckedChange={(c) => setIncludesSupport(!!c)} />
+                  Inclui suporte técnico
+                </label>
+                <label className="flex items-center gap-2 text-xs cursor-pointer">
+                  <Checkbox checked={includesTraining} onCheckedChange={(c) => setIncludesTraining(!!c)} />
+                  Inclui treinamento
+                </label>
+              </div>
             </CardContent>
           </Card>
         </div>
