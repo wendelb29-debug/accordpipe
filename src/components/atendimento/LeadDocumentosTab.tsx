@@ -432,6 +432,12 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
   const [canGenerate, setCanGenerate] = useState(true);
   const [confirmMissingOpen, setConfirmMissingOpen] = useState(false);
 
+  // Quick-pick: blank-variables modal (lists ALL missing template variables, not just critical)
+  const [blankVarsOpen, setBlankVarsOpen] = useState(false);
+  const [blankVarsList, setBlankVarsList] = useState<string[]>([]);
+  const [blankVarsTemplateId, setBlankVarsTemplateId] = useState<string | null>(null);
+  const [quickPicking, setQuickPicking] = useState<string | null>(null);
+
   // View
   const [viewDoc, setViewDoc] = useState<GeneratedDoc | null>(null);
 
