@@ -1321,7 +1321,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                 Gerar com dados ausentes
               </Button>
             ) : (
-              <Button size="sm" onClick={handleGenerate} disabled={generating || !selectedTemplate}>
+              <Button size="sm" onClick={() => handleGenerate()} disabled={generating || !selectedTemplate}>
                 {generating && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
                 Gerar Documento
               </Button>
