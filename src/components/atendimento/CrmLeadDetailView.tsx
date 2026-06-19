@@ -118,7 +118,7 @@ const activityTypeLabels: Record<string, string> = {
   activity_reopened: "Atividade Reaberta",
 };
 
-const leadTabScrollClass = "lead-tab-scroll flex-1 basis-0 min-h-0 overflow-y-scroll overscroll-contain mt-0";
+const leadTabScrollClass = "flex-1 h-full min-h-0 overflow-y-auto overscroll-contain scrollbar-visible mt-0";
 
 const fieldLabels: Record<string, string> = {
   company_name: "Empresa",
@@ -1201,8 +1201,8 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         </div>
 
         {/* Main Content - Tabs */}
-        <div className="flex-1 basis-0 min-h-0 overflow-hidden flex flex-col">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 basis-0 min-h-0 flex flex-col overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 min-h-0 flex flex-col overflow-hidden">
             <div className="shrink-0 overflow-x-auto scrollbar-hide border-b bg-card">
               <TabsList className="w-max sm:w-full justify-start rounded-none bg-card px-3 sm:px-4 h-10">
                 <TabsTrigger value="historico" className="text-[11px] sm:text-xs gap-1">
@@ -1477,7 +1477,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             )}
 
             {/* Conversa WhatsApp */}
-            <TabsContent value="conversa" className={`${leadTabScrollClass} p-0`}>
+            <TabsContent value="conversa" className="flex-1 min-h-0 overflow-hidden p-0 mt-0">
               <div className="flex flex-col h-full min-h-0">
                 <LeadWhatsAppTab lead={lead} onBack={() => setActiveTab("historico")} />
               </div>
