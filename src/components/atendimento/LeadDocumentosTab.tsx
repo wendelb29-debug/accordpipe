@@ -1498,6 +1498,73 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Quick-pick: Variáveis em branco modal */}
+      <AlertDialog open={blankVarsOpen} onOpenChange={setBlankVarsOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
+              <AlertCircle className="h-5 w-5" />
+              Variáveis em branco
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>As seguintes variáveis não possuem dados:</p>
+                <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10 p-3">
+                  <div className="flex flex-wrap gap-1.5">
+                    {blankVarsList.map((v) => {
+                      const friendly: Record<string, string> = {
+                        nome_completo: "Nome do cliente",
+                        documento_contratante: "CPF/CNPJ do contratante",
+                        tenant_nome: "Nome do Tenant",
+                        tenant_cnpj: "CNPJ do Tenant",
+                        company_cnpj: "CNPJ",
+                        client_name: "Nome do cliente",
+                        client_email: "E-mail do cliente",
+                        client_phone: "Telefone do cliente",
+                        endereco: "Endereço",
+                        cep: "CEP",
+                        cidade: "Cidade",
+                        estado: "Estado",
+                      };
+                      const label = friendly[v] || v.replace(/_/g, " ");
+                      return (
+                        <code
+                          key={v}
+                          className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded"
+                        >
+                          {`{{${v}}}`} — {label}
+                        </code>
+                      );
+                    })}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Os campos em branco aparecerão vazios no documento final.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setBlankVarsOpen(false); setBlankVarsTemplateId(null); }}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-primary hover:bg-primary/90"
+              onClick={() => {
+                const tid = blankVarsTemplateId;
+                setBlankVarsOpen(false);
+                setBlankVarsTemplateId(null);
+                if (tid) handleGenerate(tid);
+              }}
+            >
+              Gerar assim mesmo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
+
       {/* View Dialog */}
       <Dialog open={!!viewDoc} onOpenChange={() => setViewDoc(null)}>
         <DialogContent className="sm:max-w-3xl max-h-[85vh]">
