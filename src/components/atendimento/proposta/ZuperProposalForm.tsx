@@ -740,6 +740,28 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
               </div>
             </CardContent>
           </Card>
+
+          {/* Ações finais inline (abaixo de Observações) */}
+          <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleGeneratePdf}
+              disabled={saving}
+              className="gap-1"
+            >
+              <FileDown className="h-4 w-4" /> Baixar PDF
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => handleSave("aberta")}
+              disabled={saving}
+              className="gap-1"
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Salvar Proposta
+            </Button>
+          </div>
         </div>
       </div>
 
