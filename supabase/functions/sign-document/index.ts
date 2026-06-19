@@ -301,12 +301,33 @@ async function buildCoverPage(
 }
 
 // ─── Audit Details Pages (White Label) ───
-function buildAuditPages(
+async function buildAuditPages(
   pdfDoc: any, font: any, fontBold: any,
   doc: any, signersList: any[], events: any[],
   validationCode: string, docHash: string, publicUrl: string,
   P: BrandPalette,
 ) {
+  // Pre-fetch and embed selfies for each signer
+  const signerSelfies: (any | null)[] = [];
+  for (const s of signersList) {
+    if (!s?.selfie_url) {
+      signerSelfies.push(null);
+      continue;
+    }
+    try {
+      const r = await fetch(s.selfie_url);
+      if (!r.ok) throw new Error(`status ${r.status}`);
+      const buf = new Uint8Array(await r.arrayBuffer());
+      let img: any = null;
+      try { img = await pdfDoc.embedJpg(buf); }
+      catch { try { img = await pdfDoc.embedPng(buf); } catch { img = null; } }
+      signerSelfies.push(img);
+    } catch (e) {
+      console.error("Failed to embed selfie", e);
+      signerSelfies.push(null);
+    }
+  }
+
   let page = pdfDoc.addPage([W, H]);
   drawRect(page, 0, 0, W, H, P.darkBg);
   drawRect(page, 0, H - 4, W, 4, P.coverAccentBar);
@@ -368,6 +389,7 @@ function buildAuditPages(
 
   for (let i = 0; i < signersList.length; i++) {
     const s = signersList[i];
+    const selfieImg = signerSelfies[i];
     const cardH = 120;
     ensure(cardH + 10);
 
@@ -391,7 +413,7 @@ function buildAuditPages(
       ["Localizacao", s.location_text || (s.location_lat ? `${s.location_lat}, ${s.location_lng}` : "--")],
       ["E-mail", maskEmail(s.email)],
       ["Documento", maskDoc(s.cpf)],
-      ["Selfie", s.selfie_url ? "[OK] Capturada e armazenada" : "Nao capturada"],
+      ["Selfie", selfieImg ? "Capturada (foto ao lado)" : (s.selfie_url ? "Capturada e armazenada" : "Nao capturada"), selfieImg ? P.green : (s.selfie_url ? P.green : P.white)],
     ];
 
     for (const [label, value, col] of sFields) {
@@ -400,8 +422,27 @@ function buildAuditPages(
       cy -= 12;
     }
 
+    // Draw selfie on the right side of the card
+    if (selfieImg) {
+      const photoSize = 90;
+      const photoX = M + CW - 10 - photoSize - 8;
+      const photoY = y - cardH + 14 + (cardH - photoSize) / 2;
+      // White border frame
+      drawRect(page, photoX - 2, photoY - 2, photoSize + 4, photoSize + 4, P.white);
+      page.drawImage(selfieImg, { x: photoX, y: photoY, width: photoSize, height: photoSize });
+      // Caption
+      page.drawText("Selfie do signatario", {
+        x: photoX,
+        y: photoY - 9,
+        size: 6,
+        font,
+        color: P.lightGray,
+      });
+    }
+
     y -= cardH + 14;
   }
+
 
   y -= 8;
 
@@ -656,7 +697,7 @@ Deno.serve(async (req) => {
 
               // Build white-label certificate pages
               await buildCoverPage(pdfDoc, fontRegular, fontBoldEmb, { ...fullDoc, signed_at: signedAt }, validationCode, hashHex, publicUrl, palette, logoImage);
-              buildAuditPages(pdfDoc, fontRegular, fontBoldEmb, { ...fullDoc, signed_at: signedAt }, allSigners || [], eventsData || [], validationCode, hashHex, publicUrl, palette);
+              await buildAuditPages(pdfDoc, fontRegular, fontBoldEmb, { ...fullDoc, signed_at: signedAt }, allSigners || [], eventsData || [], validationCode, hashHex, publicUrl, palette);
 
               const finalPdfBytes = await pdfDoc.save();
               const signedPath = `signed/${signer.document_id}_${Date.now()}.pdf`;
