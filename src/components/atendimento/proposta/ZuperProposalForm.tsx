@@ -309,10 +309,10 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
   };
 
   return (
-    <div className="w-full bg-background">
+    <div className="flex flex-col bg-background" style={{ height: "calc(100vh - 220px)" }}>
       {/* Content */}
-      <div className="w-full">
-        <div className="mx-auto max-w-5xl space-y-5 p-4 pb-24">
+      <div className="flex-1 overflow-y-auto pr-1">
+        <div className="mx-auto max-w-5xl space-y-5 p-4 pb-4">
 
 
           {/* Resumo Financeiro */}
@@ -707,7 +707,7 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
       </div>
 
       {/* Sticky bottom bar */}
-      <div className="sticky bottom-0 z-10 shrink-0 border-t border-border bg-card/95 backdrop-blur p-3 flex items-center gap-2 flex-wrap">
+      <div className="shrink-0 border-t border-border bg-card/95 backdrop-blur p-3 flex items-center gap-2 flex-wrap">
         <Button variant="ghost" size="sm" onClick={onClose} className="gap-1">
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Button>
