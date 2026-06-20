@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BrandIcon } from "@/components/ui/brand-icon";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Plus, Calendar as CalendarIcon, List, Search, Clock, MapPin,
@@ -279,8 +280,8 @@ export default function Eventos() {
       {/* Tabs */}
       <Tabs defaultValue="list">
         <TabsList>
-          <TabsTrigger value="list"><List className="h-4 w-4 mr-1" /> Cards</TabsTrigger>
-          <TabsTrigger value="calendar"><CalendarIcon className="h-4 w-4 mr-1" /> Calendário</TabsTrigger>
+          <TabsTrigger value="list" className="gap-1.5"><BrandIcon icon={List} tone="sky" size="xs" /> Cards</TabsTrigger>
+          <TabsTrigger value="calendar" className="gap-1.5"><BrandIcon icon={CalendarIcon} tone="blue" size="xs" /> Calendário</TabsTrigger>
         </TabsList>
 
         <TabsContent value="list" className="space-y-6 mt-4">

@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BrandIcon } from "@/components/ui/brand-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -508,13 +509,13 @@ export default function Cadastrados() {
         {/* Tabs content */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4 flex-wrap">
-            <TabsTrigger value="dados" className="text-xs gap-1.5"><User className="h-3.5 w-3.5" /> Dados</TabsTrigger>
-            <TabsTrigger value="documentos" className="text-xs gap-1.5"><Paperclip className="h-3.5 w-3.5" /> Documentos</TabsTrigger>
-            <TabsTrigger value="contrato" className="text-xs gap-1.5"><FileSignature className="h-3.5 w-3.5" /> Contrato</TabsTrigger>
-            <TabsTrigger value="financeiro" className="text-xs gap-1.5"><CreditCard className="h-3.5 w-3.5" /> Financeiro</TabsTrigger>
-            <TabsTrigger value="upsell" className="text-xs gap-1.5"><Rocket className="h-3.5 w-3.5" /> Upsell</TabsTrigger>
-            <TabsTrigger value="dependentes" className="text-xs gap-1.5"><UsersRound className="h-3.5 w-3.5" /> Dependentes</TabsTrigger>
-            <TabsTrigger value="historico" className="text-xs gap-1.5"><Activity className="h-3.5 w-3.5" /> Histórico</TabsTrigger>
+            <TabsTrigger value="dados" className="text-xs gap-1.5"><BrandIcon icon={User} tone="indigo" size="xs" /> Dados</TabsTrigger>
+            <TabsTrigger value="documentos" className="text-xs gap-1.5"><BrandIcon icon={Paperclip} tone="sky" size="xs" /> Documentos</TabsTrigger>
+            <TabsTrigger value="contrato" className="text-xs gap-1.5"><BrandIcon icon={FileSignature} tone="violet" size="xs" /> Contrato</TabsTrigger>
+            <TabsTrigger value="financeiro" className="text-xs gap-1.5"><BrandIcon icon={CreditCard} tone="blue" size="xs" /> Financeiro</TabsTrigger>
+            <TabsTrigger value="upsell" className="text-xs gap-1.5"><BrandIcon icon={Rocket} tone="orange" size="xs" /> Upsell</TabsTrigger>
+            <TabsTrigger value="dependentes" className="text-xs gap-1.5"><BrandIcon icon={UsersRound} tone="teal" size="xs" /> Dependentes</TabsTrigger>
+            <TabsTrigger value="historico" className="text-xs gap-1.5"><BrandIcon icon={Activity} tone="rose" size="xs" /> Histórico</TabsTrigger>
           </TabsList>
 
           {/* ─── TAB: Dados Gerais ─── */}

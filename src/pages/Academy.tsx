@@ -7,6 +7,7 @@ import { AcademyLessonViewer } from "@/components/academy/AcademyLessonViewer";
 import { AcademyAdmin } from "@/components/academy/AcademyAdmin";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GraduationCap, Settings2, Sparkles } from "lucide-react";
+import { BrandIcon } from "@/components/ui/brand-icon";
 
 export default function Academy() {
   const { t } = useTranslation();
@@ -44,11 +45,11 @@ export default function Academy() {
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="bg-muted/50">
             <TabsTrigger value="learn" className="gap-2">
-              <GraduationCap className="h-4 w-4" />
+              <BrandIcon icon={GraduationCap} tone="amber" size="sm" />
               Aprendizado
             </TabsTrigger>
             <TabsTrigger value="admin" className="gap-2">
-              <Settings2 className="h-4 w-4" />
+              <BrandIcon icon={Settings2} tone="slate" size="sm" />
               Gestão
             </TabsTrigger>
           </TabsList>

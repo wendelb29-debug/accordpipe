@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BrandIcon } from "@/components/ui/brand-icon";
 import { CrmKanbanBoard } from "@/components/atendimento/CrmKanbanBoard";
 import { AdminKanbanBoard } from "@/components/atendimento/AdminKanbanBoard";
 import { ImportarPlanilha } from "@/components/atendimento/ImportarPlanilha";
@@ -103,11 +104,11 @@ function AtendimentoContent() {
       {backButton}
       <Tabs defaultValue="comercial" className="flex-1 flex flex-col overflow-hidden">
         <TabsList className="mx-3 mt-0.5 mb-0 w-fit h-8">
-          <TabsTrigger value="comercial" className="gap-1 text-[11px] h-7 px-3">
-            <MessageSquare className="h-3 w-3" /> Pipeline Comercial
+          <TabsTrigger value="comercial" className="gap-1.5 text-[11px] h-7 px-3">
+            <BrandIcon icon={MessageSquare} tone="emerald" size="xs" /> Pipeline Comercial
           </TabsTrigger>
-          <TabsTrigger value="importar" className="gap-1 text-[11px] h-7 px-3">
-            <FileSpreadsheet className="h-3 w-3" /> Importar Planilha
+          <TabsTrigger value="importar" className="gap-1.5 text-[11px] h-7 px-3">
+            <BrandIcon icon={FileSpreadsheet} tone="green" size="xs" /> Importar Planilha
           </TabsTrigger>
         </TabsList>
         <TabsContent value="comercial" className="flex-1 overflow-hidden mt-0">
