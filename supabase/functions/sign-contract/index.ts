@@ -196,6 +196,7 @@ async function buildSignedPdfBytes(data: {
   signers: SignedSignerData[];
   validationUrl: string;
   signaturePositions?: SignaturePosition[];
+  supabase?: ReturnType<typeof createClient>;
 }) {
   const pdfBytes = await fetchBinary(data.pdfUrl);
   const pdfDoc = await PDFDocument.load(pdfBytes);
@@ -206,15 +207,18 @@ async function buildSignedPdfBytes(data: {
   const signerPhotos: (Uint8Array | null)[] = [];
   for (const signer of data.signers) {
     if (!signer.signature_photo_url) {
+      console.log("[sign-contract] signer has no photo url", signer.name);
       signerPhotos.push(null);
       continue;
     }
-
-    try {
-      signerPhotos.push(await fetchBinary(signer.signature_photo_url));
-    } catch {
-      signerPhotos.push(null);
+    let bytes: Uint8Array | null = null;
+    if (data.supabase) {
+      bytes = await fetchSignerPhoto(data.supabase, signer.signature_photo_url);
+    } else {
+      try { bytes = await fetchBinary(signer.signature_photo_url); } catch { bytes = null; }
     }
+    console.log("[sign-contract] signer photo fetched", signer.name, bytes ? `${bytes.length} bytes` : "FAILED");
+    signerPhotos.push(bytes);
   }
 
   let positions = [...(data.signaturePositions || [])];
