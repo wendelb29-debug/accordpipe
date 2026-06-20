@@ -340,19 +340,25 @@ export default function Servidores() {
                       onClick={() => canSwitch && handleSelect(tenant.id)}
                       className={`flex items-center gap-4 flex-1 min-w-0 ${canSwitch ? "cursor-pointer" : "cursor-default"}`}
                     >
-                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                        isActive ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground"
-                      }`}>
-                        {isLoading ? (
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                        ) : tenantType === "MASTER" ? (
-                          <Shield className="h-5 w-5" />
-                        ) : tenantType === "REVENDEDOR" ? (
-                          <Crown className="h-5 w-5" />
-                        ) : (
-                          <Building2 className="h-5 w-5" />
-                        )}
-                      </div>
+                      {(() => {
+                        const g = typeGradient[tenantType];
+                        const TypeIcon = tenantType === "MASTER" ? Shield : tenantType === "REVENDEDOR" ? Crown : Building2;
+                        return (
+                          <div
+                            className="h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 ring-1 ring-white/40"
+                            style={{
+                              background: `linear-gradient(135deg, ${g.from} 0%, ${g.to} 100%)`,
+                              boxShadow: `0 10px 22px -8px ${g.shadow}, inset 0 1px 0 rgba(255,255,255,0.35)`,
+                            }}
+                          >
+                            {isLoading ? (
+                              <Loader2 className="h-5 w-5 animate-spin text-white" />
+                            ) : (
+                              <TypeIcon className="h-5 w-5 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]" strokeWidth={2.25} />
+                            )}
+                          </div>
+                        );
+                      })()}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className={`font-semibold truncate ${isActive ? "text-primary" : "text-foreground"}`}>
