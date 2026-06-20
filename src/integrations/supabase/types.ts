@@ -774,6 +774,57 @@ export type Database = {
           },
         ]
       }
+      cloud_drive_accounts: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          oauth_scopes: string | null
+          oauth_tokens: Json | null
+          provider: string
+          provider_user_id: string | null
+          quota_synced_at: string | null
+          quota_total: number | null
+          quota_used: number | null
+          servidor_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          oauth_scopes?: string | null
+          oauth_tokens?: Json | null
+          provider: string
+          provider_user_id?: string | null
+          quota_synced_at?: string | null
+          quota_total?: number | null
+          quota_used?: number | null
+          servidor_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          oauth_scopes?: string | null
+          oauth_tokens?: Json | null
+          provider?: string
+          provider_user_id?: string | null
+          quota_synced_at?: string | null
+          quota_total?: number | null
+          quota_used?: number | null
+          servidor_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       collab_conversations: {
         Row: {
           avatar_url: string | null
