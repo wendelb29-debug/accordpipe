@@ -13,9 +13,6 @@ import {
 } from "@/components/ui/tabs";
 import { BrandIcon } from "@/components/ui/brand-icon";
 import {
-  __unused_placeholder_just_to_close,
-} from "@/components/ui/tabs";
-import {
   DollarSign, Users, ShoppingCart, Download, Copy, ArrowLeft,
   TrendingUp, Calendar, FileText, Code, Send, Webhook,
 } from "lucide-react";
@@ -171,9 +168,9 @@ export default function GestaoVendas() {
 
       <Tabs defaultValue="vendas">
         <TabsList>
-          <TabsTrigger value="vendas" className="gap-2"><ShoppingCart className="h-4 w-4" /> Vendas</TabsTrigger>
-          <TabsTrigger value="webhooks" className="gap-2"><Webhook className="h-4 w-4" /> Webhooks</TabsTrigger>
-          <TabsTrigger value="docs" className="gap-2"><FileText className="h-4 w-4" /> Documentação</TabsTrigger>
+          <TabsTrigger value="vendas" className="gap-2"><BrandIcon icon={ShoppingCart} tone="orange" size="sm" /> Vendas</TabsTrigger>
+          <TabsTrigger value="webhooks" className="gap-2"><BrandIcon icon={Webhook} tone="cyan" size="sm" /> Webhooks</TabsTrigger>
+          <TabsTrigger value="docs" className="gap-2"><BrandIcon icon={FileText} tone="sky" size="sm" /> Documentação</TabsTrigger>
         </TabsList>
 
         <TabsContent value="vendas" className="space-y-6 mt-4">
