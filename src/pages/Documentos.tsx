@@ -289,7 +289,12 @@ export default function Documentos() {
   };
 
   return (
-    <div className="space-y-4">
+    <Tabs defaultValue="meus" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="meus">Meus Documentos</TabsTrigger>
+        <TabsTrigger value="nuvem">Nuvem</TabsTrigger>
+      </TabsList>
+      <TabsContent value="meus" className="space-y-4 mt-0">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
