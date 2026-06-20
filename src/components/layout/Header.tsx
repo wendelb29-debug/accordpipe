@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { User, Moon, Sun, Clock, ChevronLeft, Building2, Bot } from "lucide-react";
+import { User, Moon, Sun, Clock, ChevronLeft, Building2, Bot, UserCircle, KeyRound, LogOut } from "lucide-react";
+import { BrandIcon } from "@/components/ui/brand-icon";
 import { useAIAssistant } from "@/contexts/AIAssistantContext";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "./NotificationBell";
@@ -199,22 +200,29 @@ export function Header() {
 
             {(isGlobalMaster || isResellerTenant) && (
               <>
-                <DropdownMenuItem className="rounded-lg cursor-pointer gap-2" onClick={() => navigate("/servidores")}>
-                  <Building2 className="h-4 w-4" />
-                  {t("nav.tenants")}
+                <DropdownMenuItem className="rounded-lg cursor-pointer gap-2.5" onClick={() => navigate("/servidores")}>
+                  <BrandIcon icon={Building2} tone="indigo" size="xs" />
+                  <span>{t("nav.tenants")}</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
               </>
             )}
 
-            <DropdownMenuItem className="rounded-lg cursor-pointer" onClick={() => navigate("/perfil")}>{t("header.profile")}</DropdownMenuItem>
-            <DropdownMenuItem className="rounded-lg cursor-pointer" onClick={() => navigate("/perfil")}>{t("header.changePassword")}</DropdownMenuItem>
+            <DropdownMenuItem className="rounded-lg cursor-pointer gap-2.5" onClick={() => navigate("/perfil")}>
+              <BrandIcon icon={UserCircle} tone="blue" size="xs" />
+              <span>{t("header.profile")}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="rounded-lg cursor-pointer gap-2.5" onClick={() => navigate("/perfil")}>
+              <BrandIcon icon={KeyRound} tone="amber" size="xs" />
+              <span>{t("header.changePassword")}</span>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              className="text-destructive rounded-lg cursor-pointer"
+              className="text-destructive rounded-lg cursor-pointer gap-2.5"
               onClick={signOut}
             >
-              {t("header.logout")}
+              <BrandIcon icon={LogOut} tone="rose" size="xs" />
+              <span>{t("header.logout")}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
