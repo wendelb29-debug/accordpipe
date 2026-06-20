@@ -203,7 +203,7 @@ export function NotificationBell() {
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-full sm:max-w-[420px] p-0 flex flex-col gap-0">
+      <SheetContent side="right" className="w-full sm:max-w-[420px] p-0 flex flex-col gap-0 [&>button]:hidden">
         {view === "settings" ? (
           <NotificationSettingsPanel onBack={() => setView("list")} onClose={() => setOpen(false)} />
         ) : (
