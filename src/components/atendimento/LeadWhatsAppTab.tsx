@@ -243,7 +243,7 @@ export function LeadWhatsAppTab({ lead, onBack }: LeadWhatsAppTabProps) {
       )}
       <div className="flex items-center gap-2 flex-1 min-w-0">
         <div className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
-          <MessageCircle size={13} className="text-emerald-500" />
+          <WhatsAppIcon className="h-3.5 w-3.5 text-emerald-500" />
         </div>
         <div className="min-w-0">
           <p className="text-xs font-medium truncate">{lead.contact_name || lead.company_name}</p>
