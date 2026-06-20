@@ -15,6 +15,7 @@ import { LeadPropostasTab } from "./LeadPropostasTab";
 
 import { LeadDocsTab } from "./LeadDocsTab";
 import { LeadDocumentosTab } from "./LeadDocumentosTab";
+import { LeadEmailTab } from "./LeadEmailTab";
 import { LeadPosVendaTab } from "./LeadPosVendaTab";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -1223,6 +1224,9 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                 <TabsTrigger value="ligacoes" className="text-[11px] sm:text-xs gap-1">
                   <PhoneCall className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Ligações
                 </TabsTrigger>
+                <TabsTrigger value="email" className="text-[11px] sm:text-xs gap-1">
+                  <Mail className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> E-mail
+                </TabsTrigger>
                 <TabsTrigger value="propostas" className="text-[11px] sm:text-xs gap-1">
                   <FileSpreadsheet className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Propostas
                 </TabsTrigger>
@@ -1457,6 +1461,11 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                 </button>
               </div>
               <ActivityFilteredList activities={activities.filter((a) => a.type === "call")} loading={activitiesLoading} emptyLabel="ligações" />
+            </TabsContent>
+
+            {/* E-mail */}
+            <TabsContent value="email" className="overflow-y-auto overflow-x-hidden mt-0 focus-visible:outline-none" style={leadTabScrollStyle}>
+              <LeadEmailTab lead={lead} addActivity={addActivity} />
             </TabsContent>
 
 
