@@ -893,7 +893,10 @@ const CSS = `
   font-family:'Inter',system-ui,sans-serif;
   -webkit-font-smoothing:antialiased;
   letter-spacing:-.011em;
-  background:hsl(var(--background));color:hsl(var(--foreground));
+  background:
+    linear-gradient(180deg, rgba(139,92,246,0.18) 0%, rgba(167,139,250,0.10) 35%, hsl(var(--background)) 100%),
+    hsl(var(--background));
+  color:hsl(var(--foreground));
   min-height:100vh;
   position:relative;
   overflow-x:hidden;
@@ -903,8 +906,8 @@ const CSS = `
 .afp-root::before{
   content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
   background:
-    radial-gradient(900px 600px at 90% -5%, rgba(91,63,212,0.14), transparent 60%),
-    radial-gradient(700px 500px at 5% 80%, rgba(45,75,212,0.12), transparent 60%);
+    radial-gradient(900px 600px at 90% -5%, rgba(139,92,246,0.22), transparent 60%),
+    radial-gradient(700px 500px at 5% 80%, rgba(168,85,247,0.18), transparent 60%);
 }
 
 .afp-shell{
