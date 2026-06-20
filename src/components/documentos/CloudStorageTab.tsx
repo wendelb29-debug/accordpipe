@@ -167,7 +167,7 @@ export function CloudStorageTab() {
           </p>
         </div>
         <Button
-          onClick={() => setOpen(true)}
+          onClick={() => openDialog()}
           className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
         >
           <Plus className="h-4 w-4" />
