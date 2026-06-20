@@ -72,11 +72,13 @@ export function KanbanStageHeader({
       </p>
       <div
         ref={scrollRef}
-        className="flex gap-px overflow-x-auto pb-0.5 -mb-0.5 scrollbar-hide"
+        className="flex overflow-x-auto pb-0.5 -mb-0.5 scrollbar-hide"
       >
         {stages.map((stage, i) => {
           const isActive = i === currentStageIndex;
           const isPast = i < currentStageIndex;
+          const isFirst = i === 0;
+          const isLast = i === stages.length - 1;
 
           const bgStyle: React.CSSProperties = {};
           let colorClass = "";
@@ -96,6 +98,16 @@ export function KanbanStageHeader({
             colorClass = isPast && !stage.rawColor ? "bg-primary/20 text-primary" : "";
           }
 
+          // Arrow shape (breadcrumb style): right-pointing chevron on the right,
+          // matching notch on the left so items interlock.
+          const arrowSize = 8;
+          const rightPoint = isLast
+            ? ""
+            : `, 100% 50%, calc(100% - ${arrowSize}px) 100%`;
+          const rightFlat = isLast ? `, 100% 100%` : "";
+          const leftNotch = isFirst ? `` : `, ${arrowSize}px 50%`;
+          bgStyle.clipPath = `polygon(0 0, calc(100% - ${arrowSize}px) 0${rightPoint}${rightFlat}, 0 100%${leftNotch})`;
+
           return (
             <button
               key={stage.id}
@@ -103,9 +115,11 @@ export function KanbanStageHeader({
               disabled={saving}
               style={bgStyle}
               className={cn(
-                "flex-shrink-0 min-w-[60px] sm:flex-1 py-1 text-[9px] sm:text-[10px] font-medium rounded-sm transition-all text-center truncate px-1 relative",
+                "flex-shrink-0 min-w-[68px] sm:flex-1 py-1 text-[9px] sm:text-[10px] font-medium transition-all text-center truncate relative",
+                !isFirst && "-ml-[6px]",
+                isFirst ? "pl-2 pr-3" : "pl-3 pr-3",
                 colorClass,
-                !isActive && !isPast && "bg-muted/70 border border-border text-foreground/70 hover:bg-muted hover:text-foreground hover:border-foreground/20",
+                !isActive && !isPast && "bg-muted/70 text-foreground/70 hover:bg-muted hover:text-foreground",
                 saving && "opacity-50 cursor-not-allowed"
               )}
               title={stage.title}
