@@ -589,7 +589,11 @@ export default function Documentos() {
           }
         }}
       />
-    </div>
+      </TabsContent>
+      <TabsContent value="nuvem" className="mt-0">
+        <CloudStorageTab />
+      </TabsContent>
+    </Tabs>
   );
 }
 
