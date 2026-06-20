@@ -126,8 +126,8 @@ const activityTypeLabels: Record<string, string> = {
 };
 
 const leadTabScrollClass = "overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-visible mt-0 focus-visible:outline-none";
-const leadTabScrollStyle = { maxHeight: 'calc(100dvh - 140px)' } as const;
-const leadTabFullStyle = { height: 'calc(100dvh - 140px)' } as const;
+const leadTabScrollStyle = { maxHeight: 'calc(100dvh - 260px)' } as const;
+const leadTabFullStyle = { height: 'calc(100dvh - 260px)' } as const;
 
 const fieldLabels: Record<string, string> = {
   company_name: "Empresa",
