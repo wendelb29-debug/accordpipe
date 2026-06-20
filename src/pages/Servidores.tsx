@@ -36,6 +36,14 @@ const typeBadgeConfig: Record<TenantType, { label: string; className: string }> 
   TENANT: { label: "Tenant", className: "border-primary/30 text-primary bg-primary/10" },
 };
 
+// Live colored gradients per tenant type (used for the icon tile)
+const typeGradient: Record<TenantType, { from: string; to: string; shadow: string }> = {
+  MASTER:    { from: "#F59E0B", to: "#D97706", shadow: "rgba(245,158,11,0.55)" },
+  REVENDEDOR:{ from: "#10B981", to: "#059669", shadow: "rgba(16,185,129,0.55)" },
+  SUBTENANT: { from: "#8B5CF6", to: "#6D28D9", shadow: "rgba(139,92,246,0.55)" },
+  TENANT:    { from: "#3B82F6", to: "#2563EB", shadow: "rgba(59,130,246,0.55)" },
+};
+
 export default function Servidores() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -276,8 +284,14 @@ export default function Servidores() {
       {/* Content */}
       <div className="relative z-10 w-full max-w-lg animate-fade-in">
         <div className="flex items-center gap-3 mb-8">
-          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shadow-sm">
-            <Building2 className="h-6 w-6 text-primary" />
+          <div
+            className="h-12 w-12 rounded-2xl flex items-center justify-center ring-1 ring-white/40"
+            style={{
+              background: "linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)",
+              boxShadow: "0 10px 24px -8px rgba(59,130,246,0.55), inset 0 1px 0 rgba(255,255,255,0.35)",
+            }}
+          >
+            <Building2 className="h-6 w-6 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]" strokeWidth={2.25} />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-foreground">Meus Servidores</h1>
@@ -326,19 +340,25 @@ export default function Servidores() {
                       onClick={() => canSwitch && handleSelect(tenant.id)}
                       className={`flex items-center gap-4 flex-1 min-w-0 ${canSwitch ? "cursor-pointer" : "cursor-default"}`}
                     >
-                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                        isActive ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground"
-                      }`}>
-                        {isLoading ? (
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                        ) : tenantType === "MASTER" ? (
-                          <Shield className="h-5 w-5" />
-                        ) : tenantType === "REVENDEDOR" ? (
-                          <Crown className="h-5 w-5" />
-                        ) : (
-                          <Building2 className="h-5 w-5" />
-                        )}
-                      </div>
+                      {(() => {
+                        const g = typeGradient[tenantType];
+                        const TypeIcon = tenantType === "MASTER" ? Shield : tenantType === "REVENDEDOR" ? Crown : Building2;
+                        return (
+                          <div
+                            className="h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 ring-1 ring-white/40"
+                            style={{
+                              background: `linear-gradient(135deg, ${g.from} 0%, ${g.to} 100%)`,
+                              boxShadow: `0 10px 22px -8px ${g.shadow}, inset 0 1px 0 rgba(255,255,255,0.35)`,
+                            }}
+                          >
+                            {isLoading ? (
+                              <Loader2 className="h-5 w-5 animate-spin text-white" />
+                            ) : (
+                              <TypeIcon className="h-5 w-5 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]" strokeWidth={2.25} />
+                            )}
+                          </div>
+                        );
+                      })()}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className={`font-semibold truncate ${isActive ? "text-primary" : "text-foreground"}`}>
@@ -400,10 +420,18 @@ export default function Servidores() {
                                 subActive ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border bg-card/60"
                               } ${subLoading ? "opacity-80 pointer-events-none" : ""}`}
                             >
-                              <div className={`h-8 w-8 rounded-md flex items-center justify-center shrink-0 ${
-                                subActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                              }`}>
-                                {subLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Home className="h-4 w-4" />}
+                              <div
+                                className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ring-1 ring-white/40"
+                                style={{
+                                  background: "linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)",
+                                  boxShadow: "0 8px 18px -8px rgba(139,92,246,0.55), inset 0 1px 0 rgba(255,255,255,0.35)",
+                                }}
+                              >
+                                {subLoading ? (
+                                  <Loader2 className="h-4 w-4 animate-spin text-white" />
+                                ) : (
+                                  <Home className="h-4 w-4 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]" strokeWidth={2.25} />
+                                )}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className={`text-sm font-medium truncate ${subActive ? "text-primary" : "text-foreground"}`}>
