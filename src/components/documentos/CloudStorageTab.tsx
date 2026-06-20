@@ -175,6 +175,46 @@ export function CloudStorageTab() {
         </Button>
       </div>
 
+      {!loading && suggestions.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Sugestões a partir das suas contas de e-mail
+          </p>
+          <div className="grid gap-2">
+            {suggestions.map((s) => {
+              const p = providerFromEmail(s.provider)!;
+              return (
+                <Card key={s.id} className="border-emerald-600/30 bg-emerald-500/5">
+                  <CardContent className="p-3 flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-lg bg-background flex items-center justify-center shrink-0 border border-border">
+                      <Cloud className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        Conectar o {p === "google" ? "Google Drive" : "OneDrive"} de{" "}
+                        <span className="text-emerald-600">{s.email_address}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Essa conta já está conectada em E-mail — autorize o acesso ao
+                        armazenamento em um clique.
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => openDialog(p, s.email_address)}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                      Conectar
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
