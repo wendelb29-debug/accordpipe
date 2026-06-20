@@ -85,14 +85,14 @@
     --border: 222 20% 14%;
     --input: 222 24% 13%;
     --ring: 224 76% 58%;
-    --sidebar-background: 224 32% 5%;
-    --sidebar-foreground: 220 15% 82%;
-    --sidebar-primary: 224 76% 62%;
+    --sidebar-background: 251 41% 18%;
+    --sidebar-foreground: 250 25% 90%;
+    --sidebar-primary: 256 82% 64%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 26% 10%;
-    --sidebar-accent-foreground: 220 15% 82%;
-    --sidebar-border: 222 24% 9%;
-    --sidebar-ring: 224 76% 62%;
+    --sidebar-accent: 252 28% 24%;
+    --sidebar-accent-foreground: 250 25% 90%;
+    --sidebar-border: 252 25% 28%;
+    --sidebar-ring: 256 82% 64%;
 
     /* LinkedIn-style feed background (soft charcoal) */
     --feed-bg: #1B1F23;
