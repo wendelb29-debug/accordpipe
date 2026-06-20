@@ -895,6 +895,8 @@ const CSS = `
   letter-spacing:-.011em;
   background:
     linear-gradient(180deg, #8B5CF6 0%, #C4B5FD 35%, #EDE9FE 65%, #FFFFFF 100%);
+  background-attachment: fixed;
+  background-size: 100% 100%;
   color:hsl(var(--foreground));
   min-height:100vh;
   position:relative;
