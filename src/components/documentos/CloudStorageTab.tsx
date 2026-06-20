@@ -63,7 +63,7 @@ export function CloudStorageTab() {
       const [{ data: cloudData }, { data: emailData }] = await Promise.all([
         (supabase as any)
           .from("cloud_drive_accounts")
-          .select("id, provider, email, display_name, created_at")
+          .select("id, provider, email, display_name, created_at, quota_total, quota_used")
           .eq("user_id", userId)
           .eq("servidor_id", activeCompanyId)
           .order("created_at", { ascending: false }),
