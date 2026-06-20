@@ -541,10 +541,10 @@ export function AccordAIChat() {
         onClick={isPureAI ? undefined : handleFabClick}
         role="button"
         className={cn(
-          "fixed rounded-full shadow-lg flex items-center justify-center text-primary-foreground select-none",
-          isPureAI ? "z-[95] touch-none cursor-grab active:cursor-grabbing" : "z-40 transition-all duration-300 hover:scale-105",
-          isMobile ? "h-11 w-11" : "h-12 w-12 sm:h-14 sm:w-14",
-          isDragging && "scale-110 shadow-2xl",
+          "fixed rounded-2xl flex items-center justify-center text-white select-none ring-1 ring-white/20",
+          isPureAI ? "z-[95] touch-none cursor-grab active:cursor-grabbing" : "z-40 transition-all duration-300 hover:scale-105 hover:-translate-y-0.5",
+          isMobile ? "h-12 w-12" : "h-14 w-14",
+          isDragging && "scale-110",
           dragOverDrop && "scale-90 opacity-60"
         )}
         style={{
@@ -552,14 +552,21 @@ export function AccordAIChat() {
             ? { left: computedPos.x, top: computedPos.y }
             : { bottom: `${safeBottom}px`, right: isMobile ? 16 : 24 }),
           background: showWhatsAppLook
-            ? "linear-gradient(135deg, #10b981, #059669)"
-            : "linear-gradient(135deg, #3B3F9C, #7A3FF2)",
+            ? "linear-gradient(135deg, #10b981 0%, #059669 100%)"
+            : "linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #A855F7 100%)",
+          boxShadow: showWhatsAppLook
+            ? "0 10px 30px -8px rgba(16,185,129,0.55), inset 0 1px 0 rgba(255,255,255,0.25)"
+            : "0 14px 36px -10px rgba(139,92,246,0.65), 0 4px 12px -4px rgba(99,102,241,0.4), inset 0 1px 0 rgba(255,255,255,0.3)",
           transition: isDragging ? "none" : undefined,
         }}
         title={showWhatsAppLook ? "Nova mensagem" : "✨ Assistente IA"}
       >
+        {/* Inner glow */}
+        {!showWhatsAppLook && !open && (
+          <span className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-white/0 via-white/10 to-white/30 pointer-events-none" />
+        )}
         {open && !isPureAI ? (
-          <X className="h-5 w-5 sm:h-6 sm:w-6 pointer-events-none" />
+          <X className="h-5 w-5 sm:h-6 sm:w-6 pointer-events-none relative" />
         ) : showWhatsAppLook ? (
           <div className="relative pointer-events-none">
             <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -571,8 +578,8 @@ export function AccordAIChat() {
           </div>
         ) : (
           <div className="relative pointer-events-none">
-            <Bot className="h-5 w-5 sm:h-6 sm:w-6" />
-            <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-green-400 border border-[#3B3F9C] animate-pulse" />
+            <Sparkles className="h-5 w-5 sm:h-[22px] sm:w-[22px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]" strokeWidth={2.25} />
+            <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-white/90 animate-pulse" />
           </div>
         )}
       </div>
@@ -596,15 +603,21 @@ export function AccordAIChat() {
         >
           {/* Header */}
           <div
-            className="flex items-center gap-3 px-4 py-3 text-primary-foreground shrink-0"
-            style={{ background: "linear-gradient(135deg, #3B3F9C, #7A3FF2)" }}
+            className="flex items-center gap-3 px-4 py-3 text-white shrink-0"
+            style={{ background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #A855F7 100%)" }}
           >
-            <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center">
-              <Sparkles className="h-4 w-4" />
+            <div
+              className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ring-1 ring-white/30"
+              style={{
+                background: "linear-gradient(135deg, rgba(255,255,255,0.28), rgba(255,255,255,0.08))",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.45), 0 4px 12px -4px rgba(0,0,0,0.25)",
+              }}
+            >
+              <Sparkles className="h-[18px] w-[18px] drop-shadow-[0_1px_1px_rgba(0,0,0,0.3)]" strokeWidth={2.25} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm">✨ ACCORD IA</p>
-              <p className="text-[11px] opacity-80 truncate">Contexto: {pageName}</p>
+              <p className="font-bold text-sm tracking-tight">Accord IA</p>
+              <p className="text-[11px] opacity-85 truncate">Contexto: {pageName}</p>
             </div>
             <div className="flex items-center gap-1 shrink-0">
               <button
@@ -634,11 +647,19 @@ export function AccordAIChat() {
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
             {messages.length === 0 && (
               <div className="space-y-4">
-                <div className="text-center text-muted-foreground text-sm py-4 space-y-2">
-                  <Bot className="h-10 w-10 mx-auto opacity-40" />
-                  <p className="font-medium">Olá! Sou o Accord AI.</p>
-                  <p className="text-xs">
-                    Estou aqui para ajudar com <strong>{pageName}</strong>.
+                <div className="text-center py-4 space-y-2.5">
+                  <div
+                    className="mx-auto h-14 w-14 rounded-2xl flex items-center justify-center ring-1 ring-violet-200/60 dark:ring-violet-700/40"
+                    style={{
+                      background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #A855F7 100%)",
+                      boxShadow: "0 10px 24px -8px rgba(139,92,246,0.5), inset 0 1px 0 rgba(255,255,255,0.35)",
+                    }}
+                  >
+                    <Sparkles className="h-6 w-6 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]" strokeWidth={2.25} />
+                  </div>
+                  <p className="font-semibold text-sm text-foreground">Olá! Sou o Accord IA.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Estou aqui para ajudar com <strong className="text-foreground">{pageName}</strong>.
                   </p>
                 </div>
                 <div className="space-y-1.5">
