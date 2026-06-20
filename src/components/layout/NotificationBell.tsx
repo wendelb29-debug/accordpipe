@@ -9,10 +9,10 @@ import { NotificationSettingsPanel } from "./NotificationSettingsPanel";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -192,8 +192,8 @@ export function NotificationBell() {
   const allRead = unreadNotifications.length === 0;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+    <Sheet open={open} onOpenChange={(v) => { setOpen(v); if (!v) setView("list"); }}>
+      <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="relative rounded-xl h-10 w-10">
           <Bell className="h-[18px] w-[18px]" />
           {unreadCount > 0 && (
@@ -202,8 +202,8 @@ export function NotificationBell() {
             </span>
           )}
         </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-[380px] p-0 rounded-xl" onCloseAutoFocus={() => setView("list")}>
+      </SheetTrigger>
+      <SheetContent side="right" className="w-full sm:max-w-[420px] p-0 flex flex-col gap-0 [&>button]:hidden">
         {view === "settings" ? (
           <NotificationSettingsPanel onBack={() => setView("list")} onClose={() => setOpen(false)} />
         ) : (
@@ -259,7 +259,7 @@ export function NotificationBell() {
           </button>
         </div>
 
-        <ScrollArea className="h-[480px]">
+        <ScrollArea className="flex-1 min-h-0">
           {/* All-read state */}
           {tab === "unread" && allRead && (
             <div className="flex flex-col items-center justify-center py-8 px-4">
@@ -441,7 +441,7 @@ export function NotificationBell() {
         </div>
         </>
         )}
-      </PopoverContent>
-    </Popover>
+      </SheetContent>
+    </Sheet>
   );
 }
