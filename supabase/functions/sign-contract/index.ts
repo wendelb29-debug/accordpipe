@@ -625,6 +625,7 @@ async function persistSignedPdfForContract(
     signers: signerList,
     validationUrl: `${origin}/validar-documento/${contractData.validation_code || ""}`,
     signaturePositions,
+    supabase,
   });
 
   const signedPath = `contracts/${contractId}/contrato_assinado_${Date.now()}.pdf`;
