@@ -1241,7 +1241,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             </div>
 
             {/* Histórico - all activities */}
-            <TabsContent value="historico" className={`${leadTabScrollClass} p-4`}>
+            <TabsContent value="historico" className={`${leadTabScrollClass} p-4`} style={leadTabScrollStyle}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-semibold">Histórico</h3>
                 <Button size="sm" variant="outline" onClick={() => setShowActivityForm(!showActivityForm)} className="gap-1.5 text-xs">
