@@ -266,10 +266,15 @@ export function Sidebar() {
           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-sidebar-primary shadow-[0_0_8px_rgba(122,63,242,0.5)]" />
         )}
         <div className="relative shrink-0">
-          <item.icon className={cn(
-            "h-[18px] w-[18px] transition-colors duration-200",
-            isActive ? "text-sidebar-primary" : "group-hover:text-sidebar-foreground/70"
-          )} />
+          <BrandIcon
+            icon={item.icon}
+            tone={ROUTE_TONES[item.href] ?? "slate"}
+            size="sm"
+            className={cn(
+              "transition-all duration-200",
+              !isActive && "opacity-80 group-hover:opacity-100",
+            )}
+          />
           {badge > 0 && collapsed && (
             <span className="absolute -top-2 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-0.5">
               {badge}
