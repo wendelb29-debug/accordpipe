@@ -26,13 +26,28 @@ interface CloudAccount {
   created_at: string;
 }
 
+interface EmailAccountHint {
+  id: string;
+  provider: string;
+  email_address: string | null;
+  display_name: string | null;
+}
+
+const providerFromEmail = (p: string): Provider | null => {
+  if (p === "gmail" || p === "google") return "google";
+  if (p === "outlook" || p === "microsoft" || p === "office365") return "microsoft";
+  return null;
+};
+
 export function CloudStorageTab() {
   const { profile, activeCompanyId } = useAuth();
   const userId = profile?.user_id;
   const [accounts, setAccounts] = useState<CloudAccount[]>([]);
+  const [emailHints, setEmailHints] = useState<EmailAccountHint[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [provider, setProvider] = useState<Provider>("google");
+  const [loginHint, setLoginHint] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const fetchAccounts = async () => {
