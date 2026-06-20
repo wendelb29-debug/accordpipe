@@ -1305,13 +1305,8 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                              </DropdownMenuItem>
                            </>
                          )}
-                         {doc.status === "signed" && doc.signed_pdf_url && (
-                           <>
-                             <DropdownMenuItem onClick={() => window.open(doc.signed_pdf_url!, "_blank")}>
-                               <Download className="h-3.5 w-3.5 mr-2" /> Baixar PDF assinado
-                             </DropdownMenuItem>
-                           </>
-                         )}
+                         {/* Botão "Baixar PDF assinado" já é tratado pelo handleDownloadDocument acima quando o documento está assinado */}
+
                          {doc.status === "signed" && doc.validation_code && (
                            <>
                              <DropdownMenuSeparator />
