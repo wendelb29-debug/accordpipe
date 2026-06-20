@@ -10,7 +10,7 @@ const Switch = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SwitchPrimitives.Root
     className={cn(
-      "peer relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors",
+      "peer group relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors",
       "data-[state=checked]:bg-emerald-500 data-[state=unchecked]:bg-red-500",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50",
       className,
@@ -18,17 +18,13 @@ const Switch = React.forwardRef<
     {...props}
     ref={ref}
   >
-    {/* OFF: X on the right side */}
     <X
-      className="pointer-events-none absolute right-1 h-3 w-3 text-white opacity-100 transition-opacity data-[state=checked]:opacity-0"
-      data-state={props.checked ? "checked" : undefined}
+      className="pointer-events-none absolute right-1 h-3 w-3 text-white transition-opacity group-data-[state=checked]:opacity-0 group-data-[state=unchecked]:opacity-100"
       strokeWidth={3}
       aria-hidden
     />
-    {/* ON: check on the left side */}
     <Check
-      className="pointer-events-none absolute left-1 h-3 w-3 text-white opacity-0 transition-opacity data-[state=checked]:opacity-100"
-      data-state={props.checked ? "checked" : undefined}
+      className="pointer-events-none absolute left-1 h-3 w-3 text-white transition-opacity group-data-[state=checked]:opacity-100 group-data-[state=unchecked]:opacity-0"
       strokeWidth={3}
       aria-hidden
     />
@@ -42,5 +38,3 @@ const Switch = React.forwardRef<
 Switch.displayName = SwitchPrimitives.Root.displayName;
 
 export { Switch };
-</content>
-</invoke>
