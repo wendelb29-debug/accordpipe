@@ -118,7 +118,9 @@ const activityTypeLabels: Record<string, string> = {
   activity_reopened: "Atividade Reaberta",
 };
 
-const leadTabScrollClass = "flex-1 h-full min-h-0 overflow-y-auto overscroll-contain scrollbar-visible mt-0";
+const leadTabScrollClass = "overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-visible mt-0 focus-visible:outline-none";
+const leadTabScrollStyle = { maxHeight: 'calc(100dvh - 140px)' } as const;
+const leadTabFullStyle = { height: 'calc(100dvh - 140px)' } as const;
 
 const fieldLabels: Record<string, string> = {
   company_name: "Empresa",
