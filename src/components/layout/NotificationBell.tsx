@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Bell, Eye, EyeOff, CircleCheck, BellOff, BellRing, TestTube, CheckCircle2, XCircle } from "lucide-react";
+import { Bell, Eye, EyeOff, CircleCheck, BellOff, BellRing, TestTube, CheckCircle2, XCircle, Settings, PauseCircle, X } from "lucide-react";
 import { getNotificationStyle } from "./notificationStyles";
 import { useNotificationManager } from "@/hooks/useNotificationManager";
+import { useNotificationPrefs } from "@/hooks/useNotificationPrefs";
+import { NotificationSettingsPanel } from "./NotificationSettingsPanel";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,8 +39,10 @@ export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
+  const [view, setView] = useState<"list" | "settings">("list");
   const [tab, setTab] = useState<"unread" | "read">("unread");
   const { enabled: pushEnabled, permissionState, enableNotifications, disableNotifications, sendTestNotification } = useNotificationManager();
+  const { prefs, isPaused } = useNotificationPrefs();
   const notifSupported = typeof window !== "undefined" && "Notification" in window;
 
   const handlePushToggle = async () => {
@@ -127,6 +131,9 @@ export function NotificationBell() {
         playNotificationSound();
         fetchNotifications();
 
+        // Respect per-user prefs: don't show toast when alerts off or paused
+        if (!prefs.alertsEnabled || isPaused) return;
+
         const style = getNotificationStyle(newNotif.type, newNotif.metadata);
         const ToastIcon = style.Icon;
         toast(newNotif.title, {
@@ -146,7 +153,7 @@ export function NotificationBell() {
       clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [user, activeCompanyId, fetchNotifications, playNotificationSound]);
+  }, [user, activeCompanyId, fetchNotifications, playNotificationSound, prefs.alertsEnabled, isPaused]);
 
   const toggleRead = async (id: string, currentlyRead: boolean) => {
     await supabase.from("notifications").update({ is_read: !currentlyRead }).eq("id", id);
@@ -196,7 +203,38 @@ export function NotificationBell() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-[380px] p-0 rounded-xl">
+      <PopoverContent align="end" className="w-[380px] p-0 rounded-xl" onCloseAutoFocus={() => setView("list")}>
+        {view === "settings" ? (
+          <NotificationSettingsPanel onBack={() => setView("list")} onClose={() => setOpen(false)} />
+        ) : (
+        <>
+        {/* Header */}
+        <div className="flex items-center justify-between border-b px-3 h-11">
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm font-bold text-foreground">Notificações</span>
+            {isPaused && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 rounded-full px-1.5 py-0.5">
+                <PauseCircle className="h-2.5 w-2.5" /> Pausado
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-0.5">
+            <button
+              onClick={() => setView("settings")}
+              title="Configurações"
+              className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition"
+            >
+              <Settings className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setOpen(false)}
+              title="Fechar"
+              className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
         {/* Tabs */}
         <div className="flex border-b">
           <button
@@ -401,6 +439,8 @@ export function NotificationBell() {
             }
           </button>
         </div>
+        </>
+        )}
       </PopoverContent>
     </Popover>
   );
