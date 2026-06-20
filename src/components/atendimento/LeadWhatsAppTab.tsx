@@ -186,14 +186,20 @@ export function LeadWhatsAppTab({ lead, onBack }: LeadWhatsAppTabProps) {
         .single();
       if (msgError) throw msgError;
 
-      const { data, error } = await supabase.functions.invoke("zapi", {
-        body: { action: "send-text", phone: contact.phone, message: text, company_id: companyId },
+      const { data, error } = await supabase.functions.invoke("whatsapp-send", {
+        body: {
+          tenant_id: companyId,
+          phone: contact.phone,
+          text,
+          message_id: msgData.id,
+          message_type: "text",
+        },
       });
 
       const newStatus = error || !data?.success ? "failed" : "sent";
       await supabase.from("whatsapp_messages").update({ status: newStatus }).eq("id", msgData.id);
 
-      if (newStatus === "failed") toast.error("Falha ao enviar mensagem");
+      if (newStatus === "failed") toast.error(data?.message || "Falha ao enviar mensagem");
     } catch {
       toast.error("Erro ao enviar mensagem");
     } finally {
