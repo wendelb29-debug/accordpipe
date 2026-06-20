@@ -258,18 +258,18 @@ export function Sidebar() {
         className={cn(
           "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200 group relative",
           isActive
-            ? "bg-sidebar-primary/15 text-sidebar-foreground"
-            : "text-sidebar-foreground/45 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground/80"
+            ? "bg-sidebar-primary/20 border border-sidebar-primary/35 text-sidebar-foreground"
+            : "bg-sidebar-accent/40 border border-sidebar-border/60 text-sidebar-foreground/60 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground/90"
         )}
       >
         {isActive && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-sidebar-primary shadow-[0_0_8px_rgba(122,63,242,0.5)]" />
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-sidebar-primary shadow-[0_0_8px_rgba(130,87,240,0.5)]" />
         )}
         <div className="relative shrink-0">
           <BrandIcon
             icon={item.icon}
             tone={ROUTE_TONES[item.href] ?? "slate"}
-            size="sm"
+            size="md"
             className={cn(
               "transition-all duration-200",
               !isActive && "opacity-80 group-hover:opacity-100",
