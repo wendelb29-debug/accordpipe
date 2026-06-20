@@ -894,8 +894,7 @@ const CSS = `
   -webkit-font-smoothing:antialiased;
   letter-spacing:-.011em;
   background:
-    linear-gradient(180deg, rgba(139,92,246,0.18) 0%, rgba(167,139,250,0.10) 35%, hsl(var(--background)) 100%),
-    hsl(var(--background));
+    linear-gradient(180deg, #8B5CF6 0%, #C4B5FD 35%, #EDE9FE 65%, #FFFFFF 100%);
   color:hsl(var(--foreground));
   min-height:100vh;
   position:relative;
@@ -906,7 +905,7 @@ const CSS = `
 .afp-root::before{
   content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
   background:
-    radial-gradient(900px 600px at 90% -5%, rgba(139,92,246,0.22), transparent 60%),
+    radial-gradient(900px 600px at 90% -5%, rgba(139,92,246,0.35), transparent 60%),
     radial-gradient(700px 500px at 5% 80%, rgba(168,85,247,0.18), transparent 60%);
 }
 
