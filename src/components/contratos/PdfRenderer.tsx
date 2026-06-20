@@ -32,16 +32,21 @@ export function PdfRenderer({ pdfUrl, currentPage, onTotalPages, scale = 1.2, on
     if (!pdf || !canvasRef.current) return;
     const renderPage = async () => {
       const page = await pdf.getPage(currentPage);
-      const viewport = page.getViewport({ scale });
+      const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+      const cssViewport = page.getViewport({ scale });
+      const renderViewport = page.getViewport({ scale: scale * dpr });
       const canvas = canvasRef.current!;
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
+      canvas.width = Math.floor(renderViewport.width);
+      canvas.height = Math.floor(renderViewport.height);
+      canvas.style.width = `${Math.floor(cssViewport.width)}px`;
+      canvas.style.height = `${Math.floor(cssViewport.height)}px`;
       const ctx = canvas.getContext("2d")!;
-      await page.render({ canvasContext: ctx, viewport }).promise;
+      await page.render({ canvasContext: ctx, viewport: renderViewport }).promise;
       onCanvasReady?.(canvas);
     };
     renderPage();
   }, [pdf, currentPage, scale]);
+
 
   return <canvas ref={canvasRef} className="block" />;
 }
