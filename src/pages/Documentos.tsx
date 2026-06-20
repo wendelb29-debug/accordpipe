@@ -24,6 +24,8 @@ import JSZip from "jszip";
 import { FolderPickerDialog } from "@/components/documentos/FolderPickerDialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CloudStorageTab } from "@/components/documentos/CloudStorageTab";
+import { BrandIcon } from "@/components/ui/brand-icon";
+import { FolderOpen, Cloud } from "lucide-react";
 
 
 const statusConfig: Record<string, { label: string; color: string; emoji: string }> = {
@@ -291,8 +293,14 @@ export default function Documentos() {
   return (
     <Tabs defaultValue="meus" className="space-y-4">
       <TabsList>
-        <TabsTrigger value="meus">Meus Documentos</TabsTrigger>
-        <TabsTrigger value="nuvem">Nuvem</TabsTrigger>
+        <TabsTrigger value="meus" className="gap-1.5">
+          <BrandIcon icon={FolderOpen} tone="sky" size="xs" />
+          Meus Documentos
+        </TabsTrigger>
+        <TabsTrigger value="nuvem" className="gap-1.5">
+          <BrandIcon icon={Cloud} tone="blue" size="xs" />
+          Nuvem
+        </TabsTrigger>
       </TabsList>
       <TabsContent value="meus" className="space-y-4 mt-0">
       {/* Header */}

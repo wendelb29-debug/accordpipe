@@ -14,6 +14,7 @@ import { GoalManagement } from "@/components/performance/GoalManagement";
 import { MyPerformance } from "@/components/performance/MyPerformance";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { BrandIcon } from "@/components/ui/brand-icon";
 import { useWorkspacePermissions } from "@/hooks/useWorkspacePermissions";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 
@@ -82,16 +83,16 @@ export default function Performance() {
               </div>
             </div>
             <TabsList className="h-8">
-              <TabsTrigger value="performance" className="text-xs h-7 gap-1">
-                <TrendingUp className="h-3.5 w-3.5" />
+              <TabsTrigger value="performance" className="text-xs h-7 gap-1.5">
+                <BrandIcon icon={TrendingUp} tone="emerald" size="xs" />
                 Performance
               </TabsTrigger>
-              <TabsTrigger value="goals" className="text-xs h-7 gap-1">
-                <Target className="h-3.5 w-3.5" />
+              <TabsTrigger value="goals" className="text-xs h-7 gap-1.5">
+                <BrandIcon icon={Target} tone="rose" size="xs" />
                 Gestão de Metas
               </TabsTrigger>
-              <TabsTrigger value="meu-desempenho" className="text-xs h-7 gap-1">
-                <User className="h-3.5 w-3.5" />
+              <TabsTrigger value="meu-desempenho" className="text-xs h-7 gap-1.5">
+                <BrandIcon icon={User} tone="indigo" size="xs" />
                 Meu Desempenho
               </TabsTrigger>
             </TabsList>
