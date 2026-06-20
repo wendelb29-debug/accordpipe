@@ -1218,34 +1218,61 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 min-h-0 flex flex-col overflow-hidden">
             <div className="shrink-0 overflow-x-auto scrollbar-hide border-b bg-card">
               <TabsList className="w-max sm:w-full justify-start rounded-none bg-card px-3 sm:px-4 h-10">
-                <TabsTrigger value="historico" className="text-[11px] sm:text-xs gap-1">
-                  <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Histórico
+                <TabsTrigger value="historico" className="text-[11px] sm:text-xs gap-1.5">
+                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-[5px] bg-gradient-to-br from-amber-400 to-amber-600 shadow-sm">
+                    <Clock className="h-2.5 w-2.5 text-white" strokeWidth={2.5} />
+                  </span>
+                  Histórico
                 </TabsTrigger>
-                <TabsTrigger value="notas" className="text-[11px] sm:text-xs gap-1">
-                  <StickyNote className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Notas
+                <TabsTrigger value="notas" className="text-[11px] sm:text-xs gap-1.5">
+                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-[5px] bg-gradient-to-br from-yellow-300 to-yellow-500 shadow-sm">
+                    <StickyNote className="h-2.5 w-2.5 text-yellow-900" strokeWidth={2.5} />
+                  </span>
+                  Notas
                 </TabsTrigger>
-                <TabsTrigger value="atividades" className="text-[11px] sm:text-xs gap-1">
-                  <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Agenda
+                <TabsTrigger value="atividades" className="text-[11px] sm:text-xs gap-1.5">
+                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-[5px] bg-white shadow-sm border border-border/40">
+                    <Calendar className="h-2.5 w-2.5 text-[#1A73E8]" strokeWidth={2.75} />
+                  </span>
+                  Agenda
                 </TabsTrigger>
-                <TabsTrigger value="ligacoes" className="text-[11px] sm:text-xs gap-1">
-                  <PhoneCall className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Ligações
+                <TabsTrigger value="ligacoes" className="text-[11px] sm:text-xs gap-1.5">
+                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-sm">
+                    <PhoneCall className="h-2.5 w-2.5 text-white" strokeWidth={2.75} fill="white" />
+                  </span>
+                  Ligações
                 </TabsTrigger>
-                <TabsTrigger value="email" className="text-[11px] sm:text-xs gap-1">
-                  <Mail className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> E-mail
+                <TabsTrigger value="email" className="text-[11px] sm:text-xs gap-1.5">
+                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-[5px] bg-white shadow-sm border border-border/40">
+                    <Mail className="h-2.5 w-2.5 text-[#EA4335]" strokeWidth={2.75} />
+                  </span>
+                  E-mail
                 </TabsTrigger>
-                <TabsTrigger value="propostas" className="text-[11px] sm:text-xs gap-1">
-                  <FileSpreadsheet className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Propostas
+                <TabsTrigger value="propostas" className="text-[11px] sm:text-xs gap-1.5">
+                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-[5px] bg-gradient-to-br from-[#0F9D58] to-[#0B7A43] shadow-sm">
+                    <FileSpreadsheet className="h-2.5 w-2.5 text-white" strokeWidth={2.5} />
+                  </span>
+                  Propostas
                 </TabsTrigger>
-                <TabsTrigger value="docs" className="text-[11px] sm:text-xs gap-1">
-                  <Paperclip className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Arquivos
+                <TabsTrigger value="docs" className="text-[11px] sm:text-xs gap-1.5">
+                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-[5px] bg-gradient-to-br from-sky-400 to-sky-600 shadow-sm">
+                    <Paperclip className="h-2.5 w-2.5 text-white" strokeWidth={2.75} />
+                  </span>
+                  Arquivos
                 </TabsTrigger>
                 {(isAdminPipeline || role === "administrativo" || role === "admin" || role === "ceo" || profile?.is_master) && (
-                  <TabsTrigger value="pos-venda" className="text-[11px] sm:text-xs gap-1">
-                    <Headphones className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Pós-Venda
+                  <TabsTrigger value="pos-venda" className="text-[11px] sm:text-xs gap-1.5">
+                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-[5px] bg-gradient-to-br from-violet-500 to-purple-700 shadow-sm">
+                      <Headphones className="h-2.5 w-2.5 text-white" strokeWidth={2.5} />
+                    </span>
+                    Pós-Venda
                   </TabsTrigger>
                 )}
-                <TabsTrigger value="conversa" className="text-[11px] sm:text-xs gap-1">
-                  <WhatsAppIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#25D366]" /> WhatsApp
+                <TabsTrigger value="conversa" className="text-[11px] sm:text-xs gap-1.5">
+                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#25D366] shadow-sm">
+                    <WhatsAppIcon className="h-2.5 w-2.5 text-white" />
+                  </span>
+                  WhatsApp
                 </TabsTrigger>
               </TabsList>
             </div>
