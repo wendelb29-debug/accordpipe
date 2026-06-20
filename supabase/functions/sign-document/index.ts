@@ -112,18 +112,9 @@ function buildPalette(tenant: any): BrandPalette {
   const secondary = sRgb || (pRgb ? lightenRgb(primary, 0.15) : defaultSecondary);
   const accent = aRgb || secondary;
 
-  // Dark bg derived from primary (very dark version)
-  const darkBgC = pRgb ? darkenRgb(primary, 0.4) : { r: 0.043, g: 0.059, b: 0.098 };
-  // Clamp to very dark
-  const clampedDarkBg = {
-    r: Math.max(0, Math.min(0.12, darkBgC.r)),
-    g: Math.max(0, Math.min(0.12, darkBgC.g)),
-    b: Math.max(0, Math.min(0.15, darkBgC.b)),
-  };
-
-  const cardBgC = pRgb
-    ? { r: clampedDarkBg.r + 0.03, g: clampedDarkBg.g + 0.04, b: clampedDarkBg.b + 0.06 }
-    : { r: 0.067, g: 0.094, b: 0.153 };
+  // White/professional background — printable, archive-friendly
+  const clampedDarkBg = { r: 1, g: 1, b: 1 };
+  const cardBgC = { r: 0.97, g: 0.97, b: 0.98 };
 
   const tenantName = tenant?.nome_fantasia || tenant?.razao_social || "Accord";
   const hasLogo = !!(tenant?.brand_logo_url);
@@ -135,15 +126,16 @@ function buildPalette(tenant: any): BrandPalette {
     darkBg: rgb(clampedDarkBg.r, clampedDarkBg.g, clampedDarkBg.b),
     cardBg: rgb(cardBgC.r, cardBgC.g, cardBgC.b),
     coverAccentBar: rgb(primary.r, primary.g, primary.b),
-    green: rgb(0.063, 0.725, 0.506),
-    white: rgb(0.898, 0.906, 0.922),
-    lightGray: rgb(0.624, 0.639, 0.667),
-    midGray: rgb(0.373, 0.388, 0.427),
-    dimLine: rgb(0.16, 0.18, 0.22),
+    green: rgb(0.04, 0.55, 0.35),
+    white: rgb(0.10, 0.12, 0.16),       // now used as "primary text" — dark
+    lightGray: rgb(0.42, 0.45, 0.50),    // secondary text
+    midGray: rgb(0.25, 0.28, 0.33),      // emphasized text
+    dimLine: rgb(0.85, 0.87, 0.90),      // borders / separators
     tenantName,
     hasLogo,
   };
 }
+
 
 const W = 595.28;
 const H = 841.89;
