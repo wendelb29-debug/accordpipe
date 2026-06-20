@@ -533,6 +533,7 @@ async function persistSignedPdfForPdfContract(
     })),
     validationUrl: `${origin}/validar-documento/${contract.validation_code || ""}`,
     signaturePositions,
+    supabase,
   });
 
   const signedPath = `${contract.servidor_id}/${contract.id}/contrato_assinado.pdf`;
