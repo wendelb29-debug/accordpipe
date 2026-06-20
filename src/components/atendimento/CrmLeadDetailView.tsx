@@ -118,7 +118,9 @@ const activityTypeLabels: Record<string, string> = {
   activity_reopened: "Atividade Reaberta",
 };
 
-const leadTabScrollClass = "flex-1 h-full min-h-0 overflow-y-auto overscroll-contain scrollbar-visible mt-0";
+const leadTabScrollClass = "overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-visible mt-0 focus-visible:outline-none";
+const leadTabScrollStyle = { maxHeight: 'calc(100dvh - 140px)' } as const;
+const leadTabFullStyle = { height: 'calc(100dvh - 140px)' } as const;
 
 const fieldLabels: Record<string, string> = {
   company_name: "Empresa",
@@ -1239,7 +1241,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             </div>
 
             {/* Histórico - all activities */}
-            <TabsContent value="historico" className={`${leadTabScrollClass} p-4`}>
+            <TabsContent value="historico" className={`${leadTabScrollClass} p-4`} style={leadTabScrollStyle}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-semibold">Histórico</h3>
                 <Button size="sm" variant="outline" onClick={() => setShowActivityForm(!showActivityForm)} className="gap-1.5 text-xs">
@@ -1303,7 +1305,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             </TabsContent>
 
             {/* Notas - compose + list */}
-            <TabsContent value="notas" className={`${leadTabScrollClass} p-4`}>
+            <TabsContent value="notas" className={`${leadTabScrollClass} p-4`} style={leadTabScrollStyle}>
               {/* Note compose area */}
               <Card className="mb-4">
                 <CardContent className="p-4 space-y-3">
@@ -1433,12 +1435,12 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             </TabsContent>
 
             {/* Atividades - rich tab */}
-            <TabsContent value="atividades" className={`${leadTabScrollClass} p-4`}>
+            <TabsContent value="atividades" className={`${leadTabScrollClass} p-4`} style={leadTabScrollStyle}>
               <LeadAtividadesTab lead={lead} addActivity={addActivity} />
             </TabsContent>
 
             {/* Ligações - filtered */}
-            <TabsContent value="ligacoes" className={`${leadTabScrollClass} p-4`}>
+            <TabsContent value="ligacoes" className={`${leadTabScrollClass} p-4`} style={leadTabScrollStyle}>
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-sm font-semibold text-foreground">Ligações registradas</h3>
@@ -1461,13 +1463,14 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             {/* Propostas */}
             <TabsContent
               value="propostas"
-              className={`${leadTabScrollClass} p-0 w-full max-w-full focus-visible:outline-none data-[state=inactive]:hidden`}
+              className={`${leadTabScrollClass} p-0 w-full max-w-full data-[state=inactive]:hidden`}
+              style={leadTabScrollStyle}
             >
               <LeadPropostasTab lead={lead} addActivity={addActivity} onUpdateLead={onUpdate} />
             </TabsContent>
 
              {/* Docs - Documentos Gerados + Arquivos */}
-            <TabsContent value="docs" className={`${leadTabScrollClass} p-2 sm:p-4 space-y-6`}>
+            <TabsContent value="docs" className={`${leadTabScrollClass} p-2 sm:p-4 space-y-6`} style={leadTabScrollStyle}>
               <LeadDocumentosTab lead={lead} addActivity={addActivity} />
               <LeadDocsTab lead={lead} />
             </TabsContent>
@@ -1475,13 +1478,13 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
              {/* Pós-Venda */}
             {(isAdminPipeline || role === "administrativo" || role === "admin" || role === "ceo" || profile?.is_master) && (
-              <TabsContent value="pos-venda" className={`${leadTabScrollClass} p-4`}>
+              <TabsContent value="pos-venda" className={`${leadTabScrollClass} p-4`} style={leadTabScrollStyle}>
                 <LeadPosVendaTab lead={lead} />
               </TabsContent>
             )}
 
             {/* Conversa WhatsApp */}
-            <TabsContent value="conversa" className="flex-1 min-h-0 overflow-hidden p-0 mt-0">
+            <TabsContent value="conversa" className="flex flex-col overflow-hidden p-0 mt-0 focus-visible:outline-none" style={leadTabFullStyle}>
               <div className="flex flex-col h-full min-h-0">
                 <LeadWhatsAppTab lead={lead} onBack={() => setActiveTab("historico")} />
               </div>
