@@ -90,6 +90,42 @@ async function fetchBinary(url: string): Promise<Uint8Array> {
   return new Uint8Array(await response.arrayBuffer());
 }
 
+function parseStorageUrl(url: string): { bucket: string; path: string } | null {
+  if (!url) return null;
+  const m = url.match(/\/storage\/v1\/object\/(?:sign|public|authenticated)\/([^/?]+)\/([^?]+)/);
+  if (!m) return null;
+  try {
+    return { bucket: decodeURIComponent(m[1]), path: decodeURIComponent(m[2]) };
+  } catch {
+    return { bucket: m[1], path: m[2] };
+  }
+}
+
+async function fetchSignerPhoto(
+  supabase: ReturnType<typeof createClient>,
+  url: string,
+): Promise<Uint8Array | null> {
+  if (!url) return null;
+  const parsed = parseStorageUrl(url);
+  if (parsed) {
+    try {
+      const { data, error } = await supabase.storage.from(parsed.bucket).download(parsed.path);
+      if (!error && data) {
+        return new Uint8Array(await data.arrayBuffer());
+      }
+      console.error("[sign-contract] storage.download failed", parsed, error?.message);
+    } catch (e) {
+      console.error("[sign-contract] storage.download threw", parsed, e);
+    }
+  }
+  try {
+    return await fetchBinary(url);
+  } catch (e) {
+    console.error("[sign-contract] fetchBinary fallback failed", url.slice(0, 120), e);
+    return null;
+  }
+}
+
 async function resolveSignaturePositions(supabase: ReturnType<typeof createClient>, contractId: string, servidorId: string) {
   const { data: sigFields, error: sigFieldsError } = await supabase
     .from("pdf_contract_fields")
@@ -160,6 +196,7 @@ async function buildSignedPdfBytes(data: {
   signers: SignedSignerData[];
   validationUrl: string;
   signaturePositions?: SignaturePosition[];
+  supabase?: ReturnType<typeof createClient>;
 }) {
   const pdfBytes = await fetchBinary(data.pdfUrl);
   const pdfDoc = await PDFDocument.load(pdfBytes);
@@ -170,15 +207,18 @@ async function buildSignedPdfBytes(data: {
   const signerPhotos: (Uint8Array | null)[] = [];
   for (const signer of data.signers) {
     if (!signer.signature_photo_url) {
+      console.log("[sign-contract] signer has no photo url", signer.name);
       signerPhotos.push(null);
       continue;
     }
-
-    try {
-      signerPhotos.push(await fetchBinary(signer.signature_photo_url));
-    } catch {
-      signerPhotos.push(null);
+    let bytes: Uint8Array | null = null;
+    if (data.supabase) {
+      bytes = await fetchSignerPhoto(data.supabase, signer.signature_photo_url);
+    } else {
+      try { bytes = await fetchBinary(signer.signature_photo_url); } catch { bytes = null; }
     }
+    console.log("[sign-contract] signer photo fetched", signer.name, bytes ? `${bytes.length} bytes` : "FAILED");
+    signerPhotos.push(bytes);
   }
 
   let positions = [...(data.signaturePositions || [])];
@@ -493,6 +533,7 @@ async function persistSignedPdfForPdfContract(
     })),
     validationUrl: `${origin}/validar-documento/${contract.validation_code || ""}`,
     signaturePositions,
+    supabase,
   });
 
   const signedPath = `${contract.servidor_id}/${contract.id}/contrato_assinado.pdf`;
@@ -584,6 +625,7 @@ async function persistSignedPdfForContract(
     signers: signerList,
     validationUrl: `${origin}/validar-documento/${contractData.validation_code || ""}`,
     signaturePositions,
+    supabase,
   });
 
   const signedPath = `contracts/${contractId}/contrato_assinado_${Date.now()}.pdf`;
