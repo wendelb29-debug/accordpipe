@@ -58,12 +58,37 @@ import { useUnreadEmailCount } from "@/hooks/useUnreadEmailCount";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { BrandIcon, type BrandIconTone } from "@/components/ui/brand-icon";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+// Brand color per route — gives the sidebar a real-app (iOS/Notion) feel
+const ROUTE_TONES: Record<string, BrandIconTone> = {
+  "/home": "orange",
+  "/dashboard": "blue",
+  "/crm-dashboard": "indigo",
+  "/atendimento": "emerald",
+  "/formularios": "cyan",
+  "/atividades": "rose",
+  "/collabs": "fuchsia",
+  "/email": "red",
+  "/cadastrados": "teal",
+  "/financeiro": "green",
+  "/marketing": "orange",
+  "/documentos": "sky",
+  "/relatorios": "violet",
+  "/performance": "emerald",
+  "/academy": "amber",
+  "/accord-pulse": "red",
+  "/descarte": "slate",
+  "/configuracoes/usuarios": "teal",
+  "/configuracoes/logs": "slate",
+};
+
 
 const navigationSections = [
   {
