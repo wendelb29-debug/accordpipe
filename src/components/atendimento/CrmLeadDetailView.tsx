@@ -1462,6 +1462,11 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
               <ActivityFilteredList activities={activities.filter((a) => a.type === "call")} loading={activitiesLoading} emptyLabel="ligações" />
             </TabsContent>
 
+            {/* E-mail */}
+            <TabsContent value="email" className="overflow-y-auto overflow-x-hidden mt-0 focus-visible:outline-none" style={leadTabScrollStyle}>
+              <LeadEmailTab lead={lead} addActivity={addActivity} />
+            </TabsContent>
+
 
             {/* Propostas */}
             <TabsContent
