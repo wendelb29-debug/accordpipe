@@ -7,8 +7,7 @@ const corsHeaders = {
 };
 
 const DRIVE_SCOPES = [
-  "https://www.googleapis.com/auth/drive.readonly",
-  "https://www.googleapis.com/auth/drive.metadata.readonly",
+  "https://www.googleapis.com/auth/drive.file",
   "openid",
   "email",
   "profile",
