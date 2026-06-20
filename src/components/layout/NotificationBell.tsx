@@ -153,7 +153,7 @@ export function NotificationBell() {
       clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [user, activeCompanyId, fetchNotifications, playNotificationSound]);
+  }, [user, activeCompanyId, fetchNotifications, playNotificationSound, prefs.alertsEnabled, isPaused]);
 
   const toggleRead = async (id: string, currentlyRead: boolean) => {
     await supabase.from("notifications").update({ is_read: !currentlyRead }).eq("id", id);
