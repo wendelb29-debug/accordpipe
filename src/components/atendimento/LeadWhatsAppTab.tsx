@@ -41,8 +41,42 @@ export function LeadWhatsAppTab({ lead, onBack }: LeadWhatsAppTabProps) {
   const [sending, setSending] = useState(false);
   const [contactId, setContactId] = useState<string | null>(null);
   const [accordLoading, setAccordLoading] = useState(false);
+  const [starting, setStarting] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const companyId = lead.servidor_id;
+
+  const handleStartConversation = async () => {
+    if (!lead.phone || starting) return;
+    setStarting(true);
+    try {
+      const digits = lead.phone.replace(/\D/g, "").replace(/^0+/, "");
+      const phone = digits.startsWith("55") ? digits : `55${digits}`;
+      const { data: novo, error } = await supabase
+        .from("whatsapp_contacts")
+        .insert({
+          company_id: lead.servidor_id,
+          name: lead.contact_name || lead.company_name || "Lead",
+          phone,
+          lead_id: lead.id,
+          workspace_id: (lead as any).workspace_id || null,
+          conversation_status: "aguardando",
+        } as any)
+        .select()
+        .single();
+      if (error || !novo) {
+        toast.error("Não foi possível iniciar a conversa");
+        return;
+      }
+      setContactId((novo as any).id);
+      setMessages([]);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    } catch {
+      toast.error("Não foi possível iniciar a conversa");
+    } finally {
+      setStarting(false);
+    }
+  };
 
   const fetchContact = useCallback(async () => {
     if (!lead.phone) {
