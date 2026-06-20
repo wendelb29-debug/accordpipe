@@ -441,7 +441,7 @@ export function NotificationBell() {
         </div>
         </>
         )}
-      </PopoverContent>
-    </Popover>
+      </SheetContent>
+    </Sheet>
   );
 }
