@@ -293,8 +293,14 @@ export default function Documentos() {
   return (
     <Tabs defaultValue="meus" className="space-y-4">
       <TabsList>
-        <TabsTrigger value="meus">Meus Documentos</TabsTrigger>
-        <TabsTrigger value="nuvem">Nuvem</TabsTrigger>
+        <TabsTrigger value="meus" className="gap-1.5">
+          <BrandIcon icon={FolderOpen} tone="sky" size="xs" />
+          Meus Documentos
+        </TabsTrigger>
+        <TabsTrigger value="nuvem" className="gap-1.5">
+          <BrandIcon icon={Cloud} tone="blue" size="xs" />
+          Nuvem
+        </TabsTrigger>
       </TabsList>
       <TabsContent value="meus" className="space-y-4 mt-0">
       {/* Header */}
