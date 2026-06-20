@@ -11,10 +11,13 @@ const buttonVariants = cva(
       variant: {
         default:
           "gradient-primary text-white font-semibold rounded-full shadow-[0_8px_20px_-6px_rgba(37,99,235,0.55)] hover:shadow-[0_12px_26px_-6px_rgba(37,99,235,0.7)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-[0_4px_12px_-4px_rgba(37,99,235,0.5)]",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
+        destructive:
+          "bg-gradient-to-br from-red-500 to-red-600 text-white font-semibold rounded-full shadow-[0_8px_20px_-6px_rgba(220,38,38,0.55)] hover:shadow-[0_12px_26px_-6px_rgba(220,38,38,0.7)] hover:-translate-y-0.5 active:translate-y-0",
+        outline:
+          "border border-input bg-background rounded-full hover:bg-accent hover:text-accent-foreground hover:border-primary/40 hover:shadow-[0_6px_16px_-8px_rgba(37,99,235,0.35)] hover:-translate-y-0.5 active:translate-y-0 transition-all",
+        secondary:
+          "bg-secondary text-secondary-foreground rounded-full hover:bg-secondary/80 hover:shadow-[0_6px_16px_-8px_rgba(0,0,0,0.25)] hover:-translate-y-0.5 active:translate-y-0",
+        ghost: "rounded-full hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
