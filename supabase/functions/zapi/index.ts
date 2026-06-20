@@ -6,6 +6,37 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function normalizePhone(phone: string): string {
+  return phone.replace(/\D/g, "");
+}
+
+async function sendViaActiveIntegration(supabase: any, companyId: string, phone: string, message: string) {
+  const { data: integ } = await supabase
+    .from("tenant_whatsapp_integrations")
+    .select("provider_type, server_url, instance_token, instance_id, instance_name, is_active")
+    .eq("tenant_id", companyId)
+    .order("is_active", { ascending: false })
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!integ || !integ.is_active || !integ.server_url || !integ.instance_token) return null;
+
+  if (integ.provider_type === "uazapi") {
+    const res = await fetch(`${String(integ.server_url).replace(/\/$/, "")}/send/text`, {
+      method: "POST",
+      headers: { token: integ.instance_token, "Content-Type": "application/json" },
+      body: JSON.stringify({ number: normalizePhone(phone), text: message }),
+    });
+    const rawText = await res.text();
+    let data: any = null;
+    try { data = JSON.parse(rawText); } catch { data = { raw: rawText }; }
+    return { success: res.ok, data, error: res.ok ? null : `Uazapi send-text failed [${res.status}]` };
+  }
+
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -35,6 +66,14 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (credsError || !creds) {
+      if (action === "send-text" && phone && message) {
+        const routed = await sendViaActiveIntegration(supabase, company_id, phone, message);
+        if (routed) {
+          return new Response(JSON.stringify(routed), {
+            status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
       return new Response(
         JSON.stringify({ success: false, error: "API credentials not found for this company" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -46,6 +85,14 @@ Deno.serve(async (req) => {
     const CLIENT_TOKEN = creds.zapi_client_token;
 
     if (!INSTANCE_ID || !TOKEN || !CLIENT_TOKEN) {
+      if (action === "send-text" && phone && message) {
+        const routed = await sendViaActiveIntegration(supabase, company_id, phone, message);
+        if (routed) {
+          return new Response(JSON.stringify(routed), {
+            status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
       return new Response(
         JSON.stringify({ error: "Z-API não configurada para esta empresa. Configure em Configurações." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
