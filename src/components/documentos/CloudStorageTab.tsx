@@ -53,24 +53,37 @@ export function CloudStorageTab() {
   const fetchAccounts = async () => {
     if (!userId || !activeCompanyId) {
       setAccounts([]);
+      setEmailHints([]);
       setLoading(false);
       return;
     }
     try {
-      const { data, error } = await (supabase as any)
-        .from("cloud_drive_accounts")
-        .select("id, provider, email, display_name, created_at")
-        .eq("user_id", userId)
-        .eq("servidor_id", activeCompanyId)
-        .order("created_at", { ascending: false });
-      if (error) {
-        // table may not exist yet — treat as empty
-        setAccounts([]);
-      } else {
-        setAccounts((data || []) as CloudAccount[]);
-      }
+      const [{ data: cloudData }, { data: emailData }] = await Promise.all([
+        (supabase as any)
+          .from("cloud_drive_accounts")
+          .select("id, provider, email, display_name, created_at")
+          .eq("user_id", userId)
+          .eq("servidor_id", activeCompanyId)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("email_accounts")
+          .select("id, provider, email_address, display_name, status")
+          .eq("user_id", userId)
+          .eq("servidor_id", activeCompanyId),
+      ]);
+      setAccounts(((cloudData as any[]) || []) as CloudAccount[]);
+      const hints = ((emailData as any[]) || [])
+        .filter((e) => providerFromEmail(e.provider) !== null)
+        .map((e) => ({
+          id: e.id,
+          provider: e.provider,
+          email_address: e.email_address,
+          display_name: e.display_name,
+        })) as EmailAccountHint[];
+      setEmailHints(hints);
     } catch {
       setAccounts([]);
+      setEmailHints([]);
     } finally {
       setLoading(false);
     }
@@ -80,6 +93,12 @@ export function CloudStorageTab() {
     fetchAccounts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, activeCompanyId]);
+
+  const openDialog = (preselect?: Provider, hintEmail?: string | null) => {
+    if (preselect) setProvider(preselect);
+    setLoginHint(hintEmail ?? null);
+    setOpen(true);
+  };
 
   const handleConnect = async () => {
     if (!userId || !activeCompanyId) {
@@ -93,7 +112,11 @@ export function CloudStorageTab() {
           ? "drive-oauth-start"
           : "drive-oauth-start-microsoft";
       const { data, error } = await supabase.functions.invoke(fn, {
-        body: { user_id: userId, servidor_id: activeCompanyId },
+        body: {
+          user_id: userId,
+          servidor_id: activeCompanyId,
+          login_hint: loginHint || undefined,
+        },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -102,22 +125,23 @@ export function CloudStorageTab() {
         return;
       }
       throw new Error("URL de autorização não recebida");
-    } catch (e: any) {
-      const msg = String(e?.message || e || "");
-      if (
-        msg.includes("Function not found") ||
-        msg.includes("404") ||
-        msg.toLowerCase().includes("not found")
-      ) {
-        toast.info("Integração em configuração");
-      } else {
-        toast.info("Integração em configuração");
-      }
+    } catch {
+      toast.info("Integração em configuração");
     } finally {
       setBusy(false);
       setOpen(false);
     }
   };
+
+  // Hide hints for which a cloud drive of same provider+email already exists
+  const connectedKeys = new Set(
+    accounts.map((a) => `${a.provider}:${(a.email || "").toLowerCase()}`),
+  );
+  const suggestions = emailHints.filter((h) => {
+    const p = providerFromEmail(h.provider)!;
+    return !connectedKeys.has(`${p}:${(h.email_address || "").toLowerCase()}`);
+  });
+
 
   const providerLabel = (p: string) =>
     p === "google"
