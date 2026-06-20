@@ -15,6 +15,7 @@ import { LeadPropostasTab } from "./LeadPropostasTab";
 
 import { LeadDocsTab } from "./LeadDocsTab";
 import { LeadDocumentosTab } from "./LeadDocumentosTab";
+import { LeadEmailTab } from "./LeadEmailTab";
 import { LeadPosVendaTab } from "./LeadPosVendaTab";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
