@@ -603,15 +603,21 @@ export function AccordAIChat() {
         >
           {/* Header */}
           <div
-            className="flex items-center gap-3 px-4 py-3 text-primary-foreground shrink-0"
-            style={{ background: "linear-gradient(135deg, #3B3F9C, #7A3FF2)" }}
+            className="flex items-center gap-3 px-4 py-3 text-white shrink-0"
+            style={{ background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #A855F7 100%)" }}
           >
-            <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center">
-              <Sparkles className="h-4 w-4" />
+            <div
+              className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ring-1 ring-white/30"
+              style={{
+                background: "linear-gradient(135deg, rgba(255,255,255,0.28), rgba(255,255,255,0.08))",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.45), 0 4px 12px -4px rgba(0,0,0,0.25)",
+              }}
+            >
+              <Sparkles className="h-[18px] w-[18px] drop-shadow-[0_1px_1px_rgba(0,0,0,0.3)]" strokeWidth={2.25} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm">✨ ACCORD IA</p>
-              <p className="text-[11px] opacity-80 truncate">Contexto: {pageName}</p>
+              <p className="font-bold text-sm tracking-tight">Accord IA</p>
+              <p className="text-[11px] opacity-85 truncate">Contexto: {pageName}</p>
             </div>
             <div className="flex items-center gap-1 shrink-0">
               <button
