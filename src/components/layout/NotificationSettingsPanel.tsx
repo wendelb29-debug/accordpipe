@@ -77,9 +77,9 @@ export function NotificationSettingsPanel({ onBack, onClose }: Props) {
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between border-b px-3 h-12">
+      <div className="flex items-center justify-between border-b px-3 h-12 shrink-0">
         <button onClick={onBack} className="flex items-center gap-1.5 text-xs font-medium text-foreground hover:text-primary transition">
           <ArrowLeft className="h-4 w-4" />
           Voltar às notificações
@@ -89,7 +89,7 @@ export function NotificationSettingsPanel({ onBack, onClose }: Props) {
         </button>
       </div>
 
-      <ScrollArea className="h-[560px]">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="px-4 py-4 space-y-5">
           <h3 className="text-base font-bold text-foreground">Configurações</h3>
 
