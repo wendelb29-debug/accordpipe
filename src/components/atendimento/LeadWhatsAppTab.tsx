@@ -368,6 +368,7 @@ export function LeadWhatsAppTab({ lead, onBack }: LeadWhatsAppTabProps) {
           {accordLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
         </Button>
         <textarea
+          ref={inputRef}
           value={inputValue}
           onChange={e => setInputValue(e.target.value)}
           onKeyDown={e => {
