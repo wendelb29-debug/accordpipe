@@ -420,10 +420,18 @@ export default function Servidores() {
                                 subActive ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border bg-card/60"
                               } ${subLoading ? "opacity-80 pointer-events-none" : ""}`}
                             >
-                              <div className={`h-8 w-8 rounded-md flex items-center justify-center shrink-0 ${
-                                subActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                              }`}>
-                                {subLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Home className="h-4 w-4" />}
+                              <div
+                                className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ring-1 ring-white/40"
+                                style={{
+                                  background: "linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)",
+                                  boxShadow: "0 8px 18px -8px rgba(139,92,246,0.55), inset 0 1px 0 rgba(255,255,255,0.35)",
+                                }}
+                              >
+                                {subLoading ? (
+                                  <Loader2 className="h-4 w-4 animate-spin text-white" />
+                                ) : (
+                                  <Home className="h-4 w-4 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]" strokeWidth={2.25} />
+                                )}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className={`text-sm font-medium truncate ${subActive ? "text-primary" : "text-foreground"}`}>
