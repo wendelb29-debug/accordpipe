@@ -1305,7 +1305,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             </TabsContent>
 
             {/* Notas - compose + list */}
-            <TabsContent value="notas" className={`${leadTabScrollClass} p-4`}>
+            <TabsContent value="notas" className={`${leadTabScrollClass} p-4`} style={leadTabScrollStyle}>
               {/* Note compose area */}
               <Card className="mb-4">
                 <CardContent className="p-4 space-y-3">
