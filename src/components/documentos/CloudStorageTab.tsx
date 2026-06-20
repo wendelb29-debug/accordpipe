@@ -35,6 +35,18 @@ interface EmailAccountHint {
   display_name: string | null;
 }
 
+const formatBytes = (bytes: number): string => {
+  if (!bytes || bytes < 1024) return `${bytes || 0} B`;
+  const units = ["KB", "MB", "GB", "TB"];
+  let val = bytes / 1024;
+  let i = 0;
+  while (val >= 1024 && i < units.length - 1) {
+    val /= 1024;
+    i++;
+  }
+  return `${val.toFixed(val >= 100 ? 0 : 1)} ${units[i]}`;
+};
+
 const providerFromEmail = (p: string): Provider | null => {
   if (p === "gmail" || p === "google") return "google";
   if (p === "outlook" || p === "microsoft" || p === "office365") return "microsoft";
