@@ -439,6 +439,8 @@ export function NotificationBell() {
             }
           </button>
         </div>
+        </>
+        )}
       </PopoverContent>
     </Popover>
   );
