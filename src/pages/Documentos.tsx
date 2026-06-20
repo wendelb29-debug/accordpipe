@@ -22,6 +22,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import JSZip from "jszip";
 import { FolderPickerDialog } from "@/components/documentos/FolderPickerDialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { CloudStorageTab } from "@/components/documentos/CloudStorageTab";
 
 
 const statusConfig: Record<string, { label: string; color: string; emoji: string }> = {
