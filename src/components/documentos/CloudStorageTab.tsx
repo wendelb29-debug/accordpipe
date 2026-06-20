@@ -243,7 +243,7 @@ export function CloudStorageTab() {
                 <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
                   <Cloud className="h-5 w-5 text-primary" />
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 space-y-1">
                   <p className="font-medium text-foreground truncate">
                     {acc.display_name || acc.email || providerLabel(acc.provider)}
                   </p>
@@ -251,6 +251,21 @@ export function CloudStorageTab() {
                     {providerLabel(acc.provider)}
                     {acc.email ? ` • ${acc.email}` : ""}
                   </p>
+                  {acc.quota_total ? (
+                    <div className="pt-1">
+                      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-600 rounded-full transition-all"
+                          style={{
+                            width: `${Math.min(100, ((acc.quota_used || 0) / acc.quota_total) * 100).toFixed(1)}%`,
+                          }}
+                        />
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        {formatBytes(acc.quota_used || 0)} de {formatBytes(acc.quota_total)} usados
+                      </p>
+                    </div>
+                  ) : null}
                 </div>
                 <Button
                   variant="ghost"
