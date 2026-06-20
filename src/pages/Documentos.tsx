@@ -22,6 +22,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import JSZip from "jszip";
 import { FolderPickerDialog } from "@/components/documentos/FolderPickerDialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { CloudStorageTab } from "@/components/documentos/CloudStorageTab";
 
 
 const statusConfig: Record<string, { label: string; color: string; emoji: string }> = {
@@ -287,7 +289,12 @@ export default function Documentos() {
   };
 
   return (
-    <div className="space-y-4">
+    <Tabs defaultValue="meus" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="meus">Meus Documentos</TabsTrigger>
+        <TabsTrigger value="nuvem">Nuvem</TabsTrigger>
+      </TabsList>
+      <TabsContent value="meus" className="space-y-4 mt-0">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -582,7 +589,11 @@ export default function Documentos() {
           }
         }}
       />
-    </div>
+      </TabsContent>
+      <TabsContent value="nuvem" className="mt-0">
+        <CloudStorageTab />
+      </TabsContent>
+    </Tabs>
   );
 }
 
