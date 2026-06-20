@@ -1440,7 +1440,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             </TabsContent>
 
             {/* Ligações - filtered */}
-            <TabsContent value="ligacoes" className={`${leadTabScrollClass} p-4`}>
+            <TabsContent value="ligacoes" className={`${leadTabScrollClass} p-4`} style={leadTabScrollStyle}>
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-sm font-semibold text-foreground">Ligações registradas</h3>
