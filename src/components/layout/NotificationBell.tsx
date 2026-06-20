@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Bell, Eye, EyeOff, CircleCheck, BellOff, BellRing, TestTube, CheckCircle2, XCircle } from "lucide-react";
+import { Bell, Eye, EyeOff, CircleCheck, BellOff, BellRing, TestTube, CheckCircle2, XCircle, Settings, PauseCircle, X } from "lucide-react";
 import { getNotificationStyle } from "./notificationStyles";
 import { useNotificationManager } from "@/hooks/useNotificationManager";
+import { useNotificationPrefs } from "@/hooks/useNotificationPrefs";
+import { NotificationSettingsPanel } from "./NotificationSettingsPanel";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
