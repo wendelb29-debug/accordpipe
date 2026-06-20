@@ -203,7 +203,38 @@ export function NotificationBell() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-[380px] p-0 rounded-xl">
+      <PopoverContent align="end" className="w-[380px] p-0 rounded-xl" onCloseAutoFocus={() => setView("list")}>
+        {view === "settings" ? (
+          <NotificationSettingsPanel onBack={() => setView("list")} onClose={() => setOpen(false)} />
+        ) : (
+        <>
+        {/* Header */}
+        <div className="flex items-center justify-between border-b px-3 h-11">
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm font-bold text-foreground">Notificações</span>
+            {isPaused && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 rounded-full px-1.5 py-0.5">
+                <PauseCircle className="h-2.5 w-2.5" /> Pausado
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-0.5">
+            <button
+              onClick={() => setView("settings")}
+              title="Configurações"
+              className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition"
+            >
+              <Settings className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setOpen(false)}
+              title="Fechar"
+              className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
         {/* Tabs */}
         <div className="flex border-b">
           <button
