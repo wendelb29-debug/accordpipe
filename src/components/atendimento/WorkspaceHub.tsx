@@ -409,13 +409,32 @@ function WorkspaceCard({
       className="group relative w-full rounded-xl border border-border/50 bg-card hover:bg-card/80 hover:border-primary/30 transition-all duration-200 text-left overflow-hidden"
     >
       <div
-        className="h-20 w-full flex items-center justify-center"
-        style={{ backgroundColor: workspace.color + "30" }}
+        className="relative h-24 w-full flex items-center justify-center overflow-hidden"
+        style={{
+          background: `linear-gradient(135deg, ${workspace.color}26 0%, ${workspace.color}40 50%, ${workspace.color}1a 100%)`,
+        }}
       >
-        <div className="flex gap-1">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="w-1 h-8 rounded-full" style={{ backgroundColor: workspace.color + "60" }} />
-          ))}
+        {/* subtle glow */}
+        <div
+          className="absolute -top-10 -right-10 h-32 w-32 rounded-full blur-2xl opacity-50"
+          style={{ backgroundColor: workspace.color + "55" }}
+        />
+        <div
+          className="absolute -bottom-12 -left-8 h-28 w-28 rounded-full blur-2xl opacity-40"
+          style={{ backgroundColor: workspace.color + "33" }}
+        />
+        {/* live colored icon tile */}
+        <div
+          className="relative h-14 w-14 rounded-2xl flex items-center justify-center ring-1 ring-white/40"
+          style={{
+            background: `linear-gradient(135deg, ${workspace.color} 0%, ${workspace.color}d9 100%)`,
+            boxShadow: `0 10px 24px -8px ${workspace.color}99, inset 0 1px 0 rgba(255,255,255,0.35)`,
+          }}
+        >
+          <Icon
+            className="h-7 w-7 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
+            strokeWidth={2.25}
+          />
         </div>
       </div>
 
