@@ -112,8 +112,11 @@ export default function Documentos() {
       if (c.type === "folder") {
         await gatherFolderFiles(c.id, `${prefix}${c.name}/`, zip);
       } else if (c.file_path) {
-        const { data } = await supabase.storage.from("contract-pdfs").download(c.file_path);
-        if (data) zip.file(`${prefix}${c.name}`, data);
+        const { data: signed } = await supabase.storage.from("contract-pdfs").createSignedUrl(c.file_path, 300);
+        if (signed?.signedUrl) {
+          const resp = await fetch(signed.signedUrl);
+          if (resp.ok) zip.file(`${prefix}${c.name}`, await resp.blob());
+        }
       }
     }
   };
@@ -134,8 +137,11 @@ export default function Documentos() {
         if (item.type === "folder") {
           await gatherFolderFiles(item.id, `${item.name}/`, zip);
         } else if (item.file_path) {
-          const { data } = await supabase.storage.from("contract-pdfs").download(item.file_path);
-          if (data) zip.file(item.name, data);
+          const { data: signed } = await supabase.storage.from("contract-pdfs").createSignedUrl(item.file_path, 300);
+          if (signed?.signedUrl) {
+            const resp = await fetch(signed.signedUrl);
+            if (resp.ok) zip.file(item.name, await resp.blob());
+          }
         }
       }
       const blob = await zip.generateAsync({ type: "blob" });
