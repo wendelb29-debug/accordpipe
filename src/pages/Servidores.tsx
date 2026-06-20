@@ -284,8 +284,14 @@ export default function Servidores() {
       {/* Content */}
       <div className="relative z-10 w-full max-w-lg animate-fade-in">
         <div className="flex items-center gap-3 mb-8">
-          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shadow-sm">
-            <Building2 className="h-6 w-6 text-primary" />
+          <div
+            className="h-12 w-12 rounded-2xl flex items-center justify-center ring-1 ring-white/40"
+            style={{
+              background: "linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)",
+              boxShadow: "0 10px 24px -8px rgba(59,130,246,0.55), inset 0 1px 0 rgba(255,255,255,0.35)",
+            }}
+          >
+            <Building2 className="h-6 w-6 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]" strokeWidth={2.25} />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-foreground">Meus Servidores</h1>
