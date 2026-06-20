@@ -1239,7 +1239,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                   </TabsTrigger>
                 )}
                 <TabsTrigger value="conversa" className="text-[11px] sm:text-xs gap-1">
-                  <MessageCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Conversa
+                  <WhatsAppIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#25D366]" /> WhatsApp
                 </TabsTrigger>
               </TabsList>
             </div>
