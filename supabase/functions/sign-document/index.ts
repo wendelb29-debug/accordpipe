@@ -344,7 +344,8 @@ async function buildAuditPages(
   drawRect(page, 0, H - 4, W, 4, P.coverAccentBar);
   // ICP seal on the top-right corner of the first audit page
   drawIcpSeal(page, W - 50, H - 55, 26);
-  let y = H - 50;
+  // Start content below the seal area (seal + labels reach ~H-100) to avoid overlap with section bar
+  let y = H - 110;
 
 
   function newPage() {
