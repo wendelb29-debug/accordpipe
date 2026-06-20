@@ -45,30 +45,34 @@ export function PdfAllPagesRenderer({ pdfUrl, scale = 1.2, onTotalPages, onPageS
     const renderAll = async () => {
       const sizes: PageSize[] = [];
       const containerWidth = containerRef.current?.clientWidth || 600;
+      const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
 
       for (let i = 1; i <= numPages; i++) {
         if (cancelled) return;
         const page = await pdf.getPage(i);
         const baseViewport = page.getViewport({ scale: 1 });
-        
-        // Calculate scale to fit container width, but don't exceed the provided scale
-        const fitScale = Math.min(scale, (containerWidth - 16) / baseViewport.width);
-        const viewport = page.getViewport({ scale: fitScale });
-        
+
+        // CSS size: fit the container width (cap to scale*baseWidth to avoid blowing up huge pages)
+        const cssScale = Math.min(scale, (containerWidth - 16) / baseViewport.width);
+        const cssViewport = page.getViewport({ scale: cssScale });
+
+        // Render at devicePixelRatio for crisp HiDPI output, then downscale via CSS
+        const renderViewport = page.getViewport({ scale: cssScale * dpr });
+
         const canvas = canvasRefs.current[i - 1];
         if (!canvas) continue;
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        canvas.style.width = `${viewport.width}px`;
-        canvas.style.height = `${viewport.height}px`;
+        canvas.width = Math.floor(renderViewport.width);
+        canvas.height = Math.floor(renderViewport.height);
+        canvas.style.width = `${Math.floor(cssViewport.width)}px`;
+        canvas.style.height = `${Math.floor(cssViewport.height)}px`;
         canvas.style.maxWidth = "100%";
-        canvas.style.height = "auto";
         const ctx = canvas.getContext("2d")!;
-        await page.render({ canvasContext: ctx, viewport }).promise;
-        sizes.push({ width: viewport.width, height: viewport.height });
+        await page.render({ canvasContext: ctx, viewport: renderViewport }).promise;
+        sizes.push({ width: cssViewport.width, height: cssViewport.height });
       }
       if (!cancelled) onPageSizes?.(sizes);
     };
+
 
     renderAll();
     return () => { cancelled = true; };
