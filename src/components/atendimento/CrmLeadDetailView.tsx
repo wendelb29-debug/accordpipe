@@ -1003,13 +1003,17 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         {/* Left Sidebar - Details (full width on mobile, collapsible on desktop) */}
         <div
           className={cn(
-            "shrink-0 min-h-0 border-b md:border-b-0 md:border-r overflow-y-auto overscroll-contain transition-all duration-250 ease-in-out",
+            "shrink-0 min-h-0 border-b md:border-b-0 md:border-r overflow-y-auto overscroll-contain transition-[width,padding] duration-250 ease-in-out",
             sidebarCollapsed
               ? "hidden md:block md:w-10 p-0"
               : "w-full md:w-72 p-3 sm:p-4",
-            !sidebarCollapsed && (detailsCollapsed ? 'max-h-fit' : 'max-h-[40vh]'),
-            "md:max-h-full md:h-full"
+            !sidebarCollapsed && (detailsCollapsed ? 'max-h-fit md:max-h-none' : 'max-h-[40vh] md:max-h-none')
           )}
+          style={
+            sidebarCollapsed
+              ? undefined
+              : { maxHeight: 'calc(100dvh - 140px)' }
+          }
         >
           {/* Collapsed state - desktop only */}
           {sidebarCollapsed && (
