@@ -24,6 +24,8 @@ interface CloudAccount {
   email: string | null;
   display_name: string | null;
   created_at: string;
+  quota_total?: number | null;
+  quota_used?: number | null;
 }
 
 interface EmailAccountHint {
