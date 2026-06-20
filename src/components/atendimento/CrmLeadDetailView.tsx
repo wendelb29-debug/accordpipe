@@ -1021,7 +1021,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
           style={
             sidebarCollapsed
               ? undefined
-              : { maxHeight: 'calc(100dvh - 140px)' }
+              : { maxHeight: 'calc(100dvh - 260px)' }
           }
         >
           {/* Collapsed state - desktop only */}
