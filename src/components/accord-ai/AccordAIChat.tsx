@@ -541,10 +541,10 @@ export function AccordAIChat() {
         onClick={isPureAI ? undefined : handleFabClick}
         role="button"
         className={cn(
-          "fixed rounded-full shadow-lg flex items-center justify-center text-primary-foreground select-none",
-          isPureAI ? "z-[95] touch-none cursor-grab active:cursor-grabbing" : "z-40 transition-all duration-300 hover:scale-105",
-          isMobile ? "h-11 w-11" : "h-12 w-12 sm:h-14 sm:w-14",
-          isDragging && "scale-110 shadow-2xl",
+          "fixed rounded-2xl flex items-center justify-center text-white select-none ring-1 ring-white/20",
+          isPureAI ? "z-[95] touch-none cursor-grab active:cursor-grabbing" : "z-40 transition-all duration-300 hover:scale-105 hover:-translate-y-0.5",
+          isMobile ? "h-12 w-12" : "h-14 w-14",
+          isDragging && "scale-110",
           dragOverDrop && "scale-90 opacity-60"
         )}
         style={{
@@ -552,14 +552,21 @@ export function AccordAIChat() {
             ? { left: computedPos.x, top: computedPos.y }
             : { bottom: `${safeBottom}px`, right: isMobile ? 16 : 24 }),
           background: showWhatsAppLook
-            ? "linear-gradient(135deg, #10b981, #059669)"
-            : "linear-gradient(135deg, #3B3F9C, #7A3FF2)",
+            ? "linear-gradient(135deg, #10b981 0%, #059669 100%)"
+            : "linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #A855F7 100%)",
+          boxShadow: showWhatsAppLook
+            ? "0 10px 30px -8px rgba(16,185,129,0.55), inset 0 1px 0 rgba(255,255,255,0.25)"
+            : "0 14px 36px -10px rgba(139,92,246,0.65), 0 4px 12px -4px rgba(99,102,241,0.4), inset 0 1px 0 rgba(255,255,255,0.3)",
           transition: isDragging ? "none" : undefined,
         }}
         title={showWhatsAppLook ? "Nova mensagem" : "✨ Assistente IA"}
       >
+        {/* Inner glow */}
+        {!showWhatsAppLook && !open && (
+          <span className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-white/0 via-white/10 to-white/30 pointer-events-none" />
+        )}
         {open && !isPureAI ? (
-          <X className="h-5 w-5 sm:h-6 sm:w-6 pointer-events-none" />
+          <X className="h-5 w-5 sm:h-6 sm:w-6 pointer-events-none relative" />
         ) : showWhatsAppLook ? (
           <div className="relative pointer-events-none">
             <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -571,8 +578,8 @@ export function AccordAIChat() {
           </div>
         ) : (
           <div className="relative pointer-events-none">
-            <Bot className="h-5 w-5 sm:h-6 sm:w-6" />
-            <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-green-400 border border-[#3B3F9C] animate-pulse" />
+            <Sparkles className="h-5 w-5 sm:h-[22px] sm:w-[22px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]" strokeWidth={2.25} />
+            <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-white/90 animate-pulse" />
           </div>
         )}
       </div>
