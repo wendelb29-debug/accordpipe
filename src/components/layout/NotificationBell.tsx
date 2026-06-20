@@ -192,8 +192,8 @@ export function NotificationBell() {
   const allRead = unreadNotifications.length === 0;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+    <Sheet open={open} onOpenChange={(v) => { setOpen(v); if (!v) setView("list"); }}>
+      <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="relative rounded-xl h-10 w-10">
           <Bell className="h-[18px] w-[18px]" />
           {unreadCount > 0 && (
@@ -202,8 +202,8 @@ export function NotificationBell() {
             </span>
           )}
         </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-[380px] p-0 rounded-xl" onCloseAutoFocus={() => setView("list")}>
+      </SheetTrigger>
+      <SheetContent side="right" className="w-full sm:max-w-[420px] p-0 flex flex-col gap-0">
         {view === "settings" ? (
           <NotificationSettingsPanel onBack={() => setView("list")} onClose={() => setOpen(false)} />
         ) : (
