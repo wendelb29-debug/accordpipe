@@ -12,7 +12,7 @@ interface ConnectedAccount {
 
 interface LeadEmailTabProps {
   lead: any;
-  addActivity?: (a: any) => Promise<void> | void;
+  addActivity?: (a: any) => any;
 }
 
 const PROVIDER_LABELS: Record<string, string> = {
