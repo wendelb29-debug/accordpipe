@@ -90,6 +90,42 @@ async function fetchBinary(url: string): Promise<Uint8Array> {
   return new Uint8Array(await response.arrayBuffer());
 }
 
+function parseStorageUrl(url: string): { bucket: string; path: string } | null {
+  if (!url) return null;
+  const m = url.match(/\/storage\/v1\/object\/(?:sign|public|authenticated)\/([^/?]+)\/([^?]+)/);
+  if (!m) return null;
+  try {
+    return { bucket: decodeURIComponent(m[1]), path: decodeURIComponent(m[2]) };
+  } catch {
+    return { bucket: m[1], path: m[2] };
+  }
+}
+
+async function fetchSignerPhoto(
+  supabase: ReturnType<typeof createClient>,
+  url: string,
+): Promise<Uint8Array | null> {
+  if (!url) return null;
+  const parsed = parseStorageUrl(url);
+  if (parsed) {
+    try {
+      const { data, error } = await supabase.storage.from(parsed.bucket).download(parsed.path);
+      if (!error && data) {
+        return new Uint8Array(await data.arrayBuffer());
+      }
+      console.error("[sign-contract] storage.download failed", parsed, error?.message);
+    } catch (e) {
+      console.error("[sign-contract] storage.download threw", parsed, e);
+    }
+  }
+  try {
+    return await fetchBinary(url);
+  } catch (e) {
+    console.error("[sign-contract] fetchBinary fallback failed", url.slice(0, 120), e);
+    return null;
+  }
+}
+
 async function resolveSignaturePositions(supabase: ReturnType<typeof createClient>, contractId: string, servidorId: string) {
   const { data: sigFields, error: sigFieldsError } = await supabase
     .from("pdf_contract_fields")
