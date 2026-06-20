@@ -39,8 +39,10 @@ export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
+  const [view, setView] = useState<"list" | "settings">("list");
   const [tab, setTab] = useState<"unread" | "read">("unread");
   const { enabled: pushEnabled, permissionState, enableNotifications, disableNotifications, sendTestNotification } = useNotificationManager();
+  const { prefs, isPaused } = useNotificationPrefs();
   const notifSupported = typeof window !== "undefined" && "Notification" in window;
 
   const handlePushToggle = async () => {
