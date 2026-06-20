@@ -406,7 +406,7 @@ function WorkspaceCard({
   return (
     <button
       onClick={onClick}
-      className="group relative w-full rounded-xl border border-border/50 bg-card hover:bg-card/80 hover:border-primary/30 transition-all duration-200 text-left overflow-hidden"
+      className="group relative w-full rounded-2xl border border-border/60 bg-card text-left overflow-hidden shadow-[0_4px_14px_-6px_rgba(15,23,42,0.18)] hover:shadow-[0_18px_38px_-12px_rgba(37,99,235,0.35)] hover:border-primary/40 hover:-translate-y-1 active:translate-y-0 active:shadow-[0_6px_14px_-6px_rgba(37,99,235,0.25)] transition-all duration-200"
     >
       <div
         className="relative h-24 w-full flex items-center justify-center overflow-hidden"
