@@ -14,6 +14,7 @@ import { GoalManagement } from "@/components/performance/GoalManagement";
 import { MyPerformance } from "@/components/performance/MyPerformance";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { BrandIcon } from "@/components/ui/brand-icon";
 import { useWorkspacePermissions } from "@/hooks/useWorkspacePermissions";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 
