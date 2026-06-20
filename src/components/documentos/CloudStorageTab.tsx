@@ -24,38 +24,80 @@ interface CloudAccount {
   email: string | null;
   display_name: string | null;
   created_at: string;
+  quota_total?: number | null;
+  quota_used?: number | null;
 }
+
+interface EmailAccountHint {
+  id: string;
+  provider: string;
+  email_address: string | null;
+  display_name: string | null;
+}
+
+const formatBytes = (bytes: number): string => {
+  if (!bytes || bytes < 1024) return `${bytes || 0} B`;
+  const units = ["KB", "MB", "GB", "TB"];
+  let val = bytes / 1024;
+  let i = 0;
+  while (val >= 1024 && i < units.length - 1) {
+    val /= 1024;
+    i++;
+  }
+  return `${val.toFixed(val >= 100 ? 0 : 1)} ${units[i]}`;
+};
+
+const providerFromEmail = (p: string): Provider | null => {
+  if (p === "gmail" || p === "google") return "google";
+  if (p === "outlook" || p === "microsoft" || p === "office365") return "microsoft";
+  return null;
+};
 
 export function CloudStorageTab() {
   const { profile, activeCompanyId } = useAuth();
   const userId = profile?.user_id;
   const [accounts, setAccounts] = useState<CloudAccount[]>([]);
+  const [emailHints, setEmailHints] = useState<EmailAccountHint[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [provider, setProvider] = useState<Provider>("google");
+  const [loginHint, setLoginHint] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const fetchAccounts = async () => {
     if (!userId || !activeCompanyId) {
       setAccounts([]);
+      setEmailHints([]);
       setLoading(false);
       return;
     }
     try {
-      const { data, error } = await (supabase as any)
-        .from("cloud_drive_accounts")
-        .select("id, provider, email, display_name, created_at")
-        .eq("user_id", userId)
-        .eq("servidor_id", activeCompanyId)
-        .order("created_at", { ascending: false });
-      if (error) {
-        // table may not exist yet — treat as empty
-        setAccounts([]);
-      } else {
-        setAccounts((data || []) as CloudAccount[]);
-      }
+      const [{ data: cloudData }, { data: emailData }] = await Promise.all([
+        (supabase as any)
+          .from("cloud_drive_accounts")
+          .select("id, provider, email, display_name, created_at, quota_total, quota_used")
+          .eq("user_id", userId)
+          .eq("servidor_id", activeCompanyId)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("email_accounts")
+          .select("id, provider, email_address, display_name, status")
+          .eq("user_id", userId)
+          .eq("servidor_id", activeCompanyId),
+      ]);
+      setAccounts(((cloudData as any[]) || []) as CloudAccount[]);
+      const hints = ((emailData as any[]) || [])
+        .filter((e) => providerFromEmail(e.provider) !== null)
+        .map((e) => ({
+          id: e.id,
+          provider: e.provider,
+          email_address: e.email_address,
+          display_name: e.display_name,
+        })) as EmailAccountHint[];
+      setEmailHints(hints);
     } catch {
       setAccounts([]);
+      setEmailHints([]);
     } finally {
       setLoading(false);
     }
@@ -65,6 +107,12 @@ export function CloudStorageTab() {
     fetchAccounts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, activeCompanyId]);
+
+  const openDialog = (preselect?: Provider, hintEmail?: string | null) => {
+    if (preselect) setProvider(preselect);
+    setLoginHint(hintEmail ?? null);
+    setOpen(true);
+  };
 
   const handleConnect = async () => {
     if (!userId || !activeCompanyId) {
@@ -78,7 +126,11 @@ export function CloudStorageTab() {
           ? "drive-oauth-start"
           : "drive-oauth-start-microsoft";
       const { data, error } = await supabase.functions.invoke(fn, {
-        body: { user_id: userId, servidor_id: activeCompanyId },
+        body: {
+          user_id: userId,
+          servidor_id: activeCompanyId,
+          login_hint: loginHint || undefined,
+        },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -87,22 +139,23 @@ export function CloudStorageTab() {
         return;
       }
       throw new Error("URL de autorização não recebida");
-    } catch (e: any) {
-      const msg = String(e?.message || e || "");
-      if (
-        msg.includes("Function not found") ||
-        msg.includes("404") ||
-        msg.toLowerCase().includes("not found")
-      ) {
-        toast.info("Integração em configuração");
-      } else {
-        toast.info("Integração em configuração");
-      }
+    } catch {
+      toast.info("Integração em configuração");
     } finally {
       setBusy(false);
       setOpen(false);
     }
   };
+
+  // Hide hints for which a cloud drive of same provider+email already exists
+  const connectedKeys = new Set(
+    accounts.map((a) => `${a.provider}:${(a.email || "").toLowerCase()}`),
+  );
+  const suggestions = emailHints.filter((h) => {
+    const p = providerFromEmail(h.provider)!;
+    return !connectedKeys.has(`${p}:${(h.email_address || "").toLowerCase()}`);
+  });
+
 
   const providerLabel = (p: string) =>
     p === "google"
@@ -126,13 +179,53 @@ export function CloudStorageTab() {
           </p>
         </div>
         <Button
-          onClick={() => setOpen(true)}
+          onClick={() => openDialog()}
           className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
         >
           <Plus className="h-4 w-4" />
           Conectar o armazenamento em nuvem
         </Button>
       </div>
+
+      {!loading && suggestions.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Sugestões a partir das suas contas de e-mail
+          </p>
+          <div className="grid gap-2">
+            {suggestions.map((s) => {
+              const p = providerFromEmail(s.provider)!;
+              return (
+                <Card key={s.id} className="border-emerald-600/30 bg-emerald-500/5">
+                  <CardContent className="p-3 flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-lg bg-background flex items-center justify-center shrink-0 border border-border">
+                      <Cloud className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        Conectar o {p === "google" ? "Google Drive" : "OneDrive"} de{" "}
+                        <span className="text-emerald-600">{s.email_address}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Essa conta já está conectada em E-mail — autorize o acesso ao
+                        armazenamento em um clique.
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => openDialog(p, s.email_address)}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                      Conectar
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
@@ -162,7 +255,7 @@ export function CloudStorageTab() {
                 <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
                   <Cloud className="h-5 w-5 text-primary" />
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 space-y-1">
                   <p className="font-medium text-foreground truncate">
                     {acc.display_name || acc.email || providerLabel(acc.provider)}
                   </p>
@@ -170,6 +263,21 @@ export function CloudStorageTab() {
                     {providerLabel(acc.provider)}
                     {acc.email ? ` • ${acc.email}` : ""}
                   </p>
+                  {acc.quota_total ? (
+                    <div className="pt-1">
+                      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-600 rounded-full transition-all"
+                          style={{
+                            width: `${Math.min(100, ((acc.quota_used || 0) / acc.quota_total) * 100).toFixed(1)}%`,
+                          }}
+                        />
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        {formatBytes(acc.quota_used || 0)} de {formatBytes(acc.quota_total)} usados
+                      </p>
+                    </div>
+                  ) : null}
                 </div>
                 <Button
                   variant="ghost"
