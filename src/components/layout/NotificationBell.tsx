@@ -131,6 +131,9 @@ export function NotificationBell() {
         playNotificationSound();
         fetchNotifications();
 
+        // Respect per-user prefs: don't show toast when alerts off or paused
+        if (!prefs.alertsEnabled || isPaused) return;
+
         const style = getNotificationStyle(newNotif.type, newNotif.metadata);
         const ToastIcon = style.Icon;
         toast(newNotif.title, {
