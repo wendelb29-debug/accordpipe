@@ -105,8 +105,7 @@ export function KanbanStageHeader({
               className={cn(
                 "flex-shrink-0 min-w-[60px] sm:flex-1 py-1 text-[9px] sm:text-[10px] font-medium rounded-sm transition-all text-center truncate px-1 relative",
                 colorClass,
-                !isActive && !isPast && !stage.rawColor && "bg-muted text-muted-foreground hover:bg-muted/80",
-                !isActive && !isPast && stage.rawColor && "text-muted-foreground hover:opacity-80",
+                !isActive && !isPast && "bg-muted/70 border border-border text-foreground/70 hover:bg-muted hover:text-foreground hover:border-foreground/20",
                 saving && "opacity-50 cursor-not-allowed"
               )}
               title={stage.title}
