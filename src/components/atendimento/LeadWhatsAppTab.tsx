@@ -306,6 +306,20 @@ export function LeadWhatsAppTab({ lead, onBack }: LeadWhatsAppTabProps) {
           <MessageSquare className="h-10 w-10 mb-3 opacity-30" />
           <p className="text-sm">Nenhuma conversa WhatsApp encontrada para este lead.</p>
           <p className="text-xs mt-1">O lead será vinculado automaticamente quando uma mensagem chegar.</p>
+          {lead.phone && (
+            <Button
+              onClick={handleStartConversation}
+              disabled={starting}
+              className="mt-4 bg-emerald-500 hover:bg-emerald-600 text-white gap-2"
+            >
+              {starting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <WhatsAppIcon className="h-4 w-4" />
+              )}
+              Iniciar conversa no WhatsApp
+            </Button>
+          )}
         </div>
       </div>
     );
