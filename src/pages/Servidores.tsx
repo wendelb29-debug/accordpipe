@@ -36,6 +36,14 @@ const typeBadgeConfig: Record<TenantType, { label: string; className: string }> 
   TENANT: { label: "Tenant", className: "border-primary/30 text-primary bg-primary/10" },
 };
 
+// Live colored gradients per tenant type (used for the icon tile)
+const typeGradient: Record<TenantType, { from: string; to: string; shadow: string }> = {
+  MASTER:    { from: "#F59E0B", to: "#D97706", shadow: "rgba(245,158,11,0.55)" },
+  REVENDEDOR:{ from: "#10B981", to: "#059669", shadow: "rgba(16,185,129,0.55)" },
+  SUBTENANT: { from: "#8B5CF6", to: "#6D28D9", shadow: "rgba(139,92,246,0.55)" },
+  TENANT:    { from: "#3B82F6", to: "#2563EB", shadow: "rgba(59,130,246,0.55)" },
+};
+
 export default function Servidores() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
