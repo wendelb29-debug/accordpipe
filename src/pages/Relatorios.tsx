@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BrandIcon } from "@/components/ui/brand-icon";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -569,22 +570,22 @@ export default function Relatorios() {
         <TabsList className="bg-muted/40 border border-border/30 p-1">
           {canViewClients && (
             <TabsTrigger value="clientes" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              <Users className="h-3.5 w-3.5" /> Base de Clientes
+              <BrandIcon icon={Users} tone="indigo" size="xs" /> Base de Clientes
             </TabsTrigger>
           )}
           {canViewCrm && (
             <TabsTrigger value="crm" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              <TrendingUp className="h-3.5 w-3.5" /> CRM / Workspaces
+              <BrandIcon icon={TrendingUp} tone="emerald" size="xs" /> CRM / Workspaces
             </TabsTrigger>
           )}
           {(canViewClients || canViewCrm) && (
             <TabsTrigger value="performance" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              <Trophy className="h-3.5 w-3.5" /> Performance
+              <BrandIcon icon={Trophy} tone="amber" size="xs" /> Performance
             </TabsTrigger>
           )}
           {(canViewClients || canViewCrm) && (
             <TabsTrigger value="financeiro" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              <DollarSign className="h-3.5 w-3.5" /> Financeiro
+              <BrandIcon icon={DollarSign} tone="green" size="xs" /> Financeiro
             </TabsTrigger>
           )}
         </TabsList>

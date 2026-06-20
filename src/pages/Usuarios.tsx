@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { PlanUsageCard } from "@/components/usuarios/PlanUsageCard";
 import { Plus, Search, User, MoreHorizontal, Pencil, Power, Shield, Eye, EyeOff, Building2, Server, CheckCircle, XCircle, Clock, FlaskConical, Send, MessageCircle, LayoutGrid, Trash2, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BrandIcon } from "@/components/ui/brand-icon";
 import ServidoresTab from "@/components/servidores/ServidoresTab";
 import ServidoresTesteTab from "@/components/servidores/ServidoresTesteTab";
 import { Button } from "@/components/ui/button";
@@ -549,18 +550,18 @@ export default function Usuarios() {
       <Tabs defaultValue="usuarios" className="space-y-6">
         <TabsList>
           <TabsTrigger value="usuarios" className="gap-2">
-            <User className="h-4 w-4" />
+            <BrandIcon icon={User} tone="indigo" size="sm" />
             Usuários
           </TabsTrigger>
           {isGlobalMaster && profile?.company_id === activeCompanyId && (
             <TabsTrigger value="servidores" className="gap-2">
-              <Server className="h-4 w-4" />
+              <BrandIcon icon={Server} tone="slate" size="sm" />
               Tenants
             </TabsTrigger>
           )}
           {isGlobalMaster && profile?.company_id === activeCompanyId && (
             <TabsTrigger value="servidores-teste" className="gap-2">
-              <FlaskConical className="h-4 w-4" />
+              <BrandIcon icon={FlaskConical} tone="fuchsia" size="sm" />
               Tenants Teste
             </TabsTrigger>
           )}
@@ -1054,11 +1055,11 @@ export default function Usuarios() {
                 <Tabs defaultValue="modules" className="w-full">
                   <TabsList className="w-full mb-4">
                     <TabsTrigger value="modules" className="flex-1 gap-2">
-                      <Shield className="h-4 w-4" />
+                      <BrandIcon icon={Shield} tone="violet" size="sm" />
                       Módulos
                     </TabsTrigger>
                     <TabsTrigger value="workspaces" className="flex-1 gap-2">
-                      <LayoutGrid className="h-4 w-4" />
+                      <BrandIcon icon={LayoutGrid} tone="indigo" size="sm" />
                       Workspaces
                     </TabsTrigger>
                   </TabsList>

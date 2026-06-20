@@ -19,6 +19,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BrandIcon } from "@/components/ui/brand-icon";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -368,11 +369,11 @@ export default function Atividades() {
       <Tabs value={view} onValueChange={(v) => setView(v as "list" | "agenda")}>
         <TabsList className="mb-4">
           <TabsTrigger value="list" className="gap-2">
-            <ListOrdered className="h-4 w-4" />
+            <BrandIcon icon={ListOrdered} tone="sky" size="sm" />
             Atividades
           </TabsTrigger>
           <TabsTrigger value="agenda" className="gap-2">
-            <Calendar className="h-4 w-4" />
+            <BrandIcon icon={Calendar} tone="blue" size="sm" />
             Agenda
           </TabsTrigger>
         </TabsList>

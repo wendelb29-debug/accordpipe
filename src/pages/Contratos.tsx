@@ -3,6 +3,7 @@ import {
   Plus, Search, FileSignature, Eye, Clock, CheckCircle2, XCircle, Loader2, Download, ShieldAlert, User, MapPin, Camera, Filter, Upload,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BrandIcon } from "@/components/ui/brand-icon";
 import { PdfContractsList } from "@/components/contratos/PdfContractsList";
 import { downloadContractPdf, generateContractPdf } from "@/lib/generateContractPdf";
 import { Button } from "@/components/ui/button";
@@ -161,8 +162,8 @@ export default function Contratos() {
 
       <Tabs defaultValue="adesao" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="adesao" className="gap-2"><FileSignature className="h-4 w-4" /> Contratos de Adesão</TabsTrigger>
-          <TabsTrigger value="pdf" className="gap-2"><Upload className="h-4 w-4" /> Contratos PDF</TabsTrigger>
+          <TabsTrigger value="adesao" className="gap-2"><BrandIcon icon={FileSignature} tone="violet" size="sm" /> Contratos de Adesão</TabsTrigger>
+          <TabsTrigger value="pdf" className="gap-2"><BrandIcon icon={Upload} tone="indigo" size="sm" /> Contratos PDF</TabsTrigger>
         </TabsList>
 
         <TabsContent value="adesao">

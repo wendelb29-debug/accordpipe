@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { BrandIcon } from "@/components/ui/brand-icon";
 import DescarteAnalytics from "@/components/descarte/DescarteAnalytics";
 import { BarChart3, List } from "lucide-react";
 
@@ -155,10 +156,10 @@ export default function Descarte() {
       <Tabs defaultValue="lista" className="space-y-4">
         <TabsList>
           <TabsTrigger value="lista" className="gap-1.5 text-xs">
-            <List className="h-3.5 w-3.5" /> Lista
+            <BrandIcon icon={List} tone="sky" size="xs" /> Lista
           </TabsTrigger>
           <TabsTrigger value="analise" className="gap-1.5 text-xs">
-            <BarChart3 className="h-3.5 w-3.5" /> Análise de Descartes
+            <BrandIcon icon={BarChart3} tone="blue" size="xs" /> Análise de Descartes
           </TabsTrigger>
         </TabsList>
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BrandIcon } from "@/components/ui/brand-icon";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -324,11 +325,11 @@ export default function Financeiro() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="h-9">
-          <TabsTrigger value="overview" className="text-xs gap-1.5 h-7"><BarChart3 className="h-3 w-3" /> Visão Geral</TabsTrigger>
-          <TabsTrigger value="cobrancas" className="text-xs gap-1.5 h-7"><CreditCard className="h-3 w-3" /> Cobranças</TabsTrigger>
-          <TabsTrigger value="pagamentos" className="text-xs gap-1.5 h-7"><CheckCircle2 className="h-3 w-3" /> Pagos</TabsTrigger>
-          <TabsTrigger value="inadimplencia" className="text-xs gap-1.5 h-7"><AlertTriangle className="h-3 w-3" /> Inadimplência</TabsTrigger>
-          <TabsTrigger value="historico" className="text-xs gap-1.5 h-7"><History className="h-3 w-3" /> Histórico</TabsTrigger>
+          <TabsTrigger value="overview" className="text-xs gap-1.5 h-7"><BrandIcon icon={BarChart3} tone="blue" size="xs" /> Visão Geral</TabsTrigger>
+          <TabsTrigger value="cobrancas" className="text-xs gap-1.5 h-7"><BrandIcon icon={CreditCard} tone="indigo" size="xs" /> Cobranças</TabsTrigger>
+          <TabsTrigger value="pagamentos" className="text-xs gap-1.5 h-7"><BrandIcon icon={CheckCircle2} tone="emerald" size="xs" /> Pagos</TabsTrigger>
+          <TabsTrigger value="inadimplencia" className="text-xs gap-1.5 h-7"><BrandIcon icon={AlertTriangle} tone="red" size="xs" /> Inadimplência</TabsTrigger>
+          <TabsTrigger value="historico" className="text-xs gap-1.5 h-7"><BrandIcon icon={History} tone="amber" size="xs" /> Histórico</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4 space-y-4">

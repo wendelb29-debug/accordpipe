@@ -11,6 +11,10 @@ import {
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/ui/tabs";
+import { BrandIcon } from "@/components/ui/brand-icon";
+import {
+  __unused_placeholder_just_to_close,
+} from "@/components/ui/tabs";
 import {
   DollarSign, Users, ShoppingCart, Download, Copy, ArrowLeft,
   TrendingUp, Calendar, FileText, Code, Send, Webhook,

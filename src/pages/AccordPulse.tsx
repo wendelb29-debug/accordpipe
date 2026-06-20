@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BrandIcon } from "@/components/ui/brand-icon";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -133,11 +134,11 @@ export default function AccordPulse() {
 
       <Tabs defaultValue="queue" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="queue"><ListChecks className="h-3.5 w-3.5 mr-1" />Fila outbound</TabsTrigger>
-          <TabsTrigger value="import"><Upload className="h-3.5 w-3.5 mr-1" />Importar leads</TabsTrigger>
-          <TabsTrigger value="agent"><Bot className="h-3.5 w-3.5 mr-1" />Agente IA</TabsTrigger>
+          <TabsTrigger value="queue" className="gap-1.5"><BrandIcon icon={ListChecks} tone="cyan" size="xs" />Fila outbound</TabsTrigger>
+          <TabsTrigger value="import" className="gap-1.5"><BrandIcon icon={Upload} tone="indigo" size="xs" />Importar leads</TabsTrigger>
+          <TabsTrigger value="agent" className="gap-1.5"><BrandIcon icon={Bot} tone="fuchsia" size="xs" />Agente IA</TabsTrigger>
           <TabsTrigger value="lost">Descartados</TabsTrigger>
-          <TabsTrigger value="campaign"><Settings2 className="h-3.5 w-3.5 mr-1" />Campanha</TabsTrigger>
+          <TabsTrigger value="campaign" className="gap-1.5"><BrandIcon icon={Settings2} tone="slate" size="xs" />Campanha</TabsTrigger>
         </TabsList>
 
         <TabsContent value="queue">
