@@ -12,8 +12,8 @@ const ONEDRIVE_SCOPES = [
   "profile",
   "email",
   "User.Read",
-  "Files.Read",
-  "Files.Read.All",
+  "Files.ReadWrite",
+  "Files.ReadWrite.All",
 ].join(" ");
 
 Deno.serve(async (req) => {
