@@ -1223,6 +1223,9 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                 <TabsTrigger value="ligacoes" className="text-[11px] sm:text-xs gap-1">
                   <PhoneCall className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Ligações
                 </TabsTrigger>
+                <TabsTrigger value="email" className="text-[11px] sm:text-xs gap-1">
+                  <Mail className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> E-mail
+                </TabsTrigger>
                 <TabsTrigger value="propostas" className="text-[11px] sm:text-xs gap-1">
                   <FileSpreadsheet className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Propostas
                 </TabsTrigger>
