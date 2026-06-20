@@ -1463,13 +1463,14 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
             {/* Propostas */}
             <TabsContent
               value="propostas"
-              className={`${leadTabScrollClass} p-0 w-full max-w-full focus-visible:outline-none data-[state=inactive]:hidden`}
+              className={`${leadTabScrollClass} p-0 w-full max-w-full data-[state=inactive]:hidden`}
+              style={leadTabScrollStyle}
             >
               <LeadPropostasTab lead={lead} addActivity={addActivity} onUpdateLead={onUpdate} />
             </TabsContent>
 
              {/* Docs - Documentos Gerados + Arquivos */}
-            <TabsContent value="docs" className={`${leadTabScrollClass} p-2 sm:p-4 space-y-6`}>
+            <TabsContent value="docs" className={`${leadTabScrollClass} p-2 sm:p-4 space-y-6`} style={leadTabScrollStyle}>
               <LeadDocumentosTab lead={lead} addActivity={addActivity} />
               <LeadDocsTab lead={lead} />
             </TabsContent>
@@ -1477,13 +1478,13 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
              {/* Pós-Venda */}
             {(isAdminPipeline || role === "administrativo" || role === "admin" || role === "ceo" || profile?.is_master) && (
-              <TabsContent value="pos-venda" className={`${leadTabScrollClass} p-4`}>
+              <TabsContent value="pos-venda" className={`${leadTabScrollClass} p-4`} style={leadTabScrollStyle}>
                 <LeadPosVendaTab lead={lead} />
               </TabsContent>
             )}
 
             {/* Conversa WhatsApp */}
-            <TabsContent value="conversa" className="flex-1 min-h-0 overflow-hidden p-0 mt-0">
+            <TabsContent value="conversa" className="flex flex-col overflow-hidden p-0 mt-0 focus-visible:outline-none" style={leadTabFullStyle}>
               <div className="flex flex-col h-full min-h-0">
                 <LeadWhatsAppTab lead={lead} onBack={() => setActiveTab("historico")} />
               </div>
