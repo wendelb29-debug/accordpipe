@@ -24,6 +24,8 @@ import JSZip from "jszip";
 import { FolderPickerDialog } from "@/components/documentos/FolderPickerDialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CloudStorageTab } from "@/components/documentos/CloudStorageTab";
+import { BrandIcon } from "@/components/ui/brand-icon";
+import { FolderOpen, Cloud } from "lucide-react";
 
 
 const statusConfig: Record<string, { label: string; color: string; emoji: string }> = {
