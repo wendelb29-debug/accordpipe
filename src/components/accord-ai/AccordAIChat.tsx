@@ -647,11 +647,19 @@ export function AccordAIChat() {
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
             {messages.length === 0 && (
               <div className="space-y-4">
-                <div className="text-center text-muted-foreground text-sm py-4 space-y-2">
-                  <Bot className="h-10 w-10 mx-auto opacity-40" />
-                  <p className="font-medium">Olá! Sou o Accord AI.</p>
-                  <p className="text-xs">
-                    Estou aqui para ajudar com <strong>{pageName}</strong>.
+                <div className="text-center py-4 space-y-2.5">
+                  <div
+                    className="mx-auto h-14 w-14 rounded-2xl flex items-center justify-center ring-1 ring-violet-200/60 dark:ring-violet-700/40"
+                    style={{
+                      background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #A855F7 100%)",
+                      boxShadow: "0 10px 24px -8px rgba(139,92,246,0.5), inset 0 1px 0 rgba(255,255,255,0.35)",
+                    }}
+                  >
+                    <Sparkles className="h-6 w-6 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]" strokeWidth={2.25} />
+                  </div>
+                  <p className="font-semibold text-sm text-foreground">Olá! Sou o Accord IA.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Estou aqui para ajudar com <strong className="text-foreground">{pageName}</strong>.
                   </p>
                 </div>
                 <div className="space-y-1.5">
