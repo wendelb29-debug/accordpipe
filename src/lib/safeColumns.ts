@@ -10,6 +10,7 @@ export const COMPANY_SAFE_COLUMNS = [
   "is_trial", "trial_start", "trial_expires_at", "trial_extensions",
   "brand_logo_url", "brand_logo_path", "brand_primary_color", "brand_secondary_color",
   "brand_accent_color", "brand_bg_color", "brand_text_color",
+  "doc_primary_color", "doc_secondary_color", "doc_accent_color", "doc_bg_color", "doc_text_color",
   "tenant_type", "parent_tenant_id", "created_by_tenant_id",
   "can_create_tenants", "can_manage_child_tenants", "max_child_tenants",
   "is_reseller", "reseller_panel_enabled", "can_create_child_tenants", "can_edit_child_tenants",
