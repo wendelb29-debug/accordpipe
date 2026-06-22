@@ -826,12 +826,15 @@ export function InboxChat({
         .from("whatsapp-media")
         .upload(path, file, { contentType: file.type, upsert: false });
       if (upErr) throw upErr;
-      const { data: pub } = supabase.storage.from("whatsapp-media").getPublicUrl(path);
+      const { data: signed, error: signErr } = await supabase.storage
+        .from("whatsapp-media")
+        .createSignedUrl(path, 60 * 60 * 24); // 24h
+      if (signErr || !signed?.signedUrl) throw signErr || new Error("Falha ao gerar URL assinada");
       // For non-image/audio types, we send 'file' to backend (uazapi treats document/audio/image distinctly)
       const sendType = messageType === "video" ? "file" : messageType;
       onSendMessage(file.name, {
         messageType: sendType,
-        mediaUrl: pub.publicUrl,
+        mediaUrl: signed.signedUrl,
         fileName: file.name,
         replyToMessageId: replyTo?.id ?? null,
       });

@@ -634,9 +634,15 @@ async function downloadUazapiMediaToStorage(
       console.warn("[downloadUazapiMediaToStorage] upload error:", upErr.message);
       return fallbackUrl ?? null;
     }
-    const { data: pub } = supabase.storage.from("whatsapp-media").getPublicUrl(path);
-    console.log("[downloadUazapiMediaToStorage] success", { path, publicUrl: pub?.publicUrl, bytes: bytes.byteLength, mime: resolvedMime });
-    return pub?.publicUrl || fallbackUrl || null;
+    const { data: signed, error: signErr } = await supabase.storage
+      .from("whatsapp-media")
+      .createSignedUrl(path, 60 * 60 * 24); // 24h
+    if (signErr) {
+      console.warn("[downloadUazapiMediaToStorage] signed url error:", signErr.message);
+      return fallbackUrl ?? null;
+    }
+    console.log("[downloadUazapiMediaToStorage] success", { path, bytes: bytes.byteLength, mime: resolvedMime });
+    return signed?.signedUrl || fallbackUrl || null;
   } catch (e) {
     console.warn("[downloadUazapiMediaToStorage] failed:", (e as Error).message);
     return fallbackUrl ?? null;
