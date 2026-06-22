@@ -132,18 +132,29 @@ function StatusPill({ status }: { status?: string }) {
 // Single global audio ref so only one plays at a time
 let CURRENT_AUDIO: HTMLAudioElement | null = null;
 
+const VOICE_BAR_COUNT = 34;
+const VOICE_BARS = Array.from({ length: VOICE_BAR_COUNT }, (_, i) => {
+  const x = i / VOICE_BAR_COUNT;
+  return 0.35 + Math.sin(x * Math.PI * 3) * 0.25 + (i % 3 === 0 ? 0.15 : 0);
+});
+
 function AudioPlayer({ direction, src }: { direction: string; src?: string }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [current, setCurrent] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [rate, setRate] = useState<1 | 1.5 | 2>(1);
 
   const fmt = (s: number) => {
-    if (!isFinite(s)) return "0:00";
+    if (!isFinite(s) || s < 0) s = 0;
     const m = Math.floor(s / 60);
     const r = Math.floor(s % 60);
     return `${m}:${r.toString().padStart(2, "0")}`;
   };
+
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.playbackRate = rate;
+  }, [rate]);
 
   const toggle = () => {
     const el = audioRef.current;
@@ -157,11 +168,28 @@ function AudioPlayer({ direction, src }: { direction: string; src?: string }) {
     }
   };
 
+  const onBarsClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const a = audioRef.current;
+    if (!a || !total) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    a.currentTime = ratio * total;
+    setCurrent(a.currentTime);
+  };
+
   const isOut = direction === "outbound";
+  const progress = total > 0 ? current / total : 0;
+  const accent = isOut ? "#10b981" : "#059669";
+  const bgPlay = "#10b981";
+  const bubbleBg = isOut
+    ? "linear-gradient(135deg, #DCF8C6 0%, #C8F0B0 100%)"
+    : "linear-gradient(135deg, #FFFFFF 0%, #F3F4F6 100%)";
+
   return (
-    <div className={cn("flex items-center gap-2.5 px-3 py-2.5 rounded-2xl min-w-[220px]",
-      isOut ? "bg-primary rounded-br-sm" : "bg-muted/80 dark:bg-muted/50 rounded-bl-sm border border-border/40"
-    )}>
+    <div
+      className="flex items-center gap-3 min-w-[240px] max-w-[300px] px-3 py-2 rounded-2xl border border-white/60 shadow-[0_4px_18px_-6px_rgba(15,23,42,0.18)]"
+      style={{ background: bubbleBg }}
+    >
       {src && (
         <audio
           ref={audioRef}
@@ -169,28 +197,61 @@ function AudioPlayer({ direction, src }: { direction: string; src?: string }) {
           preload="metadata"
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
-          onEnded={() => { setPlaying(false); setProgress(0); }}
-          onLoadedMetadata={(e) => setDuration((e.target as HTMLAudioElement).duration)}
-          onTimeUpdate={(e) => {
+          onEnded={() => { setPlaying(false); setCurrent(0); }}
+          onLoadedMetadata={(e) => {
             const a = e.target as HTMLAudioElement;
-            setProgress(a.duration ? (a.currentTime / a.duration) * 100 : 0);
+            if (isFinite(a.duration) && a.duration > 0) setTotal(a.duration);
           }}
+          onTimeUpdate={(e) => setCurrent((e.target as HTMLAudioElement).currentTime)}
         />
       )}
-      <button onClick={toggle} disabled={!src}
-        className={cn("w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all",
-          isOut ? "bg-white/20 hover:bg-white/30" : "bg-primary hover:bg-primary/90"
-        )}>
-        {playing
-          ? <Pause size={12} className={isOut ? "text-white" : "text-primary-foreground"} />
-          : <Play size={12} className={isOut ? "text-white" : "text-primary-foreground"} />}
+      <button
+        onClick={toggle}
+        disabled={!src}
+        className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-white shadow-sm hover:opacity-95 active:scale-95 transition"
+        style={{ background: bgPlay }}
+        aria-label={playing ? "Pausar" : "Reproduzir"}
+      >
+        {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
       </button>
-      <div className={cn("flex-1 h-1 rounded-full overflow-hidden", isOut ? "bg-white/25" : "bg-primary/20")}>
-        <div className={cn("h-full rounded-full transition-all", isOut ? "bg-white" : "bg-primary")} style={{ width: `${progress}%` }} />
+      <div className="flex-1 min-w-0">
+        <div
+          className="flex items-center gap-[2px] h-7 cursor-pointer"
+          onClick={onBarsClick}
+          role="slider"
+          aria-valuemin={0}
+          aria-valuemax={total || 0}
+          aria-valuenow={current}
+        >
+          {VOICE_BARS.map((v, i) => {
+            const filled = i / VOICE_BAR_COUNT < progress;
+            const h = Math.max(4, v * 24);
+            return (
+              <span
+                key={i}
+                className="rounded-full"
+                style={{
+                  width: 2.5,
+                  height: h,
+                  background: filled ? accent : "rgba(0,0,0,0.18)",
+                  transition: "background .15s",
+                }}
+              />
+            );
+          })}
+        </div>
+        <div className="flex items-center justify-between mt-0.5">
+          <span className="text-[10.5px] text-gray-500 tabular-nums">
+            {fmt(playing || current > 0 ? current : total)}
+          </span>
+          <button
+            onClick={() => setRate(rate === 1 ? 1.5 : rate === 1.5 ? 2 : 1)}
+            className="text-[10px] font-semibold text-gray-500 hover:text-gray-700 px-1.5 py-0.5 rounded bg-gray-100"
+          >
+            {rate}×
+          </button>
+        </div>
       </div>
-      <span className={cn("text-[11px] flex-shrink-0", isOut ? "text-white/70" : "text-muted-foreground")}>
-        {fmt(duration)}
-      </span>
     </div>
   );
 }
