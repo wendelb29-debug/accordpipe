@@ -1027,6 +1027,28 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PdfContractCreateDialog
+        open={createContractOpen}
+        onOpenChange={setCreateContractOpen}
+        onSubmit={handleCreateContractFromUpload}
+        initialSigners={initialContractSigners}
+        defaultName={lead.company_name || lead.contact_name ? `Contrato - ${lead.company_name || lead.contact_name}` : undefined}
+      />
+
+      {builderContract && (
+        <SignatureBuilderDialog
+          open={builderOpen}
+          onOpenChange={setBuilderOpen}
+          contractId={builderContract.id}
+          pdfUrl={builderContract.pdf_url}
+          signers={builderSigners}
+          onComplete={() => {
+            fetchSignedContracts();
+            setBuilderContract(null);
+          }}
+        />
+      )}
     </div>
   );
 }
