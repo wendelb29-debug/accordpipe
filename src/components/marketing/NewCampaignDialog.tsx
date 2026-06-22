@@ -268,8 +268,13 @@ ${renderPreview(body)}
         setCampaignProgress({ id: campaign.id, total: recipients.length });
         setSendConfigOpen(false);
       } else {
-        toast.success("Campanha criada e enfileirada");
-        onCreated(campaign.id);
+        // WhatsApp: fire-and-forget processor; UI watches progress via Realtime
+        supabase.functions
+          .invoke("process-whatsapp-campaign", { body: { campaign_id: campaign.id } })
+          .catch((err) => console.error("[process-whatsapp-campaign]", err));
+        toast.success("Envio iniciado!", { description: "Acompanhe o progresso em tempo real." });
+        setCampaignProgress({ id: campaign.id, total: recipients.length });
+        setSendConfigOpen(false);
       }
     } catch (e: any) {
       captureAppError(e, { module: "marketing.campaign", action: "create" }, "error");
