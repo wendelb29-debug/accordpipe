@@ -811,11 +811,11 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                         } : undefined}
                       />
 
-                      {/* Faixa externa do contrato — visível antes de abrir o card */}
+                      {/* Faixa de assinaturas — visível por fora do card, antes de abrir */}
                       {signatureStats && (
                         <div
                           className={cn(
-                            "absolute top-1.5 right-1.5 z-10 flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold shadow-sm border",
+                            "flex items-center justify-between gap-1.5 px-2.5 py-1 text-[10px] font-bold border-b",
                             signatureStats.approved
                               ? "bg-emerald-500 text-white border-emerald-600"
                               : signatureStats.total === 0
@@ -829,17 +829,28 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                               ? "Contrato totalmente assinado"
                               : signatureStats.total === 0
                               ? "Contrato emitido — aguardando signatários"
-                              : `${signatureStats.signed}/${signatureStats.total} assinaturas`
+                              : `${signatureStats.signed}/${signatureStats.total} assinaturas coletadas`
                           }
                         >
-                          {signatureStats.approved ? (
-                            <CheckCircle className="h-2.5 w-2.5" />
-                          ) : (
-                            <FileSignature className="h-2.5 w-2.5" />
-                          )}
-                          {signatureStats.total === 0
-                            ? "Emitido"
-                            : `${signatureStats.signed}/${signatureStats.total}`}
+                          <span className="flex items-center gap-1.5">
+                            {signatureStats.approved ? (
+                              <CheckCircle className="h-3 w-3" />
+                            ) : (
+                              <FileSignature className="h-3 w-3" />
+                            )}
+                            <span className="uppercase tracking-wide">
+                              {signatureStats.approved
+                                ? "Contrato assinado"
+                                : signatureStats.total === 0
+                                ? "Contrato emitido"
+                                : "Aguardando assinatura"}
+                            </span>
+                          </span>
+                          <span className="font-extrabold">
+                            {signatureStats.total === 0
+                              ? "0/0"
+                              : `${signatureStats.signed}/${signatureStats.total}`}
+                          </span>
                         </div>
                       )}
 
