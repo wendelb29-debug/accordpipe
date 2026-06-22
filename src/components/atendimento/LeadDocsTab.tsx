@@ -199,7 +199,7 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
   const [signDrawerSigners, setSignDrawerSigners] = useState<ContractSigner[]>([]);
 
   // Upload-to-contract flow
-  const { createContract: createPdfContract, fetchSigners: fetchPdfSigners, fetchContracts: refetchPdfContracts, contracts: pdfContractsLive } = usePdfContracts();
+  const { createContract: createPdfContract, fetchSigners: fetchPdfSigners, fetchContracts: refetchPdfContracts } = usePdfContracts();
   const [createContractOpen, setCreateContractOpen] = useState(false);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [builderContract, setBuilderContract] = useState<PdfContract | null>(null);
