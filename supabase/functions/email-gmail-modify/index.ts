@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
       const msgId = msg.provider_msg_id;
       let r: Response;
       if (action === "trash") {
-        r = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${msgId}/move`, {
+        r = await fetchWithRetry(`https://graph.microsoft.com/v1.0/me/messages/${msgId}/move`, {
           method: "POST",
           headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
           body: JSON.stringify({ destinationId: "deleteditems" }),
@@ -147,22 +147,22 @@ Deno.serve(async (req) => {
         else if (action === "markUnread") patch.isRead = false;
         else if (action === "star") patch.flag = { flagStatus: "flagged" };
         else if (action === "unstar") patch.flag = { flagStatus: "notFlagged" };
-        r = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${msgId}`, {
+        r = await fetchWithRetry(`https://graph.microsoft.com/v1.0/me/messages/${msgId}`, {
           method: "PATCH",
           headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
           body: JSON.stringify(patch),
         });
       }
-      if (!r.ok) return new Response(JSON.stringify({ error: await r.text() }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (!r.ok) return new Response(JSON.stringify({ error: await r.text() }), { status: r.status === 429 ? 429 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       if (action === "trash") await admin.from("email_messages").delete().eq("id", messageRowId);
       else await admin.from("email_messages").update(dbUpdate).eq("id", messageRowId);
     } else {
       // Gmail
       if (action === "trash") {
-        const r = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.provider_msg_id}/trash`, {
+        const r = await fetchWithRetry(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.provider_msg_id}/trash`, {
           method: "POST", headers: { Authorization: `Bearer ${accessToken}` },
         });
-        if (!r.ok) return new Response(JSON.stringify({ error: await r.text() }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (!r.ok) return new Response(JSON.stringify({ error: await r.text() }), { status: r.status === 429 ? 429 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         await admin.from("email_messages").delete().eq("id", messageRowId);
       } else {
         const body: any = {};
@@ -170,12 +170,12 @@ Deno.serve(async (req) => {
         else if (action === "markUnread") body.addLabelIds = ["UNREAD"];
         else if (action === "star") body.addLabelIds = ["STARRED"];
         else if (action === "unstar") body.removeLabelIds = ["STARRED"];
-        const r = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.provider_msg_id}/modify`, {
+        const r = await fetchWithRetry(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.provider_msg_id}/modify`, {
           method: "POST",
           headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
-        if (!r.ok) return new Response(JSON.stringify({ error: await r.text() }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (!r.ok) return new Response(JSON.stringify({ error: await r.text() }), { status: r.status === 429 ? 429 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         await admin.from("email_messages").update(dbUpdate).eq("id", messageRowId);
       }
     }
