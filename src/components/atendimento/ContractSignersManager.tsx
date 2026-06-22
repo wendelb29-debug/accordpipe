@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Plus, Copy, CheckCircle2, Clock, User, UserPlus, Link2,
-  Loader2, Trash2, MessageSquare, Shield, Users,
+  Loader2, Trash2, MessageSquare, Shield, Users, Mail,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -233,6 +233,35 @@ export function ContractSignersManager({
     window.open(url, "_blank");
   };
 
+  const [sendingEmailTo, setSendingEmailTo] = useState<string | null>(null);
+  const handleSendEmail = async (signer: { id: string; signing_token: string; name: string; email: string | null }) => {
+    if (!signer.email) {
+      toast.error(`${signer.name} não possui e-mail cadastrado.`);
+      return;
+    }
+    setSendingEmailTo(signer.id);
+    try {
+      const { error } = await supabase.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "contract-signature-request",
+          recipientEmail: signer.email,
+          idempotencyKey: `contract-sign-${signer.id}-${signer.signing_token}`,
+          templateData: {
+            signerName: signer.name,
+            signingUrl: getSigningLink(signer.signing_token),
+            senderName: "Accord",
+          },
+        },
+      });
+      if (error) throw error;
+      toast.success(`E-mail enviado para ${signer.email}`);
+    } catch (err: any) {
+      toast.error("Erro ao enviar e-mail: " + (err?.message || ""));
+    } finally {
+      setSendingEmailTo(null);
+    }
+  };
+
   // Stats
   const totalSigners = signers.length;
   const signedCount = signers.filter(s => s.status === "assinado").length;
@@ -351,6 +380,20 @@ export function ContractSignersManager({
                             title="Copiar link"
                           >
                             <Copy className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => handleSendEmail(signer)}
+                            disabled={sendingEmailTo === signer.id || !signer.email}
+                            title={signer.email ? "Enviar por e-mail" : "Signatário sem e-mail"}
+                          >
+                            {sendingEmailTo === signer.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Mail className="h-3.5 w-3.5" />
+                            )}
                           </Button>
                           <Button
                             variant="ghost"
