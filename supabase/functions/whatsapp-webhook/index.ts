@@ -944,14 +944,21 @@ async function handleIncomingMessage(
     }
   }
 
-  // For Uazapi inbound media, fetch the decrypted file and re-upload to Supabase Storage so
-  // the frontend can render/download it (the original `mmg.whatsapp.net` URL is encrypted).
+  // Inbound media: re-host into whatsapp-media bucket so the player gets a stable URL.
   let resolvedMediaUrl = media_url ?? null;
-  if (provider === "uazapi" && message_type !== "text" && external_id) {
-    const stored = await downloadUazapiMediaToStorage(
-      supabase, company_id, external_id, media_url, mime_type, file_name,
-    );
-    if (stored) resolvedMediaUrl = stored;
+  const isMediaType = message_type !== "text" && ["audio", "image", "video", "document", "pdf", "sticker"].includes(message_type);
+  if (isMediaType) {
+    if (provider === "uazapi" && external_id) {
+      const stored = await downloadUazapiMediaToStorage(
+        supabase, company_id, external_id, media_url, mime_type, file_name,
+      );
+      if (stored) resolvedMediaUrl = stored;
+    } else if (media_url) {
+      const stored = await fetchAndStoreInboundMedia(
+        supabase, company_id, media_url, mime_type, file_name,
+      );
+      if (stored) resolvedMediaUrl = stored;
+    }
   }
 
   const insertPayload = {
