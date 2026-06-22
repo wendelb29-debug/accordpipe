@@ -213,20 +213,24 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
   ) => {
     const contractId = await createPdfContract(name, description, file, signers);
     if (!contractId) return;
-    await refetchPdfContracts();
-    // Pull the freshly created contract + signers and open builder
-    const { data: freshContract } = await supabase
-      .from("pdf_contracts")
-      .select("*")
-      .eq("id", contractId)
-      .maybeSingle();
-    const freshSigners = await fetchPdfSigners(contractId);
-    if (freshContract) {
-      setBuilderContract(freshContract as PdfContract);
-      setBuilderSigners(freshSigners);
-      setBuilderOpen(true);
+    // Post-create steps must NOT throw — contract is already created successfully.
+    try {
+      await refetchPdfContracts();
+      const { data: freshContract } = await supabase
+        .from("pdf_contracts")
+        .select("*")
+        .eq("id", contractId)
+        .maybeSingle();
+      const freshSigners = await fetchPdfSigners(contractId);
+      if (freshContract) {
+        setBuilderContract(freshContract as PdfContract);
+        setBuilderSigners(freshSigners);
+        setBuilderOpen(true);
+      }
+      await fetchSignedContracts();
+    } catch (err) {
+      console.warn("[contract] post-create step failed (contract was created):", err);
     }
-    await fetchSignedContracts();
   };
 
   const initialContractSigners = [
