@@ -198,6 +198,48 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
   const [signDrawerContract, setSignDrawerContract] = useState<SignedContract | null>(null);
   const [signDrawerSigners, setSignDrawerSigners] = useState<ContractSigner[]>([]);
 
+  // Upload-to-contract flow
+  const { createContract: createPdfContract, fetchSigners: fetchPdfSigners, fetchContracts: refetchPdfContracts, contracts: pdfContractsLive } = usePdfContracts();
+  const [createContractOpen, setCreateContractOpen] = useState(false);
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [builderContract, setBuilderContract] = useState<PdfContract | null>(null);
+  const [builderSigners, setBuilderSigners] = useState<PdfContractSigner[]>([]);
+
+  const handleCreateContractFromUpload = async (
+    name: string,
+    description: string,
+    file: File,
+    signers: { name: string; email: string; phone: string; cpf_cnpj: string; address: string }[],
+  ) => {
+    const contractId = await createPdfContract(name, description, file, signers);
+    if (!contractId) return;
+    await refetchPdfContracts();
+    // Pull the freshly created contract + signers and open builder
+    const { data: freshContract } = await supabase
+      .from("pdf_contracts")
+      .select("*")
+      .eq("id", contractId)
+      .maybeSingle();
+    const freshSigners = await fetchPdfSigners(contractId);
+    if (freshContract) {
+      setBuilderContract(freshContract as PdfContract);
+      setBuilderSigners(freshSigners);
+      setBuilderOpen(true);
+    }
+    await fetchSignedContracts();
+  };
+
+  const initialContractSigners = [
+    {
+      name: lead.contact_name || lead.company_name || "",
+      email: lead.email || "",
+      phone: lead.phone || "",
+      cpf_cnpj: (lead as any).documento || "",
+      address: "",
+    },
+  ];
+
+
   const fetchDocs = async () => {
     setLoading(true);
     const { data, error } = await (supabase as any)
