@@ -513,7 +513,7 @@ Deno.serve(async (req) => {
         signer_cn: signerCN,
         tsa_authority: tsAuth,
         cert_valid_until: certValidUntil,
-        timestamp_embedded: Boolean(ts),
+        timestamp_embedded: Boolean(tsaToken),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
