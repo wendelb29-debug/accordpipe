@@ -76,20 +76,79 @@ function getCN(cert: forge.pki.Certificate): string {
   return cn ? cn.value : "Desconhecido";
 }
 
-// Build CAdES (CMS SignedData) for a given message digest. Detached.
-function buildCmsSignedData(
+// ---------- helpers binários ----------
+function bytesToBinaryString(bytes: Uint8Array): string {
+  let s = "";
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    s += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return s;
+}
+function binaryStringToBytes(s: string): Uint8Array {
+  const out = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i);
+  return out;
+}
+
+// Request RFC 3161 timestamp from TSA for given hash. Returns full TSA response.
+async function requestTimestamp(hashBytes: Uint8Array): Promise<{ token: Uint8Array; authority: string } | null> {
+  try {
+    const messageImprint = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [
+      forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [
+        forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.OID, false, forge.asn1.oidToDer("2.16.840.1.101.3.4.2.1").getBytes()),
+        forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.NULL, false, ""),
+      ]),
+      forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.OCTETSTRING, false, bytesToBinaryString(hashBytes)),
+    ]);
+
+    const tsReq = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [
+      forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.INTEGER, false, String.fromCharCode(1)),
+      messageImprint,
+      forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.BOOLEAN, false, String.fromCharCode(0xFF)),
+    ]);
+
+    const reqDer = forge.asn1.toDer(tsReq).getBytes();
+    const reqBytes = binaryStringToBytes(reqDer);
+
+    const resp = await fetch(TSA_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/timestamp-query" },
+      body: reqBytes,
+    });
+    if (!resp.ok) { console.warn(`[TSA] HTTP ${resp.status}`); return null; }
+    const respBytes = new Uint8Array(await resp.arrayBuffer());
+    return { token: respBytes, authority: new URL(TSA_URL).hostname };
+  } catch (err) {
+    console.warn("[TSA] timestamp request failed:", err);
+    return null;
+  }
+}
+
+// Extrai o TimeStampToken (ContentInfo) de dentro da TimeStampResp (RFC 3161).
+// TimeStampResp ::= SEQUENCE { status PKIStatusInfo, timeStampToken ContentInfo OPTIONAL }
+function extractTsaTokenAsn1(respBytes: Uint8Array): any | null {
+  try {
+    const asn1 = forge.asn1.fromDer(bytesToBinaryString(respBytes));
+    if (!asn1.value || asn1.value.length < 2) return null;
+    return asn1.value[1]; // ContentInfo do TimeStampToken
+  } catch (e) {
+    console.warn("[TSA] failed to parse response:", e);
+    return null;
+  }
+}
+
+// Build CAdES (CMS SignedData) com timestamp embutido como unsignedAttribute (PAdES-B-T).
+async function buildCmsSignedDataWithTimestamp(
   contentHash: Uint8Array,
   privateKey: forge.pki.PrivateKey,
   cert: forge.pki.Certificate,
   chain: forge.pki.Certificate[]
-): Uint8Array {
+): Promise<{ cms: Uint8Array; tsaAuthority: string | null; tsaToken: Uint8Array | null }> {
   const p7 = forge.pkcs7.createSignedData();
-  // content is "detached" — we set the content but won't include it (set contentInfo only)
-  p7.content = forge.util.createBuffer(""); // placeholder; we'll inject digest via authenticatedAttributes
+  p7.content = forge.util.createBuffer("");
   p7.addCertificate(cert);
-  for (const c of chain) {
-    if (c !== cert) p7.addCertificate(c);
-  }
+  for (const c of chain) if (c !== cert) p7.addCertificate(c);
 
   const digestHex = forge.util.bytesToHex(forge.util.binary.raw.encode(contentHash));
 
@@ -104,55 +163,57 @@ function buildCmsSignedData(
     ],
   });
 
-  // Sign detached
   p7.sign({ detached: true });
 
-  const der = forge.asn1.toDer(p7.toAsn1()).getBytes();
-  const out = new Uint8Array(der.length);
-  for (let i = 0; i < der.length; i++) out[i] = der.charCodeAt(i);
-  return out;
-}
+  // signatureValue está em p7.signers[0].signature (binary string)
+  const sigBin: string = (p7 as any).signers?.[0]?.signature ?? "";
+  let tsaAuthority: string | null = null;
+  let tsaTokenBytes: Uint8Array | null = null;
+  let tsaTokenAsn1: any = null;
 
-// Request RFC 3161 timestamp from TSA for given hash
-async function requestTimestamp(hashBytes: Uint8Array): Promise<{ token: Uint8Array; authority: string } | null> {
-  try {
-    // Build TimeStampReq (ASN.1)
-    const messageImprint = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [
-      // AlgorithmIdentifier: sha-256 = 2.16.840.1.101.3.4.2.1
-      forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [
-        forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.OID, false, forge.asn1.oidToDer("2.16.840.1.101.3.4.2.1").getBytes()),
-        forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.NULL, false, ""),
-      ]),
-      forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.OCTETSTRING, false, String.fromCharCode(...hashBytes)),
-    ]);
-
-    const tsReq = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [
-      forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.INTEGER, false, String.fromCharCode(1)), // version
-      messageImprint,
-      // certReq = true so cert is included in response
-      forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.BOOLEAN, false, String.fromCharCode(0xFF)),
-    ]);
-
-    const reqDer = forge.asn1.toDer(tsReq).getBytes();
-    const reqBytes = new Uint8Array(reqDer.length);
-    for (let i = 0; i < reqDer.length; i++) reqBytes[i] = reqDer.charCodeAt(i);
-
-    const resp = await fetch(TSA_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/timestamp-query" },
-      body: reqBytes,
-    });
-    if (!resp.ok) {
-      console.warn(`[TSA] HTTP ${resp.status}`);
-      return null;
+  if (sigBin) {
+    const sigBytes = binaryStringToBytes(sigBin);
+    const sigHash = new Uint8Array(await crypto.subtle.digest("SHA-256", sigBytes));
+    const ts = await requestTimestamp(sigHash);
+    if (ts) {
+      tsaAuthority = ts.authority;
+      tsaTokenBytes = ts.token;
+      tsaTokenAsn1 = extractTsaTokenAsn1(ts.token);
     }
-    const respBytes = new Uint8Array(await resp.arrayBuffer());
-    return { token: respBytes, authority: new URL(TSA_URL).hostname };
-  } catch (err) {
-    console.warn("[TSA] timestamp request failed:", err);
-    return null;
   }
+
+  // Serializa o CMS e injeta unsignedAttrs no SignerInfo, se houver token
+  const cmsAsn1 = p7.toAsn1();
+  if (tsaTokenAsn1) {
+    try {
+      // ContentInfo -> [0] EXPLICIT -> SignedData -> ... -> signerInfos (SET, último filho)
+      const signedData = cmsAsn1.value[1].value[0];
+      const signerInfos = signedData.value[signedData.value.length - 1];
+      const signerInfo = signerInfos.value[0];
+
+      // [1] IMPLICIT UnsignedAttributes ::= SET OF Attribute
+      // Attribute ::= SEQUENCE { attrType OID, attrValues SET OF AttributeValue }
+      // signatureTimeStampToken OID: 1.2.840.113549.1.9.16.2.14
+      const unsignedAttrs = forge.asn1.create(
+        forge.asn1.Class.CONTEXT_SPECIFIC, 1, true,
+        [
+          forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [
+            forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.OID, false,
+              forge.asn1.oidToDer("1.2.840.113549.1.9.16.2.14").getBytes()),
+            forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SET, true, [tsaTokenAsn1]),
+          ]),
+        ]
+      );
+      signerInfo.value.push(unsignedAttrs);
+    } catch (e) {
+      console.warn("[CMS] falha ao injetar timestamp unsignedAttr:", e);
+    }
+  }
+
+  const der = forge.asn1.toDer(cmsAsn1).getBytes();
+  return { cms: binaryStringToBytes(der), tsaAuthority, tsaToken: tsaTokenBytes };
 }
+
 
 // Insert a signature dictionary + ByteRange placeholder into the PDF
 // Returns: pdf bytes with placeholder, byteRange offsets, signature placeholder offset
