@@ -58,6 +58,7 @@ const AssinarDocumento = lazy(() => import("./pages/AssinarDocumento"));
 const Performance = lazy(() => import("./pages/Performance"));
 const TenantSetupPublico = lazy(() => import("./pages/TenantSetupPublico"));
 const Eventos = lazy(() => import("./pages/Eventos"));
+const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const PropostaPublica = lazy(() => import("./pages/PropostaPublica"));
 const MeusTenants = lazy(() => import("./pages/MeusTenants"));
 const Academy = lazy(() => import("./pages/Academy"));
@@ -502,6 +503,7 @@ const App = () => (
             <Route path="/termos" element={<TermsOfService />} />
             <Route path="/refund-policy" element={<RefundPolicy />} />
             <Route path="/reembolso" element={<RefundPolicy />} />
+            <Route path="/unsubscribe" element={<Unsubscribe />} />
             {/* Redirects de URLs antigas / sem subrota */}
             <Route path="/configuracoes" element={<Navigate to="/configuracoes/usuarios" replace />} />
             <Route path="/crm" element={<Navigate to="/atendimento" replace />} />
