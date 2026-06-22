@@ -115,10 +115,18 @@ export function usePdfContracts() {
     }
 
     try {
-      const filePath = `${companyId}/${Date.now()}_${pdfFile.name}`;
+      const safeName = (pdfFile.name || "contrato.pdf")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9._-]+/g, "_")
+        .replace(/_+/g, "_")
+        .replace(/^_|_$/g, "")
+        .toLowerCase();
+      const finalName = safeName.endsWith(".pdf") ? safeName : `${safeName}.pdf`;
+      const filePath = `${companyId}/${Date.now()}_${finalName}`;
       const { error: uploadErr } = await supabase.storage
         .from("contract-pdfs")
-        .upload(filePath, pdfFile, { contentType: "application/pdf" });
+        .upload(filePath, pdfFile, { contentType: "application/pdf", upsert: false });
       if (uploadErr) throw uploadErr;
 
       const { data: signedData } = await supabase.storage.from("contract-pdfs").createSignedUrl(filePath, 86400);
