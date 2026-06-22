@@ -22,16 +22,19 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onSubmit: (name: string, description: string, file: File, signers: Signer[]) => Promise<void>;
+  initialSigners?: Signer[];
+  defaultName?: string;
 }
 
-export function PdfContractCreateDialog({ open, onOpenChange, onSubmit }: Props) {
-  const [name, setName] = useState("");
+export function PdfContractCreateDialog({ open, onOpenChange, onSubmit, initialSigners, defaultName }: Props) {
+  const blankSigner: Signer = { name: "", email: "", phone: "", cpf_cnpj: "", address: "" };
+  const [name, setName] = useState(defaultName || "");
   const [description, setDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [signers, setSigners] = useState<Signer[]>([{ name: "", email: "", phone: "", cpf_cnpj: "", address: "" }]);
+  const [signers, setSigners] = useState<Signer[]>(initialSigners && initialSigners.length ? initialSigners : [blankSigner]);
   const [loading, setLoading] = useState(false);
 
-  const addSigner = () => setSigners([...signers, { name: "", email: "", phone: "", cpf_cnpj: "", address: "" }]);
+  const addSigner = () => setSigners([...signers, { ...blankSigner }]);
   const removeSigner = (idx: number) => setSigners(signers.filter((_, i) => i !== idx));
   const updateSigner = (idx: number, field: keyof Signer, value: string) => {
     const updated = [...signers];
@@ -44,14 +47,24 @@ export function PdfContractCreateDialog({ open, onOpenChange, onSubmit }: Props)
     if (signers.every(s => !s.name.trim())) return;
     const validSigners = signers.filter(s => s.name.trim());
     setLoading(true);
-    await onSubmit(name, description, file, validSigners);
-    setLoading(false);
-    // Reset
-    setName("");
-    setDescription("");
-    setFile(null);
-    setSigners([{ name: "", email: "", phone: "", cpf_cnpj: "", address: "" }]);
-    onOpenChange(false);
+    try {
+      let finalFile = file;
+      if (isWordFile(file)) {
+        toast.info("Convertendo Word para PDF...");
+        finalFile = await convertWordToPdf(file);
+      }
+      await onSubmit(name, description, finalFile, validSigners);
+      // Reset
+      setName(defaultName || "");
+      setDescription("");
+      setFile(null);
+      setSigners(initialSigners && initialSigners.length ? initialSigners : [{ ...blankSigner }]);
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error("Erro ao criar contrato: " + (err?.message || ""));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
