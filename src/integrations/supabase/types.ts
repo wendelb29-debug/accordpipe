@@ -8734,6 +8734,10 @@ export type Database = {
         Args: { check_env?: string; tenant_uuid: string }
         Returns: boolean
       }
+      has_company_webhook_token: {
+        Args: { _company_id: string }
+        Returns: boolean
+      }
       has_permission: {
         Args: { _permission: string; _user_id: string }
         Returns: boolean
