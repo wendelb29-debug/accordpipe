@@ -224,7 +224,7 @@ async function prepareSignedPdf(pdfBytes: Uint8Array): Promise<{
 }> {
   const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
 
-  const signatureContentsLength = 16384; // 8KB hex = plenty for CMS+timestamp
+  const signatureContentsLength = 32768; // 16KB hex — acomoda CMS + TimeStampToken TSA
   const placeholderHex = "0".repeat(signatureContentsLength);
 
   const byteRangePlaceholder = "/ByteRange [0 ********** ********** **********]";
