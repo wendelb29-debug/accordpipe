@@ -316,12 +316,11 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
       for (const contract of latestContractsByLead.values()) {
         const { signed, total, allSigned } = getLeadContractSignatureStats(signersByContract.get(contract.id) || []);
 
-        if (total === 0) continue;
-
+        // Inclui mesmo contratos emitidos sem signatários cadastrados — mostra "Emitido"
         nextStats[contract.lead_id] = {
           signed,
           total,
-          approved: allSigned || contract.signature_status === "signed",
+          approved: (total > 0 && allSigned) || contract.signature_status === "signed",
         };
       }
 
