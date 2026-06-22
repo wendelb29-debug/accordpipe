@@ -74,16 +74,17 @@ export function PdfContractCreateDialog({ open, onOpenChange, onSubmit }: Props)
               <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Descrição opcional do contrato..." rows={2} />
             </div>
             <div className="space-y-2">
-              <Label>Arquivo PDF *</Label>
+              <Label>Arquivo do Contrato (PDF ou Word) *</Label>
               <div className="flex items-center gap-3">
                 <Input
                   type="file"
-                  accept=".pdf"
+                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   onChange={(e) => setFile(e.target.files?.[0] || null)}
                   className="flex-1"
                 />
                 {file && <span className="text-xs text-muted-foreground truncate max-w-[150px]">{file.name}</span>}
               </div>
+              <p className="text-[11px] text-muted-foreground">Aceita PDF, DOC e DOCX. Arquivos Word são convertidos automaticamente para PDF.</p>
             </div>
           </div>
 
