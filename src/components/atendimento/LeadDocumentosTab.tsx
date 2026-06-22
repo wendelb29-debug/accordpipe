@@ -1024,6 +1024,42 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     addActivity?.({ type: "signature", title: `Documento "${signDoc.nome}" enviado para assinatura` });
     toast.success("Envelope configurado!");
 
+    // === AUTO Email signature link delivery ===
+    try {
+      const emailSigners = (insertedSigners || []).filter((s: any) => s.email);
+      for (const signer of emailSigners) {
+        const signingUrl = `${window.location.origin}/assinar-documento/${(signer as any).auth_token}`;
+        try {
+          const { error } = await supabase.functions.invoke("send-transactional-email", {
+            body: {
+              templateName: "contract-signature-request",
+              recipientEmail: (signer as any).email,
+              idempotencyKey: `doc-${signDoc.id}-signer-${(signer as any).id}`,
+              templateData: {
+                signerName: (signer as any).nome_completo,
+                contractName: signDoc.nome,
+                signingUrl,
+                senderName: profile?.name ?? "Accord",
+              },
+            },
+          });
+          if (error) throw error;
+          toast.success(`Link enviado por e-mail para ${(signer as any).nome_completo}`);
+          await supabase.from("document_events").insert({
+            document_id: signDoc.id,
+            signer_id: (signer as any).id,
+            evento: "link_enviado_email",
+            descricao: `Link enviado automaticamente por e-mail para ${(signer as any).email}`,
+          });
+        } catch (err: any) {
+          console.error("[signature email auto-send] failed for", (signer as any).email, err);
+          toast.warning(`E-mail não enviado para ${(signer as any).nome_completo}: ${err?.message || "falha"}`);
+        }
+      }
+    } catch (err) {
+      console.error("[signature email auto-send] error", err);
+    }
+
     // === AUTO WhatsApp signature link delivery (multi-tenant strict) ===
     // Only client-role signers, only inside the current tenant.
     try {
