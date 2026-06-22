@@ -78,23 +78,19 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
   useEffect(() => {
     if (!companyId) return;
     (async () => {
-      const { data } = await supabase
-        .from("companies")
-        .select("zapi_webhook_on_send, zapi_webhook_on_disconnect, zapi_webhook_on_receive, zapi_webhook_chat_presence, zapi_webhook_message_status, zapi_webhook_on_connect, zapi_webhook_notify_me")
-        .eq("id", companyId)
-        .single();
-      if (data) {
+      const { data } = await supabase.rpc("get_company_webhook_config" as any, { _company_id: companyId });
+      const row = Array.isArray(data) ? data[0] : data;
+      if (row) {
         const vals: Record<string, string> = {};
         let hasAnyUrl = false;
         webhookFields.forEach((f) => {
-          const stored = (data as any)[f.key];
+          const stored = (row as any)[f.key];
           if (stored) {
             vals[f.key] = stored;
             hasAnyUrl = true;
           }
         });
         if (hasAnyUrl) {
-          // Fill missing ones
           webhookFields.forEach((f) => {
             if (!vals[f.key] && supabaseUrl) {
               vals[f.key] = buildUrl(supabaseUrl, companyId, f.eventType, generateHash());
@@ -104,7 +100,7 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
         } else {
           setUrls(initializeUrls());
         }
-        setNotifyMe((data as any).zapi_webhook_notify_me || false);
+        setNotifyMe((row as any).zapi_webhook_notify_me || false);
       } else {
         setUrls(initializeUrls());
       }
