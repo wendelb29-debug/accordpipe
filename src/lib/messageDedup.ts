@@ -28,12 +28,16 @@ export interface DedupableMessage {
  * that arrive before the DB roundtrip still dedupe correctly.
  */
 export function getMessageUniqueKey(message: any): string {
+  // Database id is the canonical identity once persisted. Using it first
+  // ensures that an INSERT event (no external_message_id yet) and a later
+  // UPDATE event (external_message_id now filled in) merge into the same
+  // bubble instead of rendering as two duplicates.
   return (
+    message?.id ||
     message?.external_message_id ||
     message?.message_id ||
     message?.provider_message_id ||
     message?.client_temp_id ||
-    message?.id ||
     `${message?.contact_id || message?.conversation_id || message?.phone || ""}-${
       message?.direction || ""
     }-${message?.message || message?.content || ""}-${message?.created_at || ""}`
