@@ -811,7 +811,40 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                         } : undefined}
                       />
 
+                      {/* Faixa externa do contrato — visível antes de abrir o card */}
+                      {signatureStats && (
+                        <div
+                          className={cn(
+                            "absolute top-1.5 right-1.5 z-10 flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold shadow-sm border",
+                            signatureStats.approved
+                              ? "bg-emerald-500 text-white border-emerald-600"
+                              : signatureStats.total === 0
+                              ? "bg-slate-600 text-white border-slate-700"
+                              : signatureStats.signed > 0
+                              ? "bg-amber-500 text-white border-amber-600"
+                              : "bg-slate-700 text-white border-slate-800"
+                          )}
+                          title={
+                            signatureStats.approved
+                              ? "Contrato totalmente assinado"
+                              : signatureStats.total === 0
+                              ? "Contrato emitido — aguardando signatários"
+                              : `${signatureStats.signed}/${signatureStats.total} assinaturas`
+                          }
+                        >
+                          {signatureStats.approved ? (
+                            <CheckCircle className="h-2.5 w-2.5" />
+                          ) : (
+                            <FileSignature className="h-2.5 w-2.5" />
+                          )}
+                          {signatureStats.total === 0
+                            ? "Emitido"
+                            : `${signatureStats.signed}/${signatureStats.total}`}
+                        </div>
+                      )}
+
                       <div className="p-2.5 pt-3">
+
                         {/* Lead name + status icons */}
                         <div className="flex items-start justify-between mb-1">
                           <div className="min-w-0 flex-1">
