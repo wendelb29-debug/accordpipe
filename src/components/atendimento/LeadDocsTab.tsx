@@ -35,6 +35,9 @@ import { generateContractPdf } from "@/lib/generateContractPdf";
 import { addAnnexPage } from "@/lib/generateContractAnnex";
 import type { AnnexData, AnnexLineItem } from "@/lib/generateContractAnnex";
 import type { CrmLead } from "@/hooks/useCrmLeads";
+import { PdfContractCreateDialog } from "@/components/contratos/PdfContractCreateDialog";
+import { SignatureBuilderDialog } from "@/components/contratos/SignatureBuilderDialog";
+import { usePdfContracts, type PdfContract, type PdfContractSigner } from "@/hooks/usePdfContracts";
 
 const ACCEPTED_STATUSES = new Set(["aceita", "accepted", "aprovada", "approved"]);
 
