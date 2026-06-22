@@ -552,8 +552,77 @@ async function fetchUazapiAvatar(
   }
 }
 
+// Map mime/filename to file extension for storage uploads.
+function extFromMime(mime?: string | null, fileName?: string | null): string {
+  if (fileName && fileName.includes(".")) {
+    const e = fileName.split(".").pop();
+    if (e && e.length <= 5) return e.toLowerCase();
+  }
+  const m = (mime || "").toLowerCase();
+  if (m.includes("jpeg")) return "jpg";
+  if (m.includes("png")) return "png";
+  if (m.includes("webp")) return "webp";
+  if (m.includes("gif")) return "gif";
+  if (m.includes("pdf")) return "pdf";
+  if (m.includes("ogg")) return "ogg";
+  if (m.includes("mpeg")) return "mp3";
+  if (m.includes("audio/mp4") || m.includes("m4a")) return "m4a";
+  if (m.includes("wav")) return "wav";
+  if (m.includes("mp4")) return "mp4";
+  if (m.includes("webm")) return "webm";
+  if (m.includes("msword")) return "doc";
+  if (m.includes("wordprocessingml")) return "docx";
+  if (m.includes("spreadsheetml")) return "xlsx";
+  if (m.includes("excel")) return "xls";
+  return "bin";
+}
+
+// Generic: download an inbound media URL (any provider) and re-upload to whatsapp-media,
+// returning a 7-day signed URL. Falls back to the original URL on any failure.
+async function fetchAndStoreInboundMedia(
+  supabase: any,
+  company_id: string,
+  sourceUrl: string,
+  mimeType: string | null | undefined,
+  fileName: string | null | undefined,
+): Promise<string | null> {
+  try {
+    if (!sourceUrl || !/^https?:\/\//i.test(sourceUrl)) return sourceUrl ?? null;
+    const res = await fetch(sourceUrl);
+    if (!res.ok) {
+      console.warn("[fetchAndStoreInboundMedia] non-ok", res.status, sourceUrl);
+      return sourceUrl;
+    }
+    const ct = res.headers.get("content-type") || "";
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    if (!bytes.byteLength) return sourceUrl;
+    const resolvedMime = mimeType || ct || "application/octet-stream";
+    const ext = extFromMime(resolvedMime, fileName);
+    const rand = Math.random().toString(36).slice(2, 10);
+    const path = `${company_id}/inbound/${Date.now()}-${rand}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from("whatsapp-media")
+      .upload(path, bytes, { contentType: resolvedMime, upsert: true });
+    if (upErr) {
+      console.warn("[fetchAndStoreInboundMedia] upload error:", upErr.message);
+      return sourceUrl;
+    }
+    const { data: signed, error: signErr } = await supabase.storage
+      .from("whatsapp-media")
+      .createSignedUrl(path, 60 * 60 * 24 * 7);
+    if (signErr || !signed?.signedUrl) {
+      console.warn("[fetchAndStoreInboundMedia] signed url error:", signErr?.message);
+      return sourceUrl;
+    }
+    console.log("[fetchAndStoreInboundMedia] success", { path, bytes: bytes.byteLength, mime: resolvedMime });
+    return signed.signedUrl;
+  } catch (e) {
+    console.warn("[fetchAndStoreInboundMedia] failed:", (e as Error).message);
+    return sourceUrl ?? null;
+  }
+}
+
 // Download Uazapi-encrypted media via /message/download and upload to Supabase Storage,
-// returning a permanent public URL. Falls back to the original (encrypted) URL on failure.
 async function downloadUazapiMediaToStorage(
   supabase: any,
   company_id: string,
@@ -610,20 +679,9 @@ async function downloadUazapiMediaToStorage(
     if (!bytes || bytes.byteLength === 0) {
       return fallbackUrl ?? null;
     }
-    const ext = (() => {
-      if (fileName?.includes(".")) return fileName.split(".").pop();
-      if (resolvedMime?.includes("jpeg")) return "jpg";
-      if (resolvedMime?.includes("png")) return "png";
-      if (resolvedMime?.includes("webp")) return "webp";
-      if (resolvedMime?.includes("pdf")) return "pdf";
-      if (resolvedMime?.includes("ogg")) return "ogg";
-      if (resolvedMime?.includes("mpeg")) return "mp3";
-      if (resolvedMime?.includes("mp4")) return "mp4";
-      return "bin";
-    })();
-    // Sanitize external_id for storage path (strip ":" which breaks public URLs in some browsers)
-    const safeId = String(external_id).replace(/[^a-zA-Z0-9_-]/g, "_");
-    const path = `inbound/${company_id}/${safeId}.${ext}`;
+    const ext = extFromMime(resolvedMime, fileName);
+    const rand = Math.random().toString(36).slice(2, 10);
+    const path = `${company_id}/inbound/${Date.now()}-${rand}.${ext}`;
     const { error: upErr } = await supabase.storage
       .from("whatsapp-media")
       .upload(path, bytes, {
@@ -636,7 +694,7 @@ async function downloadUazapiMediaToStorage(
     }
     const { data: signed, error: signErr } = await supabase.storage
       .from("whatsapp-media")
-      .createSignedUrl(path, 60 * 60 * 24); // 24h
+      .createSignedUrl(path, 60 * 60 * 24 * 7); // 7 days
     if (signErr) {
       console.warn("[downloadUazapiMediaToStorage] signed url error:", signErr.message);
       return fallbackUrl ?? null;
@@ -886,14 +944,21 @@ async function handleIncomingMessage(
     }
   }
 
-  // For Uazapi inbound media, fetch the decrypted file and re-upload to Supabase Storage so
-  // the frontend can render/download it (the original `mmg.whatsapp.net` URL is encrypted).
+  // Inbound media: re-host into whatsapp-media bucket so the player gets a stable URL.
   let resolvedMediaUrl = media_url ?? null;
-  if (provider === "uazapi" && message_type !== "text" && external_id) {
-    const stored = await downloadUazapiMediaToStorage(
-      supabase, company_id, external_id, media_url, mime_type, file_name,
-    );
-    if (stored) resolvedMediaUrl = stored;
+  const isMediaType = message_type !== "text" && ["audio", "image", "video", "document", "pdf", "sticker"].includes(message_type);
+  if (isMediaType) {
+    if (provider === "uazapi" && external_id) {
+      const stored = await downloadUazapiMediaToStorage(
+        supabase, company_id, external_id, media_url, mime_type, file_name,
+      );
+      if (stored) resolvedMediaUrl = stored;
+    } else if (media_url) {
+      const stored = await fetchAndStoreInboundMedia(
+        supabase, company_id, media_url, mime_type, file_name,
+      );
+      if (stored) resolvedMediaUrl = stored;
+    }
   }
 
   const insertPayload = {
