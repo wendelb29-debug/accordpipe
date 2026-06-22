@@ -31,18 +31,18 @@ export function UazapiWebhookSection({ tenantId }: Props) {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const [webhookToken, setWebhookToken] = useState<string | null>(null);
 
-  // Load webhook_token from companies (used to authenticate the webhook)
+  // Load webhook_token via secure RPC (admin/ceo/master only)
   useEffect(() => {
     if (!tenantId) {
       setWebhookToken(null);
       return;
     }
     supabase
-      .from("companies")
-      .select("webhook_token")
-      .eq("id", tenantId)
-      .maybeSingle()
-      .then(({ data }) => setWebhookToken((data as any)?.webhook_token ?? null));
+      .rpc("get_company_credentials", { _company_id: tenantId })
+      .then(({ data }) => {
+        const row = Array.isArray(data) ? data[0] : data;
+        setWebhookToken((row as any)?.webhook_token ?? null);
+      });
   }, [tenantId]);
 
   const defaultWebhookUrl =
