@@ -235,7 +235,62 @@ export function SignatureBuilderDialog({ open, onOpenChange, contractId, pdfUrl,
       return;
     }
     await saveFields();
-    toast.success("Contrato pronto para assinatura! Copie os links dos contratantes.");
+
+    // Auto-dispatch signature link to every pending signer via Email + WhatsApp
+    const baseUrl = `${window.location.origin}/assinar-pdf`;
+    let emailsSent = 0;
+    let emailsSkipped = 0;
+    let whatsappOpened = 0;
+
+    for (const signer of signers) {
+      if (signer.status === "assinado") continue;
+      const signingUrl = `${baseUrl}/${signer.signing_token}`;
+
+      // Email
+      if (signer.email) {
+        try {
+          const { error } = await supabase.functions.invoke("send-transactional-email", {
+            body: {
+              templateName: "contract-signature-request",
+              recipientEmail: signer.email,
+              idempotencyKey: `pdf-contract-${contractId}-signer-${signer.id}`,
+              templateData: {
+                signerName: signer.name,
+                signingUrl,
+                senderName: "Accord",
+              },
+            },
+          });
+          if (error) throw error;
+          emailsSent++;
+        } catch (err) {
+          console.warn("[signature] email send failed for", signer.email, err);
+          emailsSkipped++;
+        }
+      } else {
+        emailsSkipped++;
+      }
+
+      // WhatsApp — open a tab per signer with a pre-filled message
+      const cleanPhone = (signer.phone || "").replace(/\D/g, "");
+      if (cleanPhone) {
+        const phone = cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`;
+        const message = `Olá ${signer.name},\n\nVocê tem um contrato para assinar. Acesse o link abaixo para revisar e assinar com validade jurídica (ICP-Brasil + Carimbo do Tempo):\n\n${signingUrl}`;
+        const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+        const opened = window.open(url, "_blank");
+        if (opened) whatsappOpened++;
+      }
+    }
+
+    const parts: string[] = [];
+    if (emailsSent > 0) parts.push(`${emailsSent} e-mail(s) enviados`);
+    if (whatsappOpened > 0) parts.push(`${whatsappOpened} WhatsApp aberto(s)`);
+    if (emailsSkipped > 0) parts.push(`${emailsSkipped} sem e-mail`);
+    toast.success(
+      parts.length > 0
+        ? `Contrato enviado para assinatura — ${parts.join(", ")}.`
+        : "Contrato pronto para assinatura! Copie os links dos contratantes.",
+    );
     onComplete();
     onOpenChange(false);
   };
