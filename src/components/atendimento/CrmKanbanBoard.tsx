@@ -900,22 +900,35 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                           </div>
                         )}
 
-                        {signatureStats && (
+                        {signatureStats && signatureStats.total > 0 && (
                           <div className="mt-1.5 flex flex-wrap gap-1">
-                            <Badge
-                              variant="secondary"
-                              className={cn(
-                                "text-[9px] gap-0.5 px-1.5 py-0",
-                                signatureStats.approved
-                                  ? "bg-status-paid text-status-paid-foreground"
-                                  : "bg-status-open text-status-open-foreground"
-                              )}
-                            >
-                              {signatureStats.approved ? <CheckCircle className="h-2.5 w-2.5" /> : <FileSignature className="h-2.5 w-2.5" />}
-                              {signatureStats.approved
-                                ? "Aprovado"
-                                : `${signatureStats.signed}/${signatureStats.total}`}
-                            </Badge>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge
+                                  variant="secondary"
+                                  className={cn(
+                                    "text-[9px] gap-0.5 px-1.5 py-0 font-semibold",
+                                    signatureStats.approved
+                                      ? "bg-emerald-500 text-white hover:bg-emerald-500"
+                                      : signatureStats.signed > 0
+                                      ? "bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30"
+                                      : "bg-muted text-muted-foreground border border-border/60"
+                                  )}
+                                >
+                                  {signatureStats.approved ? (
+                                    <CheckCircle className="h-2.5 w-2.5" />
+                                  ) : (
+                                    <FileSignature className="h-2.5 w-2.5" />
+                                  )}
+                                  {signatureStats.signed}/{signatureStats.total}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-[10px]">
+                                {signatureStats.approved
+                                  ? "Contrato totalmente assinado"
+                                  : `${signatureStats.signed} de ${signatureStats.total} assinatura${signatureStats.total > 1 ? "s" : ""} concluída${signatureStats.signed === 1 ? "" : "s"}`}
+                              </TooltipContent>
+                            </Tooltip>
                           </div>
                         )}
 
