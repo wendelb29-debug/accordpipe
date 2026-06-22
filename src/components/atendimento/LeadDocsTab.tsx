@@ -35,6 +35,9 @@ import { generateContractPdf } from "@/lib/generateContractPdf";
 import { addAnnexPage } from "@/lib/generateContractAnnex";
 import type { AnnexData, AnnexLineItem } from "@/lib/generateContractAnnex";
 import type { CrmLead } from "@/hooks/useCrmLeads";
+import { PdfContractCreateDialog } from "@/components/contratos/PdfContractCreateDialog";
+import { SignatureBuilderDialog } from "@/components/contratos/SignatureBuilderDialog";
+import { usePdfContracts, type PdfContract, type PdfContractSigner } from "@/hooks/usePdfContracts";
 
 const ACCEPTED_STATUSES = new Set(["aceita", "accepted", "aprovada", "approved"]);
 
@@ -194,6 +197,48 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
   // Signature drawer state
   const [signDrawerContract, setSignDrawerContract] = useState<SignedContract | null>(null);
   const [signDrawerSigners, setSignDrawerSigners] = useState<ContractSigner[]>([]);
+
+  // Upload-to-contract flow
+  const { createContract: createPdfContract, fetchSigners: fetchPdfSigners, fetchContracts: refetchPdfContracts } = usePdfContracts();
+  const [createContractOpen, setCreateContractOpen] = useState(false);
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [builderContract, setBuilderContract] = useState<PdfContract | null>(null);
+  const [builderSigners, setBuilderSigners] = useState<PdfContractSigner[]>([]);
+
+  const handleCreateContractFromUpload = async (
+    name: string,
+    description: string,
+    file: File,
+    signers: { name: string; email: string; phone: string; cpf_cnpj: string; address: string }[],
+  ) => {
+    const contractId = await createPdfContract(name, description, file, signers);
+    if (!contractId) return;
+    await refetchPdfContracts();
+    // Pull the freshly created contract + signers and open builder
+    const { data: freshContract } = await supabase
+      .from("pdf_contracts")
+      .select("*")
+      .eq("id", contractId)
+      .maybeSingle();
+    const freshSigners = await fetchPdfSigners(contractId);
+    if (freshContract) {
+      setBuilderContract(freshContract as PdfContract);
+      setBuilderSigners(freshSigners);
+      setBuilderOpen(true);
+    }
+    await fetchSignedContracts();
+  };
+
+  const initialContractSigners = [
+    {
+      name: lead.contact_name || lead.company_name || "",
+      email: lead.email || "",
+      phone: lead.phone || "",
+      cpf_cnpj: (lead as any).documento || "",
+      address: "",
+    },
+  ];
+
 
   const fetchDocs = async () => {
     setLoading(true);
@@ -844,6 +889,29 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
 
   return (
     <div className="space-y-6" onPaste={handlePaste}>
+      {/* Generate contract from upload */}
+      <Card className="border-emerald-500/30 bg-emerald-500/5">
+        <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+          <div className="flex items-start gap-3">
+            <div className="h-10 w-10 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
+              <FileSignature className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Gerar contrato a partir de arquivo</p>
+              <p className="text-xs text-muted-foreground">Envie um PDF ou Word, adicione signatários e dispare a coleta de assinaturas em uma única vez.</p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shrink-0"
+            onClick={() => setCreateContractOpen(true)}
+          >
+            <Upload className="h-4 w-4" />
+            Enviar e gerar contrato
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* General Upload Area */}
       <div>
         <input
@@ -959,6 +1027,28 @@ export function LeadDocsTab({ lead }: LeadDocsTabProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PdfContractCreateDialog
+        open={createContractOpen}
+        onOpenChange={setCreateContractOpen}
+        onSubmit={handleCreateContractFromUpload}
+        initialSigners={initialContractSigners}
+        defaultName={lead.company_name || lead.contact_name ? `Contrato - ${lead.company_name || lead.contact_name}` : undefined}
+      />
+
+      {builderContract && (
+        <SignatureBuilderDialog
+          open={builderOpen}
+          onOpenChange={setBuilderOpen}
+          contractId={builderContract.id}
+          pdfUrl={builderContract.pdf_url}
+          signers={builderSigners}
+          onComplete={() => {
+            fetchSignedContracts();
+            setBuilderContract(null);
+          }}
+        />
+      )}
     </div>
   );
 }

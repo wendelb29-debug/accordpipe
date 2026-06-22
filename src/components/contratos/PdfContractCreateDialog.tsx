@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
+import { convertWordToPdf, isWordFile } from "@/lib/wordToPdf";
 
 interface Signer {
   name: string;
@@ -20,16 +22,19 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onSubmit: (name: string, description: string, file: File, signers: Signer[]) => Promise<void>;
+  initialSigners?: Signer[];
+  defaultName?: string;
 }
 
-export function PdfContractCreateDialog({ open, onOpenChange, onSubmit }: Props) {
-  const [name, setName] = useState("");
+export function PdfContractCreateDialog({ open, onOpenChange, onSubmit, initialSigners, defaultName }: Props) {
+  const blankSigner: Signer = { name: "", email: "", phone: "", cpf_cnpj: "", address: "" };
+  const [name, setName] = useState(defaultName || "");
   const [description, setDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [signers, setSigners] = useState<Signer[]>([{ name: "", email: "", phone: "", cpf_cnpj: "", address: "" }]);
+  const [signers, setSigners] = useState<Signer[]>(initialSigners && initialSigners.length ? initialSigners : [blankSigner]);
   const [loading, setLoading] = useState(false);
 
-  const addSigner = () => setSigners([...signers, { name: "", email: "", phone: "", cpf_cnpj: "", address: "" }]);
+  const addSigner = () => setSigners([...signers, { ...blankSigner }]);
   const removeSigner = (idx: number) => setSigners(signers.filter((_, i) => i !== idx));
   const updateSigner = (idx: number, field: keyof Signer, value: string) => {
     const updated = [...signers];
@@ -42,14 +47,24 @@ export function PdfContractCreateDialog({ open, onOpenChange, onSubmit }: Props)
     if (signers.every(s => !s.name.trim())) return;
     const validSigners = signers.filter(s => s.name.trim());
     setLoading(true);
-    await onSubmit(name, description, file, validSigners);
-    setLoading(false);
-    // Reset
-    setName("");
-    setDescription("");
-    setFile(null);
-    setSigners([{ name: "", email: "", phone: "", cpf_cnpj: "", address: "" }]);
-    onOpenChange(false);
+    try {
+      let finalFile = file;
+      if (isWordFile(file)) {
+        toast.info("Convertendo Word para PDF...");
+        finalFile = await convertWordToPdf(file);
+      }
+      await onSubmit(name, description, finalFile, validSigners);
+      // Reset
+      setName(defaultName || "");
+      setDescription("");
+      setFile(null);
+      setSigners(initialSigners && initialSigners.length ? initialSigners : [{ ...blankSigner }]);
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error("Erro ao criar contrato: " + (err?.message || ""));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -74,16 +89,17 @@ export function PdfContractCreateDialog({ open, onOpenChange, onSubmit }: Props)
               <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Descrição opcional do contrato..." rows={2} />
             </div>
             <div className="space-y-2">
-              <Label>Arquivo PDF *</Label>
+              <Label>Arquivo do Contrato (PDF ou Word) *</Label>
               <div className="flex items-center gap-3">
                 <Input
                   type="file"
-                  accept=".pdf"
+                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   onChange={(e) => setFile(e.target.files?.[0] || null)}
                   className="flex-1"
                 />
                 {file && <span className="text-xs text-muted-foreground truncate max-w-[150px]">{file.name}</span>}
               </div>
+              <p className="text-[11px] text-muted-foreground">Aceita PDF, DOC e DOCX. Arquivos Word são convertidos automaticamente para PDF.</p>
             </div>
           </div>
 
