@@ -447,16 +447,11 @@ Deno.serve(async (req) => {
     const signedContent = concatRanges(pdfWithBR, signedRanges);
     const contentDigest = await sha256(signedContent);
 
-    // 7) Build CMS detached signature
-    const cmsBytes = buildCmsSignedData(contentDigest, privateKey, cert, chain);
+    // 7) Build CMS detached signature WITH embedded RFC 3161 timestamp (PAdES-B-T)
+    const { cms: cmsBytes, tsaAuthority, tsaToken } =
+      await buildCmsSignedDataWithTimestamp(contentDigest, privateKey, cert, chain);
 
-    // 8) Request timestamp on the signature value (for PAdES-B-T)
-    const cmsDigest = await sha256(cmsBytes);
-    const ts = await requestTimestamp(cmsDigest);
-    // (Embedding the TSA token as unsigned attribute would require rebuilding CMS;
-    //  here we store the token alongside in DB. The CMS itself is valid PAdES-B-B.)
-
-    // 9) Convert CMS to hex and inject into placeholder
+    // 8) Convert CMS to hex and inject into placeholder
     const hex = Array.from(cmsBytes).map((b) => b.toString(16).padStart(2, "0")).join("");
     if (hex.length > pos.end - pos.start) {
       throw new Error(`CMS muito grande (${hex.length} > ${pos.end - pos.start}). Aumentar signatureContentsLength.`);
@@ -467,7 +462,7 @@ Deno.serve(async (req) => {
     const enc = new TextEncoder();
     finalPdf.set(enc.encode(paddedHex), pos.start);
 
-    // 10) Upload to storage
+    // 9) Upload to storage
     const storagePath = `icp/${contract.id}.pdf`;
     const { error: upErr } = await supabase.storage
       .from("pdf-contracts")
@@ -481,8 +476,8 @@ Deno.serve(async (req) => {
     const icpPdfUrl = pub.publicUrl;
 
     const signedAt = new Date().toISOString();
-    const tsToken = ts ? uint8ToB64(ts.token) : null;
-    const tsAuth = ts ? ts.authority : null;
+    const tsToken = tsaToken ? uint8ToB64(tsaToken) : null;
+    const tsAuth = tsaAuthority;
 
     // 11) Persist audit
     const { error: updErr } = await supabase
