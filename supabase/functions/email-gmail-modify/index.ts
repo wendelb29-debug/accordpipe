@@ -62,7 +62,25 @@ async function getValidToken(admin: any, account: any): Promise<string> {
   return refreshed.access_token;
 }
 
-Deno.serve(async (req) => {
+// Retry com backoff exponencial + jitter para 429 / 5xx (Gmail "Too many concurrent requests")
+async function fetchWithRetry(url: string, init: RequestInit, maxAttempts = 5): Promise<Response> {
+  let lastResp: Response | null = null;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const resp = await fetch(url, init);
+    if (resp.ok) return resp;
+    if (resp.status !== 429 && resp.status < 500) return resp; // erro definitivo, não retentar
+    lastResp = resp;
+    // drena o corpo para liberar o socket
+    try { await resp.text(); } catch (_) {}
+    const retryAfter = Number(resp.headers.get("retry-after"));
+    const base = Number.isFinite(retryAfter) && retryAfter > 0
+      ? retryAfter * 1000
+      : Math.min(8000, 400 * Math.pow(2, attempt));
+    const delay = base + Math.floor(Math.random() * 250);
+    await new Promise((r) => setTimeout(r, delay));
+  }
+  return lastResp as Response;
+}
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const authHeader = req.headers.get("Authorization");
