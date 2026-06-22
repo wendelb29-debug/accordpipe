@@ -316,12 +316,11 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
       for (const contract of latestContractsByLead.values()) {
         const { signed, total, allSigned } = getLeadContractSignatureStats(signersByContract.get(contract.id) || []);
 
-        if (total === 0) continue;
-
+        // Inclui mesmo contratos emitidos sem signatários cadastrados — mostra "Emitido"
         nextStats[contract.lead_id] = {
           signed,
           total,
-          approved: allSigned || contract.signature_status === "signed",
+          approved: (total > 0 && allSigned) || contract.signature_status === "signed",
         };
       }
 
@@ -900,7 +899,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                           </div>
                         )}
 
-                        {signatureStats && signatureStats.total > 0 && (
+                        {signatureStats && (
                           <div className="mt-1.5 flex flex-wrap gap-1">
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -910,6 +909,8 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                                     "text-[9px] gap-0.5 px-1.5 py-0 font-semibold",
                                     signatureStats.approved
                                       ? "bg-emerald-500 text-white hover:bg-emerald-500"
+                                      : signatureStats.total === 0
+                                      ? "bg-slate-500/15 text-slate-600 dark:text-slate-300 border border-slate-500/30"
                                       : signatureStats.signed > 0
                                       ? "bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30"
                                       : "bg-muted text-muted-foreground border border-border/60"
@@ -920,12 +921,16 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                                   ) : (
                                     <FileSignature className="h-2.5 w-2.5" />
                                   )}
-                                  {signatureStats.signed}/{signatureStats.total}
+                                  {signatureStats.total === 0
+                                    ? "Emitido"
+                                    : `${signatureStats.signed}/${signatureStats.total}`}
                                 </Badge>
                               </TooltipTrigger>
                               <TooltipContent side="top" className="text-[10px]">
                                 {signatureStats.approved
                                   ? "Contrato totalmente assinado"
+                                  : signatureStats.total === 0
+                                  ? "Contrato emitido — aguardando signatários"
                                   : `${signatureStats.signed} de ${signatureStats.total} assinatura${signatureStats.total > 1 ? "s" : ""} concluída${signatureStats.signed === 1 ? "" : "s"}`}
                               </TooltipContent>
                             </Tooltip>
