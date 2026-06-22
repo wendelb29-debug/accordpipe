@@ -8535,6 +8535,18 @@ export type Database = {
           zapi_token: string
         }[]
       }
+      get_company_webhook_config: {
+        Args: { _company_id: string }
+        Returns: {
+          zapi_webhook_chat_presence: string
+          zapi_webhook_message_status: string
+          zapi_webhook_notify_me: boolean
+          zapi_webhook_on_connect: string
+          zapi_webhook_on_disconnect: string
+          zapi_webhook_on_receive: string
+          zapi_webhook_on_send: string
+        }[]
+      }
       get_contract_company_id: {
         Args: { _contract_id: string }
         Returns: string
