@@ -610,20 +610,9 @@ async function downloadUazapiMediaToStorage(
     if (!bytes || bytes.byteLength === 0) {
       return fallbackUrl ?? null;
     }
-    const ext = (() => {
-      if (fileName?.includes(".")) return fileName.split(".").pop();
-      if (resolvedMime?.includes("jpeg")) return "jpg";
-      if (resolvedMime?.includes("png")) return "png";
-      if (resolvedMime?.includes("webp")) return "webp";
-      if (resolvedMime?.includes("pdf")) return "pdf";
-      if (resolvedMime?.includes("ogg")) return "ogg";
-      if (resolvedMime?.includes("mpeg")) return "mp3";
-      if (resolvedMime?.includes("mp4")) return "mp4";
-      return "bin";
-    })();
-    // Sanitize external_id for storage path (strip ":" which breaks public URLs in some browsers)
-    const safeId = String(external_id).replace(/[^a-zA-Z0-9_-]/g, "_");
-    const path = `inbound/${company_id}/${safeId}.${ext}`;
+    const ext = extFromMime(resolvedMime, fileName);
+    const rand = Math.random().toString(36).slice(2, 10);
+    const path = `${company_id}/inbound/${Date.now()}-${rand}.${ext}`;
     const { error: upErr } = await supabase.storage
       .from("whatsapp-media")
       .upload(path, bytes, {
@@ -636,7 +625,7 @@ async function downloadUazapiMediaToStorage(
     }
     const { data: signed, error: signErr } = await supabase.storage
       .from("whatsapp-media")
-      .createSignedUrl(path, 60 * 60 * 24); // 24h
+      .createSignedUrl(path, 60 * 60 * 24 * 7); // 7 days
     if (signErr) {
       console.warn("[downloadUazapiMediaToStorage] signed url error:", signErr.message);
       return fallbackUrl ?? null;
