@@ -1,0 +1,1 @@
+REVOKE SELECT (webhook_token, zapi_token, zapi_client_token, zapi_instance_id) ON public.companies FROM anon, authenticated;
