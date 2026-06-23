@@ -1698,6 +1698,73 @@ export type Database = {
           },
         ]
       }
+      contact_assignment_status: {
+        Row: {
+          assigned_by_system: boolean
+          assigned_to_user_id: string | null
+          assumed_at: string | null
+          closed_at: string | null
+          contact_id: string
+          created_at: string
+          department_id: string | null
+          id: string
+          queue_position: number | null
+          status: string
+          tenant_id: string
+          timeout_auto_release_at: string | null
+        }
+        Insert: {
+          assigned_by_system?: boolean
+          assigned_to_user_id?: string | null
+          assumed_at?: string | null
+          closed_at?: string | null
+          contact_id: string
+          created_at?: string
+          department_id?: string | null
+          id?: string
+          queue_position?: number | null
+          status?: string
+          tenant_id: string
+          timeout_auto_release_at?: string | null
+        }
+        Update: {
+          assigned_by_system?: boolean
+          assigned_to_user_id?: string | null
+          assumed_at?: string | null
+          closed_at?: string | null
+          contact_id?: string
+          created_at?: string
+          department_id?: string | null
+          id?: string
+          queue_position?: number | null
+          status?: string
+          tenant_id?: string
+          timeout_auto_release_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_assignment_status_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: true
+            referencedRelation: "whatsapp_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_assignment_status_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_assignment_status_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contract_signatures: {
         Row: {
           contract_id: string
@@ -4405,6 +4472,56 @@ export type Database = {
             foreignKeyName: "master_tenant_clients_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          auto_release_enabled: boolean
+          auto_release_timeout_minutes: number
+          browser_notification_enabled: boolean
+          created_at: string
+          id: string
+          sound_enabled: boolean
+          sound_file: string
+          sound_volume: number
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_release_enabled?: boolean
+          auto_release_timeout_minutes?: number
+          browser_notification_enabled?: boolean
+          created_at?: string
+          id?: string
+          sound_enabled?: boolean
+          sound_file?: string
+          sound_volume?: number
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_release_enabled?: boolean
+          auto_release_timeout_minutes?: number
+          browser_notification_enabled?: boolean
+          created_at?: string
+          id?: string
+          sound_enabled?: boolean
+          sound_file?: string
+          sound_volume?: number
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
@@ -9082,6 +9199,15 @@ export type Database = {
         Args: { p_token: string }
         Returns: boolean
       }
+      assume_attendance: {
+        Args: {
+          p_contact_id: string
+          p_timeout_minutes?: number
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      auto_release_expired_attendance: { Args: never; Returns: undefined }
       block_expired_trials: { Args: never; Returns: undefined }
       check_cnpj_status: {
         Args: { _cnpj: string }
@@ -9115,6 +9241,7 @@ export type Database = {
         Returns: number
       }
       count_child_tenants: { Args: { _reseller_id: string }; Returns: number }
+      count_queue_items: { Args: { p_department_id: string }; Returns: number }
       create_notification:
         | {
             Args: {
@@ -9555,6 +9682,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      release_attendance: { Args: { p_contact_id: string }; Returns: undefined }
       reseller_can_add_child: {
         Args: { _reseller_id: string }
         Returns: boolean

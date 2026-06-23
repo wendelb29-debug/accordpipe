@@ -12,6 +12,8 @@ import { QuickReplyPicker } from "./QuickReplyPicker";
 import { PresenceIndicator } from "./PresenceIndicator";
 import { usePresenceIndicator } from "@/hooks/usePresenceIndicator";
 import { usePresenceIndicators } from "@/hooks/usePresenceIndicators";
+import { useContactStatus } from "@/hooks/useContactStatus";
+import { Badge } from "@/components/ui/badge";
 
 const EMOJI_LIST = [
   "😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰",
@@ -769,6 +771,15 @@ export function InboxChat({
     currentUserId || undefined
   );
 
+  const {
+    isPending: attendancePending,
+    isInProgress: attendanceInProgress,
+    isAssignedToMe: attendanceAssignedToMe,
+    assumeMutation: assumeAttendanceMut,
+    releaseMutation: releaseAttendanceMut,
+  } = useContactStatus(contact?.id);
+  const attendanceLocked = attendancePending && !attendanceAssignedToMe;
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -1185,6 +1196,27 @@ export function InboxChat({
               {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
             </button>
           )}
+          {attendancePending && !attendanceAssignedToMe && (
+            <button
+              onClick={() => assumeAttendanceMut.mutate()}
+              disabled={assumeAttendanceMut.isPending}
+              className="h-8 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium flex items-center gap-1.5 disabled:opacity-60"
+            >
+              <Phone size={13} /> Assumir
+            </button>
+          )}
+          {attendanceInProgress && attendanceAssignedToMe && (
+            <>
+              <Badge className="bg-emerald-500 text-white text-[10px]">Em atendimento</Badge>
+              <button
+                onClick={() => releaseAttendanceMut.mutate()}
+                disabled={releaseAttendanceMut.isPending}
+                className="h-8 px-2 rounded-lg border border-border/50 text-[11px] text-muted-foreground hover:bg-muted/50"
+              >
+                Liberar
+              </button>
+            </>
+          )}
           {isAdmin && (
             <button onClick={() => setSettingsOpen(true)}
               aria-label="Configurações WhatsApp"
@@ -1477,9 +1509,13 @@ export function InboxChat({
                     }
                     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
                   }}
-                  placeholder='Digite uma mensagem... (use "/" para respostas rápidas)'
+                  placeholder={attendanceLocked ? 'Clique em "Assumir" para responder' : 'Digite uma mensagem... (use "/" para respostas rápidas)'}
+                  disabled={attendanceLocked}
                   rows={1}
-                  className="flex-1 min-w-0 resize-none outline-none text-base sm:text-sm bg-transparent border-0 px-1 py-2.5 text-foreground placeholder:text-muted-foreground leading-relaxed self-center"
+                  className={cn(
+                    "flex-1 min-w-0 resize-none outline-none text-base sm:text-sm bg-transparent border-0 px-1 py-2.5 text-foreground placeholder:text-muted-foreground leading-relaxed self-center",
+                    attendanceLocked && "cursor-not-allowed opacity-60"
+                  )}
                   style={{ height: 40, maxHeight: 120 }}
                 />
 
