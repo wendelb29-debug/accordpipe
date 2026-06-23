@@ -80,6 +80,14 @@ Deno.serve(async (req) => {
         companyId = creds?.company_id || null;
       }
 
+      // Reject instanceId spoofing: the resolved company must match the webhook token's tenant
+      if (companyId && companyId !== allowedCompanyId) {
+        return new Response(JSON.stringify({ ok: false, error: "tenant_mismatch" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       if (companyId && messageText) {
         // Clean phone number
         const cleanPhone = phone.replace(/\D/g, "");
