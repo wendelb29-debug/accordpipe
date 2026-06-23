@@ -74,6 +74,7 @@ export function LeadAtividadesTab({
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [subTab, setSubTab] = useState("planejadas");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Modal state
   const [modalTarget, setModalTarget] = useState<ActivityItem | null>(null);
@@ -129,6 +130,28 @@ export function LeadAtividadesTab({
       reminder: "none",
     });
     setReminderChannels({ system: true, email: false });
+    setEditingId(null);
+  };
+
+  const handleEdit = (activity: ActivityItem) => {
+    const meta = activity.metadata || {};
+    const scheduled = meta.scheduled_at ? new Date(meta.scheduled_at) : new Date(activity.created_at);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    setForm({
+      type: activity.type === "activity" ? "internal" : activity.type,
+      title: activity.title,
+      description: activity.description || "",
+      date: `${scheduled.getFullYear()}-${pad(scheduled.getMonth() + 1)}-${pad(scheduled.getDate())}`,
+      time: `${pad(scheduled.getHours())}:${pad(scheduled.getMinutes())}`,
+      duration: meta.duration || "00:30",
+      reminder: meta.reminder || "none",
+    });
+    setReminderChannels({
+      system: meta.reminder_channels?.system ?? true,
+      email: meta.reminder_channels?.email ?? false,
+    });
+    setEditingId(activity.id);
+    setShowForm(true);
   };
 
   const handleCreate = async () => {
@@ -139,20 +162,77 @@ export function LeadAtividadesTab({
     setSaving(true);
     try {
       const scheduledAt = `${form.date}T${form.time}:00`;
+      const metadata = {
+        activity_status: "planejada",
+        scheduled_at: scheduledAt,
+        duration: form.duration,
+        reminder: form.reminder,
+        reminder_channels: reminderChannels,
+        activity_type_label: ACTIVITY_TYPES.find(t => t.value === form.type)?.label || form.type,
+      };
+
+      // EDIT mode
+      if (editingId) {
+        const existing = activities.find(a => a.id === editingId);
+        const mergedMeta = { ...(existing?.metadata || {}), ...metadata };
+        const { error } = await supabase
+          .from("crm_lead_activities")
+          .update({
+            type: form.type === "internal" ? "activity" : form.type,
+            title: form.title,
+            description: form.description || null,
+            metadata: mergedMeta,
+          } as any)
+          .eq("id", editingId);
+
+        if (error) {
+          toast.error("Erro ao atualizar atividade");
+          return;
+        }
+
+        // Reschedule reminder queue row if exists
+        if (profile?.user_id) {
+          await supabase.from("activity_reminders").delete().eq("activity_id", editingId);
+          if (form.reminder !== "none" && (reminderChannels.system || reminderChannels.email)) {
+            const reminderMinutes = parseInt(form.reminder);
+            const scheduledDate = new Date(scheduledAt);
+            const reminderDate = new Date(scheduledDate.getTime() - reminderMinutes * 60 * 1000);
+            if (reminderDate > new Date()) {
+              await supabase.from("activity_reminders").insert({
+                activity_id: editingId,
+                user_id: profile.user_id,
+                lead_id: lead.id,
+                servidor_id: lead.servidor_id,
+                reminder_minutes: reminderMinutes,
+                reminder_scheduled_at: reminderDate.toISOString(),
+                notify_system: reminderChannels.system,
+                notify_email: reminderChannels.email,
+              });
+            }
+          }
+        }
+
+        await addActivity({
+          type: "activity_updated",
+          title: `Atividade editada: ${form.title}`,
+          servidor_id: lead.servidor_id,
+        });
+
+        toast.success("Atividade atualizada!");
+        resetForm();
+        setShowForm(false);
+        await fetchActivities();
+        return;
+      }
+
       const result = await addActivity({
         type: form.type === "internal" ? "activity" : form.type,
         title: form.title,
         description: form.description || undefined,
         servidor_id: lead.servidor_id,
-        metadata: {
-          activity_status: "planejada",
-          scheduled_at: scheduledAt,
-          duration: form.duration,
-          reminder: form.reminder,
-          reminder_channels: reminderChannels,
-          activity_type_label: ACTIVITY_TYPES.find(t => t.value === form.type)?.label || form.type,
-        },
+        metadata,
       });
+
 
       if (!result) {
         toast.error("Erro ao criar atividade. Verifique suas permissões.");
@@ -412,6 +492,11 @@ export function LeadAtividadesTab({
                           >
                             <Ban className="h-3.5 w-3.5 text-amber-600" />
                           </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Editar"
+                            onClick={() => handleEdit(a)}
+                          >
+                            <Edit className="h-3.5 w-3.5 text-blue-600" />
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7" title="Duplicar"
                             onClick={() => handleDuplicate(a)}
                           >
@@ -473,7 +558,7 @@ export function LeadAtividadesTab({
       {showForm && (
         <Card>
           <CardContent className="p-4 space-y-4">
-            <h4 className="text-sm font-semibold">Criar atividade</h4>
+            <h4 className="text-sm font-semibold">{editingId ? "Editar atividade" : "Criar atividade"}</h4>
 
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
@@ -583,7 +668,7 @@ export function LeadAtividadesTab({
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button size="sm" variant="ghost" onClick={() => setShowForm(false)} className="text-xs">
+              <Button size="sm" variant="ghost" onClick={() => { setShowForm(false); resetForm(); }} className="text-xs">
                 Fechar
               </Button>
               <Button
