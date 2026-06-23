@@ -1153,6 +1153,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
         value={advancedFilters}
         onApply={setAdvancedFilters}
         responsaveis={teamMembers.map((m) => ({ user_id: m.user_id, name: m.name }))}
+        leads={leads}
       />
     </div>
   );
