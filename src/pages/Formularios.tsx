@@ -11,10 +11,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCrmForms, AVAILABLE_FIELDS, CrmForm } from "@/hooks/useCrmForms";
 import { useWorkspaceContext } from "@/contexts/WorkspaceContext";
 import { slugify } from "@/lib/slugify";
 import { toast } from "sonner";
+import AdsCapture from "@/components/formularios/AdsCapture";
 
 export default function Formularios() {
   const { forms, loading, createForm, updateForm, deleteForm, duplicateForm } = useCrmForms();
@@ -158,6 +160,12 @@ export default function Formularios() {
   }
 
   return (
+    <Tabs defaultValue="meus" className="space-y-6">
+      <TabsList>
+        <TabsTrigger value="meus">Meus Formulários</TabsTrigger>
+        <TabsTrigger value="ads">Captação de Ads</TabsTrigger>
+      </TabsList>
+      <TabsContent value="meus" className="space-y-6 mt-0">
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -514,5 +522,10 @@ export default function Formularios() {
         </DialogContent>
       </Dialog>
     </div>
+      </TabsContent>
+      <TabsContent value="ads" className="mt-0">
+        <AdsCapture />
+      </TabsContent>
+    </Tabs>
   );
 }
