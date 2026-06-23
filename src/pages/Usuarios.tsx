@@ -231,7 +231,7 @@ export default function Usuarios() {
     }
   };
 
-  const handleOpenDialog = (user?: UserWithRole) => {
+  const handleOpenDialog = async (user?: UserWithRole) => {
     if (user) {
       setEditingUser(user);
       setFormData({
@@ -244,6 +244,12 @@ export default function Usuarios() {
         role: user.role,
         company_id: user.company_id || "",
       });
+      // Load existing departments
+      const { data: ud } = await supabase
+        .from("user_departments")
+        .select("department_id")
+        .eq("user_id", user.user_id);
+      setSelectedDepartmentIds((ud || []).map((d: any) => d.department_id));
     } else {
       setEditingUser(null);
       setFormData({
@@ -256,6 +262,7 @@ export default function Usuarios() {
         role: "leitura",
         company_id: activeCompanyId || "",
       });
+      setSelectedDepartmentIds([]);
     }
     setDialogOpen(true);
   };
