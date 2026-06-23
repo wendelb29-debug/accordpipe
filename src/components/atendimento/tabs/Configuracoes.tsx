@@ -15,10 +15,11 @@ import { toast } from "sonner";
 type ConnectionStatus = "disconnected" | "connecting" | "connected";
 
 export function Configuracoes() {
-  const { activeCompanyId, profile } = useAuth();
+  const { activeCompanyId, profile, role, isMaster } = useAuth();
   const { loading, createInstance, connect, connectionState, logout } = useEvolutionApi();
 
   const companyId = activeCompanyId || profile?.company_id;
+  const isAdmin = isMaster || role === "ceo" || role === "admin";
   const defaultInstanceName = companyId ? `accord-${companyId.slice(0, 8)}` : "accord-default";
 
   const [instanceName, setInstanceName] = useState(defaultInstanceName);
