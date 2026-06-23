@@ -5,10 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Settings, Upload, Zap, Pencil, Trash2, Plus, Loader2 } from "lucide-react";
+import { Settings, Upload, Zap, Pencil, Trash2, Plus, Loader2, Bell, Users2, Inbox } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWhatsAppProfileSettings } from "@/hooks/useWhatsAppProfileSettings";
 import { useQuickReplies, QuickReply } from "@/hooks/useQuickReplies";
+import { useAuth } from "@/contexts/AuthContext";
+import { QueueTab } from "./QueueTab";
+import { NotificationPreferences } from "./NotificationPreferences";
+import { DepartmentManagement } from "../atendimento/DepartmentManagement";
+import { DepartmentRoutingConfig } from "../atendimento/DepartmentRoutingConfig";
 
 interface WhatsAppSettingsDialogProps {
   open: boolean;
