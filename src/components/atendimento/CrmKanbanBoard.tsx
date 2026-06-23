@@ -36,6 +36,7 @@ import {
 } from "./FilterPanel";
 import { useCrmLeads, CrmLead, STAGES } from "@/hooks/useCrmLeads";
 import { useKanbanColumns } from "@/hooks/useKanbanColumns";
+import { useNewLeadNotifications } from "@/hooks/useNewLeadNotifications";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -111,6 +112,9 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   const { profile } = useAuth();
   const companyId = useActiveCompanyId();
   const navigate = useNavigate();
+
+  // Realtime visual toast when a new lead arrives in this workspace/tenant
+  useNewLeadNotifications(companyId, workspaceId);
   const [draggedLead, setDraggedLead] = useState<CrmLead | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [selectedLead, setSelectedLead] = useState<CrmLead | null>(null);
