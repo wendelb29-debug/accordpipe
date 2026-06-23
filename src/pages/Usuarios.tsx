@@ -44,6 +44,7 @@ import { AppRole, useAuth } from "@/contexts/AuthContext";
 import { PermissionsEditor } from "@/components/usuarios/PermissionsEditor";
 import { WorkspacePermissionsEditor } from "@/components/usuarios/WorkspacePermissionsEditor";
 import { InviteUserDialog } from "@/components/usuarios/InviteUserDialog";
+import { DepartmentManagement } from "@/components/atendimento/DepartmentManagement";
 
 interface UserWithRole {
   id: string;
@@ -553,6 +554,12 @@ export default function Usuarios() {
             <BrandIcon icon={User} tone="indigo" size="sm" />
             Usuários
           </TabsTrigger>
+          {canManageUsers && (
+            <TabsTrigger value="departamentos" className="gap-2">
+              <BrandIcon icon={Building2} tone="emerald" size="sm" />
+              Departamentos
+            </TabsTrigger>
+          )}
           {isGlobalMaster && profile?.company_id === activeCompanyId && (
             <TabsTrigger value="servidores" className="gap-2">
               <BrandIcon icon={Server} tone="slate" size="sm" />
@@ -1083,6 +1090,16 @@ export default function Usuarios() {
             </DialogContent>
           </Dialog>
         </TabsContent>
+
+        {canManageUsers && (
+          <TabsContent value="departamentos">
+            <DepartmentManagement
+              companyId={activeCompanyId || profile?.company_id || ""}
+              isAdmin={canManageUsers}
+            />
+          </TabsContent>
+        )}
+
 
         {showTenantTabs && (
           <TabsContent value="servidores">
