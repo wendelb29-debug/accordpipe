@@ -26,7 +26,43 @@ type NormalizedEvent =
     }
   | { kind: "message_status"; external_id: string; status: "sent" | "delivered" | "read" }
   | { kind: "instance_status"; status: string; phone?: string | null }
+  | {
+      kind: "call_received";
+      phone: string;
+      caller_name?: string | null;
+      caller_avatar?: string | null;
+      external_call_id?: string | null;
+      timestamp: string;
+    }
   | { kind: "ignore"; reason: string };
+
+function detectCallEvent(data: any, ev?: string, body?: any): NormalizedEvent | null {
+  const e = (ev || "").toString().toLowerCase();
+  const t = (data?.type || data?.messageType || body?.type || "").toString().toLowerCase();
+  const isCall =
+    e === "call" || e === "incomingcall" || e === "call_received" || e === "calls" ||
+    e.includes("call") ||
+    t === "call" || t.includes("call") ||
+    data?.event === "call" || data?.event === "call_received" ||
+    body?.event === "call" || body?.event === "call_received";
+
+  if (!isCall) return null;
+
+  const phoneRaw = pickPhone(data) || pickPhone(body) || data?.from || data?.caller || body?.from;
+  if (!phoneRaw) return null;
+  const phone = String(phoneRaw).replace(/[^\d]/g, "");
+
+  return {
+    kind: "call_received",
+    phone,
+    caller_name:
+      data?.senderName || data?.pushName || data?.notifyName || data?.from_name ||
+      data?.contact?.name || body?.senderName || null,
+    caller_avatar: pickAvatar(data) || pickAvatar(body),
+    external_call_id: data?.call_id || data?.callId || data?.id || body?.callId || null,
+    timestamp: data?.timestamp || body?.timestamp || new Date().toISOString(),
+  };
+}
 
 function pickAvatar(d: any): string | null {
   if (!d) return null;
