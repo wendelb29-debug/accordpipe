@@ -276,6 +276,9 @@ function normalizeUazapi(body: any): NormalizedEvent {
   const ev = (body?.event || body?.type || body?.EventType || "").toString().toLowerCase();
   const data = body?.data ?? body?.message ?? body?.payload ?? body;
 
+  const callEvent = detectCallEvent(data, ev, body);
+  if (callEvent) return callEvent;
+
   if (ev.includes("status") || ev.includes("connection") || ev.includes("presence") || data?.connection || data?.state) {
     return {
       kind: "instance_status",
