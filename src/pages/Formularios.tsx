@@ -11,10 +11,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCrmForms, AVAILABLE_FIELDS, CrmForm } from "@/hooks/useCrmForms";
 import { useWorkspaceContext } from "@/contexts/WorkspaceContext";
 import { slugify } from "@/lib/slugify";
 import { toast } from "sonner";
+import AdsCapture from "@/components/formularios/AdsCapture";
 
 export default function Formularios() {
   const { forms, loading, createForm, updateForm, deleteForm, duplicateForm } = useCrmForms();
