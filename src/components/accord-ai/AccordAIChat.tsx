@@ -9,6 +9,8 @@ import { useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useInboxNotifications, type InboxNotification } from "@/hooks/useInboxNotifications";
 import { QuickWhatsAppChat } from "./QuickWhatsAppChat";
+import { supabase } from "@/integrations/supabase/client";
+
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -234,17 +236,21 @@ export function AccordAIChat() {
     const allMessages = [...messages, userMsg];
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({
           messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
           context: getContext(),
         }),
       });
+
 
       if (!resp.ok || !resp.body) {
         const err = await resp.json().catch(() => ({ error: "Erro desconhecido" }));
