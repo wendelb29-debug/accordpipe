@@ -747,77 +747,139 @@ async function downloadUazapiMediaToStorage(
   fileName: string | null | undefined,
 ): Promise<string | null> {
   try {
-    if (!external_id) return fallbackUrl ?? null;
-    const { data: integ } = await supabase
-      .from("tenant_whatsapp_integrations")
-      .select("server_url, instance_token")
-      .eq("tenant_id", company_id)
-      .eq("provider_type", "uazapi")
-      .maybeSingle();
-    if (!integ?.server_url || !integ?.instance_token) {
+    if (!external_id) {
+      console.warn("[downloadUazapiMediaToStorage] No external_id, using fallback", { fallbackUrl });
       return fallbackUrl ?? null;
     }
+    if (!company_id) {
+      console.warn("[downloadUazapiMediaToStorage] No company_id");
+      return fallbackUrl ?? null;
+    }
+
+    console.log("[downloadUazapiMediaToStorage] Fetching Uazapi config", { company_id, external_id });
+    const { data: integ, error: integError } = await supabase
+      .from("tenant_whatsapp_integrations")
+      .select("server_url, instance_token, provider_type")
+      .eq("tenant_id", company_id)
+      .eq("provider_type", "uazapi")
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (integError) {
+      console.error("[downloadUazapiMediaToStorage] Error fetching integration:", integError);
+      return fallbackUrl ?? null;
+    }
+    if (!integ?.server_url || !integ?.instance_token) {
+      console.warn("[downloadUazapiMediaToStorage] No Uazapi config found, using fallback");
+      return fallbackUrl ?? null;
+    }
+
     const baseUrl = integ.server_url.replace(/\/$/, "");
-    // Uazapi /message/download returns the decrypted media as a downloadable stream/url
-    const dlRes = await fetch(`${baseUrl}/message/download`, {
+    const downloadUrl = `${baseUrl}/message/download`;
+    console.log("[downloadUazapiMediaToStorage] Calling Uazapi download", { url: downloadUrl, externalId: external_id });
+
+    const dlRes = await fetch(downloadUrl, {
       method: "POST",
       headers: { token: integ.instance_token, "Content-Type": "application/json" },
       body: JSON.stringify({ id: external_id }),
     });
+
     if (!dlRes.ok) {
-      console.warn("[downloadUazapiMediaToStorage] non-ok", dlRes.status);
+      console.warn("[downloadUazapiMediaToStorage] Uazapi returned non-ok status", { status: dlRes.status, statusText: dlRes.statusText });
+      try {
+        const errorBody = await dlRes.text();
+        console.warn("[downloadUazapiMediaToStorage] Error response:", errorBody.slice(0, 200));
+      } catch { /* ignore */ }
       return fallbackUrl ?? null;
     }
+
     const ct = dlRes.headers.get("content-type") || "";
+    console.log("[downloadUazapiMediaToStorage] Response content-type:", ct);
+
     let bytes: Uint8Array | null = null;
     let resolvedMime = mimeType || null;
+    let originalFileName = fileName || "media";
+
     if (ct.includes("application/json")) {
-      const json: any = await dlRes.json().catch(() => null);
-      // Uazapi may return { fileURL, base64, mimetype, fileName }
-      const b64 = json?.base64 || json?.fileBase64 || json?.data;
-      const fileUrl = json?.fileURL || json?.url;
-      resolvedMime = json?.mimetype || json?.mimeType || resolvedMime;
+      const json: any = await dlRes.json().catch((e) => {
+        console.warn("[downloadUazapiMediaToStorage] Failed to parse JSON:", e.message);
+        return null;
+      });
+      if (!json) return fallbackUrl ?? null;
+
+      console.log("[downloadUazapiMediaToStorage] JSON keys:", Object.keys(json));
+
+      const b64 = json?.base64 || json?.fileBase64 || json?.data || json?.file;
       if (b64 && typeof b64 === "string") {
-        const clean = b64.replace(/^data:[^;]+;base64,/, "");
-        bytes = Uint8Array.from(atob(clean), (c) => c.charCodeAt(0));
-      } else if (fileUrl && typeof fileUrl === "string") {
-        const r2 = await fetch(fileUrl);
-        if (r2.ok) {
-          bytes = new Uint8Array(await r2.arrayBuffer());
-          resolvedMime = r2.headers.get("content-type") || resolvedMime;
+        try {
+          const clean = b64.replace(/^data:[^;]+;base64,/, "");
+          bytes = Uint8Array.from(atob(clean), (c) => c.charCodeAt(0));
+          console.log("[downloadUazapiMediaToStorage] Decoded base64 to", bytes.byteLength, "bytes");
+        } catch (e) {
+          console.error("[downloadUazapiMediaToStorage] Failed to decode base64:", (e as Error).message);
         }
       }
+
+      if (!bytes) {
+        const fileUrl = json?.fileURL || json?.url || json?.file_url || json?.fileUrl;
+        if (fileUrl && typeof fileUrl === "string") {
+          console.log("[downloadUazapiMediaToStorage] Found fileURL, downloading from:", fileUrl);
+          try {
+            const r2 = await fetch(fileUrl);
+            if (r2.ok) {
+              bytes = new Uint8Array(await r2.arrayBuffer());
+              resolvedMime = r2.headers.get("content-type") || resolvedMime;
+              console.log("[downloadUazapiMediaToStorage] Downloaded from fileURL:", bytes.byteLength, "bytes");
+            } else {
+              console.warn("[downloadUazapiMediaToStorage] fileURL returned non-ok:", r2.status);
+            }
+          } catch (e) {
+            console.error("[downloadUazapiMediaToStorage] Failed to download from fileURL:", (e as Error).message);
+          }
+        }
+      }
+
+      resolvedMime = json?.mimetype || json?.mimeType || json?.contentType || resolvedMime;
+      originalFileName = json?.fileName || json?.file_name || originalFileName;
     } else {
       bytes = new Uint8Array(await dlRes.arrayBuffer());
       resolvedMime = ct || resolvedMime;
+      console.log("[downloadUazapiMediaToStorage] Treating response as binary:", bytes.byteLength, "bytes");
     }
+
     if (!bytes || bytes.byteLength === 0) {
+      console.warn("[downloadUazapiMediaToStorage] No bytes downloaded");
       return fallbackUrl ?? null;
     }
-    const ext = extFromMime(resolvedMime, fileName);
+
+    const ext = extFromMime(resolvedMime, originalFileName);
     const rand = Math.random().toString(36).slice(2, 10);
     const path = `${company_id}/inbound/${Date.now()}-${rand}.${ext}`;
+    console.log("[downloadUazapiMediaToStorage] Uploading to Storage", { path, size: bytes.byteLength });
+
     const { error: upErr } = await supabase.storage
       .from("whatsapp-media")
       .upload(path, bytes, {
         contentType: resolvedMime || "application/octet-stream",
         upsert: true,
+        cacheControl: "3600",
       });
     if (upErr) {
-      console.warn("[downloadUazapiMediaToStorage] upload error:", upErr.message);
+      console.error("[downloadUazapiMediaToStorage] upload error:", upErr.message);
       return fallbackUrl ?? null;
     }
+
     const { data: signed, error: signErr } = await supabase.storage
       .from("whatsapp-media")
-      .createSignedUrl(path, 60 * 60 * 24 * 7); // 7 days
+      .createSignedUrl(path, 60 * 60 * 24 * 7);
     if (signErr) {
-      console.warn("[downloadUazapiMediaToStorage] signed url error:", signErr.message);
+      console.error("[downloadUazapiMediaToStorage] signed url error:", signErr.message);
       return fallbackUrl ?? null;
     }
-    console.log("[downloadUazapiMediaToStorage] success", { path, bytes: bytes.byteLength, mime: resolvedMime });
+    console.log("[downloadUazapiMediaToStorage] ✅ SUCCESS", { path, bytes: bytes.byteLength, mime: resolvedMime });
     return signed?.signedUrl || fallbackUrl || null;
   } catch (e) {
-    console.warn("[downloadUazapiMediaToStorage] failed:", (e as Error).message);
+    console.error("[downloadUazapiMediaToStorage] Unexpected error:", (e as Error).message);
     return fallbackUrl ?? null;
   }
 }
