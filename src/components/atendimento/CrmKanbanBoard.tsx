@@ -112,6 +112,9 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   const { profile } = useAuth();
   const companyId = useActiveCompanyId();
   const navigate = useNavigate();
+
+  // Realtime visual toast when a new lead arrives in this workspace/tenant
+  useNewLeadNotifications(companyId, workspaceId);
   const [draggedLead, setDraggedLead] = useState<CrmLead | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [selectedLead, setSelectedLead] = useState<CrmLead | null>(null);
