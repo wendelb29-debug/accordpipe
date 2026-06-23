@@ -41,7 +41,7 @@ function generateKey(): string {
 }
 
 export default function AdsCapture() {
-  const { profile } = useAuth();
+  
   const companyId = useActiveCompanyId();
   const { workspaces } = useWorkspaceContext();
 
