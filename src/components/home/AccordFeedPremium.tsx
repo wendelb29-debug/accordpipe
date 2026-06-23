@@ -43,6 +43,20 @@ type FilterKey = "all" | "posts" | "events" | "saved";
 
 const REACTION_EMOJIS = ["❤️", "😀", "🎉", "👏", "🔥", "🚀", "💯"];
 
+/** Avatar image with graceful fallback to initials when the URL fails to load. */
+function AvatarPic({ url, name, radius = 99 }: { url?: string | null; name?: string | null; radius?: number }) {
+  const [errored, setErrored] = useState(false);
+  if (!url || errored) return <>{initials(name)}</>;
+  return (
+    <img
+      src={url}
+      alt=""
+      onError={() => setErrored(true)}
+      style={{ width: "100%", height: "100%", borderRadius: radius, objectFit: "cover" }}
+    />
+  );
+}
+
 function greetingFor(hour: number) {
   if (hour < 5) return "Boa madrugada";
   if (hour < 12) return "Bom dia";
