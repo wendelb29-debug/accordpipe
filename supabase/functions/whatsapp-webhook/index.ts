@@ -1066,6 +1066,124 @@ async function handleIncomingMessage(
     await supabase.from("whatsapp_contacts").update(updates).eq("id", contact.id);
   }
 
+  // 2.5 Department routing menu (optional, per-tenant)
+  try {
+    const { data: routingCfg } = await supabase
+      .from("department_routing_config")
+      .select("is_enabled, welcome_message, first_response_message")
+      .eq("tenant_id", company_id)
+      .maybeSingle();
+
+    if (routingCfg?.is_enabled) {
+      const { data: priorMsgs } = await supabase
+        .from("whatsapp_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("contact_id", contact.id)
+        .eq("direction", "inbound");
+      const priorCount = (priorMsgs as any)?.length ?? 0;
+
+      const { count: inboundCount } = await supabase
+        .from("whatsapp_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("contact_id", contact.id)
+        .eq("direction", "inbound");
+
+      const { data: contactFlags } = await supabase
+        .from("whatsapp_contacts")
+        .select("routed_by_department, department_id")
+        .eq("id", contact.id)
+        .maybeSingle();
+
+      const isFirstInbound = (inboundCount ?? priorCount ?? 0) === 0;
+      const trimmed = String(message || "").trim();
+      const isMenuChoice = /^[1-9]$/.test(trimmed);
+
+      // Helper to send text via tenant Uazapi
+      const sendText = async (to: string, text: string) => {
+        const { data: integ } = await supabase
+          .from("tenant_whatsapp_integrations")
+          .select("server_url, instance_token")
+          .eq("tenant_id", company_id)
+          .eq("is_active", true)
+          .maybeSingle();
+        if (!integ?.server_url || !integ?.instance_token) return;
+        const baseUrl = String(integ.server_url).replace(/\/$/, "");
+        try {
+          await fetch(`${baseUrl}/send/text`, {
+            method: "POST",
+            headers: { token: integ.instance_token, "Content-Type": "application/json" },
+            body: JSON.stringify({ number: to, text }),
+          });
+        } catch (e) {
+          console.warn("[dept-routing] failed to send text:", (e as Error).message);
+        }
+      };
+
+      // (A) Route now if contact not yet routed and chose 1-9
+      if (!contactFlags?.routed_by_department && isMenuChoice) {
+        const { data: deptList } = await supabase
+          .from("tenant_departments")
+          .select("id, name, auto_response_message")
+          .eq("tenant_id", company_id)
+          .eq("is_active", true)
+          .order("position", { ascending: true });
+        const optionIdx = parseInt(trimmed, 10) - 1;
+        const chosen = deptList?.[optionIdx];
+        if (chosen) {
+          const { data: routedUser, error: routeErr } = await supabase.rpc(
+            "route_by_department",
+            {
+              p_contact_id: contact.id,
+              p_tenant_id: company_id,
+              p_department_id: chosen.id,
+              p_selected_option: trimmed,
+            },
+          );
+          if (!routeErr && routedUser) {
+            const responseMsg =
+              chosen.auto_response_message ||
+              (routingCfg.first_response_message || "Obrigado por escolher {department}!").replace(
+                "{department}",
+                chosen.name,
+              );
+            await sendText(primaryPhone, responseMsg);
+            await supabase.from("whatsapp_messages").insert({
+              company_id,
+              contact_id: contact.id,
+              phone: primaryPhone,
+              message: responseMsg,
+              direction: "outbound",
+              status: "sent",
+              message_type: "text",
+              metadata: { system_dept_routing: true, department_id: chosen.id },
+            });
+          } else if (routeErr) {
+            console.warn("[dept-routing] route_by_department failed:", routeErr.message);
+          }
+        }
+      } else if (isFirstInbound && !contactFlags?.routed_by_department) {
+        // (B) First-time contact: send welcome menu
+        const welcome = routingCfg.welcome_message || "";
+        if (welcome.trim()) {
+          await sendText(primaryPhone, welcome);
+          await supabase.from("whatsapp_messages").insert({
+            company_id,
+            contact_id: contact.id,
+            phone: primaryPhone,
+            message: welcome,
+            direction: "outbound",
+            status: "sent",
+            message_type: "text",
+            metadata: { system_dept_menu: true },
+          });
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("[dept-routing] check failed:", (e as Error).message);
+  }
+
+
   // 3. Ensure lead exists (dedup by normalized phone)
   if (!contact.lead_id) {
     let existingLead: any = null;
