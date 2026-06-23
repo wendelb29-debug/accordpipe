@@ -326,6 +326,10 @@ function normalizeUazapi(body: any): NormalizedEvent {
 }
 
 function normalizeZapi(body: any): NormalizedEvent {
+  const ev = (body?.event || body?.type || "").toString().toLowerCase();
+  const callEvent = detectCallEvent(body?.data || body, ev, body);
+  if (callEvent) return callEvent;
+
   const status = body?.status || body?.messageStatus;
   const messageId = body?.messageId || body?.ids?.[0];
   if (status && messageId) {
