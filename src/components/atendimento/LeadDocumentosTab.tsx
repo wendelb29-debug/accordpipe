@@ -1117,14 +1117,13 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
   const fetchSigners = async (doc: GeneratedDoc) => {
     setViewSignersDoc(doc);
     setLoadingSigners(true);
-    const { data } = await supabase
-      .from("document_signers")
-      .select("*")
-      .eq("document_id", doc.id)
-      .order("ordem");
+    // Admin-only RPC: auth_token / validation_code only returned to admins.
+    const { data } = await (supabase as any)
+      .rpc("get_document_signers_admin", { _document_id: doc.id });
     setViewSignersList((data as DocumentSigner[]) || []);
     setLoadingSigners(false);
   };
+
 
   const handleCancelSignature = async (doc: GeneratedDoc) => {
     await supabase
