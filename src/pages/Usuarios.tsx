@@ -125,6 +125,8 @@ export default function Usuarios() {
     role: "leitura" as AppRole,
     company_id: "" as string,
   });
+  const [tenantDepartments, setTenantDepartments] = useState<Array<{ id: string; name: string; icon: string | null }>>([]);
+  const [selectedDepartmentIds, setSelectedDepartmentIds] = useState<string[]>([]);
 
   const selectedTenantId = formData.company_id || activeCompanyId || profile?.company_id || "";
   const selectedTenant = allCompanies.find((c) => c.id === selectedTenantId);
