@@ -683,8 +683,12 @@ function extFromMime(mime?: string | null, fileName?: string | null): string {
   if (m.includes("mpeg")) return "mp3";
   if (m.includes("audio/mp4") || m.includes("m4a")) return "m4a";
   if (m.includes("wav")) return "wav";
+  if (m.includes("aac")) return "aac";
+  if (m.includes("flac")) return "flac";
   if (m.includes("mp4")) return "mp4";
   if (m.includes("webm")) return "webm";
+  // Generic audio fallback → use ogg (Whatsapp default for PTT)
+  if (m.startsWith("audio/")) return "ogg";
   if (m.includes("msword")) return "doc";
   if (m.includes("wordprocessingml")) return "docx";
   if (m.includes("spreadsheetml")) return "xlsx";
