@@ -9,6 +9,8 @@ import { useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useInboxNotifications, type InboxNotification } from "@/hooks/useInboxNotifications";
 import { QuickWhatsAppChat } from "./QuickWhatsAppChat";
+import { supabase } from "@/integrations/supabase/client";
+
 
 type Msg = { role: "user" | "assistant"; content: string };
 
