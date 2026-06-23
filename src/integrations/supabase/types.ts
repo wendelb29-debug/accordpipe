@@ -8305,6 +8305,51 @@ export type Database = {
           },
         ]
       }
+      whatsapp_presence: {
+        Row: {
+          contact_id: string
+          id: string
+          last_updated: string
+          presence_type: string
+          started_at: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          contact_id: string
+          id?: string
+          last_updated?: string
+          presence_type: string
+          started_at?: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          contact_id?: string
+          id?: string
+          last_updated?: string
+          presence_type?: string
+          started_at?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_presence_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_presence_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_quick_replies: {
         Row: {
           category: string | null
@@ -8839,6 +8884,11 @@ export type Database = {
         }[]
       }
       check_user_limit: { Args: { _tenant_id: string }; Returns: Json }
+      cleanup_expired_presence: { Args: never; Returns: undefined }
+      clear_presence: {
+        Args: { p_contact_id: string; p_user_id: string }
+        Returns: undefined
+      }
       compute_crm_performance: {
         Args: { _ano: number; _mes: number; _tenant_id: string }
         Returns: {
@@ -9309,6 +9359,15 @@ export type Database = {
       }
       sync_master_client_user_count: {
         Args: { _tenant_id: string }
+        Returns: undefined
+      }
+      update_presence: {
+        Args: {
+          p_contact_id: string
+          p_presence_type: string
+          p_tenant_id: string
+          p_user_id: string
+        }
         Returns: undefined
       }
       update_whatsapp_call_status: {
