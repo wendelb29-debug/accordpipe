@@ -1509,9 +1509,13 @@ export function InboxChat({
                     }
                     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
                   }}
-                  placeholder='Digite uma mensagem... (use "/" para respostas rápidas)'
+                  placeholder={attendanceLocked ? 'Clique em "Assumir" para responder' : 'Digite uma mensagem... (use "/" para respostas rápidas)'}
+                  disabled={attendanceLocked}
                   rows={1}
-                  className="flex-1 min-w-0 resize-none outline-none text-base sm:text-sm bg-transparent border-0 px-1 py-2.5 text-foreground placeholder:text-muted-foreground leading-relaxed self-center"
+                  className={cn(
+                    "flex-1 min-w-0 resize-none outline-none text-base sm:text-sm bg-transparent border-0 px-1 py-2.5 text-foreground placeholder:text-muted-foreground leading-relaxed self-center",
+                    attendanceLocked && "cursor-not-allowed opacity-60"
+                  )}
                   style={{ height: 40, maxHeight: 120 }}
                 />
 
