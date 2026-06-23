@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -90,6 +91,10 @@ export function LeadAtividadesTab({
     duration: "00:30",
     reminder: "none",
   });
+  const [reminderChannels, setReminderChannels] = useState({
+    system: true,
+    email: false,
+  });
 
   useEffect(() => {
     fetchActivities();
@@ -123,6 +128,7 @@ export function LeadAtividadesTab({
       duration: "00:30",
       reminder: "none",
     });
+    setReminderChannels({ system: true, email: false });
   };
 
   const handleCreate = async () => {
