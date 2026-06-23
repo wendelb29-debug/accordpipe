@@ -11,6 +11,24 @@ interface NewLeadPayload {
   servidor_id: string;
   workspace_id?: string | null;
   created_by_user_id?: string | null;
+  origem?: string | null;
+}
+
+// Dedupe sends across open tabs / re-subscribes
+const SENT_KEY = "accord-new-lead-sent";
+function alreadyDispatched(leadId: string): boolean {
+  try {
+    const raw = sessionStorage.getItem(SENT_KEY);
+    const set = new Set<string>(raw ? JSON.parse(raw) : []);
+    if (set.has(leadId)) return true;
+    set.add(leadId);
+    // keep last 200
+    const trimmed = Array.from(set).slice(-200);
+    sessionStorage.setItem(SENT_KEY, JSON.stringify(trimmed));
+    return false;
+  } catch {
+    return false;
+  }
 }
 
 function playNotificationSound() {
@@ -119,6 +137,11 @@ export function useNewLeadNotifications(
           if (prefs.types.leads_won === false && false) return; // placeholder
 
           showNewLeadToast(lead);
+
+          // Dispatch Email + WhatsApp (server-side) — once per lead per session
+          if (!alreadyDispatched(lead.id)) {
+            void dispatchMultiChannel(lead, profile);
+          }
         }
       )
       .subscribe();
@@ -127,4 +150,57 @@ export function useNewLeadNotifications(
       supabase.removeChannel(channel);
     };
   }, [enabled, servidorId, workspaceId, profile?.user_id, user?.id]);
+}
+
+async function dispatchMultiChannel(lead: NewLeadPayload, profile: any) {
+  // Workspace name for templates
+  let workspaceName: string | undefined;
+  if (lead.workspace_id) {
+    const { data } = await supabase
+      .from("workspaces")
+      .select("name")
+      .eq("id", lead.workspace_id)
+      .maybeSingle();
+    workspaceName = (data as any)?.name;
+  }
+
+  const leadLink = `https://accordpipe.com.br/atendimento?lead=${lead.id}`;
+
+  // Email via Lovable transactional infra
+  if (profile?.email) {
+    try {
+      await supabase.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "new-lead-notification",
+          recipientEmail: profile.email,
+          idempotencyKey: `new-lead-${lead.id}-${profile.user_id}`,
+          templateData: {
+            companyName: lead.company_name,
+            contactName: lead.contact_name || undefined,
+            workspaceName,
+            leadOrigin: lead.origem || undefined,
+            leadLink,
+            userName: profile.full_name || undefined,
+          },
+        },
+      });
+    } catch (err) {
+      console.error("[new-lead] email error:", err);
+    }
+  }
+
+  // WhatsApp via tenant integration
+  try {
+    await supabase.functions.invoke("notify-new-lead-whatsapp", {
+      body: {
+        lead_id: lead.id,
+        company_name: lead.company_name,
+        contact_name: lead.contact_name,
+        workspace_id: lead.workspace_id,
+        servidor_id: lead.servidor_id,
+      },
+    });
+  } catch (err) {
+    console.error("[new-lead] whatsapp error:", err);
+  }
 }
