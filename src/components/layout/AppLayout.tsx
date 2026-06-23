@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { BackNavigationProvider } from "@/contexts/BackNavigationContext";
 import { LoginNotifications } from "@/components/notifications/LoginNotifications";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
+import { IncomingCallScreen } from "@/components/accord-inbox/IncomingCallScreen";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -131,6 +132,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
 
         <AccordAIChat />
+        <IncomingCallScreen />
       </div>
     </BackNavigationProvider>
   );

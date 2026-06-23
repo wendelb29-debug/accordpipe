@@ -26,7 +26,43 @@ type NormalizedEvent =
     }
   | { kind: "message_status"; external_id: string; status: "sent" | "delivered" | "read" }
   | { kind: "instance_status"; status: string; phone?: string | null }
+  | {
+      kind: "call_received";
+      phone: string;
+      caller_name?: string | null;
+      caller_avatar?: string | null;
+      external_call_id?: string | null;
+      timestamp: string;
+    }
   | { kind: "ignore"; reason: string };
+
+function detectCallEvent(data: any, ev?: string, body?: any): NormalizedEvent | null {
+  const e = (ev || "").toString().toLowerCase();
+  const t = (data?.type || data?.messageType || body?.type || "").toString().toLowerCase();
+  const isCall =
+    e === "call" || e === "incomingcall" || e === "call_received" || e === "calls" ||
+    e.includes("call") ||
+    t === "call" || t.includes("call") ||
+    data?.event === "call" || data?.event === "call_received" ||
+    body?.event === "call" || body?.event === "call_received";
+
+  if (!isCall) return null;
+
+  const phoneRaw = pickPhone(data) || pickPhone(body) || data?.from || data?.caller || body?.from;
+  if (!phoneRaw) return null;
+  const phone = String(phoneRaw).replace(/[^\d]/g, "");
+
+  return {
+    kind: "call_received",
+    phone,
+    caller_name:
+      data?.senderName || data?.pushName || data?.notifyName || data?.from_name ||
+      data?.contact?.name || body?.senderName || null,
+    caller_avatar: pickAvatar(data) || pickAvatar(body),
+    external_call_id: data?.call_id || data?.callId || data?.id || body?.callId || null,
+    timestamp: data?.timestamp || body?.timestamp || new Date().toISOString(),
+  };
+}
 
 function pickAvatar(d: any): string | null {
   if (!d) return null;
@@ -240,6 +276,9 @@ function normalizeUazapi(body: any): NormalizedEvent {
   const ev = (body?.event || body?.type || body?.EventType || "").toString().toLowerCase();
   const data = body?.data ?? body?.message ?? body?.payload ?? body;
 
+  const callEvent = detectCallEvent(data, ev, body);
+  if (callEvent) return callEvent;
+
   if (ev.includes("status") || ev.includes("connection") || ev.includes("presence") || data?.connection || data?.state) {
     return {
       kind: "instance_status",
@@ -287,6 +326,10 @@ function normalizeUazapi(body: any): NormalizedEvent {
 }
 
 function normalizeZapi(body: any): NormalizedEvent {
+  const ev = (body?.event || body?.type || "").toString().toLowerCase();
+  const callEvent = detectCallEvent(body?.data || body, ev, body);
+  if (callEvent) return callEvent;
+
   const status = body?.status || body?.messageStatus;
   const messageId = body?.messageId || body?.ids?.[0];
   if (status && messageId) {
@@ -466,6 +509,78 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, reqId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    if (normalized.kind === "call_received") {
+      log("📞 INCOMING CALL", { phone: normalized.phone, caller: normalized.caller_name });
+      try {
+        const { data: contact } = await supabase
+          .from("whatsapp_contacts")
+          .select("id, workspace_id, assigned_to, name")
+          .eq("phone", normalized.phone)
+          .eq("company_id", companyId!)
+          .maybeSingle();
+
+        if (!contact) {
+          log("call ignored: contact not found");
+          return new Response(JSON.stringify({ ok: true, ignored: "contact_not_found", reqId }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const { data: callId } = await supabase.rpc("register_incoming_whatsapp_call", {
+          p_contact_id: contact.id,
+          p_company_id: companyId!,
+          p_workspace_id: contact.workspace_id ?? null,
+          p_phone: normalized.phone,
+          p_caller_name: normalized.caller_name || contact.name || null,
+          p_caller_avatar: normalized.caller_avatar ?? null,
+          p_external_call_id: normalized.external_call_id ?? null,
+        });
+
+        const { data: responder } = await supabase.rpc("get_call_responder", {
+          p_contact_id: contact.id,
+          p_workspace_id: contact.workspace_id ?? null,
+        });
+
+        const notifyUserId = responder || contact.assigned_to || null;
+
+        if (notifyUserId) {
+          const ch = supabase.channel(`incoming_calls_${notifyUserId}`);
+          await ch.send({
+            type: "broadcast",
+            event: "incoming_call",
+            payload: {
+              call_id: callId,
+              contact_id: contact.id,
+              phone: normalized.phone,
+              caller_name: normalized.caller_name || contact.name || null,
+              caller_avatar: normalized.caller_avatar ?? null,
+              workspace_id: contact.workspace_id ?? null,
+              timestamp: normalized.timestamp,
+            },
+          });
+          await supabase.removeChannel(ch);
+
+          await supabase.rpc("create_notification", {
+            _user_id: notifyUserId,
+            _title: "📞 Chamada Recebida",
+            _message: `${normalized.caller_name || contact.name || normalized.phone} está te ligando`,
+            _type: "incoming_call",
+            _metadata: { call_id: callId, contact_id: contact.id, phone: normalized.phone },
+          }).then(() => {}, () => {});
+        }
+
+        return new Response(JSON.stringify({ ok: true, call_id: callId, reqId }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (err) {
+        console.error("[whatsapp-webhook] call_received error:", err);
+        return new Response(JSON.stringify({ ok: false, error: String(err), reqId }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // message_received → reuse the same routing/lead logic as legacy handler
