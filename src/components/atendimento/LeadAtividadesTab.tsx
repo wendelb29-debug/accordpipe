@@ -492,6 +492,11 @@ export function LeadAtividadesTab({
                           >
                             <Ban className="h-3.5 w-3.5 text-amber-600" />
                           </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Editar"
+                            onClick={() => handleEdit(a)}
+                          >
+                            <Edit className="h-3.5 w-3.5 text-blue-600" />
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7" title="Duplicar"
                             onClick={() => handleDuplicate(a)}
                           >
