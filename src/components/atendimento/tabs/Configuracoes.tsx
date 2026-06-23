@@ -293,7 +293,6 @@ export function Configuracoes() {
           <WhatsAppRoutingConfig />
         </CardContent>
       </Card>
-      </Card>
 
       {/* Department Menu Routing */}
       {isAdmin && companyId && (
