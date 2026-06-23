@@ -125,6 +125,8 @@ export default function Usuarios() {
     role: "leitura" as AppRole,
     company_id: "" as string,
   });
+  const [tenantDepartments, setTenantDepartments] = useState<Array<{ id: string; name: string; icon: string | null }>>([]);
+  const [selectedDepartmentIds, setSelectedDepartmentIds] = useState<string[]>([]);
 
   const selectedTenantId = formData.company_id || activeCompanyId || profile?.company_id || "";
   const selectedTenant = allCompanies.find((c) => c.id === selectedTenantId);
@@ -139,6 +141,22 @@ export default function Usuarios() {
     fetchUsers();
     fetchAllCompanies();
   }, [activeCompanyId, isGlobalMaster, isResellerTenant, profile?.company_id]);
+
+  // Load departments of the selected tenant when dialog is open
+  useEffect(() => {
+    if (!dialogOpen || !selectedTenantId) {
+      setTenantDepartments([]);
+      return;
+    }
+    (async () => {
+      const { data } = await supabase
+        .from("tenant_departments")
+        .select("id, name, icon")
+        .eq("tenant_id", selectedTenantId)
+        .order("position");
+      setTenantDepartments((data as any) || []);
+    })();
+  }, [dialogOpen, selectedTenantId]);
 
   const fetchAllCompanies = async () => {
     let query = supabase
@@ -213,7 +231,7 @@ export default function Usuarios() {
     }
   };
 
-  const handleOpenDialog = (user?: UserWithRole) => {
+  const handleOpenDialog = async (user?: UserWithRole) => {
     if (user) {
       setEditingUser(user);
       setFormData({
@@ -226,6 +244,12 @@ export default function Usuarios() {
         role: user.role,
         company_id: user.company_id || "",
       });
+      // Load existing departments
+      const { data: ud } = await supabase
+        .from("user_departments")
+        .select("department_id")
+        .eq("user_id", user.user_id);
+      setSelectedDepartmentIds((ud || []).map((d: any) => d.department_id));
     } else {
       setEditingUser(null);
       setFormData({
@@ -238,8 +262,31 @@ export default function Usuarios() {
         role: "leitura",
         company_id: activeCompanyId || "",
       });
+      setSelectedDepartmentIds([]);
     }
     setDialogOpen(true);
+  };
+
+  const syncUserDepartments = async (userId: string, tenantId: string, deptIds: string[]) => {
+    try {
+      // Remove all current assignments for this tenant
+      await supabase
+        .from("user_departments")
+        .delete()
+        .eq("user_id", userId)
+        .eq("tenant_id", tenantId);
+      if (deptIds.length > 0) {
+        await supabase.from("user_departments").insert(
+          deptIds.map((department_id) => ({
+            user_id: userId,
+            tenant_id: tenantId,
+            department_id,
+          })) as any
+        );
+      }
+    } catch (e) {
+      console.error("[Usuarios] syncUserDepartments error", e);
+    }
   };
 
   const handleCreateUser = async () => {
@@ -298,6 +345,23 @@ export default function Usuarios() {
           ? `${formData.name} já possuía cadastro e foi vinculado a este tenant.${waNote}`
           : `${formData.name} foi criado.${data?.temp_password ? ` Senha temporária: ${data.temp_password}.` : ""}${waNote}`,
       });
+
+      // Sync departments for newly created/linked user
+      const newUserId = data?.user_id;
+      if (newUserId && companyId) {
+        await syncUserDepartments(newUserId, companyId, selectedDepartmentIds);
+      } else if (companyId) {
+        // Fallback: lookup by email + tenant
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("user_id")
+          .eq("email", formData.email)
+          .eq("company_id", companyId)
+          .maybeSingle();
+        if (prof?.user_id) {
+          await syncUserDepartments(prof.user_id, companyId, selectedDepartmentIds);
+        }
+      }
 
       setDialogOpen(false);
       fetchUsers();
@@ -385,6 +449,11 @@ export default function Usuarios() {
               status: "ativo",
             } as any);
         }
+      }
+
+      // Sync departments
+      if (tenantId) {
+        await syncUserDepartments(editingUser.user_id, tenantId, selectedDepartmentIds);
       }
 
       toast({
@@ -950,7 +1019,48 @@ export default function Usuarios() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {tenantDepartments.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Departamentos</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Vincule o usuário a um ou mais departamentos para roteamento automático.
+                      </p>
+                      <div className="space-y-1 max-h-48 overflow-y-auto rounded-md border border-border p-2">
+                        {tenantDepartments.map((d) => {
+                          const checked = selectedDepartmentIds.includes(d.id);
+                          return (
+                            <label
+                              key={d.id}
+                              className="flex items-center gap-2 p-1.5 rounded-md hover:bg-muted cursor-pointer text-sm"
+                            >
+                              <input
+                                type="checkbox"
+                                className="rounded"
+                                checked={checked}
+                                onChange={(e) => {
+                                  setSelectedDepartmentIds((prev) =>
+                                    e.target.checked
+                                      ? [...prev, d.id]
+                                      : prev.filter((id) => id !== d.id)
+                                  );
+                                }}
+                              />
+                              <span className="text-base">{d.icon || "🏷️"}</span>
+                              <span>{d.name}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {tenantDepartments.length === 0 && selectedTenantId && (
+                    <p className="text-xs text-muted-foreground">
+                      Nenhum departamento criado neste tenant. Crie em <strong>Departamentos</strong>.
+                    </p>
+                  )}
                 </div>
+
 
                 <DialogFooter>
                   <Button
