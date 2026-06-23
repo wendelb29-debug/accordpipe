@@ -36,12 +36,25 @@ serve(async (req) => {
 
   try {
     const { text, action, leadContext } = await req.json();
+
+    let userPrompt = "";
+    if (action === "improve") {
+      userPrompt = `Melhore a redação desta nota comercial:\n\n"${text}"\n\nContexto do lead: ${leadContext || "Não disponível"}`;
+    } else if (action === "complete") {
+      userPrompt = `Complete esta nota comercial que está parcialmente escrita:\n\n"${text}"\n\nContexto do lead: ${leadContext || "Não disponível"}`;
+    } else if (action === "suggest") {
+      userPrompt = `Sugira uma nota de acompanhamento profissional para este lead.\n\nContexto: ${leadContext || "Não disponível"}`;
+    } else {
+      userPrompt = `Melhore este texto:\n\n"${text}"`;
+    }
+
     const response = await geminiChatCompletion({
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: userPrompt },
       ],
     });
+
 
 
     if (!response.ok) {
