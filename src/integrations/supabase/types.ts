@@ -7960,7 +7960,11 @@ export type Database = {
       }
       whatsapp_calls: {
         Row: {
+          answered_at: string | null
+          answered_by_user_id: string | null
           call_type: string
+          caller_avatar: string | null
+          caller_name: string | null
           company_id: string
           contact_id: string
           contact_name: string | null
@@ -7981,7 +7985,11 @@ export type Database = {
           workspace_id: string | null
         }
         Insert: {
+          answered_at?: string | null
+          answered_by_user_id?: string | null
           call_type: string
+          caller_avatar?: string | null
+          caller_name?: string | null
           company_id: string
           contact_id: string
           contact_name?: string | null
@@ -8002,7 +8010,11 @@ export type Database = {
           workspace_id?: string | null
         }
         Update: {
+          answered_at?: string | null
+          answered_by_user_id?: string | null
           call_type?: string
+          caller_avatar?: string | null
+          caller_name?: string | null
           company_id?: string
           contact_id?: string
           contact_name?: string | null
@@ -8791,6 +8803,10 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_call_responder: {
+        Args: { p_contact_id: string; p_workspace_id: string }
+        Returns: string
+      }
       get_client_contract_signers_by_token: {
         Args: { p_token: string }
         Returns: {
@@ -9152,6 +9168,18 @@ export type Database = {
       record_proposal_public_view: {
         Args: { p_ip: string; p_token: string; p_user_agent: string }
         Returns: undefined
+      }
+      register_incoming_whatsapp_call: {
+        Args: {
+          p_caller_avatar?: string
+          p_caller_name?: string
+          p_company_id: string
+          p_contact_id: string
+          p_external_call_id?: string
+          p_phone: string
+          p_workspace_id: string
+        }
+        Returns: string
       }
       register_whatsapp_call: {
         Args: {
