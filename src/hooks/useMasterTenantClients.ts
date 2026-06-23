@@ -170,6 +170,7 @@ export function useMasterTenantClients() {
   return {
     clients,
     loading,
+    error,
     filters,
     setFilters,
     fetchClients,
