@@ -149,6 +149,7 @@ export function LeadAtividadesTab({
           scheduled_at: scheduledAt,
           duration: form.duration,
           reminder: form.reminder,
+          reminder_channels: reminderChannels,
           activity_type_label: ACTIVITY_TYPES.find(t => t.value === form.type)?.label || form.type,
         },
       });
@@ -158,12 +159,27 @@ export function LeadAtividadesTab({
         return;
       }
 
-      // Schedule reminder notification
+      // Schedule multi-channel reminder
       if (form.reminder !== "none" && profile?.user_id) {
         const reminderMinutes = parseInt(form.reminder);
         const scheduledDate = new Date(scheduledAt);
         const reminderDate = new Date(scheduledDate.getTime() - reminderMinutes * 60 * 1000);
         if (reminderDate > new Date()) {
+          // Multi-channel queue row (system + email) – consumed by edge fn
+          if (reminderChannels.system || reminderChannels.email) {
+            await supabase.from("activity_reminders").insert({
+              activity_id: result.id,
+              user_id: profile.user_id,
+              lead_id: lead.id,
+              servidor_id: lead.servidor_id,
+              reminder_minutes: reminderMinutes,
+              reminder_scheduled_at: reminderDate.toISOString(),
+              notify_system: reminderChannels.system,
+              notify_email: reminderChannels.email,
+            });
+          }
+
+          // Legacy in-app notification (kept for backward compatibility)
           await supabase.rpc("create_notification", {
             _user_id: profile.user_id,
             _title: `Lembrete: ${form.title}`,
@@ -175,6 +191,7 @@ export function LeadAtividadesTab({
               scheduled_at: scheduledAt,
               reminder_at: reminderDate.toISOString(),
               activity_type: form.type,
+              channels: reminderChannels,
             },
           });
         }
