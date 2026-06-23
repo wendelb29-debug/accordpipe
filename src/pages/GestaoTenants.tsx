@@ -42,7 +42,7 @@ const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString("pt-BR"
 
 export default function GestaoTenants() {
   const { isMasterTenantAdmin, isGlobalMaster, activeCompanyId } = useAuth();
-  const { clients, loading, filters, setFilters, updateClient, syncUserCount, fetchClients } = useMasterTenantClients();
+  const { clients, loading, error, filters, setFilters, updateClient, syncUserCount, fetchClients } = useMasterTenantClients();
   const [search, setSearch] = useState("");
   const [detailClient, setDetailClient] = useState<MasterTenantClient | null>(null);
 
