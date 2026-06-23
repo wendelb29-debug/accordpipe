@@ -685,9 +685,7 @@ function PostCard({
         <div className="afp-av-ring" style={{ background: gradientFor(post.author.user_id) }}>
           <div className="afp-av-inner">
             <div className="afp-av-pic" style={{ background: gradientFor(post.author.user_id) }}>
-              {post.author.avatar_url
-                ? <img src={post.author.avatar_url} alt="" style={{ width: "100%", height: "100%", borderRadius: 99, objectFit: "cover" }} />
-                : initials(post.author.name)}
+              <AvatarPic url={post.author.avatar_url} name={post.author.name} radius={99} />
             </div>
           </div>
         </div>
