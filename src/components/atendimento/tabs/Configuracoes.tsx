@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Smartphone, QrCode, Wifi, WifiOff, RefreshCw, Settings, Loader2, Plus, Unplug, Webhook, Route } from "lucide-react";
+import { Smartphone, QrCode, Wifi, WifiOff, RefreshCw, Settings, Loader2, Plus, Unplug, Webhook, Route, Users2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { useEvolutionApi } from "@/hooks/useEvolutionApi";
 import { WebhookConfig } from "./WebhookConfig";
 import { WhatsAppRoutingConfig } from "../WhatsAppRoutingConfig";
+import { DepartmentManagement } from "../DepartmentManagement";
+import { DepartmentRoutingConfig } from "../DepartmentRoutingConfig";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
