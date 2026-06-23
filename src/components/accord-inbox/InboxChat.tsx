@@ -1196,6 +1196,27 @@ export function InboxChat({
               {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
             </button>
           )}
+          {attendancePending && !attendanceAssignedToMe && (
+            <button
+              onClick={() => assumeAttendanceMut.mutate()}
+              disabled={assumeAttendanceMut.isPending}
+              className="h-8 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium flex items-center gap-1.5 disabled:opacity-60"
+            >
+              <Phone size={13} /> Assumir
+            </button>
+          )}
+          {attendanceInProgress && attendanceAssignedToMe && (
+            <>
+              <Badge className="bg-emerald-500 text-white text-[10px]">Em atendimento</Badge>
+              <button
+                onClick={() => releaseAttendanceMut.mutate()}
+                disabled={releaseAttendanceMut.isPending}
+                className="h-8 px-2 rounded-lg border border-border/50 text-[11px] text-muted-foreground hover:bg-muted/50"
+              >
+                Liberar
+              </button>
+            </>
+          )}
           {isAdmin && (
             <button onClick={() => setSettingsOpen(true)}
               aria-label="Configurações WhatsApp"
