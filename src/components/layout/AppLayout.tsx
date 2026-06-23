@@ -132,6 +132,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
 
         <AccordAIChat />
+        <IncomingCallScreen />
       </div>
     </BackNavigationProvider>
   );
