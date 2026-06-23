@@ -267,6 +267,28 @@ export default function Usuarios() {
     setDialogOpen(true);
   };
 
+  const syncUserDepartments = async (userId: string, tenantId: string, deptIds: string[]) => {
+    try {
+      // Remove all current assignments for this tenant
+      await supabase
+        .from("user_departments")
+        .delete()
+        .eq("user_id", userId)
+        .eq("tenant_id", tenantId);
+      if (deptIds.length > 0) {
+        await supabase.from("user_departments").insert(
+          deptIds.map((department_id) => ({
+            user_id: userId,
+            tenant_id: tenantId,
+            department_id,
+          })) as any
+        );
+      }
+    } catch (e) {
+      console.error("[Usuarios] syncUserDepartments error", e);
+    }
+  };
+
   const handleCreateUser = async () => {
     if (!formData.name || !formData.email || !formData.cpf || !formData.birth_date || !formData.whatsapp) {
       toast({
