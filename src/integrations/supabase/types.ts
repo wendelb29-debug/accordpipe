@@ -247,6 +247,147 @@ export type Database = {
           },
         ]
       }
+      ad_integrations: {
+        Row: {
+          ad_account_id: string | null
+          business_id: string | null
+          connected_by: string | null
+          created_at: string
+          google_webhook_key: string | null
+          id: string
+          page_access_token: string | null
+          page_id: string | null
+          provider: string
+          servidor_id: string
+          status: string
+          system_user_token: string | null
+          updated_at: string
+        }
+        Insert: {
+          ad_account_id?: string | null
+          business_id?: string | null
+          connected_by?: string | null
+          created_at?: string
+          google_webhook_key?: string | null
+          id?: string
+          page_access_token?: string | null
+          page_id?: string | null
+          provider: string
+          servidor_id: string
+          status?: string
+          system_user_token?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ad_account_id?: string | null
+          business_id?: string | null
+          connected_by?: string | null
+          created_at?: string
+          google_webhook_key?: string | null
+          id?: string
+          page_access_token?: string | null
+          page_id?: string | null
+          provider?: string
+          servidor_id?: string
+          status?: string
+          system_user_token?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ad_lead_events: {
+        Row: {
+          created_at: string
+          crm_lead_id: string | null
+          error: string | null
+          external_lead_id: string | null
+          id: string
+          processed: boolean | null
+          provider: string | null
+          raw_payload: Json | null
+          servidor_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          crm_lead_id?: string | null
+          error?: string | null
+          external_lead_id?: string | null
+          id?: string
+          processed?: boolean | null
+          provider?: string | null
+          raw_payload?: Json | null
+          servidor_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          crm_lead_id?: string | null
+          error?: string | null
+          external_lead_id?: string | null
+          id?: string
+          processed?: boolean | null
+          provider?: string | null
+          raw_payload?: Json | null
+          servidor_id?: string | null
+        }
+        Relationships: []
+      }
+      ad_lead_forms: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          external_form_id: string | null
+          external_form_name: string | null
+          field_mapping: Json | null
+          google_webhook_key: string | null
+          id: string
+          is_active: boolean | null
+          last_lead_at: string | null
+          lead_count: number | null
+          page_id: string | null
+          provider: string
+          servidor_id: string
+          stage: string | null
+          tags: string[] | null
+          workspace_id: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          external_form_id?: string | null
+          external_form_name?: string | null
+          field_mapping?: Json | null
+          google_webhook_key?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_lead_at?: string | null
+          lead_count?: number | null
+          page_id?: string | null
+          provider: string
+          servidor_id: string
+          stage?: string | null
+          tags?: string[] | null
+          workspace_id?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          external_form_id?: string | null
+          external_form_name?: string | null
+          field_mapping?: Json | null
+          google_webhook_key?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_lead_at?: string | null
+          lead_count?: number | null
+          page_id?: string | null
+          provider?: string
+          servidor_id?: string
+          stage?: string | null
+          tags?: string[] | null
+          workspace_id?: string | null
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           created_at: string
