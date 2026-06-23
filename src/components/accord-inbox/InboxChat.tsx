@@ -3,8 +3,9 @@ import {
   Search, ArrowLeftRight, Info, X, Paperclip, Image, Mic, Trash2,
   Send, Play, Pause, FileText, FileSpreadsheet, FileArchive, FileImage, FileVideo, FileAudio, File as FileIcon, Download, ExternalLink,
   MoreVertical, Users, Check, CheckCheck, ArrowLeft, Reply, Smile,
-  MessageSquare, Plus, Filter, BarChart2,
+  MessageSquare, Plus, Filter, BarChart2, Phone, PhoneOff,
 } from "lucide-react";
+import { CallButtons } from "./CallButtons";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const EMOJI_LIST = [
