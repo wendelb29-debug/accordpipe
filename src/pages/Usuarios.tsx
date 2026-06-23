@@ -1019,7 +1019,48 @@ export default function Usuarios() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {tenantDepartments.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Departamentos</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Vincule o usuário a um ou mais departamentos para roteamento automático.
+                      </p>
+                      <div className="space-y-1 max-h-48 overflow-y-auto rounded-md border border-border p-2">
+                        {tenantDepartments.map((d) => {
+                          const checked = selectedDepartmentIds.includes(d.id);
+                          return (
+                            <label
+                              key={d.id}
+                              className="flex items-center gap-2 p-1.5 rounded-md hover:bg-muted cursor-pointer text-sm"
+                            >
+                              <input
+                                type="checkbox"
+                                className="rounded"
+                                checked={checked}
+                                onChange={(e) => {
+                                  setSelectedDepartmentIds((prev) =>
+                                    e.target.checked
+                                      ? [...prev, d.id]
+                                      : prev.filter((id) => id !== d.id)
+                                  );
+                                }}
+                              />
+                              <span className="text-base">{d.icon || "🏷️"}</span>
+                              <span>{d.name}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {tenantDepartments.length === 0 && selectedTenantId && (
+                    <p className="text-xs text-muted-foreground">
+                      Nenhum departamento criado neste tenant. Crie em <strong>Departamentos</strong>.
+                    </p>
+                  )}
                 </div>
+
 
                 <DialogFooter>
                   <Button
