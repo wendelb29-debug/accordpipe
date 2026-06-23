@@ -130,6 +130,28 @@ export function LeadAtividadesTab({
       reminder: "none",
     });
     setReminderChannels({ system: true, email: false });
+    setEditingId(null);
+  };
+
+  const handleEdit = (activity: ActivityItem) => {
+    const meta = activity.metadata || {};
+    const scheduled = meta.scheduled_at ? new Date(meta.scheduled_at) : new Date(activity.created_at);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    setForm({
+      type: activity.type === "activity" ? "internal" : activity.type,
+      title: activity.title,
+      description: activity.description || "",
+      date: `${scheduled.getFullYear()}-${pad(scheduled.getMonth() + 1)}-${pad(scheduled.getDate())}`,
+      time: `${pad(scheduled.getHours())}:${pad(scheduled.getMinutes())}`,
+      duration: meta.duration || "00:30",
+      reminder: meta.reminder || "none",
+    });
+    setReminderChannels({
+      system: meta.reminder_channels?.system ?? true,
+      email: meta.reminder_channels?.email ?? false,
+    });
+    setEditingId(activity.id);
+    setShowForm(true);
   };
 
   const handleCreate = async () => {
