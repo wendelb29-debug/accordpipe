@@ -981,15 +981,19 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
       };
     });
 
-    const { data: insertedSigners, error: signersError } = await supabase
+    const { error: signersError } = await supabase
       .from("document_signers")
-      .insert(signersToInsert)
-      .select();
+      .insert(signersToInsert);
 
     if (signersError) {
       setSendingSignature(false);
       return toast.error("Erro ao configurar signatários");
     }
+
+    // Reload with admin RPC to obtain auth_token (restricted column) for link generation.
+    const { data: insertedSigners } = await (supabase as any)
+      .rpc("get_document_signers_admin", { _document_id: signDoc.id });
+
 
     // Update document status
     await supabase
