@@ -36,6 +36,7 @@ import {
 } from "./FilterPanel";
 import { useCrmLeads, CrmLead, STAGES } from "@/hooks/useCrmLeads";
 import { useKanbanColumns } from "@/hooks/useKanbanColumns";
+import { useNewLeadNotifications } from "@/hooks/useNewLeadNotifications";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
