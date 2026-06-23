@@ -461,6 +461,27 @@ function MeuCanalWhatsAppCard() {
     }
   };
 
+  const [disconnecting, setDisconnecting] = useState(false);
+  const handleDisconnect = async () => {
+    if (!active?.server_url || !active?.instance_token) return;
+    if (!confirm("Desconectar WhatsApp deste canal?")) return;
+    setDisconnecting(true);
+    try {
+      const base = active.server_url.trim().replace(/\/$/, "");
+      const headers = { token: active.instance_token.trim(), "Content-Type": "application/json" };
+      const res = await fetch(`${base}/instance/disconnect`, { method: "POST", headers });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      toast.success("WhatsApp desconectado");
+      setQrCode(null);
+      await testConnection(active.provider_type);
+      await reload();
+    } catch (err: any) {
+      toast.error("Erro ao desconectar: " + (err.message || "desconhecido"));
+    } finally {
+      setDisconnecting(false);
+    }
+  };
+
   // countdown + polling enquanto QR visível
   useEffect(() => {
     if (!qrCode) {
