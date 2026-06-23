@@ -9,6 +9,9 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { WhatsAppSettingsDialog } from "./WhatsAppSettingsDialog";
 import { QuickReplyPicker } from "./QuickReplyPicker";
+import { PresenceIndicator } from "./PresenceIndicator";
+import { usePresenceIndicator } from "@/hooks/usePresenceIndicator";
+import { usePresenceIndicators } from "@/hooks/usePresenceIndicators";
 
 const EMOJI_LIST = [
   "😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰",
@@ -751,6 +754,21 @@ export function InboxChat({
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Presence: typing / recording indicators
+  const { handleTextInput: handlePresenceTyping, clearPresence } = usePresenceIndicator({
+    userId: currentUserId || "",
+    contactId: contact?.id || "",
+    tenantId: companyId || "",
+    serverUrl: serverUrl || null,
+    instanceToken: null,
+    isRecording,
+    remoteJid: contact?.phone || null,
+  });
+  const { indicators: presenceIndicators } = usePresenceIndicators(
+    contact?.id || "",
+    currentUserId || undefined
+  );
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -894,6 +912,7 @@ export function InboxChat({
     setText("");
     setReplyTo(null);
     if (taRef.current) taRef.current.style.height = "40px";
+    clearPresence();
   };
 
   const insertEmoji = (emoji: string) => {
@@ -1271,6 +1290,14 @@ export function InboxChat({
         )}
       </div>
 
+      {presenceIndicators.length > 0 && (
+        <div className="flex-shrink-0 border-t border-primary/10 bg-background/60">
+          <PresenceIndicator indicators={presenceIndicators} />
+        </div>
+      )}
+
+
+
       <div
         className="flex-shrink-0 p-3 border-t"
         style={{
@@ -1432,6 +1459,7 @@ export function InboxChat({
                     setText(v);
                     e.target.style.height = "40px";
                     e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+                    if (v.trim().length > 0) handlePresenceTyping();
                     // Detect "/trigger" at end of text (start of string or after whitespace)
                     const m = v.match(/(^|\s)\/([^\s]*)$/);
                     if (m) {
