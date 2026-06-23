@@ -42,7 +42,7 @@ const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString("pt-BR"
 
 export default function GestaoTenants() {
   const { isMasterTenantAdmin, isGlobalMaster, activeCompanyId } = useAuth();
-  const { clients, loading, filters, setFilters, updateClient, syncUserCount, fetchClients } = useMasterTenantClients();
+  const { clients, loading, error, filters, setFilters, updateClient, syncUserCount, fetchClients } = useMasterTenantClients();
   const [search, setSearch] = useState("");
   const [detailClient, setDetailClient] = useState<MasterTenantClient | null>(null);
 
@@ -86,6 +86,37 @@ export default function GestaoTenants() {
       <div className="space-y-4">
         <Skeleton className="h-10 w-64" />
         <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-xl font-bold flex items-center gap-2">
+          <Crown className="h-5 w-5 text-primary" />
+          Gestão de Tenants
+        </h1>
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-6 space-y-3">
+          <h3 className="font-semibold text-destructive flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Erro ao carregar tenants
+          </h3>
+          <p className="text-sm text-foreground">{error}</p>
+          <div className="text-sm text-muted-foreground space-y-1">
+            <p><strong>Causas possíveis:</strong></p>
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>Você não tem permissão de Master/CEO</li>
+              <li>Sua sessão expirou</li>
+              <li>RLS bloqueando acesso à tabela</li>
+              <li>Erro de conexão com o banco de dados</li>
+            </ul>
+          </div>
+          <Button onClick={() => fetchClients()} variant="outline" size="sm" className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Tentar Novamente
+          </Button>
+        </div>
       </div>
     );
   }
