@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Smartphone, QrCode, Wifi, WifiOff, RefreshCw, Settings, Loader2, Plus, Unplug, Webhook, Route } from "lucide-react";
+import { Smartphone, QrCode, Wifi, WifiOff, RefreshCw, Settings, Loader2, Plus, Unplug, Webhook, Route, Users2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,16 +7,19 @@ import { Input } from "@/components/ui/input";
 import { useEvolutionApi } from "@/hooks/useEvolutionApi";
 import { WebhookConfig } from "./WebhookConfig";
 import { WhatsAppRoutingConfig } from "../WhatsAppRoutingConfig";
+import { DepartmentManagement } from "../DepartmentManagement";
+import { DepartmentRoutingConfig } from "../DepartmentRoutingConfig";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 type ConnectionStatus = "disconnected" | "connecting" | "connected";
 
 export function Configuracoes() {
-  const { activeCompanyId, profile } = useAuth();
+  const { activeCompanyId, profile, role, isMaster } = useAuth();
   const { loading, createInstance, connect, connectionState, logout } = useEvolutionApi();
 
   const companyId = activeCompanyId || profile?.company_id;
+  const isAdmin = isMaster || role === "ceo" || role === "admin";
   const defaultInstanceName = companyId ? `accord-${companyId.slice(0, 8)}` : "accord-default";
 
   const [instanceName, setInstanceName] = useState(defaultInstanceName);
@@ -290,6 +293,24 @@ export function Configuracoes() {
           <WhatsAppRoutingConfig />
         </CardContent>
       </Card>
+
+      {/* Department Menu Routing */}
+      {isAdmin && companyId && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users2 className="h-4 w-4 text-primary" /> Roteamento por Departamento
+            </CardTitle>
+            <CardDescription>
+              Mostre um menu numerado ao novo contato e atribua automaticamente ao usuário do departamento escolhido
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <DepartmentManagement companyId={companyId} isAdmin={isAdmin} />
+            <DepartmentRoutingConfig companyId={companyId} isAdmin={isAdmin} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

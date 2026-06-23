@@ -2342,6 +2342,105 @@ export type Database = {
           },
         ]
       }
+      department_routing_config: {
+        Row: {
+          created_at: string
+          first_response_message: string
+          id: string
+          is_enabled: boolean
+          tenant_id: string
+          timeout_minutes: number
+          updated_at: string
+          welcome_message: string
+        }
+        Insert: {
+          created_at?: string
+          first_response_message?: string
+          id?: string
+          is_enabled?: boolean
+          tenant_id: string
+          timeout_minutes?: number
+          updated_at?: string
+          welcome_message?: string
+        }
+        Update: {
+          created_at?: string
+          first_response_message?: string
+          id?: string
+          is_enabled?: boolean
+          tenant_id?: string
+          timeout_minutes?: number
+          updated_at?: string
+          welcome_message?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "department_routing_config_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      department_routing_log: {
+        Row: {
+          contact_id: string
+          created_at: string
+          id: string
+          reason: string | null
+          routed_to_user_id: string | null
+          routing_method: string | null
+          selected_department_id: string | null
+          selected_option: string | null
+          tenant_id: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          routed_to_user_id?: string | null
+          routing_method?: string | null
+          selected_department_id?: string | null
+          selected_option?: string | null
+          tenant_id: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          routed_to_user_id?: string | null
+          routing_method?: string | null
+          selected_department_id?: string | null
+          selected_option?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "department_routing_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "department_routing_log_selected_department_id_fkey"
+            columns: ["selected_department_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "department_routing_log_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_events: {
         Row: {
           created_at: string
@@ -6782,6 +6881,59 @@ export type Database = {
           },
         ]
       }
+      tenant_departments: {
+        Row: {
+          auto_response_message: string | null
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+          position: number
+          routing_method: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          auto_response_message?: string | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          position?: number
+          routing_method?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          auto_response_message?: string | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          position?: number
+          routing_method?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_departments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_event_confirmations: {
         Row: {
           confirmed_at: string | null
@@ -7535,6 +7687,51 @@ export type Database = {
         }
         Relationships: []
       }
+      user_departments: {
+        Row: {
+          created_at: string
+          department_id: string
+          id: string
+          is_active: boolean
+          priority: number
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          department_id: string
+          id?: string
+          is_active?: boolean
+          priority?: number
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          department_id?: string
+          id?: string
+          is_active?: boolean
+          priority?: number
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_departments_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_departments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_follows: {
         Row: {
           created_at: string
@@ -8108,6 +8305,7 @@ export type Database = {
           company_id: string
           conversation_status: string
           created_at: string
+          department_id: string | null
           id: string
           labels: string[] | null
           last_message: string | null
@@ -8116,6 +8314,7 @@ export type Database = {
           name: string
           notes: string | null
           phone: string
+          routed_by_department: boolean
           updated_at: string
           workspace_id: string | null
         }
@@ -8126,6 +8325,7 @@ export type Database = {
           company_id: string
           conversation_status?: string
           created_at?: string
+          department_id?: string | null
           id?: string
           labels?: string[] | null
           last_message?: string | null
@@ -8134,6 +8334,7 @@ export type Database = {
           name: string
           notes?: string | null
           phone: string
+          routed_by_department?: boolean
           updated_at?: string
           workspace_id?: string | null
         }
@@ -8144,6 +8345,7 @@ export type Database = {
           company_id?: string
           conversation_status?: string
           created_at?: string
+          department_id?: string | null
           id?: string
           labels?: string[] | null
           last_message?: string | null
@@ -8152,6 +8354,7 @@ export type Database = {
           name?: string
           notes?: string | null
           phone?: string
+          routed_by_department?: boolean
           updated_at?: string
           workspace_id?: string | null
         }
@@ -8161,6 +8364,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_contacts_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_departments"
             referencedColumns: ["id"]
           },
           {
@@ -9351,6 +9561,15 @@ export type Database = {
       }
       resolve_tenant_by_webhook_token: {
         Args: { p_token: string }
+        Returns: string
+      }
+      route_by_department: {
+        Args: {
+          p_contact_id: string
+          p_department_id: string
+          p_selected_option: string
+          p_tenant_id: string
+        }
         Returns: string
       }
       submit_tenant_setup_by_token: {
