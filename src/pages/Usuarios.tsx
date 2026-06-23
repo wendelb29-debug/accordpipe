@@ -553,6 +553,12 @@ export default function Usuarios() {
             <BrandIcon icon={User} tone="indigo" size="sm" />
             Usuários
           </TabsTrigger>
+          {canManageUsers && (
+            <TabsTrigger value="departamentos" className="gap-2">
+              <BrandIcon icon={Building2} tone="emerald" size="sm" />
+              Departamentos
+            </TabsTrigger>
+          )}
           {isGlobalMaster && profile?.company_id === activeCompanyId && (
             <TabsTrigger value="servidores" className="gap-2">
               <BrandIcon icon={Server} tone="slate" size="sm" />
