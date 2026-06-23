@@ -12,6 +12,8 @@ import { QuickReplyPicker } from "./QuickReplyPicker";
 import { PresenceIndicator } from "./PresenceIndicator";
 import { usePresenceIndicator } from "@/hooks/usePresenceIndicator";
 import { usePresenceIndicators } from "@/hooks/usePresenceIndicators";
+import { useContactStatus } from "@/hooks/useContactStatus";
+import { Badge } from "@/components/ui/badge";
 
 const EMOJI_LIST = [
   "😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰",
