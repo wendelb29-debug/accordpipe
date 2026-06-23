@@ -63,45 +63,63 @@ type Filter = {
 export function useMasterTenantClients() {
   const [clients, setClients] = useState<MasterTenantClient[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filter>({});
 
   const fetchClients = useCallback(async () => {
     setLoading(true);
-    let query = supabase
-      .from("master_tenant_clients")
-      .select("*")
-      .order("created_at", { ascending: false });
+    setError(null);
+    try {
+      let query = supabase
+        .from("master_tenant_clients")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    if (filters.subscription_status) {
-      query = query.eq("subscription_status", filters.subscription_status);
-    }
-    if (filters.payment_status) {
-      query = query.eq("payment_status", filters.payment_status);
-    }
-    if (filters.billing_cycle) {
-      query = query.eq("billing_cycle", filters.billing_cycle);
-    }
-    if (filters.tenant_type) {
-      query = query.eq("tenant_type", filters.tenant_type);
-    }
-    if (filters.due_range === "today") {
-      const today = new Date().toISOString().split("T")[0];
-      query = query.eq("next_due_date", today);
-    } else if (filters.due_range === "this_week") {
-      const today = new Date();
-      const endOfWeek = new Date(today);
-      endOfWeek.setDate(today.getDate() + (7 - today.getDay()));
-      query = query
-        .gte("next_due_date", today.toISOString().split("T")[0])
-        .lte("next_due_date", endOfWeek.toISOString().split("T")[0]);
-    }
+      if (filters.subscription_status) {
+        query = query.eq("subscription_status", filters.subscription_status);
+      }
+      if (filters.payment_status) {
+        query = query.eq("payment_status", filters.payment_status);
+      }
+      if (filters.billing_cycle) {
+        query = query.eq("billing_cycle", filters.billing_cycle);
+      }
+      if (filters.tenant_type) {
+        query = query.eq("tenant_type", filters.tenant_type);
+      }
+      if (filters.due_range === "today") {
+        const today = new Date().toISOString().split("T")[0];
+        query = query.eq("next_due_date", today);
+      } else if (filters.due_range === "this_week") {
+        const today = new Date();
+        const endOfWeek = new Date(today);
+        endOfWeek.setDate(today.getDate() + (7 - today.getDay()));
+        query = query
+          .gte("next_due_date", today.toISOString().split("T")[0])
+          .lte("next_due_date", endOfWeek.toISOString().split("T")[0]);
+      }
 
-    const { data, error } = await query;
-    if (error) {
-      console.error("Error fetching master tenant clients:", error);
+      const { data, error: queryError } = await query;
+      if (queryError) {
+        console.error("[useMasterTenantClients] Error:", queryError);
+        if (queryError.code === "42501") {
+          setError("Permissão negada: você não tem acesso aos tenants. Verifique se é Master/CEO.");
+        } else if (queryError.message?.includes("does not exist")) {
+          setError("Tabela não encontrada. Contate o suporte.");
+        } else {
+          setError(`Erro ao carregar: ${queryError.message}`);
+        }
+        setClients([]);
+      } else {
+        setClients((data as unknown as MasterTenantClient[]) || []);
+      }
+    } catch (err) {
+      console.error("[useMasterTenantClients] Exception:", err);
+      setError(`Erro inesperado: ${(err as Error).message}`);
+      setClients([]);
+    } finally {
+      setLoading(false);
     }
-    setClients((data as unknown as MasterTenantClient[]) || []);
-    setLoading(false);
   }, [filters]);
 
   useEffect(() => {
