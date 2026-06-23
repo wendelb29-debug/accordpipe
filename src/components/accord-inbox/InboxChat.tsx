@@ -169,13 +169,35 @@ function AudioPlayer({ direction, src }: { direction: string; src?: string }) {
 
   const toggle = () => {
     const el = audioRef.current;
-    if (!el) return;
-    if (playing) {
-      el.pause();
-    } else {
-      if (CURRENT_AUDIO && CURRENT_AUDIO !== el) CURRENT_AUDIO.pause();
-      CURRENT_AUDIO = el;
-      el.play().catch(() => {});
+    if (!el) {
+      console.warn("[AudioPlayer] No audio element");
+      return;
+    }
+    if (!el.src) {
+      console.warn("[AudioPlayer] No src provided");
+      return;
+    }
+    try {
+      if (playing) {
+        el.pause();
+      } else {
+        if (CURRENT_AUDIO && CURRENT_AUDIO !== el) CURRENT_AUDIO.pause();
+        CURRENT_AUDIO = el;
+        if (el.readyState < 2) {
+          console.log("[AudioPlayer] Audio not ready, loading...", src);
+          el.load();
+        }
+        const p = el.play();
+        if (p) {
+          p.then(() => console.log("[AudioPlayer] ▶️ Play started"))
+            .catch((err) => {
+              console.error("[AudioPlayer] ❌ Play failed:", err?.message, { src });
+              setPlaying(false);
+            });
+        }
+      }
+    } catch (err) {
+      console.error("[AudioPlayer] Exception during toggle:", err);
     }
   };
 
@@ -196,26 +218,47 @@ function AudioPlayer({ direction, src }: { direction: string; src?: string }) {
     ? "linear-gradient(135deg, #DCF8C6 0%, #C8F0B0 100%)"
     : "linear-gradient(135deg, #FFFFFF 0%, #F3F4F6 100%)";
 
+  if (!src) {
+    return (
+      <div
+        className="flex items-center gap-2 min-w-[200px] px-3 py-2 rounded-2xl border border-red-200 text-sm text-red-600"
+        style={{ background: "#FEF2F2" }}
+      >
+        <FileAudio className="w-4 h-4" />
+        <span>Áudio indisponível</span>
+      </div>
+    );
+  }
+
   return (
     <div
       className="flex items-center gap-3 min-w-[240px] max-w-[300px] px-3 py-2 rounded-2xl border border-white/60 shadow-[0_4px_18px_-6px_rgba(15,23,42,0.18)]"
       style={{ background: bubbleBg }}
     >
-      {src && (
-        <audio
-          ref={audioRef}
-          src={src}
-          preload="metadata"
-          onPlay={() => setPlaying(true)}
-          onPause={() => setPlaying(false)}
-          onEnded={() => { setPlaying(false); setCurrent(0); }}
-          onLoadedMetadata={(e) => {
-            const a = e.target as HTMLAudioElement;
-            if (isFinite(a.duration) && a.duration > 0) setTotal(a.duration);
-          }}
-          onTimeUpdate={(e) => setCurrent((e.target as HTMLAudioElement).currentTime)}
-        />
-      )}
+      <audio
+        ref={audioRef}
+        src={src}
+        preload="metadata"
+        crossOrigin="anonymous"
+        controlsList="nodownload"
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => { setPlaying(false); setCurrent(0); }}
+        onLoadedMetadata={(e) => {
+          const a = e.target as HTMLAudioElement;
+          if (isFinite(a.duration) && a.duration > 0) setTotal(a.duration);
+        }}
+        onTimeUpdate={(e) => setCurrent((e.target as HTMLAudioElement).currentTime)}
+        onError={(e) => {
+          const a = e.target as HTMLAudioElement;
+          console.error("[AudioPlayer] ❌ ERROR loading audio", {
+            src,
+            error: a.error?.message,
+            code: a.error?.code,
+          });
+          setPlaying(false);
+        }}
+      />
       <button
         onClick={toggle}
         disabled={!src}
