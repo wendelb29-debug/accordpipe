@@ -93,12 +93,13 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
         }
       }
 
-      // Load signer details for signature stamp rendering
+      // Load signer details for signature stamp rendering (signing_token excluded — restricted column)
       const { data: signers } = await supabase
         .from("pdf_contract_signers")
-        .select("*")
+        .select("id, contract_id, name, email, phone, cpf_cnpj, address, status, sign_order, signed_at, signature_photo_url, signature_latitude, signature_longitude, signature_address, signer_ip, created_at")
         .eq("contract_id", contractId)
         .order("sign_order", { ascending: true });
+
 
       const signerMap: Record<string, any> = {};
       if (signers) {

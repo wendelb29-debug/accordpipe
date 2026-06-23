@@ -90,14 +90,13 @@ export function ContractSignersManager({
 
   const fetchSigners = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("client_contract_signers")
-      .select("*")
-      .eq("contract_id", contractId)
-      .order("sign_order", { ascending: true });
+    // Admin-only RPC: signing_token + signer_document only readable by admin/CEO.
+    const { data, error } = await (supabase as any)
+      .rpc("get_client_contract_signers_admin", { _contract_id: contractId });
     if (!error) setSigners((data as ClientContractSigner[]) || []);
     setLoading(false);
   }, [contractId]);
+
 
   // Auto-create default signers (client + vendedor) if none exist — runs once
   const ensureDefaultSigners = useCallback(async () => {

@@ -78,17 +78,16 @@ export function usePdfContracts() {
   };
 
   const fetchSigners = async (contractId: string): Promise<PdfContractSigner[]> => {
-    const { data, error } = await supabase
-      .from("pdf_contract_signers")
-      .select("*")
-      .eq("contract_id", contractId)
-      .order("sign_order", { ascending: true });
+    // Use admin-only RPC so that signing_token is only returned to admin/CEO users.
+    const { data, error } = await (supabase as any)
+      .rpc("get_pdf_contract_signers_admin", { _contract_id: contractId });
     if (error) {
       console.error(error);
       return [];
     }
     return (data as PdfContractSigner[]) || [];
   };
+
 
   const fetchHistory = async (contractId: string): Promise<PdfContractHistory[]> => {
     const { data, error } = await supabase

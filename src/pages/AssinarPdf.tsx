@@ -489,9 +489,10 @@ export default function AssinarPdf() {
       try {
         const { data: fullSigners } = await supabase
           .from("pdf_contract_signers")
-          .select("*")
+          .select("id, contract_id, name, email, phone, cpf_cnpj, address, status, sign_order, signed_at, signature_photo_url, signature_latitude, signature_longitude, signature_address, signer_ip, created_at")
           .eq("contract_id", contract.id)
           .order("sign_order", { ascending: true });
+
 
         if (!fullSigners?.length) return;
 
@@ -578,9 +579,10 @@ export default function AssinarPdf() {
 
         const { data: fullSigners } = await supabase
           .from("pdf_contract_signers")
-          .select("*")
+          .select("id, contract_id, name, email, phone, cpf_cnpj, address, status, sign_order, signed_at, signature_photo_url, signature_latitude, signature_longitude, signature_address, signer_ip, created_at")
           .eq("contract_id", contract.id)
           .order("sign_order", { ascending: true });
+
 
         const blob = await buildSignedPdfBlob({
           contract,

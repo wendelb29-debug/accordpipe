@@ -9185,6 +9185,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _is_signer_admin: { Args: { _company_id: string }; Returns: boolean }
       accept_proposal_public: {
         Args: {
           p_doc: string
@@ -9286,6 +9287,34 @@ export type Database = {
         Args: { p_contact_id: string; p_workspace_id: string }
         Returns: string
       }
+      get_client_contract_signers_admin: {
+        Args: { _contract_id: string }
+        Returns: {
+          contract_id: string
+          created_at: string
+          email: string | null
+          id: string
+          is_required: boolean
+          name: string
+          sign_order: number
+          signature_address: string | null
+          signature_latitude: number | null
+          signature_longitude: number | null
+          signature_photo_url: string | null
+          signed_at: string | null
+          signer_document: string | null
+          signer_ip: string | null
+          signer_type: string
+          signing_token: string
+          status: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "client_contract_signers"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_client_contract_signers_by_token: {
         Args: { p_token: string }
         Returns: {
@@ -9380,6 +9409,44 @@ export type Database = {
           telefone: string
         }[]
       }
+      get_document_signers_admin: {
+        Args: { _document_id: string }
+        Returns: {
+          auth_token: string
+          cpf: string | null
+          created_at: string
+          data_nascimento: string | null
+          document_id: string
+          email: string | null
+          id: string
+          ip_address: string | null
+          location_lat: number | null
+          location_lng: number | null
+          location_text: string | null
+          nome_completo: string
+          obrigatorio: boolean
+          ordem: number
+          papel: string
+          reject_reason: string | null
+          rejected_at: string | null
+          selfie_url: string | null
+          signed_at: string | null
+          status: string
+          telefone: string | null
+          updated_at: string
+          user_agent: string | null
+          validated_at: string | null
+          validation_code: string | null
+          validation_code_expires_at: string | null
+          viewed_at: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "document_signers"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_document_signers_by_token: {
         Args: { p_token: string }
         Returns: {
@@ -9409,6 +9476,34 @@ export type Database = {
       get_pdf_contract_servidor: {
         Args: { _contract_id: string }
         Returns: string
+      }
+      get_pdf_contract_signers_admin: {
+        Args: { _contract_id: string }
+        Returns: {
+          address: string | null
+          contract_id: string
+          cpf_cnpj: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          sign_order: number
+          signature_address: string | null
+          signature_latitude: number | null
+          signature_longitude: number | null
+          signature_photo_url: string | null
+          signed_at: string | null
+          signer_ip: string | null
+          signing_token: string
+          status: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "pdf_contract_signers"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_pdf_contract_signers_by_token: {
         Args: { p_token: string }
