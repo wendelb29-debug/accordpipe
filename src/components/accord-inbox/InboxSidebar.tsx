@@ -20,6 +20,7 @@ export interface SidebarContact {
   assignedTo?: string;
   profilePicUrl?: string;
   conversationStatus?: string;
+  isPinned?: boolean;
 }
 
 interface InboxSidebarProps {
