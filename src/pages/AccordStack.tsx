@@ -39,6 +39,8 @@ export default function AccordStack() {
   const [statusFilter, setStatusFilter] = useState<ConversationStatusFilter>("fila");
   const [uiFilter, setUiFilter] = useState<UiFilter>("Todas");
 
+  const { pinnedIds, isPinned, togglePin } = useChatPins(companyId);
+
   const selectedContact = contacts.find((c) => c.id === selectedContactId) || null;
   const queueCount = contacts.filter((c) => c.conversation_status === "fila" || c.conversation_status === "aguardando").length;
   const inServiceCount = contacts.filter((c) => c.conversation_status === "em_atendimento").length;
