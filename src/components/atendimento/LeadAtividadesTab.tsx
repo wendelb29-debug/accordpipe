@@ -510,6 +510,29 @@ export function LeadAtividadesTab({
               <div /> {/* spacer */}
             </div>
 
+            {form.reminder !== "none" && (
+              <div className="space-y-2 p-3 bg-muted/30 rounded-md border border-border/40">
+                <Label className="text-[11px] font-semibold text-primary">Notificar via</Label>
+                <div className="flex flex-col gap-1.5">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs">
+                    <Checkbox
+                      checked={reminderChannels.system}
+                      onCheckedChange={(c) => setReminderChannels((p) => ({ ...p, system: c === true }))}
+                    />
+                    <span>🔔 Sistema (notificação + som)</span>
+                  </label>
+                  <label className={cn("flex items-center gap-2 text-xs", profile?.email ? "cursor-pointer" : "opacity-60")}>
+                    <Checkbox
+                      checked={reminderChannels.email}
+                      onCheckedChange={(c) => setReminderChannels((p) => ({ ...p, email: c === true }))}
+                      disabled={!profile?.email}
+                    />
+                    <span>📧 E-mail {!profile?.email ? "(sem e-mail no perfil)" : `(${profile.email})`}</span>
+                  </label>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-1">
               <Label className="text-xs font-semibold text-primary">Título</Label>
               <Input
