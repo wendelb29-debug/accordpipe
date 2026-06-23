@@ -28,6 +28,8 @@ export function WhatsAppSettingsDialog({
 }: WhatsAppSettingsDialogProps) {
   const { loading: profileLoading, ready, updateName, updateImage } = useWhatsAppProfileSettings(integrationId, serverUrl);
   const { replies, isLoading: repliesLoading, create, update, remove } = useQuickReplies(companyId);
+  const { role, isMaster } = useAuth();
+  const isAdmin = isMaster || role === "ceo" || role === "admin";
 
   const [name, setName] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
