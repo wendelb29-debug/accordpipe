@@ -3,6 +3,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { withErrorHandling, jsonResponse, HttpError } from "../_shared/error-handler.ts";
 import { EdgeLogger } from "../_shared/edge-logger.ts";
+import { geminiChatCompletion } from "../_shared/gemini.ts";
+
 
 const logger = new EdgeLogger("generate-email-template");
 
@@ -57,9 +59,8 @@ Deno.serve(withErrorHandling("generate-email-template", async (req) => {
     throw new HttpError("Briefing muito curto. Descreva o objetivo do e-mail.", 400, { code: "BRIEFING_TOO_SHORT" });
   }
 
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) {
-    logger.error("missing_api_key", { userId: user.id }, "LOVABLE_API_KEY not configured");
+  if (!Deno.env.get("GOOGLE_GEMINI_API_KEY")) {
+    logger.error("missing_api_key", { userId: user.id }, "GOOGLE_GEMINI_API_KEY not configured");
     throw new HttpError("Serviço de IA indisponível (chave não configurada).", 500, { code: "NO_API_KEY" });
   }
 
@@ -82,20 +83,12 @@ Gere o e-mail HTML conforme as regras. Retorne SOMENTE o JSON.`;
 
   let resp: Response;
   try {
-    resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userPrompt },
-        ],
-        response_format: { type: "json_object" },
-      }),
+    resp = await geminiChatCompletion({
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: userPrompt },
+      ],
+      response_format: { type: "json_object" },
     });
   } catch (netErr) {
     logger.error("ai_gateway_network_fail", { userId: user.id }, netErr);
@@ -106,9 +99,9 @@ Gere o e-mail HTML conforme as regras. Retorne SOMENTE o JSON.`;
     const errText = await resp.text().catch(() => "");
     logger.error("ai_gateway_error", { status: resp.status, userId: user.id }, errText);
     if (resp.status === 429) throw new HttpError("Limite de uso atingido. Tente novamente em alguns instantes.", 429, { code: "RATE_LIMIT" });
-    if (resp.status === 402) throw new HttpError("Créditos esgotados. Adicione créditos em Workspace → Usage.", 402, { code: "NO_CREDITS" });
     throw new HttpError(`IA indisponível: ${errText.slice(0, 200)}`, 502, { code: "AI_UPSTREAM" });
   }
+
 
   let data: any;
   try {

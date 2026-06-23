@@ -1,11 +1,10 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { geminiChatCompletion } from "../_shared/gemini.ts";
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
-
     const { lead, instruction, currentSubject, currentBody, senderName } = await req.json();
 
     const leadCtx = lead
@@ -29,18 +28,13 @@ Rascunho atual (pode estar vazio): ${currentBody || "-"}
 
 Instrução do usuário: ${instruction || "Escreva um e-mail apropriado para este contato."}`;
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
-        response_format: { type: "json_object" },
-      }),
-    });
+    const res = await geminiChatCompletion({
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+      response_format: { type: "json_object" },
+    }, corsHeaders);
 
     if (!res.ok) {
       const text = await res.text();
@@ -48,6 +42,7 @@ Instrução do usuário: ${instruction || "Escreva um e-mail apropriado para est
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     const json = await res.json();
     const content = json.choices?.[0]?.message?.content || "{}";
