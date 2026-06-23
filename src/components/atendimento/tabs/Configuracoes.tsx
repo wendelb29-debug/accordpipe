@@ -293,6 +293,25 @@ export function Configuracoes() {
           <WhatsAppRoutingConfig />
         </CardContent>
       </Card>
+      </Card>
+
+      {/* Department Menu Routing */}
+      {isAdmin && companyId && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users2 className="h-4 w-4 text-primary" /> Roteamento por Departamento
+            </CardTitle>
+            <CardDescription>
+              Mostre um menu numerado ao novo contato e atribua automaticamente ao usuário do departamento escolhido
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <DepartmentManagement companyId={companyId} isAdmin={isAdmin} />
+            <DepartmentRoutingConfig companyId={companyId} isAdmin={isAdmin} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
