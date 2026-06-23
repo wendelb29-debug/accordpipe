@@ -668,7 +668,7 @@ export function LeadAtividadesTab({
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button size="sm" variant="ghost" onClick={() => setShowForm(false)} className="text-xs">
+              <Button size="sm" variant="ghost" onClick={() => { setShowForm(false); resetForm(); }} className="text-xs">
                 Fechar
               </Button>
               <Button
