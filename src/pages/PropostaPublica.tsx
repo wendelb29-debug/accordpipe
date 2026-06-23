@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, CheckCircle2, XCircle, Building2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import DOMPurify from "dompurify";
 import { fmtCur, fmtDate, STATUS_LABEL } from "@/components/atendimento/proposta/utils";
 
 export default function PropostaPublica() {
@@ -118,7 +119,7 @@ export default function PropostaPublica() {
         {proposal.intro_html && (
           <Card><CardContent className="p-5">
             <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Introdução</p>
-            <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: proposal.intro_html }} />
+            <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(proposal.intro_html) }} />
           </CardContent></Card>
         )}
 

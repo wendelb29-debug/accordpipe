@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { token, context, bucket, path } = body;
 
-    // Authenticated flow: bucket + path with JWT validation
+    // Authenticated flow: bucket + path with JWT validation + ownership check
     if (bucket && path) {
       const authHeader = req.headers.get("Authorization");
       if (!authHeader) {
@@ -65,6 +65,42 @@ Deno.serve(async (req) => {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+
+      // ── Tenant/user ownership enforcement ──────────────────────────────
+      // Path format:
+      //   - signatures, user-signatures           → <user_id>/...
+      //   - contract-pdfs, documents,
+      //     digital-certificates                  → <tenant_id>/... or generated/<tenant_id>/...
+      const segments = String(path).replace(/^\/+/, "").split("/");
+      const USER_SCOPED = new Set(["signatures", "user-signatures"]);
+      const TENANT_SCOPED = new Set(["contract-pdfs", "documents", "digital-certificates"]);
+
+      // Look up caller's company + master status
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("company_id, is_master")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const isMaster = !!prof?.is_master;
+      const callerCompanyId = prof?.company_id ?? null;
+
+      const deny = () => new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+
+      if (!isMaster) {
+        if (USER_SCOPED.has(bucket)) {
+          if (segments[0] !== user.id) return deny();
+        } else if (TENANT_SCOPED.has(bucket)) {
+          // tenant id is either segment[0] or segment[1] when prefixed by "generated"
+          const candidate = segments[0] === "generated" ? segments[1] : segments[0];
+          if (!callerCompanyId || candidate !== callerCompanyId) return deny();
+        } else {
+          // Unknown bucket: refuse for non-master callers
+          return deny();
+        }
       }
 
       const { data, error } = await supabase.storage

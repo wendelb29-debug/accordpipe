@@ -41,7 +41,7 @@ serve(async (req) => {
     // Check caller permissions
     const { data: callerProfile } = await supabase
       .from("profiles")
-      .select("is_master, name")
+      .select("is_master, name, company_id")
       .eq("user_id", caller.id)
       .single();
 
@@ -51,9 +51,9 @@ serve(async (req) => {
       .eq("user_id", caller.id)
       .single();
 
-    const isAllowed = callerProfile?.is_master ||
+    const isMaster = !!callerProfile?.is_master || callerRole?.role === "master";
+    const isAllowed = isMaster ||
       callerRole?.role === "ceo" ||
-      callerRole?.role === "master" ||
       callerRole?.role === "admin";
 
     if (!isAllowed) {
@@ -75,6 +75,24 @@ serve(async (req) => {
 
     if (!name || !email || !cpf || !birth_date || !whatsapp || !company_id || !role) {
       return respond(false, { error: "Todos os campos são obrigatórios" });
+    }
+
+    // ──────────────────────────────────────────────
+    // TENANT BOUNDARY: non-master callers may only create users inside their own tenant
+    // ──────────────────────────────────────────────
+    if (!isMaster && company_id !== callerProfile?.company_id) {
+      await supabase.rpc("log_audit", {
+        _user_id: caller.id,
+        _user_name: callerProfile?.name || caller.email || "",
+        _action: "user_creation_blocked_cross_tenant",
+        _target_type: "user",
+        _target_id: null,
+        _details: JSON.stringify({
+          attempted_company_id: company_id,
+          caller_company_id: callerProfile?.company_id ?? null,
+        }),
+      });
+      return respond(false, { error: "Sem permissão para criar usuários em outro tenant." });
     }
 
     const trialExpiresAt: string | null = trial_expires_at && typeof trial_expires_at === "string"
