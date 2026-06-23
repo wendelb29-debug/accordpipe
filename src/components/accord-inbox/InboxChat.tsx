@@ -718,6 +718,14 @@ export function InboxChat({
     return () => { mounted = false; };
   }, []);
 
+  // Allow opening settings from outside (e.g. InboxSidebar gear button)
+  useEffect(() => {
+    if (!isAdmin) return;
+    const handler = () => setSettingsOpen(true);
+    window.addEventListener("inbox:open-settings", handler);
+    return () => window.removeEventListener("inbox:open-settings", handler);
+  }, [isAdmin]);
+
 
   const messagesById = (() => {
     const map: Record<string, ChatMessage> = {};
