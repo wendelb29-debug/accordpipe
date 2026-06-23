@@ -142,6 +142,22 @@ export default function Usuarios() {
     fetchAllCompanies();
   }, [activeCompanyId, isGlobalMaster, isResellerTenant, profile?.company_id]);
 
+  // Load departments of the selected tenant when dialog is open
+  useEffect(() => {
+    if (!dialogOpen || !selectedTenantId) {
+      setTenantDepartments([]);
+      return;
+    }
+    (async () => {
+      const { data } = await supabase
+        .from("tenant_departments")
+        .select("id, name, icon")
+        .eq("tenant_id", selectedTenantId)
+        .order("position");
+      setTenantDepartments((data as any) || []);
+    })();
+  }, [dialogOpen, selectedTenantId]);
+
   const fetchAllCompanies = async () => {
     let query = supabase
       .from("companies")
