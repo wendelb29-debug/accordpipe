@@ -1,4 +1,4 @@
-import { Search, Plus, Users, MessageSquare, Pin } from "lucide-react";
+import { Search, Plus, Users, MessageSquare, Pin, Settings } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
