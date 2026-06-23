@@ -198,6 +198,9 @@ export function InboxSidebar({
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
+                    {c.isPinned && (
+                      <Pin size={11} className="text-primary flex-shrink-0" aria-label="Fixado" />
+                    )}
                     <span className={cn("text-[13px] font-medium truncate", isSelected ? "text-primary" : "text-foreground")}>
                       {c.name}
                     </span>
