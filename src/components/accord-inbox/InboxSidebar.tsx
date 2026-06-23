@@ -1,4 +1,4 @@
-import { Search, Plus, Users, MessageSquare } from "lucide-react";
+import { Search, Plus, Users, MessageSquare, Pin } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +20,7 @@ export interface SidebarContact {
   assignedTo?: string;
   profilePicUrl?: string;
   conversationStatus?: string;
+  isPinned?: boolean;
 }
 
 interface InboxSidebarProps {
@@ -197,6 +198,9 @@ export function InboxSidebar({
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
+                    {c.isPinned && (
+                      <Pin size={11} className="text-primary flex-shrink-0" aria-label="Fixado" />
+                    )}
                     <span className={cn("text-[13px] font-medium truncate", isSelected ? "text-primary" : "text-foreground")}>
                       {c.name}
                     </span>

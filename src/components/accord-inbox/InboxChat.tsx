@@ -3,10 +3,12 @@ import {
   Search, ArrowLeftRight, Info, X, Paperclip, Image, Mic, Trash2,
   Send, Play, Pause, FileText, FileSpreadsheet, FileArchive, FileImage, FileVideo, FileAudio, File as FileIcon, Download, ExternalLink,
   MoreVertical, Users, Check, CheckCheck, ArrowLeft, Reply, Smile,
-  MessageSquare, Plus, Filter, BarChart2, Phone, PhoneOff,
+  MessageSquare, Plus, Filter, BarChart2, Phone, PhoneOff, Settings, Pin, PinOff,
 } from "lucide-react";
 import { CallButtons } from "./CallButtons";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { WhatsAppSettingsDialog } from "./WhatsAppSettingsDialog";
+import { QuickReplyPicker } from "./QuickReplyPicker";
 
 const EMOJI_LIST = [
   "😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰",
@@ -90,6 +92,14 @@ interface InboxChatProps {
   onNewConversation?: () => void;
   onFilterQueue?: () => void;
   onViewReport?: () => void;
+  /** Uazapi/Z-API server URL for profile settings */
+  serverUrl?: string | null;
+  /** Active WhatsApp integration id (used to load the instance token via secure RPC) */
+  integrationId?: string | null;
+  /** Whether the current chat is pinned for the active user */
+  isPinned?: boolean;
+  /** Toggle pin/unpin for the current chat */
+  onTogglePin?: (contactId: string) => void;
 }
 
 function ContactAvatar({ contact, size = 36 }: { contact: ChatContact; size?: number }) {
@@ -637,12 +647,17 @@ function AccordWatermark() {
 
 export function InboxChat({
   contact, messages, onSendMessage, onReactToMessage, onTransfer, onToggleInfo, showInfo, onUpdateStatus, companyId,
-  onBack, queueCount = 0, inServiceCount = 0, onNewConversation, onFilterQueue, onViewReport,
+  onBack, queueCount = 0, inServiceCount = 0, onNewConversation, onFilterQueue, onViewReport, isAdmin,
+  serverUrl, integrationId, isPinned, onTogglePin,
 }: InboxChatProps) {
   const [text, setText] = useState("");
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [lightboxMsg, setLightboxMsg] = useState<ChatMessage | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState("");
+
 
   // Resolve current user id once for reaction ownership detection
   useEffect(() => {
@@ -1107,6 +1122,24 @@ export function InboxChat({
               <Info size={14} />
             </button>
           )}
+          {onTogglePin && (
+            <button onClick={() => onTogglePin(contact.id)}
+              aria-label={isPinned ? "Desafixar conversa" : "Fixar conversa"}
+              title={isPinned ? "Desafixar do topo" : "Fixar no topo"}
+              className={cn("hidden sm:flex w-8 h-8 rounded-lg border items-center justify-center transition-all",
+                isPinned ? "border-primary/40 bg-primary/10 text-primary" : "border-border/50 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+              )}>
+              {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
+            </button>
+          )}
+          {isAdmin && (
+            <button onClick={() => setSettingsOpen(true)}
+              aria-label="Configurações WhatsApp"
+              title="Configurações WhatsApp"
+              className="hidden sm:flex w-8 h-8 rounded-lg border border-border/50 items-center justify-center text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all">
+              <Settings size={14} />
+            </button>
+          )}
           {onUpdateStatus && (
             <button onClick={() => onUpdateStatus(contact.id, "encerrado")}
               aria-label="Encerrar atendimento"
@@ -1285,12 +1318,30 @@ export function InboxChat({
               </div>
             ) : (
               <div
-                className="flex items-end gap-1 rounded-2xl px-1.5 py-1 transition-colors focus-within:ring-2 focus-within:ring-primary/30"
+                className="relative flex items-end gap-1 rounded-2xl px-1.5 py-1 transition-colors focus-within:ring-2 focus-within:ring-primary/30"
                 style={{
                   background: "hsl(var(--background) / 0.85)",
                   border: "1px solid hsl(var(--primary) / 0.20)",
                 }}
               >
+                <QuickReplyPicker
+                  companyId={companyId ?? null}
+                  open={pickerOpen}
+                  query={pickerQuery}
+                  onClose={() => setPickerOpen(false)}
+                  onPick={(r) => {
+                    // Replace the "/query" token at the end of the input
+                    setText((prev) => {
+                      const match = prev.match(/(^|\s)\/[^\s]*$/);
+                      if (!match) return prev + r.content;
+                      const start = match.index! + match[1].length;
+                      return prev.slice(0, start) + r.content;
+                    });
+                    setPickerOpen(false);
+                    setPickerQuery("");
+                    requestAnimationFrame(() => taRef.current?.focus());
+                  }}
+                />
                 {/* Left actions: attachments + emoji + AI */}
                 <div className="flex items-center gap-0.5 pb-0.5 flex-shrink-0">
                   <ToolBtn icon={<Paperclip size={16} />} title="Anexar arquivo" onClick={() => fileInputRef.current?.click()} className="w-9 h-9 rounded-full" />
@@ -1343,16 +1394,33 @@ export function InboxChat({
                   ref={taRef}
                   value={text}
                   onChange={(e) => {
-                    setText(e.target.value);
+                    const v = e.target.value;
+                    setText(v);
                     e.target.style.height = "40px";
                     e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+                    // Detect "/trigger" at end of text (start of string or after whitespace)
+                    const m = v.match(/(^|\s)\/([^\s]*)$/);
+                    if (m) {
+                      setPickerQuery(m[2]);
+                      setPickerOpen(true);
+                    } else {
+                      setPickerOpen(false);
+                      setPickerQuery("");
+                    }
                   }}
-                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-                  placeholder="Digite uma mensagem..."
+                  onKeyDown={(e) => {
+                    if (pickerOpen && (e.key === "Enter" || e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "Escape" || e.key === "Tab")) {
+                      // Let the picker handle navigation/selection
+                      return;
+                    }
+                    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+                  }}
+                  placeholder='Digite uma mensagem... (use "/" para respostas rápidas)'
                   rows={1}
                   className="flex-1 min-w-0 resize-none outline-none text-base sm:text-sm bg-transparent border-0 px-1 py-2.5 text-foreground placeholder:text-muted-foreground leading-relaxed self-center"
                   style={{ height: 40, maxHeight: 120 }}
                 />
+
 
                 {/* Right action: send when typing, mic when empty */}
                 <div className="flex items-center pb-0.5 flex-shrink-0">
@@ -1389,6 +1457,16 @@ export function InboxChat({
           onClose={() => setLightboxMsg(null)}
         />
       )}
+      {isAdmin && (
+        <WhatsAppSettingsDialog
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+          companyId={companyId ?? null}
+          serverUrl={serverUrl ?? null}
+          integrationId={integrationId ?? null}
+        />
+      )}
     </div>
   );
 }
+

@@ -8058,6 +8058,48 @@ export type Database = {
           },
         ]
       }
+      whatsapp_chat_pins: {
+        Row: {
+          company_id: string
+          contact_id: string
+          id: string
+          order_position: number | null
+          pinned_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          contact_id: string
+          id?: string
+          order_position?: number | null
+          pinned_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          contact_id?: string
+          id?: string
+          order_position?: number | null
+          pinned_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_chat_pins_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_chat_pins_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_contacts: {
         Row: {
           assigned_to: string | null
@@ -8259,6 +8301,56 @@ export type Database = {
             columns: ["reply_to_message_id"]
             isOneToOne: false
             referencedRelation: "whatsapp_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_quick_replies: {
+        Row: {
+          category: string | null
+          company_id: string
+          content: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          id: string
+          shortcut: string | null
+          tags: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          company_id: string
+          content: string
+          created_at?: string
+          created_by_user_id?: string | null
+          deleted_at?: string | null
+          id?: string
+          shortcut?: string | null
+          tags?: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          company_id?: string
+          content?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          deleted_at?: string | null
+          id?: string
+          shortcut?: string | null
+          tags?: string[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_quick_replies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]

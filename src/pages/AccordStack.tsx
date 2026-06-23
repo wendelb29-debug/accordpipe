@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWhatsAppInbox, InboxFilter } from "@/hooks/useWhatsAppInbox";
 import { InboxSidebar, ConversationStatusFilter } from "@/components/accord-inbox/InboxSidebar";
 import { InboxChat } from "@/components/accord-inbox/InboxChat";
+import { useChatPins } from "@/hooks/useChatPins";
 import { TransferDialog } from "@/components/accord-inbox/TransferDialog";
 import { ContactDetailSidebar } from "@/components/accord-inbox/ContactDetailSidebar";
 import { CreateDemandModal } from "@/components/accord-inbox/CreateDemandModal";
@@ -37,6 +38,8 @@ export default function AccordStack() {
   const [newConvOpen, setNewConvOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<ConversationStatusFilter>("fila");
   const [uiFilter, setUiFilter] = useState<UiFilter>("Todas");
+
+  const { pinnedIds, isPinned, togglePin } = useChatPins(companyId);
 
   const selectedContact = contacts.find((c) => c.id === selectedContactId) || null;
   const queueCount = contacts.filter((c) => c.conversation_status === "fila" || c.conversation_status === "aguardando").length;
@@ -76,14 +79,17 @@ export default function AccordStack() {
       conversationStatus: c.conversation_status,
       assignedTo: c.assigned_to || undefined,
       unreadCount: unreadByContact[c.id] || 0,
+      isPinned: pinnedIds.has(c.id),
       _lastAt: c.last_message_at ? new Date(c.last_message_at).getTime() : 0,
     }))
     .sort((a, b) => {
-      // Unread conversations first, then most-recent
+      // Pinned first, then unread, then most-recent
+      if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
       if ((a.unreadCount > 0) !== (b.unreadCount > 0)) return a.unreadCount > 0 ? -1 : 1;
       return b._lastAt - a._lastAt;
     })
     .map(({ _lastAt, ...rest }) => rest);
+
 
   // Map InboxContact -> ChatContact
   const chatContact = selectedContact
@@ -264,6 +270,10 @@ export default function AccordStack() {
           inServiceCount={inServiceCount}
           onNewConversation={() => setNewConvOpen(true)}
           onViewReport={() => navigate("/relatorios")}
+          serverUrl={activeIntegration?.server_url ?? null}
+          integrationId={activeIntegration?.id ?? null}
+          isPinned={selectedContactId ? isPinned(selectedContactId) : false}
+          onTogglePin={togglePin}
         />
       </div>
 
