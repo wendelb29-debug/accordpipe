@@ -92,25 +92,51 @@ export function WhatsAppSettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="h-4 w-4 text-primary" />
             Configurações WhatsApp
           </DialogTitle>
           <DialogDescription>
-            Alterar nome/foto do perfil conectado e gerenciar as respostas rápidas do time.
+            Perfil, respostas rápidas, fila de atendimento, departamentos e notificações.
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid grid-cols-2 w-full">
+        <Tabs defaultValue="queue" className="w-full">
+          <TabsList className={cn("grid w-full", isAdmin ? "grid-cols-5" : "grid-cols-4")}>
+            <TabsTrigger value="queue"><Inbox className="h-3.5 w-3.5 mr-1.5" />Fila</TabsTrigger>
             <TabsTrigger value="profile">Perfil</TabsTrigger>
             <TabsTrigger value="quick">
               <Zap className="h-3.5 w-3.5 mr-1.5" />
               Respostas rápidas
             </TabsTrigger>
+            <TabsTrigger value="notifications"><Bell className="h-3.5 w-3.5 mr-1.5" />Notificações</TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="departments"><Users2 className="h-3.5 w-3.5 mr-1.5" />Departamentos</TabsTrigger>
+            )}
           </TabsList>
+
+          <TabsContent value="queue" className="pt-4">
+            <QueueTab />
+          </TabsContent>
+
+          <TabsContent value="notifications" className="pt-4">
+            <NotificationPreferences />
+          </TabsContent>
+
+          {isAdmin && (
+            <TabsContent value="departments" className="space-y-6 pt-4">
+              {companyId ? (
+                <>
+                  <DepartmentManagement companyId={companyId} isAdmin={isAdmin} />
+                  <DepartmentRoutingConfig companyId={companyId} isAdmin={isAdmin} />
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">Tenant não identificado.</p>
+              )}
+            </TabsContent>
+          )}
 
           <TabsContent value="profile" className="space-y-6 pt-4">
             {!ready && (
