@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWhatsAppInbox, InboxFilter } from "@/hooks/useWhatsAppInbox";
 import { InboxSidebar, ConversationStatusFilter } from "@/components/accord-inbox/InboxSidebar";
 import { InboxChat } from "@/components/accord-inbox/InboxChat";
+import { useChatPins } from "@/hooks/useChatPins";
 import { TransferDialog } from "@/components/accord-inbox/TransferDialog";
 import { ContactDetailSidebar } from "@/components/accord-inbox/ContactDetailSidebar";
 import { CreateDemandModal } from "@/components/accord-inbox/CreateDemandModal";
