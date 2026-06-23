@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield, Webhook, Briefcase, ShieldCheck, Link2, Copy, Check, ChevronDown, Trash2, CreditCard, Crown, Network,
+  Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield, Webhook, Briefcase, ShieldCheck, Link2, Copy, Check, ChevronDown, Trash2, CreditCard, Crown, Network, AlertTriangle,
 } from "lucide-react";
 import { TenantSubscriptionTab } from "./TenantSubscriptionTab";
 import { ResellerTab } from "./ResellerTab";
@@ -82,6 +82,7 @@ export default function ServidoresTab() {
   const [searchTerm, setSearchTerm] = useState("");
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -141,6 +142,8 @@ export default function ServidoresTab() {
   }, [activeCompanyId, isResellerTenant, isGlobalMaster]);
 
   const fetchCompanies = async () => {
+    setLoading(true);
+    setLoadError(null);
     try {
       // Reseller (non-master) tenants only see their own children.
       // Global Master sees everything; setup requests only matter for the master.
@@ -167,7 +170,9 @@ export default function ServidoresTab() {
 
       const [companiesRes, tenantLinksRes, setupRes] = await Promise.all(requests);
 
-      if (companiesRes.error) throw companiesRes.error;
+      if (companiesRes.error) throw new Error(`companies: ${companiesRes.error.message}`);
+      if (tenantLinksRes.error) throw new Error(`user_tenants: ${tenantLinksRes.error.message}`);
+      if (setupRes?.error) throw new Error(`tenant_setup_requests: ${setupRes.error.message}`);
 
       const countMap: Record<string, number> = {};
       (tenantLinksRes.data || []).forEach((l: any) => {
@@ -216,7 +221,10 @@ export default function ServidoresTab() {
       setCompanies([...setupEntries, ...enriched]);
     } catch (error) {
       console.error("Error fetching companies:", error);
-      toast({ title: "Erro", description: "Não foi possível carregar os tenants.", variant: "destructive" });
+      const message = error instanceof Error ? error.message : "Erro desconhecido";
+      setCompanies([]);
+      setLoadError(`Não foi possível carregar os tenants. Detalhe: ${message}`);
+      toast({ title: "Erro", description: `Não foi possível carregar os tenants: ${message}`, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -593,6 +601,28 @@ export default function ServidoresTab() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">Tenants</h2>
+          <p className="text-sm text-muted-foreground">Ambientes independentes vinculados por CNPJ</p>
+        </div>
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6 space-y-3">
+          <h3 className="font-semibold text-destructive flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Erro ao carregar tenants
+          </h3>
+          <p className="text-sm text-foreground">{loadError}</p>
+          <Button onClick={fetchCompanies} variant="outline" size="sm" className="gap-2">
+            <Loader2 className="h-4 w-4" />
+            Tentar novamente
+          </Button>
+        </div>
       </div>
     );
   }
