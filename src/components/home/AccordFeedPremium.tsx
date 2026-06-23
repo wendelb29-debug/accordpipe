@@ -573,9 +573,7 @@ export function AccordFeedPremium() {
                 {(suggested as any[]).map(p => (
                   <div className="afp-suggest-row" key={p.user_id}>
                     <div className="afp-suggest-av" style={{ background: gradientFor(p.user_id) }}>
-                      {p.avatar_url
-                        ? <img src={p.avatar_url} alt="" style={{ width: "100%", height: "100%", borderRadius: 12, objectFit: "cover" }} />
-                        : initials(p.name)}
+                      <AvatarPic url={p.avatar_url} name={p.name} radius={12} />
                     </div>
                     <div className="afp-suggest-info">
                       <div className="afp-suggest-name">{p.name || "Colega"}</div>
