@@ -552,9 +552,7 @@ export function AccordFeedPremium() {
             ) : otherOnline.slice(0, 6).map(u => (
               <div className="afp-online-row" key={u.user_id}>
                 <div className="afp-online-av" style={{ background: gradientFor(u.user_id) }}>
-                  {u.avatar_url
-                    ? <img src={u.avatar_url} alt="" style={{ width: "100%", height: "100%", borderRadius: 11, objectFit: "cover" }} />
-                    : initials(u.name)}
+                  <AvatarPic url={u.avatar_url} name={u.name} radius={11} />
                 </div>
                 <div className="afp-online-info">
                   <div className="afp-online-name">{u.name || "Colega"}</div>
