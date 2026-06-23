@@ -43,6 +43,20 @@ type FilterKey = "all" | "posts" | "events" | "saved";
 
 const REACTION_EMOJIS = ["❤️", "😀", "🎉", "👏", "🔥", "🚀", "💯"];
 
+/** Avatar image with graceful fallback to initials when the URL fails to load. */
+function AvatarPic({ url, name, radius = 99 }: { url?: string | null; name?: string | null; radius?: number }) {
+  const [errored, setErrored] = useState(false);
+  if (!url || errored) return <>{initials(name)}</>;
+  return (
+    <img
+      src={url}
+      alt=""
+      onError={() => setErrored(true)}
+      style={{ width: "100%", height: "100%", borderRadius: radius, objectFit: "cover" }}
+    />
+  );
+}
+
 function greetingFor(hour: number) {
   if (hour < 5) return "Boa madrugada";
   if (hour < 12) return "Bom dia";
@@ -414,9 +428,7 @@ export function AccordFeedPremium() {
           <div className="afp-composer">
             <div className="afp-composer-top">
               <div className="afp-composer-avatar" style={{ background: gradientFor(user?.id) }}>
-                {profile?.avatar_url
-                  ? <img src={profile.avatar_url} alt="" style={{ width: "100%", height: "100%", borderRadius: 14, objectFit: "cover" }} />
-                  : initials(profile?.name)}
+                <AvatarPic url={profile?.avatar_url} name={profile?.name} radius={14} />
               </div>
               <button type="button" className="afp-composer-input" onClick={() => setComposerOpen(true)} style={{ textAlign: "left", cursor: "text", fontFamily: "inherit" }}>No que está pensando, {firstName}?</button>
             </div>
@@ -540,9 +552,7 @@ export function AccordFeedPremium() {
             ) : otherOnline.slice(0, 6).map(u => (
               <div className="afp-online-row" key={u.user_id}>
                 <div className="afp-online-av" style={{ background: gradientFor(u.user_id) }}>
-                  {u.avatar_url
-                    ? <img src={u.avatar_url} alt="" style={{ width: "100%", height: "100%", borderRadius: 11, objectFit: "cover" }} />
-                    : initials(u.name)}
+                  <AvatarPic url={u.avatar_url} name={u.name} radius={11} />
                 </div>
                 <div className="afp-online-info">
                   <div className="afp-online-name">{u.name || "Colega"}</div>
@@ -563,9 +573,7 @@ export function AccordFeedPremium() {
                 {(suggested as any[]).map(p => (
                   <div className="afp-suggest-row" key={p.user_id}>
                     <div className="afp-suggest-av" style={{ background: gradientFor(p.user_id) }}>
-                      {p.avatar_url
-                        ? <img src={p.avatar_url} alt="" style={{ width: "100%", height: "100%", borderRadius: 12, objectFit: "cover" }} />
-                        : initials(p.name)}
+                      <AvatarPic url={p.avatar_url} name={p.name} radius={12} />
                     </div>
                     <div className="afp-suggest-info">
                       <div className="afp-suggest-name">{p.name || "Colega"}</div>
@@ -677,9 +685,7 @@ function PostCard({
         <div className="afp-av-ring" style={{ background: gradientFor(post.author.user_id) }}>
           <div className="afp-av-inner">
             <div className="afp-av-pic" style={{ background: gradientFor(post.author.user_id) }}>
-              {post.author.avatar_url
-                ? <img src={post.author.avatar_url} alt="" style={{ width: "100%", height: "100%", borderRadius: 99, objectFit: "cover" }} />
-                : initials(post.author.name)}
+              <AvatarPic url={post.author.avatar_url} name={post.author.name} radius={99} />
             </div>
           </div>
         </div>
