@@ -614,6 +614,18 @@ function MeuCanalWhatsAppCard() {
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Hash className="h-3.5 w-3.5" />}
             {qrCode ? "Gerar Novo QR" : "Ler QR Code"}
           </Button>
+          {isConnected && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10"
+              onClick={handleDisconnect}
+              disabled={!active || disconnecting}
+            >
+              {disconnecting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <WifiOff className="h-3.5 w-3.5" />}
+              Desconectar
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
