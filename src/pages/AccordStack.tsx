@@ -270,6 +270,10 @@ export default function AccordStack() {
           inServiceCount={inServiceCount}
           onNewConversation={() => setNewConvOpen(true)}
           onViewReport={() => navigate("/relatorios")}
+          serverUrl={activeIntegration?.server_url ?? null}
+          integrationId={activeIntegration?.id ?? null}
+          isPinned={selectedContactId ? isPinned(selectedContactId) : false}
+          onTogglePin={togglePin}
         />
       </div>
 
