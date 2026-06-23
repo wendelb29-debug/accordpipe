@@ -12,6 +12,43 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // ── Webhook authentication ──────────────────────────────────────────
+    // Require a per-tenant webhook_token (query string or `x-webhook-token` header)
+    // matching companies.webhook_token. Without it the endpoint would accept
+    // forged Z-API payloads from any source.
+    const url = new URL(req.url);
+    const token =
+      url.searchParams.get("token") ||
+      url.searchParams.get("webhook_token") ||
+      req.headers.get("x-webhook-token");
+
+    if (!token) {
+      return new Response(JSON.stringify({ ok: false, error: "missing_token" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: tenantRow } = await supabase
+      .from("companies")
+      .select("id")
+      .eq("webhook_token", token)
+      .maybeSingle();
+
+    if (!tenantRow) {
+      return new Response(JSON.stringify({ ok: false, error: "invalid_token" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const allowedCompanyId = tenantRow.id as string;
+
     const body = await req.json();
 
     const eventType = body.event || body.type || body.status || "unknown";
@@ -20,11 +57,6 @@ Deno.serve(async (req) => {
     const instanceId = body.instanceId || null;
     const messageText = body.text?.message || body.body || body.message || "";
     const isFromMe = body.fromMe === true;
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
 
     // Log the raw event
     await supabase.from("zapi_webhook_events").insert({
@@ -46,6 +78,14 @@ Deno.serve(async (req) => {
           .eq("zapi_instance_id", instanceId)
           .maybeSingle();
         companyId = creds?.company_id || null;
+      }
+
+      // Reject instanceId spoofing: the resolved company must match the webhook token's tenant
+      if (companyId && companyId !== allowedCompanyId) {
+        return new Response(JSON.stringify({ ok: false, error: "tenant_mismatch" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       if (companyId && messageText) {
