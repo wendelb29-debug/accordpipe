@@ -119,6 +119,15 @@ export function InboxSidebar({
               onChange={(e) => onSearchChange(e.target.value)}
             />
           </div>
+          {isAdmin && (
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("inbox:open-settings"))}
+              title="Configurações do WhatsApp"
+              className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-muted/60 border border-border/50 text-muted-foreground hover:text-emerald-600 hover:border-emerald-500/40 hover:bg-emerald-500/10 transition-all"
+            >
+              <Settings size={15} />
+            </button>
+          )}
         </div>
 
 
