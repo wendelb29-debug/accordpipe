@@ -10,6 +10,7 @@ import { useActivityReminders } from "@/hooks/useActivityReminders";
 import { useNotificationManager } from "@/hooks/useNotificationManager";
 import { AccordAIChat } from "@/components/accord-ai/AccordAIChat";
 import { useEmailNotifications } from "@/hooks/useEmailNotifications";
+import { useMultiEventNotifications } from "@/hooks/useMultiEventNotifications";
 import { TenantBillingBanner } from "./TenantBillingBanner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const hasAvatar = !!(profile as any)?.avatar_url;
   useActivityReminders();
   useEmailNotifications();
+  useMultiEventNotifications(true);
   const { bannerVisible, dismissBanner } = useNotificationManager();
   const navigate = useNavigate();
   const location = useLocation();
