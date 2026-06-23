@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireAuth } from "../_shared/auth.ts";
+import { geminiChatCompletion } from "../_shared/gemini.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,29 +16,19 @@ serve(async (req) => {
 
   try {
     const { leadName } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          {
-            role: "system",
-            content: "Você é um coach de vendas motivacional. Gere UMA frase curta (máximo 2 linhas) de motivação e celebração para um vendedor que acabou de fechar uma venda. Seja entusiasmado, inspirador e use emojis. Não repita frases genéricas. Responda APENAS com a frase, sem aspas.",
-          },
-          {
-            role: "user",
-            content: `O vendedor acabou de fechar a venda do lead "${leadName || "cliente"}". Gere uma frase motivacional única para celebrar essa conquista.`,
-          },
-        ],
-      }),
+    const response = await geminiChatCompletion({
+      messages: [
+        {
+          role: "system",
+          content: "Você é um coach de vendas motivacional. Gere UMA frase curta (máximo 2 linhas) de motivação e celebração para um vendedor que acabou de fechar uma venda. Seja entusiasmado, inspirador e use emojis. Não repita frases genéricas. Responda APENAS com a frase, sem aspas.",
+        },
+        {
+          role: "user",
+          content: `O vendedor acabou de fechar a venda do lead "${leadName || "cliente"}". Gere uma frase motivacional única para celebrar essa conquista.`,
+        },
+      ],
     });
+
 
     if (!response.ok) {
       if (response.status === 429) {

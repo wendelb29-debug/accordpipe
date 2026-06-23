@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireAuth } from "../_shared/auth.ts";
+import { geminiChatCompletion } from "../_shared/gemini.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,8 +16,6 @@ serve(async (req) => {
   try {
     const { userName, goal, snapshots, totalGanhos, totalPerdas, avgScore, workspaceContext, workspaceKpis } = await req.json();
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const metaInfo = goal
       ? `Meta: R$${goal.meta}, Realizado: R$${goal.realizado}, Percentual: ${goal.percentual}%`
@@ -36,12 +36,12 @@ serve(async (req) => {
     const systemPrompt = `Você é o Accord Performance Copilot, um analista de performance universal de alto nível.
 Analise os dados do colaborador e gere um diagnóstico preciso, plano de ação concreto e meta de recuperação.
 Adapte sua análise ao contexto do workspace e seus KPIs específicos.${wsContext}${kpiInfo}
-Responda SEMPRE em JSON com as chaves: diagnostico, sugestoes, meta_recuperacao, data_reavaliacao.
+Responda SEMPRE em JSON válido com as chaves: diagnostico, sugestoes, meta_recuperacao, data_reavaliacao.
 - diagnostico: texto curto descrevendo a situação atual
 - sugestoes: lista de 3-5 ações práticas separadas por quebra de linha
 - meta_recuperacao: meta específica e mensurável
 - data_reavaliacao: data ISO (YYYY-MM-DD) sugerida para reavaliação (geralmente 7 dias à frente)
-Seja direto, assertivo e focado em resultado.`;
+Seja direto, assertivo e focado em resultado. Retorne APENAS o JSON, sem texto adicional.`;
 
     const userPrompt = `Colaborador: ${userName}
 ${metaInfo}
@@ -54,69 +54,30 @@ ${snapInfo}
 
 Gere o diagnóstico e plano de ação em JSON.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+    const response = await geminiChatCompletion(
+      {
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "generate_action_plan",
-              description: "Generate a performance action plan",
-              parameters: {
-                type: "object",
-                properties: {
-                  diagnostico: { type: "string", description: "Current performance diagnosis" },
-                  sugestoes: { type: "string", description: "Action items separated by newlines" },
-                  meta_recuperacao: { type: "string", description: "Recovery goal" },
-                  data_reavaliacao: { type: "string", description: "Reassessment date in YYYY-MM-DD format" },
-                },
-                required: ["diagnostico", "sugestoes", "meta_recuperacao", "data_reavaliacao"],
-                additionalProperties: false,
-              },
-            },
-          },
-        ],
-        tool_choice: { type: "function", function: { name: "generate_action_plan" } },
-      }),
-    });
+        response_format: { type: "json_object" },
+      },
+      corsHeaders,
+    );
 
     if (!response.ok) {
-      const status = response.status;
-      if (status === 429) {
-        return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns segundos." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos de IA esgotados. Adicione créditos ao workspace." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
       const text = await response.text();
-      console.error("AI gateway error:", status, text);
-      throw new Error("AI gateway error");
+      console.error("AI error:", response.status, text);
+      return new Response(text, {
+        status: response.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const data = await response.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    let result;
-    if (toolCall?.function?.arguments) {
-      result = JSON.parse(toolCall.function.arguments);
-    } else {
-      // Fallback: try parsing content as JSON
-      const content = data.choices?.[0]?.message?.content || "{}";
-      result = JSON.parse(content);
-    }
+    const content = data.choices?.[0]?.message?.content || "{}";
+    const result = JSON.parse(content);
+
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

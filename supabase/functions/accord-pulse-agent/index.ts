@@ -1,7 +1,7 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { geminiChatCompletion } from "../_shared/gemini.ts";
 
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -10,22 +10,13 @@ type AnyObj = Record<string, any>;
 // ─────────────────────────────────────────────
 // Shared helpers
 // ─────────────────────────────────────────────
-async function callAi(system: string, user: string, model = "google/gemini-2.5-flash") {
-  if (!LOVABLE_API_KEY) throw new Error("no_ai_key");
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
-      response_format: { type: "json_object" },
-    }),
+async function callAi(system: string, user: string, _model = "gemini-2.5-flash") {
+  const res = await geminiChatCompletion({
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
+    response_format: { type: "json_object" },
   });
   if (!res.ok) {
     const t = await res.text();
@@ -35,6 +26,7 @@ async function callAi(system: string, user: string, model = "google/gemini-2.5-f
   const content = data?.choices?.[0]?.message?.content || "{}";
   try { return JSON.parse(content); } catch { return { message: content }; }
 }
+
 
 function formatKnowledgeBase(items: AnyObj[] | null | undefined): string {
   if (!items || !items.length) return "(sem materiais cadastrados)";
