@@ -429,6 +429,11 @@ export default function Usuarios() {
         }
       }
 
+      // Sync departments
+      if (tenantId) {
+        await syncUserDepartments(editingUser.user_id, tenantId, selectedDepartmentIds);
+      }
+
       toast({
         title: "Usuário atualizado",
         description: "Os dados do usuário foram atualizados.",
