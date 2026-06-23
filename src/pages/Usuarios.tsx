@@ -324,6 +324,23 @@ export default function Usuarios() {
           : `${formData.name} foi criado.${data?.temp_password ? ` Senha temporária: ${data.temp_password}.` : ""}${waNote}`,
       });
 
+      // Sync departments for newly created/linked user
+      const newUserId = data?.user_id;
+      if (newUserId && companyId) {
+        await syncUserDepartments(newUserId, companyId, selectedDepartmentIds);
+      } else if (companyId) {
+        // Fallback: lookup by email + tenant
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("user_id")
+          .eq("email", formData.email)
+          .eq("company_id", companyId)
+          .maybeSingle();
+        if (prof?.user_id) {
+          await syncUserDepartments(prof.user_id, companyId, selectedDepartmentIds);
+        }
+      }
+
       setDialogOpen(false);
       fetchUsers();
     } catch (error: any) {
