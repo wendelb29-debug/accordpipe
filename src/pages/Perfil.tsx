@@ -461,6 +461,27 @@ function MeuCanalWhatsAppCard() {
     }
   };
 
+  const [disconnecting, setDisconnecting] = useState(false);
+  const handleDisconnect = async () => {
+    if (!active?.server_url || !active?.instance_token) return;
+    if (!confirm("Desconectar WhatsApp deste canal?")) return;
+    setDisconnecting(true);
+    try {
+      const base = active.server_url.trim().replace(/\/$/, "");
+      const headers = { token: active.instance_token.trim(), "Content-Type": "application/json" };
+      const res = await fetch(`${base}/instance/disconnect`, { method: "POST", headers });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      toast.success("WhatsApp desconectado");
+      setQrCode(null);
+      await testConnection(active.provider_type);
+      await reload();
+    } catch (err: any) {
+      toast.error("Erro ao desconectar: " + (err.message || "desconhecido"));
+    } finally {
+      setDisconnecting(false);
+    }
+  };
+
   // countdown + polling enquanto QR visível
   useEffect(() => {
     if (!qrCode) {
@@ -593,6 +614,18 @@ function MeuCanalWhatsAppCard() {
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Hash className="h-3.5 w-3.5" />}
             {qrCode ? "Gerar Novo QR" : "Ler QR Code"}
           </Button>
+          {isConnected && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10"
+              onClick={handleDisconnect}
+              disabled={!active || disconnecting}
+            >
+              {disconnecting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <WifiOff className="h-3.5 w-3.5" />}
+              Desconectar
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
