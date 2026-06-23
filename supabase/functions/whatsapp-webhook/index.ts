@@ -824,17 +824,30 @@ async function downloadUazapiMediaToStorage(
         const fileUrl = json?.fileURL || json?.url || json?.file_url || json?.fileUrl;
         if (fileUrl && typeof fileUrl === "string") {
           console.log("[downloadUazapiMediaToStorage] Found fileURL, downloading from:", fileUrl);
-          try {
-            const r2 = await fetch(fileUrl);
-            if (r2.ok) {
-              bytes = new Uint8Array(await r2.arrayBuffer());
-              resolvedMime = r2.headers.get("content-type") || resolvedMime;
-              console.log("[downloadUazapiMediaToStorage] Downloaded from fileURL:", bytes.byteLength, "bytes");
-            } else {
-              console.warn("[downloadUazapiMediaToStorage] fileURL returned non-ok:", r2.status);
+          // Uazapi may return fileURL before the file is fully written to disk
+          // (especially when `cached: true`). Retry with backoff if we get 0 bytes.
+          const delays = [0, 800, 1500, 2500];
+          for (let attempt = 0; attempt < delays.length; attempt++) {
+            if (delays[attempt] > 0) {
+              await new Promise((r) => setTimeout(r, delays[attempt]));
             }
-          } catch (e) {
-            console.error("[downloadUazapiMediaToStorage] Failed to download from fileURL:", (e as Error).message);
+            try {
+              const r2 = await fetch(fileUrl, { headers: { "cache-control": "no-cache" } });
+              if (r2.ok) {
+                const buf = new Uint8Array(await r2.arrayBuffer());
+                if (buf.byteLength > 0) {
+                  bytes = buf;
+                  resolvedMime = r2.headers.get("content-type") || resolvedMime;
+                  console.log("[downloadUazapiMediaToStorage] Downloaded from fileURL:", buf.byteLength, "bytes (attempt", attempt + 1, ")");
+                  break;
+                }
+                console.warn("[downloadUazapiMediaToStorage] fileURL returned 0 bytes (attempt", attempt + 1, "), retrying...");
+              } else {
+                console.warn("[downloadUazapiMediaToStorage] fileURL returned non-ok:", r2.status, "(attempt", attempt + 1, ")");
+              }
+            } catch (e) {
+              console.error("[downloadUazapiMediaToStorage] Failed to download from fileURL (attempt", attempt + 1, "):", (e as Error).message);
+            }
           }
         }
       }
