@@ -522,5 +522,10 @@ export default function Formularios() {
         </DialogContent>
       </Dialog>
     </div>
+      </TabsContent>
+      <TabsContent value="ads" className="mt-0">
+        <AdsCapture />
+      </TabsContent>
+    </Tabs>
   );
 }
