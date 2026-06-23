@@ -247,6 +247,75 @@ export type Database = {
           },
         ]
       }
+      activity_reminders: {
+        Row: {
+          activity_id: string
+          attempts: number
+          created_at: string
+          email_error: string | null
+          email_sent_at: string | null
+          id: string
+          lead_id: string
+          notify_email: boolean
+          notify_system: boolean
+          reminder_minutes: number
+          reminder_scheduled_at: string
+          servidor_id: string
+          system_sent_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_id: string
+          attempts?: number
+          created_at?: string
+          email_error?: string | null
+          email_sent_at?: string | null
+          id?: string
+          lead_id: string
+          notify_email?: boolean
+          notify_system?: boolean
+          reminder_minutes: number
+          reminder_scheduled_at: string
+          servidor_id: string
+          system_sent_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_id?: string
+          attempts?: number
+          created_at?: string
+          email_error?: string | null
+          email_sent_at?: string | null
+          id?: string
+          lead_id?: string
+          notify_email?: boolean
+          notify_system?: boolean
+          reminder_minutes?: number
+          reminder_scheduled_at?: string
+          servidor_id?: string
+          system_sent_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_reminders_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "crm_lead_activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_reminders_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ad_integrations: {
         Row: {
           ad_account_id: string | null

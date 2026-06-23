@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -90,6 +91,10 @@ export function LeadAtividadesTab({
     duration: "00:30",
     reminder: "none",
   });
+  const [reminderChannels, setReminderChannels] = useState({
+    system: true,
+    email: false,
+  });
 
   useEffect(() => {
     fetchActivities();
@@ -123,6 +128,7 @@ export function LeadAtividadesTab({
       duration: "00:30",
       reminder: "none",
     });
+    setReminderChannels({ system: true, email: false });
   };
 
   const handleCreate = async () => {
@@ -143,6 +149,7 @@ export function LeadAtividadesTab({
           scheduled_at: scheduledAt,
           duration: form.duration,
           reminder: form.reminder,
+          reminder_channels: reminderChannels,
           activity_type_label: ACTIVITY_TYPES.find(t => t.value === form.type)?.label || form.type,
         },
       });
@@ -152,12 +159,27 @@ export function LeadAtividadesTab({
         return;
       }
 
-      // Schedule reminder notification
+      // Schedule multi-channel reminder
       if (form.reminder !== "none" && profile?.user_id) {
         const reminderMinutes = parseInt(form.reminder);
         const scheduledDate = new Date(scheduledAt);
         const reminderDate = new Date(scheduledDate.getTime() - reminderMinutes * 60 * 1000);
         if (reminderDate > new Date()) {
+          // Multi-channel queue row (system + email) – consumed by edge fn
+          if (reminderChannels.system || reminderChannels.email) {
+            await supabase.from("activity_reminders").insert({
+              activity_id: result.id,
+              user_id: profile.user_id,
+              lead_id: lead.id,
+              servidor_id: lead.servidor_id,
+              reminder_minutes: reminderMinutes,
+              reminder_scheduled_at: reminderDate.toISOString(),
+              notify_system: reminderChannels.system,
+              notify_email: reminderChannels.email,
+            });
+          }
+
+          // Legacy in-app notification (kept for backward compatibility)
           await supabase.rpc("create_notification", {
             _user_id: profile.user_id,
             _title: `Lembrete: ${form.title}`,
@@ -169,6 +191,7 @@ export function LeadAtividadesTab({
               scheduled_at: scheduledAt,
               reminder_at: reminderDate.toISOString(),
               activity_type: form.type,
+              channels: reminderChannels,
             },
           });
         }
@@ -486,6 +509,29 @@ export function LeadAtividadesTab({
 
               <div /> {/* spacer */}
             </div>
+
+            {form.reminder !== "none" && (
+              <div className="space-y-2 p-3 bg-muted/30 rounded-md border border-border/40">
+                <Label className="text-[11px] font-semibold text-primary">Notificar via</Label>
+                <div className="flex flex-col gap-1.5">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs">
+                    <Checkbox
+                      checked={reminderChannels.system}
+                      onCheckedChange={(c) => setReminderChannels((p) => ({ ...p, system: c === true }))}
+                    />
+                    <span>🔔 Sistema (notificação + som)</span>
+                  </label>
+                  <label className={cn("flex items-center gap-2 text-xs", profile?.email ? "cursor-pointer" : "opacity-60")}>
+                    <Checkbox
+                      checked={reminderChannels.email}
+                      onCheckedChange={(c) => setReminderChannels((p) => ({ ...p, email: c === true }))}
+                      disabled={!profile?.email}
+                    />
+                    <span>📧 E-mail {!profile?.email ? "(sem e-mail no perfil)" : `(${profile.email})`}</span>
+                  </label>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-1">
               <Label className="text-xs font-semibold text-primary">Título</Label>
