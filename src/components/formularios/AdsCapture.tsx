@@ -90,8 +90,8 @@ export default function AdsCapture() {
     setSaving(true);
     const key = generateKey();
     const tags = tagsInput.split(",").map((t) => t.trim()).filter(Boolean);
-    const { data, error } = await supabase
-      .from("ad_lead_forms" as any)
+    const { data, error } = await (supabase
+      .from("ad_lead_forms" as any) as any)
       .insert({
         servidor_id: companyId,
         provider: "google",
@@ -113,8 +113,8 @@ export default function AdsCapture() {
     setWorkspaceId(""); setStageId(""); setTagsInput("");
     toast.success("Captação Google criada!");
     setCredsDialog({ key });
-    // Save revealed key so the list row can also copy it
-    if (data?.id) setRevealedKeys((prev) => ({ ...prev, [data.id]: key }));
+    const newId = (data as any)?.id as string | undefined;
+    if (newId) setRevealedKeys((prev) => ({ ...prev, [newId]: key }));
     fetchForms();
   };
 
