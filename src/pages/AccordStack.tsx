@@ -79,14 +79,17 @@ export default function AccordStack() {
       conversationStatus: c.conversation_status,
       assignedTo: c.assigned_to || undefined,
       unreadCount: unreadByContact[c.id] || 0,
+      isPinned: pinnedIds.has(c.id),
       _lastAt: c.last_message_at ? new Date(c.last_message_at).getTime() : 0,
     }))
     .sort((a, b) => {
-      // Unread conversations first, then most-recent
+      // Pinned first, then unread, then most-recent
+      if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
       if ((a.unreadCount > 0) !== (b.unreadCount > 0)) return a.unreadCount > 0 ? -1 : 1;
       return b._lastAt - a._lastAt;
     })
     .map(({ _lastAt, ...rest }) => rest);
+
 
   // Map InboxContact -> ChatContact
   const chatContact = selectedContact
