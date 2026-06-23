@@ -1090,6 +1090,16 @@ export default function Usuarios() {
           </Dialog>
         </TabsContent>
 
+        {canManageUsers && (
+          <TabsContent value="departamentos">
+            <DepartmentManagement
+              companyId={activeCompanyId || profile?.company_id || ""}
+              isAdmin={canManageUsers}
+            />
+          </TabsContent>
+        )}
+
+
         {showTenantTabs && (
           <TabsContent value="servidores">
             <ServidoresTab />
