@@ -1079,6 +1079,15 @@ export function InboxChat({
         </div>
         <div className="hidden sm:block"><StatusPill status={contact.conversationStatus} /></div>
         <div className="flex items-center gap-1 ml-1 sm:ml-2 flex-shrink-0">
+          {companyId && (
+            <CallButtons
+              contactId={contact.id}
+              phone={contact.phone}
+              contactName={contact.name}
+              companyId={companyId}
+              compact
+            />
+          )}
           <button className="hidden sm:flex w-8 h-8 rounded-lg border border-border/50 items-center justify-center text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all">
             <Search size={14} />
           </button>
