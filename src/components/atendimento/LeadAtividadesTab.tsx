@@ -558,7 +558,7 @@ export function LeadAtividadesTab({
       {showForm && (
         <Card>
           <CardContent className="p-4 space-y-4">
-            <h4 className="text-sm font-semibold">Criar atividade</h4>
+            <h4 className="text-sm font-semibold">{editingId ? "Editar atividade" : "Criar atividade"}</h4>
 
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
