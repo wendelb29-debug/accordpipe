@@ -74,6 +74,7 @@ export function LeadAtividadesTab({
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [subTab, setSubTab] = useState("planejadas");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Modal state
   const [modalTarget, setModalTarget] = useState<ActivityItem | null>(null);
