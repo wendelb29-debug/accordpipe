@@ -160,6 +160,12 @@ export default function Formularios() {
   }
 
   return (
+    <Tabs defaultValue="meus" className="space-y-6">
+      <TabsList>
+        <TabsTrigger value="meus">Meus Formulários</TabsTrigger>
+        <TabsTrigger value="ads">Captação de Ads</TabsTrigger>
+      </TabsList>
+      <TabsContent value="meus" className="space-y-6 mt-0">
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
