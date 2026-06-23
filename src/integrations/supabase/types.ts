@@ -7958,6 +7958,94 @@ export type Database = {
           },
         ]
       }
+      whatsapp_calls: {
+        Row: {
+          call_type: string
+          company_id: string
+          contact_id: string
+          contact_name: string | null
+          contact_phone: string
+          created_at: string
+          deleted_at: string | null
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          initiated_by_user_id: string | null
+          metadata: Json
+          notes: string | null
+          rejection_reason: string | null
+          started_at: string | null
+          status: string
+          uazapi_call_id: string | null
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          call_type: string
+          company_id: string
+          contact_id: string
+          contact_name?: string | null
+          contact_phone: string
+          created_at?: string
+          deleted_at?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          initiated_by_user_id?: string | null
+          metadata?: Json
+          notes?: string | null
+          rejection_reason?: string | null
+          started_at?: string | null
+          status?: string
+          uazapi_call_id?: string | null
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          call_type?: string
+          company_id?: string
+          contact_id?: string
+          contact_name?: string | null
+          contact_phone?: string
+          created_at?: string
+          deleted_at?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          initiated_by_user_id?: string | null
+          metadata?: Json
+          notes?: string | null
+          rejection_reason?: string | null
+          started_at?: string | null
+          status?: string
+          uazapi_call_id?: string | null
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_calls_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_calls_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_calls_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_contacts: {
         Row: {
           assigned_to: string | null
@@ -9065,6 +9153,19 @@ export type Database = {
         Args: { p_ip: string; p_token: string; p_user_agent: string }
         Returns: undefined
       }
+      register_whatsapp_call: {
+        Args: {
+          p_call_type: string
+          p_company_id: string
+          p_contact_id: string
+          p_name: string
+          p_phone: string
+          p_uazapi_call_id?: string
+          p_user_id: string
+          p_workspace_id: string
+        }
+        Returns: string
+      }
       reject_proposal_public: {
         Args: {
           p_ip: string
@@ -9088,6 +9189,15 @@ export type Database = {
       }
       sync_master_client_user_count: {
         Args: { _tenant_id: string }
+        Returns: undefined
+      }
+      update_whatsapp_call_status: {
+        Args: {
+          p_call_id: string
+          p_duration_seconds?: number
+          p_rejection_reason?: string
+          p_status: string
+        }
         Returns: undefined
       }
       user_can_access_workspace: {
