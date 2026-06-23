@@ -299,10 +299,12 @@ export function AccordAIChat() {
           }
         }
       }
-    } catch {
+    } catch (err) {
+      console.error("[AccordAI] erro:", err);
+      const msg = err instanceof Error ? err.message : String(err);
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "⚠️ Não foi possível conectar. Tente novamente em alguns segundos." },
+        { role: "assistant", content: `⚠️ Não foi possível conectar: ${msg}` },
       ]);
     } finally {
       setIsLoading(false);
