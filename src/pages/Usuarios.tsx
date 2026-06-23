@@ -44,6 +44,7 @@ import { AppRole, useAuth } from "@/contexts/AuthContext";
 import { PermissionsEditor } from "@/components/usuarios/PermissionsEditor";
 import { WorkspacePermissionsEditor } from "@/components/usuarios/WorkspacePermissionsEditor";
 import { InviteUserDialog } from "@/components/usuarios/InviteUserDialog";
+import { DepartmentManagement } from "@/components/atendimento/DepartmentManagement";
 
 interface UserWithRole {
   id: string;
