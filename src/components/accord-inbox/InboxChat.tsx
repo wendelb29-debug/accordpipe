@@ -771,6 +771,15 @@ export function InboxChat({
     currentUserId || undefined
   );
 
+  const {
+    isPending: attendancePending,
+    isInProgress: attendanceInProgress,
+    isAssignedToMe: attendanceAssignedToMe,
+    assumeMutation: assumeAttendanceMut,
+    releaseMutation: releaseAttendanceMut,
+  } = useContactStatus(contact?.id);
+  const attendanceLocked = attendancePending && !attendanceAssignedToMe;
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
