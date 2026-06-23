@@ -897,16 +897,31 @@ export function InboxChat({
   }, [contact?.id]);
 
   // On open conversation: jump instantly to bottom (no smooth, no page scroll)
+  // Also re-jump once messages finish loading for the newly opened contact,
+  // because the first effect fire may happen before messages arrive.
+  const initialScrollDoneRef = useRef(false);
   useEffect(() => {
     if (!contact?.id) return;
     if (prevContactIdRef.current !== contact.id) {
       prevContactIdRef.current = contact.id;
       prevMsgCountRef.current = messages.length;
-      requestAnimationFrame(() => scrollToBottom("auto"));
+      initialScrollDoneRef.current = false;
       isAtBottomRef.current = true;
       setHasNewBelow(false);
-      // Clear any reply-state carried from a previous conversation
       setReplyTo(null);
+    }
+    if (!initialScrollDoneRef.current) {
+      // Force jump to the latest message; retry a couple frames in case
+      // images/layout change the scrollHeight after first paint.
+      requestAnimationFrame(() => {
+        scrollToBottom("auto");
+        requestAnimationFrame(() => scrollToBottom("auto"));
+        setTimeout(() => scrollToBottom("auto"), 120);
+      });
+      if (messages.length > 0) {
+        initialScrollDoneRef.current = true;
+        prevMsgCountRef.current = messages.length;
+      }
     }
   }, [contact?.id, messages.length]);
 
