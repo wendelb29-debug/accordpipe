@@ -659,6 +659,9 @@ Deno.serve(async (req) => {
         tsa_authority: tsAuth,
         cert_valid_until: certValidUntil,
         timestamp_embedded: Boolean(tsaToken),
+        chain_count: chainCount,
+        signing_certificate_v2: true,
+        pades_profile: tsaToken ? "PAdES-B-T" : "PAdES-B-B",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
