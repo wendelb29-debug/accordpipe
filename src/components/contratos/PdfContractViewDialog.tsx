@@ -41,10 +41,26 @@ export function PdfContractViewDialog({ contract, signers: initialSigners, histo
     if (!currentContract?.id) return;
     setIcpLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("sign-pdf-icp", {
+      // Feature flag: VITE_USE_RESTPKI=true usa a integração Lacuna REST PKI Core;
+      // caso falhe com "restpki_not_configured", cai para o sign-pdf-icp legado.
+      const useRestPki = String(import.meta.env.VITE_USE_RESTPKI || "").toLowerCase() === "true";
+      const primaryFn = useRestPki ? "sign-pdf-icp-restpki" : "sign-pdf-icp";
+
+      let { data, error } = await supabase.functions.invoke(primaryFn, {
         body: { contract_id: currentContract.id },
       });
       if (error) throw error;
+
+      // Fallback automático caso o REST PKI não esteja configurado
+      if (useRestPki && data?.error === "restpki_not_configured") {
+        console.warn("[icp] REST PKI não configurado, usando sign-pdf-icp legado");
+        const r = await supabase.functions.invoke("sign-pdf-icp", {
+          body: { contract_id: currentContract.id },
+        });
+        if (r.error) throw r.error;
+        data = r.data;
+      }
+
       if (data?.error === "not_configured") {
         toast.error("Certificado A1 ICP-Brasil ainda não foi provisionado.");
         return;
