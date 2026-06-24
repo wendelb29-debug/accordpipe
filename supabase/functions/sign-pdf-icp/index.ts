@@ -323,7 +323,7 @@ async function buildCmsSignedDataWithTimestamp(
   privateKey: forge.pki.PrivateKey,
   cert: forge.pki.Certificate,
   chain: forge.pki.Certificate[]
-): Promise<{ cms: Uint8Array; tsaAuthority: string | null; tsaToken: Uint8Array | null; chainCount: number }> {
+): Promise<{ cms: Uint8Array; tsaAuthority: string | null; tsaToken: Uint8Array | null; chainCount: number; signaturePolicyApplied: boolean }> {
   const p7 = forge.pkcs7.createSignedData();
   p7.content = forge.util.createBuffer("");
 
