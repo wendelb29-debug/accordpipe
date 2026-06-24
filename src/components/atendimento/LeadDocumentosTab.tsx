@@ -1128,9 +1128,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
   };
 
   const copySignerLink = (token: string) => {
-    const baseUrl = window.location.origin;
-    const link = `${baseUrl}/assinar-documento/${token}`;
-    navigator.clipboard.writeText(link);
+    navigator.clipboard.writeText(getDocumentSigningLink(token));
     toast.success("Link copiado!");
   };
 
