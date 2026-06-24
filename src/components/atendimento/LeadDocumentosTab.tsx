@@ -1612,13 +1612,46 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
       <Dialog open={!!viewDoc} onOpenChange={() => setViewDoc(null)}>
         <DialogContent className="max-w-[95vw] w-[95vw] sm:max-w-[1200px] h-[95vh] p-4 flex flex-col gap-3">
           <DialogHeader className="shrink-0">
-            <DialogTitle className="text-base">
-              {viewDoc?.nome}
+            <DialogTitle className="text-base flex items-center gap-2 flex-wrap">
+              <span>{viewDoc?.nome}</span>
               {viewDoc?.status === "signed" && viewDoc?.signed_pdf_url && (
-                <Badge variant="outline" className="ml-2 text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                <Badge variant="outline" className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
                   PDF Assinado
                 </Badge>
               )}
+              {(() => {
+                const pdfToDownload = (viewDoc?.status === "signed" && viewDoc?.signed_pdf_url) ? viewDoc.signed_pdf_url : viewDoc?.pdf_url;
+                if (!pdfToDownload || !viewDoc) return null;
+                const safeName = (viewDoc.nome || "documento")
+                  .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                  .replace(/[^a-zA-Z0-9._-]+/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
+                const filename = `${safeName}${viewDoc.status === "signed" ? "_assinado" : ""}.pdf`;
+                return (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-auto h-8 gap-1"
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(pdfToDownload);
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                      } catch {
+                        toast.error("Erro ao baixar PDF");
+                      }
+                    }}
+                  >
+                    <Download className="h-3.5 w-3.5" /> Baixar PDF
+                  </Button>
+                );
+              })()}
             </DialogTitle>
           </DialogHeader>
           {(() => {
