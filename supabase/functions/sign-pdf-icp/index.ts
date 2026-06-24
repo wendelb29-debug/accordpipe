@@ -728,7 +728,7 @@ Deno.serve(async (req) => {
       target_id: contract.id,
       success: true,
       message: `Selo aplicado • CN=${signerCN}`,
-      metadata: { scope: usedCertScope, tsa_authority: tsAuth, cert_valid_until: certValidUntil, chain_count: chainCount, signing_certificate_v2: true },
+      metadata: { scope: usedCertScope, tsa_authority: tsAuth, cert_valid_until: certValidUntil, chain_count: chainCount, signing_certificate_v2: true, signature_policy_applied: signaturePolicyApplied, signature_policy_oid: signaturePolicyApplied ? (Deno.env.get("ICP_PA_OID") || null) : null },
     });
 
     return new Response(
