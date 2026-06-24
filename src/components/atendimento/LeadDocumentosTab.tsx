@@ -1877,7 +1877,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                     rejected: { label: "Recusado", cls: "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800" },
                   };
                   const st = statusMap[signer.status] || statusMap.pending;
-                  const link = `${window.location.origin}/assinar-documento/${signer.auth_token}`;
+                  const link = getDocumentSigningLink(signer.auth_token);
 
                   return (
                     <Card key={signer.id} className="border overflow-hidden">
