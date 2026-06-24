@@ -437,7 +437,7 @@ async function buildCmsSignedDataWithTimestamp(
   }
 
   const der = forge.asn1.toDer(cmsAsn1).getBytes();
-  return { cms: binaryStringToBytes(der), tsaAuthority, tsaToken: tsaTokenBytes, chainCount: seen.size };
+  return { cms: binaryStringToBytes(der), tsaAuthority, tsaToken: tsaTokenBytes, chainCount: seen.size, signaturePolicyApplied };
 }
 
 
