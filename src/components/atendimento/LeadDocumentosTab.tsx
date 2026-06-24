@@ -2054,7 +2054,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
                 {viewSignersList.map((s) => {
                   const sCfg = signerStatusConfig[s.status] || signerStatusConfig.pending;
-                  const link = `${window.location.origin}/assinar-documento/${s.auth_token}`;
+                  const link = getDocumentSigningLink(s.auth_token);
                   return (
                     <Card key={s.id} className="border">
                       <CardContent className="p-4 space-y-3">
