@@ -666,9 +666,17 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
-    console.error("[sign-pdf-icp] error:", err);
+    const msg = (err as Error).message || String(err);
+    console.error("[sign-pdf-icp] error:", msg);
+    const isTsaRequired = msg.startsWith("TSA_REQUIRED_BUT_FAILED");
     return new Response(
-      JSON.stringify({ ok: false, error: (err as Error).message }),
+      JSON.stringify({
+        ok: false,
+        error: isTsaRequired ? "tsa_required_but_failed" : msg,
+        message: isTsaRequired
+          ? `Carimbo do tempo é obrigatório (REQUIRE_TIMESTAMP=true) e a TSA falhou: ${msg.replace(/^TSA_REQUIRED_BUT_FAILED:\s*/, "")}`
+          : msg,
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
