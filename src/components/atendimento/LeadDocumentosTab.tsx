@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils";
 import type { CrmLead } from "@/hooks/useCrmLeads";
 import { toast } from "sonner";
 import { sendSignatureLinkViaWhatsApp } from "@/lib/sendSignatureWhatsApp";
+import { getDocumentSigningLink } from "@/lib/signing";
 
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -1030,9 +1031,24 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
     // === AUTO Email signature link delivery ===
     try {
-      const emailSigners = (insertedSigners || []).filter((s: any) => s.email);
+      // Re-fetch via admin RPC para garantir auth_token real gerado pelo banco
+      // (não confiar no payload do insert).
+      const { data: freshSigners } = await (supabase as any)
+        .rpc("get_document_signers_admin", { _document_id: signDoc.id });
+      const byId = new Map<string, any>(
+        ((freshSigners as any[]) || []).map((s) => [s.id, s]),
+      );
+
+      const emailSigners = ((insertedSigners as any[]) || []).filter((s: any) => s.email);
       for (const signer of emailSigners) {
-        const signingUrl = `${window.location.origin}/assinar-documento/${(signer as any).auth_token}`;
+        const fresh = byId.get((signer as any).id) || signer;
+        const authToken = (fresh as any)?.auth_token;
+        if (!authToken || typeof authToken !== "string" || authToken.length < 8) {
+          console.warn("[signature email auto-send] auth_token ausente para", (signer as any).nome_completo);
+          toast.warning(`Link não gerado para ${(signer as any).nome_completo}`);
+          continue;
+        }
+        const signingUrl = getDocumentSigningLink(authToken);
         try {
           const { error } = await supabase.functions.invoke("send-transactional-email", {
             body: {
@@ -1112,9 +1128,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
   };
 
   const copySignerLink = (token: string) => {
-    const baseUrl = window.location.origin;
-    const link = `${baseUrl}/assinar-documento/${token}`;
-    navigator.clipboard.writeText(link);
+    navigator.clipboard.writeText(getDocumentSigningLink(token));
     toast.success("Link copiado!");
   };
 
@@ -1863,7 +1877,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                     rejected: { label: "Recusado", cls: "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800" },
                   };
                   const st = statusMap[signer.status] || statusMap.pending;
-                  const link = `${window.location.origin}/assinar-documento/${signer.auth_token}`;
+                  const link = getDocumentSigningLink(signer.auth_token);
 
                   return (
                     <Card key={signer.id} className="border overflow-hidden">
@@ -2040,7 +2054,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
                 {viewSignersList.map((s) => {
                   const sCfg = signerStatusConfig[s.status] || signerStatusConfig.pending;
-                  const link = `${window.location.origin}/assinar-documento/${s.auth_token}`;
+                  const link = getDocumentSigningLink(s.auth_token);
                   return (
                     <Card key={s.id} className="border">
                       <CardContent className="p-4 space-y-3">
