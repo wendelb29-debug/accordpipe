@@ -93,7 +93,15 @@ function binaryStringToBytes(s: string): Uint8Array {
 }
 
 // Request RFC 3161 timestamp from TSA for given hash. Returns full TSA response.
+// Throws on failure when REQUIRE_TIMESTAMP=true; otherwise returns null and logs the issue.
 async function requestTimestamp(hashBytes: Uint8Array): Promise<{ token: Uint8Array; authority: string } | null> {
+  const failOrNull = (reason: string): null => {
+    console.warn(`[TSA] ${reason}`);
+    if (REQUIRE_TIMESTAMP) {
+      throw new Error(`TSA_REQUIRED_BUT_FAILED: ${reason}`);
+    }
+    return null;
+  };
   try {
     const messageImprint = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [
       forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [
@@ -117,12 +125,36 @@ async function requestTimestamp(hashBytes: Uint8Array): Promise<{ token: Uint8Ar
       headers: { "Content-Type": "application/timestamp-query" },
       body: reqBytes,
     });
-    if (!resp.ok) { console.warn(`[TSA] HTTP ${resp.status}`); return null; }
+
+    console.log(`[TSA] status=${resp.status} content-type=${resp.headers.get("content-type") || "?"}`);
+    if (!resp.ok) {
+      const bodyText = await resp.text().catch(() => "<no body>");
+      console.warn(`[TSA] response body (truncated):`, bodyText.slice(0, 500));
+      return failOrNull(`HTTP ${resp.status}`);
+    }
     const respBytes = new Uint8Array(await resp.arrayBuffer());
+    if (respBytes.byteLength === 0) {
+      return failOrNull("empty response body");
+    }
+
+    // Validate PKIStatusInfo: status 0 (granted) or 1 (grantedWithMods) are OK.
+    try {
+      const asn1 = forge.asn1.fromDer(bytesToBinaryString(respBytes));
+      const pkiStatusInfo = asn1.value?.[0];
+      const statusInteger = pkiStatusInfo?.value?.[0];
+      const statusVal = statusInteger ? statusInteger.value.charCodeAt(0) : -1;
+      if (statusVal !== 0 && statusVal !== 1) {
+        console.warn(`[TSA] PKIStatus=${statusVal} (rejected)`);
+        return failOrNull(`PKIStatus=${statusVal}`);
+      }
+    } catch (e) {
+      console.warn("[TSA] could not parse PKIStatusInfo:", e);
+    }
+
     return { token: respBytes, authority: new URL(TSA_URL).hostname };
   } catch (err) {
-    console.warn("[TSA] timestamp request failed:", err);
-    return null;
+    if (err instanceof Error && err.message.startsWith("TSA_REQUIRED_BUT_FAILED")) throw err;
+    return failOrNull(`request error: ${(err as Error)?.message || err}`);
   }
 }
 
