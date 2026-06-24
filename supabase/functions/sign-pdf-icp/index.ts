@@ -234,7 +234,78 @@ function buildSigningCertV2Attr(cert: forge.pki.Certificate): any {
   ]);
 }
 
-// DER SET OF requires its elements to be sorted by their encoded bytes.
+// Build the ETSI signature-policy-identifier signed attribute (RFC 5126 / ETSI TS 101 733).
+// Attribute ::= SEQUENCE { attrType OID(1.2.840.113549.1.9.16.2.15),
+//                          attrValues SET OF SignaturePolicy }
+// SignaturePolicy ::= CHOICE { signaturePolicyId SignaturePolicyId, signaturePolicyImplied NULL }
+// SignaturePolicyId ::= SEQUENCE {
+//   sigPolicyId           OBJECT IDENTIFIER,
+//   sigPolicyHash         OtherHashAlgAndValue,
+//   sigPolicyQualifiers   SEQUENCE SIZE (1..MAX) OF SigPolicyQualifierInfo OPTIONAL
+// }
+// OtherHashAlgAndValue ::= SEQUENCE { hashAlgorithm AlgorithmIdentifier, hashValue OCTET STRING }
+// SigPolicyQualifierInfo ::= SEQUENCE { sigPolicyQualifierId OID, sigQualifier ANY }
+// id-spq-ets-uri OID 1.2.840.113549.1.9.16.5.1 -> qualifier is IA5String (URI)
+//
+// Values come ONLY from env vars (ICP_PA_OID, ICP_PA_URI, ICP_PA_HASH_B64). If any is missing,
+// returns null and the policy attribute is NOT added (current behaviour preserved).
+function buildSignaturePolicyAttr(): any | null {
+  const oid = (Deno.env.get("ICP_PA_OID") || "").trim();
+  const uri = (Deno.env.get("ICP_PA_URI") || "").trim();
+  const hashB64 = (Deno.env.get("ICP_PA_HASH_B64") || "").trim();
+  if (!oid || !uri || !hashB64) {
+    return null;
+  }
+
+  let hashBin: string;
+  try {
+    hashBin = forge.util.decode64(hashB64);
+  } catch (_e) {
+    console.warn("[CMS] ICP_PA_HASH_B64 inválido (não é base64) — política ignorada");
+    return null;
+  }
+  if (hashBin.length !== 32) {
+    console.warn(`[CMS] ICP_PA_HASH_B64 deve ser SHA-256 (32 bytes); recebido ${hashBin.length} — política ignorada`);
+    return null;
+  }
+  // Validate OID shape (digits and dots only)
+  if (!/^\d+(\.\d+)+$/.test(oid)) {
+    console.warn(`[CMS] ICP_PA_OID inválido: ${oid} — política ignorada`);
+    return null;
+  }
+
+  const sigPolicyId = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.OID, false,
+    forge.asn1.oidToDer(oid).getBytes());
+
+  // OtherHashAlgAndValue { sha256, OCTET STRING }
+  const hashAlg = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [
+    forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.OID, false,
+      forge.asn1.oidToDer("2.16.840.1.101.3.4.2.1").getBytes()),
+    forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.NULL, false, ""),
+  ]);
+  const hashOctet = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.OCTETSTRING, false, hashBin);
+  const sigPolicyHash = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true,
+    [hashAlg, hashOctet]);
+
+  // SigPolicyQualifierInfo with id-spq-ets-uri
+  const qualifier = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [
+    forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.OID, false,
+      forge.asn1.oidToDer("1.2.840.113549.1.9.16.5.1").getBytes()),
+    forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.IA5STRING, false, uri),
+  ]);
+  const sigPolicyQualifiers = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true,
+    [qualifier]);
+
+  const signaturePolicyId = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true,
+    [sigPolicyId, sigPolicyHash, sigPolicyQualifiers]);
+
+  return forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [
+    forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.OID, false,
+      forge.asn1.oidToDer("1.2.840.113549.1.9.16.2.15").getBytes()),
+    forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SET, true, [signaturePolicyId]),
+  ]);
+}
+
 function sortSetOfDer(items: any[]): any[] {
   return items.slice().sort((a, b) => {
     const da = forge.asn1.toDer(a).getBytes();
