@@ -234,7 +234,78 @@ function buildSigningCertV2Attr(cert: forge.pki.Certificate): any {
   ]);
 }
 
-// DER SET OF requires its elements to be sorted by their encoded bytes.
+// Build the ETSI signature-policy-identifier signed attribute (RFC 5126 / ETSI TS 101 733).
+// Attribute ::= SEQUENCE { attrType OID(1.2.840.113549.1.9.16.2.15),
+//                          attrValues SET OF SignaturePolicy }
+// SignaturePolicy ::= CHOICE { signaturePolicyId SignaturePolicyId, signaturePolicyImplied NULL }
+// SignaturePolicyId ::= SEQUENCE {
+//   sigPolicyId           OBJECT IDENTIFIER,
+//   sigPolicyHash         OtherHashAlgAndValue,
+//   sigPolicyQualifiers   SEQUENCE SIZE (1..MAX) OF SigPolicyQualifierInfo OPTIONAL
+// }
+// OtherHashAlgAndValue ::= SEQUENCE { hashAlgorithm AlgorithmIdentifier, hashValue OCTET STRING }
+// SigPolicyQualifierInfo ::= SEQUENCE { sigPolicyQualifierId OID, sigQualifier ANY }
+// id-spq-ets-uri OID 1.2.840.113549.1.9.16.5.1 -> qualifier is IA5String (URI)
+//
+// Values come ONLY from env vars (ICP_PA_OID, ICP_PA_URI, ICP_PA_HASH_B64). If any is missing,
+// returns null and the policy attribute is NOT added (current behaviour preserved).
+function buildSignaturePolicyAttr(): any | null {
+  const oid = (Deno.env.get("ICP_PA_OID") || "").trim();
+  const uri = (Deno.env.get("ICP_PA_URI") || "").trim();
+  const hashB64 = (Deno.env.get("ICP_PA_HASH_B64") || "").trim();
+  if (!oid || !uri || !hashB64) {
+    return null;
+  }
+
+  let hashBin: string;
+  try {
+    hashBin = forge.util.decode64(hashB64);
+  } catch (_e) {
+    console.warn("[CMS] ICP_PA_HASH_B64 inválido (não é base64) — política ignorada");
+    return null;
+  }
+  if (hashBin.length !== 32) {
+    console.warn(`[CMS] ICP_PA_HASH_B64 deve ser SHA-256 (32 bytes); recebido ${hashBin.length} — política ignorada`);
+    return null;
+  }
+  // Validate OID shape (digits and dots only)
+  if (!/^\d+(\.\d+)+$/.test(oid)) {
+    console.warn(`[CMS] ICP_PA_OID inválido: ${oid} — política ignorada`);
+    return null;
+  }
+
+  const sigPolicyId = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.OID, false,
+    forge.asn1.oidToDer(oid).getBytes());
+
+  // OtherHashAlgAndValue { sha256, OCTET STRING }
+  const hashAlg = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [
+    forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.OID, false,
+      forge.asn1.oidToDer("2.16.840.1.101.3.4.2.1").getBytes()),
+    forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.NULL, false, ""),
+  ]);
+  const hashOctet = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.OCTETSTRING, false, hashBin);
+  const sigPolicyHash = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true,
+    [hashAlg, hashOctet]);
+
+  // SigPolicyQualifierInfo with id-spq-ets-uri
+  const qualifier = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [
+    forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.OID, false,
+      forge.asn1.oidToDer("1.2.840.113549.1.9.16.5.1").getBytes()),
+    forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.IA5STRING, false, uri),
+  ]);
+  const sigPolicyQualifiers = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true,
+    [qualifier]);
+
+  const signaturePolicyId = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true,
+    [sigPolicyId, sigPolicyHash, sigPolicyQualifiers]);
+
+  return forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [
+    forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.OID, false,
+      forge.asn1.oidToDer("1.2.840.113549.1.9.16.2.15").getBytes()),
+    forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SET, true, [signaturePolicyId]),
+  ]);
+}
+
 function sortSetOfDer(items: any[]): any[] {
   return items.slice().sort((a, b) => {
     const da = forge.asn1.toDer(a).getBytes();
@@ -252,7 +323,7 @@ async function buildCmsSignedDataWithTimestamp(
   privateKey: forge.pki.PrivateKey,
   cert: forge.pki.Certificate,
   chain: forge.pki.Certificate[]
-): Promise<{ cms: Uint8Array; tsaAuthority: string | null; tsaToken: Uint8Array | null; chainCount: number }> {
+): Promise<{ cms: Uint8Array; tsaAuthority: string | null; tsaToken: Uint8Array | null; chainCount: number; signaturePolicyApplied: boolean }> {
   const p7 = forge.pkcs7.createSignedData();
   p7.content = forge.util.createBuffer("");
 
@@ -305,6 +376,16 @@ async function buildCmsSignedDataWithTimestamp(
   // Inject signing-certificate-v2
   signedAttrsImplicit.value.push(buildSigningCertV2Attr(cert));
 
+  // Inject signature-policy-identifier (only when all ICP_PA_* env vars are set)
+  const policyAttr = buildSignaturePolicyAttr();
+  const signaturePolicyApplied = !!policyAttr;
+  if (policyAttr) {
+    signedAttrsImplicit.value.push(policyAttr);
+    console.log("[CMS] signature-policy-identifier ICP-Brasil injected");
+  } else {
+    console.log("[CMS] signature-policy-identifier ICP-Brasil NOT applied (env not configured)");
+  }
+
   // DER requires SET OF elements sorted by encoded bytes — apply to both the [0] IMPLICIT
   // (which gets embedded as-is) and to the universal SET we hash for signing.
   const sorted = sortSetOfDer(signedAttrsImplicit.value);
@@ -356,7 +437,7 @@ async function buildCmsSignedDataWithTimestamp(
   }
 
   const der = forge.asn1.toDer(cmsAsn1).getBytes();
-  return { cms: binaryStringToBytes(der), tsaAuthority, tsaToken: tsaTokenBytes, chainCount: seen.size };
+  return { cms: binaryStringToBytes(der), tsaAuthority, tsaToken: tsaTokenBytes, chainCount: seen.size, signaturePolicyApplied };
 }
 
 
@@ -369,7 +450,7 @@ async function prepareSignedPdf(pdfBytes: Uint8Array): Promise<{
 }> {
   const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
 
-  const signatureContentsLength = 65536; // 32KB hex (16KB raw) — acomoda CMS com cadeia ICP completa + signing-certificate-v2 + TimeStampToken TSA
+  const signatureContentsLength = 81920; // 40KB hex (20KB raw) — acomoda CMS com cadeia ICP completa + signing-certificate-v2 + signature-policy-identifier + TimeStampToken TSA
   const placeholderHex = "0".repeat(signatureContentsLength);
 
   const byteRangePlaceholder = "/ByteRange [0 ********** ********** **********]";
@@ -592,8 +673,8 @@ Deno.serve(async (req) => {
     const signedContent = concatRanges(pdfWithBR, signedRanges);
     const contentDigest = await sha256(signedContent);
 
-    // 7) Build CMS detached signature WITH signing-certificate-v2 + full chain + RFC 3161 timestamp (PAdES-B-T)
-    const { cms: cmsBytes, tsaAuthority, tsaToken, chainCount } =
+    // 7) Build CMS detached signature WITH signing-certificate-v2 + signature-policy-identifier (ICP-Brasil, se configurada) + full chain + RFC 3161 timestamp (PAdES-B-T)
+    const { cms: cmsBytes, tsaAuthority, tsaToken, chainCount, signaturePolicyApplied } =
       await buildCmsSignedDataWithTimestamp(contentDigest, privateKey, cert, chain);
 
     // 8) Convert CMS to hex and inject into placeholder
@@ -647,7 +728,7 @@ Deno.serve(async (req) => {
       target_id: contract.id,
       success: true,
       message: `Selo aplicado • CN=${signerCN}`,
-      metadata: { scope: usedCertScope, tsa_authority: tsAuth, cert_valid_until: certValidUntil, chain_count: chainCount, signing_certificate_v2: true },
+      metadata: { scope: usedCertScope, tsa_authority: tsAuth, cert_valid_until: certValidUntil, chain_count: chainCount, signing_certificate_v2: true, signature_policy_applied: signaturePolicyApplied, signature_policy_oid: signaturePolicyApplied ? (Deno.env.get("ICP_PA_OID") || null) : null },
     });
 
     return new Response(
@@ -662,6 +743,8 @@ Deno.serve(async (req) => {
         chain_count: chainCount,
         signing_certificate_v2: true,
         pades_profile: tsaToken ? "PAdES-B-T" : "PAdES-B-B",
+        signature_policy_applied: signaturePolicyApplied,
+        signature_policy_oid: signaturePolicyApplied ? (Deno.env.get("ICP_PA_OID") || null) : null,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
