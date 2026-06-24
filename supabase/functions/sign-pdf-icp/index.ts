@@ -376,6 +376,16 @@ async function buildCmsSignedDataWithTimestamp(
   // Inject signing-certificate-v2
   signedAttrsImplicit.value.push(buildSigningCertV2Attr(cert));
 
+  // Inject signature-policy-identifier (only when all ICP_PA_* env vars are set)
+  const policyAttr = buildSignaturePolicyAttr();
+  const signaturePolicyApplied = !!policyAttr;
+  if (policyAttr) {
+    signedAttrsImplicit.value.push(policyAttr);
+    console.log("[CMS] signature-policy-identifier ICP-Brasil injected");
+  } else {
+    console.log("[CMS] signature-policy-identifier ICP-Brasil NOT applied (env not configured)");
+  }
+
   // DER requires SET OF elements sorted by encoded bytes — apply to both the [0] IMPLICIT
   // (which gets embedded as-is) and to the universal SET we hash for signing.
   const sorted = sortSetOfDer(signedAttrsImplicit.value);
