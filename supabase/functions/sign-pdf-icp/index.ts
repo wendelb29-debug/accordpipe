@@ -673,8 +673,8 @@ Deno.serve(async (req) => {
     const signedContent = concatRanges(pdfWithBR, signedRanges);
     const contentDigest = await sha256(signedContent);
 
-    // 7) Build CMS detached signature WITH signing-certificate-v2 + full chain + RFC 3161 timestamp (PAdES-B-T)
-    const { cms: cmsBytes, tsaAuthority, tsaToken, chainCount } =
+    // 7) Build CMS detached signature WITH signing-certificate-v2 + signature-policy-identifier (ICP-Brasil, se configurada) + full chain + RFC 3161 timestamp (PAdES-B-T)
+    const { cms: cmsBytes, tsaAuthority, tsaToken, chainCount, signaturePolicyApplied } =
       await buildCmsSignedDataWithTimestamp(contentDigest, privateKey, cert, chain);
 
     // 8) Convert CMS to hex and inject into placeholder
