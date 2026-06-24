@@ -36,7 +36,7 @@ export const template = {
   previewData: {
     signerName: 'João Silva',
     contractName: 'Contrato de Prestação de Serviços',
-    signingUrl: 'https://accordpipe.com.br/assinar/exemplo-token',
+    signingUrl: 'https://accordpipe.com.br/assinar-documento/exemplo-token',
     senderName: 'Accord',
   },
 } satisfies TemplateEntry
