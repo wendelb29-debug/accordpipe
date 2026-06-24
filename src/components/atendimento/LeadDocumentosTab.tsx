@@ -1031,9 +1031,24 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
     // === AUTO Email signature link delivery ===
     try {
-      const emailSigners = (insertedSigners || []).filter((s: any) => s.email);
+      // Re-fetch via admin RPC para garantir auth_token real gerado pelo banco
+      // (não confiar no payload do insert).
+      const { data: freshSigners } = await (supabase as any)
+        .rpc("get_document_signers_admin", { _document_id: signDoc.id });
+      const byId = new Map<string, any>(
+        ((freshSigners as any[]) || []).map((s) => [s.id, s]),
+      );
+
+      const emailSigners = ((insertedSigners as any[]) || []).filter((s: any) => s.email);
       for (const signer of emailSigners) {
-        const signingUrl = `${window.location.origin}/assinar-documento/${(signer as any).auth_token}`;
+        const fresh = byId.get((signer as any).id) || signer;
+        const authToken = (fresh as any)?.auth_token;
+        if (!authToken || typeof authToken !== "string" || authToken.length < 8) {
+          console.warn("[signature email auto-send] auth_token ausente para", (signer as any).nome_completo);
+          toast.warning(`Link não gerado para ${(signer as any).nome_completo}`);
+          continue;
+        }
+        const signingUrl = getDocumentSigningLink(authToken);
         try {
           const { error } = await supabase.functions.invoke("send-transactional-email", {
             body: {
