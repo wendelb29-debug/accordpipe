@@ -743,6 +743,8 @@ Deno.serve(async (req) => {
         chain_count: chainCount,
         signing_certificate_v2: true,
         pades_profile: tsaToken ? "PAdES-B-T" : "PAdES-B-B",
+        signature_policy_applied: signaturePolicyApplied,
+        signature_policy_oid: signaturePolicyApplied ? (Deno.env.get("ICP_PA_OID") || null) : null,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
