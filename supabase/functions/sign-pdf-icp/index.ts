@@ -25,6 +25,7 @@ const corsHeaders = {
 };
 
 const TSA_URL = Deno.env.get("ACCORD_TSA_URL") || "https://timestamp.iti.gov.br";
+const REQUIRE_TIMESTAMP = (Deno.env.get("REQUIRE_TIMESTAMP") || "false").toLowerCase() === "true";
 
 interface ContractRow {
   id: string;
