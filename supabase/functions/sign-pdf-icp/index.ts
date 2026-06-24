@@ -647,7 +647,7 @@ Deno.serve(async (req) => {
       target_id: contract.id,
       success: true,
       message: `Selo aplicado • CN=${signerCN}`,
-      metadata: { scope: usedCertScope, tsa_authority: tsAuth, cert_valid_until: certValidUntil },
+      metadata: { scope: usedCertScope, tsa_authority: tsAuth, cert_valid_until: certValidUntil, chain_count: chainCount, signing_certificate_v2: true },
     });
 
     return new Response(
