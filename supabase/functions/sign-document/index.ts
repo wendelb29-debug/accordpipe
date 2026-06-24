@@ -299,25 +299,66 @@ async function buildAuditPages(
   validationCode: string, docHash: string, publicUrl: string,
   P: BrandPalette,
 ) {
-  // Pre-fetch and embed selfies for each signer
+  // Pre-fetch and embed selfies for each signer (robusto: tenta via service role no bucket "signatures", depois URL assinada)
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+  function extractSignaturesPath(url: string): string | null {
+    try {
+      const clean = url.split("?")[0];
+      // Suporta /object/sign/signatures/... e /object/public/signatures/... e /object/signatures/...
+      const markers = ["/object/sign/signatures/", "/object/public/signatures/", "/object/signatures/"];
+      for (const m of markers) {
+        const idx = clean.indexOf(m);
+        if (idx >= 0) return decodeURIComponent(clean.slice(idx + m.length));
+      }
+      return null;
+    } catch { return null; }
+  }
   const signerSelfies: (any | null)[] = [];
   for (const s of signersList) {
     if (!s?.selfie_url) {
       signerSelfies.push(null);
       continue;
     }
-    try {
-      const r = await fetch(s.selfie_url);
-      if (!r.ok) throw new Error(`status ${r.status}`);
-      const buf = new Uint8Array(await r.arrayBuffer());
-      let img: any = null;
-      try { img = await pdfDoc.embedJpg(buf); }
-      catch { try { img = await pdfDoc.embedPng(buf); } catch { img = null; } }
-      signerSelfies.push(img);
-    } catch (e) {
-      console.error("Failed to embed selfie", e);
-      signerSelfies.push(null);
+    let buf: Uint8Array | null = null;
+    const path = extractSignaturesPath(s.selfie_url);
+    if (path) {
+      try {
+        console.log("[selfie] tentando download via service role:", path);
+        const { data: blob, error: dlErr } = await supabaseAdmin.storage.from("signatures").download(path);
+        if (dlErr) throw dlErr;
+        if (blob) {
+          buf = new Uint8Array(await blob.arrayBuffer());
+          console.log("[selfie] download via path OK, bytes=", buf.length);
+        }
+      } catch (e) {
+        console.warn("[selfie] download por path falhou, caindo para fetch:", (e as any)?.message || e);
+      }
+    } else {
+      console.warn("[selfie] não foi possível extrair path do selfie_url, usando fetch direto");
     }
+    if (!buf) {
+      try {
+        const r = await fetch(s.selfie_url);
+        if (!r.ok) throw new Error(`status ${r.status}`);
+        buf = new Uint8Array(await r.arrayBuffer());
+        console.log("[selfie] fetch direto OK, bytes=", buf.length);
+      } catch (e) {
+        console.error("[selfie] fetch direto falhou:", (e as any)?.message || e);
+      }
+    }
+    let img: any = null;
+    if (buf) {
+      try { img = await pdfDoc.embedJpg(buf); console.log("[selfie] embedJpg OK"); }
+      catch (e1) {
+        console.warn("[selfie] embedJpg falhou, tentando PNG:", (e1 as any)?.message || e1);
+        try { img = await pdfDoc.embedPng(buf); console.log("[selfie] embedPng OK"); }
+        catch (e2) { console.error("[selfie] embedJpg e embedPng falharam:", (e2 as any)?.message || e2); img = null; }
+      }
+    }
+    signerSelfies.push(img);
   }
 
   // ICP-Brasil seal drawing helper (circular badge)
