@@ -172,16 +172,104 @@ function extractTsaTokenAsn1(respBytes: Uint8Array): any | null {
 }
 
 // Build CAdES (CMS SignedData) com timestamp embutido como unsignedAttribute (PAdES-B-T).
+// Build the ESS signing-certificate-v2 attribute (RFC 5035) for the signing cert.
+// Attribute ::= SEQUENCE { attrType OID(1.2.840.113549.1.9.16.2.47),
+//                          attrValues SET OF SigningCertificateV2 }
+// SigningCertificateV2 ::= SEQUENCE { certs SEQUENCE OF ESSCertIDv2 }
+// ESSCertIDv2 ::= SEQUENCE {
+//   hashAlgorithm AlgorithmIdentifier DEFAULT id-sha256,
+//   certHash OCTET STRING,
+//   issuerSerial IssuerSerial OPTIONAL
+// }
+// IssuerSerial ::= SEQUENCE { issuer GeneralNames, serialNumber INTEGER }
+function buildSigningCertV2Attr(cert: forge.pki.Certificate): any {
+  const certDer = forge.asn1.toDer(forge.pki.certificateToAsn1(cert)).getBytes();
+  const md = forge.md.sha256.create();
+  md.update(certDer);
+  const certHash = md.digest().getBytes();
+
+  // hashAlgorithm = sha256 (explicit, with NULL params for max compatibility)
+  const hashAlg = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [
+    forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.OID, false,
+      forge.asn1.oidToDer("2.16.840.1.101.3.4.2.1").getBytes()),
+    forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.NULL, false, ""),
+  ]);
+
+  const certHashOctet = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.OCTETSTRING, false, certHash);
+
+  // issuer GeneralNames = SEQUENCE OF GeneralName; directoryName = [4] EXPLICIT Name
+  const issuerName = forge.pki.distinguishedNameToAsn1
+    ? (forge.pki as any).distinguishedNameToAsn1(cert.issuer)
+    : null;
+  const issuerAsn1 = issuerName
+    || forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true,
+        (cert.issuer.attributes || []).map((a: any) =>
+          forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SET, true, [
+            forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [
+              forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.OID, false,
+                forge.asn1.oidToDer(a.type).getBytes()),
+              forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.UTF8, false, a.value),
+            ]),
+          ])
+        ));
+
+  const generalName = forge.asn1.create(forge.asn1.Class.CONTEXT_SPECIFIC, 4, true, [issuerAsn1]);
+  const generalNames = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [generalName]);
+
+  const serialBytes = forge.util.hexToBytes(cert.serialNumber);
+  const serialInteger = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.INTEGER, false, serialBytes);
+
+  const issuerSerial = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true,
+    [generalNames, serialInteger]);
+
+  const essCertIdV2 = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true,
+    [hashAlg, certHashOctet, issuerSerial]);
+  const certsSeq = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [essCertIdV2]);
+  const signingCertV2 = forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [certsSeq]);
+
+  return forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [
+    forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.OID, false,
+      forge.asn1.oidToDer("1.2.840.113549.1.9.16.2.47").getBytes()),
+    forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SET, true, [signingCertV2]),
+  ]);
+}
+
+// DER SET OF requires its elements to be sorted by their encoded bytes.
+function sortSetOfDer(items: any[]): any[] {
+  return items.slice().sort((a, b) => {
+    const da = forge.asn1.toDer(a).getBytes();
+    const db = forge.asn1.toDer(b).getBytes();
+    if (da < db) return -1;
+    if (da > db) return 1;
+    return 0;
+  });
+}
+
+// Build CAdES (CMS SignedData) with signing-certificate-v2 signed attribute, full cert chain,
+// and an embedded RFC 3161 timestamp as an unsigned attribute (PAdES-B-T).
 async function buildCmsSignedDataWithTimestamp(
   contentHash: Uint8Array,
   privateKey: forge.pki.PrivateKey,
   cert: forge.pki.Certificate,
   chain: forge.pki.Certificate[]
-): Promise<{ cms: Uint8Array; tsaAuthority: string | null; tsaToken: Uint8Array | null }> {
+): Promise<{ cms: Uint8Array; tsaAuthority: string | null; tsaToken: Uint8Array | null; chainCount: number }> {
   const p7 = forge.pkcs7.createSignedData();
   p7.content = forge.util.createBuffer("");
-  p7.addCertificate(cert);
-  for (const c of chain) if (c !== cert) p7.addCertificate(c);
+
+  // Embed full chain: signing cert + every other cert extracted from the PFX (dedupe by SHA-256(DER)).
+  const seen = new Set<string>();
+  const addCert = (c: forge.pki.Certificate) => {
+    const der = forge.asn1.toDer(forge.pki.certificateToAsn1(c)).getBytes();
+    const md = forge.md.sha256.create();
+    md.update(der);
+    const fp = md.digest().toHex();
+    if (seen.has(fp)) return;
+    seen.add(fp);
+    p7.addCertificate(c);
+  };
+  addCert(cert);
+  for (const c of chain) addCert(c);
+  console.log(`[CMS] embedded certs: ${seen.size}`);
 
   const digestHex = forge.util.bytesToHex(forge.util.binary.raw.encode(contentHash));
 
@@ -198,53 +286,77 @@ async function buildCmsSignedDataWithTimestamp(
 
   p7.sign({ detached: true });
 
-  // signatureValue está em p7.signers[0].signature (binary string)
-  const sigBin: string = (p7 as any).signers?.[0]?.signature ?? "";
+  // Serialize and patch the SignerInfo: add signing-certificate-v2 to signedAttrs and re-sign.
+  const cmsAsn1 = p7.toAsn1();
+  // ContentInfo -> [0] EXPLICIT -> SignedData -> ... -> signerInfos (SET, last child of SignedData)
+  const signedData = cmsAsn1.value[1].value[0];
+  const signerInfos = signedData.value[signedData.value.length - 1];
+  const signerInfo = signerInfos.value[0];
+
+  // SignerInfo layout (with signedAttrs present):
+  //  [0] version, [1] sid, [2] digestAlgorithm,
+  //  [3] [0] IMPLICIT signedAttrs,
+  //  [4] signatureAlgorithm, [5] signature OCTET STRING, [6..] [1] IMPLICIT unsignedAttrs
+  const signedAttrsImplicit = signerInfo.value[3];
+  if (!signedAttrsImplicit || signedAttrsImplicit.tagClass !== forge.asn1.Class.CONTEXT_SPECIFIC) {
+    throw new Error("Não foi possível localizar signedAttrs [0] no SignerInfo");
+  }
+
+  // Inject signing-certificate-v2
+  signedAttrsImplicit.value.push(buildSigningCertV2Attr(cert));
+
+  // DER requires SET OF elements sorted by encoded bytes — apply to both the [0] IMPLICIT
+  // (which gets embedded as-is) and to the universal SET we hash for signing.
+  const sorted = sortSetOfDer(signedAttrsImplicit.value);
+  signedAttrsImplicit.value = sorted;
+
+  // For the signature digest, the SET must be encoded with universal tag 0x31 (SET OF), per CMS.
+  const setForDigest = forge.asn1.create(
+    forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SET, true, sorted
+  );
+  const setDer = forge.asn1.toDer(setForDigest).getBytes();
+
+  const md = forge.md.sha256.create();
+  md.update(setDer);
+  const newSignature = (privateKey as forge.pki.rsa.PrivateKey).sign(md);
+
+  // Replace the signature OCTET STRING value in place.
+  signerInfo.value[5] = forge.asn1.create(
+    forge.asn1.Class.UNIVERSAL, forge.asn1.Type.OCTETSTRING, false, newSignature
+  );
+
+  // Now request the RFC 3161 timestamp over the FINAL signature (after re-sign).
   let tsaAuthority: string | null = null;
   let tsaTokenBytes: Uint8Array | null = null;
   let tsaTokenAsn1: any = null;
 
-  if (sigBin) {
-    const sigBytes = binaryStringToBytes(sigBin);
-    const sigHash = new Uint8Array(await crypto.subtle.digest("SHA-256", sigBytes));
-    const ts = await requestTimestamp(sigHash);
-    if (ts) {
-      tsaAuthority = ts.authority;
-      tsaTokenBytes = ts.token;
-      tsaTokenAsn1 = extractTsaTokenAsn1(ts.token);
-    }
+  const sigBytes = binaryStringToBytes(newSignature);
+  const sigHash = new Uint8Array(await crypto.subtle.digest("SHA-256", sigBytes));
+  const ts = await requestTimestamp(sigHash); // may throw if REQUIRE_TIMESTAMP=true
+  if (ts) {
+    tsaAuthority = ts.authority;
+    tsaTokenBytes = ts.token;
+    tsaTokenAsn1 = extractTsaTokenAsn1(ts.token);
   }
 
-  // Serializa o CMS e injeta unsignedAttrs no SignerInfo, se houver token
-  const cmsAsn1 = p7.toAsn1();
   if (tsaTokenAsn1) {
-    try {
-      // ContentInfo -> [0] EXPLICIT -> SignedData -> ... -> signerInfos (SET, último filho)
-      const signedData = cmsAsn1.value[1].value[0];
-      const signerInfos = signedData.value[signedData.value.length - 1];
-      const signerInfo = signerInfos.value[0];
-
-      // [1] IMPLICIT UnsignedAttributes ::= SET OF Attribute
-      // Attribute ::= SEQUENCE { attrType OID, attrValues SET OF AttributeValue }
-      // signatureTimeStampToken OID: 1.2.840.113549.1.9.16.2.14
-      const unsignedAttrs = forge.asn1.create(
-        forge.asn1.Class.CONTEXT_SPECIFIC, 1, true,
-        [
-          forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [
-            forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.OID, false,
-              forge.asn1.oidToDer("1.2.840.113549.1.9.16.2.14").getBytes()),
-            forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SET, true, [tsaTokenAsn1]),
-          ]),
-        ]
-      );
-      signerInfo.value.push(unsignedAttrs);
-    } catch (e) {
-      console.warn("[CMS] falha ao injetar timestamp unsignedAttr:", e);
-    }
+    // [1] IMPLICIT UnsignedAttributes ::= SET OF Attribute
+    // signatureTimeStampToken OID: 1.2.840.113549.1.9.16.2.14
+    const unsignedAttrs = forge.asn1.create(
+      forge.asn1.Class.CONTEXT_SPECIFIC, 1, true,
+      [
+        forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SEQUENCE, true, [
+          forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.OID, false,
+            forge.asn1.oidToDer("1.2.840.113549.1.9.16.2.14").getBytes()),
+          forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.SET, true, [tsaTokenAsn1]),
+        ]),
+      ]
+    );
+    signerInfo.value.push(unsignedAttrs);
   }
 
   const der = forge.asn1.toDer(cmsAsn1).getBytes();
-  return { cms: binaryStringToBytes(der), tsaAuthority, tsaToken: tsaTokenBytes };
+  return { cms: binaryStringToBytes(der), tsaAuthority, tsaToken: tsaTokenBytes, chainCount: seen.size };
 }
 
 
