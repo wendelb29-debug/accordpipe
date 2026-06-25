@@ -55,13 +55,20 @@ export function AsaasIntegrationTab({ companyId }: Props) {
     try {
       const { data } = await supabase
         .from("tenant_fintech_integrations")
-        .select("*")
+        .select("id, tenant_id, provider, environment, api_key_masked, webhook_url, webhook_remote_id, webhook_enabled, connection_status, last_connection_check_at, last_connection_error, last_webhook_event, last_webhook_received_at")
         .eq("tenant_id", companyId)
         .eq("provider", "asaas")
         .maybeSingle();
-      setIntegration(data as any);
       if (data) {
+        // webhook_auth_token is column-restricted; fetch via SECURITY DEFINER RPC.
+        const { data: tokenData } = await supabase.rpc("get_tenant_fintech_webhook_token" as any, {
+          _tenant_id: companyId,
+          _provider: "asaas",
+        });
+        setIntegration({ ...(data as any), webhook_auth_token: (tokenData as string) ?? null });
         setEnvironment((data as any).environment || "sandbox");
+      } else {
+        setIntegration(null);
       }
     } catch (err) {
       console.error(err);
