@@ -9565,6 +9565,10 @@ export type Database = {
           workspace_id: string
         }[]
       }
+      get_tenant_fintech_webhook_token: {
+        Args: { _provider?: string; _tenant_id: string }
+        Returns: string
+      }
       get_tenant_members: {
         Args: { _tenant_id: string }
         Returns: {
