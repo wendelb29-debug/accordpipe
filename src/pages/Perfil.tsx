@@ -364,6 +364,49 @@ export default function Perfil() {
           </Card>
         </div>
       </div>
+
+      {/* Crop dialog */}
+      <Dialog open={!!cropSrc} onOpenChange={(o) => { if (!o && !uploading) handleCancelCrop(); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ajustar foto</DialogTitle>
+          </DialogHeader>
+          <div className="relative w-full h-72 bg-muted rounded-md overflow-hidden">
+            {cropSrc && (
+              <Cropper
+                image={cropSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="round"
+                showGrid={false}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+              />
+            )}
+          </div>
+          <div className="space-y-2 pt-2">
+            <Label className="text-xs text-muted-foreground">Zoom</Label>
+            <Slider
+              value={[zoom]}
+              min={1}
+              max={3}
+              step={0.01}
+              onValueChange={(v) => setZoom(v[0])}
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={handleCancelCrop} disabled={uploading}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveCroppedPhoto} disabled={uploading || !croppedAreaPixels} className="gap-2">
+              {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
+              Salvar foto
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
