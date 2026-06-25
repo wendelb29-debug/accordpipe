@@ -679,10 +679,19 @@ function PostCard({
 }) {
   const liked = post.reactions.some(r => r.byMe);
   const isAuthor = !!currentUserId && currentUserId === post.author.user_id;
+  const navigate = useNavigate();
+  const openAuthor = () => {
+    if (post.author?.user_id) navigate(`/usuario/${post.author.user_id}`);
+  };
   return (
     <div className={`afp-post-card${post.pinned ? " afp-post-card-pinned" : ""}${post.post_type === "anuncio" ? " afp-post-card-anuncio" : ""}`} id={`afp-post-${post.id}`}>
       <div className="afp-post-header">
-        <div className="afp-av-ring" style={{ background: gradientFor(post.author.user_id) }}>
+        <div
+          className="afp-av-ring"
+          style={{ background: gradientFor(post.author.user_id), cursor: "pointer" }}
+          onClick={openAuthor}
+          title={post.author.name || "Ver perfil"}
+        >
           <div className="afp-av-inner">
             <div className="afp-av-pic" style={{ background: gradientFor(post.author.user_id) }}>
               <AvatarPic url={post.author.avatar_url} name={post.author.name} radius={99} />
@@ -691,7 +700,13 @@ function PostCard({
         </div>
         <div className="afp-post-author-info">
           <div className="afp-post-author-line1">
-            {post.author.name || "Colega"}
+            <span
+              onClick={openAuthor}
+              style={{ cursor: "pointer" }}
+              className="hover:underline"
+            >
+              {post.author.name || "Colega"}
+            </span>
           </div>
           <div className="afp-post-author-line2">
             <span>{relativeTime(post.created_at)}</span>
