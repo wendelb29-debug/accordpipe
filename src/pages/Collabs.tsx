@@ -852,7 +852,7 @@ export default function Collabs() {
           color: meta.color,
           created_by: user.id,
         })
-        .select()
+        .select("id")
         .single();
       if (error) throw error;
       // Add creator as owner + selected members
