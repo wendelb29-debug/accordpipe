@@ -53,6 +53,7 @@ export function Header() {
   const { handleBack } = useBackNavigation();
   const [currentTheme, setCurrentTheme] = useState(() => document.documentElement.classList.contains("dark") ? "dark" : "light");
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
@@ -173,9 +174,16 @@ export function Header() {
                   )}
                 </div>
               ) : null}
-              <div className="flex h-9 w-9 sm:h-8 sm:w-8 items-center justify-center rounded-lg overflow-hidden" style={{ background: 'linear-gradient(135deg, #2563EB, #7A3FF2)' }}>
-                {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
+              <div className="flex h-9 w-9 sm:h-8 sm:w-8 items-center justify-center rounded-lg overflow-hidden text-[11px] font-semibold text-primary-foreground" style={{ background: 'linear-gradient(135deg, #2563EB, #7A3FF2)' }}>
+                {profile?.avatar_url && !avatarFailed ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt="Avatar"
+                    className="h-full w-full object-cover"
+                    onError={() => setAvatarFailed(true)}
+                  />
+                ) : profile?.name ? (
+                  <span>{profile.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}</span>
                 ) : (
                   <User className="h-4 w-4 text-primary-foreground" />
                 )}
