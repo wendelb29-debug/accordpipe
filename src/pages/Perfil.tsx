@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   User, Camera, Building2, Mail, Shield, Calendar, Loader2, AlertTriangle,
   Phone, FileText, Bell, BellOff, MessageSquare, Wifi, WifiOff, Hash,
   Save, CheckCircle2, XCircle, TestTube,
 } from "lucide-react";
+import Cropper, { Area } from "react-easy-crop";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -75,21 +78,68 @@ export default function Perfil() {
       });
   }, [profile?.user_id]);
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !profile) return;
-    if (!file.type.startsWith("image/")) { toast.error("Selecione um arquivo de imagem"); return; }
-    if (file.size > 5 * 1024 * 1024) { toast.error("Imagem deve ter no máximo 5MB"); return; }
+  // ---- Crop state ----
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
 
+  const onCropComplete = useCallback((_: Area, areaPixels: Area) => {
+    setCroppedAreaPixels(areaPixels);
+  }, []);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast.error("Selecione um arquivo de imagem"); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error("Imagem deve ter no máximo 10MB"); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropSrc(reader.result as string);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCroppedAreaPixels(null);
+    };
+    reader.readAsDataURL(file);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const getCroppedBlob = (imageSrc: string, area: Area): Promise<Blob> =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const size = 512;
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("Canvas indisponível"));
+        ctx.drawImage(img, area.x, area.y, area.width, area.height, 0, 0, size, size);
+        canvas.toBlob(
+          (blob) => (blob ? resolve(blob) : reject(new Error("Falha ao gerar imagem"))),
+          "image/jpeg",
+          0.9,
+        );
+      };
+      img.onerror = () => reject(new Error("Falha ao carregar imagem"));
+      img.src = imageSrc;
+    });
+
+  const handleCancelCrop = () => {
+    setCropSrc(null);
+    setCroppedAreaPixels(null);
+  };
+
+  const handleSaveCroppedPhoto = async () => {
+    if (!profile || !cropSrc || !croppedAreaPixels) return;
     setUploading(true);
     try {
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      const allowed = ["jpg", "jpeg", "png", "webp", "gif"];
-      const safeExt = allowed.includes(ext) ? ext : "jpg";
-      const filePath = `${profile.user_id}.${safeExt}`;
+      const blob = await getCroppedBlob(cropSrc, croppedAreaPixels);
+      const filePath = `${profile.user_id}.jpg`;
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(filePath, file, { upsert: true, contentType: file.type });
+        .upload(filePath, blob, { upsert: true, contentType: "image/jpeg" });
       if (uploadError) throw uploadError;
 
       const proxyUrl = `https://nglwgzknqgihlbkdnflu.supabase.co/functions/v1/avatar-proxy?u=${profile.user_id}&v=${Date.now()}`;
@@ -100,6 +150,7 @@ export default function Perfil() {
       if (updateError) throw updateError;
       setAvatarUrl(proxyUrl);
       setAvatarFailed(false);
+      setCropSrc(null);
       toast.success("Foto atualizada com sucesso!");
       setTimeout(() => window.location.reload(), 1000);
     } catch (err: any) {
@@ -166,7 +217,7 @@ export default function Perfil() {
               >
                 {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
               </button>
-              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
             </div>
 
             {/* Name & Email */}
@@ -313,6 +364,49 @@ export default function Perfil() {
           </Card>
         </div>
       </div>
+
+      {/* Crop dialog */}
+      <Dialog open={!!cropSrc} onOpenChange={(o) => { if (!o && !uploading) handleCancelCrop(); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ajustar foto</DialogTitle>
+          </DialogHeader>
+          <div className="relative w-full h-72 bg-muted rounded-md overflow-hidden">
+            {cropSrc && (
+              <Cropper
+                image={cropSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="round"
+                showGrid={false}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+              />
+            )}
+          </div>
+          <div className="space-y-2 pt-2">
+            <Label className="text-xs text-muted-foreground">Zoom</Label>
+            <Slider
+              value={[zoom]}
+              min={1}
+              max={3}
+              step={0.01}
+              onValueChange={(v) => setZoom(v[0])}
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={handleCancelCrop} disabled={uploading}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveCroppedPhoto} disabled={uploading || !croppedAreaPixels} className="gap-2">
+              {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
+              Salvar foto
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
