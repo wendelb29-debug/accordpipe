@@ -147,7 +147,8 @@ export function AccordFeedPremium() {
 
   const visiblePosts = useMemo(() => posts.filter(p => !hidden.includes(p.id)), [posts, hidden]);
   const savedPosts = useMemo(() => visiblePosts.filter(p => (p as any).saved_by_me), [visiblePosts]);
-  const filteredPosts = filter === "events" ? [] : filter === "saved" ? savedPosts : visiblePosts;
+  const myPosts = useMemo(() => visiblePosts.filter(p => p.author?.user_id === user?.id), [visiblePosts, user?.id]);
+  const filteredPosts = filter === "events" ? [] : filter === "saved" ? savedPosts : filter === "posts" ? myPosts : visiblePosts;
   const showEvents = filter === "all" || filter === "events";
 
   // ─── Handlers ───────────────────────────────────────────
