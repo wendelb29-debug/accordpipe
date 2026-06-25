@@ -117,6 +117,13 @@ export default function Auth() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [openSheet, setOpenSheet] = useState<null | "about" | "contact" | "terms" | "privacy">(null);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotStep, setForgotStep] = useState<1 | 2>(1);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotCode, setForgotCode] = useState("");
+  const [forgotNewPwd, setForgotNewPwd] = useState("");
+  const [forgotConfirm, setForgotConfirm] = useState("");
+  const [forgotSubmitting, setForgotSubmitting] = useState(false);
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -148,30 +155,49 @@ export default function Auth() {
     }
   };
 
-  const handleForgotPassword = async () => {
-    const email = loginForm.getValues("email");
-    if (!email) {
-      setError("Digite seu e-mail no campo acima para redefinir a senha.");
-      return;
-    }
-    setError(null);
-    setResetLoading(true);
+  const openForgot = () => {
+    const prefill = loginForm.getValues("email") || "";
+    setForgotEmail(prefill);
+    setForgotStep(1);
+    setForgotCode(""); setForgotNewPwd(""); setForgotConfirm("");
+    setError(null); setSuccess(null);
+    setForgotOpen(true);
+  };
+
+  const handleSendOtp = async () => {
+    if (!forgotEmail) { setError("Informe o e-mail."); return; }
+    setError(null); setSuccess(null); setResetLoading(true);
     try {
-      const { data: profiles } = await supabase
-        .from("profiles").select("id").eq("email", email).limit(1);
-      if (!profiles || profiles.length === 0) {
-        setError("Nenhuma conta encontrada com este e-mail.");
+      await supabase.functions.invoke("password-otp-request", { body: { email: forgotEmail } });
+      setSuccess("Se a conta existir, enviamos um código para seu e-mail.");
+      setForgotStep(2);
+    } catch {
+      setSuccess("Se a conta existir, enviamos um código para seu e-mail.");
+      setForgotStep(2);
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleConfirmOtp = async () => {
+    if (forgotCode.length < 4) { setError("Informe o código recebido."); return; }
+    if (forgotNewPwd.length < 8) { setError("A nova senha deve ter pelo menos 8 caracteres."); return; }
+    if (forgotNewPwd !== forgotConfirm) { setError("As senhas não conferem."); return; }
+    setError(null); setForgotSubmitting(true);
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke("password-otp-verify-and-reset", {
+        body: { email: forgotEmail, code: forgotCode, newPassword: forgotNewPwd },
+      });
+      if (fnErr || !(data as any)?.ok) {
+        setError((data as any)?.error || "Código inválido ou expirado.");
         return;
       }
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      if (error) setError("Erro ao enviar e-mail de redefinição.");
-      else setSuccess("E-mail de redefinição enviado! Verifique sua caixa de entrada.");
+      setSuccess("Senha redefinida! Faça login com a nova senha.");
+      setForgotOpen(false);
     } catch {
       setError("Erro inesperado. Tente novamente.");
     } finally {
-      setResetLoading(false);
+      setForgotSubmitting(false);
     }
   };
 
