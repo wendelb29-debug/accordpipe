@@ -22,6 +22,7 @@ import { useNotificationManager } from "@/hooks/useNotificationManager";
 import { useOperatorStatus } from "@/hooks/useOperatorStatus";
 import { useTenantWhatsAppIntegration } from "@/hooks/useTenantWhatsAppIntegration";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 
 const roleLabels: Record<string, string> = {
   admin: "Administrador",
