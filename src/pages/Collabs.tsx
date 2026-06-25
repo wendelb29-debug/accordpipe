@@ -1152,7 +1152,7 @@ export default function Collabs() {
           color: "#0ea5e9",
           created_by: user.id,
         })
-        .select()
+        .select("id")
         .single();
       if (error || !conv) throw error || new Error("Falha ao criar anotações");
       await supabase.from("collab_members").insert([
