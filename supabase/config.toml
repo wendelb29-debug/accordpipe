@@ -17,3 +17,7 @@ project_id = "nglwgzknqgihlbkdnflu"
     verify_jwt = false
   [functions.handle-email-suppression]
     verify_jwt = false
+  [functions.password-otp-request]
+    verify_jwt = false
+  [functions.password-otp-verify-and-reset]
+    verify_jwt = false
