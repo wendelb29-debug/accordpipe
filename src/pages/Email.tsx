@@ -112,7 +112,7 @@ export default function Email() {
       <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+            <div className="w-12 h-12 rounded-2xl gradient-primary flex items-center justify-center shadow-lg">
               <Mail className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -127,14 +127,14 @@ export default function Email() {
           </div>
           {hasAccounts && (
             <div className="flex gap-2">
-              <button 
+              <button
                 onClick={() => navigate("/email/inbox")}
-                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-semibold text-white bg-indigo-500 hover:bg-indigo-600 transition shadow-sm"
+                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-semibold text-white gradient-primary hover:opacity-90 transition shadow-sm"
               >
                 <Inbox className="w-4 h-4" />
                 Caixa Unificada
               </button>
-              <button 
+              <button
                 onClick={() => setDialogProvider("gmail")} // default to open dialog
                 className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-semibold text-foreground bg-secondary hover:bg-secondary/80 transition"
               >
@@ -143,6 +143,7 @@ export default function Email() {
               </button>
             </div>
           )}
+
         </div>
 
         {loading ? (
