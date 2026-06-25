@@ -112,7 +112,7 @@ export default function Email() {
       <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+            <div className="w-12 h-12 rounded-2xl gradient-primary flex items-center justify-center shadow-lg">
               <Mail className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -127,14 +127,14 @@ export default function Email() {
           </div>
           {hasAccounts && (
             <div className="flex gap-2">
-              <button 
+              <button
                 onClick={() => navigate("/email/inbox")}
-                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-semibold text-white bg-indigo-500 hover:bg-indigo-600 transition shadow-sm"
+                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-semibold text-white gradient-primary hover:opacity-90 transition shadow-sm"
               >
                 <Inbox className="w-4 h-4" />
                 Caixa Unificada
               </button>
-              <button 
+              <button
                 onClick={() => setDialogProvider("gmail")} // default to open dialog
                 className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-semibold text-foreground bg-secondary hover:bg-secondary/80 transition"
               >
@@ -143,6 +143,7 @@ export default function Email() {
               </button>
             </div>
           )}
+
         </div>
 
         {loading ? (
@@ -226,32 +227,60 @@ export default function Email() {
           </div>
         ) : null}
 
-        <div>
-          <h2 className="text-center text-[22px] font-semibold text-foreground mb-2">
-            Use e gerencie sua caixa de correio no Accord
-          </h2>
-          <p className="text-center text-[13px] text-muted-foreground mb-8">
-            Escolha um provedor abaixo para conectar sua conta
-          </p>
-
-          <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
-            {PROVIDERS.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setDialogProvider(p.id)}
-                className="group rounded-2xl border border-border bg-card hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-lg transition p-6 flex flex-col items-center text-center"
-              >
-                <div className="w-16 h-16 rounded-2xl bg-muted/30 flex items-center justify-center mb-3 group-hover:scale-105 transition">
-                  <p.Logo className="w-10 h-10" />
-                </div>
-                <div className="text-[14px] font-semibold text-foreground">{p.name}</div>
-                <div className="mt-3 flex items-center gap-1 text-[11px] font-medium text-emerald-600 opacity-0 group-hover:opacity-100 transition">
-                  Conectar <ArrowRight className="w-3 h-3" />
-                </div>
-              </button>
-            ))}
+        {hasAccounts ? (
+          <div>
+            <h2 className="text-[13px] font-semibold text-foreground mb-3">
+              Adicionar outra conta
+            </h2>
+            <div className="grid grid-cols-2 gap-3 max-w-xl">
+              {PROVIDERS.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setDialogProvider(p.id)}
+                  className="group rounded-2xl border border-border bg-card hover:border-primary/40 hover:shadow-lg transition p-3 flex items-center gap-3 text-left"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-muted/30 flex items-center justify-center shrink-0 group-hover:scale-105 transition">
+                    <p.Logo className="w-6 h-6" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13.5px] font-semibold text-foreground">{p.name}</div>
+                    <div className="text-[11px] font-medium text-primary flex items-center gap-1 opacity-70 group-hover:opacity-100 transition">
+                      Conectar <ArrowRight className="w-3 h-3" />
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div>
+            <h2 className="text-center text-[22px] font-semibold text-foreground mb-2">
+              Use e gerencie sua caixa de correio no Accord
+            </h2>
+            <p className="text-center text-[13px] text-muted-foreground mb-8">
+              Escolha um provedor abaixo para conectar sua conta
+            </p>
+
+            <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
+              {PROVIDERS.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setDialogProvider(p.id)}
+                  className="group rounded-2xl border border-border bg-card hover:border-primary/40 hover:shadow-lg transition p-6 flex flex-col items-center text-center"
+                >
+                  <div className="w-16 h-16 rounded-2xl bg-muted/30 flex items-center justify-center mb-3 group-hover:scale-105 transition">
+                    <p.Logo className="w-10 h-10" />
+                  </div>
+                  <div className="text-[14px] font-semibold text-foreground">{p.name}</div>
+                  <div className="mt-3 flex items-center gap-1 text-[11px] font-medium text-primary opacity-0 group-hover:opacity-100 transition">
+                    Conectar <ArrowRight className="w-3 h-3" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
 
         {dialogProvider && (
           <EmailProviderDialog
