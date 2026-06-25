@@ -397,11 +397,11 @@ export default function Auth() {
             <div className="flex justify-end mb-[18px]">
               <button
                 type="button"
-                onClick={handleForgotPassword}
+                onClick={openForgot}
                 disabled={resetLoading}
                 className="text-[12px] font-semibold text-[#7A3FF2] hover:underline disabled:opacity-50"
               >
-                {resetLoading ? "Enviando..." : "Esqueceu a senha?"}
+                Esqueceu a senha?
               </button>
             </div>
 
