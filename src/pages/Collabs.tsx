@@ -549,7 +549,7 @@ export default function Collabs() {
       setLoadingConvs(true);
       const { data, error } = await supabase
         .from("collab_conversations")
-        .select("*")
+        .select("id, servidor_id, kind, name, emoji, color, created_by, is_pinned, last_message_at, last_message_preview, created_at, updated_at, avatar_url")
         .eq("servidor_id", companyId)
         .order("is_pinned", { ascending: false })
         .order("last_message_at", { ascending: false, nullsFirst: false })
