@@ -411,7 +411,7 @@ export function AccordFeedPremium() {
             {[
               { key: "all" as const, label: "Tudo", count: posts.length + events.length },
               { key: "saved" as const, label: "Salvos", count: savedPosts.length },
-              { key: "posts" as const, label: "Posts", count: posts.length },
+              { key: "posts" as const, label: "Posts", count: myPosts.length },
               { key: "events" as const, label: "Eventos", count: events.length },
             ].map(f => (
               <button
