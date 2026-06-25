@@ -50,6 +50,7 @@ export default function Perfil() {
   const isMobile = useIsMobile();
   const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>((profile as any)?.avatar_url || null);
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Editable fields
