@@ -951,7 +951,7 @@ export default function Collabs() {
         return;
       }
       // Optimistically reflect locally so the link in the dialog updates instantly
-      setConversations((prev) => prev.map((c) => c.id === activeId ? { ...c, invite_token: newToken } : c));
+      setActiveInviteToken(newToken);
       // System message in the group informing about the rotation
       const myName = userMap.get(user.id)?.name || "Um administrador";
       await supabase.from("collab_messages").insert({
