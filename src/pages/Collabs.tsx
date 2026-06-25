@@ -908,8 +908,22 @@ export default function Collabs() {
   };
 
   const [rotatingInvite, setRotatingInvite] = useState(false);
-  const inviteLink = active && active.invite_token
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}/collabs/convite/${active.invite_token}`
+  const [activeInviteToken, setActiveInviteToken] = useState<string | null>(null);
+
+  // invite_token is column-restricted; fetch via SECURITY DEFINER RPC (admin/owner only)
+  useEffect(() => {
+    setActiveInviteToken(null);
+    if (!activeId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.rpc("get_collab_invite_token" as any, { _conv_id: activeId });
+      if (!cancelled) setActiveInviteToken((data as string) ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [activeId]);
+
+  const inviteLink = activeInviteToken
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/collabs/convite/${activeInviteToken}`
     : activeId
     ? `${typeof window !== "undefined" ? window.location.origin : ""}/collabs/convite/${activeId}`
     : "";
