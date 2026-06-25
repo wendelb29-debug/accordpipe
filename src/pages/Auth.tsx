@@ -520,6 +520,56 @@ export default function Auth() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {forgotOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => !forgotSubmitting && setForgotOpen(false)}>
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-[#0D1117]">Redefinir senha</h2>
+            <p className="text-[12.5px] text-[#6B7280] mt-1">
+              {forgotStep === 1 ? "Informe seu e-mail e enviaremos um código de verificação." : "Digite o código recebido e sua nova senha."}
+            </p>
+
+            {error && <Alert className="mt-3 border-red-200 bg-red-50"><AlertDescription className="text-red-700 text-[12.5px]">{error}</AlertDescription></Alert>}
+            {success && <Alert className="mt-3 border-emerald-200 bg-emerald-50"><AlertDescription className="text-emerald-700 text-[12.5px]">{success}</AlertDescription></Alert>}
+
+            {forgotStep === 1 ? (
+              <div className="mt-4 space-y-3">
+                <div>
+                  <label className="block text-[12px] font-semibold text-[#374151] mb-1.5">E-mail</label>
+                  <Input type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="voce@empresa.com" />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="ghost" onClick={() => setForgotOpen(false)}>Cancelar</Button>
+                  <Button onClick={handleSendOtp} disabled={resetLoading} style={{ background: "linear-gradient(135deg, #2563EB 0%, #7A3FF2 100%)", color: "white" }}>
+                    {resetLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Enviar código"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 space-y-3">
+                <div>
+                  <label className="block text-[12px] font-semibold text-[#374151] mb-1.5">Código</label>
+                  <Input inputMode="numeric" maxLength={6} value={forgotCode} onChange={(e) => setForgotCode(e.target.value.replace(/\D/g, ""))} placeholder="000000" />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-semibold text-[#374151] mb-1.5">Nova senha</label>
+                  <Input type="password" value={forgotNewPwd} onChange={(e) => setForgotNewPwd(e.target.value)} placeholder="Mínimo 8 caracteres" />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-semibold text-[#374151] mb-1.5">Confirmar nova senha</label>
+                  <Input type="password" value={forgotConfirm} onChange={(e) => setForgotConfirm(e.target.value)} />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="ghost" onClick={() => setForgotStep(1)} disabled={forgotSubmitting}>Voltar</Button>
+                  <Button onClick={handleConfirmOtp} disabled={forgotSubmitting} style={{ background: "linear-gradient(135deg, #2563EB 0%, #7A3FF2 100%)", color: "white" }}>
+                    {forgotSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirmar"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </main>
     </>
   );
