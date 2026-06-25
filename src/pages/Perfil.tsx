@@ -217,7 +217,7 @@ export default function Perfil() {
               >
                 {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
               </button>
-              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
             </div>
 
             {/* Name & Email */}
