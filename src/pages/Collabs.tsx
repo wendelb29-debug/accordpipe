@@ -549,7 +549,7 @@ export default function Collabs() {
       setLoadingConvs(true);
       const { data, error } = await supabase
         .from("collab_conversations")
-        .select("*")
+        .select("id, servidor_id, kind, name, emoji, color, created_by, is_pinned, last_message_at, last_message_preview, created_at, updated_at, avatar_url")
         .eq("servidor_id", companyId)
         .order("is_pinned", { ascending: false })
         .order("last_message_at", { ascending: false, nullsFirst: false })
@@ -852,7 +852,7 @@ export default function Collabs() {
           color: meta.color,
           created_by: user.id,
         })
-        .select()
+        .select("id")
         .single();
       if (error) throw error;
       // Add creator as owner + selected members
@@ -908,8 +908,22 @@ export default function Collabs() {
   };
 
   const [rotatingInvite, setRotatingInvite] = useState(false);
-  const inviteLink = active && active.invite_token
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}/collabs/convite/${active.invite_token}`
+  const [activeInviteToken, setActiveInviteToken] = useState<string | null>(null);
+
+  // invite_token is column-restricted; fetch via SECURITY DEFINER RPC (admin/owner only)
+  useEffect(() => {
+    setActiveInviteToken(null);
+    if (!activeId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.rpc("get_collab_invite_token" as any, { _conv_id: activeId });
+      if (!cancelled) setActiveInviteToken((data as string) ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [activeId]);
+
+  const inviteLink = activeInviteToken
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/collabs/convite/${activeInviteToken}`
     : activeId
     ? `${typeof window !== "undefined" ? window.location.origin : ""}/collabs/convite/${activeId}`
     : "";
@@ -937,7 +951,7 @@ export default function Collabs() {
         return;
       }
       // Optimistically reflect locally so the link in the dialog updates instantly
-      setConversations((prev) => prev.map((c) => c.id === activeId ? { ...c, invite_token: newToken } : c));
+      setActiveInviteToken(newToken);
       // System message in the group informing about the rotation
       const myName = userMap.get(user.id)?.name || "Um administrador";
       await supabase.from("collab_messages").insert({
@@ -1072,7 +1086,7 @@ export default function Collabs() {
           color: KIND_META.direct.color,
           created_by: user.id,
         })
-        .select()
+        .select("id")
         .single();
       if (error || !conv) throw error || new Error("Falha ao criar conversa");
       const { error: memErr } = await supabase.from("collab_members").insert([
@@ -1152,7 +1166,7 @@ export default function Collabs() {
           color: "#0ea5e9",
           created_by: user.id,
         })
-        .select()
+        .select("id")
         .single();
       if (error || !conv) throw error || new Error("Falha ao criar anotações");
       await supabase.from("collab_members").insert([

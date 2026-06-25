@@ -9347,6 +9347,7 @@ export type Database = {
           status: string
         }[]
       }
+      get_collab_invite_token: { Args: { _conv_id: string }; Returns: string }
       get_collab_servidor: { Args: { _conv_id: string }; Returns: string }
       get_company_credentials: {
         Args: { _company_id: string }
