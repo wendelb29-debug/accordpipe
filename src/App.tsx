@@ -267,6 +267,16 @@ const App = () => (
               }
             />
             <Route
+              path="/usuario/:userId"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <PerfilPublico />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/accord-stack"
               element={
                 <ProtectedRoute allowedRoles={["admin"]}>
