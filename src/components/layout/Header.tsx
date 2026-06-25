@@ -53,6 +53,7 @@ export function Header() {
   const { handleBack } = useBackNavigation();
   const [currentTheme, setCurrentTheme] = useState(() => document.documentElement.classList.contains("dark") ? "dark" : "light");
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
