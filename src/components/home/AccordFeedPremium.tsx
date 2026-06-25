@@ -550,12 +550,17 @@ export function AccordFeedPremium() {
                 Ninguém online no momento.
               </div>
             ) : otherOnline.slice(0, 6).map(u => (
-              <div className="afp-online-row" key={u.user_id}>
+              <div
+                className="afp-online-row"
+                key={u.user_id}
+                style={{ cursor: "pointer" }}
+                onClick={() => navigate(`/usuario/${u.user_id}`)}
+              >
                 <div className="afp-online-av" style={{ background: gradientFor(u.user_id) }}>
                   <AvatarPic url={u.avatar_url} name={u.name} radius={11} />
                 </div>
                 <div className="afp-online-info">
-                  <div className="afp-online-name">{u.name || "Colega"}</div>
+                  <div className="afp-online-name hover:underline">{u.name || "Colega"}</div>
                   <div className="afp-online-status"><span className="afp-online-dot" /> Disponível</div>
                 </div>
               </div>
