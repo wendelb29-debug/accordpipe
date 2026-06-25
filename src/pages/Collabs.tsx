@@ -1112,6 +1112,29 @@ export default function Collabs() {
     }
   };
 
+  /* ────── Auto-open direct conversation from ?dm=userId param ────── */
+  const [searchParams, setSearchParams] = useSearchParams();
+  const dmParam = searchParams.get("dm");
+  const dmHandledRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!dmParam || !user || !companyId) return;
+    if (dmHandledRef.current === dmParam) return;
+    if (dmParam === user.id) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("dm");
+      setSearchParams(next, { replace: true });
+      return;
+    }
+    dmHandledRef.current = dmParam;
+    (async () => {
+      await openDirectWith(dmParam);
+      const next = new URLSearchParams(searchParams);
+      next.delete("dm");
+      setSearchParams(next, { replace: true });
+    })();
+  }, [dmParam, user?.id, companyId]);
+
+
   const openAnotacoes = async () => {
     if (!user || !companyId || openingNotes) return;
     setOpeningNotes(true);
