@@ -1072,7 +1072,7 @@ export default function Collabs() {
           color: KIND_META.direct.color,
           created_by: user.id,
         })
-        .select()
+        .select("id")
         .single();
       if (error || !conv) throw error || new Error("Falha ao criar conversa");
       const { error: memErr } = await supabase.from("collab_members").insert([
