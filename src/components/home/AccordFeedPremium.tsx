@@ -577,11 +577,19 @@ export function AccordFeedPremium() {
               <div style={{ maxHeight: 360, overflowY: "auto" }}>
                 {(suggested as any[]).map(p => (
                   <div className="afp-suggest-row" key={p.user_id}>
-                    <div className="afp-suggest-av" style={{ background: gradientFor(p.user_id) }}>
+                    <div
+                      className="afp-suggest-av"
+                      style={{ background: gradientFor(p.user_id), cursor: "pointer" }}
+                      onClick={() => navigate(`/usuario/${p.user_id}`)}
+                    >
                       <AvatarPic url={p.avatar_url} name={p.name} radius={12} />
                     </div>
-                    <div className="afp-suggest-info">
-                      <div className="afp-suggest-name">{p.name || "Colega"}</div>
+                    <div
+                      className="afp-suggest-info"
+                      style={{ cursor: "pointer" }}
+                      onClick={() => navigate(`/usuario/${p.user_id}`)}
+                    >
+                      <div className="afp-suggest-name hover:underline">{p.name || "Colega"}</div>
                     </div>
                     <button
                       className={`afp-follow-btn ${p.followed_by_me ? "afp-liked" : ""}`}
