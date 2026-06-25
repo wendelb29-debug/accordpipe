@@ -148,8 +148,13 @@ export default function Perfil() {
             {/* Avatar */}
             <div className="relative group shrink-0">
               <div className="h-28 w-28 rounded-full border-4 border-background overflow-hidden bg-muted flex items-center justify-center shadow-lg">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+                {avatarUrl && !avatarFailed ? (
+                  <img
+                    src={avatarUrl}
+                    alt="Avatar"
+                    className="h-full w-full object-cover"
+                    onError={() => setAvatarFailed(true)}
+                  />
                 ) : (
                   <span className="text-3xl font-bold text-primary">{initials}</span>
                 )}
