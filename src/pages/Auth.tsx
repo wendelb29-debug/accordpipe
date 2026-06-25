@@ -117,6 +117,13 @@ export default function Auth() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [openSheet, setOpenSheet] = useState<null | "about" | "contact" | "terms" | "privacy">(null);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotStep, setForgotStep] = useState<1 | 2>(1);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotCode, setForgotCode] = useState("");
+  const [forgotNewPwd, setForgotNewPwd] = useState("");
+  const [forgotConfirm, setForgotConfirm] = useState("");
+  const [forgotSubmitting, setForgotSubmitting] = useState(false);
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -148,30 +155,49 @@ export default function Auth() {
     }
   };
 
-  const handleForgotPassword = async () => {
-    const email = loginForm.getValues("email");
-    if (!email) {
-      setError("Digite seu e-mail no campo acima para redefinir a senha.");
-      return;
-    }
-    setError(null);
-    setResetLoading(true);
+  const openForgot = () => {
+    const prefill = loginForm.getValues("email") || "";
+    setForgotEmail(prefill);
+    setForgotStep(1);
+    setForgotCode(""); setForgotNewPwd(""); setForgotConfirm("");
+    setError(null); setSuccess(null);
+    setForgotOpen(true);
+  };
+
+  const handleSendOtp = async () => {
+    if (!forgotEmail) { setError("Informe o e-mail."); return; }
+    setError(null); setSuccess(null); setResetLoading(true);
     try {
-      const { data: profiles } = await supabase
-        .from("profiles").select("id").eq("email", email).limit(1);
-      if (!profiles || profiles.length === 0) {
-        setError("Nenhuma conta encontrada com este e-mail.");
+      await supabase.functions.invoke("password-otp-request", { body: { email: forgotEmail } });
+      setSuccess("Se a conta existir, enviamos um código para seu e-mail.");
+      setForgotStep(2);
+    } catch {
+      setSuccess("Se a conta existir, enviamos um código para seu e-mail.");
+      setForgotStep(2);
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleConfirmOtp = async () => {
+    if (forgotCode.length < 4) { setError("Informe o código recebido."); return; }
+    if (forgotNewPwd.length < 8) { setError("A nova senha deve ter pelo menos 8 caracteres."); return; }
+    if (forgotNewPwd !== forgotConfirm) { setError("As senhas não conferem."); return; }
+    setError(null); setForgotSubmitting(true);
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke("password-otp-verify-and-reset", {
+        body: { email: forgotEmail, code: forgotCode, newPassword: forgotNewPwd },
+      });
+      if (fnErr || !(data as any)?.ok) {
+        setError((data as any)?.error || "Código inválido ou expirado.");
         return;
       }
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      if (error) setError("Erro ao enviar e-mail de redefinição.");
-      else setSuccess("E-mail de redefinição enviado! Verifique sua caixa de entrada.");
+      setSuccess("Senha redefinida! Faça login com a nova senha.");
+      setForgotOpen(false);
     } catch {
       setError("Erro inesperado. Tente novamente.");
     } finally {
-      setResetLoading(false);
+      setForgotSubmitting(false);
     }
   };
 
@@ -371,11 +397,11 @@ export default function Auth() {
             <div className="flex justify-end mb-[18px]">
               <button
                 type="button"
-                onClick={handleForgotPassword}
+                onClick={openForgot}
                 disabled={resetLoading}
                 className="text-[12px] font-semibold text-[#7A3FF2] hover:underline disabled:opacity-50"
               >
-                {resetLoading ? "Enviando..." : "Esqueceu a senha?"}
+                Esqueceu a senha?
               </button>
             </div>
 
@@ -494,6 +520,56 @@ export default function Auth() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {forgotOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => !forgotSubmitting && setForgotOpen(false)}>
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-[#0D1117]">Redefinir senha</h2>
+            <p className="text-[12.5px] text-[#6B7280] mt-1">
+              {forgotStep === 1 ? "Informe seu e-mail e enviaremos um código de verificação." : "Digite o código recebido e sua nova senha."}
+            </p>
+
+            {error && <Alert className="mt-3 border-red-200 bg-red-50"><AlertDescription className="text-red-700 text-[12.5px]">{error}</AlertDescription></Alert>}
+            {success && <Alert className="mt-3 border-emerald-200 bg-emerald-50"><AlertDescription className="text-emerald-700 text-[12.5px]">{success}</AlertDescription></Alert>}
+
+            {forgotStep === 1 ? (
+              <div className="mt-4 space-y-3">
+                <div>
+                  <label className="block text-[12px] font-semibold text-[#374151] mb-1.5">E-mail</label>
+                  <Input type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="voce@empresa.com" />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="ghost" onClick={() => setForgotOpen(false)}>Cancelar</Button>
+                  <Button onClick={handleSendOtp} disabled={resetLoading} style={{ background: "linear-gradient(135deg, #2563EB 0%, #7A3FF2 100%)", color: "white" }}>
+                    {resetLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Enviar código"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 space-y-3">
+                <div>
+                  <label className="block text-[12px] font-semibold text-[#374151] mb-1.5">Código</label>
+                  <Input inputMode="numeric" maxLength={6} value={forgotCode} onChange={(e) => setForgotCode(e.target.value.replace(/\D/g, ""))} placeholder="000000" />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-semibold text-[#374151] mb-1.5">Nova senha</label>
+                  <Input type="password" value={forgotNewPwd} onChange={(e) => setForgotNewPwd(e.target.value)} placeholder="Mínimo 8 caracteres" />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-semibold text-[#374151] mb-1.5">Confirmar nova senha</label>
+                  <Input type="password" value={forgotConfirm} onChange={(e) => setForgotConfirm(e.target.value)} />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="ghost" onClick={() => setForgotStep(1)} disabled={forgotSubmitting}>Voltar</Button>
+                  <Button onClick={handleConfirmOtp} disabled={forgotSubmitting} style={{ background: "linear-gradient(135deg, #2563EB 0%, #7A3FF2 100%)", color: "white" }}>
+                    {forgotSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirmar"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </main>
     </>
   );

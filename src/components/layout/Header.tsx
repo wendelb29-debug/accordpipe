@@ -23,6 +23,7 @@ import { useState, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ChangePasswordDialog } from "@/components/auth/ChangePasswordDialog";
 
 const ROUTE_TITLE_KEYS: Record<string, string> = {
   "/home": "nav.home",
@@ -54,6 +55,7 @@ export function Header() {
   const [currentTheme, setCurrentTheme] = useState(() => document.documentElement.classList.contains("dark") ? "dark" : "light");
   const [currentTime, setCurrentTime] = useState(new Date());
   const [avatarFailed, setAvatarFailed] = useState(false);
+  const [pwdDialogOpen, setPwdDialogOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
@@ -220,7 +222,7 @@ export function Header() {
               <BrandIcon icon={UserCircle} tone="blue" size="xs" />
               <span>{t("header.profile")}</span>
             </DropdownMenuItem>
-            <DropdownMenuItem className="rounded-lg cursor-pointer gap-2.5" onClick={() => navigate("/perfil")}>
+            <DropdownMenuItem className="rounded-lg cursor-pointer gap-2.5" onClick={() => setPwdDialogOpen(true)}>
               <BrandIcon icon={KeyRound} tone="amber" size="xs" />
               <span>{t("header.changePassword")}</span>
             </DropdownMenuItem>
@@ -235,6 +237,7 @@ export function Header() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      <ChangePasswordDialog open={pwdDialogOpen} onOpenChange={setPwdDialogOpen} />
     </header>
   );
 }
