@@ -550,12 +550,17 @@ export function AccordFeedPremium() {
                 Ninguém online no momento.
               </div>
             ) : otherOnline.slice(0, 6).map(u => (
-              <div className="afp-online-row" key={u.user_id}>
+              <div
+                className="afp-online-row"
+                key={u.user_id}
+                style={{ cursor: "pointer" }}
+                onClick={() => navigate(`/usuario/${u.user_id}`)}
+              >
                 <div className="afp-online-av" style={{ background: gradientFor(u.user_id) }}>
                   <AvatarPic url={u.avatar_url} name={u.name} radius={11} />
                 </div>
                 <div className="afp-online-info">
-                  <div className="afp-online-name">{u.name || "Colega"}</div>
+                  <div className="afp-online-name hover:underline">{u.name || "Colega"}</div>
                   <div className="afp-online-status"><span className="afp-online-dot" /> Disponível</div>
                 </div>
               </div>
@@ -572,11 +577,19 @@ export function AccordFeedPremium() {
               <div style={{ maxHeight: 360, overflowY: "auto" }}>
                 {(suggested as any[]).map(p => (
                   <div className="afp-suggest-row" key={p.user_id}>
-                    <div className="afp-suggest-av" style={{ background: gradientFor(p.user_id) }}>
+                    <div
+                      className="afp-suggest-av"
+                      style={{ background: gradientFor(p.user_id), cursor: "pointer" }}
+                      onClick={() => navigate(`/usuario/${p.user_id}`)}
+                    >
                       <AvatarPic url={p.avatar_url} name={p.name} radius={12} />
                     </div>
-                    <div className="afp-suggest-info">
-                      <div className="afp-suggest-name">{p.name || "Colega"}</div>
+                    <div
+                      className="afp-suggest-info"
+                      style={{ cursor: "pointer" }}
+                      onClick={() => navigate(`/usuario/${p.user_id}`)}
+                    >
+                      <div className="afp-suggest-name hover:underline">{p.name || "Colega"}</div>
                     </div>
                     <button
                       className={`afp-follow-btn ${p.followed_by_me ? "afp-liked" : ""}`}
@@ -679,10 +692,19 @@ function PostCard({
 }) {
   const liked = post.reactions.some(r => r.byMe);
   const isAuthor = !!currentUserId && currentUserId === post.author.user_id;
+  const navigate = useNavigate();
+  const openAuthor = () => {
+    if (post.author?.user_id) navigate(`/usuario/${post.author.user_id}`);
+  };
   return (
     <div className={`afp-post-card${post.pinned ? " afp-post-card-pinned" : ""}${post.post_type === "anuncio" ? " afp-post-card-anuncio" : ""}`} id={`afp-post-${post.id}`}>
       <div className="afp-post-header">
-        <div className="afp-av-ring" style={{ background: gradientFor(post.author.user_id) }}>
+        <div
+          className="afp-av-ring"
+          style={{ background: gradientFor(post.author.user_id), cursor: "pointer" }}
+          onClick={openAuthor}
+          title={post.author.name || "Ver perfil"}
+        >
           <div className="afp-av-inner">
             <div className="afp-av-pic" style={{ background: gradientFor(post.author.user_id) }}>
               <AvatarPic url={post.author.avatar_url} name={post.author.name} radius={99} />
@@ -691,7 +713,13 @@ function PostCard({
         </div>
         <div className="afp-post-author-info">
           <div className="afp-post-author-line1">
-            {post.author.name || "Colega"}
+            <span
+              onClick={openAuthor}
+              style={{ cursor: "pointer" }}
+              className="hover:underline"
+            >
+              {post.author.name || "Colega"}
+            </span>
           </div>
           <div className="afp-post-author-line2">
             <span>{relativeTime(post.created_at)}</span>

@@ -37,6 +37,7 @@ const Atividades = lazy(() => import("./pages/Atividades"));
 const Salvos = lazy(() => import("./pages/Salvos"));
 
 const Perfil = lazy(() => import("./pages/Perfil"));
+const PerfilPublico = lazy(() => import("./pages/PerfilPublico"));
 const AccordStack = lazy(() => import("./pages/AccordStack"));
 const GestaoVendas = lazy(() => import("./pages/GestaoVendas"));
 const CrmDashboard = lazy(() => import("./pages/CrmDashboard"));
@@ -261,6 +262,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <Perfil />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/usuario/:userId"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <PerfilPublico />
                   </AppLayout>
                 </ProtectedRoute>
               }

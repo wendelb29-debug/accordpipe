@@ -9599,6 +9599,17 @@ export type Database = {
           workspace_id: string
         }[]
       }
+      get_public_profile: {
+        Args: { p_user_id: string }
+        Returns: {
+          avatar_url: string
+          created_at: string
+          departments: Json
+          name: string
+          status: string
+          user_id: string
+        }[]
+      }
       get_tenant_fintech_webhook_token: {
         Args: { _provider?: string; _tenant_id: string }
         Returns: string
