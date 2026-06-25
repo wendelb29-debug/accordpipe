@@ -54,7 +54,7 @@ import {
   Clock3,
   PinOff,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { HexAvatar, hexGradientFor } from "@/components/collabs/HexAvatar";
 import { CollabInfoPanel } from "@/components/collabs/CollabInfoPanel";
