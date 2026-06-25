@@ -82,15 +82,23 @@ export default function Perfil() {
 
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop();
-      const filePath = `avatars/${profile.user_id}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from("documents").upload(filePath, file, { upsert: true });
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const allowed = ["jpg", "jpeg", "png", "webp", "gif"];
+      const safeExt = allowed.includes(ext) ? ext : "jpg";
+      const filePath = `${profile.user_id}.${safeExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file, { upsert: true, contentType: file.type });
       if (uploadError) throw uploadError;
-      const { data: signedData } = await supabase.storage.from("documents").createSignedUrl(filePath, 3600);
-      const signedUrl = signedData?.signedUrl || "";
-      const { error: updateError } = await supabase.from("profiles").update({ avatar_url: signedUrl } as any).eq("user_id", profile.user_id);
+
+      const proxyUrl = `https://nglwgzknqgihlbkdnflu.supabase.co/functions/v1/avatar-proxy?u=${profile.user_id}&v=${Date.now()}`;
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: proxyUrl } as any)
+        .eq("user_id", profile.user_id);
       if (updateError) throw updateError;
-      setAvatarUrl(signedUrl);
+      setAvatarUrl(proxyUrl);
+      setAvatarFailed(false);
       toast.success("Foto atualizada com sucesso!");
       setTimeout(() => window.location.reload(), 1000);
     } catch (err: any) {
