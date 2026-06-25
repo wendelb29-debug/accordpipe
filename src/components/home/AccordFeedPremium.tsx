@@ -1133,11 +1133,13 @@ const CSS = `
   --b24-border-input:#C6CDD3;
   --b24-divider:#F0F1F2;
 }
-.dark {
+.dark .afp-root {
   --b24-text-primary: hsl(var(--foreground));
   --b24-text-secondary: hsl(var(--muted-foreground));
   --b24-text-meta: hsl(var(--muted-foreground));
   --b24-text-label: hsl(var(--muted-foreground));
+  --b24-divider: hsl(var(--border));
+  --b24-border-input: hsl(var(--border));
 }
 
 /* Layout: 521 + 264, gap 18px */
