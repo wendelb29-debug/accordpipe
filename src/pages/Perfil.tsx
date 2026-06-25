@@ -57,6 +57,28 @@ export default function Perfil() {
   const [avatarFailed, setAvatarFailed] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const userId = (profile as any)?.user_id as string | undefined;
+  const tenantId = activeCompany?.id as string | undefined;
+  const { data: userDepartments, isLoading: loadingDepartments } = useQuery({
+    queryKey: ["user-departments", userId, tenantId],
+    enabled: !!userId,
+    queryFn: async () => {
+      let q = supabase
+        .from("user_departments")
+        .select("department_id, priority, tenant_departments ( name, color )")
+        .eq("user_id", userId!)
+        .eq("is_active", true);
+      if (tenantId) q = q.eq("tenant_id", tenantId);
+      const { data, error } = await q.order("priority", { ascending: true });
+      if (error) throw error;
+      return (data || []) as Array<{
+        department_id: string;
+        priority: number | null;
+        tenant_departments: { name: string; color: string | null } | null;
+      }>;
+    },
+  });
+
   // Editable fields
   const [name, setName] = useState(profile?.name || "");
   const [email] = useState(profile?.email || "");
@@ -258,9 +280,26 @@ export default function Perfil() {
               <div>
                 <p className="text-xs font-medium text-muted-foreground mb-2">Departamentos</p>
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary" className="text-xs">
-                    {roleLabels[role || ""] || "Sem departamento"}
-                  </Badge>
+                  {loadingDepartments ? (
+                    <div className="h-5 w-24 rounded bg-muted animate-pulse" />
+                  ) : userDepartments && userDepartments.length > 0 ? (
+                    userDepartments.map((ud) => {
+                      const name = ud.tenant_departments?.name || "Departamento";
+                      const color = ud.tenant_departments?.color || undefined;
+                      return (
+                        <Badge
+                          key={ud.department_id}
+                          variant="outline"
+                          className="text-xs"
+                          style={color ? { borderColor: color, color, backgroundColor: `${color}1A` } : undefined}
+                        >
+                          {name}
+                        </Badge>
+                      );
+                    })
+                  ) : (
+                    <Badge variant="secondary" className="text-xs">Sem departamento</Badge>
+                  )}
                 </div>
               </div>
               {activeCompany && !isMaster && (
