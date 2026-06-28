@@ -10,11 +10,15 @@ const PRIVATE_BUCKETS = ["contract-pdfs", "signatures", "user-signatures", "docu
 
 function parseStorageUrl(url: string): { bucket: string; path: string } | null {
   for (const bucket of PRIVATE_BUCKETS) {
-    const marker = `/storage/v1/object/public/${bucket}/`;
-    const idx = url.indexOf(marker);
-    if (idx !== -1) {
-      const path = decodeURIComponent(url.substring(idx + marker.length).split("?")[0]);
-      return { bucket, path };
+    for (const prefix of [
+      `/storage/v1/object/public/${bucket}/`,
+      `/storage/v1/object/sign/${bucket}/`,
+    ]) {
+      const idx = url.indexOf(prefix);
+      if (idx !== -1) {
+        const path = decodeURIComponent(url.substring(idx + prefix.length).split("?")[0]);
+        return { bucket, path };
+      }
     }
   }
   return null;
