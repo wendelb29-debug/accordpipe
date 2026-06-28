@@ -137,6 +137,18 @@ Deno.serve(async (req) => {
           .select("pdf_url, pdf_path, pdf_assinado_url, pdf_assinado_path")
           .eq("id", signerData.contract_id)
           .single();
+        // Prefer pdf_path so we always issue a fresh signed URL,
+        // regardless of whether pdf_url is an old public URL or an expired signed URL.
+        if (contract?.pdf_path) {
+          const { data: signed } = await supabase.storage
+            .from("contract-pdfs")
+            .createSignedUrl(contract.pdf_path, 3600);
+          if (signed?.signedUrl) {
+            return new Response(JSON.stringify({ signedUrl: signed.signedUrl }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+        }
         fileUrl = contract?.pdf_url || null;
       }
     } else if (context === "contract") {
