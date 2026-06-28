@@ -10,11 +10,15 @@ const PRIVATE_BUCKETS = ["contract-pdfs", "signatures", "user-signatures", "docu
 
 function parseStorageUrl(url: string): { bucket: string; path: string } | null {
   for (const bucket of PRIVATE_BUCKETS) {
-    const marker = `/storage/v1/object/public/${bucket}/`;
-    const idx = url.indexOf(marker);
-    if (idx !== -1) {
-      const path = decodeURIComponent(url.substring(idx + marker.length).split("?")[0]);
-      return { bucket, path };
+    for (const prefix of [
+      `/storage/v1/object/public/${bucket}/`,
+      `/storage/v1/object/sign/${bucket}/`,
+    ]) {
+      const idx = url.indexOf(prefix);
+      if (idx !== -1) {
+        const path = decodeURIComponent(url.substring(idx + prefix.length).split("?")[0]);
+        return { bucket, path };
+      }
     }
   }
   return null;
@@ -137,6 +141,18 @@ Deno.serve(async (req) => {
           .select("pdf_url, pdf_path, pdf_assinado_url, pdf_assinado_path")
           .eq("id", signerData.contract_id)
           .single();
+        // Prefer pdf_path so we always issue a fresh signed URL,
+        // regardless of whether pdf_url is an old public URL or an expired signed URL.
+        if (contract?.pdf_path) {
+          const { data: signed } = await supabase.storage
+            .from("contract-pdfs")
+            .createSignedUrl(contract.pdf_path, 3600);
+          if (signed?.signedUrl) {
+            return new Response(JSON.stringify({ signedUrl: signed.signedUrl }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+        }
         fileUrl = contract?.pdf_url || null;
       }
     } else if (context === "contract") {
