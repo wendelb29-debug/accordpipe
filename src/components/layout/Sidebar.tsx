@@ -46,6 +46,8 @@ import {
   Languages,
   Megaphone,
   Bookmark,
+  Handshake,
+  Rocket as RocketIcon,
 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -84,6 +86,8 @@ const ROUTE_TONES: Record<string, BrandIconTone> = {
   "/performance": "emerald",
   "/academy": "amber",
   "/accord-pulse": "red",
+  "/closer": "indigo",
+  "/sdr": "violet",
   "/descarte": "slate",
   "/configuracoes/usuarios": "teal",
   "/configuracoes/logs": "slate",
@@ -123,6 +127,8 @@ const navigationSections = [
       { nameKey: "nav.performance", href: "/performance", icon: TrendingUp, roles: ["admin", "ceo", "operador", "comercial"] },
       { nameKey: "nav.academy", href: "/academy", icon: GraduationCap, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
       { nameKey: "nav.accordPulse", href: "/accord-pulse", icon: Flame, roles: ["admin", "ceo", "comercial"] },
+      { nameKey: "Closer", href: "/closer", icon: Handshake, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
+      { nameKey: "SDR OS", href: "/sdr", icon: RocketIcon, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
     ],
   },
   {

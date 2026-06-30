@@ -76,6 +76,8 @@ const Email = lazy(() => import("./pages/Email"));
 const EmailInbox = lazy(() => import("./pages/EmailInbox"));
 const Marketing = lazy(() => import("./pages/Marketing"));
 const MarketingCampaignDetail = lazy(() => import("./pages/MarketingCampaignDetail"));
+const Closer = lazy(() => import("./pages/Closer"));
+const Sdr = lazy(() => import("./pages/Sdr"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -412,6 +414,22 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["admin", "ceo"]}>
                   <AppLayout><MarketingCampaignDetail /></AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/closer"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "operador", "ceo", "administrativo", "comercial"]}>
+                  <AppLayout><Closer /></AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sdr"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "operador", "ceo", "administrativo", "comercial"]}>
+                  <AppLayout><Sdr /></AppLayout>
                 </ProtectedRoute>
               }
             />
