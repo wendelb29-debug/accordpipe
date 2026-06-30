@@ -227,7 +227,16 @@ export function SdrPanel({ workspaceId: workspaceIdProp }: { workspaceId?: strin
             <Dashboard leads={leads} onOpen={(id) => { setActiveId(id); setSection("qual"); }} onDelete={removeLead} onPromote={openPromote} />
           )}
           {section === "lead" && <NewLeadForm onCreate={createNew} />}
-          {section === "qual" && (active ? <Qualificacao lead={active} onChange={updateActive} /> : <EmptyActive onGo={() => setSection("lead")} />)}
+          {section === "qual" && (
+            <Qualificacao
+              lead={active}
+              leads={leads}
+              activeId={activeId}
+              onSelect={setActiveId}
+              onChange={updateActive}
+              onNew={() => setSection("lead")}
+            />
+          )}
           {section === "disc" && (active ? <DiscPanel lead={active} onChange={updateActive} /> : <EmptyActive onGo={() => setSection("lead")} />)}
           {section === "copiloto" && (active ? <Copiloto lead={active} onChange={updateActive} /> : <EmptyActive onGo={() => setSection("lead")} />)}
           {section === "percepcao" && (active ? <Percepcao lead={active} /> : <EmptyActive onGo={() => setSection("lead")} />)}
