@@ -56,7 +56,9 @@ async function callAi(body: unknown): Promise<Record<string, unknown>> {
   return (data ?? {}) as Record<string, unknown>;
 }
 
-export function SdrPanel() {
+type SdrWs = { id: string; name: string; color: string | null };
+
+export function SdrPanel({ workspaceId: workspaceIdProp }: { workspaceId?: string } = {}) {
   const { profile } = useAuth();
   const companyId = useActiveCompanyId();
   const { workspaces } = useWorkspaces();
@@ -65,42 +67,66 @@ export function SdrPanel() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // SDR workspaces (tipo = 'sdr')
+  const [sdrWorkspaces, setSdrWorkspaces] = useState<SdrWs[]>([]);
+  const [currentWsId, setCurrentWsId] = useState<string | null>(workspaceIdProp ?? null);
+
   // Promote modal
   const [promoteOpen, setPromoteOpen] = useState(false);
   const [promoteLeadId, setPromoteLeadId] = useState<string | null>(null);
   const [promoteTargetWs, setPromoteTargetWs] = useState<string>("");
 
+  // Carrega workspaces tipo SDR do tenant ativo (se não veio fixado via prop)
+  useEffect(() => {
+    if (workspaceIdProp) { setCurrentWsId(workspaceIdProp); return; }
+    if (!companyId) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from("workspaces")
+        .select("id,name,color,workspace_type")
+        .eq("servidor_id", companyId)
+        .eq("workspace_type", "sdr")
+        .order("name");
+      if (error) { console.error(error); return; }
+      const list = (data ?? []) as SdrWs[];
+      setSdrWorkspaces(list);
+      setCurrentWsId((prev) => prev ?? list[0]?.id ?? null);
+    })();
+  }, [companyId, workspaceIdProp]);
+
+  // Re-carrega leads sempre que o workspace ativo mudar
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const l = await fetchLeads();
+      const l = currentWsId ? await fetchLeads({ workspaceId: currentWsId }) : [];
       setLeads(l);
-      if (l[0]) setActiveId(l[0].id);
+      setActiveId(l[0]?.id ?? null);
       setLoading(false);
     })();
-  }, []);
+  }, [currentWsId]);
 
   const active = useMemo(() => leads.find((l) => l.id === activeId) ?? null, [leads, activeId]);
 
   const refresh = async () => {
-    const l = await fetchLeads();
+    const l = currentWsId ? await fetchLeads({ workspaceId: currentWsId }) : [];
     setLeads(l);
   };
 
   const updateActive = async (patch: Partial<Lead>) => {
     if (!active) return;
-    // Otimista
     setLeads((prev) => prev.map((l) => (l.id === active.id ? { ...l, ...patch } : l)));
     await updateLead(active.id, patch);
   };
 
   const createNew = async (data: Partial<Lead>) => {
     if (!companyId) { toast.error("Selecione um tenant ativo"); return; }
+    if (!currentWsId) { toast.error("Crie ou selecione um workspace do tipo SDR primeiro"); return; }
     const lead = await createLead({
       name: data.name ?? "",
       company: data.company,
       origin: data.origin,
       channel: data.channel,
+      workspaceId: currentWsId,
       servidorId: companyId,
       ownerId: profile?.user_id ?? null,
     });
@@ -131,9 +157,20 @@ export function SdrPanel() {
     await refresh();
   };
 
+  // Sem workspace SDR cadastrado → empty state
+  if (!workspaceIdProp && sdrWorkspaces.length === 0 && !loading) {
+    return (
+      <div className="bg-card border border-border rounded-2xl p-10 text-center">
+        <p className="text-sm text-muted-foreground mb-2">Nenhum workspace do tipo <strong>SDR</strong> encontrado.</p>
+        <p className="text-xs text-muted-foreground">Crie um workspace e selecione o tipo "SDR" pra começar a qualificar leads aqui.</p>
+      </div>
+    );
+  }
+
   if (loading) {
     return <div className="flex h-64 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
+
 
   return (
     <div className="min-h-[60vh]">
