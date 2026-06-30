@@ -424,55 +424,108 @@ function NewLeadForm({ onCreate }: { onCreate: (data: Partial<Lead>) => void }) 
 }
 
 /* ===== 3. Qualificação ===== */
-function Qualificacao({ lead, onChange }: { lead: Lead; onChange: (p: Partial<Lead>) => void }) {
+function Qualificacao({
+  lead, leads, activeId, onSelect, onChange, onNew,
+}: {
+  lead: Lead | null;
+  leads: Lead[];
+  activeId: string | null;
+  onSelect: (id: string) => void;
+  onChange: (p: Partial<Lead>) => void;
+  onNew: () => void;
+}) {
   const set = (framework: "bant" | "champ" | "gpct" | "spin", key: string, val: string) => {
+    if (!lead) return;
     const next = { ...lead.qual, [framework]: { ...((lead.qual as any)[framework] ?? {}), [key]: val } };
     const updated = { ...lead, qual: next };
     const temp = classifyTemperature(updated);
     onChange({ qual: next, temp, stage: lead.stage === "novo" ? "qualificacao" : lead.stage });
   };
+  const qualifiableLeads = leads.filter((l) => l.stage !== "ganho" && l.stage !== "perdido" && l.stage !== "qualificado");
   return (
     <>
-      <H1 title="Qualificação" sub={`${lead.name} — ${lead.company || "—"}`} />
-      <div className="flex items-center gap-3 mb-4">
-        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Etapa</Label>
-        <Select value={lead.stage} onValueChange={(v) => onChange({ stage: v as LeadStage })}>
-          <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="novo">Novo</SelectItem>
-            <SelectItem value="qualificacao">Qualificação</SelectItem>
-            <SelectItem value="fechamento">Fechamento</SelectItem>
-            <SelectItem value="ganho">Ganho</SelectItem>
-            <SelectItem value="perdido">Perdido</SelectItem>
-            <SelectItem value="qualificado">Qualificado (no CRM)</SelectItem>
-          </SelectContent>
-        </Select>
-        {lead.temp && (
-          <Badge className={cn("capitalize", lead.temp === "quente" ? "bg-rose-600" : lead.temp === "morno" ? "bg-amber-500" : "bg-muted text-foreground")}>
-            Lead {lead.temp}
-          </Badge>
-        )}
+      <H1 title="Qualificação" sub={lead ? `${lead.name} — ${lead.company || "—"}` : "Escolha um lead do workspace SDR pra qualificar."} />
+      <div className="grid md:grid-cols-[260px_1fr] gap-4">
+        <Card className="p-3 md:sticky md:top-4 md:self-start">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Leads SDR</div>
+            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={onNew}>+ Novo</Button>
+          </div>
+          {qualifiableLeads.length === 0 && (
+            <p className="text-xs text-muted-foreground py-2">Nenhum lead pra qualificar.</p>
+          )}
+          <div className="space-y-1 max-h-[60vh] overflow-y-auto">
+            {qualifiableLeads.map((l) => {
+              const isActive = l.id === activeId;
+              return (
+                <button
+                  key={l.id}
+                  onClick={() => onSelect(l.id)}
+                  className={cn(
+                    "w-full text-left px-2 py-2 rounded-lg text-sm transition",
+                    isActive ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                  )}
+                >
+                  <div className="font-semibold truncate">{l.name || "(sem nome)"}</div>
+                  <div className={cn("text-[11px] truncate", isActive ? "text-primary-foreground/80" : "text-muted-foreground")}>
+                    {l.company || "—"} • {l.stage}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+
+        <div>
+          {!lead ? (
+            <Card className="text-center py-10">
+              <p className="text-sm text-muted-foreground">Selecione um lead à esquerda pra iniciar a qualificação.</p>
+            </Card>
+          ) : (
+            <>
+              <div className="flex items-center gap-3 mb-4">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Etapa</Label>
+                <Select value={lead.stage} onValueChange={(v) => onChange({ stage: v as LeadStage })}>
+                  <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="novo">Novo</SelectItem>
+                    <SelectItem value="qualificacao">Qualificação</SelectItem>
+                    <SelectItem value="fechamento">Fechamento</SelectItem>
+                    <SelectItem value="ganho">Ganho</SelectItem>
+                    <SelectItem value="perdido">Perdido</SelectItem>
+                    <SelectItem value="qualificado">Qualificado (no CRM)</SelectItem>
+                  </SelectContent>
+                </Select>
+                {lead.temp && (
+                  <Badge className={cn("capitalize", lead.temp === "quente" ? "bg-rose-600" : lead.temp === "morno" ? "bg-amber-500" : "bg-muted text-foreground")}>
+                    Lead {lead.temp}
+                  </Badge>
+                )}
+              </div>
+              <Tabs defaultValue="bant">
+                <TabsList className="grid grid-cols-4">
+                  <TabsTrigger value="bant">BANT</TabsTrigger>
+                  <TabsTrigger value="champ">CHAMP</TabsTrigger>
+                  <TabsTrigger value="gpct">GPCT</TabsTrigger>
+                  <TabsTrigger value="spin">SPIN</TabsTrigger>
+                </TabsList>
+                {(["bant","champ","gpct","spin"] as const).map((fw) => {
+                  const map = { bant: bantQuestions, champ: champQuestions, gpct: gpctQuestions, spin: spinQuestions }[fw];
+                  return (
+                    <TabsContent key={fw} value={fw} className="mt-4 space-y-3">
+                      {Object.entries(map).map(([k, q]) => (
+                        <QualField key={k} label={k.toUpperCase()} question={q as string}
+                          value={((lead.qual as any)[fw] as Record<string, string> | undefined)?.[k] ?? ""}
+                          onChange={(v) => set(fw, k, v)} />
+                      ))}
+                    </TabsContent>
+                  );
+                })}
+              </Tabs>
+            </>
+          )}
+        </div>
       </div>
-      <Tabs defaultValue="bant">
-        <TabsList className="grid grid-cols-4">
-          <TabsTrigger value="bant">BANT</TabsTrigger>
-          <TabsTrigger value="champ">CHAMP</TabsTrigger>
-          <TabsTrigger value="gpct">GPCT</TabsTrigger>
-          <TabsTrigger value="spin">SPIN</TabsTrigger>
-        </TabsList>
-        {(["bant","champ","gpct","spin"] as const).map((fw) => {
-          const map = { bant: bantQuestions, champ: champQuestions, gpct: gpctQuestions, spin: spinQuestions }[fw];
-          return (
-            <TabsContent key={fw} value={fw} className="mt-4 space-y-3">
-              {Object.entries(map).map(([k, q]) => (
-                <QualField key={k} label={k.toUpperCase()} question={q as string}
-                  value={((lead.qual as any)[fw] as Record<string, string> | undefined)?.[k] ?? ""}
-                  onChange={(v) => set(fw, k, v)} />
-              ))}
-            </TabsContent>
-          );
-        })}
-      </Tabs>
     </>
   );
 }
