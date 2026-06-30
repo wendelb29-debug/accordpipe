@@ -8,7 +8,7 @@ export default function Sdr() {
     <PageContainer>
       <PageHeader
         title="SDR Operating System"
-        subtitle="Copiloto de vendas consultivas com IA — qualificação, DISC, copiloto, percepção, objeções, fechamento e cold outreach."
+        description="Copiloto de vendas consultivas com IA — qualificação, DISC, copiloto, percepção, objeções, fechamento e cold outreach."
         icon={Rocket}
       />
       <SdrPanel />
