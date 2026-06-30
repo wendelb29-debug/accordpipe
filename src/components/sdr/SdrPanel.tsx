@@ -251,7 +251,7 @@ export function SdrPanel({ workspaceId: workspaceIdProp }: { workspaceId?: strin
             <Select value={promoteTargetWs} onValueChange={setPromoteTargetWs}>
               <SelectTrigger className="mt-1"><SelectValue placeholder="Escolha um workspace" /></SelectTrigger>
               <SelectContent>
-                {workspaces.filter(w => w.type !== "pre_venda_sdr").map((w) => (
+                {workspaces.filter((w: any) => (w.workspace_type ?? "crm") === "crm").map((w) => (
                   <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
                 ))}
               </SelectContent>
