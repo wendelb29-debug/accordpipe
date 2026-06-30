@@ -182,8 +182,23 @@ export function SdrPanel({ workspaceId: workspaceIdProp }: { workspaceId?: strin
             <div className="text-sm font-bold">Copiloto de vendas consultivas</div>
           </div>
         </div>
-        <ActiveLeadPill active={active} leads={leads} onChange={setActiveId} />
+        <div className="flex items-center gap-2">
+          {!workspaceIdProp && sdrWorkspaces.length > 0 && (
+            <Select value={currentWsId ?? ""} onValueChange={setCurrentWsId}>
+              <SelectTrigger className="h-9 min-w-[200px]">
+                <SelectValue placeholder="Workspace SDR" />
+              </SelectTrigger>
+              <SelectContent>
+                {sdrWorkspaces.map((w) => (
+                  <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <ActiveLeadPill active={active} leads={leads} onChange={setActiveId} />
+        </div>
       </div>
+
 
       <div className="grid md:grid-cols-[220px_1fr] gap-4">
         {/* Nav */}
