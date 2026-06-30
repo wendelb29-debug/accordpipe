@@ -322,10 +322,19 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
           { name: "Concluído", position: 4, sla_days: 0, color: "#22C55E", is_final: true },
         ];
 
+        const sdrPipeline = [
+          { name: "Novos Leads", position: 0, sla_days: 1, color: "#6366F1", is_default: true },
+          { name: "Pesquisa / Enriquecimento", position: 1, sla_days: 2, color: "#3B82F6" },
+          { name: "Cadência Ativa", position: 2, sla_days: 7, color: "#F59E0B" },
+          { name: "Qualificando (BANT)", position: 3, sla_days: 3, color: "#A855F7" },
+          { name: "Reunião Agendada", position: 4, sla_days: 2, color: "#EC4899" },
+          { name: "Passado p/ Closer", position: 5, sla_days: 0, color: "#22C55E", is_final: true },
+        ];
+
         const defaultCols: Record<string, typeof salesPipeline> = {
           vendas: salesPipeline,
           comercial: salesPipeline,
-          pre_venda_sdr: salesPipeline,
+          pre_venda_sdr: sdrPipeline,
           crm: salesPipeline,
           task: taskPipeline,
           suporte: suportePipeline,
