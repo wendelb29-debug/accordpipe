@@ -19,6 +19,8 @@ const routeImporters: Record<string, () => Promise<unknown>> = {
   "/empresas": () => import("@/pages/Empresas"),
   "/configuracoes/usuarios": () => import("@/pages/Usuarios"),
   "/gestao-tenants": () => import("@/pages/GestaoTenants"),
+  "/closer": () => import("@/pages/Closer"),
+  "/sdr": () => import("@/pages/Sdr"),
 };
 
 const warmed = new Set<string>();

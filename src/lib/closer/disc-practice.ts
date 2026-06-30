@@ -1,0 +1,13 @@
+import { Zap, MessageCircle, Shield, ListChecks } from "lucide-react";
+import type { DiscKey } from "./disc-data";
+
+export const discIcons: Record<DiscKey, React.ComponentType<{ className?: string }>> = {
+  D: Zap, I: MessageCircle, S: Shield, C: ListChecks,
+};
+
+export const discPractice: Record<DiscKey, { identify: string[]; adapt: { do: string[]; avoid: string[]; examples: string[] } }> = {
+  D: { identify: ["Fala rápido, em frases curtas e diretas","Interrompe, vai direto ao ponto, pergunta 'quanto custa?'","Demonstra impaciência com explicação longa","Tom firme, decisivo, pouco emocional"], adapt: { do: ["Frases curtas e objetivas","Foco em resultado e economia","Dê opções fechadas (A ou B)"], avoid: ["Rodeios, histórias, detalhes técnicos","Perguntas abertas e demoradas"], examples: ["\u201cVou ser direto: por R$ X, seu carro fica protegido. Fecha?\u201d","\u201cResumo em 3 pontos: cobertura, valor, prazo. Pode ser?\u201d"] } },
+  I: { identify: ["Fala muito, conta histórias, usa expressões animadas","Pergunta sobre você, cria conexão pessoal","Usa emojis, risadas, áudios longos no WhatsApp","Decide pela emoção e pela relação com o vendedor"], adapt: { do: ["Crie conversa antes de proposta","Use exemplos de outros clientes","Tom leve, validação emocional"], avoid: ["Excesso de número e tecnicismo","Tom frio ou apressado"], examples: ["\u201cCara, vou te contar uma história rápida que tem tudo a ver com você…\u201d","\u201cImagina a tranquilidade de sair com a família sem aquele aperto no peito 😉\u201d"] } },
+  S: { identify: ["Fala calmo, pausado, escuta mais do que fala","Pede tempo, evita decisões rápidas","Pergunta sobre segurança, garantia, atendimento","Demonstra cuidado com família e rotina"], adapt: { do: ["Ritmo calmo, pausas entre frases","Reforce segurança e estabilidade","Dê espaço para ele pensar"], avoid: ["Pressão para decidir agora","Mudanças bruscas de tom"], examples: ["\u201cSem pressa. Vou te explicar com calma e você decide no seu tempo.\u201d","\u201cNosso atendimento é humano, você sempre fala com gente de verdade.\u201d"] } },
+  C: { identify: ["Fala técnico, pede dados, números, comparações","Faz perguntas específicas sobre cláusulas e cobertura","Quer ver contrato, regulamento, prints","Tom analítico, pouca emoção, foco em lógica"], adapt: { do: ["Dados, números, comparativos","Mande documentação por escrito","Linguagem precisa e neutra"], avoid: ["Exagero, entusiasmo, promessas vagas","Pressão emocional"], examples: ["\u201cTe envio agora o contrato e o regulamento pra você analisar.\u201d","\u201cCobertura de 100% FIPE, sem franquia em roubo. Quer ver a tabela?\u201d"] } },
+};

@@ -6474,6 +6474,133 @@ export type Database = {
         }
         Relationships: []
       }
+      sdr_leads: {
+        Row: {
+          channel: string | null
+          company: string | null
+          created_at: string
+          disc: string | null
+          email: string | null
+          id: string
+          last_touch_at: string | null
+          name: string
+          next_touch_at: string | null
+          notes: string | null
+          origin: string
+          owner_id: string | null
+          phone: string | null
+          promoted_lead_id: string | null
+          promoted_workspace_id: string | null
+          qual: Json
+          qualified_at: string | null
+          sequence_day: number
+          servidor_id: string
+          stage: string
+          temperature: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          channel?: string | null
+          company?: string | null
+          created_at?: string
+          disc?: string | null
+          email?: string | null
+          id?: string
+          last_touch_at?: string | null
+          name: string
+          next_touch_at?: string | null
+          notes?: string | null
+          origin?: string
+          owner_id?: string | null
+          phone?: string | null
+          promoted_lead_id?: string | null
+          promoted_workspace_id?: string | null
+          qual?: Json
+          qualified_at?: string | null
+          sequence_day?: number
+          servidor_id: string
+          stage?: string
+          temperature?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          channel?: string | null
+          company?: string | null
+          created_at?: string
+          disc?: string | null
+          email?: string | null
+          id?: string
+          last_touch_at?: string | null
+          name?: string
+          next_touch_at?: string | null
+          notes?: string | null
+          origin?: string
+          owner_id?: string | null
+          phone?: string | null
+          promoted_lead_id?: string | null
+          promoted_workspace_id?: string | null
+          qual?: Json
+          qualified_at?: string | null
+          sequence_day?: number
+          servidor_id?: string
+          stage?: string
+          temperature?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sdr_leads_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sdr_sequence_events: {
+        Row: {
+          channel: string
+          created_by: string | null
+          day: number
+          id: string
+          message: string | null
+          response: string | null
+          sdr_lead_id: string
+          sent_at: string
+        }
+        Insert: {
+          channel: string
+          created_by?: string | null
+          day: number
+          id?: string
+          message?: string | null
+          response?: string | null
+          sdr_lead_id: string
+          sent_at?: string
+        }
+        Update: {
+          channel?: string
+          created_by?: string | null
+          day?: number
+          id?: string
+          message?: string | null
+          response?: string | null
+          sdr_lead_id?: string
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sdr_sequence_events_sdr_lead_id_fkey"
+            columns: ["sdr_lead_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_extras: {
         Row: {
           created_at: string
@@ -9140,6 +9267,7 @@ export type Database = {
           sort_order: number
           type: string
           updated_at: string
+          workspace_type: string
         }
         Insert: {
           color?: string
@@ -9154,6 +9282,7 @@ export type Database = {
           sort_order?: number
           type?: string
           updated_at?: string
+          workspace_type?: string
         }
         Update: {
           color?: string
@@ -9168,6 +9297,7 @@ export type Database = {
           sort_order?: number
           type?: string
           updated_at?: string
+          workspace_type?: string
         }
         Relationships: [
           {
@@ -9775,6 +9905,10 @@ export type Database = {
       pdf_contract_has_signer_token: {
         Args: { _contract_id: string }
         Returns: boolean
+      }
+      promote_sdr_lead: {
+        Args: { _sdr_lead_id: string; _target_workspace_id: string }
+        Returns: string
       }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }

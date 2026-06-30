@@ -62,6 +62,12 @@
 
     /* LinkedIn-style feed background (off-white warm gray) */
     --feed-bg: #F4F2EE;
+
+    /* DISC profile colors (Closer / SDR modules) */
+    --disc-d: #dc2626;
+    --disc-i: #f59e0b;
+    --disc-s: #16a34a;
+    --disc-c: #2563eb;
   }
 
   .dark {

@@ -1,80 +1,81 @@
+## Objetivo
 
-# Replicar fluxo Zuper no card de vendas
-
-Especificação grande — vou dividir em **7 fases entregáveis**. Cada fase já fica funcional e pode ser revisada antes da próxima. Tudo dentro do componente atual `CrmLeadDetailView` (memória: mantém `LeadPropostasTab` legado como entrypoint).
-
-> **Decisão importante:** mantenho o design system atual do Accord (dark theme #050505, header h-14, botão "Ganho" emerald, navegação pela seta azul). Replico **funcionalidade e fluxo** do Zuper, **não a paleta clara** dele.
-
----
-
-## Fase 1 — Pipeline horizontal de etapas (no topo do card)
-
-- Adicionar barra horizontal clicável logo acima das infos do lead, dentro de `CrmLeadDetailView`.
-- Cada etapa = botão. Etapa atual em destaque (primary). Demais neutras.
-- Click muda `stage_id` do lead via `useCrmLeads.updateLead` (já existe).
-- Etapas vêm de `kanban_columns` do workspace (não hardcoded — respeita configuração do tenant).
-- Mobile: scroll horizontal com snap.
-
-## Fase 2 — Aba Propostas: modal de modelo + ajustes na tela cheia
-
-Já existe `ZuperProposalModule` + `NewProposalModal` + `ZuperProposalForm`. Vou:
-
-- **Modal "Escolha o modelo"**: já existe. Refinar copy e adicionar dropdown de templates ativos (`proposal_templates`).
-- **Tela cheia** (`ZuperProposalForm`): garantir que renderiza
-  - Header com logo do tenant + CNPJ + responsável
-  - 3 blocos: Dados da Pessoa / Empresa / Proposta (com data criação auto + validade +15d editável)
-  - Editor TipTap para Introdução (Bold/Italic/listas/undo/redo)
-  - Busca de catálogo (`proposal_catalog_items`) com qtd + "Adicionar Item"
-  - Tabela de itens com tipo (P&S / MRR), qtd, unitário, total, remover
-  - Barra inferior fixa: Voltar / Template / Link Público / Gerar PDF / Salvar
-- **Listagem**: 2 cards de resumo (P&S total + MRR total/mês com nota), tabela com Proposta/Dono/P&S/MRR/Validade/Cobrança/Status/Ações, paginação 25/pg.
-
-## Fase 3 — Aba Principal (resumo financeiro do card)
-
-- 3 cards no topo: P&S (itens + R$), MRR (itens + R$/mês), nota informativa.
-- Cálculo a partir de `proposals` + `proposal_line_items` do lead, filtrando status `aberta` ou `aprovada`.
-- Abaixo: form de criação configurável (estado vazio quando workspace não tem form vinculado).
-
-## Fase 4 — Aba Arquivos (rename de "Docs") + dropdown "Gerar Documento" + modal "Variáveis em branco"
-
-- Renomear label da aba para "Arquivos".
-- Botão **+ Gerar Documento** vira `DropdownMenu` listando templates ativos de `document_templates` do tenant.
-- Ao escolher um template: roda o `buildVariableMap` que já existe, identifica variáveis sem dado, abre **modal "Variáveis em branco"** com lista (`{{COMPANY_CNPJ}} — CNPJ`, etc.) e botões **Cancelar / Gerar assim mesmo**.
-- Mantém botão **Enviar arquivo** (PDF/Word) já implementado e abre direto signatários com dono do card obrigatório.
-- Estado vazio com ícone de pasta + "Os arquivos do card aparecerão aqui".
-
-## Fase 5 — Aba Formulários em sub-abas
-
-- Buscar formulários vinculados ao workspace (`crm_forms` filtrado por `workspace_id`).
-- Sub-tabs (Tabs aninhada) — uma por formulário.
-- Cada sub-tab: cabeçalho com **Link Público** e **Editar**, grid 2 colunas com campos preenchidos do lead (Nome, Email, WhatsApp, CPF, DoB, CNPJ, Razão Social, CEP, Rua, Número, Complemento, Bairro, Cidade, Estado).
-
-## Fase 6 — Polish nas abas Agenda / Notas / Ligações
-
-- **Agenda**: título "Agenda / Compromissos", subtítulo "Gerencie os compromissos e atividades deste card", botão "+ Novo Compromisso", estado vazio com ícone + textos.
-- **Notas**: adicionar hint "Ctrl+V para colar imagem" abaixo do editor.
-- **Ligações**: estado vazio com instrução "Use o botão 📞 ao lado do telefone do contato para iniciar uma ligação".
-
-## Fase 7 — Aba Transcrição (nova)
-
-- Nova aba dedicada listando transcrições de ligações (já temos `transcription` em ligações).
-- Estado vazio adequado.
+1. Aba **Closer** na sidebar → página `/closer` com as 3 abas do `rapport-master-tool` (Atendimento, DISC na prática, Metodologias), adaptada ao tema Accord.
+2. Workspace ganha tipo: `crm` | `sdr` | `cadastro`. Ao criar workspace o usuário escolhe o tipo.
+3. Workspaces do tipo **SDR** ganham aba extra "SDR OS" (sequência 7d, conversacional IA, scripts) ao lado do Kanban atual. Têm funil/leads próprios.
+4. Lead SDR qualificado → ação "Enviar pro Closer" copia o lead pro funil CRM normal (workspace destino escolhido).
 
 ---
 
-## Detalhes técnicos
+## 1. Banco
 
-- **Sem migration nova nessa rodada** — todas as tabelas já existem (`proposals`, `proposal_line_items`, `proposal_templates`, `proposal_catalog_items`, `document_templates`, `crm_forms`, `kanban_columns`).
-- **Reuso máximo**: `CrmLeadDetailView` orquestra; cada aba fica em arquivo próprio em `src/components/atendimento/tabs/` para reduzir o monstro de 1900 linhas atual.
-- **Pipeline horizontal**: novo componente `LeadStagePipeline.tsx`, usa `useKanbanColumns(workspaceId)` (já existe).
-- **Variáveis em branco**: lógica já parcialmente existe em `LeadDocumentosTab` (`buildVariableMap` + `CRITICAL_VARS`). Vou expor a lista completa de placeholders detectados no template.
-- **Editor rich text**: usa TipTap já presente em `IntroSection` (verifico se há dependência ou troco por implementação leve com `contenteditable` + comandos do form).
+Migration única:
 
----
+- `workspaces.workspace_type text not null default 'crm' check in ('crm','sdr','cadastro')` — popula tudo existente como `crm`.
+- Nova tabela `sdr_leads` (funil SDR isolado, RLS por `workspace_id` reusando a policy padrão de workspaces):
+  - `id, workspace_id, owner_id, name, phone, email, source, stage` (`novo|tentativa_1|tentativa_2|conectado|qualificado|descartado`), `notes, last_touch_at, next_touch_at, sequence_day` (0–7), `qualified_at, promoted_lead_id` (FK opcional `crm_leads`), `created_at, updated_at`.
+- Nova tabela `sdr_sequence_events` (log das mensagens da sequência 7d): `id, sdr_lead_id, day, channel, sent_at, response`.
+- GRANT + RLS escopado por workspace (mesmo padrão de `crm_leads`).
 
-## Pontos para confirmar antes de começar
+Função `public.promote_sdr_lead(sdr_lead_id uuid, target_workspace_id uuid)` (SECURITY DEFINER) que cria `crm_leads` na primeira coluna do kanban do workspace destino, grava `promoted_lead_id`, marca `stage='qualificado'`, `qualified_at=now()`.
 
-1. **Etapas do pipeline**: você quer que as etapas venham dinâmicas do `kanban_columns` do workspace, ou prefere fixar exatamente as 10 etapas que listou (Standby → ... → Assinatura Contrato) hardcoded?
-2. **Ordem de execução**: começo pela **Fase 1 (pipeline)** ou pela **Fase 4 (Arquivos + dropdown + modal variáveis)** que parece mais urgente pelos prints anteriores?
-3. **Aba "Transcrição" separada**: cria aba nova, ou junta dentro de Ligações como sub-seção?
-4. **Form de criação configurável (Fase 3)**: existe alguma tabela/coluna que liga formulário-de-criação ao workspace? Ou só mostro o estado vazio por enquanto?
+## 2. Arquivos copiados de `rapport-master-tool` (adaptados)
+
+| Origem | Destino no Accord | Adaptação |
+|---|---|---|
+| `src/routes/index.tsx` (3 abas Closer) | `src/pages/Closer.tsx` | Vira página React Router, usa `AppLayout`, tokens do Accord |
+| `src/routes/sdr.tsx` | `src/components/sdr/SdrPanel.tsx` | Componente reusável, montado dentro do workspace SDR |
+| `src/routes/api/sdr.ts` (server route TanStack) | `supabase/functions/sdr-ai/index.ts` | Edge Function, AI SDK via `npm:ai` + `npm:@ai-sdk/openai-compatible`, helper `ai-gateway` inline |
+| `src/lib/ai-gateway.server.ts` | inline na edge function | — |
+| `src/lib/sdr-data.ts`, `sdr-storage.ts` | `src/lib/sdr/` | `sdr-storage` passa a usar Supabase (`sdr_leads`) em vez de localStorage |
+| `src/lib/disc-*.ts`, `metodologias.ts` | `src/lib/closer/` | puro, sem mudança |
+| `src/components/DiscQuizDialog.tsx` | `src/components/closer/DiscQuizDialog.tsx` | trocar cores hard-coded por tokens do Accord |
+
+Cliente passa a chamar `supabase.functions.invoke("sdr-ai", { body })` em vez de `fetch("/api/sdr")`.
+
+## 3. Workspaces — UI
+
+- `WorkspaceFormDialog` (criar/editar workspace): novo `Select` "Tipo" com 3 opções; ícone e descrição curtos.
+- Lista de workspaces mostra badge do tipo (CRM / SDR / Cadastro).
+- `useWorkspaces` retorna `workspace_type`.
+
+## 4. Página do workspace
+
+No layout do workspace (CRM/Atendimento), quando `workspace_type === 'sdr'`:
+- Topo do workspace ganha **abas**: `Funil SDR` (Kanban com os stages SDR usando `sdr_leads`) e `SDR OS` (`<SdrPanel/>` — conversacional IA, sequência 7d, scripts).
+- Cards do funil SDR têm botão "Enviar pro Closer" → modal pra escolher workspace CRM destino → chama `promote_sdr_lead` RPC → toast + remove do funil SDR.
+- Workspaces `crm` continuam exatamente como hoje (sem aba extra).
+
+## 5. Navegação
+
+`Sidebar.tsx`: novo item **Closer** (ícone `Headphones` ou `MessageSquareQuote`) → `/closer`, perto de Accord Pulse/Atendimento. Adicionar `routePrefetch` da rota nova.
+
+`App.tsx`: rota `/closer` com `ProtectedRoute` + `AppLayout`, lazy import `Closer`.
+
+## 6. Infra IA
+
+- Dependências: `bun add ai @ai-sdk/openai-compatible` (usadas só pela edge function via `npm:`, mas mantemos no `package.json` p/ tipos).
+- `LOVABLE_API_KEY` já é auto-provisionada pelo Lovable Cloud; verifico via `fetch_secrets` e provisiono se faltar antes do deploy.
+- Edge function `sdr-ai` com CORS, `verify_jwt` default, valida body com Zod, usa `google/gemini-3-flash-preview` via `createLovableAiGatewayProvider`. Trata 429 (rate limit) e 402 (créditos esgotados) com mensagens claras.
+
+## 7. Design
+
+- Cores, espaçamento e tipografia 100% do Accord (dark `#050505`, `text-foreground`, `gradient-primary` roxo, `rounded-2xl`, `h-14` headers).
+- Nada de cores azul/indigo originais do `rapport-master-tool`.
+
+## 8. Ordem de execução
+
+1. Migration (workspace_type + sdr_leads + sdr_sequence_events + RPC `promote_sdr_lead`).
+2. Edge function `sdr-ai` + deps (`ai`, `@ai-sdk/openai-compatible`).
+3. Libs em `src/lib/closer/` e `src/lib/sdr/` (incluindo `sdrApi.ts` que substitui `localStorage` por Supabase).
+4. Componentes: `SdrPanel.tsx`, `DiscQuizDialog.tsx`, abas Closer.
+5. Página `Closer.tsx` + rota.
+6. UI workspace: tipo no form, badge, aba SDR no layout do workspace SDR.
+7. Sidebar: item Closer + prefetch.
+8. Verificar `LOVABLE_API_KEY`, smoke test Conversacional IA e Sequência 7d.
+
+## Riscos
+
+- Volume grande de arquivos novos — entrega em uma leva, mas typecheck no fim.
+- Migration que adiciona coluna `not null default 'crm'` em `workspaces` é segura (não bloqueia leitura).
+- Promoção SDR→CRM precisa que a primeira coluna do Kanban exista no workspace destino; se não houver, o RPC retorna erro tratado.
