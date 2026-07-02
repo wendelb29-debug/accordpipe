@@ -570,6 +570,124 @@ async function buildAuditPages(
   centerText(page, `Certificado gerado em ${fmtDateTimeBR(new Date().toISOString())}`, y, font, 6, P.midGray);
 }
 
+// ─── Helpers: robust PDF fetch + certificate builder ───
+
+function extractStoragePath(pdfUrl: string | null | undefined): string | null {
+  if (!pdfUrl) return null;
+  const clean = pdfUrl.split("?")[0];
+  const marker = "/storage/v1/object/";
+  const idx = clean.indexOf(marker);
+  if (idx === -1) return null;
+  const rest = clean.substring(idx + marker.length);
+  const parts = rest.split("/");
+  if (parts.length < 3) return null;
+  if (parts[1] !== "contract-pdfs") return null;
+  return decodeURIComponent(parts.slice(2).join("/"));
+}
+
+async function downloadPdfBytesFromDoc(supabase: any, doc: any): Promise<ArrayBuffer | null> {
+  const path = doc.pdf_path || extractStoragePath(doc.pdf_url);
+  if (path) {
+    const { data, error } = await supabase.storage.from("contract-pdfs").download(path);
+    if (!error && data) {
+      if (!doc.pdf_path) {
+        await supabase.from("generated_documents").update({ pdf_path: path }).eq("id", doc.id);
+      }
+      return await data.arrayBuffer();
+    }
+    console.error("[sign-document] storage.download failed", error?.message);
+  }
+  if (doc.pdf_url) {
+    try {
+      const r = await fetch(doc.pdf_url);
+      if (r.ok) return await r.arrayBuffer();
+      console.error("[sign-document] fetch pdf_url failed", r.status);
+    } catch (e) {
+      console.error("[sign-document] fetch pdf_url threw", e);
+    }
+  }
+  return null;
+}
+
+async function buildAndSaveSignedPdf(
+  supabase: any,
+  documentId: string,
+): Promise<{ ok: boolean; signed_pdf_url?: string; document_hash?: string; validation_code?: string; error?: string }> {
+  const { data: fullDoc } = await supabase
+    .from("generated_documents").select("*").eq("id", documentId).single();
+  if (!fullDoc) return { ok: false, error: "documento nao encontrado" };
+
+  let tenantData: any = null;
+  if (fullDoc.servidor_id) {
+    const { data: tenantRow } = await supabase
+      .from("companies")
+      .select("nome_fantasia, razao_social, brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color, brand_logo_url")
+      .eq("id", fullDoc.servidor_id)
+      .single();
+    tenantData = tenantRow;
+  }
+  const palette = buildPalette(tenantData);
+
+  const pdfBytes = await downloadPdfBytesFromDoc(supabase, fullDoc);
+  if (!pdfBytes) return { ok: false, error: "falha ao baixar PDF original" };
+
+  const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+
+  const hashBuffer = await crypto.subtle.digest("SHA-256", pdfBytes);
+  const hashHex = Array.from(new Uint8Array(hashBuffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
+
+  const validationCode = fullDoc.validation_code ||
+    `ACD-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+  const signedAt = fullDoc.signed_at || new Date().toISOString();
+
+  const { data: allSigners } = await supabase
+    .from("document_signers").select("*").eq("document_id", documentId);
+  const { data: eventsData } = await supabase
+    .from("document_events").select("*").eq("document_id", documentId).order("created_at", { ascending: true });
+
+  const publicUrl = `https://accordpipe.lovable.app/validar-documento/${validationCode}`;
+
+  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBoldEmb = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+  let logoImage: any = null;
+  if (tenantData?.brand_logo_url) {
+    try {
+      const logoResp = await fetch(tenantData.brand_logo_url);
+      if (logoResp.ok) {
+        const logoBytes = await logoResp.arrayBuffer();
+        const contentType = logoResp.headers.get("content-type") || "";
+        logoImage = contentType.includes("png")
+          ? await pdfDoc.embedPng(logoBytes)
+          : await pdfDoc.embedJpg(logoBytes);
+      }
+    } catch (logoErr) {
+      console.error("[sign-document] Logo embed failed:", logoErr);
+    }
+  }
+
+  await buildCoverPage(pdfDoc, fontRegular, fontBoldEmb, { ...fullDoc, signed_at: signedAt }, validationCode, hashHex, publicUrl, palette, logoImage);
+  await buildAuditPages(pdfDoc, fontRegular, fontBoldEmb, { ...fullDoc, signed_at: signedAt }, allSigners || [], eventsData || [], validationCode, hashHex, publicUrl, palette);
+
+  const finalPdfBytes = await pdfDoc.save();
+  const signedPath = `signed/${documentId}_${Date.now()}.pdf`;
+  const { error: upErr } = await supabase.storage.from("contract-pdfs").upload(signedPath, finalPdfBytes, { contentType: "application/pdf", upsert: true });
+  if (upErr) return { ok: false, error: `upload falhou: ${upErr.message}` };
+
+  const { data: urlData } = await supabase.storage.from("contract-pdfs").createSignedUrl(signedPath, 2592000);
+  const signedPdfUrl = urlData?.signedUrl || "";
+
+  await supabase.from("generated_documents").update({
+    status: "signed",
+    signed_pdf_url: signedPdfUrl,
+    document_hash: hashHex,
+    validation_code: validationCode,
+    signed_at: signedAt,
+  }).eq("id", documentId);
+
+  return { ok: true, signed_pdf_url: signedPdfUrl, document_hash: hashHex, validation_code: validationCode };
+}
+
 // ─── Main handler ───
 
 Deno.serve(async (req) => {
