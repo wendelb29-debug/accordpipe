@@ -726,6 +726,25 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     }
   }, [ensureDocumentPdfUrl]);
 
+  const handleRegenerateSignedPdf = useCallback(async (doc: GeneratedDoc) => {
+    const toastId = toast.loading("Gerando PDF com assinaturas…");
+    try {
+      const { data, error } = await supabase.functions.invoke("sign-document", {
+        body: { action: "regenerate", document_id: doc.id },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "Falha ao gerar PDF assinado");
+      toast.success("PDF com assinaturas gerado!", { id: toastId });
+      await fetchDocuments();
+      if (data.signed_pdf_url) {
+        window.open(data.signed_pdf_url, "_blank", "noopener,noreferrer");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao gerar PDF assinado", { id: toastId });
+    }
+  }, []);
+
+
   const handleGenerate = async (forcedTemplateId?: string) => {
     const tid = forcedTemplateId || selectedTemplate;
     if (!tid) return toast.error("Selecione um modelo");
