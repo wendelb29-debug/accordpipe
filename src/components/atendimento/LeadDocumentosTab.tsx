@@ -1375,8 +1375,13 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                                <Download className="h-3.5 w-3.5 mr-2" /> {doc.status === "signed" && doc.signed_pdf_url ? "Baixar PDF assinado" : "Baixar PDF original"}
                              </DropdownMenuItem>
                            </>
-                         )}
-                         {/* Botão "Baixar PDF assinado" já é tratado pelo handleDownloadDocument acima quando o documento está assinado */}
+                          )}
+                          {doc.status === "signed" && !doc.signed_pdf_url && (
+                            <DropdownMenuItem onClick={() => handleRegenerateSignedPdf(doc)}>
+                              <Download className="h-3.5 w-3.5 mr-2" /> Gerar PDF com assinaturas
+                            </DropdownMenuItem>
+                          )}
+                          {/* Botão "Baixar PDF assinado" já é tratado pelo handleDownloadDocument acima quando o documento está assinado */}
 
                          {doc.status === "signed" && doc.validation_code && (
                            <>
