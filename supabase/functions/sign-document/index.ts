@@ -703,6 +703,52 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action, token } = body;
 
+    // ── REGENERATE (admin, no signer token) ──
+    if (action === "regenerate") {
+      const { document_id } = body;
+      if (!document_id) {
+        return new Response(JSON.stringify({ success: false, error: "document_id obrigatorio" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // Verify caller is authenticated and belongs to the tenant of the document
+      const authHeader = req.headers.get("Authorization") || "";
+      const jwt = authHeader.replace("Bearer ", "");
+      if (!jwt) {
+        return new Response(JSON.stringify({ success: false, error: "nao autenticado" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: `Bearer ${jwt}` } },
+      });
+      const { data: userRes } = await anonClient.auth.getUser();
+      const userId = userRes?.user?.id;
+      if (!userId) {
+        return new Response(JSON.stringify({ success: false, error: "token invalido" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: docRow } = await supabase
+        .from("generated_documents").select("id, servidor_id").eq("id", document_id).maybeSingle();
+      if (!docRow) {
+        return new Response(JSON.stringify({ success: false, error: "documento nao encontrado" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: linkRow } = await supabase
+        .from("user_tenants").select("id").eq("user_id", userId).eq("company_id", docRow.servidor_id).maybeSingle();
+      if (!linkRow) {
+        return new Response(JSON.stringify({ success: false, error: "sem acesso" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const res = await buildAndSaveSignedPdf(supabase, document_id);
+      return new Response(JSON.stringify(res), {
+        status: res.ok ? 200 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (!token) {
       return new Response(JSON.stringify({ success: false, error: "Token obrigatorio" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
