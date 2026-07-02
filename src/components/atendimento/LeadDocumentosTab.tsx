@@ -802,11 +802,11 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         tenantName: tenant?.nome_fantasia || tenant?.razao_social || undefined,
         tenantCnpj: tenant?.cnpj || undefined,
       });
-      const pdfUrl = await uploadGeneratedPdf(insertedDoc.id, finalName, pdfBytes);
+      const { url: pdfUrl, path: pdfPath } = await uploadGeneratedPdf(insertedDoc.id, finalName, pdfBytes);
 
       const { error: updateError } = await supabase
         .from("generated_documents")
-        .update({ pdf_url: pdfUrl } as any)
+        .update({ pdf_url: pdfUrl, pdf_path: pdfPath } as any)
         .eq("id", insertedDoc.id);
 
       if (updateError) throw updateError;
