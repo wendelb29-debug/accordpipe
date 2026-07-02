@@ -552,7 +552,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
       const { error: updateErr } = await supabase
         .from("generated_documents")
-        .update({ pdf_url: pdfUrl } as any)
+        .update({ pdf_url: pdfUrl, pdf_path: filePath } as any)
         .eq("id", insertedDoc.id);
       if (updateErr) throw updateErr;
 
