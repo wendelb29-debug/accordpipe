@@ -3765,6 +3765,7 @@ export type Database = {
           id: string
           lead_id: string
           nome: string
+          pdf_path: string | null
           pdf_url: string | null
           proposal_id: string | null
           rendered_variables_json: Json | null
@@ -3790,6 +3791,7 @@ export type Database = {
           id?: string
           lead_id: string
           nome: string
+          pdf_path?: string | null
           pdf_url?: string | null
           proposal_id?: string | null
           rendered_variables_json?: Json | null
@@ -3815,6 +3817,7 @@ export type Database = {
           id?: string
           lead_id?: string
           nome?: string
+          pdf_path?: string | null
           pdf_url?: string | null
           proposal_id?: string | null
           rendered_variables_json?: Json | null
@@ -9442,6 +9445,7 @@ export type Database = {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
       }
+      email_queue_dispatch: { Args: never; Returns: undefined }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number

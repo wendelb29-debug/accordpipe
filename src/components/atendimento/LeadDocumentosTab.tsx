@@ -552,7 +552,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
 
       const { error: updateErr } = await supabase
         .from("generated_documents")
-        .update({ pdf_url: pdfUrl } as any)
+        .update({ pdf_url: pdfUrl, pdf_path: filePath } as any)
         .eq("id", insertedDoc.id);
       if (updateErr) throw updateErr;
 
@@ -637,7 +637,7 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     fetchTemplates();
   }, [fetchDocuments, fetchTemplates]);
 
-  const uploadGeneratedPdf = useCallback(async (documentId: string, fileName: string, pdfBytes: Uint8Array) => {
+  const uploadGeneratedPdf = useCallback(async (documentId: string, fileName: string, pdfBytes: Uint8Array): Promise<{ url: string; path: string }> => {
     const arrayBuf = pdfBytes.buffer.slice(pdfBytes.byteOffset, pdfBytes.byteOffset + pdfBytes.byteLength) as ArrayBuffer;
     const blob = new Blob([arrayBuf], { type: "application/pdf" });
     const safeName = fileName
@@ -656,12 +656,30 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
     }
 
     const { data: signedData } = await supabase.storage.from("contract-pdfs").createSignedUrl(filePath, 86400);
-    return signedData?.signedUrl || "";
+    return { url: signedData?.signedUrl || "", path: filePath };
   }, [servidorId]);
+
+  // Extract the storage object path from a Supabase signed/public URL
+  const extractStoragePath = (url: string | null | undefined): string | null => {
+    if (!url) return null;
+    const clean = url.split("?")[0];
+    const m = clean.match(/\/storage\/v1\/object\/(?:sign|public|authenticated)\/contract-pdfs\/(.+)$/);
+    return m ? decodeURIComponent(m[1]) : null;
+  };
+
+  const refreshSignedUrlIfNeeded = useCallback(async (doc: GeneratedDoc, currentUrl: string): Promise<string> => {
+    // Prefer refreshing from pdf_path (or extracted path) so expired signed URLs are transparently renewed.
+    const path = (doc as any).pdf_path || extractStoragePath(currentUrl);
+    if (!path) return currentUrl;
+    const { data } = await supabase.storage.from("contract-pdfs").createSignedUrl(path, 86400);
+    return data?.signedUrl || currentUrl;
+  }, []);
 
   const ensureDocumentPdfUrl = useCallback(async (doc: GeneratedDoc) => {
     // For signed documents, prefer the signed PDF from the edge function (has the professional dark certificate)
-    if (doc.status === "signed" && doc.signed_pdf_url) return doc.signed_pdf_url;
+    if (doc.status === "signed" && doc.signed_pdf_url) {
+      return await refreshSignedUrlIfNeeded({ ...doc, pdf_url: doc.signed_pdf_url } as any, doc.signed_pdf_url);
+    }
 
     // For non-signed documents, re-render from html_content
     if (doc.html_content) {
@@ -675,20 +693,20 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
       };
 
       const pdfBytes = await renderGeneratedDocumentPdf(doc.nome, doc.html_content, brandingOpts);
-      const pdfUrl = await uploadGeneratedPdf(doc.id, doc.nome, pdfBytes);
+      const { url: pdfUrl, path: pdfPath } = await uploadGeneratedPdf(doc.id, doc.nome, pdfBytes);
 
       await supabase
         .from("generated_documents")
-        .update({ pdf_url: pdfUrl } as any)
+        .update({ pdf_url: pdfUrl, pdf_path: pdfPath } as any)
         .eq("id", doc.id);
 
-      setDocuments((prev) => prev.map((item) => item.id === doc.id ? { ...item, pdf_url: pdfUrl } : item));
+      setDocuments((prev) => prev.map((item) => item.id === doc.id ? { ...item, pdf_url: pdfUrl, pdf_path: pdfPath } as any : item));
       return pdfUrl;
     }
 
-    if (doc.pdf_url) return doc.pdf_url;
+    if (doc.pdf_url) return await refreshSignedUrlIfNeeded(doc, doc.pdf_url);
     throw new Error("Documento sem conteúdo renderizado para gerar PDF");
-  }, [uploadGeneratedPdf, servidorId]);
+  }, [uploadGeneratedPdf, servidorId, refreshSignedUrlIfNeeded]);
 
   const handleOpenDocument = useCallback(async (doc: GeneratedDoc) => {
     try {
@@ -707,6 +725,25 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
       toast.error(err.message || "Erro ao baixar documento");
     }
   }, [ensureDocumentPdfUrl]);
+
+  const handleRegenerateSignedPdf = useCallback(async (doc: GeneratedDoc) => {
+    const toastId = toast.loading("Gerando PDF com assinaturas…");
+    try {
+      const { data, error } = await supabase.functions.invoke("sign-document", {
+        body: { action: "regenerate", document_id: doc.id },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "Falha ao gerar PDF assinado");
+      toast.success("PDF com assinaturas gerado!", { id: toastId });
+      await fetchDocuments();
+      if (data.signed_pdf_url) {
+        window.open(data.signed_pdf_url, "_blank", "noopener,noreferrer");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao gerar PDF assinado", { id: toastId });
+    }
+  }, []);
+
 
   const handleGenerate = async (forcedTemplateId?: string) => {
     const tid = forcedTemplateId || selectedTemplate;
@@ -784,11 +821,11 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
         tenantName: tenant?.nome_fantasia || tenant?.razao_social || undefined,
         tenantCnpj: tenant?.cnpj || undefined,
       });
-      const pdfUrl = await uploadGeneratedPdf(insertedDoc.id, finalName, pdfBytes);
+      const { url: pdfUrl, path: pdfPath } = await uploadGeneratedPdf(insertedDoc.id, finalName, pdfBytes);
 
       const { error: updateError } = await supabase
         .from("generated_documents")
-        .update({ pdf_url: pdfUrl } as any)
+        .update({ pdf_url: pdfUrl, pdf_path: pdfPath } as any)
         .eq("id", insertedDoc.id);
 
       if (updateError) throw updateError;
@@ -1357,8 +1394,13 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                                <Download className="h-3.5 w-3.5 mr-2" /> {doc.status === "signed" && doc.signed_pdf_url ? "Baixar PDF assinado" : "Baixar PDF original"}
                              </DropdownMenuItem>
                            </>
-                         )}
-                         {/* Botão "Baixar PDF assinado" já é tratado pelo handleDownloadDocument acima quando o documento está assinado */}
+                          )}
+                          {doc.status === "signed" && !doc.signed_pdf_url && (
+                            <DropdownMenuItem onClick={() => handleRegenerateSignedPdf(doc)}>
+                              <Download className="h-3.5 w-3.5 mr-2" /> Gerar PDF com assinaturas
+                            </DropdownMenuItem>
+                          )}
+                          {/* Botão "Baixar PDF assinado" já é tratado pelo handleDownloadDocument acima quando o documento está assinado */}
 
                          {doc.status === "signed" && doc.validation_code && (
                            <>
