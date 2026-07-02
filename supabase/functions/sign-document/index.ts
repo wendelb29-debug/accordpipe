@@ -823,77 +823,22 @@ Deno.serve(async (req) => {
           metadata_json: { total_signers: (allSigners || []).length, required_signers: required.length, finalized_at: signedAt },
         });
 
-        const { data: fullDoc } = await supabase
-          .from("generated_documents").select("*").eq("id", signer.document_id).single();
+        // Persist signed_at + validation_code up-front so the helper sees them
+        await supabase.from("generated_documents").update({
+          status: "signed",
+          signed_at: signedAt,
+          validation_code: validationCode,
+          html_content: updatedHtml,
+          rendered_variables_json: snapshot,
+        }).eq("id", signer.document_id);
 
-        if (fullDoc?.pdf_url) {
-          try {
-            // ── Fetch tenant brand data ──
-            let tenantData: any = null;
-            if (fullDoc.servidor_id) {
-              const { data: tenantRow } = await supabase
-                .from("companies")
-                .select("nome_fantasia, razao_social, brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color, brand_logo_url")
-                .eq("id", fullDoc.servidor_id)
-                .single();
-              tenantData = tenantRow;
-            }
-
-            const palette = buildPalette(tenantData);
-
-            const pdfResp = await fetch(fullDoc.pdf_url);
-            if (pdfResp.ok) {
-              const pdfBytes = await pdfResp.arrayBuffer();
-              const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
-
-              const hashBuffer = await crypto.subtle.digest("SHA-256", pdfBytes);
-              const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
-              docUpdate.document_hash = hashHex;
-
-              const { data: eventsData } = await supabase
-                .from("document_events").select("*").eq("document_id", signer.document_id)
-                .order("created_at", { ascending: true });
-
-              const publicUrl = `https://accordpipe.lovable.app/validar-documento/${validationCode}`;
-
-              const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
-              const fontBoldEmb = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-
-              // ── Try to embed tenant logo ──
-              let logoImage: any = null;
-              if (tenantData?.brand_logo_url) {
-                try {
-                  const logoResp = await fetch(tenantData.brand_logo_url);
-                  if (logoResp.ok) {
-                    const logoBytes = await logoResp.arrayBuffer();
-                    const contentType = logoResp.headers.get("content-type") || "";
-                    if (contentType.includes("png")) {
-                      logoImage = await pdfDoc.embedPng(logoBytes);
-                    } else {
-                      logoImage = await pdfDoc.embedJpg(logoBytes);
-                    }
-                  }
-                } catch (logoErr) {
-                  console.error("[sign-document] Logo embed failed:", logoErr);
-                }
-              }
-
-              // Build white-label certificate pages
-              await buildCoverPage(pdfDoc, fontRegular, fontBoldEmb, { ...fullDoc, signed_at: signedAt }, validationCode, hashHex, publicUrl, palette, logoImage);
-              await buildAuditPages(pdfDoc, fontRegular, fontBoldEmb, { ...fullDoc, signed_at: signedAt }, allSigners || [], eventsData || [], validationCode, hashHex, publicUrl, palette);
-
-              const finalPdfBytes = await pdfDoc.save();
-              const signedPath = `signed/${signer.document_id}_${Date.now()}.pdf`;
-              const { error: upErr } = await supabase.storage.from("contract-pdfs").upload(signedPath, finalPdfBytes, { contentType: "application/pdf" });
-
-              if (!upErr) {
-                const { data: urlData } = await supabase.storage.from("contract-pdfs").createSignedUrl(signedPath, 2592000);
-                docUpdate.signed_pdf_url = urlData?.signedUrl || "";
-              }
-            }
-          } catch (pdfErr) {
-            console.error("[sign-document] PDF generation failed:", pdfErr);
-          }
+        // Build signed PDF with cover/audit pages using storage path (never expires)
+        const buildRes = await buildAndSaveSignedPdf(supabase, signer.document_id);
+        if (buildRes.ok) {
+          docUpdate.signed_pdf_url = buildRes.signed_pdf_url;
+          docUpdate.document_hash = buildRes.document_hash;
+        } else {
+          console.error("[sign-document] buildAndSaveSignedPdf failed:", buildRes.error);
         }
 
         await supabase.from("document_events").insert({
