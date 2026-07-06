@@ -737,7 +737,7 @@ Deno.serve(async (req) => {
         });
       }
       const { data: linkRow } = await supabase
-        .from("user_tenants").select("id").eq("user_id", userId).eq("company_id", docRow.servidor_id).maybeSingle();
+        .from("user_tenants").select("id").eq("user_id", userId).eq("tenant_id", docRow.servidor_id).maybeSingle();
       if (!linkRow) {
         return new Response(JSON.stringify({ success: false, error: "sem acesso" }), {
           status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
