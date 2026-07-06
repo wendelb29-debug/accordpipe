@@ -455,7 +455,13 @@ export default function NovoServidor() {
           webhookPayload.zapi_webhook_notify_me = webhookNotifyMe;
         }
 
-        const { error } = await supabase.from("companies").upsert({ id: newId, ...payload, ...webhookPayload }, { onConflict: "id" });
+        // Ensure the new tenant is linked to the actor's tenant so the
+        // "prevent additional master tenants" trigger doesn't block the insert.
+        const parentLink = activeCompanyId ? { servidor_id: activeCompanyId } : {};
+        const resellerLink = (isResellerTenant && !isGlobalMaster && activeCompanyId)
+          ? { parent_tenant_id: activeCompanyId, created_by_tenant_id: activeCompanyId }
+          : {};
+        const { error } = await supabase.from("companies").upsert({ id: newId, ...parentLink, ...resellerLink, ...payload, ...webhookPayload }, { onConflict: "id" });
         if (error) throw error;
 
         // If created from a setup request, finalize it
