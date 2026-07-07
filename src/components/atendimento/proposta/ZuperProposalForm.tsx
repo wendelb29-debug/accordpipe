@@ -15,6 +15,7 @@ import { RichTextEditor } from "./RichTextEditor";
 import type { ProposalLineItem, ProposalRecord, ProposalTemplate, PSPayment, MRRPayment, ProposalItemType } from "./types";
 import { calcItemTotal, calcTotals, fmtCur, generatePSInstallments, randomPublicToken } from "./utils";
 import { generateProposalPdf } from "@/lib/generateProposalPdf";
+import { COMPANY_SAFE_COLUMNS } from "@/lib/safeColumns";
 
 interface CatalogItem {
   id: string; name: string; value: number; description: string | null;
@@ -102,9 +103,26 @@ export function ZuperProposalForm({ lead, servidorId, existingProposal, initialT
     (async () => {
       const { data: comp } = await supabase
         .from("companies")
-        .select("razao_social, nome_fantasia, cnpj, responsavel, email, telefone, logo_url")
+        .select(COMPANY_SAFE_COLUMNS)
         .eq("id", servidorId).maybeSingle();
-      setCompany(comp as any);
+      let signedLogo: string | null = null;
+      const compAny: any = comp || {};
+      if (compAny.brand_logo_path) {
+        const { data: signed } = await supabase.storage
+          .from("documents")
+          .createSignedUrl(compAny.brand_logo_path, 60 * 60 * 24);
+        if (signed?.signedUrl) signedLogo = signed.signedUrl;
+      }
+      if (!signedLogo && compAny.brand_logo_url) signedLogo = compAny.brand_logo_url;
+      setCompany({
+        razao_social: compAny.razao_social || "",
+        nome_fantasia: compAny.nome_fantasia || null,
+        cnpj: compAny.cnpj || "",
+        responsavel: compAny.responsavel || null,
+        email: compAny.email || null,
+        telefone: compAny.telefone || null,
+        logo_url: signedLogo,
+      });
 
       const { data: cat } = await supabase
         .from("proposal_catalog_items")
