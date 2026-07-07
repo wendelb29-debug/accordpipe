@@ -37,7 +37,9 @@ function formatSla(stage: DynamicStage): string {
 }
 
 export function CrmLeadDialog({ lead, open, onOpenChange, onSave, onDelete, isNew, dynamicStages, stagesLoading }: CrmLeadDialogProps) {
-  const stages: DynamicStage[] = dynamicStages && dynamicStages.length > 0
+  // Always use the workspace's configured kanban columns.
+  // Only fall back to legacy STAGES when the caller did not provide dynamicStages at all.
+  const stages: DynamicStage[] = dynamicStages !== undefined
     ? dynamicStages
     : STAGES.map(s => ({ id: s.id, title: s.title, daysLimit: s.daysLimit, color: s.color }));
 
