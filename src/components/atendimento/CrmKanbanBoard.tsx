@@ -710,9 +710,11 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
           onMouseUp={handlePipelineMouseUp}
           onMouseLeave={handlePipelineMouseUp}
         >
-        {stageStats.map((stage) => {
+        {stageStats.map((stage, stageIdx) => {
           const Icon = stageIcons[stage.id] || Clock;
           const showTransferredWon = advancedFilters.status.includes("ganho");
+          const firstStageId = stageStats[0]?.id;
+          const noStatusFilter = advancedFilters.status.length === 0;
           const stageLeads = filteredLeads.filter((l) => {
             const isTransferredWon =
               !!workspaceId &&
@@ -720,10 +722,21 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
               l.workspace_id !== workspaceId &&
               l.origin_workspace_id === workspaceId;
             if (isTransferredWon) {
-              return showTransferredWon && l.origin_stage === stage.id;
+              if (!showTransferredWon) return false;
+              // If origin_stage matches this column, show here.
+              // If origin_stage is null/unknown, fall back to the FIRST column.
+              if (l.origin_stage) return l.origin_stage === stage.id;
+              return stage.id === firstStageId;
             }
-            return l.stage === stage.id;
+            if (l.stage !== stage.id) return false;
+            // Default (no status filter): only show open cards to avoid polluting the board.
+            if (noStatusFilter) {
+              const st = getCardStatus(l);
+              return st === "aberto";
+            }
+            return true;
           });
+
           const colors = stageColors[stage.id] || { bg: "bg-muted/30", text: "text-foreground", icon: "bg-primary", border: "border-border" };
           const dynCol = kanbanCols.find(c => c.id === stage.id);
           const rawSla = dynCol?.sla_days ?? (stage.daysLimit ? parseInt(stage.daysLimit, 10) : 0);
