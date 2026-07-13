@@ -113,8 +113,8 @@ export function useCrmLeads(
       .from("crm_leads")
       .select("*")
       .in("stage", stageIds)
-      .not("lead_status", "in", "(trash)")
       .order("created_at", { ascending: false });
+
 
     if (!canSeeAll && profile?.user_id) {
       query = query.eq("created_by_user_id", profile.user_id);
@@ -190,12 +190,9 @@ export function useCrmLeads(
       toast.error("Erro ao atualizar lead");
       return false;
     }
-    if (updates.lead_status === "lost") {
-      setLeads((prev) => prev.filter((l) => l.id !== id));
-    } else {
-      setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...updates } : l)));
-    }
+    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...updates } : l)));
     return true;
+
   };
 
   const deleteLead = async (id: string) => {
@@ -440,10 +437,12 @@ export function useCrmLeads(
         }
       }
 
-      // Remove from current pipeline view
-      setLeads((prev) => prev.filter((l) => l.id !== id));
+      // Keep the lead in local state so it remains visible in the origin
+      // workspace board when the "Ganho" filter is active (positioned in the
+      // origin_stage column, drag disabled).
 
       toast.success("🎉 Oportunidade ganha! Card transferido para Cadastro. Contrato e cobrança gerados automaticamente.");
+
     }
     return success;
   };
