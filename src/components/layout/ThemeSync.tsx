@@ -198,17 +198,21 @@ export function applyBrandColors(brand: {
     root.style.setProperty("--sidebar-ring", DEFAULTS.sidebarPrimary);
     root.style.setProperty("--gradient-accord-btn", "linear-gradient(135deg, #2563EB, #7A3FF2)");
     root.style.setProperty("--gradient-primary", "linear-gradient(135deg, #0F1C3F 0%, #3B3F9C 35%, #7A3FF2 70%, #D94FD5 100%)");
-    // Reset accent/foreground overrides
-    root.style.removeProperty("--accent");
-    root.style.removeProperty("--accent-foreground");
-    // Reset background/foreground/card/popover/muted overrides
+    // Reset all bg/surface/foreground overrides so default Accord theme returns 100%
     root.style.removeProperty("--background");
     root.style.removeProperty("--foreground");
     root.style.removeProperty("--card");
     root.style.removeProperty("--card-foreground");
     root.style.removeProperty("--popover");
     root.style.removeProperty("--popover-foreground");
+    root.style.removeProperty("--muted");
     root.style.removeProperty("--muted-foreground");
+    root.style.removeProperty("--secondary");
+    root.style.removeProperty("--secondary-foreground");
+    root.style.removeProperty("--accent");
+    root.style.removeProperty("--accent-foreground");
+    root.style.removeProperty("--input");
+    root.style.removeProperty("--border");
     root.style.removeProperty("--primary-foreground");
     root.style.removeProperty("--sidebar-primary-foreground");
     return;
