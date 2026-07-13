@@ -1190,6 +1190,7 @@ Deno.serve(async (req) => {
         if (buildRes.ok) {
           docUpdate.signed_pdf_url = buildRes.signed_pdf_url;
           docUpdate.document_hash = buildRes.document_hash;
+          try { await notifySignersOfSignedCopy(supabase, signer.document_id); } catch (e) { console.error("[sign-document] notify signers failed:", (e as Error).message); }
         } else {
           console.error("[sign-document] buildAndSaveSignedPdf failed:", buildRes.error);
         }
