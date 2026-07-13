@@ -2263,6 +2263,8 @@ export type Database = {
           lost_reason: string | null
           notes: string | null
           numero: string | null
+          origin_stage: string | null
+          origin_workspace_id: string | null
           phone: string | null
           servidor_id: string
           source: string
@@ -2298,6 +2300,8 @@ export type Database = {
           lost_reason?: string | null
           notes?: string | null
           numero?: string | null
+          origin_stage?: string | null
+          origin_workspace_id?: string | null
           phone?: string | null
           servidor_id: string
           source?: string
@@ -2333,6 +2337,8 @@ export type Database = {
           lost_reason?: string | null
           notes?: string | null
           numero?: string | null
+          origin_stage?: string | null
+          origin_workspace_id?: string | null
           phone?: string | null
           servidor_id?: string
           source?: string
