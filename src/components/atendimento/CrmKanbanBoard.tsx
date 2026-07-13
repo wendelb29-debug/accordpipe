@@ -712,7 +712,18 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
         >
         {stageStats.map((stage) => {
           const Icon = stageIcons[stage.id] || Clock;
-          const stageLeads = filteredLeads.filter((l) => l.stage === stage.id);
+          const showTransferredWon = advancedFilters.status.includes("ganho");
+          const stageLeads = filteredLeads.filter((l) => {
+            const isTransferredWon =
+              !!workspaceId &&
+              !!l.origin_workspace_id &&
+              l.workspace_id !== workspaceId &&
+              l.origin_workspace_id === workspaceId;
+            if (isTransferredWon) {
+              return showTransferredWon && l.origin_stage === stage.id;
+            }
+            return l.stage === stage.id;
+          });
           const colors = stageColors[stage.id] || { bg: "bg-muted/30", text: "text-foreground", icon: "bg-primary", border: "border-border" };
           const dynCol = kanbanCols.find(c => c.id === stage.id);
           const rawSla = dynCol?.sla_days ?? (stage.daysLimit ? parseInt(stage.daysLimit, 10) : 0);
