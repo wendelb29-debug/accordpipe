@@ -1395,9 +1395,9 @@ export function LeadDocumentosTab({ lead, addActivity }: Props) {
                              </DropdownMenuItem>
                            </>
                           )}
-                          {doc.status === "signed" && !doc.signed_pdf_url && (
+                          {doc.status === "signed" && (
                             <DropdownMenuItem onClick={() => handleRegenerateSignedPdf(doc)}>
-                              <Download className="h-3.5 w-3.5 mr-2" /> Gerar PDF com assinaturas
+                              <Download className="h-3.5 w-3.5 mr-2" /> Regerar dossiê digital
                             </DropdownMenuItem>
                           )}
                           {/* Botão "Baixar PDF assinado" já é tratado pelo handleDownloadDocument acima quando o documento está assinado */}
