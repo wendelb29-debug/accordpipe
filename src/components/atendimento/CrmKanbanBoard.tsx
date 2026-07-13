@@ -769,8 +769,11 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                       <Icon className="h-3 w-3 text-white" />
                     </div>
                     <span className="font-semibold text-[11px] text-foreground">{stage.title}</span>
-                    <span className={cn("text-[10px] font-bold rounded-full px-2 py-0.5 bg-card border border-border/50", dynCol ? "text-foreground" : colors.text)}>
-                      {stage.count}
+                    <span
+                      className={cn("text-[10px] font-bold rounded-full px-2 py-0.5 bg-card border border-border/50", dynCol ? "text-foreground" : colors.text)}
+                      title="Cards filtrados / total na etapa"
+                    >
+                      {stageLeads.length}/{stageTotalMap[stage.id] || 0}
                     </span>
                   </div>
                   {stage.daysLimit && (
