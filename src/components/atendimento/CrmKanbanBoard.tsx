@@ -587,10 +587,16 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-muted/30">
+    <div
+      className={cn(
+        "flex flex-col h-full overflow-hidden bg-muted/30",
+        isMobile && "pb-[env(safe-area-inset-bottom)]"
+      )}
+      style={isMobile ? { paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' } : undefined}
+    >
       {/* KPI Cards */}
-      <div className="px-3 py-1 flex items-center gap-2 shrink-0">
-        <div className="flex items-center gap-1.5 flex-1">
+      <div className={cn("px-3 py-1 gap-2 shrink-0", isMobile ? "flex flex-wrap items-center" : "flex items-center")}>
+        <div className={cn("flex items-center gap-1.5", isMobile ? "w-full" : "flex-1")}>
           <div className="flex items-center gap-3 bg-card rounded-lg border border-border/50 px-3 py-1 shadow-sm">
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Oport.</span>
