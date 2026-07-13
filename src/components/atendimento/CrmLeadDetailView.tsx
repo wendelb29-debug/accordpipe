@@ -493,6 +493,8 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         stage: cadastro.firstColumnId,
         stage_entered_at: new Date().toISOString(),
         workspace_id: cadastro.workspaceId,
+        origin_workspace_id: originWorkspaceId,
+        origin_stage: originStage,
       } as any);
 
       const desc = observation.trim()
