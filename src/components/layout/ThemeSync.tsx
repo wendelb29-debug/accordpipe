@@ -47,26 +47,52 @@ export function lightenHsl(hsl: string, amount: number): string {
   return `${h} ${s}% ${l}%`;
 }
 
-/**
- * Perceived luminance of an HSL color (0..1). Uses the lightness channel
- * plus a rough gamma correction so yellow/cyan don't fool the contrast picker.
- */
-function hslLuminance(hsl: string): number {
+function parseHsl(hsl: string): [number, number, number] | null {
   const parts = hsl.match(/(\d+)\s+(\d+)%\s+(\d+)%/);
-  if (!parts) return 0.5;
-  const h = parseInt(parts[1]);
-  const l = parseInt(parts[3]) / 100;
-  // Boost perceived luminance for yellow-ish hues (~40°–80°)
-  const yellowBoost = h >= 40 && h <= 80 ? 0.12 : 0;
-  return Math.min(1, l + yellowBoost);
+  if (!parts) return null;
+  return [parseInt(parts[1]), parseInt(parts[2]), parseInt(parts[3])];
 }
 
-/**
- * Given a background HSL, returns the foreground HSL (near-black or near-white)
- * that yields readable contrast.
- */
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+  s /= 100; l /= 100;
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  return [f(0), f(8), f(4)];
+}
+
+/** WCAG relative luminance (0..1) from an "H S% L%" string. */
+function luminance(hsl: string): number {
+  const p = parseHsl(hsl);
+  if (!p) return 0.5;
+  const [r, g, b] = hslToRgb(p[0], p[1], p[2]);
+  const toLin = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  return 0.2126 * toLin(r) + 0.7152 * toLin(g) + 0.0722 * toLin(b);
+}
+
+function contrastRatio(a: string, b: string): number {
+  const la = luminance(a);
+  const lb = luminance(b);
+  const hi = Math.max(la, lb);
+  const lo = Math.min(la, lb);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/** Shifts the L channel by `delta` (percentage points), clamped to [4, 96]. */
+function shade(hsl: string, delta: number): string {
+  const p = parseHsl(hsl);
+  if (!p) return hsl;
+  const l = Math.min(96, Math.max(4, p[2] + delta));
+  return `${p[0]} ${p[1]}% ${l}%`;
+}
+
+function contrastText(bgHsl: string): string {
+  return luminance(bgHsl) < 0.5 ? "0 0% 98%" : "0 0% 12%";
+}
+
+/** Legacy helper kept for primary/sidebar contrast picks. */
 function readableForeground(bgHsl: string): string {
-  return hslLuminance(bgHsl) > 0.6 ? "224 71% 7%" : "0 0% 100%";
+  return contrastText(bgHsl);
 }
 
 // Default ACCORD brand HSL values (from index.css)
