@@ -652,7 +652,7 @@ async function buildAndSaveSignedPdf(
   if (fullDoc.servidor_id) {
     const { data: tenantRow } = await supabase
       .from("companies")
-      .select("nome_fantasia, razao_social, brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color, brand_logo_url")
+      .select("nome_fantasia, razao_social, cnpj, brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color, brand_logo_url")
       .eq("id", fullDoc.servidor_id)
       .single();
     tenantData = tenantRow;
@@ -698,7 +698,10 @@ async function buildAndSaveSignedPdf(
   }
 
   await buildCoverPage(pdfDoc, fontRegular, fontBoldEmb, { ...fullDoc, signed_at: signedAt }, validationCode, hashHex, publicUrl, palette, logoImage);
-  await buildAuditPages(pdfDoc, fontRegular, fontBoldEmb, { ...fullDoc, signed_at: signedAt }, allSigners || [], eventsData || [], validationCode, hashHex, publicUrl, palette);
+  await buildAuditPages(pdfDoc, fontRegular, fontBoldEmb, { ...fullDoc, signed_at: signedAt }, allSigners || [], eventsData || [], validationCode, hashHex, publicUrl, palette, tenantData);
+
+  // Paint footer on EVERY page (including original contract pages)
+  paintFooters(pdfDoc, fontRegular, fontBoldEmb, palette, validationCode, hashHex);
 
   const finalPdfBytes = await pdfDoc.save();
   const signedPath = `signed/${documentId}_${Date.now()}.pdf`;
