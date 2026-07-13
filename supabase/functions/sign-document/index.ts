@@ -852,7 +852,147 @@ async function buildAndSaveSignedPdf(
   return { ok: true, signed_pdf_url: signedPdfUrl, document_hash: hashHex, validation_code: validationCode };
 }
 
+// ─── WhatsApp helpers (mirror process-whatsapp-campaign) ───
+function normalizePhone(p: string): string {
+  return (p || "").replace(/\D/g, "");
+}
+async function sendUazapi(serverUrl: string, _instanceName: string, instanceToken: string, phone: string, text: string) {
+  const base = serverUrl.replace(/\/$/, "");
+  const res = await fetch(`${base}/send/text`, {
+    method: "POST",
+    headers: { token: instanceToken, "Content-Type": "application/json" },
+    body: JSON.stringify({ number: normalizePhone(phone), text }),
+  });
+  return res.ok;
+}
+async function sendZapi(serverUrl: string, instanceId: string, token: string, clientToken: string | null, phone: string, text: string) {
+  const base = serverUrl.replace(/\/$/, "");
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (clientToken) headers["Client-Token"] = clientToken;
+  const res = await fetch(`${base}/instances/${instanceId}/token/${token}/send-text`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ phone: normalizePhone(phone), message: text }),
+  });
+  return res.ok;
+}
+
+// ─── Notify signers with signed copy (email + WhatsApp) ───
+async function notifySignersOfSignedCopy(supabase: any, documentId: string) {
+  try {
+    const { data: doc } = await supabase
+      .from("generated_documents")
+      .select("id, nome, servidor_id, signed_pdf_url, validation_code")
+      .eq("id", documentId)
+      .maybeSingle();
+    if (!doc) return;
+
+    const { data: signers } = await supabase
+      .from("document_signers")
+      .select("id, nome_completo, email, telefone")
+      .eq("document_id", documentId);
+    if (!signers?.length) return;
+
+    const { data: sentEvents } = await supabase
+      .from("document_events")
+      .select("signer_id, metadata_json")
+      .eq("document_id", documentId)
+      .eq("evento", "copia_assinada_enviada");
+
+    const already = new Set<string>();
+    for (const ev of sentEvents || []) {
+      const meta = typeof ev.metadata_json === "string" ? JSON.parse(ev.metadata_json) : ev.metadata_json;
+      already.add(`${ev.signer_id}|${meta?.channel || ""}`);
+    }
+
+    const validationCode = doc.validation_code || "";
+    const publicValidationUrl = validationCode
+      ? `https://accordpipe.com.br/validar-documento/${validationCode}`
+      : "";
+    const downloadUrl = doc.signed_pdf_url || publicValidationUrl;
+    if (!downloadUrl) return;
+
+    // Resolve tenant WhatsApp integration once
+    const { data: integ } = await supabase
+      .from("tenant_whatsapp_integrations")
+      .select("*")
+      .eq("tenant_id", doc.servidor_id)
+      .order("is_active", { ascending: false })
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let zapiClientToken: string | null = null;
+    if (integ?.provider_type === "zapi") {
+      const { data: comp } = await supabase
+        .from("companies").select("zapi_client_token").eq("id", doc.servidor_id).maybeSingle();
+      zapiClientToken = comp?.zapi_client_token ?? null;
+    }
+
+    for (const s of signers) {
+      // Email
+      if (s.email && !already.has(`${s.id}|email`)) {
+        try {
+          const r = await supabase.functions.invoke("send-transactional-email", {
+            body: {
+              templateName: "contract-signed-copy",
+              recipientEmail: s.email,
+              idempotencyKey: `signed-copy-email-${documentId}-${s.id}`,
+              templateData: {
+                nome: s.nome_completo || "",
+                documento: doc.nome || "",
+                downloadUrl,
+                validationCode,
+              },
+            },
+          });
+          if (!r.error) {
+            await supabase.from("document_events").insert({
+              document_id: documentId, signer_id: s.id, evento: "copia_assinada_enviada",
+              descricao: `Cópia assinada enviada por e-mail para ${s.email}`,
+              metadata_json: { channel: "email", recipient: s.email, download_url: downloadUrl },
+            });
+          } else {
+            console.error("[sign-document] email signed-copy error:", r.error);
+          }
+        } catch (e) {
+          console.error("[sign-document] email signed-copy threw:", (e as Error).message);
+        }
+      }
+
+      // WhatsApp
+      if (s.telefone && integ?.server_url && integ?.instance_token && !already.has(`${s.id}|whatsapp`)) {
+        const msg = `Olá ${s.nome_completo || ""}! Seu contrato "${doc.nome || ""}" foi assinado com sucesso. Baixe sua via aqui: ${downloadUrl}`;
+        try {
+          let ok = false;
+          if (integ.provider_type === "uazapi") {
+            ok = await sendUazapi(integ.server_url, integ.instance_name || integ.instance_id, integ.instance_token, s.telefone, msg);
+          } else if (integ.provider_type === "zapi") {
+            ok = await sendZapi(integ.server_url, integ.instance_id, integ.instance_token, zapiClientToken, s.telefone, msg);
+          } else {
+            console.log("[sign-document] whatsapp provider unsupported:", integ.provider_type);
+          }
+          if (ok) {
+            await supabase.from("document_events").insert({
+              document_id: documentId, signer_id: s.id, evento: "copia_assinada_enviada",
+              descricao: `Cópia assinada enviada por WhatsApp para ${s.telefone}`,
+              metadata_json: { channel: "whatsapp", recipient: s.telefone, download_url: downloadUrl },
+            });
+          }
+        } catch (e) {
+          console.error("[sign-document] whatsapp signed-copy threw:", (e as Error).message);
+        }
+      } else if (s.telefone && !integ) {
+        console.log("[sign-document] no active whatsapp integration for tenant", doc.servidor_id);
+      }
+    }
+  } catch (e) {
+    console.error("[sign-document] notifySignersOfSignedCopy failed:", (e as Error).message);
+  }
+}
+
 // ─── Main handler ───
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
