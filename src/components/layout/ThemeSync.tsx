@@ -47,26 +47,52 @@ export function lightenHsl(hsl: string, amount: number): string {
   return `${h} ${s}% ${l}%`;
 }
 
-/**
- * Perceived luminance of an HSL color (0..1). Uses the lightness channel
- * plus a rough gamma correction so yellow/cyan don't fool the contrast picker.
- */
-function hslLuminance(hsl: string): number {
+function parseHsl(hsl: string): [number, number, number] | null {
   const parts = hsl.match(/(\d+)\s+(\d+)%\s+(\d+)%/);
-  if (!parts) return 0.5;
-  const h = parseInt(parts[1]);
-  const l = parseInt(parts[3]) / 100;
-  // Boost perceived luminance for yellow-ish hues (~40°–80°)
-  const yellowBoost = h >= 40 && h <= 80 ? 0.12 : 0;
-  return Math.min(1, l + yellowBoost);
+  if (!parts) return null;
+  return [parseInt(parts[1]), parseInt(parts[2]), parseInt(parts[3])];
 }
 
-/**
- * Given a background HSL, returns the foreground HSL (near-black or near-white)
- * that yields readable contrast.
- */
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+  s /= 100; l /= 100;
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  return [f(0), f(8), f(4)];
+}
+
+/** WCAG relative luminance (0..1) from an "H S% L%" string. */
+function luminance(hsl: string): number {
+  const p = parseHsl(hsl);
+  if (!p) return 0.5;
+  const [r, g, b] = hslToRgb(p[0], p[1], p[2]);
+  const toLin = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  return 0.2126 * toLin(r) + 0.7152 * toLin(g) + 0.0722 * toLin(b);
+}
+
+function contrastRatio(a: string, b: string): number {
+  const la = luminance(a);
+  const lb = luminance(b);
+  const hi = Math.max(la, lb);
+  const lo = Math.min(la, lb);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/** Shifts the L channel by `delta` (percentage points), clamped to [4, 96]. */
+function shade(hsl: string, delta: number): string {
+  const p = parseHsl(hsl);
+  if (!p) return hsl;
+  const l = Math.min(96, Math.max(4, p[2] + delta));
+  return `${p[0]} ${p[1]}% ${l}%`;
+}
+
+function contrastText(bgHsl: string): string {
+  return luminance(bgHsl) < 0.5 ? "0 0% 98%" : "0 0% 12%";
+}
+
+/** Legacy helper kept for primary/sidebar contrast picks. */
 function readableForeground(bgHsl: string): string {
-  return hslLuminance(bgHsl) > 0.6 ? "224 71% 7%" : "0 0% 100%";
+  return contrastText(bgHsl);
 }
 
 // Default ACCORD brand HSL values (from index.css)
@@ -172,17 +198,21 @@ export function applyBrandColors(brand: {
     root.style.setProperty("--sidebar-ring", DEFAULTS.sidebarPrimary);
     root.style.setProperty("--gradient-accord-btn", "linear-gradient(135deg, #2563EB, #7A3FF2)");
     root.style.setProperty("--gradient-primary", "linear-gradient(135deg, #0F1C3F 0%, #3B3F9C 35%, #7A3FF2 70%, #D94FD5 100%)");
-    // Reset accent/foreground overrides
-    root.style.removeProperty("--accent");
-    root.style.removeProperty("--accent-foreground");
-    // Reset background/foreground/card/popover/muted overrides
+    // Reset all bg/surface/foreground overrides so default Accord theme returns 100%
     root.style.removeProperty("--background");
     root.style.removeProperty("--foreground");
     root.style.removeProperty("--card");
     root.style.removeProperty("--card-foreground");
     root.style.removeProperty("--popover");
     root.style.removeProperty("--popover-foreground");
+    root.style.removeProperty("--muted");
     root.style.removeProperty("--muted-foreground");
+    root.style.removeProperty("--secondary");
+    root.style.removeProperty("--secondary-foreground");
+    root.style.removeProperty("--accent");
+    root.style.removeProperty("--accent-foreground");
+    root.style.removeProperty("--input");
+    root.style.removeProperty("--border");
     root.style.removeProperty("--primary-foreground");
     root.style.removeProperty("--sidebar-primary-foreground");
     return;
@@ -238,33 +268,46 @@ export function applyBrandColors(brand: {
     root.style.setProperty("--sidebar-primary-foreground", readableForeground(secondaryHsl));
   }
 
-  // Background token — also derive --card and --popover so cards remain visible
+  // Background surface scale — derive card/popover/muted/secondary/input/border/accent
+  // from the chosen background so the whole UI keeps contrast (no green-on-green).
   if (bgHsl) {
+    const isDarkBg = luminance(bgHsl) < 0.5;
+
     root.style.setProperty("--background", bgHsl);
-    const bgIsLight = hslLuminance(bgHsl) > 0.6;
-    // Cards nudge slightly opposite the background so they don't blend in
-    const cardHsl = bgIsLight ? darkenHsl(bgHsl, 4) : lightenHsl(bgHsl, 6);
-    root.style.setProperty("--card", cardHsl);
-    root.style.setProperty("--popover", cardHsl);
-  }
+    root.style.setProperty("--card", shade(bgHsl, isDarkBg ? 6 : -4));
+    root.style.setProperty("--popover", shade(bgHsl, isDarkBg ? 6 : -4));
+    root.style.setProperty("--muted", shade(bgHsl, isDarkBg ? 10 : -7));
+    root.style.setProperty("--secondary", shade(bgHsl, isDarkBg ? 10 : -7));
+    root.style.setProperty("--input", shade(bgHsl, isDarkBg ? 12 : -9));
+    root.style.setProperty("--border", shade(bgHsl, isDarkBg ? 16 : -14));
+    root.style.setProperty("--accent", shade(bgHsl, isDarkBg ? 12 : -8));
 
-  // Foreground / text token
-  if (textHsl) {
-    root.style.setProperty("--foreground", textHsl);
-    root.style.setProperty("--card-foreground", textHsl);
-    root.style.setProperty("--popover-foreground", textHsl);
+    // Foreground: honor user's brand_text_color only if it clears WCAG AA (>= 4.5).
+    // Otherwise force a guaranteed-legible near-white/near-black.
+    const fg =
+      textHsl && contrastRatio(bgHsl, textHsl) >= 4.5
+        ? textHsl
+        : contrastText(bgHsl);
 
-    // Muted text: same hue, reduced saturation, pulled toward the background luminance
-    const parts = textHsl.match(/(\d+)\s+(\d+)%\s+(\d+)%/);
-    if (parts) {
-      const h = parseInt(parts[1]);
-      const s = Math.max(0, parseInt(parts[2]) - 20);
-      const baseL = parseInt(parts[3]);
-      const textIsLight = baseL > 60;
-      const mutedL = textIsLight
-        ? Math.max(0, baseL - 25) // light text → darker muted
-        : Math.min(100, baseL + 30); // dark text → lighter muted
+    root.style.setProperty("--foreground", fg);
+    root.style.setProperty("--card-foreground", fg);
+    root.style.setProperty("--popover-foreground", fg);
+    root.style.setProperty("--secondary-foreground", fg);
+    root.style.setProperty("--accent-foreground", fg);
+
+    const fgParts = parseHsl(fg);
+    if (fgParts) {
+      const [h, s, l] = fgParts;
+      const mutedL = isDarkBg
+        ? Math.max(4, l - 25) // light text on dark bg → slightly dimmer
+        : Math.min(96, l + 25); // dark text on light bg → slightly lighter
       root.style.setProperty("--muted-foreground", `${h} ${s}% ${mutedL}%`);
+    }
+
+    // Text over primary buttons — force contrast against the primary color itself
+    if (primaryHsl) {
+      root.style.setProperty("--primary-foreground", contrastText(primaryHsl));
+      root.style.setProperty("--sidebar-primary-foreground", contrastText(accentHsl || secondaryHsl || primaryHsl));
     }
   }
 }
