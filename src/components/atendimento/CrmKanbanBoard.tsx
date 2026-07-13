@@ -839,6 +839,21 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                         } : undefined}
                       />
 
+                      {/* Selo de status Ganho/Perdido (aparece quando o painel de filtros permite ganhos/perdidos no kanban) */}
+                      {(isWon || isLost) && (
+                        <span
+                          className={cn(
+                            "absolute top-1.5 right-1.5 z-10 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide border shadow-sm",
+                            isWon
+                              ? "bg-emerald-500 text-white border-emerald-600"
+                              : "bg-red-500 text-white border-red-600"
+                          )}
+                        >
+                          {isWon ? "Ganho" : "Perdido"}
+                        </span>
+                      )}
+
+
                       {/* Faixa de assinaturas — visível por fora do card, antes de abrir */}
                       {signatureStats && (
                         <div
