@@ -867,6 +867,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
                         if (reg) {
                           const regUpdate: any = {
+                            lead_id: reg.lead_id || lead.id,
                             client_status: "ativo",
                             status: "concluido",
                             nome_completo: pick(r.nome_completo, leadNome),
