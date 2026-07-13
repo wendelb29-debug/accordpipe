@@ -314,41 +314,58 @@ export function useCrmLeads(
   };
 
 
-  // Mark as WON and transfer to Cadastro workspace
+  // Mark as WON — destination depends on workspace config
   const markAsWonAndTransfer = async (id: string) => {
     const lead = leads.find((l) => l.id === id);
     if (!lead) return false;
 
-    // Find or create Cadastro workspace
-    const cadastro = await getOrCreateCadastroWorkspace(lead.servidor_id, profile?.user_id);
-    if (!cadastro) {
-      toast.error("Erro ao localizar/criar workspace de Cadastro");
+    const dest = await resolveWonDestination(
+      { id: lead.id, servidor_id: lead.servidor_id, workspace_id: lead.workspace_id },
+      profile?.user_id,
+    );
+    if (!dest) {
+      toast.error("Erro ao resolver destino do card ao marcar como Ganho");
       return false;
     }
 
     const previousStage = lead.stage;
     const originWorkspaceId = lead.workspace_id;
 
-    const success = await updateLead(id, {
+    // For 'base_clientes' we keep the current workspace/stage; otherwise we move.
+    const updatePayload: any = {
       lead_status: "won",
-      stage: cadastro.firstColumnId,
       stage_entered_at: new Date().toISOString(),
-      workspace_id: cadastro.workspaceId,
       origin_workspace_id: originWorkspaceId,
       origin_stage: previousStage,
-    } as any);
+    };
+    if (dest.kind !== "base_clientes") {
+      updatePayload.stage = dest.firstColumnId;
+      updatePayload.workspace_id = dest.workspaceId;
+    }
+
+    const success = await updateLead(id, updatePayload);
 
     if (success) {
+      const activityTitle =
+        dest.kind === "base_clientes"
+          ? "Oportunidade ganha! Enviada para a Base de Clientes."
+          : `Oportunidade ganha! Transferida para ${dest.label}.`;
+      const activityDesc =
+        dest.kind === "base_clientes"
+          ? `Lead marcado como ganho e enviado diretamente para a **Base de Clientes**. Etapa anterior: **${previousStage}**.`
+          : `Lead marcado como ganho e transferido para o workspace **${dest.label}**. Etapa anterior: **${previousStage}**.`;
+
       await supabase.from("crm_lead_activities").insert({
         lead_id: id,
         servidor_id: lead.servidor_id,
         type: "won",
-        title: "Oportunidade ganha! Transferida para Cadastro.",
-        description: `Lead marcado como ganho e transferido para o workspace **Cadastro**. Etapa anterior: **${previousStage}**.`,
+        title: activityTitle,
+        description: activityDesc,
         created_by_user_id: profile?.user_id || null,
         created_by_name: profile?.name || null,
-        metadata: { previous_stage: previousStage },
+        metadata: { previous_stage: previousStage, destination_kind: dest.kind },
       } as any);
+
 
       // Create registration
       const regResult = await supabase.from("crm_client_registrations" as any).insert({
