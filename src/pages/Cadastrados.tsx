@@ -199,10 +199,31 @@ export default function Cadastrados() {
       estado: reg.estado || "",
     });
 
+    // Resolve lead_id: use reg.lead_id if present; otherwise try to find by email/cpf on same tenant.
+    let leadId: string | null = reg.lead_id || null;
+    if (!leadId && reg.servidor_id) {
+      const orParts: string[] = [];
+      if (reg.email) orParts.push(`email.eq.${reg.email}`);
+      if (reg.cpf) orParts.push(`documento.eq.${reg.cpf}`);
+      if (orParts.length > 0) {
+        const { data: leadMatch } = await supabase
+          .from("crm_leads")
+          .select("id")
+          .eq("servidor_id", reg.servidor_id)
+          .or(orParts.join(","))
+          .limit(1)
+          .maybeSingle();
+        if (leadMatch?.id) leadId = leadMatch.id;
+      }
+    }
+
     // Fetch contracts, transactions, history, upsells in parallel
     const contractIds = (await supabase.from("client_contracts").select("id").eq("registration_id", reg.id)).data?.map((c: any) => c.id) || [];
 
-    const [contractsRes, transactionsRes, historyRes, upsellsRes, docsRes, crmContractsRes, leadDocsRes] = await Promise.all([
+    const [
+      contractsRes, transactionsRes, historyRes, upsellsRes,
+      crmContractsRes, leadDocsRes, generatedDocsRes, pdfContractsRes, proposalsRes,
+    ] = await Promise.all([
       supabase
         .from("client_contracts")
         .select("*")
@@ -223,30 +244,76 @@ export default function Cadastrados() {
         .select("*")
         .eq("registration_id", reg.id)
         .order("created_at", { ascending: false }),
-      reg.lead_id ? supabase
+      leadId ? supabase
+        .from("contracts")
+        .select("id, code, signature_status, signed_at, validation_code, document_hash, pdf_url, pdf_assinado_url, signer_name, signer_document, signature_photo_url, created_at")
+        .eq("lead_id", leadId)
+        .eq("signature_status", "signed") : Promise.resolve({ data: [] }),
+      leadId ? (supabase as any)
+        .from("lead_documents")
+        .select("*")
+        .eq("lead_id", leadId)
+        .order("created_at", { ascending: false }) : Promise.resolve({ data: [] }),
+      leadId ? supabase
+        .from("generated_documents")
+        .select("id, nome, tipo, status, pdf_url, signed_pdf_url, validation_code, document_hash, signed_at, created_at")
+        .eq("lead_id", leadId)
+        .order("created_at", { ascending: false }) : Promise.resolve({ data: [] }),
+      leadId ? (async () => {
+        // pdf_contracts has no lead_id column; link via pdf_contract_signers if present.
+        try {
+          const { data: signers } = await (supabase as any)
+            .from("pdf_contract_signers")
+            .select("contract_id, lead_id")
+            .eq("lead_id", leadId);
+          const ids = Array.from(new Set((signers || []).map((s: any) => s.contract_id).filter(Boolean)));
+          if (ids.length === 0) return { data: [] };
+          return await supabase
+            .from("pdf_contracts")
+            .select("*")
+            .in("id", ids)
+            .order("created_at", { ascending: false });
+        } catch {
+          return { data: [] };
+        }
+      })() : Promise.resolve({ data: [] }),
+      leadId ? supabase
+        .from("proposals")
+        .select("id, titulo, valor, status, mrr_payment, approved_at, created_at")
+        .eq("lead_id", leadId)
+        .in("status", ["aprovada", "aceita", "approved"]) : Promise.resolve({ data: [] }),
+    ]);
+
+    const generatedDocs = (generatedDocsRes as any).data || [];
+    const pdfContracts = (pdfContractsRes as any).data || [];
+
+    // Drive files scoped to this lead: only those linked to a contract/document belonging to this lead.
+    const relatedContractIds: string[] = [
+      ...generatedDocs.map((d: any) => d.id),
+      ...pdfContracts.map((c: any) => c.id),
+      ...(crmContractsRes.data || []).map((c: any) => c.id),
+    ];
+    let driveFilesData: any[] = [];
+    if (leadId && relatedContractIds.length > 0) {
+      const { data: df } = await supabase
         .from("drive_files")
         .select("*")
         .eq("servidor_id", reg.servidor_id)
         .eq("type", "file")
-        .order("created_at", { ascending: false }) : Promise.resolve({ data: [] }),
-      reg.lead_id ? supabase
-        .from("contracts")
-        .select("id, code, signature_status, signed_at, validation_code, document_hash, pdf_url, pdf_assinado_url, signer_name, signer_document, signature_photo_url, created_at")
-        .eq("lead_id", reg.lead_id)
-        .eq("signature_status", "signed") : Promise.resolve({ data: [] }),
-      reg.lead_id ? (supabase as any)
-        .from("lead_documents")
-        .select("*")
-        .eq("lead_id", reg.lead_id)
-        .order("created_at", { ascending: false }) : Promise.resolve({ data: [] }),
-    ]);
+        .in("contract_id", relatedContractIds)
+        .order("created_at", { ascending: false });
+      driveFilesData = df || [];
+    }
 
     setDetailContracts(contractsRes.data || []);
     setDetailTransactions(transactionsRes.data || []);
     setDetailHistory(historyRes.data || []);
     setDetailUpsells((upsellsRes as any).data || []);
-    setDetailDocuments((docsRes as any).data || []);
+    setDetailDocuments(driveFilesData);
     setDetailLeadDocs(leadDocsRes.data || []);
+    setDetailGeneratedDocs(generatedDocs);
+    setDetailPdfContracts(pdfContracts);
+    setDetailProposals((proposalsRes as any).data || []);
 
     // Fetch signers for each CRM contract (deduplicated by role)
     const crmWithSigners: any[] = [];
