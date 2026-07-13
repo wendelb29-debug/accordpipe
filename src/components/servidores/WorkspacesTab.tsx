@@ -278,18 +278,25 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
   };
   const handleSaveWorkspace = async () => {
     if (!wsName.trim() || !companyId) return;
+    if (wsWonDestination === "workspace" && !wsWonTargetId) {
+      toast.error("Selecione o workspace de destino para o Ganho.");
+      return;
+    }
     setSavingWs(true);
     const workspace_type = deriveWorkspaceType(wsType);
+    const wonDestinationValue = wsWonDestination === "cadastro" ? null : wsWonDestination;
+    const wonTargetValue = wsWonDestination === "workspace" ? wsWonTargetId : null;
     if (editingWs) {
       const { error } = await supabase.from("workspaces")
-        .update({ name: wsName.trim(), color: wsColor, type: wsType, workspace_type, group_id: wsGroupId || null } as any)
+        .update({ name: wsName.trim(), color: wsColor, type: wsType, workspace_type, group_id: wsGroupId || null, won_destination: wonDestinationValue, won_target_workspace_id: wonTargetValue } as any)
         .eq("id", editingWs.id);
       if (error) toast.error("Erro ao atualizar workspace"); else toast.success("Workspace atualizado!");
     } else {
       const groupWs = workspaces.filter((w) => w.group_id === wsGroupId);
       const { data, error } = await supabase.from("workspaces")
-        .insert({ name: wsName.trim(), servidor_id: companyId, color: wsColor, type: wsType, workspace_type, group_id: wsGroupId || null, is_default: workspaces.length === 0, sort_order: groupWs.length } as any)
+        .insert({ name: wsName.trim(), servidor_id: companyId, color: wsColor, type: wsType, workspace_type, group_id: wsGroupId || null, is_default: workspaces.length === 0, sort_order: groupWs.length, won_destination: wonDestinationValue, won_target_workspace_id: wonTargetValue } as any)
         .select().single();
+
       if (error) toast.error("Erro ao criar workspace");
       else {
         toast.success(`Workspace "${wsName.trim()}" criado!`);
