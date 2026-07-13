@@ -326,12 +326,15 @@ export function useCrmLeads(
     }
 
     const previousStage = lead.stage;
+    const originWorkspaceId = lead.workspace_id;
 
     const success = await updateLead(id, {
       lead_status: "won",
       stage: cadastro.firstColumnId,
       stage_entered_at: new Date().toISOString(),
       workspace_id: cadastro.workspaceId,
+      origin_workspace_id: originWorkspaceId,
+      origin_stage: previousStage,
     } as any);
 
     if (success) {
