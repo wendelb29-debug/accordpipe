@@ -590,12 +590,12 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
             <div className="w-px h-4 bg-border/50" />
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">P&S</span>
-              <span className="text-sm font-bold text-foreground">{formatCurrency(totalPS)}</span>
+              <span className="text-sm font-bold text-foreground">{formatCurrency(filteredTotalPS)}</span>
             </div>
             <div className="w-px h-4 bg-border/50" />
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">MRR</span>
-              <span className="text-sm font-bold text-primary">{formatCurrency(totalMRR)}</span>
+              <span className="text-sm font-bold text-primary">{formatCurrency(filteredTotalMRR)}</span>
             </div>
           </div>
         </div>
