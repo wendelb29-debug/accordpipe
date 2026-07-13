@@ -851,28 +851,61 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                       try {
                         const { data: reg } = await supabase
                           .from("crm_client_registrations")
-                          .select("id")
+                          .select("*")
                           .eq("lead_id", lead.id)
                           .maybeSingle();
+
+                        // MERGE: valor já preenchido no cadastro tem prioridade;
+                        // lead só preenche o que estiver faltando. NUNCA sobrescreve com vazio.
+                        const pick = (regVal: any, leadVal: any) =>
+                          (regVal ?? null) || (leadVal ?? null) || null;
+
+                        const leadNome = lead.contact_name || lead.company_name || null;
+                        const r: any = reg || {};
+
                         if (reg) {
                           const regUpdate: any = {
                             client_status: "ativo",
                             status: "concluido",
-                            nome_completo: lead.contact_name || lead.company_name || null,
-                            cpf: lead.documento || null,
-                            email: lead.email || null,
-                            cep: lead.cep || null,
-                            endereco: lead.endereco || null,
-                            numero: lead.numero || null,
-                            bairro: lead.bairro || null,
-                            cidade: lead.cidade || null,
-                            estado: lead.estado || null,
-                            plano_contratado: null,
-                            valor_mensal: lead.value_mrr || 0,
+                            nome_completo: pick(r.nome_completo, leadNome),
+                            cpf: pick(r.cpf, (lead as any).documento),
+                            email: pick(r.email, lead.email),
+                            cep: pick(r.cep, (lead as any).cep),
+                            endereco: pick(r.endereco, (lead as any).endereco),
+                            numero: pick(r.numero, (lead as any).numero),
+                            bairro: pick(r.bairro, (lead as any).bairro),
+                            cidade: pick(r.cidade, (lead as any).cidade),
+                            estado: pick(r.estado, (lead as any).estado),
+                            // valor_mensal: mantém o que já está no cadastro; só usa o do lead se estiver zerado/nulo
+                            valor_mensal: (r.valor_mensal && Number(r.valor_mensal) > 0)
+                              ? r.valor_mensal
+                              : (lead.value_mrr || 0),
+                            // NÃO tocar em: rg, data_nascimento, nome_pai, nome_mae, plano_contratado
                           };
                           await supabase.from("crm_client_registrations")
                             .update(regUpdate)
                             .eq("id", reg.id);
+                        } else {
+                          // Não existe registro: cria agora com o que o card tem, garantindo
+                          // que o cliente apareça na Base de Clientes.
+                          await supabase.from("crm_client_registrations" as any).insert({
+                            lead_id: lead.id,
+                            servidor_id: (lead as any).servidor_id,
+                            client_status: "ativo",
+                            status: "concluido",
+                            nome_completo: leadNome,
+                            cpf: (lead as any).documento || null,
+                            email: lead.email || null,
+                            cep: (lead as any).cep || null,
+                            endereco: (lead as any).endereco || null,
+                            numero: (lead as any).numero || null,
+                            bairro: (lead as any).bairro || null,
+                            cidade: (lead as any).cidade || null,
+                            estado: (lead as any).estado || null,
+                            valor_mensal: lead.value_mrr || 0,
+                            created_by_user_id: profile?.id || null,
+                            created_by_name: profile?.name || null,
+                          });
                         }
                         const currentTags = lead.tags || [];
                         const cleanTags = currentTags.filter(t => t !== "Pendente de Correção");
