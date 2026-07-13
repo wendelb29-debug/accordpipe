@@ -268,33 +268,46 @@ export function applyBrandColors(brand: {
     root.style.setProperty("--sidebar-primary-foreground", readableForeground(secondaryHsl));
   }
 
-  // Background token — also derive --card and --popover so cards remain visible
+  // Background surface scale — derive card/popover/muted/secondary/input/border/accent
+  // from the chosen background so the whole UI keeps contrast (no green-on-green).
   if (bgHsl) {
+    const isDarkBg = luminance(bgHsl) < 0.5;
+
     root.style.setProperty("--background", bgHsl);
-    const bgIsLight = hslLuminance(bgHsl) > 0.6;
-    // Cards nudge slightly opposite the background so they don't blend in
-    const cardHsl = bgIsLight ? darkenHsl(bgHsl, 4) : lightenHsl(bgHsl, 6);
-    root.style.setProperty("--card", cardHsl);
-    root.style.setProperty("--popover", cardHsl);
-  }
+    root.style.setProperty("--card", shade(bgHsl, isDarkBg ? 6 : -4));
+    root.style.setProperty("--popover", shade(bgHsl, isDarkBg ? 6 : -4));
+    root.style.setProperty("--muted", shade(bgHsl, isDarkBg ? 10 : -7));
+    root.style.setProperty("--secondary", shade(bgHsl, isDarkBg ? 10 : -7));
+    root.style.setProperty("--input", shade(bgHsl, isDarkBg ? 12 : -9));
+    root.style.setProperty("--border", shade(bgHsl, isDarkBg ? 16 : -14));
+    root.style.setProperty("--accent", shade(bgHsl, isDarkBg ? 12 : -8));
 
-  // Foreground / text token
-  if (textHsl) {
-    root.style.setProperty("--foreground", textHsl);
-    root.style.setProperty("--card-foreground", textHsl);
-    root.style.setProperty("--popover-foreground", textHsl);
+    // Foreground: honor user's brand_text_color only if it clears WCAG AA (>= 4.5).
+    // Otherwise force a guaranteed-legible near-white/near-black.
+    const fg =
+      textHsl && contrastRatio(bgHsl, textHsl) >= 4.5
+        ? textHsl
+        : contrastText(bgHsl);
 
-    // Muted text: same hue, reduced saturation, pulled toward the background luminance
-    const parts = textHsl.match(/(\d+)\s+(\d+)%\s+(\d+)%/);
-    if (parts) {
-      const h = parseInt(parts[1]);
-      const s = Math.max(0, parseInt(parts[2]) - 20);
-      const baseL = parseInt(parts[3]);
-      const textIsLight = baseL > 60;
-      const mutedL = textIsLight
-        ? Math.max(0, baseL - 25) // light text → darker muted
-        : Math.min(100, baseL + 30); // dark text → lighter muted
+    root.style.setProperty("--foreground", fg);
+    root.style.setProperty("--card-foreground", fg);
+    root.style.setProperty("--popover-foreground", fg);
+    root.style.setProperty("--secondary-foreground", fg);
+    root.style.setProperty("--accent-foreground", fg);
+
+    const fgParts = parseHsl(fg);
+    if (fgParts) {
+      const [h, s, l] = fgParts;
+      const mutedL = isDarkBg
+        ? Math.max(4, l - 25) // light text on dark bg → slightly dimmer
+        : Math.min(96, l + 25); // dark text on light bg → slightly lighter
       root.style.setProperty("--muted-foreground", `${h} ${s}% ${mutedL}%`);
+    }
+
+    // Text over primary buttons — force contrast against the primary color itself
+    if (primaryHsl) {
+      root.style.setProperty("--primary-foreground", contrastText(primaryHsl));
+      root.style.setProperty("--sidebar-primary-foreground", contrastText(accentHsl || secondaryHsl || primaryHsl));
     }
   }
 }
