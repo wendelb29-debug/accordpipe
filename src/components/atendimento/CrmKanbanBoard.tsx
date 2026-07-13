@@ -8,7 +8,7 @@ import {
   CheckCircle2, XCircle,
 } from "lucide-react";
 import { KanbanQuickActionZones } from "./KanbanQuickActionZones";
-import { StatusFilteredGrid } from "./StatusFilteredGrid";
+
 import { TransferWorkspaceDialog } from "./TransferWorkspaceDialog";
 import { LostReasonDialog } from "./LostReasonDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
