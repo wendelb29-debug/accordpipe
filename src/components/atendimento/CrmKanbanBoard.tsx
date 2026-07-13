@@ -167,27 +167,20 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   const [lastCompletedActivities, setLastCompletedActivities] = useState<Record<string, string>>({});
   const [signatureStatsByLead, setSignatureStatsByLead] = useState<Record<string, { signed: number; total: number; approved: boolean }>>({});
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
-  const [advancedFilters, setAdvancedFilters] = useState<FilterState>(emptyFilterState);
+  const [advancedFilters, setAdvancedFilters] = useState<FilterState>({
+    ...emptyFilterState,
+    status: ["aberto"],
+  });
+  const [filterApplying, setFilterApplying] = useState(false);
   const activeFilterCount = countActiveFilters(advancedFilters);
 
-  // Sincroniza o painel "Filtrar Cards" com o statusFilter do board.
-  // - Exatamente 1 status selecionado -> troca a visão (kanban/lista).
-  // - 0 ou mais de 1 status -> mantém a visão kanban ("open") e deixa applyFilters cuidar.
+  // Skeleton flash quando o filtro muda, antes de renderizar cards coloridos
   useEffect(() => {
-    const map: Record<string, "open" | "won" | "lost" | "trash"> = {
-      aberto: "open",
-      ganho: "won",
-      perdido: "lost",
-      lixeira: "trash",
-    };
-    const sel = advancedFilters.status;
-    if (sel.length === 1) {
-      const next = map[sel[0]];
-      if (next) setStatusFilter(next);
-    } else {
-      setStatusFilter("open");
-    }
-  }, [advancedFilters.status]);
+    setFilterApplying(true);
+    const t = setTimeout(() => setFilterApplying(false), 220);
+    return () => clearTimeout(t);
+  }, [advancedFilters]);
+
 
   // Drag-to-scroll
   const pipelineRef = useRef<HTMLDivElement>(null);
