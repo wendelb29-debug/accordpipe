@@ -793,7 +793,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
               className={cn(
                 "rounded-xl flex flex-col border transition-all duration-200",
                 isMobile
-                  ? "shrink-0 w-full snap-center mx-1"
+                  ? "shrink-0 basis-full min-w-full snap-center px-1"
                   : "flex-shrink-0 w-[220px]",
                 dynCol ? "border-border/50" : `${colors.border} ${colors.bg}`,
                 !dynCol && !colors.bg && "bg-muted/20",
