@@ -16,6 +16,7 @@ export interface TemplateEntry {
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'contract-signature-request': contractSignatureRequest,
+  'contract-signed-copy': contractSignedCopy,
   'activity-reminder': activityReminder,
   'new-lead-notification': newLeadNotification,
   'password-reset-code': passwordResetCode,
