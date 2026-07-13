@@ -1148,6 +1148,39 @@ export default function Cadastrados() {
               ))}
             </div>
 
+            {/* Approved Proposals (reference values from CRM) */}
+            {detailProposals.length > 0 && (
+              <Card>
+                <CardContent className="p-4">
+                  <h4 className="text-xs font-semibold flex items-center gap-1.5 text-foreground uppercase tracking-wider mb-3">
+                    <FileText className="h-3.5 w-3.5" /> Propostas Aprovadas (referência)
+                  </h4>
+                  <div className="space-y-2">
+                    {detailProposals.map((p: any) => {
+                      const mrr = Number(p?.mrr_payment?.amount ?? p?.mrr_payment?.valor ?? 0);
+                      return (
+                        <div key={p.id} className="flex items-center justify-between text-sm border-b border-border/40 last:border-0 py-1.5">
+                          <div>
+                            <p className="font-medium text-foreground">{p.titulo || "Proposta"}</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {p.approved_at ? `Aprovada em ${fmtDate(p.approved_at)}` : `Criada em ${fmtDate(p.created_at)}`}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-foreground">{fmtCur(Number(p.valor || 0))}</p>
+                            {mrr > 0 && (
+                              <p className="text-[11px] text-muted-foreground">{fmtCur(mrr)}/mês</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+
             {detailTransactions.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <CreditCard className="h-10 w-10 mx-auto mb-3 opacity-30" />
