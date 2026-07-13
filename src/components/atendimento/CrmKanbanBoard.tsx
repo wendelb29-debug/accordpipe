@@ -820,15 +820,18 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                     lead.workspace_id !== workspaceId &&
                     lead.origin_workspace_id === workspaceId;
 
-                  // Priority: 1) won, 2) lost, 3) overdue activity, 4) SLA exceeded, 5) no activity, 6) normal
+                  // Priority: 1) won, 2) lost, 3) trash, 4) overdue activity, 5) SLA exceeded, 6) no activity, 7) normal
                   const cardStatus = getCardStatus(lead);
                   const isWon = cardStatus === "ganho";
                   const isLost = cardStatus === "perdido";
-                  const isNaturalState = !isWon && !isLost && !hasOverdue && !noActivity && !overdue;
+                  const isTrash = cardStatus === "lixeira";
+                  const isNaturalState = !isWon && !isLost && !isTrash && !hasOverdue && !noActivity && !overdue;
                   const cardStyle = isWon
                     ? "bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-500/70 dark:border-emerald-600/60 ring-1 ring-emerald-500/30"
                     : isLost
                     ? "bg-red-50/80 dark:bg-red-950/40 border-red-400/70 dark:border-red-700/60 ring-1 ring-red-400/30"
+                    : isTrash
+                    ? "bg-slate-100/80 dark:bg-slate-900/40 border-slate-400/70 dark:border-slate-600/60 ring-1 ring-slate-400/30 opacity-80"
                     : hasOverdue
                     ? "bg-red-50/70 dark:bg-red-950/30 border-red-300/70 dark:border-red-800/50"
                     : overdue && hasActivity
@@ -837,16 +840,18 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                     ? "bg-amber-50/60 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/40"
                     : "bg-card/95 dark:bg-[rgba(255,255,255,0.03)] border-border/40 dark:border-[rgba(255,255,255,0.07)]";
 
+                  const dragDisabled = isTransferredWon || isTrash;
+
                   return (
                     <div
                       key={lead.id}
-                      draggable={!isTransferredWon}
-                      onDragStart={() => { if (!isTransferredWon) setDraggedLead(lead); }}
+                      draggable={!dragDisabled}
+                      onDragStart={() => { if (!dragDisabled) setDraggedLead(lead); }}
                       onClick={() => openDetail(lead)}
-                      title={isTransferredWon ? "Ganho — já transferido para Cadastro (somente leitura neste board)" : undefined}
+                      title={isTransferredWon ? "Ganho — já transferido para Cadastro (somente leitura neste board)" : isTrash ? "Card na lixeira (somente leitura)" : undefined}
                       className={cn(
                         "kanban-card rounded-xl border transition-all duration-200 group relative overflow-hidden",
-                        isTransferredWon ? "cursor-pointer" : "cursor-grab active:cursor-grabbing active:scale-[0.98]",
+                        dragDisabled ? "cursor-pointer" : "cursor-grab active:cursor-grabbing active:scale-[0.98]",
                         draggedLead?.id === lead.id && "opacity-40 scale-95",
                         cardStyle,
                         isNaturalState
@@ -869,19 +874,22 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                         } : undefined}
                       />
 
-                      {/* Selo de status Ganho/Perdido (aparece quando o painel de filtros permite ganhos/perdidos no kanban) */}
-                      {(isWon || isLost) && (
+                      {/* Selo de status Ganho/Perdido/Lixeira */}
+                      {(isWon || isLost || isTrash) && (
                         <span
                           className={cn(
                             "absolute top-1.5 right-1.5 z-10 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide border shadow-sm",
                             isWon
                               ? "bg-emerald-500 text-white border-emerald-600"
-                              : "bg-red-500 text-white border-red-600"
+                              : isLost
+                              ? "bg-red-500 text-white border-red-600"
+                              : "bg-slate-500 text-white border-slate-600"
                           )}
                         >
-                          {isWon ? (isTransferredWon ? "Ganho — em Cadastro" : "Ganho") : "Perdido"}
+                          {isWon ? (isTransferredWon ? "Ganho — em Cadastro" : "Ganho") : isLost ? "Perdido" : "Lixeira"}
                         </span>
                       )}
+
 
 
                       {/* Faixa de assinaturas — visível por fora do card, antes de abrir */}
