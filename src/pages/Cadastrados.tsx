@@ -823,6 +823,62 @@ export default function Cadastrados() {
 
               return (
                 <>
+                  {/* Signed Generated Documents (from generated_documents) */}
+                  {signedGenerated.map((d: any) => (
+                    <Card key={`gen-${d.id}`} className="border-green-200/50">
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2.5 rounded-lg bg-green-500/10">
+                            <FileSignature className="h-5 w-5 text-green-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{d.nome || "Documento assinado"}</p>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-400 dark:border-green-800">Assinado</Badge>
+                              {d.signed_at && <span className="text-[10px] text-muted-foreground">{fmtDate(d.signed_at)}</span>}
+                              {d.validation_code && <span className="text-[10px] text-muted-foreground">Código: {d.validation_code}</span>}
+                            </div>
+                          </div>
+                        </div>
+                        {(d.signed_pdf_url || d.pdf_url) && (
+                          <Button size="sm" variant="outline" asChild className="gap-1.5">
+                            <a href={d.signed_pdf_url || d.pdf_url} target="_blank" rel="noreferrer" download>
+                              <Download className="h-4 w-4" /> Baixar PDF assinado
+                            </a>
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+
+                  {/* Signed PDF Contracts (from pdf_contracts) */}
+                  {signedPdf.map((c: any) => (
+                    <Card key={`pdf-${c.id}`} className="border-green-200/50">
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2.5 rounded-lg bg-green-500/10">
+                            <FileSignature className="h-5 w-5 text-green-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{c.name || "Contrato PDF"}</p>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-400 dark:border-green-800">Assinado</Badge>
+                              {c.icp_signed_at && <span className="text-[10px] text-muted-foreground">{fmtDate(c.icp_signed_at)}</span>}
+                              {c.validation_code && <span className="text-[10px] text-muted-foreground">Código: {c.validation_code}</span>}
+                            </div>
+                          </div>
+                        </div>
+                        {(c.pdf_assinado_url || c.icp_pdf_url || c.pdf_url) && (
+                          <Button size="sm" variant="outline" asChild className="gap-1.5">
+                            <a href={c.pdf_assinado_url || c.icp_pdf_url || c.pdf_url} target="_blank" rel="noreferrer" download>
+                              <Download className="h-4 w-4" /> Baixar PDF assinado
+                            </a>
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+
                   {/* CRM Signed Contracts (from contracts table) */}
                   {detailCrmContracts.map((c: any) => {
                     const isGen = generatingPdf === c.id;
