@@ -98,6 +98,9 @@ export default function Cadastrados() {
   const [detailHistory, setDetailHistory] = useState<any[]>([]);
   const [detailDocuments, setDetailDocuments] = useState<any[]>([]);
   const [detailLeadDocs, setDetailLeadDocs] = useState<any[]>([]);
+  const [detailGeneratedDocs, setDetailGeneratedDocs] = useState<any[]>([]);
+  const [detailPdfContracts, setDetailPdfContracts] = useState<any[]>([]);
+  const [detailProposals, setDetailProposals] = useState<any[]>([]);
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState<any>({});
   const [saving, setSaving] = useState(false);
@@ -196,10 +199,31 @@ export default function Cadastrados() {
       estado: reg.estado || "",
     });
 
+    // Resolve lead_id: use reg.lead_id if present; otherwise try to find by email/cpf on same tenant.
+    let leadId: string | null = reg.lead_id || null;
+    if (!leadId && reg.servidor_id) {
+      const orParts: string[] = [];
+      if (reg.email) orParts.push(`email.eq.${reg.email}`);
+      if (reg.cpf) orParts.push(`documento.eq.${reg.cpf}`);
+      if (orParts.length > 0) {
+        const { data: leadMatch } = await supabase
+          .from("crm_leads")
+          .select("id")
+          .eq("servidor_id", reg.servidor_id)
+          .or(orParts.join(","))
+          .limit(1)
+          .maybeSingle();
+        if (leadMatch?.id) leadId = leadMatch.id;
+      }
+    }
+
     // Fetch contracts, transactions, history, upsells in parallel
     const contractIds = (await supabase.from("client_contracts").select("id").eq("registration_id", reg.id)).data?.map((c: any) => c.id) || [];
 
-    const [contractsRes, transactionsRes, historyRes, upsellsRes, docsRes, crmContractsRes, leadDocsRes] = await Promise.all([
+    const [
+      contractsRes, transactionsRes, historyRes, upsellsRes,
+      crmContractsRes, leadDocsRes, generatedDocsRes, pdfContractsRes, proposalsRes,
+    ] = await Promise.all([
       supabase
         .from("client_contracts")
         .select("*")
@@ -220,30 +244,78 @@ export default function Cadastrados() {
         .select("*")
         .eq("registration_id", reg.id)
         .order("created_at", { ascending: false }),
-      reg.lead_id ? supabase
+      leadId ? supabase
+        .from("contracts")
+        .select("id, code, signature_status, signed_at, validation_code, document_hash, pdf_url, pdf_assinado_url, signer_name, signer_document, signature_photo_url, created_at")
+        .eq("lead_id", leadId)
+        .eq("signature_status", "signed") : Promise.resolve({ data: [] }),
+      leadId ? (supabase as any)
+        .from("lead_documents")
+        .select("*")
+        .eq("lead_id", leadId)
+        .order("created_at", { ascending: false }) : Promise.resolve({ data: [] }),
+      leadId ? supabase
+        .from("generated_documents")
+        .select("id, nome, tipo, status, pdf_url, signed_pdf_url, validation_code, document_hash, signed_at, created_at")
+        .eq("lead_id", leadId)
+        .order("created_at", { ascending: false }) : Promise.resolve({ data: [] }),
+      leadId ? (async () => {
+        // pdf_contracts has no lead_id column; link via pdf_contract_signers if present.
+        try {
+          const { data: signers } = await (supabase as any)
+            .from("pdf_contract_signers")
+            .select("contract_id, lead_id")
+            .eq("lead_id", leadId);
+          const ids = Array.from(
+            new Set((signers || []).map((s: any) => s.contract_id as string).filter(Boolean))
+          ) as string[];
+          if (ids.length === 0) return { data: [] };
+          return await supabase
+            .from("pdf_contracts")
+            .select("*")
+            .in("id", ids)
+            .order("created_at", { ascending: false });
+        } catch {
+          return { data: [] };
+        }
+      })() : Promise.resolve({ data: [] }),
+      leadId ? supabase
+        .from("proposals")
+        .select("id, titulo, valor, status, mrr_payment, approved_at, created_at")
+        .eq("lead_id", leadId)
+        .in("status", ["aprovada", "aceita", "approved"]) : Promise.resolve({ data: [] }),
+    ]);
+
+    const generatedDocs = (generatedDocsRes as any).data || [];
+    const pdfContracts = (pdfContractsRes as any).data || [];
+
+    // Drive files scoped to this lead: only those linked to a contract/document belonging to this lead.
+    const relatedContractIds: string[] = [
+      ...generatedDocs.map((d: any) => d.id),
+      ...pdfContracts.map((c: any) => c.id),
+      ...(crmContractsRes.data || []).map((c: any) => c.id),
+    ];
+    let driveFilesData: any[] = [];
+    if (leadId && relatedContractIds.length > 0) {
+      const { data: df } = await supabase
         .from("drive_files")
         .select("*")
         .eq("servidor_id", reg.servidor_id)
         .eq("type", "file")
-        .order("created_at", { ascending: false }) : Promise.resolve({ data: [] }),
-      reg.lead_id ? supabase
-        .from("contracts")
-        .select("id, code, signature_status, signed_at, validation_code, document_hash, pdf_url, pdf_assinado_url, signer_name, signer_document, signature_photo_url, created_at")
-        .eq("lead_id", reg.lead_id)
-        .eq("signature_status", "signed") : Promise.resolve({ data: [] }),
-      reg.lead_id ? (supabase as any)
-        .from("lead_documents")
-        .select("*")
-        .eq("lead_id", reg.lead_id)
-        .order("created_at", { ascending: false }) : Promise.resolve({ data: [] }),
-    ]);
+        .in("contract_id", relatedContractIds)
+        .order("created_at", { ascending: false });
+      driveFilesData = df || [];
+    }
 
     setDetailContracts(contractsRes.data || []);
     setDetailTransactions(transactionsRes.data || []);
     setDetailHistory(historyRes.data || []);
     setDetailUpsells((upsellsRes as any).data || []);
-    setDetailDocuments((docsRes as any).data || []);
+    setDetailDocuments(driveFilesData);
     setDetailLeadDocs(leadDocsRes.data || []);
+    setDetailGeneratedDocs(generatedDocs);
+    setDetailPdfContracts(pdfContracts);
+    setDetailProposals((proposalsRes as any).data || []);
 
     // Fetch signers for each CRM contract (deduplicated by role)
     const crmWithSigners: any[] = [];
@@ -718,7 +790,50 @@ export default function Cadastrados() {
               </Card>
             ))}
 
-            {!selectedReg.comprovante_url && detailDocuments.length === 0 && detailCrmContracts.length === 0 && detailLeadDocs.length === 0 && (
+            {/* Generated Documents (all: signed and unsigned) */}
+            {detailGeneratedDocs.length > 0 && (
+              <>
+                <h4 className="text-xs font-semibold flex items-center gap-1.5 text-foreground uppercase tracking-wider mt-2">
+                  <FileText className="h-3.5 w-3.5" /> Documentos Gerados
+                </h4>
+                {detailGeneratedDocs.map((doc: any) => {
+                  const url = doc.signed_pdf_url || doc.pdf_url;
+                  const isSigned = doc.status === "signed" || doc.status === "assinado" || !!doc.signed_pdf_url;
+                  return (
+                    <Card key={`gd-${doc.id}`}>
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2.5 rounded-lg ${isSigned ? "bg-green-500/10" : "bg-primary/10"}`}>
+                            <FileText className={`h-5 w-5 ${isSigned ? "text-green-600" : "text-primary"}`} />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{doc.nome}</p>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              <Badge variant="outline" className={`text-[10px] ${isSigned ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-400 dark:border-green-800" : ""}`}>
+                                {isSigned ? "Assinado" : (doc.status || doc.tipo || "Gerado")}
+                              </Badge>
+                              <span className="text-[10px] text-muted-foreground">{fmtDate(doc.created_at)}</span>
+                            </div>
+                          </div>
+                        </div>
+                        {url && (
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="ghost" asChild title="Visualizar">
+                              <a href={url} target="_blank" rel="noreferrer"><Eye className="h-4 w-4" /></a>
+                            </Button>
+                            <Button size="sm" variant="outline" asChild className="gap-1.5">
+                              <a href={url} target="_blank" rel="noreferrer" download><Download className="h-4 w-4" /> Baixar</a>
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </>
+            )}
+
+            {!selectedReg.comprovante_url && detailDocuments.length === 0 && detailCrmContracts.length === 0 && detailLeadDocs.length === 0 && detailGeneratedDocs.length === 0 && (
               <div className="text-center py-12 text-muted-foreground">
                 <Paperclip className="h-10 w-10 mx-auto mb-3 opacity-30" />
                 <p className="text-sm">Nenhum documento anexado</p>
@@ -733,8 +848,13 @@ export default function Cadastrados() {
               const signedContracts = detailContracts.filter(c => c.contract_status === "assinado");
               const pendingContracts = detailContracts.filter(c => c.contract_status === "pendente");
               const hasCrmContracts = detailCrmContracts.length > 0;
+              const signedGenerated = detailGeneratedDocs.filter((d: any) => d.status === "signed" || d.status === "assinado" || d.signed_pdf_url);
+              const signedPdf = detailPdfContracts.filter((c: any) => c.status === "assinado" || c.pdf_assinado_url);
 
-              if (signedContracts.length === 0 && pendingContracts.length === 0 && !hasCrmContracts) {
+              if (
+                signedContracts.length === 0 && pendingContracts.length === 0 && !hasCrmContracts &&
+                signedGenerated.length === 0 && signedPdf.length === 0
+              ) {
                 return (
                   <div className="text-center py-12 text-muted-foreground">
                     <FileSignature className="h-10 w-10 mx-auto mb-3 opacity-30" />
@@ -746,6 +866,62 @@ export default function Cadastrados() {
 
               return (
                 <>
+                  {/* Signed Generated Documents (from generated_documents) */}
+                  {signedGenerated.map((d: any) => (
+                    <Card key={`gen-${d.id}`} className="border-green-200/50">
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2.5 rounded-lg bg-green-500/10">
+                            <FileSignature className="h-5 w-5 text-green-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{d.nome || "Documento assinado"}</p>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-400 dark:border-green-800">Assinado</Badge>
+                              {d.signed_at && <span className="text-[10px] text-muted-foreground">{fmtDate(d.signed_at)}</span>}
+                              {d.validation_code && <span className="text-[10px] text-muted-foreground">Código: {d.validation_code}</span>}
+                            </div>
+                          </div>
+                        </div>
+                        {(d.signed_pdf_url || d.pdf_url) && (
+                          <Button size="sm" variant="outline" asChild className="gap-1.5">
+                            <a href={d.signed_pdf_url || d.pdf_url} target="_blank" rel="noreferrer" download>
+                              <Download className="h-4 w-4" /> Baixar PDF assinado
+                            </a>
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+
+                  {/* Signed PDF Contracts (from pdf_contracts) */}
+                  {signedPdf.map((c: any) => (
+                    <Card key={`pdf-${c.id}`} className="border-green-200/50">
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2.5 rounded-lg bg-green-500/10">
+                            <FileSignature className="h-5 w-5 text-green-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{c.name || "Contrato PDF"}</p>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-400 dark:border-green-800">Assinado</Badge>
+                              {c.icp_signed_at && <span className="text-[10px] text-muted-foreground">{fmtDate(c.icp_signed_at)}</span>}
+                              {c.validation_code && <span className="text-[10px] text-muted-foreground">Código: {c.validation_code}</span>}
+                            </div>
+                          </div>
+                        </div>
+                        {(c.pdf_assinado_url || c.icp_pdf_url || c.pdf_url) && (
+                          <Button size="sm" variant="outline" asChild className="gap-1.5">
+                            <a href={c.pdf_assinado_url || c.icp_pdf_url || c.pdf_url} target="_blank" rel="noreferrer" download>
+                              <Download className="h-4 w-4" /> Baixar PDF assinado
+                            </a>
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+
                   {/* CRM Signed Contracts (from contracts table) */}
                   {detailCrmContracts.map((c: any) => {
                     const isGen = generatingPdf === c.id;
@@ -971,6 +1147,39 @@ export default function Cadastrados() {
                 </Card>
               ))}
             </div>
+
+            {/* Approved Proposals (reference values from CRM) */}
+            {detailProposals.length > 0 && (
+              <Card>
+                <CardContent className="p-4">
+                  <h4 className="text-xs font-semibold flex items-center gap-1.5 text-foreground uppercase tracking-wider mb-3">
+                    <FileText className="h-3.5 w-3.5" /> Propostas Aprovadas (referência)
+                  </h4>
+                  <div className="space-y-2">
+                    {detailProposals.map((p: any) => {
+                      const mrr = Number(p?.mrr_payment?.amount ?? p?.mrr_payment?.valor ?? 0);
+                      return (
+                        <div key={p.id} className="flex items-center justify-between text-sm border-b border-border/40 last:border-0 py-1.5">
+                          <div>
+                            <p className="font-medium text-foreground">{p.titulo || "Proposta"}</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {p.approved_at ? `Aprovada em ${fmtDate(p.approved_at)}` : `Criada em ${fmtDate(p.created_at)}`}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-foreground">{fmtCur(Number(p.valor || 0))}</p>
+                            {mrr > 0 && (
+                              <p className="text-[11px] text-muted-foreground">{fmtCur(mrr)}/mês</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
 
             {detailTransactions.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
