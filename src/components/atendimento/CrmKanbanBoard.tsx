@@ -695,24 +695,9 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
       </div>
 
 
-      {/* Kanban Columns / Status Grid */}
-      {statusFilter !== "open" ? (
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          <StatusFilteredGrid
-            leads={statusFilter === "trash" ? trashLeads : filteredLeads.filter(l => l.lead_status === statusFilter)}
-            statusFilter={statusFilter as "won" | "lost" | "trash"}
-            onRestore={async (leadId) => {
-              await updateLead(leadId, { lead_status: "open", status_changed_at: new Date().toISOString() } as any);
-              if (statusFilter === "trash") {
-                setTrashLeads(prev => prev.filter(l => l.id !== leadId));
-              }
-              toast.success("Card restaurado pro pipeline");
-            }}
-            onOpenCard={openDetail}
-          />
-        </div>
-      ) : (
+      {/* Kanban Columns (única visão — cards permanecem nas colunas de origem) */}
       <div className="flex-1 min-h-0 flex flex-col w-full max-w-full">
+
         <div
           ref={pipelineRef}
           style={{ scrollBehavior: 'smooth', scrollbarWidth: 'thin' }}
