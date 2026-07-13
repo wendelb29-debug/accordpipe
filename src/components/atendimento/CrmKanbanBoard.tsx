@@ -616,7 +616,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className={cn("flex items-center gap-1.5", isMobile ? "flex-wrap w-full justify-start" : "shrink-0")}>
           {searchOpen && (
             <Input
               autoFocus
