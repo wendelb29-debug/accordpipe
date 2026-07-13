@@ -899,7 +899,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                     ? "bg-amber-50/60 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/40"
                     : "bg-card/95 dark:bg-[rgba(255,255,255,0.03)] border-border/40 dark:border-[rgba(255,255,255,0.07)]";
 
-                  const dragDisabled = isTransferredWon || isTrash;
+                  const dragDisabled = isTransferredWon || isTrash || isMobile;
 
                   return (
                     <div
