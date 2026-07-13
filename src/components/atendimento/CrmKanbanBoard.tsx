@@ -170,6 +170,25 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   const [advancedFilters, setAdvancedFilters] = useState<FilterState>(emptyFilterState);
   const activeFilterCount = countActiveFilters(advancedFilters);
 
+  // Sincroniza o painel "Filtrar Cards" com o statusFilter do board.
+  // - Exatamente 1 status selecionado -> troca a visão (kanban/lista).
+  // - 0 ou mais de 1 status -> mantém a visão kanban ("open") e deixa applyFilters cuidar.
+  useEffect(() => {
+    const map: Record<string, "open" | "won" | "lost" | "trash"> = {
+      aberto: "open",
+      ganho: "won",
+      perdido: "lost",
+      lixeira: "trash",
+    };
+    const sel = advancedFilters.status;
+    if (sel.length === 1) {
+      const next = map[sel[0]];
+      if (next) setStatusFilter(next);
+    } else {
+      setStatusFilter("open");
+    }
+  }, [advancedFilters.status]);
+
   // Drag-to-scroll
   const pipelineRef = useRef<HTMLDivElement>(null);
   const isDraggingScroll = useRef(false);
