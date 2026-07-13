@@ -266,7 +266,9 @@ export default function Cadastrados() {
             .from("pdf_contract_signers")
             .select("contract_id, lead_id")
             .eq("lead_id", leadId);
-          const ids = Array.from(new Set((signers || []).map((s: any) => s.contract_id).filter(Boolean)));
+          const ids = Array.from(
+            new Set((signers || []).map((s: any) => s.contract_id as string).filter(Boolean))
+          ) as string[];
           if (ids.length === 0) return { data: [] };
           return await supabase
             .from("pdf_contracts")
