@@ -789,8 +789,12 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
           return (
             <div
               key={stage.id}
+              ref={(el) => { stageColumnRefs.current[stage.id] = el; }}
               className={cn(
-                "flex-shrink-0 w-[220px] rounded-xl flex flex-col border transition-all duration-200",
+                "rounded-xl flex flex-col border transition-all duration-200",
+                isMobile
+                  ? "shrink-0 w-full snap-center mx-1"
+                  : "flex-shrink-0 w-[220px]",
                 dynCol ? "border-border/50" : `${colors.border} ${colors.bg}`,
                 !dynCol && !colors.bg && "bg-muted/20",
                 dragOverStage === stage.id && "ring-2 ring-primary/60 scale-[1.01]"
@@ -800,9 +804,9 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                 borderTopColor: dynCol.color,
                 borderTopWidth: '2px',
               } : undefined}
-              onDragOver={(e) => { e.preventDefault(); setDragOverStage(stage.id); }}
-              onDragLeave={() => setDragOverStage(null)}
-              onDrop={(e) => handleDrop(e, stage.id)}
+              onDragOver={isMobile ? undefined : (e) => { e.preventDefault(); setDragOverStage(stage.id); }}
+              onDragLeave={isMobile ? undefined : () => setDragOverStage(null)}
+              onDrop={isMobile ? undefined : (e) => handleDrop(e, stage.id)}
             >
               {/* Column Header */}
               <div className="px-2.5 py-2 rounded-t-xl">
