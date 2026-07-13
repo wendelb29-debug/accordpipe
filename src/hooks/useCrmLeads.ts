@@ -112,7 +112,6 @@ export function useCrmLeads(
     let query = supabase
       .from("crm_leads")
       .select("*")
-      .in("stage", stageIds)
       .order("created_at", { ascending: false });
 
 
@@ -122,9 +121,12 @@ export function useCrmLeads(
 
     if (workspaceId) {
       // Inclui leads deste workspace OU leads cuja ORIGEM é este workspace
-      // (ganhos transferidos para o Cadastro), para que voltem a aparecer aqui
-      // quando o filtro "Ganho" estiver ativo.
+      // (ganhos transferidos para o Cadastro), para que Ganho/Perdido/Lixeira
+      // apareçam mesmo quando a etapa atual não pertence mais a este funil.
       query = query.or(`workspace_id.eq.${workspaceId},origin_workspace_id.eq.${workspaceId}`);
+    } else {
+      // Sem workspace: restringe às etapas ativas do funil (comportamento original)
+      query = query.in("stage", stageIds);
     }
 
     const { data, error } = await query;
