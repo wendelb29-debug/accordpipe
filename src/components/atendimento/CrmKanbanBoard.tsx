@@ -789,13 +789,22 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
 
               {/* Cards */}
               <div className="flex-1 px-1.5 pb-1.5 space-y-1.5 overflow-y-auto">
-                {stageLeads.length === 0 && (
+                {filterApplying ? (
+                  <div className="space-y-1.5">
+                    {Array.from({ length: Math.max(1, Math.min(4, stageLeads.length || 2)) }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="h-[86px] rounded-xl border border-border/40 bg-muted/40 dark:bg-muted/20 animate-pulse"
+                      />
+                    ))}
+                  </div>
+                ) : stageLeads.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8 text-muted-foreground/30">
                     <Icon className="h-8 w-8 mb-2" />
                     <p className="text-[10px] font-medium">Etapa vazia</p>
                   </div>
-                )}
-                {stageLeads.map((lead) => {
+                ) : null}
+                {!filterApplying && stageLeads.map((lead) => {
                   const overdue = dynCol
                     ? isLeadOverdueDynamic(lead, slaDays)
                     : isLeadOverdue(lead, stage.id);
