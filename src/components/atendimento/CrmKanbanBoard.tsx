@@ -1044,7 +1044,14 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                           <DropdownMenu>
 
                             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn(
+                                  "h-5 w-5 rounded-md transition-opacity",
+                                  isMobile ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                                )}
+                              >
                                 <MoreVertical className="h-3 w-3" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -1052,6 +1059,23 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEdit(lead); }}>
                                 <Edit className="h-3.5 w-3.5 mr-2" /> Editar
                               </DropdownMenuItem>
+                              {isMobile && !dragDisabled && stageStats.length > 1 && (
+                                <>
+                                  <div className="px-2 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                    Mover para etapa
+                                  </div>
+                                  {stageStats
+                                    .filter((s) => s.id !== lead.stage)
+                                    .map((s) => (
+                                      <DropdownMenuItem
+                                        key={s.id}
+                                        onClick={(e) => { e.stopPropagation(); moveToStage(lead.id, s.id); }}
+                                      >
+                                        <RefreshCw className="h-3.5 w-3.5 mr-2" /> {s.title}
+                                      </DropdownMenuItem>
+                                    ))}
+                                </>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
