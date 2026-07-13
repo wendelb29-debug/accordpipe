@@ -367,8 +367,9 @@ export function useCrmLeads(
       } as any);
 
 
-      // Create registration
-      const regResult = await supabase.from("crm_client_registrations" as any).insert({
+      // Build the registration payload (used for insert AND for MERGE updates)
+      const planoContratado = lead.notes?.includes("Plano:") ? lead.notes.split("Plano:")[1]?.trim().split("\n")[0] : null;
+      const regPayload: Record<string, any> = {
         lead_id: id,
         servidor_id: lead.servidor_id,
         nome_completo: lead.contact_name || lead.company_name || "",
@@ -382,10 +383,47 @@ export function useCrmLeads(
         estado: lead.estado || null,
         created_by_user_id: profile?.user_id || null,
         created_by_name: profile?.name || null,
-        plano_contratado: lead.notes?.includes("Plano:") ? lead.notes.split("Plano:")[1]?.trim().split("\n")[0] : null,
+        plano_contratado: planoContratado,
         valor_mensal: lead.value_mrr || 0,
-      }).select("id").single();
-      const regId = (regResult.data as any)?.id;
+      };
+      // For 'base_clientes', activate the client immediately
+      if (dest.kind === "base_clientes") {
+        regPayload.client_status = "ativo";
+        regPayload.status = "concluido";
+        regPayload.data_adesao = new Date().toISOString().split("T")[0];
+      }
+
+      // MERGE: if a registration already exists for this lead, update only
+      // fields that are currently empty; otherwise insert.
+      const { data: existingReg } = await supabase
+        .from("crm_client_registrations" as any)
+        .select("*")
+        .eq("lead_id", id)
+        .maybeSingle();
+
+      let regId: string | null = null;
+      if (existingReg) {
+        regId = (existingReg as any).id;
+        const merged: Record<string, any> = {};
+        for (const [k, v] of Object.entries(regPayload)) {
+          const cur = (existingReg as any)[k];
+          const curEmpty = cur === null || cur === undefined || cur === "";
+          const newHas = v !== null && v !== undefined && v !== "";
+          if (curEmpty && newHas) merged[k] = v;
+        }
+        // Destination-driven status is authoritative for base_clientes
+        if (dest.kind === "base_clientes") {
+          merged.client_status = "ativo";
+          merged.status = "concluido";
+          if (!(existingReg as any).data_adesao) merged.data_adesao = regPayload.data_adesao;
+        }
+        if (Object.keys(merged).length > 0) {
+          await supabase.from("crm_client_registrations" as any).update(merged).eq("id", regId);
+        }
+      } else {
+        const regResult = await supabase.from("crm_client_registrations" as any).insert(regPayload).select("id").single();
+        regId = (regResult.data as any)?.id ?? null;
+      }
 
       if (regId) {
         const contractResult = await supabase.from("client_contracts").insert({
@@ -394,7 +432,7 @@ export function useCrmLeads(
           lead_id: id,
           client_name: lead.contact_name || lead.company_name || "",
           client_cpf: (lead as any).documento || "",
-          plan_name: lead.notes?.includes("Plano:") ? lead.notes.split("Plano:")[1]?.trim().split("\n")[0] : "Plano Padrão",
+          plan_name: planoContratado || "Plano Padrão",
           monthly_value: lead.value_mrr || 0,
           created_by_user_id: profile?.user_id || null,
           created_by_name: profile?.name || null,
@@ -430,37 +468,42 @@ export function useCrmLeads(
         }
       }
 
-      // Notify admin users
-      const { data: adminProfiles } = await supabase
-        .from("profiles")
-        .select("user_id")
-        .eq("company_id", lead.servidor_id)
-        .eq("is_active", true);
+      // Notify admin users (only for cadastro/workspace flows; base_clientes is already active)
+      if (dest.kind !== "base_clientes") {
+        const { data: adminProfiles } = await supabase
+          .from("profiles")
+          .select("user_id")
+          .eq("company_id", lead.servidor_id)
+          .eq("is_active", true);
 
-      if (adminProfiles) {
-        for (const ap of adminProfiles) {
-          const { data: roleData } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", ap.user_id)
-            .maybeSingle();
+        if (adminProfiles) {
+          for (const ap of adminProfiles) {
+            const { data: roleData } = await supabase
+              .from("user_roles")
+              .select("role")
+              .eq("user_id", ap.user_id)
+              .maybeSingle();
 
-          if (roleData?.role === "administrativo" || roleData?.role === "admin") {
-            await supabase.rpc("create_notification", {
-              _user_id: ap.user_id,
-              _title: "Novo cadastro pendente",
-              _message: `A oportunidade "${lead.company_name}" foi marcada como ganha e aguarda conferência no workspace Cadastro. Contrato e cobrança foram gerados automaticamente.`,
-              _type: "cadastro_pendente",
-            });
+            if (roleData?.role === "administrativo" || roleData?.role === "admin") {
+              await supabase.rpc("create_notification", {
+                _user_id: ap.user_id,
+                _title: "Novo cadastro pendente",
+                _message: `A oportunidade "${lead.company_name}" foi marcada como ganha e aguarda conferência no workspace ${dest.label}. Contrato e cobrança foram gerados automaticamente.`,
+                _type: "cadastro_pendente",
+              });
+            }
           }
         }
       }
 
-      // Keep the lead in local state so it remains visible in the origin
-      // workspace board when the "Ganho" filter is active (positioned in the
-      // origin_stage column, drag disabled).
+      // Toast per destination
+      if (dest.kind === "base_clientes") {
+        toast.success("🎉 Oportunidade ganha! Cliente enviado direto para a Base de Clientes.");
+      } else {
+        toast.success(`🎉 Oportunidade ganha! Card transferido para ${dest.label}. Contrato e cobrança gerados automaticamente.`);
+      }
 
-      toast.success("🎉 Oportunidade ganha! Card transferido para Cadastro. Contrato e cobrança gerados automaticamente.");
+
 
     }
     return success;
