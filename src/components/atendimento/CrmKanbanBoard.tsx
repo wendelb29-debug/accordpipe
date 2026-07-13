@@ -42,6 +42,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const stageIcons: Record<string, React.ElementType> = {
   "novos": Sparkles,
@@ -113,6 +114,14 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   const { profile } = useAuth();
   const companyId = useActiveCompanyId();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const stageColumnRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [activeMobileStageId, setActiveMobileStageId] = useState<string | null>(null);
+  const scrollToMobileStage = (stageId: string) => {
+    const el = stageColumnRefs.current[stageId];
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    setActiveMobileStageId(stageId);
+  };
 
   // Realtime visual toast when a new lead arrives in this workspace/tenant
   useNewLeadNotifications(companyId, workspaceId);
@@ -578,10 +587,16 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-muted/30">
+    <div
+      className={cn(
+        "flex flex-col h-full overflow-hidden bg-muted/30",
+        isMobile && "pb-[env(safe-area-inset-bottom)]"
+      )}
+      style={isMobile ? { paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' } : undefined}
+    >
       {/* KPI Cards */}
-      <div className="px-3 py-1 flex items-center gap-2 shrink-0">
-        <div className="flex items-center gap-1.5 flex-1">
+      <div className={cn("px-3 py-1 gap-2 shrink-0", isMobile ? "flex flex-wrap items-center" : "flex items-center")}>
+        <div className={cn("flex items-center gap-1.5", isMobile ? "w-full" : "flex-1")}>
           <div className="flex items-center gap-3 bg-card rounded-lg border border-border/50 px-3 py-1 shadow-sm">
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Oport.</span>
@@ -601,7 +616,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className={cn("flex items-center gap-1.5", isMobile ? "flex-wrap w-full justify-start" : "shrink-0")}>
           {searchOpen && (
             <Input
               autoFocus
@@ -698,14 +713,45 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
       {/* Kanban Columns (única visão — cards permanecem nas colunas de origem) */}
       <div className="flex-1 min-h-0 flex flex-col w-full max-w-full">
 
+        {/* Mobile stage chip bar */}
+        {isMobile && (
+          <div className="flex gap-1.5 overflow-x-auto px-2 py-1.5 shrink-0 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
+            {stageStats.map((s) => {
+              const isActive = activeMobileStageId === s.id;
+              const dynCol = kanbanCols.find((c) => c.id === s.id);
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => scrollToMobileStage(s.id)}
+                  className={cn(
+                    "shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold border transition-colors",
+                    isActive
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-card text-foreground border-border/60"
+                  )}
+                  style={isActive && dynCol?.color ? { backgroundColor: dynCol.color, borderColor: dynCol.color, color: "#fff" } : undefined}
+                >
+                  {s.title}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <div
           ref={pipelineRef}
           style={{ scrollBehavior: 'smooth', scrollbarWidth: 'thin' }}
-          className="flex flex-1 min-h-0 items-stretch gap-2 pl-2 pr-6 pb-0 w-full max-w-full overflow-x-auto overflow-y-hidden cursor-grab [&::-webkit-scrollbar]:h-[6px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gradient-to-r [&::-webkit-scrollbar-thumb]:from-[hsl(var(--primary))] [&::-webkit-scrollbar-thumb]:to-[hsl(263,87%,60%)]"
-          onMouseDown={handlePipelineMouseDown}
-          onMouseMove={handlePipelineMouseMove}
-          onMouseUp={handlePipelineMouseUp}
-          onMouseLeave={handlePipelineMouseUp}
+          className={cn(
+            "flex flex-1 min-h-0 items-stretch pb-0 w-full max-w-full overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:h-[6px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gradient-to-r [&::-webkit-scrollbar-thumb]:from-[hsl(var(--primary))] [&::-webkit-scrollbar-thumb]:to-[hsl(263,87%,60%)]",
+            isMobile
+              ? "gap-0 px-0 snap-x snap-mandatory"
+              : "gap-2 pl-2 pr-6 cursor-grab"
+          )}
+          onMouseDown={isMobile ? undefined : handlePipelineMouseDown}
+          onMouseMove={isMobile ? undefined : handlePipelineMouseMove}
+          onMouseUp={isMobile ? undefined : handlePipelineMouseUp}
+          onMouseLeave={isMobile ? undefined : handlePipelineMouseUp}
         >
         {stageStats.map((stage, stageIdx) => {
           const Icon = stageIcons[stage.id] || Clock;
@@ -743,8 +789,12 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
           return (
             <div
               key={stage.id}
+              ref={(el) => { stageColumnRefs.current[stage.id] = el; }}
               className={cn(
-                "flex-shrink-0 w-[220px] rounded-xl flex flex-col border transition-all duration-200",
+                "rounded-xl flex flex-col border transition-all duration-200",
+                isMobile
+                  ? "shrink-0 basis-full min-w-full snap-center px-1"
+                  : "flex-shrink-0 w-[220px]",
                 dynCol ? "border-border/50" : `${colors.border} ${colors.bg}`,
                 !dynCol && !colors.bg && "bg-muted/20",
                 dragOverStage === stage.id && "ring-2 ring-primary/60 scale-[1.01]"
@@ -754,9 +804,9 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                 borderTopColor: dynCol.color,
                 borderTopWidth: '2px',
               } : undefined}
-              onDragOver={(e) => { e.preventDefault(); setDragOverStage(stage.id); }}
-              onDragLeave={() => setDragOverStage(null)}
-              onDrop={(e) => handleDrop(e, stage.id)}
+              onDragOver={isMobile ? undefined : (e) => { e.preventDefault(); setDragOverStage(stage.id); }}
+              onDragLeave={isMobile ? undefined : () => setDragOverStage(null)}
+              onDrop={isMobile ? undefined : (e) => handleDrop(e, stage.id)}
             >
               {/* Column Header */}
               <div className="px-2.5 py-2 rounded-t-xl">
@@ -849,7 +899,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                     ? "bg-amber-50/60 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/40"
                     : "bg-card/95 dark:bg-[rgba(255,255,255,0.03)] border-border/40 dark:border-[rgba(255,255,255,0.07)]";
 
-                  const dragDisabled = isTransferredWon || isTrash;
+                  const dragDisabled = isTransferredWon || isTrash || isMobile;
 
                   return (
                     <div
@@ -994,7 +1044,14 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                           <DropdownMenu>
 
                             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn(
+                                  "h-5 w-5 rounded-md transition-opacity",
+                                  isMobile ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                                )}
+                              >
                                 <MoreVertical className="h-3 w-3" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -1002,6 +1059,23 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEdit(lead); }}>
                                 <Edit className="h-3.5 w-3.5 mr-2" /> Editar
                               </DropdownMenuItem>
+                              {isMobile && !dragDisabled && stageStats.length > 1 && (
+                                <>
+                                  <div className="px-2 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                    Mover para etapa
+                                  </div>
+                                  {stageStats
+                                    .filter((s) => s.id !== lead.stage)
+                                    .map((s) => (
+                                      <DropdownMenuItem
+                                        key={s.id}
+                                        onClick={(e) => { e.stopPropagation(); moveToStage(lead.id, s.id); }}
+                                      >
+                                        <RefreshCw className="h-3.5 w-3.5 mr-2" /> {s.title}
+                                      </DropdownMenuItem>
+                                    ))}
+                                </>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
