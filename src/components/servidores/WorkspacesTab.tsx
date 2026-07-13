@@ -264,8 +264,12 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
     setWsColor(ws?.color || "#7C3AED");
     setWsType(ws?.type || "vendas");
     setWsGroupId(ws?.group_id || defaultGroupId || groups[0]?.id || "");
+    const wd = ((ws as any)?.won_destination as "cadastro" | "workspace" | "base_clientes" | null) || "cadastro";
+    setWsWonDestination(wd);
+    setWsWonTargetId(((ws as any)?.won_target_workspace_id as string | null) || "");
     setWsDialogOpen(true);
   };
+
 
   const deriveWorkspaceType = (t: string): "sdr" | "cadastro" | "crm" => {
     if (t === "pre_venda_sdr") return "sdr";
