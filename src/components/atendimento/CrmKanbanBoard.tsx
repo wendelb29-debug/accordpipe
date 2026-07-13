@@ -1167,7 +1167,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
         })}
         </div>
       </div>
-      )}
+
 
       <KanbanQuickActionZones
         visible={!!draggedLead}
