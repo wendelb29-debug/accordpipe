@@ -33,6 +33,7 @@ import {
   emptyFilterState,
   countActiveFilters,
   applyFilters,
+  getCardStatus,
 } from "./FilterPanel";
 import { useCrmLeads, CrmLead, STAGES } from "@/hooks/useCrmLeads";
 import { useKanbanColumns } from "@/hooks/useKanbanColumns";
@@ -168,6 +169,25 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState<FilterState>(emptyFilterState);
   const activeFilterCount = countActiveFilters(advancedFilters);
+
+  // Sincroniza o painel "Filtrar Cards" com o statusFilter do board.
+  // - Exatamente 1 status selecionado -> troca a visão (kanban/lista).
+  // - 0 ou mais de 1 status -> mantém a visão kanban ("open") e deixa applyFilters cuidar.
+  useEffect(() => {
+    const map: Record<string, "open" | "won" | "lost" | "trash"> = {
+      aberto: "open",
+      ganho: "won",
+      perdido: "lost",
+      lixeira: "trash",
+    };
+    const sel = advancedFilters.status;
+    if (sel.length === 1) {
+      const next = map[sel[0]];
+      if (next) setStatusFilter(next);
+    } else {
+      setStatusFilter("open");
+    }
+  }, [advancedFilters.status]);
 
   // Drag-to-scroll
   const pipelineRef = useRef<HTMLDivElement>(null);
@@ -771,10 +791,14 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                   const progressColor = getProgressColor(lead, stage.id, hasActivity, hasOverdue);
                   const signatureStats = signatureStatsByLead[lead.id];
 
-                  // Priority: 1) lost, 2) overdue activity, 3) SLA exceeded, 4) no activity, 5) normal
-                  const isLost = lead.lead_status === "lost";
-                  const isNaturalState = !isLost && !hasOverdue && !noActivity && !overdue;
-                  const cardStyle = isLost
+                  // Priority: 1) won, 2) lost, 3) overdue activity, 4) SLA exceeded, 5) no activity, 6) normal
+                  const cardStatus = getCardStatus(lead);
+                  const isWon = cardStatus === "ganho";
+                  const isLost = cardStatus === "perdido";
+                  const isNaturalState = !isWon && !isLost && !hasOverdue && !noActivity && !overdue;
+                  const cardStyle = isWon
+                    ? "bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-500/70 dark:border-emerald-600/60 ring-1 ring-emerald-500/30"
+                    : isLost
                     ? "bg-red-50/80 dark:bg-red-950/40 border-red-400/70 dark:border-red-700/60 ring-1 ring-red-400/30"
                     : hasOverdue
                     ? "bg-red-50/70 dark:bg-red-950/30 border-red-300/70 dark:border-red-800/50"
@@ -814,6 +838,21 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                           background: `linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.6))`,
                         } : undefined}
                       />
+
+                      {/* Selo de status Ganho/Perdido (aparece quando o painel de filtros permite ganhos/perdidos no kanban) */}
+                      {(isWon || isLost) && (
+                        <span
+                          className={cn(
+                            "absolute top-1.5 right-1.5 z-10 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide border shadow-sm",
+                            isWon
+                              ? "bg-emerald-500 text-white border-emerald-600"
+                              : "bg-red-500 text-white border-red-600"
+                          )}
+                        >
+                          {isWon ? "Ganho" : "Perdido"}
+                        </span>
+                      )}
+
 
                       {/* Faixa de assinaturas — visível por fora do card, antes de abrir */}
                       {signatureStats && (
