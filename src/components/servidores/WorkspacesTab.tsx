@@ -834,7 +834,48 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
                 ))}
               </div>
             </div>
+            <div className="space-y-2 border-t border-border/40 pt-4">
+              <Label className="text-xs font-medium">Ao marcar como Ganho, enviar o card para:</Label>
+              <RadioGroup value={wsWonDestination} onValueChange={(v) => setWsWonDestination(v as any)} className="space-y-2">
+                <label className="flex items-start gap-2 cursor-pointer rounded-md border border-border/50 p-2.5 hover:bg-muted/30 transition-colors">
+                  <RadioGroupItem value="cadastro" id="won-cadastro" className="mt-0.5" />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">Workspace de Cadastro (padrão)</div>
+                    <div className="text-xs text-muted-foreground">Comportamento atual: envia para o workspace de Cadastro do tenant.</div>
+                  </div>
+                </label>
+                <label className="flex items-start gap-2 cursor-pointer rounded-md border border-border/50 p-2.5 hover:bg-muted/30 transition-colors">
+                  <RadioGroupItem value="workspace" id="won-workspace" className="mt-0.5" />
+                  <div className="flex-1 space-y-2">
+                    <div>
+                      <div className="text-sm font-medium">Outro workspace</div>
+                      <div className="text-xs text-muted-foreground">Move o card para a primeira coluna do workspace escolhido.</div>
+                    </div>
+                    {wsWonDestination === "workspace" && (
+                      <Select value={wsWonTargetId} onValueChange={setWsWonTargetId}>
+                        <SelectTrigger className="h-9"><SelectValue placeholder="Selecione o workspace de destino..." /></SelectTrigger>
+                        <SelectContent>
+                          {workspaces
+                            .filter((w) => w.servidor_id === companyId && (!editingWs || w.id !== editingWs.id))
+                            .map((w) => (
+                              <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                </label>
+                <label className="flex items-start gap-2 cursor-pointer rounded-md border border-border/50 p-2.5 hover:bg-muted/30 transition-colors">
+                  <RadioGroupItem value="base_clientes" id="won-base" className="mt-0.5" />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">Direto para a Base de Clientes</div>
+                    <div className="text-xs text-muted-foreground">Não move o card; ativa o cliente imediatamente na Base de Clientes.</div>
+                  </div>
+                </label>
+              </RadioGroup>
+            </div>
           </div>
+
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setWsDialogOpen(false)}>Cancelar</Button>
             <Button onClick={handleSaveWorkspace} disabled={!wsName.trim() || !wsGroupId || savingWs} className="gap-1.5 bg-gradient-to-r from-primary to-blue-600">
