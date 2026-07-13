@@ -68,10 +68,15 @@ async function fetchWithRetry(url: string, init: RequestInit, maxAttempts = 5): 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const resp = await fetch(url, init);
     if (resp.ok) return resp;
-    if (resp.status !== 429 && resp.status < 500) return resp; // erro definitivo, não retentar
-    lastResp = resp;
-    // drena o corpo para liberar o socket
+    if (resp.status !== 429 && resp.status < 500) return resp; // erro definitivo, corpo intacto
+    // Vai retentar: precisamos drenar o socket, mas preservar o body para o caller
+    // caso essa seja a última tentativa. Clonamos antes de ler.
+    if (attempt === maxAttempts - 1) {
+      lastResp = resp; // última tentativa: NÃO consumir o body, o caller vai ler
+      break;
+    }
     try { await resp.text(); } catch (_) {}
+    lastResp = resp;
     const retryAfter = Number(resp.headers.get("retry-after"));
     const base = Number.isFinite(retryAfter) && retryAfter > 0
       ? retryAfter * 1000
