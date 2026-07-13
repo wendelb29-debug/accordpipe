@@ -114,6 +114,14 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   const { profile } = useAuth();
   const companyId = useActiveCompanyId();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const stageColumnRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [activeMobileStageId, setActiveMobileStageId] = useState<string | null>(null);
+  const scrollToMobileStage = (stageId: string) => {
+    const el = stageColumnRefs.current[stageId];
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    setActiveMobileStageId(stageId);
+  };
 
   // Realtime visual toast when a new lead arrives in this workspace/tenant
   useNewLeadNotifications(companyId, workspaceId);
