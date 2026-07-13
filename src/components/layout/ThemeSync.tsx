@@ -47,6 +47,28 @@ export function lightenHsl(hsl: string, amount: number): string {
   return `${h} ${s}% ${l}%`;
 }
 
+/**
+ * Perceived luminance of an HSL color (0..1). Uses the lightness channel
+ * plus a rough gamma correction so yellow/cyan don't fool the contrast picker.
+ */
+function hslLuminance(hsl: string): number {
+  const parts = hsl.match(/(\d+)\s+(\d+)%\s+(\d+)%/);
+  if (!parts) return 0.5;
+  const h = parseInt(parts[1]);
+  const l = parseInt(parts[3]) / 100;
+  // Boost perceived luminance for yellow-ish hues (~40°–80°)
+  const yellowBoost = h >= 40 && h <= 80 ? 0.12 : 0;
+  return Math.min(1, l + yellowBoost);
+}
+
+/**
+ * Given a background HSL, returns the foreground HSL (near-black or near-white)
+ * that yields readable contrast.
+ */
+function readableForeground(bgHsl: string): string {
+  return hslLuminance(bgHsl) > 0.6 ? "224 71% 7%" : "0 0% 100%";
+}
+
 // Default ACCORD brand HSL values (from index.css)
 const DEFAULTS = {
   primary: "224 76% 53%",
@@ -84,17 +106,9 @@ export function ThemeSync() {
     }
   }, [user, profile, loading]);
 
-  // Tenant brand colors sync — master's own company uses ACCORD defaults
+  // Tenant brand colors sync
   useEffect(() => {
     if (!activeCompanyId || !user) {
-      applyBrandColors(null);
-      return;
-    }
-
-    // The master's own company (profile.company_id) always uses default Accord colors
-    const isMasterOwnCompany = isMaster && profile?.company_id === activeCompanyId;
-
-    if (isMasterOwnCompany) {
       applyBrandColors(null);
       return;
     }
@@ -102,11 +116,24 @@ export function ThemeSync() {
     const fetchBrand = async () => {
       const { data } = await supabase
         .from("companies")
-        .select("brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color")
+        .select("brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color, servidor_id")
         .eq("id", activeCompanyId)
         .single();
 
       if (!data) {
+        applyBrandColors(null);
+        return;
+      }
+
+      // Skip branding ONLY when the master is truly in the master-tenant context:
+      // it must be the master's own company AND that company must be a master tenant
+      // (servidor_id === null). If the master is operating on a child tenant, apply it.
+      const isMasterTenantContext =
+        isMaster &&
+        profile?.company_id === activeCompanyId &&
+        (data as any).servidor_id === null;
+
+      if (isMasterTenantContext) {
         applyBrandColors(null);
       } else {
         applyBrandColors(data);
@@ -148,16 +175,32 @@ export function applyBrandColors(brand: {
     // Reset accent/foreground overrides
     root.style.removeProperty("--accent");
     root.style.removeProperty("--accent-foreground");
+    // Reset background/foreground/card/popover/muted overrides
+    root.style.removeProperty("--background");
+    root.style.removeProperty("--foreground");
+    root.style.removeProperty("--card");
+    root.style.removeProperty("--card-foreground");
+    root.style.removeProperty("--popover");
+    root.style.removeProperty("--popover-foreground");
+    root.style.removeProperty("--muted-foreground");
+    root.style.removeProperty("--primary-foreground");
+    root.style.removeProperty("--sidebar-primary-foreground");
     return;
   }
 
   const primaryHsl = hexToHsl(brand.brand_primary_color);
   const accentHsl = brand.brand_accent_color ? hexToHsl(brand.brand_accent_color) : null;
   const secondaryHsl = brand.brand_secondary_color ? hexToHsl(brand.brand_secondary_color) : null;
+  const bgHsl = brand.brand_bg_color ? hexToHsl(brand.brand_bg_color) : null;
+  const textHsl = brand.brand_text_color ? hexToHsl(brand.brand_text_color) : null;
 
   if (primaryHsl) {
     root.style.setProperty("--primary", primaryHsl);
     root.style.setProperty("--ring", primaryHsl);
+
+    // Automatic contrast for text over primary buttons
+    const primaryFg = readableForeground(primaryHsl);
+    root.style.setProperty("--primary-foreground", primaryFg);
 
     // Sidebar derives from primary — deep dark version
     const sidebarBg = darkenHsl(primaryHsl, 38);
@@ -186,9 +229,42 @@ export function applyBrandColors(brand: {
     root.style.setProperty("--sidebar-ring", accentHsl);
     root.style.setProperty("--accent", lightenHsl(accentHsl, 30));
     root.style.setProperty("--accent-foreground", darkenHsl(accentHsl, 30));
+    // Auto-contrast for text over sidebar-primary (active nav item)
+    root.style.setProperty("--sidebar-primary-foreground", readableForeground(accentHsl));
   } else if (secondaryHsl) {
     root.style.setProperty("--primary-glow", secondaryHsl);
     root.style.setProperty("--sidebar-primary", secondaryHsl);
     root.style.setProperty("--sidebar-ring", secondaryHsl);
+    root.style.setProperty("--sidebar-primary-foreground", readableForeground(secondaryHsl));
+  }
+
+  // Background token — also derive --card and --popover so cards remain visible
+  if (bgHsl) {
+    root.style.setProperty("--background", bgHsl);
+    const bgIsLight = hslLuminance(bgHsl) > 0.6;
+    // Cards nudge slightly opposite the background so they don't blend in
+    const cardHsl = bgIsLight ? darkenHsl(bgHsl, 4) : lightenHsl(bgHsl, 6);
+    root.style.setProperty("--card", cardHsl);
+    root.style.setProperty("--popover", cardHsl);
+  }
+
+  // Foreground / text token
+  if (textHsl) {
+    root.style.setProperty("--foreground", textHsl);
+    root.style.setProperty("--card-foreground", textHsl);
+    root.style.setProperty("--popover-foreground", textHsl);
+
+    // Muted text: same hue, reduced saturation, pulled toward the background luminance
+    const parts = textHsl.match(/(\d+)\s+(\d+)%\s+(\d+)%/);
+    if (parts) {
+      const h = parseInt(parts[1]);
+      const s = Math.max(0, parseInt(parts[2]) - 20);
+      const baseL = parseInt(parts[3]);
+      const textIsLight = baseL > 60;
+      const mutedL = textIsLight
+        ? Math.max(0, baseL - 25) // light text → darker muted
+        : Math.min(100, baseL + 30); // dark text → lighter muted
+      root.style.setProperty("--muted-foreground", `${h} ${s}% ${mutedL}%`);
+    }
   }
 }
