@@ -119,7 +119,10 @@ export function useCrmLeads(
     }
 
     if (workspaceId) {
-      query = query.eq("workspace_id", workspaceId);
+      // Inclui leads deste workspace OU leads cuja ORIGEM é este workspace
+      // (ganhos transferidos para o Cadastro), para que voltem a aparecer aqui
+      // quando o filtro "Ganho" estiver ativo.
+      query = query.or(`workspace_id.eq.${workspaceId},origin_workspace_id.eq.${workspaceId}`);
     }
 
     const { data, error } = await query;
