@@ -827,12 +827,13 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                   return (
                     <div
                       key={lead.id}
-                      draggable
-                      onDragStart={() => setDraggedLead(lead)}
+                      draggable={!isTransferredWon}
+                      onDragStart={() => { if (!isTransferredWon) setDraggedLead(lead); }}
                       onClick={() => openDetail(lead)}
+                      title={isTransferredWon ? "Ganho — já transferido para Cadastro (somente leitura neste board)" : undefined}
                       className={cn(
-                        "kanban-card rounded-xl border cursor-grab active:cursor-grabbing transition-all duration-200 group relative overflow-hidden",
-                        "active:scale-[0.98]",
+                        "kanban-card rounded-xl border transition-all duration-200 group relative overflow-hidden",
+                        isTransferredWon ? "cursor-pointer" : "cursor-grab active:cursor-grabbing active:scale-[0.98]",
                         draggedLead?.id === lead.id && "opacity-40 scale-95",
                         cardStyle,
                         isNaturalState
