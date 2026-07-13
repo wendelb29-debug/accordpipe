@@ -246,9 +246,16 @@ export function FilterPanel({
   const currentMin = draft.valueMin ?? sliderMin;
   const currentMax = draft.valueMax ?? sliderMax;
 
+  const isMobile = useIsMobile();
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col p-0">
+      <SheetContent
+        side={isMobile ? "bottom" : "right"}
+        className={isMobile
+          ? "w-full h-[90vh] max-h-[90vh] flex flex-col p-0 rounded-t-2xl"
+          : "w-full sm:max-w-md flex flex-col p-0"}
+      >
         <SheetHeader className="px-5 py-4 border-b">
           <SheetTitle>Filtrar Cards</SheetTitle>
           <SheetDescription>Refine por responsável, status, tags, localização e mais</SheetDescription>
