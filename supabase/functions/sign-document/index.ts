@@ -158,7 +158,7 @@ function centerText(page: any, text: string, y: number, font: any, size: number,
 
 function drawWrapped(page: any, text: string, x: number, y: number, font: any, size: number, maxW: number, color: any, lineH = 0): number {
   const gap = lineH || size + 4;
-  const words = text.split(" ");
+  const words = String(text || "").split(/\s+/);
   let line = "";
   let cy = y;
   for (const word of words) {
@@ -178,6 +178,74 @@ function drawWrapped(page: any, text: string, x: number, y: number, font: any, s
   return cy;
 }
 
+/**
+ * drawWrappedText — quebra por palavra e trunca no fim da última palavra inteira
+ * com reticências quando exceder maxLines. Retorna nova coordenada y.
+ */
+function drawWrappedText(
+  page: any,
+  text: string,
+  opts: { x: number; y: number; maxWidth: number; font: any; size: number; lineHeight?: number; maxLines?: number; color: any },
+): number {
+  const { x, y, maxWidth, font, size, color } = opts;
+  const lineHeight = opts.lineHeight || size + 3;
+  const maxLines = opts.maxLines || 99;
+  const words = String(text ?? "").split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let cur = "";
+  for (const w of words) {
+    const test = cur ? cur + " " + w : w;
+    if (font.widthOfTextAtSize(test, size) > maxWidth && cur) {
+      lines.push(cur);
+      cur = w;
+    } else {
+      cur = test;
+    }
+    if (lines.length >= maxLines) break;
+  }
+  if (cur && lines.length < maxLines) lines.push(cur);
+
+  // If we still have overflow words, truncate last line with ellipsis
+  const totalConsumed = lines.join(" ").split(/\s+/).filter(Boolean).length;
+  if (totalConsumed < words.length && lines.length > 0) {
+    let last = lines[lines.length - 1];
+    const ell = "…";
+    while (last.length > 0 && font.widthOfTextAtSize(last + ell, size) > maxWidth) {
+      const parts = last.split(" ");
+      parts.pop();
+      last = parts.join(" ");
+      if (!last) break;
+    }
+    lines[lines.length - 1] = (last || "").trim() + ell;
+  }
+
+  let cy = y;
+  for (const l of lines) {
+    page.drawText(l, { x, y: cy, size, font, color });
+    cy -= lineHeight;
+  }
+  return cy;
+}
+
+/** ICP-Brasil circular seal (restored) */
+function drawIcpSeal(page: any, font: any, fontBold: any, cx: number, cy: number, r: number) {
+  const green = rgb(0.04, 0.42, 0.27);
+  const goldBg = rgb(0.98, 0.93, 0.78);
+  page.drawCircle({ x: cx, y: cy, size: r, color: goldBg, borderColor: green, borderWidth: 1.5 });
+  page.drawCircle({ x: cx, y: cy, size: r - 6, borderColor: green, borderWidth: 0.6, color: rgb(1, 1, 1) });
+  page.drawCircle({ x: cx, y: cy, size: r - 14, color: green });
+  const tw1 = fontBold.widthOfTextAtSize("ICP", 10);
+  page.drawText("ICP", { x: cx - tw1 / 2, y: cy + 2, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+  const tw2 = fontBold.widthOfTextAtSize("BRASIL", 7);
+  page.drawText("BRASIL", { x: cx - tw2 / 2, y: cy - 8, size: 7, font: fontBold, color: rgb(1, 1, 1) });
+  const lbl = "Selo ICP-Brasil";
+  const lw = fontBold.widthOfTextAtSize(lbl, 6.5);
+  page.drawText(lbl, { x: cx - lw / 2, y: cy - r - 8, size: 6.5, font: fontBold, color: green });
+  const lbl2 = "Carimbo do Tempo";
+  const lw2 = font.widthOfTextAtSize(lbl2, 5.5);
+  page.drawText(lbl2, { x: cx - lw2 / 2, y: cy - r - 15, size: 5.5, font, color: rgb(0.3, 0.3, 0.3) });
+}
+
 // ─── Certificate Cover Page (White Label) ───
 async function buildCoverPage(
   pdfDoc: any, font: any, fontBold: any,
@@ -186,15 +254,14 @@ async function buildCoverPage(
 ) {
   const page = pdfDoc.addPage([W, H]);
 
-  // Full dark background
   drawRect(page, 0, 0, W, H, P.darkBg);
-
-  // Top decorative accent bar in tenant primary
   drawRect(page, 0, H - 6, W, 6, P.coverAccentBar);
+
+  // ICP-Brasil seal top-right
+  drawIcpSeal(page, font, fontBold, W - 70, H - 80, 28);
 
   let y = H - 60;
 
-  // ── Logo or tenant name ──
   if (logoImage) {
     const maxLogoH = 40;
     const maxLogoW = 160;
@@ -207,32 +274,30 @@ async function buildCoverPage(
   } else {
     centerText(page, P.tenantName.toUpperCase(), y, fontBold, 13, P.primary);
     y -= 10;
-    const badgeW = font.widthOfTextAtSize("Plataforma de Assinatura Eletronica", 7);
-    page.drawText("Plataforma de Assinatura Eletronica", { x: (W - badgeW) / 2, y, size: 7, font, color: P.midGray });
+    const badge = "Plataforma de Assinatura Eletrônica";
+    const badgeW = font.widthOfTextAtSize(badge, 7);
+    page.drawText(badge, { x: (W - badgeW) / 2, y, size: 7, font, color: P.midGray });
     y -= 20;
   }
 
   y -= 30;
 
-  // Title
   centerText(page, "CERTIFICADO DE ASSINATURA", y, fontBold, 22, P.white);
   y -= 28;
-  centerText(page, "ELETRONICA", y, fontBold, 22, P.white);
+  centerText(page, "ELETRÔNICA", y, fontBold, 22, P.white);
   y -= 18;
 
-  // Decorative line under title in tenant primary
   const lineW = 80;
   page.drawLine({ start: { x: (W - lineW) / 2, y }, end: { x: (W + lineW) / 2, y }, thickness: 2, color: P.primary });
   y -= 30;
 
-  // Subtitle
   centerText(page, "Este documento certifica que o contrato foi assinado eletronicamente", y, font, 9, P.lightGray);
   y -= 14;
-  centerText(page, "com registro completo de auditoria, rastreabilidade e validacao.", y, font, 9, P.lightGray);
+  centerText(page, "com registro completo de auditoria, rastreabilidade e validação.", y, font, 9, P.lightGray);
   y -= 50;
 
   // Document info card
-  const cardH = 130;
+  const cardH = 138;
   const cardX = M + 20;
   const cardW = CW - 40;
   drawRect(page, cardX, y - cardH, cardW, cardH, P.cardBg);
@@ -241,20 +306,26 @@ async function buildCoverPage(
   let cy = y - 22;
   const labelX = cardX + 20;
   const valueX = cardX + 160;
+  const valueMaxW = cardX + cardW - valueX - 20;
 
-  const infoRows: [string, string][] = [
-    ["Documento", doc.nome || "--"],
-    ["Tipo", (doc.tipo || "contrato").charAt(0).toUpperCase() + (doc.tipo || "contrato").slice(1)],
-    ["Status", "ASSINADO"],
-    ["Data da Assinatura", doc.signed_at ? fmtDateTimeBR(doc.signed_at) : "--"],
-  ];
+  // Documento with wrapping
+  page.drawText("Documento", { x: labelX, y: cy, size: 9, font, color: P.lightGray });
+  drawWrappedText(page, doc.nome || "--", {
+    x: valueX, y: cy, maxWidth: valueMaxW, font: fontBold, size: 9, lineHeight: 11, maxLines: 2, color: P.white,
+  });
+  cy -= 30;
 
-  for (const [label, value] of infoRows) {
-    page.drawText(label, { x: labelX, y: cy, size: 9, font, color: P.lightGray });
-    const valColor = value === "ASSINADO" ? P.green : P.white;
-    page.drawText(value, { x: valueX, y: cy, size: 9, font: fontBold, color: valColor });
-    cy -= 24;
-  }
+  const tipo = (doc.tipo || "contrato").charAt(0).toUpperCase() + (doc.tipo || "contrato").slice(1);
+  page.drawText("Tipo", { x: labelX, y: cy, size: 9, font, color: P.lightGray });
+  page.drawText(tipo, { x: valueX, y: cy, size: 9, font: fontBold, color: P.white });
+  cy -= 22;
+
+  page.drawText("Status", { x: labelX, y: cy, size: 9, font, color: P.lightGray });
+  page.drawText("ASSINADO", { x: valueX, y: cy, size: 9, font: fontBold, color: P.green });
+  cy -= 22;
+
+  page.drawText("Data da Assinatura", { x: labelX, y: cy, size: 9, font, color: P.lightGray });
+  page.drawText(doc.signed_at ? fmtDateTimeBR(doc.signed_at) : "--", { x: valueX, y: cy, size: 9, font: fontBold, color: P.white });
 
   y -= cardH + 40;
 
@@ -264,25 +335,26 @@ async function buildCoverPage(
   drawRect(page, cardX, y, cardW, 2, P.secondary);
 
   cy = y - 18;
-  page.drawText("VALIDACAO E INTEGRIDADE", { x: labelX, y: cy, size: 10, font: fontBold, color: P.secondary });
+  page.drawText("VALIDAÇÃO E INTEGRIDADE", { x: labelX, y: cy, size: 10, font: fontBold, color: P.secondary });
   cy -= 24;
 
   const valRows: [string, string][] = [
-    ["Codigo de Validacao", validationCode],
+    ["Código de Validação", validationCode],
     ["Hash SHA-256", docHash.slice(0, 40) + "..."],
-    ["Verificacao Publica", publicUrl.length > 55 ? publicUrl.slice(0, 55) + "..." : publicUrl],
+    ["Verificação Pública", publicUrl],
   ];
 
   for (const [label, value] of valRows) {
     page.drawText(label, { x: labelX, y: cy, size: 8, font, color: P.lightGray });
     cy -= 13;
-    page.drawText(value, { x: labelX, y: cy, size: 7.5, font: fontBold, color: P.white });
+    drawWrappedText(page, value, {
+      x: labelX, y: cy, maxWidth: cardW - 40, font: fontBold, size: 7.5, lineHeight: 10, maxLines: 1, color: P.white,
+    });
     cy -= 20;
   }
 
   y -= valCardH + 50;
 
-  // Footer
   drawLine(page, y, P.dimLine, 0.5);
   y -= 16;
   centerText(page, "Este certificado comprova a autenticidade e integridade", y, font, 7.5, P.midGray);
@@ -299,13 +371,10 @@ async function buildAuditPages(
   doc: any, signersList: any[], events: any[],
   validationCode: string, docHash: string, publicUrl: string,
   P: BrandPalette, tenantData: any,
+  sb: any,
 ) {
-  const supabaseAdmin = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
-
   function extractSignaturesPath(url: string): string | null {
+    if (!url) return null;
     try {
       const clean = url.split("?")[0];
       const markers = ["/object/sign/signatures/", "/object/public/signatures/", "/object/signatures/"];
@@ -313,37 +382,79 @@ async function buildAuditPages(
         const idx = clean.indexOf(m);
         if (idx >= 0) return decodeURIComponent(clean.slice(idx + m.length));
       }
+      // Fallback: any occurrence of "signatures/"
+      const generic = clean.indexOf("signatures/");
+      if (generic >= 0) return decodeURIComponent(clean.slice(generic + "signatures/".length));
       return null;
-    } catch { return null; }
+    } catch (e) {
+      console.error("[dossier] extractSignaturesPath failed:", (e as any)?.message);
+      return null;
+    }
+  }
+
+  // Build a map signer_id -> selfie_url from document_events metadata_json (fallback)
+  const eventSelfieMap: Record<string, string> = {};
+  for (const ev of events || []) {
+    try {
+      const meta = typeof ev.metadata_json === "string" ? JSON.parse(ev.metadata_json) : ev.metadata_json;
+      const url = meta?.selfie_url;
+      if (url && ev.signer_id && !eventSelfieMap[ev.signer_id]) {
+        eventSelfieMap[ev.signer_id] = url;
+      }
+    } catch (e) {
+      // ignore parse
+    }
   }
 
   // Pre-load selfies
   const signerSelfies: (any | null)[] = [];
   for (const s of signersList) {
-    if (!s?.selfie_url) { signerSelfies.push(null); continue; }
+    let selfieUrl: string | null = s?.selfie_url || null;
+    if (!selfieUrl && s?.id && eventSelfieMap[s.id]) {
+      selfieUrl = eventSelfieMap[s.id];
+      console.log("[dossier] selfie recovered from events for signer", s.id);
+    }
+    if (!selfieUrl) {
+      console.log("[dossier] no selfie for signer", s?.id, s?.nome_completo);
+      signerSelfies.push(null);
+      continue;
+    }
     let buf: Uint8Array | null = null;
-    const path = extractSignaturesPath(s.selfie_url);
+    const path = extractSignaturesPath(selfieUrl);
     if (path) {
       try {
-        const { data: blob } = await supabaseAdmin.storage.from("signatures").download(path);
+        const { data: blob, error } = await sb.storage.from("signatures").download(path);
+        if (error) console.error("[dossier] storage.download selfie error:", error.message, "path:", path);
         if (blob) buf = new Uint8Array(await blob.arrayBuffer());
-      } catch {}
+      } catch (e) {
+        console.error("[dossier] storage.download selfie threw:", (e as any)?.message, "path:", path);
+      }
+    } else {
+      console.error("[dossier] could not extract signatures path from url:", selfieUrl);
     }
     if (!buf) {
       try {
-        const r = await fetch(s.selfie_url);
+        const r = await fetch(selfieUrl);
         if (r.ok) buf = new Uint8Array(await r.arrayBuffer());
-      } catch {}
+        else console.error("[dossier] fetch selfie non-ok:", r.status, selfieUrl);
+      } catch (e) {
+        console.error("[dossier] fetch selfie threw:", (e as any)?.message);
+      }
     }
     let img: any = null;
     if (buf) {
       try { img = await pdfDoc.embedJpg(buf); }
-      catch { try { img = await pdfDoc.embedPng(buf); } catch { img = null; } }
+      catch (e1) {
+        try { img = await pdfDoc.embedPng(buf); }
+        catch (e2) {
+          console.error("[dossier] embed selfie failed:", (e1 as any)?.message, "|", (e2 as any)?.message);
+          img = null;
+        }
+      }
     }
     signerSelfies.push(img);
   }
 
-  // ─────── Helpers ───────
   function newPage() {
     const p = pdfDoc.addPage([W, H]);
     drawRect(p, 0, 0, W, H, P.darkBg);
@@ -369,18 +480,16 @@ async function buildAuditPages(
     for (let i = 0; i < signersList.length; i++) {
       const s = signersList[i];
       const selfieImg = signerSelfies[i];
-      const cardH = 150;
+      const cardH = 170;
 
       if (y - cardH < 70) {
         const np = newPage(); page = np.page; y = np.y;
       }
 
-      // Card
       drawRect(page, M, y - cardH, CW, cardH, P.cardBg);
       const stripeColor = s.status === "signed" ? P.green : P.primary;
       drawRect(page, M, y - cardH, 4, cardH, stripeColor);
 
-      // Header line
       const papelLabel = PAPEL_LABELS[s.papel] || s.papel || "Signatário";
       page.drawText(`${i + 1}. ${s.nome_completo || "--"}`, { x: M + 14, y: y - 16, size: 11, font: fontBold, color: P.white });
       page.drawText(papelLabel, { x: M + 14, y: y - 30, size: 8, font, color: P.lightGray });
@@ -390,17 +499,23 @@ async function buildAuditPages(
       const stw = fontBold.widthOfTextAtSize(statusText, 8);
       page.drawText(statusText, { x: M + CW - stw - 14, y: y - 16, size: 8, font: fontBold, color: statusColor });
 
-      // Selfie right side
-      let contentRightBound = M + CW - 14;
+      // Selfie block on the right (always rendered — with placeholder text when missing)
+      const ps = 82;
+      const px = M + CW - ps - 14;
+      const py = y - 44 - ps;
+      drawRect(page, px - 2, py - 2, ps + 4, ps + 4, P.dimLine);
       if (selfieImg) {
-        const ps = 78;
-        const px = M + CW - ps - 14;
-        const py = y - cardH + (cardH - ps) / 2 - 4;
-        drawRect(page, px - 2, py - 2, ps + 4, ps + 4, P.white);
         page.drawImage(selfieImg, { x: px, y: py, width: ps, height: ps });
-        page.drawText("Selfie capturada", { x: px, y: py - 10, size: 6, font, color: P.lightGray });
-        contentRightBound = px - 12;
+      } else {
+        drawRect(page, px, py, ps, ps, P.cardBg);
+        const msg = "Selfie não capturada";
+        const mw = font.widthOfTextAtSize(msg, 7);
+        page.drawText(msg, { x: px + (ps - mw) / 2, y: py + ps / 2 - 2, size: 7, font, color: P.midGray });
       }
+      const cap = "SELFIE CAPTURADA NO ATO DA ASSINATURA";
+      const capW = font.widthOfTextAtSize(cap, 5.5);
+      page.drawText(cap, { x: px + (ps - capW) / 2, y: py - 8, size: 5.5, font: fontBold, color: P.lightGray });
+      const contentRightBound = px - 12;
 
       // Data grid
       const detailX = M + 14;
@@ -423,18 +538,16 @@ async function buildAuditPages(
         const rx = detailX + col * (colW + 16);
         const ry = dy - Math.floor(r / 2) * 14;
         page.drawText(rows[r][0] + ":", { x: rx, y: ry, size: 6.5, font, color: P.lightGray });
-        const val = rows[r][1];
-        const maxW = colW - 4;
-        let display = val;
-        while (font.widthOfTextAtSize(display, 7.5) > maxW && display.length > 4) display = display.slice(0, -2);
-        if (display !== val) display = display + "…";
-        page.drawText(display, { x: rx, y: ry - 9, size: 7.5, font: fontBold, color: P.white });
+        drawWrappedText(page, rows[r][1], {
+          x: rx, y: ry - 9, maxWidth: colW - 4, font: fontBold, size: 7.5, lineHeight: 9, maxLines: 1, color: P.white,
+        });
       }
 
-      // User-Agent (bottom small)
+      // User-Agent (wrapped, up to 2 lines)
       if (s.user_agent) {
-        const ua = s.user_agent.length > 110 ? s.user_agent.slice(0, 110) + "…" : s.user_agent;
-        page.drawText("User-Agent: " + ua, { x: detailX, y: y - cardH + 10, size: 5.5, font, color: P.midGray });
+        drawWrappedText(page, "User-Agent: " + s.user_agent, {
+          x: detailX, y: y - cardH + 22, maxWidth: contentRightBound - detailX, font, size: 5.5, lineHeight: 7, maxLines: 2, color: P.midGray,
+        });
       }
 
       y -= cardH + 12;
@@ -444,19 +557,27 @@ async function buildAuditPages(
   // ═══════════════ PÁGINA 2: ATESTADO TÉCNICO ═══════════════
   {
     let { page, y } = newPage();
+
+    // ICP-Brasil seal top-right on Atestado
+    drawIcpSeal(page, font, fontBold, W - 70, H - 80, 26);
+
     y = drawPageTitle(page, "ATESTADO TÉCNICO DE AUTENTICIDADE E INTEGRIDADE",
       "Este atestado descreve os mecanismos técnicos empregados para garantir a autoria e a inalterabilidade do documento.", y);
 
     function block(title: string, rows: [string, string][]) {
-      const rowH = 18;
+      const rowH = 20;
       const bh = 28 + rows.length * rowH;
       drawRect(page, M, y - bh, CW, bh, P.cardBg);
       drawRect(page, M, y - 2, CW, 2, P.primary);
       page.drawText(title, { x: M + 14, y: y - 18, size: 9.5, font: fontBold, color: P.primary });
       let ry = y - 40;
+      const valueX = M + 180;
+      const valueMaxW = M + CW - valueX - 14;
       for (const [l, v] of rows) {
         page.drawText(l, { x: M + 14, y: ry, size: 7.5, font, color: P.lightGray });
-        page.drawText(v, { x: M + 180, y: ry, size: 8, font: fontBold, color: P.white });
+        drawWrappedText(page, v, {
+          x: valueX, y: ry, maxWidth: valueMaxW, font: fontBold, size: 8, lineHeight: 10, maxLines: 1, color: P.white,
+        });
         ry -= rowH;
       }
       y -= bh + 14;
@@ -478,7 +599,7 @@ async function buildAuditPages(
       ["Data da Assinatura Final", doc.signed_at ? fmtDateTimeBR(doc.signed_at) : "--"],
     ]);
 
-    // Hash block (monospace-ish, split lines)
+    // Hash block
     const bh = 90;
     drawRect(page, M, y - bh, CW, bh, P.cardBg);
     drawRect(page, M, y - 2, CW, 2, P.secondary);
@@ -490,14 +611,13 @@ async function buildAuditPages(
     page.drawText("Qualquer alteração no conteúdo invalida este hash e é detectada automaticamente.", { x: M + 14, y: y - 80, size: 6.5, font, color: P.midGray });
     y -= bh + 14;
 
-    // MP 2200-2
-    const lh = 68;
+    const lh = 78;
     drawRect(page, M, y - lh, CW, lh, P.cardBg);
     page.drawText("FUNDAMENTO LEGAL", { x: M + 14, y: y - 16, size: 9, font: fontBold, color: P.primary });
-    y = drawWrapped(page,
+    drawWrappedText(page,
       "Documento assinado eletronicamente nos termos da Medida Provisória nº 2.200-2/2001, que instituiu a Infraestrutura de Chaves Públicas Brasileira (ICP-Brasil) e reconheceu a validade jurídica da assinatura eletrônica. As assinaturas coletadas nesta plataforma são avançadas, com prova de identidade, autoria e integridade registradas neste dossiê.",
-      M + 14, y - 32, font, 7.5, CW - 28, P.lightGray, 10);
-    y -= 10;
+      { x: M + 14, y: y - 32, maxWidth: CW - 28, font, size: 7.5, lineHeight: 10, maxLines: 5, color: P.lightGray });
+    y -= lh + 10;
   }
 
   // ═══════════════ PÁGINA 3: LOG DE EVENTOS ═══════════════
@@ -508,7 +628,7 @@ async function buildAuditPages(
 
     for (let i = 0; i < events.length; i++) {
       const evt = events[i];
-      if (y < 90) {
+      if (y < 100) {
         const np = newPage(); page = np.page; y = np.y;
       }
 
@@ -518,18 +638,24 @@ async function buildAuditPages(
       const dotX = M + 10;
       page.drawCircle({ x: dotX, y: y - 2, size: 3.5, color: P.primary });
       if (i < events.length - 1) {
-        page.drawLine({ start: { x: dotX, y: y - 6 }, end: { x: dotX, y: y - 30 }, thickness: 1, color: P.dimLine });
+        page.drawLine({ start: { x: dotX, y: y - 6 }, end: { x: dotX, y: y - 34 }, thickness: 1, color: P.dimLine });
       }
 
-      page.drawText(label, { x: M + 24, y: y - 2, size: 9, font: fontBold, color: P.white });
-      const tw = font.widthOfTextAtSize(time, 7.5);
-      page.drawText(time, { x: W - M - tw, y: y - 2, size: 7.5, font, color: P.midGray });
+      const textX = M + 24;
+      const timeW = font.widthOfTextAtSize(time, 7.5);
+      page.drawText(time, { x: W - M - timeW, y: y - 2, size: 7.5, font, color: P.midGray });
+      const labelMaxW = W - M - timeW - textX - 8;
+      drawWrappedText(page, label, {
+        x: textX, y: y - 2, maxWidth: labelMaxW, font: fontBold, size: 9, lineHeight: 11, maxLines: 1, color: P.white,
+      });
 
+      let descBottom = y - 14;
       if (evt.descricao) {
-        const desc = evt.descricao.length > 120 ? evt.descricao.slice(0, 120) + "…" : evt.descricao;
-        page.drawText(desc, { x: M + 24, y: y - 14, size: 7, font, color: P.lightGray });
+        descBottom = drawWrappedText(page, evt.descricao, {
+          x: textX, y: y - 14, maxWidth: W - M - textX - 8, font, size: 7, lineHeight: 9, maxLines: 2, color: P.lightGray,
+        });
       }
-      y -= 34;
+      y = Math.min(y - 34, descBottom - 6);
     }
   }
 
@@ -539,7 +665,6 @@ async function buildAuditPages(
     y = drawPageTitle(page, "VALIDAÇÃO DO DOCUMENTO",
       "Utilize o QR Code ou o link abaixo para verificar publicamente a autenticidade deste documento a qualquer momento.", y);
 
-    // Generate QR
     let qrImg: any = null;
     try {
       const dataUrl = await QRCode.toDataURL(publicUrl, { margin: 1, width: 512, errorCorrectionLevel: "M" });
@@ -552,24 +677,29 @@ async function buildAuditPages(
       console.error("[dossier] QR generation failed:", (e as any)?.message);
     }
 
-    const cardH = 320;
+    // Non-overlapping vertical layout: QR on top, labels below with breathing room
+    const qs = 200;
+    const gap = 22; // >18pt of breathing room between QR and labels
+    const labelsBlockH = 14 + 22 + 12 + 12 + 20; // "CODIGO" + code + "verify em:" + url + margin
+    const cardH = 40 + qs + gap + labelsBlockH + 20;
     drawRect(page, M, y - cardH, CW, cardH, P.cardBg);
     drawRect(page, M, y - 2, CW, 2, P.primary);
 
+    const qx = M + (CW - qs) / 2;
+    const qy = y - 30 - qs;
     if (qrImg) {
-      const qs = 200;
-      const qx = M + (CW - qs) / 2;
-      const qy = y - qs - 30;
       drawRect(page, qx - 6, qy - 6, qs + 12, qs + 12, P.white);
       page.drawImage(qrImg, { x: qx, y: qy, width: qs, height: qs });
     }
 
-    let ry = y - cardH + 90;
+    let ry = qy - gap;
     centerText(page, "CÓDIGO DE VALIDAÇÃO", ry, font, 8, P.lightGray); ry -= 14;
     centerText(page, validationCode, ry, fontBold, 14, P.primary); ry -= 22;
     centerText(page, "Verifique publicamente em:", ry, font, 8, P.lightGray); ry -= 12;
-    const urlDisplay = publicUrl.length > 70 ? publicUrl.slice(0, 70) + "…" : publicUrl;
-    centerText(page, urlDisplay, ry, fontBold, 9, P.white);
+    // wrap url on 1 line with ellipsis if needed
+    drawWrappedText(page, publicUrl, {
+      x: M + 20, y: ry, maxWidth: CW - 40, font: fontBold, size: 9, lineHeight: 11, maxLines: 1, color: P.white,
+    });
 
     y -= cardH + 24;
     centerText(page, "Este dossiê digital tem valor probatório equivalente a documento físico com firma reconhecida", y, font, 7.5, P.midGray);
@@ -698,7 +828,7 @@ async function buildAndSaveSignedPdf(
   }
 
   await buildCoverPage(pdfDoc, fontRegular, fontBoldEmb, { ...fullDoc, signed_at: signedAt }, validationCode, hashHex, publicUrl, palette, logoImage);
-  await buildAuditPages(pdfDoc, fontRegular, fontBoldEmb, { ...fullDoc, signed_at: signedAt }, allSigners || [], eventsData || [], validationCode, hashHex, publicUrl, palette, tenantData);
+  await buildAuditPages(pdfDoc, fontRegular, fontBoldEmb, { ...fullDoc, signed_at: signedAt }, allSigners || [], eventsData || [], validationCode, hashHex, publicUrl, palette, tenantData, supabase);
 
   // Paint footer on EVERY page (including original contract pages)
   paintFooters(pdfDoc, fontRegular, fontBoldEmb, palette, validationCode, hashHex);
