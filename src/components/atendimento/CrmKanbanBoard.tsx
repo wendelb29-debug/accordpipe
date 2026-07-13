@@ -866,7 +866,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                               : "bg-red-500 text-white border-red-600"
                           )}
                         >
-                          {isWon ? "Ganho" : "Perdido"}
+                          {isWon ? (isTransferredWon ? "Ganho — em Cadastro" : "Ganho") : "Perdido"}
                         </span>
                       )}
 
