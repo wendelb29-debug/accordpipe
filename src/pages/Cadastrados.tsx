@@ -790,7 +790,50 @@ export default function Cadastrados() {
               </Card>
             ))}
 
-            {!selectedReg.comprovante_url && detailDocuments.length === 0 && detailCrmContracts.length === 0 && detailLeadDocs.length === 0 && (
+            {/* Generated Documents (all: signed and unsigned) */}
+            {detailGeneratedDocs.length > 0 && (
+              <>
+                <h4 className="text-xs font-semibold flex items-center gap-1.5 text-foreground uppercase tracking-wider mt-2">
+                  <FileText className="h-3.5 w-3.5" /> Documentos Gerados
+                </h4>
+                {detailGeneratedDocs.map((doc: any) => {
+                  const url = doc.signed_pdf_url || doc.pdf_url;
+                  const isSigned = doc.status === "signed" || doc.status === "assinado" || !!doc.signed_pdf_url;
+                  return (
+                    <Card key={`gd-${doc.id}`}>
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2.5 rounded-lg ${isSigned ? "bg-green-500/10" : "bg-primary/10"}`}>
+                            <FileText className={`h-5 w-5 ${isSigned ? "text-green-600" : "text-primary"}`} />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{doc.nome}</p>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              <Badge variant="outline" className={`text-[10px] ${isSigned ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-400 dark:border-green-800" : ""}`}>
+                                {isSigned ? "Assinado" : (doc.status || doc.tipo || "Gerado")}
+                              </Badge>
+                              <span className="text-[10px] text-muted-foreground">{fmtDate(doc.created_at)}</span>
+                            </div>
+                          </div>
+                        </div>
+                        {url && (
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="ghost" asChild title="Visualizar">
+                              <a href={url} target="_blank" rel="noreferrer"><Eye className="h-4 w-4" /></a>
+                            </Button>
+                            <Button size="sm" variant="outline" asChild className="gap-1.5">
+                              <a href={url} target="_blank" rel="noreferrer" download><Download className="h-4 w-4" /> Baixar</a>
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </>
+            )}
+
+            {!selectedReg.comprovante_url && detailDocuments.length === 0 && detailCrmContracts.length === 0 && detailLeadDocs.length === 0 && detailGeneratedDocs.length === 0 && (
               <div className="text-center py-12 text-muted-foreground">
                 <Paperclip className="h-10 w-10 mx-auto mb-3 opacity-30" />
                 <p className="text-sm">Nenhum documento anexado</p>
