@@ -9276,6 +9276,8 @@ export type Database = {
           sort_order: number
           type: string
           updated_at: string
+          won_destination: string | null
+          won_target_workspace_id: string | null
           workspace_type: string
         }
         Insert: {
@@ -9291,6 +9293,8 @@ export type Database = {
           sort_order?: number
           type?: string
           updated_at?: string
+          won_destination?: string | null
+          won_target_workspace_id?: string | null
           workspace_type?: string
         }
         Update: {
@@ -9306,6 +9310,8 @@ export type Database = {
           sort_order?: number
           type?: string
           updated_at?: string
+          won_destination?: string | null
+          won_target_workspace_id?: string | null
           workspace_type?: string
         }
         Relationships: [
