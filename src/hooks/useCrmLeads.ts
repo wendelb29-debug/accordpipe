@@ -38,6 +38,8 @@ export interface CrmLead {
   lost_reason: string | null;
   tags?: string[] | null;
   workspace_id?: string | null;
+  origin_workspace_id?: string | null;
+  origin_stage?: string | null;
 }
 
 export interface CrmLeadActivity {
@@ -119,7 +121,10 @@ export function useCrmLeads(
     }
 
     if (workspaceId) {
-      query = query.eq("workspace_id", workspaceId);
+      // Inclui leads deste workspace OU leads cuja ORIGEM é este workspace
+      // (ganhos transferidos para o Cadastro), para que voltem a aparecer aqui
+      // quando o filtro "Ganho" estiver ativo.
+      query = query.or(`workspace_id.eq.${workspaceId},origin_workspace_id.eq.${workspaceId}`);
     }
 
     const { data, error } = await query;
@@ -323,12 +328,15 @@ export function useCrmLeads(
     }
 
     const previousStage = lead.stage;
+    const originWorkspaceId = lead.workspace_id;
 
     const success = await updateLead(id, {
       lead_status: "won",
       stage: cadastro.firstColumnId,
       stage_entered_at: new Date().toISOString(),
       workspace_id: cadastro.workspaceId,
+      origin_workspace_id: originWorkspaceId,
+      origin_stage: previousStage,
     } as any);
 
     if (success) {

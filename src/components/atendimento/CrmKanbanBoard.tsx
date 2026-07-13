@@ -712,7 +712,18 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
         >
         {stageStats.map((stage) => {
           const Icon = stageIcons[stage.id] || Clock;
-          const stageLeads = filteredLeads.filter((l) => l.stage === stage.id);
+          const showTransferredWon = advancedFilters.status.includes("ganho");
+          const stageLeads = filteredLeads.filter((l) => {
+            const isTransferredWon =
+              !!workspaceId &&
+              !!l.origin_workspace_id &&
+              l.workspace_id !== workspaceId &&
+              l.origin_workspace_id === workspaceId;
+            if (isTransferredWon) {
+              return showTransferredWon && l.origin_stage === stage.id;
+            }
+            return l.stage === stage.id;
+          });
           const colors = stageColors[stage.id] || { bg: "bg-muted/30", text: "text-foreground", icon: "bg-primary", border: "border-border" };
           const dynCol = kanbanCols.find(c => c.id === stage.id);
           const rawSla = dynCol?.sla_days ?? (stage.daysLimit ? parseInt(stage.daysLimit, 10) : 0);
@@ -790,6 +801,11 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                   const noActivity = !hasActivity;
                   const progressColor = getProgressColor(lead, stage.id, hasActivity, hasOverdue);
                   const signatureStats = signatureStatsByLead[lead.id];
+                  const isTransferredWon =
+                    !!workspaceId &&
+                    !!lead.origin_workspace_id &&
+                    lead.workspace_id !== workspaceId &&
+                    lead.origin_workspace_id === workspaceId;
 
                   // Priority: 1) won, 2) lost, 3) overdue activity, 4) SLA exceeded, 5) no activity, 6) normal
                   const cardStatus = getCardStatus(lead);
@@ -811,12 +827,13 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                   return (
                     <div
                       key={lead.id}
-                      draggable
-                      onDragStart={() => setDraggedLead(lead)}
+                      draggable={!isTransferredWon}
+                      onDragStart={() => { if (!isTransferredWon) setDraggedLead(lead); }}
                       onClick={() => openDetail(lead)}
+                      title={isTransferredWon ? "Ganho — já transferido para Cadastro (somente leitura neste board)" : undefined}
                       className={cn(
-                        "kanban-card rounded-xl border cursor-grab active:cursor-grabbing transition-all duration-200 group relative overflow-hidden",
-                        "active:scale-[0.98]",
+                        "kanban-card rounded-xl border transition-all duration-200 group relative overflow-hidden",
+                        isTransferredWon ? "cursor-pointer" : "cursor-grab active:cursor-grabbing active:scale-[0.98]",
                         draggedLead?.id === lead.id && "opacity-40 scale-95",
                         cardStyle,
                         isNaturalState
@@ -849,7 +866,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                               : "bg-red-500 text-white border-red-600"
                           )}
                         >
-                          {isWon ? "Ganho" : "Perdido"}
+                          {isWon ? (isTransferredWon ? "Ganho — em Cadastro" : "Ganho") : "Perdido"}
                         </span>
                       )}
 
