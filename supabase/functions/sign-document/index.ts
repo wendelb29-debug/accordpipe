@@ -1048,6 +1048,9 @@ Deno.serve(async (req) => {
         });
       }
       const res = await buildAndSaveSignedPdf(supabase, document_id);
+      if (res.ok) {
+        try { await notifySignersOfSignedCopy(supabase, document_id); } catch (e) { console.error("[sign-document] notify (regenerate) failed:", (e as Error).message); }
+      }
       return new Response(JSON.stringify(res), {
         status: res.ok ? 200 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
