@@ -48,7 +48,7 @@ import { useCrmActivities } from "@/hooks/useCrmActivities";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { WonConfirmDialog, WonCelebrationDialog } from "./WonCelebrationDialog";
-import { getOrCreateCadastroWorkspace } from "@/lib/cadastroWorkspace";
+import { getOrCreateCadastroWorkspace, resolveWonDestination } from "@/lib/cadastroWorkspace";
 import { KanbanStageHeader } from "./KanbanStageHeader";
 import { NewCallDialog } from "./NewCallDialog";
 
