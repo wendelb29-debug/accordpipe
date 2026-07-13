@@ -8,7 +8,7 @@ import {
   CheckCircle2, XCircle,
 } from "lucide-react";
 import { KanbanQuickActionZones } from "./KanbanQuickActionZones";
-import { StatusFilteredGrid } from "./StatusFilteredGrid";
+
 import { TransferWorkspaceDialog } from "./TransferWorkspaceDialog";
 import { LostReasonDialog } from "./LostReasonDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -167,27 +167,20 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   const [lastCompletedActivities, setLastCompletedActivities] = useState<Record<string, string>>({});
   const [signatureStatsByLead, setSignatureStatsByLead] = useState<Record<string, { signed: number; total: number; approved: boolean }>>({});
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
-  const [advancedFilters, setAdvancedFilters] = useState<FilterState>(emptyFilterState);
+  const [advancedFilters, setAdvancedFilters] = useState<FilterState>({
+    ...emptyFilterState,
+    status: ["aberto"],
+  });
+  const [filterApplying, setFilterApplying] = useState(false);
   const activeFilterCount = countActiveFilters(advancedFilters);
 
-  // Sincroniza o painel "Filtrar Cards" com o statusFilter do board.
-  // - Exatamente 1 status selecionado -> troca a visão (kanban/lista).
-  // - 0 ou mais de 1 status -> mantém a visão kanban ("open") e deixa applyFilters cuidar.
+  // Skeleton flash quando o filtro muda, antes de renderizar cards coloridos
   useEffect(() => {
-    const map: Record<string, "open" | "won" | "lost" | "trash"> = {
-      aberto: "open",
-      ganho: "won",
-      perdido: "lost",
-      lixeira: "trash",
-    };
-    const sel = advancedFilters.status;
-    if (sel.length === 1) {
-      const next = map[sel[0]];
-      if (next) setStatusFilter(next);
-    } else {
-      setStatusFilter("open");
-    }
-  }, [advancedFilters.status]);
+    setFilterApplying(true);
+    const t = setTimeout(() => setFilterApplying(false), 220);
+    return () => clearTimeout(t);
+  }, [advancedFilters]);
+
 
   // Drag-to-scroll
   const pipelineRef = useRef<HTMLDivElement>(null);
@@ -451,6 +444,25 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   });
   const filteredLeads = applyFilters(baseFiltered, advancedFilters);
 
+  // Totais recalculados com base nos cards que passam no filtro
+  const filteredTotalPS = useMemo(
+    () => filteredLeads.reduce((acc, l) => acc + (l.value_ps || 0), 0),
+    [filteredLeads]
+  );
+  const filteredTotalMRR = useMemo(
+    () => filteredLeads.reduce((acc, l) => acc + (l.value_mrr || 0), 0),
+    [filteredLeads]
+  );
+  // Total por etapa (respeitando busca/tags/responsável mas ignorando filtro de status)
+  const stageTotalMap = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const l of baseFiltered) {
+      if (!l.stage) continue;
+      m[l.stage] = (m[l.stage] || 0) + 1;
+    }
+    return m;
+  }, [baseFiltered]);
+
   const handleDrop = async (e: React.DragEvent, targetStage: string) => {
     e.preventDefault();
     if (!draggedLead || draggedLead.stage === targetStage) {
@@ -578,12 +590,12 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
             <div className="w-px h-4 bg-border/50" />
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">P&S</span>
-              <span className="text-sm font-bold text-foreground">{formatCurrency(totalPS)}</span>
+              <span className="text-sm font-bold text-foreground">{formatCurrency(filteredTotalPS)}</span>
             </div>
             <div className="w-px h-4 bg-border/50" />
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">MRR</span>
-              <span className="text-sm font-bold text-primary">{formatCurrency(totalMRR)}</span>
+              <span className="text-sm font-bold text-primary">{formatCurrency(filteredTotalMRR)}</span>
             </div>
           </div>
         </div>
@@ -683,24 +695,9 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
       </div>
 
 
-      {/* Kanban Columns / Status Grid */}
-      {statusFilter !== "open" ? (
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          <StatusFilteredGrid
-            leads={statusFilter === "trash" ? trashLeads : filteredLeads.filter(l => l.lead_status === statusFilter)}
-            statusFilter={statusFilter as "won" | "lost" | "trash"}
-            onRestore={async (leadId) => {
-              await updateLead(leadId, { lead_status: "open", status_changed_at: new Date().toISOString() } as any);
-              if (statusFilter === "trash") {
-                setTrashLeads(prev => prev.filter(l => l.id !== leadId));
-              }
-              toast.success("Card restaurado pro pipeline");
-            }}
-            onOpenCard={openDetail}
-          />
-        </div>
-      ) : (
+      {/* Kanban Columns (única visão — cards permanecem nas colunas de origem) */}
       <div className="flex-1 min-h-0 flex flex-col w-full max-w-full">
+
         <div
           ref={pipelineRef}
           style={{ scrollBehavior: 'smooth', scrollbarWidth: 'thin' }}
@@ -772,8 +769,11 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                       <Icon className="h-3 w-3 text-white" />
                     </div>
                     <span className="font-semibold text-[11px] text-foreground">{stage.title}</span>
-                    <span className={cn("text-[10px] font-bold rounded-full px-2 py-0.5 bg-card border border-border/50", dynCol ? "text-foreground" : colors.text)}>
-                      {stage.count}
+                    <span
+                      className={cn("text-[10px] font-bold rounded-full px-2 py-0.5 bg-card border border-border/50", dynCol ? "text-foreground" : colors.text)}
+                      title="Cards filtrados / total na etapa"
+                    >
+                      {stageLeads.length}/{stageTotalMap[stage.id] || 0}
                     </span>
                   </div>
                   {stage.daysLimit && (
@@ -789,13 +789,22 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
 
               {/* Cards */}
               <div className="flex-1 px-1.5 pb-1.5 space-y-1.5 overflow-y-auto">
-                {stageLeads.length === 0 && (
+                {filterApplying ? (
+                  <div className="space-y-1.5">
+                    {Array.from({ length: Math.max(1, Math.min(4, stageLeads.length || 2)) }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="h-[86px] rounded-xl border border-border/40 bg-muted/40 dark:bg-muted/20 animate-pulse"
+                      />
+                    ))}
+                  </div>
+                ) : stageLeads.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8 text-muted-foreground/30">
                     <Icon className="h-8 w-8 mb-2" />
                     <p className="text-[10px] font-medium">Etapa vazia</p>
                   </div>
-                )}
-                {stageLeads.map((lead) => {
+                ) : null}
+                {!filterApplying && stageLeads.map((lead) => {
                   const overdue = dynCol
                     ? isLeadOverdueDynamic(lead, slaDays)
                     : isLeadOverdue(lead, stage.id);
@@ -1170,7 +1179,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
         })}
         </div>
       </div>
-      )}
+
 
       <KanbanQuickActionZones
         visible={!!draggedLead}
