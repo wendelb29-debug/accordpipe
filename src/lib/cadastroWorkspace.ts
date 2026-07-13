@@ -94,3 +94,88 @@ export async function isCadastroWorkspace(workspaceId: string): Promise<boolean>
     .maybeSingle();
   return data?.type === "cadastro";
 }
+
+/**
+ * Resolves where a lead should land when marked as WON, based on the
+ * origin workspace's `won_destination` / `won_target_workspace_id` config.
+ *
+ * NULL / 'cadastro' → keep legacy behavior (Cadastro workspace).
+ * 'workspace'       → move to the configured workspace (same tenant, first column).
+ * 'base_clientes'   → do NOT move; stay in current workspace/stage.
+ */
+export type WonDestination =
+  | { kind: "cadastro"; workspaceId: string; firstColumnId: string; label: string }
+  | { kind: "workspace"; workspaceId: string; firstColumnId: string; label: string }
+  | { kind: "base_clientes"; label: string };
+
+export async function resolveWonDestination(
+  lead: { id: string; servidor_id: string; workspace_id: string | null },
+  createdByUserId?: string | null,
+): Promise<WonDestination | null> {
+  // Load origin workspace's won-destination config
+  let wonDestination: string | null = null;
+  let wonTargetId: string | null = null;
+  if (lead.workspace_id) {
+    const { data: originWs } = await supabase
+      .from("workspaces")
+      .select("won_destination, won_target_workspace_id")
+      .eq("id", lead.workspace_id)
+      .maybeSingle();
+    wonDestination = (originWs as any)?.won_destination ?? null;
+    wonTargetId = (originWs as any)?.won_target_workspace_id ?? null;
+  }
+
+  // Default (null or explicit 'cadastro'): legacy Cadastro workspace behavior
+  if (!wonDestination || wonDestination === "cadastro") {
+    const cad = await getOrCreateCadastroWorkspace(lead.servidor_id, createdByUserId);
+    if (!cad) return null;
+    return { kind: "cadastro", workspaceId: cad.workspaceId, firstColumnId: cad.firstColumnId, label: "Cadastro" };
+  }
+
+  if (wonDestination === "base_clientes") {
+    return { kind: "base_clientes", label: "Base de Clientes" };
+  }
+
+  if (wonDestination === "workspace") {
+    if (!wonTargetId) {
+      console.warn("[resolveWonDestination] won_destination=workspace but no target set; falling back to Cadastro");
+      const cad = await getOrCreateCadastroWorkspace(lead.servidor_id, createdByUserId);
+      if (!cad) return null;
+      return { kind: "cadastro", workspaceId: cad.workspaceId, firstColumnId: cad.firstColumnId, label: "Cadastro" };
+    }
+    const { data: target } = await supabase
+      .from("workspaces")
+      .select("id, name, servidor_id")
+      .eq("id", wonTargetId)
+      .maybeSingle();
+
+    if (!target || target.servidor_id !== lead.servidor_id) {
+      console.warn("[resolveWonDestination] target workspace missing or from another tenant; falling back to Cadastro", { wonTargetId });
+      const cad = await getOrCreateCadastroWorkspace(lead.servidor_id, createdByUserId);
+      if (!cad) return null;
+      return { kind: "cadastro", workspaceId: cad.workspaceId, firstColumnId: cad.firstColumnId, label: "Cadastro" };
+    }
+
+    const { data: cols } = await supabase
+      .from("kanban_columns")
+      .select("id")
+      .eq("workspace_id", target.id)
+      .order("position", { ascending: true })
+      .limit(1);
+
+    if (!cols || cols.length === 0) {
+      console.warn("[resolveWonDestination] target workspace has no columns; falling back to Cadastro", { wonTargetId });
+      const cad = await getOrCreateCadastroWorkspace(lead.servidor_id, createdByUserId);
+      if (!cad) return null;
+      return { kind: "cadastro", workspaceId: cad.workspaceId, firstColumnId: cad.firstColumnId, label: "Cadastro" };
+    }
+
+    return { kind: "workspace", workspaceId: target.id, firstColumnId: cols[0].id, label: target.name };
+  }
+
+  // Unknown value → legacy
+  const cad = await getOrCreateCadastroWorkspace(lead.servidor_id, createdByUserId);
+  if (!cad) return null;
+  return { kind: "cadastro", workspaceId: cad.workspaceId, firstColumnId: cad.firstColumnId, label: "Cadastro" };
+}
+

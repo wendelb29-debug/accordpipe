@@ -48,7 +48,7 @@ import { useCrmActivities } from "@/hooks/useCrmActivities";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { WonConfirmDialog, WonCelebrationDialog } from "./WonCelebrationDialog";
-import { getOrCreateCadastroWorkspace } from "@/lib/cadastroWorkspace";
+import { getOrCreateCadastroWorkspace, resolveWonDestination } from "@/lib/cadastroWorkspace";
 import { KanbanStageHeader } from "./KanbanStageHeader";
 import { NewCallDialog } from "./NewCallDialog";
 
@@ -475,10 +475,13 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
     if (saving) return;
     setSaving(true);
     try {
-      // Find or create the Cadastro workspace for this tenant
-      const cadastro = await getOrCreateCadastroWorkspace(lead.servidor_id, profile?.user_id);
-      if (!cadastro) {
-        toast.error("Erro ao localizar/criar workspace de Cadastro");
+      // Resolve destination based on origin workspace config
+      const dest = await resolveWonDestination(
+        { id: lead.id, servidor_id: lead.servidor_id, workspace_id: lead.workspace_id },
+        profile?.user_id,
+      );
+      if (!dest) {
+        toast.error("Erro ao resolver destino do card ao marcar como Ganho");
         setSaving(false);
         return;
       }
@@ -487,33 +490,44 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
       const originWorkspaceId = lead.workspace_id;
       const originStage = lead.stage;
 
-      // Move lead to Cadastro workspace first column
-      await onUpdate(lead.id, {
+      // Build update payload: 'base_clientes' does NOT move the card
+      const updatePayload: any = {
         lead_status: "won",
-        stage: cadastro.firstColumnId,
         stage_entered_at: new Date().toISOString(),
-        workspace_id: cadastro.workspaceId,
         origin_workspace_id: originWorkspaceId,
         origin_stage: originStage,
-      } as any);
+      };
+      if (dest.kind !== "base_clientes") {
+        updatePayload.stage = dest.firstColumnId;
+        updatePayload.workspace_id = dest.workspaceId;
+      }
+      await onUpdate(lead.id, updatePayload);
 
-      const desc = observation.trim()
-        ? `Lead marcado como ganho e transferido para o workspace **Cadastro**.\nObservação: ${observation.trim()}`
-        : "Lead marcado como ganho e transferido para o workspace **Cadastro**.";
+      const baseMsg =
+        dest.kind === "base_clientes"
+          ? "Lead marcado como ganho e enviado diretamente para a **Base de Clientes**."
+          : `Lead marcado como ganho e transferido para o workspace **${dest.label}**.`;
+      const desc = observation.trim() ? `${baseMsg}\nObservação: ${observation.trim()}` : baseMsg;
+      const activityTitle =
+        dest.kind === "base_clientes"
+          ? "Oportunidade ganha! Enviada para a Base de Clientes."
+          : `Oportunidade ganha! Transferida para ${dest.label}.`;
+
       await addActivity({
         type: "won",
-        title: "Oportunidade ganha! Transferida para Cadastro.",
+        title: activityTitle,
         description: desc,
         metadata: {
           origin_workspace_id: originWorkspaceId,
           origin_stage: originStage,
           origin_created_by_user_id: lead.created_by_user_id,
           origin_created_by_name: lead.created_by_name,
+          destination_kind: dest.kind,
         },
       });
-      
-      // Create registration with pendente status
-      await supabase.from("crm_client_registrations" as any).insert({
+
+      // Registration (MERGE — never overwrite existing values with empty ones)
+      const regPayload: Record<string, any> = {
         lead_id: lead.id,
         servidor_id: lead.servidor_id,
         nome_completo: lead.contact_name || lead.company_name || "",
@@ -528,34 +542,68 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
         valor_mensal: lead.value_mrr || 0,
         created_by_user_id: profile?.user_id || null,
         created_by_name: profile?.name || null,
-      } as any);
+      };
+      if (dest.kind === "base_clientes") {
+        regPayload.client_status = "ativo";
+        regPayload.status = "concluido";
+        regPayload.data_adesao = new Date().toISOString().split("T")[0];
+      }
 
-      // Notify admin users
-      const { data: adminProfiles } = await supabase
-        .from("profiles")
-        .select("user_id")
-        .eq("company_id", lead.servidor_id)
-        .eq("is_active", true);
-      if (adminProfiles) {
-        for (const ap of adminProfiles) {
-          const { data: roleData } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", ap.user_id)
-            .maybeSingle();
-          if (roleData?.role === "administrativo" || roleData?.role === "admin") {
-            await supabase.rpc("create_notification", {
-              _user_id: ap.user_id,
-              _title: "Novo cadastro pendente",
-              _message: `A oportunidade "${lead.company_name}" foi marcada como ganha e aguarda conferência no workspace Cadastro.`,
-              _type: "cadastro_pendente",
-            });
+      const { data: existingReg } = await supabase
+        .from("crm_client_registrations" as any)
+        .select("*")
+        .eq("lead_id", lead.id)
+        .maybeSingle();
+
+      if (existingReg) {
+        const merged: Record<string, any> = {};
+        for (const [k, v] of Object.entries(regPayload)) {
+          const cur = (existingReg as any)[k];
+          const curEmpty = cur === null || cur === undefined || cur === "";
+          const newHas = v !== null && v !== undefined && v !== "";
+          if (curEmpty && newHas) merged[k] = v;
+        }
+        if (dest.kind === "base_clientes") {
+          merged.client_status = "ativo";
+          merged.status = "concluido";
+          if (!(existingReg as any).data_adesao) merged.data_adesao = regPayload.data_adesao;
+        }
+        if (Object.keys(merged).length > 0) {
+          await supabase.from("crm_client_registrations" as any).update(merged).eq("id", (existingReg as any).id);
+        }
+      } else {
+        await supabase.from("crm_client_registrations" as any).insert(regPayload);
+      }
+
+      // Notify admin users only for cadastro/workspace flows
+      if (dest.kind !== "base_clientes") {
+        const { data: adminProfiles } = await supabase
+          .from("profiles")
+          .select("user_id")
+          .eq("company_id", lead.servidor_id)
+          .eq("is_active", true);
+        if (adminProfiles) {
+          for (const ap of adminProfiles) {
+            const { data: roleData } = await supabase
+              .from("user_roles")
+              .select("role")
+              .eq("user_id", ap.user_id)
+              .maybeSingle();
+            if (roleData?.role === "administrativo" || roleData?.role === "admin") {
+              await supabase.rpc("create_notification", {
+                _user_id: ap.user_id,
+                _title: "Novo cadastro pendente",
+                _message: `A oportunidade "${lead.company_name}" foi marcada como ganha e aguarda conferência no workspace ${dest.label}.`,
+                _type: "cadastro_pendente",
+              });
+            }
           }
         }
       }
 
       setShowWonConfirm(false);
       setShowWonCelebration(true);
+
     } catch (error) {
       console.error("Error marking won:", error);
       toast.error("Erro ao marcar como ganho");

@@ -12,6 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
@@ -138,6 +140,9 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
   const [wsColor, setWsColor] = useState("#7C3AED");
   const [wsType, setWsType] = useState("vendas");
   const [wsGroupId, setWsGroupId] = useState<string>("");
+  const [wsWonDestination, setWsWonDestination] = useState<"cadastro" | "workspace" | "base_clientes">("cadastro");
+  const [wsWonTargetId, setWsWonTargetId] = useState<string>("");
+
   const [savingWs, setSavingWs] = useState(false);
 
   // Delete group
@@ -261,8 +266,12 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
     setWsColor(ws?.color || "#7C3AED");
     setWsType(ws?.type || "vendas");
     setWsGroupId(ws?.group_id || defaultGroupId || groups[0]?.id || "");
+    const wd = ((ws as any)?.won_destination as "cadastro" | "workspace" | "base_clientes" | null) || "cadastro";
+    setWsWonDestination(wd);
+    setWsWonTargetId(((ws as any)?.won_target_workspace_id as string | null) || "");
     setWsDialogOpen(true);
   };
+
 
   const deriveWorkspaceType = (t: string): "sdr" | "cadastro" | "crm" => {
     if (t === "pre_venda_sdr") return "sdr";
@@ -271,18 +280,25 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
   };
   const handleSaveWorkspace = async () => {
     if (!wsName.trim() || !companyId) return;
+    if (wsWonDestination === "workspace" && !wsWonTargetId) {
+      toast.error("Selecione o workspace de destino para o Ganho.");
+      return;
+    }
     setSavingWs(true);
     const workspace_type = deriveWorkspaceType(wsType);
+    const wonDestinationValue = wsWonDestination === "cadastro" ? null : wsWonDestination;
+    const wonTargetValue = wsWonDestination === "workspace" ? wsWonTargetId : null;
     if (editingWs) {
       const { error } = await supabase.from("workspaces")
-        .update({ name: wsName.trim(), color: wsColor, type: wsType, workspace_type, group_id: wsGroupId || null } as any)
+        .update({ name: wsName.trim(), color: wsColor, type: wsType, workspace_type, group_id: wsGroupId || null, won_destination: wonDestinationValue, won_target_workspace_id: wonTargetValue } as any)
         .eq("id", editingWs.id);
       if (error) toast.error("Erro ao atualizar workspace"); else toast.success("Workspace atualizado!");
     } else {
       const groupWs = workspaces.filter((w) => w.group_id === wsGroupId);
       const { data, error } = await supabase.from("workspaces")
-        .insert({ name: wsName.trim(), servidor_id: companyId, color: wsColor, type: wsType, workspace_type, group_id: wsGroupId || null, is_default: workspaces.length === 0, sort_order: groupWs.length } as any)
+        .insert({ name: wsName.trim(), servidor_id: companyId, color: wsColor, type: wsType, workspace_type, group_id: wsGroupId || null, is_default: workspaces.length === 0, sort_order: groupWs.length, won_destination: wonDestinationValue, won_target_workspace_id: wonTargetValue } as any)
         .select().single();
+
       if (error) toast.error("Erro ao criar workspace");
       else {
         toast.success(`Workspace "${wsName.trim()}" criado!`);
@@ -818,7 +834,48 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
                 ))}
               </div>
             </div>
+            <div className="space-y-2 border-t border-border/40 pt-4">
+              <Label className="text-xs font-medium">Ao marcar como Ganho, enviar o card para:</Label>
+              <RadioGroup value={wsWonDestination} onValueChange={(v) => setWsWonDestination(v as any)} className="space-y-2">
+                <label className="flex items-start gap-2 cursor-pointer rounded-md border border-border/50 p-2.5 hover:bg-muted/30 transition-colors">
+                  <RadioGroupItem value="cadastro" id="won-cadastro" className="mt-0.5" />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">Workspace de Cadastro (padrão)</div>
+                    <div className="text-xs text-muted-foreground">Comportamento atual: envia para o workspace de Cadastro do tenant.</div>
+                  </div>
+                </label>
+                <label className="flex items-start gap-2 cursor-pointer rounded-md border border-border/50 p-2.5 hover:bg-muted/30 transition-colors">
+                  <RadioGroupItem value="workspace" id="won-workspace" className="mt-0.5" />
+                  <div className="flex-1 space-y-2">
+                    <div>
+                      <div className="text-sm font-medium">Outro workspace</div>
+                      <div className="text-xs text-muted-foreground">Move o card para a primeira coluna do workspace escolhido.</div>
+                    </div>
+                    {wsWonDestination === "workspace" && (
+                      <Select value={wsWonTargetId} onValueChange={setWsWonTargetId}>
+                        <SelectTrigger className="h-9"><SelectValue placeholder="Selecione o workspace de destino..." /></SelectTrigger>
+                        <SelectContent>
+                          {workspaces
+                            .filter((w) => w.servidor_id === companyId && (!editingWs || w.id !== editingWs.id))
+                            .map((w) => (
+                              <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                </label>
+                <label className="flex items-start gap-2 cursor-pointer rounded-md border border-border/50 p-2.5 hover:bg-muted/30 transition-colors">
+                  <RadioGroupItem value="base_clientes" id="won-base" className="mt-0.5" />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">Direto para a Base de Clientes</div>
+                    <div className="text-xs text-muted-foreground">Não move o card; ativa o cliente imediatamente na Base de Clientes.</div>
+                  </div>
+                </label>
+              </RadioGroup>
+            </div>
           </div>
+
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setWsDialogOpen(false)}>Cancelar</Button>
             <Button onClick={handleSaveWorkspace} disabled={!wsName.trim() || !wsGroupId || savingWs} className="gap-1.5 bg-gradient-to-r from-primary to-blue-600">
