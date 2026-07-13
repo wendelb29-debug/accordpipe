@@ -801,6 +801,11 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                   const noActivity = !hasActivity;
                   const progressColor = getProgressColor(lead, stage.id, hasActivity, hasOverdue);
                   const signatureStats = signatureStatsByLead[lead.id];
+                  const isTransferredWon =
+                    !!workspaceId &&
+                    !!lead.origin_workspace_id &&
+                    lead.workspace_id !== workspaceId &&
+                    lead.origin_workspace_id === workspaceId;
 
                   // Priority: 1) won, 2) lost, 3) overdue activity, 4) SLA exceeded, 5) no activity, 6) normal
                   const cardStatus = getCardStatus(lead);
