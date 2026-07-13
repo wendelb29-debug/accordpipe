@@ -50,6 +50,33 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Tenant ownership check: caller must belong to the requested servidor_id
+    // (either be a master, own the profile.company_id, or have an active user_tenants link)
+    const { data: profile } = await adminClient
+      .from("profiles")
+      .select("is_master, company_id")
+      .eq("user_id", userData.user.id)
+      .maybeSingle();
+
+    let allowed = !!profile?.is_master || profile?.company_id === servidor_id;
+    if (!allowed) {
+      const { data: link } = await adminClient
+        .from("user_tenants")
+        .select("id")
+        .eq("user_id", userData.user.id)
+        .eq("tenant_id", servidor_id)
+        .eq("status", "ativo")
+        .maybeSingle();
+      allowed = !!link;
+    }
+    if (!allowed) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden: caller does not belong to this tenant" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+
     const { data: integration } = await adminClient
       .from("fintech_integrations")
       .select("*")
