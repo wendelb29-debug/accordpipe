@@ -828,7 +828,7 @@ async function buildAndSaveSignedPdf(
   }
 
   await buildCoverPage(pdfDoc, fontRegular, fontBoldEmb, { ...fullDoc, signed_at: signedAt }, validationCode, hashHex, publicUrl, palette, logoImage);
-  await buildAuditPages(pdfDoc, fontRegular, fontBoldEmb, { ...fullDoc, signed_at: signedAt }, allSigners || [], eventsData || [], validationCode, hashHex, publicUrl, palette, tenantData);
+  await buildAuditPages(pdfDoc, fontRegular, fontBoldEmb, { ...fullDoc, signed_at: signedAt }, allSigners || [], eventsData || [], validationCode, hashHex, publicUrl, palette, tenantData, supabase);
 
   // Paint footer on EVERY page (including original contract pages)
   paintFooters(pdfDoc, fontRegular, fontBoldEmb, palette, validationCode, hashHex);
