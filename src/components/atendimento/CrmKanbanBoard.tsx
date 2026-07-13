@@ -33,6 +33,7 @@ import {
   emptyFilterState,
   countActiveFilters,
   applyFilters,
+  getCardStatus,
 } from "./FilterPanel";
 import { useCrmLeads, CrmLead, STAGES } from "@/hooks/useCrmLeads";
 import { useKanbanColumns } from "@/hooks/useKanbanColumns";
