@@ -791,10 +791,14 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                   const progressColor = getProgressColor(lead, stage.id, hasActivity, hasOverdue);
                   const signatureStats = signatureStatsByLead[lead.id];
 
-                  // Priority: 1) lost, 2) overdue activity, 3) SLA exceeded, 4) no activity, 5) normal
-                  const isLost = lead.lead_status === "lost";
-                  const isNaturalState = !isLost && !hasOverdue && !noActivity && !overdue;
-                  const cardStyle = isLost
+                  // Priority: 1) won, 2) lost, 3) overdue activity, 4) SLA exceeded, 5) no activity, 6) normal
+                  const cardStatus = getCardStatus(lead);
+                  const isWon = cardStatus === "ganho";
+                  const isLost = cardStatus === "perdido";
+                  const isNaturalState = !isWon && !isLost && !hasOverdue && !noActivity && !overdue;
+                  const cardStyle = isWon
+                    ? "bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-500/70 dark:border-emerald-600/60 ring-1 ring-emerald-500/30"
+                    : isLost
                     ? "bg-red-50/80 dark:bg-red-950/40 border-red-400/70 dark:border-red-700/60 ring-1 ring-red-400/30"
                     : hasOverdue
                     ? "bg-red-50/70 dark:bg-red-950/30 border-red-300/70 dark:border-red-800/50"
