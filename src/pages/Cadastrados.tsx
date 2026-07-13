@@ -805,8 +805,13 @@ export default function Cadastrados() {
               const signedContracts = detailContracts.filter(c => c.contract_status === "assinado");
               const pendingContracts = detailContracts.filter(c => c.contract_status === "pendente");
               const hasCrmContracts = detailCrmContracts.length > 0;
+              const signedGenerated = detailGeneratedDocs.filter((d: any) => d.status === "signed" || d.status === "assinado" || d.signed_pdf_url);
+              const signedPdf = detailPdfContracts.filter((c: any) => c.status === "assinado" || c.pdf_assinado_url);
 
-              if (signedContracts.length === 0 && pendingContracts.length === 0 && !hasCrmContracts) {
+              if (
+                signedContracts.length === 0 && pendingContracts.length === 0 && !hasCrmContracts &&
+                signedGenerated.length === 0 && signedPdf.length === 0
+              ) {
                 return (
                   <div className="text-center py-12 text-muted-foreground">
                     <FileSignature className="h-10 w-10 mx-auto mb-3 opacity-30" />
