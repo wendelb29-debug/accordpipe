@@ -41,6 +41,55 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action, instance_name, number, text, media_url, caption, api_url } = body;
 
+    // Per-tenant instance authorization:
+    // If instance_name is provided, ensure it belongs to the caller's tenant.
+    // For "create_instance", require that instance_name is either unused OR already owned by the caller's tenant.
+    if (instance_name) {
+      const admin = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      );
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("is_master, company_id")
+        .eq("user_id", claimsData.user.id)
+        .maybeSingle();
+
+      const { data: existingInstance } = await admin
+        .from("tenant_whatsapp_integrations")
+        .select("tenant_id")
+        .eq("instance_name", instance_name)
+        .maybeSingle();
+
+      if (existingInstance) {
+        // Instance exists — caller must be master or belong to that tenant
+        let allowed = !!profile?.is_master || profile?.company_id === existingInstance.tenant_id;
+        if (!allowed) {
+          const { data: link } = await admin
+            .from("user_tenants")
+            .select("id")
+            .eq("user_id", claimsData.user.id)
+            .eq("tenant_id", existingInstance.tenant_id)
+            .eq("status", "ativo")
+            .maybeSingle();
+          allowed = !!link;
+        }
+        if (!allowed) {
+          return new Response(
+            JSON.stringify({ error: "Forbidden: instance belongs to another tenant" }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      } else if (action !== "create_instance" && action !== "connect") {
+        // Unknown instance for a non-create action — reject
+        return new Response(
+          JSON.stringify({ error: "Forbidden: instance not registered for any tenant" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+
     const configuredApiUrl = EVOLUTION_API_URL?.trim() || "";
     const requestApiUrl = typeof api_url === "string" ? api_url.trim() : "";
     const fallbackApiUrl = "https://angry-cities-leave.loca.lt";

@@ -68,6 +68,28 @@ Deno.serve(async (req) => {
 
     if (!phone || !company_id) return json({ error: "Dados obrigatórios faltando" }, 400);
 
+    // Tenant ownership check
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("is_master, company_id")
+      .eq("user_id", userData.user.id)
+      .maybeSingle();
+    let allowed = !!profile?.is_master || profile?.company_id === company_id;
+    if (!allowed) {
+      const { data: link } = await admin
+        .from("user_tenants")
+        .select("id")
+        .eq("user_id", userData.user.id)
+        .eq("tenant_id", company_id)
+        .eq("status", "ativo")
+        .maybeSingle();
+      allowed = !!link;
+    }
+    if (!allowed) {
+      return json({ error: "Forbidden: caller does not belong to this tenant" }, 403);
+    }
+
+
     const { data: integ } = await admin
       .from("tenant_whatsapp_integrations")
       .select("*")

@@ -18,6 +18,25 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // Authentication: require a valid Supabase JWT
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: userData } = await userClient.auth.getUser();
+    if (!userData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const body = (await req.json()) as RouteRequest;
 
     if (!body.contact_id || !body.tenant_id || !body.selected_option) {
@@ -26,6 +45,30 @@ Deno.serve(async (req: Request) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Tenant ownership check
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_master, company_id")
+      .eq("user_id", userData.user.id)
+      .maybeSingle();
+    let allowed = !!profile?.is_master || profile?.company_id === body.tenant_id;
+    if (!allowed) {
+      const { data: link } = await supabase
+        .from("user_tenants")
+        .select("id")
+        .eq("user_id", userData.user.id)
+        .eq("tenant_id", body.tenant_id)
+        .eq("status", "ativo")
+        .maybeSingle();
+      allowed = !!link;
+    }
+    if (!allowed) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
 
     const optionNum = parseInt(body.selected_option, 10);
     if (Number.isNaN(optionNum) || optionNum < 1 || optionNum > 9) {

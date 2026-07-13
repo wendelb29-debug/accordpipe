@@ -381,6 +381,21 @@ Deno.serve(async (req) => {
       body.tenant_id = tid;
     }
 
+    // Enforce cert ownership for actions that operate on an existing certificate
+    if (!isMaster && ["test", "validate", "delete", "update_purpose"].includes(action)) {
+      const certId = body.cert_id;
+      if (!certId) {
+        return new Response(JSON.stringify({ error: "cert_id obrigatório" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
+      }
+      const { data: targetCert } = await supa.from("tenant_certificates").select("tenant_id, is_global").eq("id", certId).maybeSingle();
+      if (!targetCert) {
+        return new Response(JSON.stringify({ error: "Certificado não encontrado" }), { status: 404, headers: { ...cors, "Content-Type": "application/json" } });
+      }
+      if (targetCert.is_global || targetCert.tenant_id !== isMasterRow?.company_id) {
+        return new Response(JSON.stringify({ error: "Forbidden: certificado pertence a outro tenant" }), { status: 403, headers: { ...cors, "Content-Type": "application/json" } });
+      }
+    }
+
     let result;
     if (action === "upload") result = await handleUpload(supa, user.id, body);
     else if (action === "test") result = await handleTest(supa, body.cert_id);
@@ -389,6 +404,7 @@ Deno.serve(async (req) => {
     else if (action === "set_use_global") result = await handleSetUseGlobal(supa, body.tenant_id, !!body.use, user.id);
     else if (action === "update_purpose") result = await handleUpdatePurpose(supa, body, user.id);
     else return new Response(JSON.stringify({ error: `Ação desconhecida: ${JSON.stringify(action)}` }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
+
 
     // audit (log estrutural)
     await supa.from("audit_logs").insert({
