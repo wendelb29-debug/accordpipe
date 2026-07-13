@@ -38,6 +38,8 @@ export interface CrmLead {
   lost_reason: string | null;
   tags?: string[] | null;
   workspace_id?: string | null;
+  origin_workspace_id?: string | null;
+  origin_stage?: string | null;
 }
 
 export interface CrmLeadActivity {
