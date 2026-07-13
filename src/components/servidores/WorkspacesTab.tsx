@@ -138,6 +138,9 @@ export function WorkspacesTab({ companyId }: { companyId: string | null }) {
   const [wsColor, setWsColor] = useState("#7C3AED");
   const [wsType, setWsType] = useState("vendas");
   const [wsGroupId, setWsGroupId] = useState<string>("");
+  const [wsWonDestination, setWsWonDestination] = useState<"cadastro" | "workspace" | "base_clientes">("cadastro");
+  const [wsWonTargetId, setWsWonTargetId] = useState<string>("");
+
   const [savingWs, setSavingWs] = useState(false);
 
   // Delete group
