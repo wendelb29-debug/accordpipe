@@ -437,10 +437,12 @@ export function useCrmLeads(
         }
       }
 
-      // Remove from current pipeline view
-      setLeads((prev) => prev.filter((l) => l.id !== id));
+      // Keep the lead in local state so it remains visible in the origin
+      // workspace board when the "Ganho" filter is active (positioned in the
+      // origin_stage column, drag disabled).
 
       toast.success("🎉 Oportunidade ganha! Card transferido para Cadastro. Contrato e cobrança gerados automaticamente.");
+
     }
     return success;
   };
