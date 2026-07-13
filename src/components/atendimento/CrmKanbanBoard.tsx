@@ -713,14 +713,45 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
       {/* Kanban Columns (única visão — cards permanecem nas colunas de origem) */}
       <div className="flex-1 min-h-0 flex flex-col w-full max-w-full">
 
+        {/* Mobile stage chip bar */}
+        {isMobile && (
+          <div className="flex gap-1.5 overflow-x-auto px-2 py-1.5 shrink-0 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
+            {stageStats.map((s) => {
+              const isActive = activeMobileStageId === s.id;
+              const dynCol = kanbanCols.find((c) => c.id === s.id);
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => scrollToMobileStage(s.id)}
+                  className={cn(
+                    "shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold border transition-colors",
+                    isActive
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-card text-foreground border-border/60"
+                  )}
+                  style={isActive && dynCol?.color ? { backgroundColor: dynCol.color, borderColor: dynCol.color, color: "#fff" } : undefined}
+                >
+                  {s.title}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <div
           ref={pipelineRef}
           style={{ scrollBehavior: 'smooth', scrollbarWidth: 'thin' }}
-          className="flex flex-1 min-h-0 items-stretch gap-2 pl-2 pr-6 pb-0 w-full max-w-full overflow-x-auto overflow-y-hidden cursor-grab [&::-webkit-scrollbar]:h-[6px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gradient-to-r [&::-webkit-scrollbar-thumb]:from-[hsl(var(--primary))] [&::-webkit-scrollbar-thumb]:to-[hsl(263,87%,60%)]"
-          onMouseDown={handlePipelineMouseDown}
-          onMouseMove={handlePipelineMouseMove}
-          onMouseUp={handlePipelineMouseUp}
-          onMouseLeave={handlePipelineMouseUp}
+          className={cn(
+            "flex flex-1 min-h-0 items-stretch pb-0 w-full max-w-full overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:h-[6px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gradient-to-r [&::-webkit-scrollbar-thumb]:from-[hsl(var(--primary))] [&::-webkit-scrollbar-thumb]:to-[hsl(263,87%,60%)]",
+            isMobile
+              ? "gap-0 px-0 snap-x snap-mandatory"
+              : "gap-2 pl-2 pr-6 cursor-grab"
+          )}
+          onMouseDown={isMobile ? undefined : handlePipelineMouseDown}
+          onMouseMove={isMobile ? undefined : handlePipelineMouseMove}
+          onMouseUp={isMobile ? undefined : handlePipelineMouseUp}
+          onMouseLeave={isMobile ? undefined : handlePipelineMouseUp}
         >
         {stageStats.map((stage, stageIdx) => {
           const Icon = stageIcons[stage.id] || Clock;
