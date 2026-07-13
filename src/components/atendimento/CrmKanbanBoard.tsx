@@ -444,6 +444,25 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   });
   const filteredLeads = applyFilters(baseFiltered, advancedFilters);
 
+  // Totais recalculados com base nos cards que passam no filtro
+  const filteredTotalPS = useMemo(
+    () => filteredLeads.reduce((acc, l) => acc + (l.value_ps || 0), 0),
+    [filteredLeads]
+  );
+  const filteredTotalMRR = useMemo(
+    () => filteredLeads.reduce((acc, l) => acc + (l.value_mrr || 0), 0),
+    [filteredLeads]
+  );
+  // Total por etapa (respeitando busca/tags/responsável mas ignorando filtro de status)
+  const stageTotalMap = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const l of baseFiltered) {
+      if (!l.stage) continue;
+      m[l.stage] = (m[l.stage] || 0) + 1;
+    }
+    return m;
+  }, [baseFiltered]);
+
   const handleDrop = async (e: React.DragEvent, targetStage: string) => {
     e.preventDefault();
     if (!draggedLead || draggedLead.stage === targetStage) {
