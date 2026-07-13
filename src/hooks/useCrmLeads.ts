@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { toast } from "sonner";
-import { getOrCreateCadastroWorkspace } from "@/lib/cadastroWorkspace";
+import { getOrCreateCadastroWorkspace, resolveWonDestination } from "@/lib/cadastroWorkspace";
 import { captureAppError } from "@/lib/monitoring";
 
 
