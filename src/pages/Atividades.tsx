@@ -1143,156 +1143,316 @@ function WeeklyCalendarView({ activities, loading, userAvatars, onActivityClick 
   );
 }
 
-// ===== ACTIVITY KANBAN VIEW (grouped by workspace) =====
+// ===== ACTIVITY KANBAN VIEW (columns = stages of selected workspace) =====
 interface ActivityKanbanProps {
   activities: ActivityRow[];
   workspaces: WorkspaceCol[];
   loading: boolean;
   statusTab: "planned" | "completed" | "no_show";
   userAvatars: UserAvatarMap;
+  actor: { user_id: string | null; name: string | null };
   onCardClick: (a: ActivityRow) => void;
   onRequestComplete: (a: ActivityRow) => void;
   onRequestNoShow: (a: ActivityRow) => void;
+  onStageMoved: () => void | Promise<void>;
+}
+
+interface KanbanColumn {
+  id: string;
+  name: string;
+  color: string;
+  position: number;
 }
 
 function ActivityKanbanView({
-  activities, workspaces, loading, statusTab, userAvatars,
-  onCardClick, onRequestComplete, onRequestNoShow,
+  activities, workspaces, loading, statusTab, userAvatars, actor,
+  onCardClick, onRequestComplete, onRequestNoShow, onStageMoved,
 }: ActivityKanbanProps) {
+  const STORAGE_KEY = "atividades-kanban-workspace";
+
+  const [workspaceId, setWorkspaceId] = useState<string | null>(() => {
+    try { return localStorage.getItem(STORAGE_KEY); } catch { return null; }
+  });
+  const [columns, setColumns] = useState<KanbanColumn[]>([]);
+  const [columnsLoading, setColumnsLoading] = useState(false);
   const [dragging, setDragging] = useState<ActivityRow | null>(null);
   const [activeZone, setActiveZone] = useState<"complete" | "no_show" | null>(null);
+  const [dragOverColumnId, setDragOverColumnId] = useState<string | null>(null);
+  const [pendingMove, setPendingMove] = useState<{ activity: ActivityRow; toColumn: KanbanColumn } | null>(null);
+  const [moving, setMoving] = useState(false);
 
-  const columns = useMemo(() => {
-    const byWs: Record<string, ActivityRow[]> = { [NO_WS]: [] };
-    for (const w of workspaces) byWs[w.id] = [];
-    for (const a of activities) {
-      const wsId = a.lead_workspace_id || NO_WS;
-      if (byWs[wsId]) byWs[wsId].push(a);
-      else byWs[NO_WS].push(a);
+  // Default workspace selection
+  useEffect(() => {
+    if (workspaces.length === 0) { setWorkspaceId(null); return; }
+    if (workspaceId && workspaces.some((w) => w.id === workspaceId)) return;
+    const def = workspaces.find((w) => w.is_default) || workspaces[0];
+    setWorkspaceId(def.id);
+  }, [workspaces, workspaceId]);
+
+  useEffect(() => {
+    if (workspaceId) {
+      try { localStorage.setItem(STORAGE_KEY, workspaceId); } catch {}
     }
-    const cols: Array<{ id: string; name: string; color: string; items: ActivityRow[] }> = workspaces.map((w) => ({
-      id: w.id, name: w.name, color: w.color || "#7C3AED", items: byWs[w.id] || [],
-    }));
-    cols.push({ id: NO_WS, name: "Sem workspace", color: "#64748b", items: byWs[NO_WS] });
-    return cols;
-  }, [activities, workspaces]);
+  }, [workspaceId]);
 
-  if (loading) {
+  // Fetch kanban columns for the selected workspace
+  useEffect(() => {
+    if (!workspaceId) { setColumns([]); return; }
+    let cancel = false;
+    (async () => {
+      setColumnsLoading(true);
+      const { data, error } = await supabase
+        .from("kanban_columns")
+        .select("id, name, color, position")
+        .eq("workspace_id", workspaceId)
+        .order("position", { ascending: true });
+      if (cancel) return;
+      if (error) { toast.error("Erro ao carregar etapas"); setColumns([]); }
+      else setColumns((data || []) as KanbanColumn[]);
+      setColumnsLoading(false);
+    })();
+    return () => { cancel = true; };
+  }, [workspaceId]);
+
+  const selectedWorkspace = useMemo(
+    () => workspaces.find((w) => w.id === workspaceId) || null,
+    [workspaces, workspaceId]
+  );
+
+  // Only activities whose lead belongs to the selected workspace
+  const workspaceActivities = useMemo(
+    () => activities.filter((a) => a.lead_workspace_id === workspaceId),
+    [activities, workspaceId]
+  );
+
+  // scheduled_at parser
+  const getScheduledDate = (a: ActivityRow): Date | null => {
+    const meta = (a.metadata as any) || {};
+    if (meta.scheduled_at) {
+      const d = new Date(meta.scheduled_at);
+      if (!isNaN(d.getTime())) return d;
+    }
+    if (meta.date) {
+      const d = new Date(`${meta.date}T${meta.time || "00:00"}`);
+      if (!isNaN(d.getTime())) return d;
+    }
+    return null;
+  };
+
+  // Group activities by lead_stage; fallback to first column
+  const grouped = useMemo(() => {
+    const map: Record<string, ActivityRow[]> = {};
+    for (const col of columns) map[col.id] = [];
+    const firstId = columns[0]?.id;
+    for (const a of workspaceActivities) {
+      const stage = a.lead_stage || "";
+      if (stage && map[stage]) map[stage].push(a);
+      else if (firstId) map[firstId].push(a);
+    }
+    // Sort each column by scheduled date asc (overdue first)
+    for (const key of Object.keys(map)) {
+      map[key].sort((x, y) => {
+        const dx = getScheduledDate(x)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+        const dy = getScheduledDate(y)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+        return dx - dy;
+      });
+    }
+    return map;
+  }, [workspaceActivities, columns]);
+
+  const canDrag = true; // both status quick-actions and stage move are gated per drop target
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfToday = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000);
+
+  const confirmMove = async () => {
+    if (!pendingMove || !selectedWorkspace) return;
+    const { activity, toColumn } = pendingMove;
+    const fromStage = activity.lead_stage || null;
+    const fromCol = columns.find((c) => c.id === fromStage);
+    setMoving(true);
+    const { moveLeadStage } = await import("@/lib/moveLeadStage");
+    const res = await moveLeadStage({
+      leadId: activity.lead_id,
+      servidorId: activity.servidor_id,
+      workspaceId: selectedWorkspace.id,
+      fromStage,
+      toStage: toColumn.id,
+      fromStageName: fromCol?.name,
+      toStageName: toColumn.name,
+      actor,
+    });
+    setMoving(false);
+    setPendingMove(null);
+    if (!res.ok) { toast.error("Erro ao mover o lead de etapa"); return; }
+    toast.success(`Lead movido para ${toColumn.name}`);
+    await onStageMoved();
+  };
+
+  if (loading || columnsLoading) {
     return <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
 
-  const canDragForStatus = statusTab === "planned";
-
   return (
     <>
-      <div className="flex gap-3 overflow-x-auto pb-4 -mx-2 px-2" style={{ scrollSnapType: "x proximity" }}>
-        {columns.map((col) => (
-          <div
-            key={col.id}
-            className="min-w-[280px] w-[280px] shrink-0 rounded-xl border border-border bg-card shadow-sm flex flex-col"
-            style={{ scrollSnapAlign: "start" }}
-            // Block drop on workspace columns — drag only changes status, not workspace
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => { e.preventDefault(); /* no-op: cannot move workspace */ }}
-          >
-            <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: col.color }} />
-                <span className="text-sm font-semibold truncate">{col.name}</span>
-              </div>
-              <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{col.items.length}</Badge>
-            </div>
-            <div className="flex-1 p-2 space-y-2 min-h-[120px] max-h-[calc(100vh-320px)] overflow-y-auto">
-              {col.items.length === 0 ? (
-                <div className="text-center text-[11px] text-muted-foreground py-6">Sem atividades</div>
-              ) : (
-                col.items.map((a) => {
-                  const meta = a.metadata || {};
-                  const actType = meta.activity_type || a.type;
-                  const TypeIcon = ACTIVITY_TYPE_ICONS[actType] || Briefcase;
-                  const scheduledAt = meta.scheduled_at ? new Date(meta.scheduled_at) : null;
-                  const dateStr = scheduledAt ? scheduledAt.toLocaleDateString("pt-BR") : null;
-                  const timeStr = scheduledAt ? scheduledAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : null;
-                  const duration = meta.duration || null;
-                  const isOverdue = scheduledAt && statusTab === "planned" && scheduledAt < new Date();
-                  const creatorAvatar = a.created_by_user_id ? userAvatars[a.created_by_user_id] : null;
-
-                  return (
-                    <div
-                      key={a.id}
-                      draggable={canDragForStatus}
-                      onDragStart={() => { if (canDragForStatus) setDragging(a); }}
-                      onDragEnd={() => { setDragging(null); setActiveZone(null); }}
-                      onClick={() => onCardClick(a)}
-                      className={cn(
-                        "rounded-lg border border-border bg-background p-2.5 shadow-sm cursor-pointer",
-                        "hover:shadow-md hover:border-primary/40 transition-all",
-                        canDragForStatus && "active:cursor-grabbing",
-                        isOverdue && "border-l-2 border-l-destructive"
-                      )}
-                    >
-                      <div className="flex items-start gap-2">
-                        <div className="shrink-0 h-7 w-7 rounded-md bg-muted flex items-center justify-center">
-                          <TypeIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[13px] font-semibold text-foreground truncate">
-                            {ACTIVITY_TYPE_LABELS[actType] || a.title}
-                          </p>
-                          {a.lead_company_name && a.lead_company_name !== "-" && (
-                            <p className="text-[11px] text-primary truncate">
-                              {a.lead_company_name}
-                              {a.lead_contact_name && a.lead_contact_name !== "-" && (
-                                <span className="text-muted-foreground"> · {a.lead_contact_name}</span>
-                              )}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="mt-2 flex items-center justify-between gap-2 text-[10.5px] text-muted-foreground">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <Avatar className="h-4 w-4">
-                            {creatorAvatar?.avatar_url ? (
-                              <AvatarImage src={creatorAvatar.avatar_url} alt={creatorAvatar.name} />
-                            ) : null}
-                            <AvatarFallback className="text-[8px] bg-muted">
-                              {(a.created_by_name || "S").slice(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="truncate">{a.created_by_name || "Sistema"}</span>
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          {dateStr && <span>{dateStr}</span>}
-                          {timeStr && <span className="font-semibold text-foreground">{timeStr}</span>}
-                          {duration && duration !== "--" && <span>· {duration}</span>}
-                        </div>
-                      </div>
-
-                      {isOverdue && (
-                        <div className="mt-1.5 flex items-center gap-1 text-destructive text-[10px] font-medium">
-                          <AlertTriangle className="h-3 w-3" /> Atrasada
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        ))}
+      {/* Workspace selector */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
+        <span className="text-xs font-medium text-muted-foreground">Workspace:</span>
+        <Select value={workspaceId ?? ""} onValueChange={(v) => setWorkspaceId(v)}>
+          <SelectTrigger className="w-full sm:w-[280px] h-9 text-sm rounded-lg">
+            <SelectValue placeholder="Selecione um workspace" />
+          </SelectTrigger>
+          <SelectContent>
+            {workspaces.map((w) => (
+              <SelectItem key={w.id} value={w.id}>
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: w.color || "#7C3AED" }} />
+                  {w.name}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {selectedWorkspace && (
+          <span className="text-[11px] text-muted-foreground">
+            {workspaceActivities.length} atividade{workspaceActivities.length !== 1 ? "s" : ""} neste workspace
+          </span>
+        )}
       </div>
 
-      {/* Quick action zones — only for planned drag */}
-      {dragging && canDragForStatus && (
+      {workspaces.length === 0 ? (
+        <div className="text-center py-16 text-sm text-muted-foreground">
+          Nenhum workspace disponível.
+        </div>
+      ) : columns.length === 0 ? (
+        <div className="text-center py-16 text-sm text-muted-foreground">
+          Este workspace ainda não tem etapas configuradas.
+        </div>
+      ) : (
+        <div className="flex gap-3 overflow-x-auto pb-4 -mx-2 px-2" style={{ scrollSnapType: "x proximity" }}>
+          {columns.map((col) => {
+            const items = grouped[col.id] || [];
+            const isDropTarget = dragging && dragOverColumnId === col.id && dragging.lead_stage !== col.id;
+            return (
+              <div
+                key={col.id}
+                className={cn(
+                  "min-w-[280px] w-[280px] shrink-0 rounded-xl border bg-card shadow-sm flex flex-col transition-colors",
+                  isDropTarget ? "border-primary ring-2 ring-primary/30" : "border-border"
+                )}
+                style={{ scrollSnapAlign: "start" }}
+                onDragOver={(e) => { if (dragging) { e.preventDefault(); setDragOverColumnId(col.id); } }}
+                onDragLeave={() => setDragOverColumnId((cur) => (cur === col.id ? null : cur))}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const target = dragging;
+                  setDragOverColumnId(null);
+                  setDragging(null);
+                  if (!target) return;
+                  if ((target.lead_stage || null) === col.id) return;
+                  setPendingMove({ activity: target, toColumn: col });
+                }}
+              >
+                <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: col.color || "#7C3AED" }} />
+                    <span className="text-sm font-semibold truncate">{col.name}</span>
+                  </div>
+                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{items.length}</Badge>
+                </div>
+                <div className="flex-1 p-2 space-y-2 min-h-[120px] max-h-[calc(100vh-360px)] overflow-y-auto">
+                  {items.length === 0 ? (
+                    <div className="text-center text-[11px] text-muted-foreground py-6">Sem atividades</div>
+                  ) : (
+                    items.map((a) => {
+                      const meta = (a.metadata as any) || {};
+                      const actType = meta.activity_type || a.type;
+                      const TypeIcon = ACTIVITY_TYPE_ICONS[actType] || Briefcase;
+                      const scheduledAt = getScheduledDate(a);
+                      const dateStr = scheduledAt ? scheduledAt.toLocaleDateString("pt-BR") : null;
+                      const timeStr = scheduledAt ? scheduledAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : null;
+                      const duration = meta.duration || null;
+                      const isPlanned = statusTab === "planned";
+                      const isOverdue = !!(scheduledAt && isPlanned && scheduledAt < now);
+                      const isToday = !!(scheduledAt && !isOverdue && scheduledAt >= startOfToday && scheduledAt < endOfToday);
+                      const creatorAvatar = a.created_by_user_id ? userAvatars[a.created_by_user_id] : null;
+
+                      return (
+                        <div
+                          key={a.id}
+                          draggable={canDrag}
+                          onDragStart={() => setDragging(a)}
+                          onDragEnd={() => { setDragging(null); setActiveZone(null); setDragOverColumnId(null); }}
+                          onClick={() => onCardClick(a)}
+                          className={cn(
+                            "rounded-lg border border-border bg-background p-2.5 shadow-sm cursor-pointer",
+                            "hover:shadow-md hover:border-primary/40 transition-all active:cursor-grabbing",
+                            isOverdue && "border-l-2 border-l-destructive ring-1 ring-destructive/40"
+                          )}
+                        >
+                          <div className="flex items-start gap-2">
+                            <div className="shrink-0 h-7 w-7 rounded-md bg-muted flex items-center justify-center">
+                              <TypeIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <p className="text-[13px] font-semibold text-foreground truncate">
+                                  {ACTIVITY_TYPE_LABELS[actType] || a.title}
+                                </p>
+                                {isOverdue && (
+                                  <Badge variant="destructive" className="text-[9px] h-4 px-1">Atrasada</Badge>
+                                )}
+                                {isToday && (
+                                  <Badge className="text-[9px] h-4 px-1 bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40">Hoje</Badge>
+                                )}
+                              </div>
+                              {a.lead_company_name && a.lead_company_name !== "-" && (
+                                <p className="text-[11px] text-primary truncate">
+                                  {a.lead_company_name}
+                                  {a.lead_contact_name && a.lead_contact_name !== "-" && (
+                                    <span className="text-muted-foreground"> · {a.lead_contact_name}</span>
+                                  )}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="mt-2 flex items-center justify-between gap-2 text-[10.5px] text-muted-foreground">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <Avatar className="h-4 w-4">
+                                {creatorAvatar?.avatar_url ? (
+                                  <AvatarImage src={creatorAvatar.avatar_url} alt={creatorAvatar.name} />
+                                ) : null}
+                                <AvatarFallback className="text-[8px] bg-muted">
+                                  {(a.created_by_name || "S").slice(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="truncate">{a.created_by_name || "Sistema"}</span>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {dateStr && <span>{dateStr}</span>}
+                              {timeStr && <span className="font-semibold text-foreground">{timeStr}</span>}
+                              {duration && duration !== "--" && <span>· {duration}</span>}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Quick action zones for status */}
+      {dragging && (
         <div className="fixed bottom-0 left-0 right-0 z-50 pb-3 px-4 md:px-6 pointer-events-none animate-in slide-in-from-bottom-4 duration-200">
           <div className="grid grid-cols-2 gap-2.5 max-w-3xl mx-auto pointer-events-auto">
             {[
               {
-                id: "complete" as const,
-                Icon: CheckCircle,
-                label: "Concluir",
-                desc: "Marcar como concluída",
+                id: "complete" as const, Icon: CheckCircle, label: "Concluir", desc: "Marcar como concluída",
                 bg: "bg-emerald-50/80 dark:bg-emerald-950/30",
                 border: "border-emerald-200 dark:border-emerald-900/60",
                 iconBg: "bg-emerald-100 dark:bg-emerald-500/20",
@@ -1301,10 +1461,7 @@ function ActivityKanbanView({
                 ring: "ring-emerald-500/30",
               },
               {
-                id: "no_show" as const,
-                Icon: Ban,
-                label: "No-show",
-                desc: "Marcar como no-show",
+                id: "no_show" as const, Icon: Ban, label: "No-show", desc: "Marcar como no-show",
                 bg: "bg-amber-50/80 dark:bg-amber-950/30",
                 border: "border-amber-200 dark:border-amber-900/60",
                 iconBg: "bg-amber-100 dark:bg-amber-500/20",
@@ -1325,6 +1482,7 @@ function ActivityKanbanView({
                     const target = dragging;
                     setActiveZone(null);
                     setDragging(null);
+                    setDragOverColumnId(null);
                     if (!target) return;
                     if (z.id === "complete") onRequestComplete(target);
                     else onRequestNoShow(target);
@@ -1352,6 +1510,31 @@ function ActivityKanbanView({
           </div>
         </div>
       )}
+
+      {/* Confirmation for stage move */}
+      <AlertDialog open={!!pendingMove} onOpenChange={(o) => { if (!o && !moving) setPendingMove(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mover lead de etapa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingMove ? (
+                <>
+                  Mover o lead <b>{pendingMove.activity.lead_company_name || pendingMove.activity.lead_contact_name || "sem nome"}</b> para a etapa <b>{pendingMove.toColumn.name}</b>?
+                  <br />
+                  Isso altera a etapa do lead no funil do CRM.
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={moving}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction disabled={moving} onClick={(e) => { e.preventDefault(); confirmMove(); }}>
+              {moving ? "Movendo..." : "Confirmar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
+
