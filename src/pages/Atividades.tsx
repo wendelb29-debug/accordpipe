@@ -122,6 +122,21 @@ export default function Atividades() {
     fetchActivities();
   }, [activeCompanyId, dateFilter, view]);
 
+  useEffect(() => {
+    const servidorId = isMaster ? activeCompanyId : profile?.company_id;
+    if (!servidorId) { setWorkspaces([]); return; }
+    (async () => {
+      const { data } = await supabase
+        .from("workspaces")
+        .select("id, name, color, sort_order")
+        .eq("servidor_id", servidorId)
+        .order("sort_order", { ascending: true })
+        .order("name");
+      const allowed = filterAllowedWorkspaces((data || []) as any) as WorkspaceCol[];
+      setWorkspaces(allowed);
+    })();
+  }, [activeCompanyId, isMaster, profile?.company_id, filterAllowedWorkspaces]);
+
   const fetchActivities = async () => {
     setLoading(true);
     try {
