@@ -733,9 +733,11 @@ export default function Atividades() {
             loading={loading}
             statusTab={statusTab}
             userAvatars={userAvatars}
+            actor={{ user_id: profile?.user_id || null, name: profile?.name || null }}
             onCardClick={handleLeadClick}
             onRequestComplete={(a) => handleOpenModal(a, "complete")}
             onRequestNoShow={(a) => handleOpenModal(a, "no_show")}
+            onStageMoved={fetchActivities}
           />
         </TabsContent>
       </Tabs>
