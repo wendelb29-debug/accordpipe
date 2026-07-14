@@ -190,7 +190,13 @@ Deno.serve(async (req) => {
           headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
-        if (!r.ok) return new Response(JSON.stringify({ error: await r.text() }), { status: r.status === 429 ? 429 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (!r.ok) {
+          if (r.status === 429) {
+            await admin.from("email_messages").update(dbUpdate).eq("id", messageRowId);
+            return new Response(JSON.stringify({ ok: true, provider_synced: false, reason: "rate_limited" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+          }
+          return new Response(JSON.stringify({ error: await r.text() }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
         await admin.from("email_messages").update(dbUpdate).eq("id", messageRowId);
       }
     }
