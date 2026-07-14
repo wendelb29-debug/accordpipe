@@ -63,16 +63,14 @@ async function getValidToken(admin: any, account: any): Promise<string> {
 }
 
 // Retry com backoff exponencial + jitter para 429 / 5xx (Gmail "Too many concurrent requests")
-async function fetchWithRetry(url: string, init: RequestInit, maxAttempts = 5): Promise<Response> {
+async function fetchWithRetry(url: string, init: RequestInit, maxAttempts = 6): Promise<Response> {
   let lastResp: Response | null = null;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const resp = await fetch(url, init);
     if (resp.ok) return resp;
-    if (resp.status !== 429 && resp.status < 500) return resp; // erro definitivo, corpo intacto
-    // Vai retentar: precisamos drenar o socket, mas preservar o body para o caller
-    // caso essa seja a última tentativa. Clonamos antes de ler.
+    if (resp.status !== 429 && resp.status < 500) return resp;
     if (attempt === maxAttempts - 1) {
-      lastResp = resp; // última tentativa: NÃO consumir o body, o caller vai ler
+      lastResp = resp;
       break;
     }
     try { await resp.text(); } catch (_) {}
@@ -80,11 +78,17 @@ async function fetchWithRetry(url: string, init: RequestInit, maxAttempts = 5): 
     const retryAfter = Number(resp.headers.get("retry-after"));
     const base = Number.isFinite(retryAfter) && retryAfter > 0
       ? retryAfter * 1000
-      : Math.min(8000, 400 * Math.pow(2, attempt));
-    const delay = base + Math.floor(Math.random() * 250);
+      : Math.min(15000, 600 * Math.pow(2, attempt));
+    const delay = base + Math.floor(Math.random() * 400);
     await new Promise((r) => setTimeout(r, delay));
   }
   return lastResp as Response;
+}
+
+// Helper: para ações não-destrutivas (mark read/unread/star), 429 do provider não deve
+// quebrar a UI — o DB local já reflete a intenção e o próximo sync corrige o provider.
+function isNonDestructive(action: string) {
+  return action === "markRead" || action === "markUnread" || action === "star" || action === "unstar";
 }
 
 Deno.serve(async (req) => {
@@ -158,7 +162,13 @@ Deno.serve(async (req) => {
           body: JSON.stringify(patch),
         });
       }
-      if (!r.ok) return new Response(JSON.stringify({ error: await r.text() }), { status: r.status === 429 ? 429 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (!r.ok) {
+        if (r.status === 429 && isNonDestructive(action)) {
+          await admin.from("email_messages").update(dbUpdate).eq("id", messageRowId);
+          return new Response(JSON.stringify({ ok: true, provider_synced: false, reason: "rate_limited" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        return new Response(JSON.stringify({ error: await r.text() }), { status: r.status === 429 ? 429 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       if (action === "trash") await admin.from("email_messages").delete().eq("id", messageRowId);
       else await admin.from("email_messages").update(dbUpdate).eq("id", messageRowId);
     } else {
@@ -180,7 +190,13 @@ Deno.serve(async (req) => {
           headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
-        if (!r.ok) return new Response(JSON.stringify({ error: await r.text() }), { status: r.status === 429 ? 429 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (!r.ok) {
+          if (r.status === 429) {
+            await admin.from("email_messages").update(dbUpdate).eq("id", messageRowId);
+            return new Response(JSON.stringify({ ok: true, provider_synced: false, reason: "rate_limited" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+          }
+          return new Response(JSON.stringify({ error: await r.text() }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
         await admin.from("email_messages").update(dbUpdate).eq("id", messageRowId);
       }
     }
