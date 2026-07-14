@@ -85,8 +85,13 @@ function EntityCombobox({ label, placeholder, value, options, onSelect, onCreate
   const filtered = useMemo(() => {
     const q = norm(query);
     if (!q) return options.slice(0, 50);
+    const digits = q.replace(/\D/g, "");
     return options
-      .filter(o => norm(o.name).includes(q) || (o.document || "").replace(/\D/g, "").includes(q.replace(/\D/g, "")))
+      .filter(o =>
+        norm(o.name).includes(q)
+        || norm(o.email || "").includes(q)
+        || (digits && (o.document || "").replace(/\D/g, "").includes(digits))
+      )
       .slice(0, 50);
   }, [options, query]);
 
