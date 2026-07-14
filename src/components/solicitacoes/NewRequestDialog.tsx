@@ -54,7 +54,7 @@ interface Props {
   onCreated: () => void;
 }
 
-interface RegOpt { id: string; name: string; document: string | null; }
+interface RegOpt { id: string; name: string; document: string | null; email: string | null; }
 interface TagOpt { id: string; name: string; color: string; }
 
 const MAX_FILE = 15 * 1024 * 1024;
@@ -85,8 +85,13 @@ function EntityCombobox({ label, placeholder, value, options, onSelect, onCreate
   const filtered = useMemo(() => {
     const q = norm(query);
     if (!q) return options.slice(0, 50);
+    const digits = q.replace(/\D/g, "");
     return options
-      .filter(o => norm(o.name).includes(q) || (o.document || "").replace(/\D/g, "").includes(q.replace(/\D/g, "")))
+      .filter(o =>
+        norm(o.name).includes(q)
+        || norm(o.email || "").includes(q)
+        || (digits && (o.document || "").replace(/\D/g, "").includes(digits))
+      )
       .slice(0, 50);
   }, [options, query]);
 
@@ -157,8 +162,8 @@ function EntityCombobox({ label, placeholder, value, options, onSelect, onCreate
                     <Check className={cn("mr-2 h-4 w-4", value === o.name ? "opacity-100" : "opacity-0")} />
                     <div className="flex flex-col">
                       <span className="text-sm">{o.name}</span>
-                      {o.document && (
-                        <span className="text-xs text-muted-foreground">{o.document}</span>
+                      {(o.email || o.document) && (
+                        <span className="text-xs text-muted-foreground">{o.email || o.document}</span>
                       )}
                     </div>
                   </CommandItem>
@@ -196,12 +201,12 @@ export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, 
     if (!companyId) return;
     const { data } = await supabase
       .from("crm_client_registrations")
-      .select("id,nome_completo,cpf")
+      .select("id,nome_completo,cpf,email")
       .eq("servidor_id", companyId)
       .order("nome_completo")
       .limit(1000);
     const list: RegOpt[] = (data || [])
-      .map((c: any) => ({ id: c.id, name: c.nome_completo || "", document: c.cpf || null }))
+      .map((c: any) => ({ id: c.id, name: c.nome_completo || "", document: c.cpf || null, email: c.email || null }))
       .filter((c) => c.name);
     setRegistrations(list);
   };
@@ -265,10 +270,10 @@ export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, 
       const { data, error } = await supabase
         .from("crm_client_registrations")
         .insert(payload)
-        .select("id,nome_completo,cpf")
+        .select("id,nome_completo,cpf,email")
         .single();
       if (error) throw error;
-      const newOpt: RegOpt = { id: (data as any).id, name: (data as any).nome_completo || text, document: (data as any).cpf || null };
+      const newOpt: RegOpt = { id: (data as any).id, name: (data as any).nome_completo || text, document: (data as any).cpf || null, email: (data as any).email || null };
       setRegistrations((prev) => [newOpt, ...prev]);
       onDone(newOpt.name);
     } catch (err: any) {
