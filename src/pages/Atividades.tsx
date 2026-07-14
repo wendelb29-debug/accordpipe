@@ -711,6 +711,32 @@ export default function Atividades() {
             onActivityClick={handleLeadClick}
           />
         </TabsContent>
+
+        <TabsContent value="kanban">
+          <Tabs value={statusTab} onValueChange={(v) => setStatusTab(v as any)}>
+            <TabsList className="mb-4 bg-muted/50">
+              <TabsTrigger value="planned" className="text-xs gap-1.5">
+                Planejadas <Badge variant="secondary" className="text-[10px] ml-1 h-4 px-1">{planned.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="completed" className="text-xs gap-1.5">
+                Concluídas <Badge variant="secondary" className="text-[10px] ml-1 h-4 px-1">{completed.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="no_show" className="text-xs gap-1.5">
+                No-show <Badge variant="secondary" className="text-[10px] ml-1 h-4 px-1">{noShowList.length}</Badge>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <ActivityKanbanView
+            activities={currentList}
+            workspaces={workspaces}
+            loading={loading}
+            statusTab={statusTab}
+            userAvatars={userAvatars}
+            onCardClick={handleLeadClick}
+            onRequestComplete={(a) => handleOpenModal(a, "complete")}
+            onRequestNoShow={(a) => handleOpenModal(a, "no_show")}
+          />
+        </TabsContent>
       </Tabs>
 
       {/* Completion / No-Show Modal */}
