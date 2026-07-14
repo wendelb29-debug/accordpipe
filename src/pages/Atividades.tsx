@@ -401,8 +401,8 @@ export default function Atividades() {
         </div>
       </div>
 
-      {/* Tabs: List / Agenda */}
-      <Tabs value={view} onValueChange={(v) => setView(v as "list" | "agenda")}>
+      {/* Tabs: List / Agenda / Kanban */}
+      <Tabs value={view} onValueChange={(v) => setView(v as any)}>
         <TabsList className="mb-4">
           <TabsTrigger value="list" className="gap-2">
             <BrandIcon icon={ListOrdered} tone="sky" size="sm" />
@@ -411,6 +411,10 @@ export default function Atividades() {
           <TabsTrigger value="agenda" className="gap-2">
             <BrandIcon icon={Calendar} tone="blue" size="sm" />
             Agenda
+          </TabsTrigger>
+          <TabsTrigger value="kanban" className="gap-2">
+            <BrandIcon icon={Columns} tone="purple" size="sm" />
+            Kanban
           </TabsTrigger>
         </TabsList>
 
