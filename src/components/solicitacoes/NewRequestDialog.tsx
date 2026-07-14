@@ -387,6 +387,29 @@ export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, 
 
       if (error) throw error;
 
+      // Persist newly-created company/person into Base de Clientes now that lead_id exists
+      const toCreate: Array<{ name: string; kind: "empresa" | "pessoa" }> = [];
+      if (companyIsNew) toCreate.push({ name: companyName, kind: "empresa" });
+      if (contactIsNew && contactName !== companyName) toCreate.push({ name: contactName, kind: "pessoa" });
+      for (const item of toCreate) {
+        const digits = item.name.replace(/\D/g, "");
+        const isDoc = looksLikeDoc(item.name);
+        const { error: regErr } = await supabase.from("crm_client_registrations").insert({
+          servidor_id: companyId,
+          lead_id: lead.id,
+          nome_completo: item.name,
+          cpf: isDoc ? digits : null,
+          status: "concluido",
+          client_status: "ativo",
+          created_by_user_id: profile?.user_id || null,
+          created_by_name: profile?.name || null,
+        } as any);
+        if (regErr) {
+          console.error("Falha ao registrar cliente:", regErr);
+          toast.error(`Registro criado, mas falhou ao cadastrar ${item.kind}: ${regErr.message}`);
+        }
+      }
+
       if (file && lead) {
         const ext = file.name.split(".").pop();
         const filePath = `lead-docs/${lead.id}/solicitacao_${Date.now()}.${ext}`;
