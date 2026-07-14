@@ -71,6 +71,7 @@ interface ActivityRow {
   lead_contact_name?: string;
   lead_source?: string;
   lead_workspace_id?: string | null;
+  lead_stage?: string | null;
 }
 
 const PER_PAGE_OPTIONS = [20, 50, 100];
