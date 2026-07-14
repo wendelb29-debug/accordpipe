@@ -128,7 +128,7 @@ export default function Atividades() {
     (async () => {
       const { data } = await supabase
         .from("workspaces")
-        .select("id, name, color, sort_order")
+        .select("id, name, color, sort_order, is_default, servidor_id")
         .eq("servidor_id", servidorId)
         .order("sort_order", { ascending: true })
         .order("name");
