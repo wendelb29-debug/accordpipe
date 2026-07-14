@@ -93,6 +93,7 @@ const ROUTE_TONES: Record<string, BrandIconTone> = {
   "/descarte": "slate",
   "/configuracoes/usuarios": "teal",
   "/configuracoes/logs": "slate",
+  "/solicitacoes": "amber",
 };
 
 
