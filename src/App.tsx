@@ -260,6 +260,16 @@ const App = () => (
               }
             />
             <Route
+              path="/solicitacoes"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Solicitacoes />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/perfil"
               element={
                 <ProtectedRoute>
