@@ -287,17 +287,19 @@ export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, 
     if (!text) return;
     setConfirmSaving(true);
     try {
-      // Anti-duplicate: search by name (case-insensitive) and by document
       const isDoc = looksLikeDoc(text);
       const digits = text.replace(/\D/g, "");
-      let query = supabase
+
+      const { data: existing, error: qErr } = await supabase
         .from("crm_client_registrations")
         .select("id,nome_completo,cpf,email")
-        .eq("servidor_id", companyId);
-
-      const orConditions = [`nome_completo.ilike.${text}`];
-      if (isDoc) orConditions.push(`cpf.eq.${digits}`);
-      const { data: existing } = await query.or(orConditions.join(","));
+        .eq("servidor_id", companyId)
+        .or(
+          isDoc
+            ? `nome_completo.ilike.%${text}%,cpf.eq.${digits}`
+            : `nome_completo.ilike.%${text}%`
+        );
+      if (qErr) throw qErr;
 
       const dup = (existing || []).find((r: any) =>
         norm(r.nome_completo || "") === norm(text) ||
@@ -311,7 +313,6 @@ export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, 
           document: (dup as any).cpf || null,
           email: (dup as any).email || null,
         };
-        // Ensure it's in the local list
         setRegistrations((prev) => prev.find(p => p.id === existingOpt.id) ? prev : [existingOpt, ...prev]);
         if (confirmKind === "empresa") {
           setCompanyName(existingOpt.name);
@@ -325,39 +326,26 @@ export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, 
         return;
       }
 
-      const payload: any = {
-        servidor_id: companyId,
-        nome_completo: text,
-        cpf: isDoc ? digits : null,
-        status: "concluido",
-        client_status: "ativo",
-        created_by_user_id: profile?.user_id || null,
-        created_by_name: profile?.name || null,
+      // Defer real insert until the lead exists (crm_client_registrations.lead_id is NOT NULL).
+      // Mark it locally as a pending new entry so the field shows the "Novo" badge.
+      const tempOpt: RegOpt = {
+        id: `pending-${Date.now()}`,
+        name: text,
+        document: isDoc ? digits : null,
+        email: null,
       };
-      const { data, error } = await supabase
-        .from("crm_client_registrations")
-        .insert(payload)
-        .select("id,nome_completo,cpf,email")
-        .single();
-      if (error) throw error;
-      const newOpt: RegOpt = {
-        id: (data as any).id,
-        name: (data as any).nome_completo || text,
-        document: (data as any).cpf || null,
-        email: (data as any).email || null,
-      };
-      setRegistrations((prev) => [newOpt, ...prev]);
+      setRegistrations((prev) => [tempOpt, ...prev]);
       if (confirmKind === "empresa") {
-        setCompanyName(newOpt.name);
+        setCompanyName(tempOpt.name);
         setCompanyIsNew(true);
       } else {
-        setContactName(newOpt.name);
+        setContactName(tempOpt.name);
         setContactIsNew(true);
       }
-      toast.success(`${confirmKind === "empresa" ? "Empresa" : "Pessoa"} cadastrada na Base de Clientes`);
+      toast.success(`${confirmKind === "empresa" ? "Empresa" : "Pessoa"} pronta para cadastro`);
       setConfirmOpen(false);
     } catch (err: any) {
-      toast.error("Erro ao criar registro: " + (err?.message || ""));
+      toast.error("Erro ao verificar cadastro: " + (err?.message || ""));
     } finally {
       setConfirmSaving(false);
     }
@@ -398,6 +386,29 @@ export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, 
         .single();
 
       if (error) throw error;
+
+      // Persist newly-created company/person into Base de Clientes now that lead_id exists
+      const toCreate: Array<{ name: string; kind: "empresa" | "pessoa" }> = [];
+      if (companyIsNew) toCreate.push({ name: companyName, kind: "empresa" });
+      if (contactIsNew && contactName !== companyName) toCreate.push({ name: contactName, kind: "pessoa" });
+      for (const item of toCreate) {
+        const digits = item.name.replace(/\D/g, "");
+        const isDoc = looksLikeDoc(item.name);
+        const { error: regErr } = await supabase.from("crm_client_registrations").insert({
+          servidor_id: companyId,
+          lead_id: lead.id,
+          nome_completo: item.name,
+          cpf: isDoc ? digits : null,
+          status: "concluido",
+          client_status: "ativo",
+          created_by_user_id: profile?.user_id || null,
+          created_by_name: profile?.name || null,
+        } as any);
+        if (regErr) {
+          console.error("Falha ao registrar cliente:", regErr);
+          toast.error(`Registro criado, mas falhou ao cadastrar ${item.kind}: ${regErr.message}`);
+        }
+      }
 
       if (file && lead) {
         const ext = file.name.split(".").pop();
