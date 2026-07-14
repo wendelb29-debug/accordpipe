@@ -1139,3 +1139,216 @@ function WeeklyCalendarView({ activities, loading, userAvatars, onActivityClick 
     </div>
   );
 }
+
+// ===== ACTIVITY KANBAN VIEW (grouped by workspace) =====
+interface ActivityKanbanProps {
+  activities: ActivityRow[];
+  workspaces: WorkspaceCol[];
+  loading: boolean;
+  statusTab: "planned" | "completed" | "no_show";
+  userAvatars: UserAvatarMap;
+  onCardClick: (a: ActivityRow) => void;
+  onRequestComplete: (a: ActivityRow) => void;
+  onRequestNoShow: (a: ActivityRow) => void;
+}
+
+function ActivityKanbanView({
+  activities, workspaces, loading, statusTab, userAvatars,
+  onCardClick, onRequestComplete, onRequestNoShow,
+}: ActivityKanbanProps) {
+  const [dragging, setDragging] = useState<ActivityRow | null>(null);
+  const [activeZone, setActiveZone] = useState<"complete" | "no_show" | null>(null);
+
+  const columns = useMemo(() => {
+    const byWs: Record<string, ActivityRow[]> = { [NO_WS]: [] };
+    for (const w of workspaces) byWs[w.id] = [];
+    for (const a of activities) {
+      const wsId = a.lead_workspace_id || NO_WS;
+      if (byWs[wsId]) byWs[wsId].push(a);
+      else byWs[NO_WS].push(a);
+    }
+    const cols: Array<{ id: string; name: string; color: string; items: ActivityRow[] }> = workspaces.map((w) => ({
+      id: w.id, name: w.name, color: w.color || "#7C3AED", items: byWs[w.id] || [],
+    }));
+    cols.push({ id: NO_WS, name: "Sem workspace", color: "#64748b", items: byWs[NO_WS] });
+    return cols;
+  }, [activities, workspaces]);
+
+  if (loading) {
+    return <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
+  }
+
+  const canDragForStatus = statusTab === "planned";
+
+  return (
+    <>
+      <div className="flex gap-3 overflow-x-auto pb-4 -mx-2 px-2" style={{ scrollSnapType: "x proximity" }}>
+        {columns.map((col) => (
+          <div
+            key={col.id}
+            className="min-w-[280px] w-[280px] shrink-0 rounded-xl border border-border bg-card shadow-sm flex flex-col"
+            style={{ scrollSnapAlign: "start" }}
+            // Block drop on workspace columns — drag only changes status, not workspace
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => { e.preventDefault(); /* no-op: cannot move workspace */ }}
+          >
+            <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: col.color }} />
+                <span className="text-sm font-semibold truncate">{col.name}</span>
+              </div>
+              <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{col.items.length}</Badge>
+            </div>
+            <div className="flex-1 p-2 space-y-2 min-h-[120px] max-h-[calc(100vh-320px)] overflow-y-auto">
+              {col.items.length === 0 ? (
+                <div className="text-center text-[11px] text-muted-foreground py-6">Sem atividades</div>
+              ) : (
+                col.items.map((a) => {
+                  const meta = a.metadata || {};
+                  const actType = meta.activity_type || a.type;
+                  const TypeIcon = ACTIVITY_TYPE_ICONS[actType] || Briefcase;
+                  const scheduledAt = meta.scheduled_at ? new Date(meta.scheduled_at) : null;
+                  const dateStr = scheduledAt ? scheduledAt.toLocaleDateString("pt-BR") : null;
+                  const timeStr = scheduledAt ? scheduledAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : null;
+                  const duration = meta.duration || null;
+                  const isOverdue = scheduledAt && statusTab === "planned" && scheduledAt < new Date();
+                  const creatorAvatar = a.created_by_user_id ? userAvatars[a.created_by_user_id] : null;
+
+                  return (
+                    <div
+                      key={a.id}
+                      draggable={canDragForStatus}
+                      onDragStart={() => { if (canDragForStatus) setDragging(a); }}
+                      onDragEnd={() => { setDragging(null); setActiveZone(null); }}
+                      onClick={() => onCardClick(a)}
+                      className={cn(
+                        "rounded-lg border border-border bg-background p-2.5 shadow-sm cursor-pointer",
+                        "hover:shadow-md hover:border-primary/40 transition-all",
+                        canDragForStatus && "active:cursor-grabbing",
+                        isOverdue && "border-l-2 border-l-destructive"
+                      )}
+                    >
+                      <div className="flex items-start gap-2">
+                        <div className="shrink-0 h-7 w-7 rounded-md bg-muted flex items-center justify-center">
+                          <TypeIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[13px] font-semibold text-foreground truncate">
+                            {ACTIVITY_TYPE_LABELS[actType] || a.title}
+                          </p>
+                          {a.lead_company_name && a.lead_company_name !== "-" && (
+                            <p className="text-[11px] text-primary truncate">
+                              {a.lead_company_name}
+                              {a.lead_contact_name && a.lead_contact_name !== "-" && (
+                                <span className="text-muted-foreground"> · {a.lead_contact_name}</span>
+                              )}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="mt-2 flex items-center justify-between gap-2 text-[10.5px] text-muted-foreground">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Avatar className="h-4 w-4">
+                            {creatorAvatar?.avatar_url ? (
+                              <AvatarImage src={creatorAvatar.avatar_url} alt={creatorAvatar.name} />
+                            ) : null}
+                            <AvatarFallback className="text-[8px] bg-muted">
+                              {(a.created_by_name || "S").slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="truncate">{a.created_by_name || "Sistema"}</span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {dateStr && <span>{dateStr}</span>}
+                          {timeStr && <span className="font-semibold text-foreground">{timeStr}</span>}
+                          {duration && duration !== "--" && <span>· {duration}</span>}
+                        </div>
+                      </div>
+
+                      {isOverdue && (
+                        <div className="mt-1.5 flex items-center gap-1 text-destructive text-[10px] font-medium">
+                          <AlertTriangle className="h-3 w-3" /> Atrasada
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Quick action zones — only for planned drag */}
+      {dragging && canDragForStatus && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 pb-3 px-4 md:px-6 pointer-events-none animate-in slide-in-from-bottom-4 duration-200">
+          <div className="grid grid-cols-2 gap-2.5 max-w-3xl mx-auto pointer-events-auto">
+            {[
+              {
+                id: "complete" as const,
+                Icon: CheckCircle,
+                label: "Concluir",
+                desc: "Marcar como concluída",
+                bg: "bg-emerald-50/80 dark:bg-emerald-950/30",
+                border: "border-emerald-200 dark:border-emerald-900/60",
+                iconBg: "bg-emerald-100 dark:bg-emerald-500/20",
+                iconColor: "text-emerald-600 dark:text-emerald-400",
+                hover: "hover:bg-emerald-100/90 hover:border-emerald-400",
+                ring: "ring-emerald-500/30",
+              },
+              {
+                id: "no_show" as const,
+                Icon: Ban,
+                label: "No-show",
+                desc: "Marcar como no-show",
+                bg: "bg-amber-50/80 dark:bg-amber-950/30",
+                border: "border-amber-200 dark:border-amber-900/60",
+                iconBg: "bg-amber-100 dark:bg-amber-500/20",
+                iconColor: "text-amber-600 dark:text-amber-400",
+                hover: "hover:bg-amber-100/90 hover:border-amber-400",
+                ring: "ring-amber-500/30",
+              },
+            ].map((z) => {
+              const isActive = activeZone === z.id;
+              return (
+                <button
+                  key={z.id}
+                  onDragEnter={(e) => { e.preventDefault(); setActiveZone(z.id); }}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDragLeave={() => setActiveZone((cur) => (cur === z.id ? null : cur))}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const target = dragging;
+                    setActiveZone(null);
+                    setDragging(null);
+                    if (!target) return;
+                    if (z.id === "complete") onRequestComplete(target);
+                    else onRequestNoShow(target);
+                  }}
+                  className={cn(
+                    "border-2 border-dashed rounded-2xl transition-all duration-200 backdrop-blur-md shadow-lg",
+                    "px-4 py-5 flex flex-col items-center justify-center gap-2 text-center cursor-pointer",
+                    z.bg, z.border, z.hover,
+                    isActive && `scale-[1.04] border-solid shadow-2xl ring-4 ${z.ring}`
+                  )}
+                  style={{ minHeight: 110 }}
+                >
+                  <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", z.iconBg, isActive && "scale-110 transition-transform")}>
+                    <z.Icon className={cn("w-6 h-6", z.iconColor)} />
+                  </div>
+                  <div>
+                    <div className={cn("text-[14px] font-bold", z.iconColor)}>{z.label}</div>
+                    <div className="text-[10.5px] text-muted-foreground">
+                      {isActive ? "Solte aqui ↓" : z.desc}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
