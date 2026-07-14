@@ -9,6 +9,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +41,7 @@ import {
 } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Paperclip, Loader2, X, ChevronsUpDown, Plus, Check } from "lucide-react";
+import { Paperclip, Loader2, X, ChevronsUpDown, Plus, Check, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface WorkspaceLite {
@@ -59,7 +69,6 @@ interface TagOpt { id: string; name: string; color: string; }
 
 const MAX_FILE = 15 * 1024 * 1024;
 
-// Simple CPF/CNPJ heuristic: 11 or 14 digits after stripping non-digits
 function looksLikeDoc(s: string): boolean {
   const d = s.replace(/\D/g, "");
   return d.length === 11 || d.length === 14;
@@ -70,15 +79,17 @@ function norm(s: string) {
 
 interface ComboProps {
   label: string;
+  entityLabel: "empresa" | "pessoa";
   placeholder: string;
   value: string;
+  isNew: boolean;
   options: RegOpt[];
   onSelect: (name: string) => void;
-  onCreate: (typed: string) => Promise<void>;
-  creating: boolean;
+  onClear: () => void;
+  onRequestCreate: (typed: string) => void;
 }
 
-function EntityCombobox({ label, placeholder, value, options, onSelect, onCreate, creating }: ComboProps) {
+function EntityCombobox({ label, entityLabel, placeholder, value, isNew, options, onSelect, onClear, onRequestCreate }: ComboProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -101,6 +112,25 @@ function EntityCombobox({ label, placeholder, value, options, onSelect, onCreate
     return options.some(o => norm(o.name) === q);
   }, [options, query]);
 
+  if (value) {
+    return (
+      <div className="flex items-center gap-2 w-full h-10 px-3 rounded-md border border-input bg-background">
+        <span className="truncate flex-1 text-sm">{value}</span>
+        {isNew && (
+          <Badge className="h-5 px-1.5 text-[10px] uppercase tracking-wide">Novo</Badge>
+        )}
+        <button
+          type="button"
+          onClick={onClear}
+          className="text-muted-foreground hover:text-foreground"
+          aria-label="Limpar seleção"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -110,16 +140,14 @@ function EntityCombobox({ label, placeholder, value, options, onSelect, onCreate
           className="w-full justify-between font-normal"
           type="button"
         >
-          <span className={cn("truncate", !value && "text-muted-foreground")}>
-            {value || placeholder}
-          </span>
+          <span className="truncate text-muted-foreground">{placeholder}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start">
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder={`Buscar ${label.toLowerCase()}...`}
+            placeholder={`Buscar ${entityLabel}...`}
             value={query}
             onValueChange={setQuery}
           />
@@ -127,19 +155,14 @@ function EntityCombobox({ label, placeholder, value, options, onSelect, onCreate
             {query.trim() && !exactMatch && (
               <CommandGroup>
                 <CommandItem
-                  disabled={creating}
-                  onSelect={async () => {
-                    await onCreate(query.trim());
-                    setQuery("");
+                  onSelect={() => {
+                    onRequestCreate(query.trim());
                     setOpen(false);
+                    setQuery("");
                   }}
                   className="text-primary"
                 >
-                  {creating ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Plus className="mr-2 h-4 w-4" />
-                  )}
+                  <Plus className="mr-2 h-4 w-4" />
                   NOVO "{query.trim()}"
                 </CommandItem>
               </CommandGroup>
@@ -184,7 +207,9 @@ export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, 
   const [workspaceId, setWorkspaceId] = useState("");
   const [title, setTitle] = useState("");
   const [companyName, setCompanyName] = useState("");
+  const [companyIsNew, setCompanyIsNew] = useState(false);
   const [contactName, setContactName] = useState("");
+  const [contactIsNew, setContactIsNew] = useState(false);
   const [forecastDate, setForecastDate] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [stage, setStage] = useState("");
@@ -194,8 +219,12 @@ export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, 
 
   const [registrations, setRegistrations] = useState<RegOpt[]>([]);
   const [tags, setTags] = useState<TagOpt[]>([]);
-  const [creatingCompany, setCreatingCompany] = useState(false);
-  const [creatingPerson, setCreatingPerson] = useState(false);
+
+  // Confirm-create dialog state
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmKind, setConfirmKind] = useState<"empresa" | "pessoa">("empresa");
+  const [confirmText, setConfirmText] = useState("");
+  const [confirmSaving, setConfirmSaving] = useState(false);
 
   const loadRegistrations = async () => {
     if (!companyId) return;
@@ -234,7 +263,8 @@ export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, 
   }, [wsCols, stage]);
 
   const reset = () => {
-    setWorkspaceId(""); setTitle(""); setCompanyName(""); setContactName("");
+    setWorkspaceId(""); setTitle(""); setCompanyName(""); setCompanyIsNew(false);
+    setContactName(""); setContactIsNew(false);
     setForecastDate(""); setSelectedTags([]); setStage(""); setNotes(""); setFile(null);
   };
 
@@ -242,44 +272,94 @@ export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, 
     setSelectedTags((prev) => prev.includes(name) ? prev.filter(t => t !== name) : [...prev, name]);
   };
 
-  const createRegistration = async (typed: string, setBusy: (b: boolean) => void, onDone: (name: string) => void) => {
+  const requestCreate = (kind: "empresa" | "pessoa", typed: string) => {
+    setConfirmKind(kind);
+    setConfirmText(typed);
+    setConfirmOpen(true);
+  };
+
+  const confirmCreate = async () => {
     if (!companyId) {
       toast.error("Tenant não identificado");
       return;
     }
-    const text = typed.trim();
+    const text = confirmText.trim();
     if (!text) return;
-    setBusy(true);
+    setConfirmSaving(true);
     try {
-      // De-dup case-insensitive within tenant
-      const existing = registrations.find((r) => norm(r.name) === norm(text));
-      if (existing) {
-        onDone(existing.name);
+      // Anti-duplicate: search by name (case-insensitive) and by document
+      const isDoc = looksLikeDoc(text);
+      const digits = text.replace(/\D/g, "");
+      let query = supabase
+        .from("crm_client_registrations")
+        .select("id,nome_completo,cpf,email")
+        .eq("servidor_id", companyId);
+
+      const orConditions = [`nome_completo.ilike.${text}`];
+      if (isDoc) orConditions.push(`cpf.eq.${digits}`);
+      const { data: existing } = await query.or(orConditions.join(","));
+
+      const dup = (existing || []).find((r: any) =>
+        norm(r.nome_completo || "") === norm(text) ||
+        (isDoc && (r.cpf || "").replace(/\D/g, "") === digits)
+      );
+
+      if (dup) {
+        const existingOpt: RegOpt = {
+          id: (dup as any).id,
+          name: (dup as any).nome_completo || text,
+          document: (dup as any).cpf || null,
+          email: (dup as any).email || null,
+        };
+        // Ensure it's in the local list
+        setRegistrations((prev) => prev.find(p => p.id === existingOpt.id) ? prev : [existingOpt, ...prev]);
+        if (confirmKind === "empresa") {
+          setCompanyName(existingOpt.name);
+          setCompanyIsNew(false);
+        } else {
+          setContactName(existingOpt.name);
+          setContactIsNew(false);
+        }
+        toast.success(`${confirmKind === "empresa" ? "Empresa" : "Pessoa"} já cadastrada — selecionada automaticamente`);
+        setConfirmOpen(false);
         return;
       }
-      const isDoc = looksLikeDoc(text);
+
       const payload: any = {
         servidor_id: companyId,
-        nome_completo: isDoc ? "" : text,
-        cpf: isDoc ? text : null,
+        nome_completo: text,
+        cpf: isDoc ? digits : null,
+        status: "concluido",
+        client_status: "ativo",
         created_by_user_id: profile?.user_id || null,
         created_by_name: profile?.name || null,
       };
-      // If typed value is a document, still use it as name too (fallback)
-      if (isDoc) payload.nome_completo = text;
       const { data, error } = await supabase
         .from("crm_client_registrations")
         .insert(payload)
         .select("id,nome_completo,cpf,email")
         .single();
       if (error) throw error;
-      const newOpt: RegOpt = { id: (data as any).id, name: (data as any).nome_completo || text, document: (data as any).cpf || null, email: (data as any).email || null };
+      const newOpt: RegOpt = {
+        id: (data as any).id,
+        name: (data as any).nome_completo || text,
+        document: (data as any).cpf || null,
+        email: (data as any).email || null,
+      };
       setRegistrations((prev) => [newOpt, ...prev]);
-      onDone(newOpt.name);
+      if (confirmKind === "empresa") {
+        setCompanyName(newOpt.name);
+        setCompanyIsNew(true);
+      } else {
+        setContactName(newOpt.name);
+        setContactIsNew(true);
+      }
+      toast.success(`${confirmKind === "empresa" ? "Empresa" : "Pessoa"} cadastrada na Base de Clientes`);
+      setConfirmOpen(false);
     } catch (err: any) {
       toast.error("Erro ao criar registro: " + (err?.message || ""));
     } finally {
-      setBusy(false);
+      setConfirmSaving(false);
     }
   };
 
@@ -360,6 +440,7 @@ export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, 
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -387,24 +468,28 @@ export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, 
               <Label>Empresa *</Label>
               <EntityCombobox
                 label="Empresa"
+                entityLabel="empresa"
                 placeholder="Selecione uma empresa"
                 value={companyName}
+                isNew={companyIsNew}
                 options={registrations}
-                onSelect={setCompanyName}
-                onCreate={(t) => createRegistration(t, setCreatingCompany, setCompanyName)}
-                creating={creatingCompany}
+                onSelect={(n) => { setCompanyName(n); setCompanyIsNew(false); }}
+                onClear={() => { setCompanyName(""); setCompanyIsNew(false); }}
+                onRequestCreate={(t) => requestCreate("empresa", t)}
               />
             </div>
             <div>
               <Label>Pessoa *</Label>
               <EntityCombobox
                 label="Pessoa"
+                entityLabel="pessoa"
                 placeholder="Selecione uma pessoa"
                 value={contactName}
+                isNew={contactIsNew}
                 options={registrations}
-                onSelect={setContactName}
-                onCreate={(t) => createRegistration(t, setCreatingPerson, setContactName)}
-                creating={creatingPerson}
+                onSelect={(n) => { setContactName(n); setContactIsNew(false); }}
+                onClear={() => { setContactName(""); setContactIsNew(false); }}
+                onRequestCreate={(t) => requestCreate("pessoa", t)}
               />
             </div>
           </div>
@@ -500,5 +585,44 @@ export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, 
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={confirmOpen} onOpenChange={(o) => { if (!confirmSaving) setConfirmOpen(o); }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+            </div>
+            <AlertDialogTitle>
+              {confirmKind === "empresa" ? "Cadastrar nova empresa?" : "Cadastrar nova pessoa?"}
+            </AlertDialogTitle>
+          </div>
+          <AlertDialogDescription asChild>
+            <div className="space-y-3 pt-2">
+              <p>
+                Tem certeza que esta {confirmKind === "empresa" ? "empresa" : "pessoa"} não está cadastrada no sistema?
+              </p>
+              <div className="rounded-md bg-muted px-3 py-2 text-sm font-medium text-foreground break-words">
+                {confirmText}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Verifique no cadastro antes de criar um novo registro.
+              </p>
+            </div>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={confirmSaving}>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={confirmSaving}
+            onClick={(e) => { e.preventDefault(); confirmCreate(); }}
+          >
+            {confirmSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Sim, cadastrar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
