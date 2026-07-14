@@ -20,9 +20,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Paperclip, Loader2, X } from "lucide-react";
+import { Paperclip, Loader2, X, ChevronsUpDown, Plus, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface WorkspaceLite {
@@ -45,11 +54,123 @@ interface Props {
   onCreated: () => void;
 }
 
-interface CompanyOpt { id: string; name: string; }
-interface PersonOpt { id: string; name: string; }
+interface RegOpt { id: string; name: string; document: string | null; }
 interface TagOpt { id: string; name: string; color: string; }
 
 const MAX_FILE = 15 * 1024 * 1024;
+
+// Simple CPF/CNPJ heuristic: 11 or 14 digits after stripping non-digits
+function looksLikeDoc(s: string): boolean {
+  const d = s.replace(/\D/g, "");
+  return d.length === 11 || d.length === 14;
+}
+function norm(s: string) {
+  return s.trim().toLowerCase();
+}
+
+interface ComboProps {
+  label: string;
+  placeholder: string;
+  value: string;
+  options: RegOpt[];
+  onSelect: (name: string) => void;
+  onCreate: (typed: string) => Promise<void>;
+  creating: boolean;
+}
+
+function EntityCombobox({ label, placeholder, value, options, onSelect, onCreate, creating }: ComboProps) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = norm(query);
+    if (!q) return options.slice(0, 50);
+    return options
+      .filter(o => norm(o.name).includes(q) || (o.document || "").replace(/\D/g, "").includes(q.replace(/\D/g, "")))
+      .slice(0, 50);
+  }, [options, query]);
+
+  const exactMatch = useMemo(() => {
+    const q = norm(query);
+    if (!q) return false;
+    return options.some(o => norm(o.name) === q);
+  }, [options, query]);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          className="w-full justify-between font-normal"
+          type="button"
+        >
+          <span className={cn("truncate", !value && "text-muted-foreground")}>
+            {value || placeholder}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder={`Buscar ${label.toLowerCase()}...`}
+            value={query}
+            onValueChange={setQuery}
+          />
+          <CommandList>
+            {query.trim() && !exactMatch && (
+              <CommandGroup>
+                <CommandItem
+                  disabled={creating}
+                  onSelect={async () => {
+                    await onCreate(query.trim());
+                    setQuery("");
+                    setOpen(false);
+                  }}
+                  className="text-primary"
+                >
+                  {creating ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="mr-2 h-4 w-4" />
+                  )}
+                  NOVO "{query.trim()}"
+                </CommandItem>
+              </CommandGroup>
+            )}
+            {filtered.length === 0 && !query.trim() && (
+              <CommandEmpty>Digite para buscar...</CommandEmpty>
+            )}
+            {filtered.length > 0 && (
+              <CommandGroup>
+                {filtered.map((o) => (
+                  <CommandItem
+                    key={o.id}
+                    value={o.name}
+                    onSelect={() => {
+                      onSelect(o.name);
+                      setOpen(false);
+                      setQuery("");
+                    }}
+                  >
+                    <Check className={cn("mr-2 h-4 w-4", value === o.name ? "opacity-100" : "opacity-0")} />
+                    <div className="flex flex-col">
+                      <span className="text-sm">{o.name}</span>
+                      {o.document && (
+                        <span className="text-xs text-muted-foreground">{o.document}</span>
+                      )}
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, onCreated }: Props) {
   const { profile } = useAuth();
@@ -66,22 +187,37 @@ export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, 
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const [companies, setCompanies] = useState<CompanyOpt[]>([]);
-  const [persons, setPersons] = useState<PersonOpt[]>([]);
+  const [registrations, setRegistrations] = useState<RegOpt[]>([]);
   const [tags, setTags] = useState<TagOpt[]>([]);
+  const [creatingCompany, setCreatingCompany] = useState(false);
+  const [creatingPerson, setCreatingPerson] = useState(false);
+
+  const loadRegistrations = async () => {
+    if (!companyId) return;
+    const { data } = await supabase
+      .from("crm_client_registrations")
+      .select("id,nome_completo,cpf")
+      .eq("servidor_id", companyId)
+      .order("nome_completo")
+      .limit(1000);
+    const list: RegOpt[] = (data || [])
+      .map((c: any) => ({ id: c.id, name: c.nome_completo || "", document: c.cpf || null }))
+      .filter((c) => c.name);
+    setRegistrations(list);
+  };
 
   useEffect(() => {
     if (!open || !companyId) return;
     (async () => {
-      const [{ data: cli }, { data: tgs }] = await Promise.all([
-        supabase.from("crm_client_registrations").select("id,nome_completo").eq("servidor_id", companyId).order("nome_completo").limit(500),
-        supabase.from("crm_tags").select("id,name,color").eq("servidor_id", companyId).order("name"),
-      ]);
-      const cList: CompanyOpt[] = (cli || []).map((c: any) => ({ id: c.id, name: c.nome_completo || "" })).filter(c => c.name);
-      setCompanies(cList);
-      setPersons(cList.map(c => ({ id: c.id, name: c.name })));
+      const { data: tgs } = await supabase
+        .from("crm_tags")
+        .select("id,name,color")
+        .eq("servidor_id", companyId)
+        .order("name");
       setTags((tgs || []) as TagOpt[]);
+      await loadRegistrations();
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, companyId]);
 
   const wsCols = useMemo(() => (workspaceId ? (columnsByWs[workspaceId] || []) : []), [workspaceId, columnsByWs]);
@@ -99,6 +235,47 @@ export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, 
 
   const toggleTag = (name: string) => {
     setSelectedTags((prev) => prev.includes(name) ? prev.filter(t => t !== name) : [...prev, name]);
+  };
+
+  const createRegistration = async (typed: string, setBusy: (b: boolean) => void, onDone: (name: string) => void) => {
+    if (!companyId) {
+      toast.error("Tenant não identificado");
+      return;
+    }
+    const text = typed.trim();
+    if (!text) return;
+    setBusy(true);
+    try {
+      // De-dup case-insensitive within tenant
+      const existing = registrations.find((r) => norm(r.name) === norm(text));
+      if (existing) {
+        onDone(existing.name);
+        return;
+      }
+      const isDoc = looksLikeDoc(text);
+      const payload: any = {
+        servidor_id: companyId,
+        nome_completo: isDoc ? "" : text,
+        cpf: isDoc ? text : null,
+        created_by_user_id: profile?.user_id || null,
+        created_by_name: profile?.name || null,
+      };
+      // If typed value is a document, still use it as name too (fallback)
+      if (isDoc) payload.nome_completo = text;
+      const { data, error } = await supabase
+        .from("crm_client_registrations")
+        .insert(payload)
+        .select("id,nome_completo,cpf")
+        .single();
+      if (error) throw error;
+      const newOpt: RegOpt = { id: (data as any).id, name: (data as any).nome_completo || text, document: (data as any).cpf || null };
+      setRegistrations((prev) => [newOpt, ...prev]);
+      onDone(newOpt.name);
+    } catch (err: any) {
+      toast.error("Erro ao criar registro: " + (err?.message || ""));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const submit = async () => {
@@ -137,7 +314,6 @@ export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, 
 
       if (error) throw error;
 
-      // Attach file (same flow as LeadDocsTab: contract-pdfs bucket + lead_documents row)
       if (file && lead) {
         const ext = file.name.split(".").pop();
         const filePath = `lead-docs/${lead.id}/solicitacao_${Date.now()}.${ext}`;
@@ -157,7 +333,6 @@ export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, 
         });
       }
 
-      // Activity log
       await supabase.from("crm_lead_activities").insert({
         lead_id: lead.id,
         servidor_id: companyId,
@@ -205,29 +380,27 @@ export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label>Empresa *</Label>
-              {companies.length > 0 ? (
-                <Select value={companyName} onValueChange={setCompanyName}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    {companies.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Nome da empresa" />
-              )}
+              <EntityCombobox
+                label="Empresa"
+                placeholder="Selecione uma empresa"
+                value={companyName}
+                options={registrations}
+                onSelect={setCompanyName}
+                onCreate={(t) => createRegistration(t, setCreatingCompany, setCompanyName)}
+                creating={creatingCompany}
+              />
             </div>
             <div>
               <Label>Pessoa *</Label>
-              {persons.length > 0 ? (
-                <Select value={contactName} onValueChange={setContactName}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    {persons.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Nome do contato" />
-              )}
+              <EntityCombobox
+                label="Pessoa"
+                placeholder="Selecione uma pessoa"
+                value={contactName}
+                options={registrations}
+                onSelect={setContactName}
+                onCreate={(t) => createRegistration(t, setCreatingPerson, setContactName)}
+                creating={creatingPerson}
+              />
             </div>
           </div>
 
