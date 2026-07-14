@@ -48,6 +48,8 @@ import {
   Bookmark,
   Handshake,
   Rocket as RocketIcon,
+  Send,
+
 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -91,6 +93,7 @@ const ROUTE_TONES: Record<string, BrandIconTone> = {
   "/descarte": "slate",
   "/configuracoes/usuarios": "teal",
   "/configuracoes/logs": "slate",
+  "/solicitacoes": "amber",
 };
 
 
@@ -107,6 +110,7 @@ const navigationSections = [
       { nameKey: "nav.accordSales", href: "/atendimento", icon: Headset, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
       { nameKey: "nav.forms", href: "/formularios", icon: ClipboardList, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
       { nameKey: "nav.activities", href: "/atividades", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
+      { nameKey: "Solicitações", href: "/solicitacoes", icon: Send, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
       { nameKey: "Collabs", href: "/collabs", icon: MessagesSquare, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
       { nameKey: "nav.email", href: "/email", icon: Mail, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
     ],
