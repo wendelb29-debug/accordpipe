@@ -1,13 +1,14 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   PhoneCall, Mail, Users, Briefcase, MessageSquare, CheckCircle, ExternalLink,
-  Ban, MoreVertical, Calendar, ListOrdered, Filter, Settings,
+  Ban, MoreVertical, Calendar, ListOrdered, Filter, Settings, Columns,
   UserCircle, Plus, Loader2, ChevronLeft, ChevronRight, AlertTriangle, Eye,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWorkspacePermissions } from "@/hooks/useWorkspacePermissions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +29,9 @@ import { ActivityStatusModal } from "@/components/atendimento/ActivityStatusModa
 import { CrmLead } from "@/hooks/useCrmLeads";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+const NO_WS = "__no_workspace__";
+interface WorkspaceCol { id: string; name: string; color: string; sort_order: number; }
 
 const ACTIVITY_TYPE_ICONS: Record<string, any> = {
   call: PhoneCall,
