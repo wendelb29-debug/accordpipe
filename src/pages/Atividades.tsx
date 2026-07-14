@@ -84,15 +84,21 @@ export default function Atividades() {
   const { profile, isMaster, isAdmin, activeCompanyId, user } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { filterAllowedWorkspaces } = useWorkspacePermissions();
   const [activities, setActivities] = useState<ActivityRow[]>([]);
+  const [workspaces, setWorkspaces] = useState<WorkspaceCol[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"list" | "agenda">(() => {
+  const [view, setView] = useState<"list" | "agenda" | "kanban">(() => {
     if (typeof window !== "undefined") {
       const p = new URLSearchParams(window.location.search);
-      if (p.get("view") === "agenda") return "agenda";
+      const v = p.get("view");
+      if (v === "agenda" || v === "kanban") return v;
+      const stored = localStorage.getItem("atividades-view");
+      if (stored === "agenda" || stored === "kanban" || stored === "list") return stored as any;
     }
     return "list";
   });
+  useEffect(() => { try { localStorage.setItem("atividades-view", view); } catch {} }, [view]);
   const [statusTab, setStatusTab] = useState<"planned" | "completed" | "no_show">("planned");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(20);
