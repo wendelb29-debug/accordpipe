@@ -166,16 +166,16 @@ export default function Atividades() {
       if (error) throw error;
 
       const leadIds = [...new Set((data || []).map((a) => a.lead_id))];
-      let leadsMap: Record<string, { company_name: string; contact_name: string | null; source: string }> = {};
+      let leadsMap: Record<string, { company_name: string; contact_name: string | null; source: string; workspace_id: string | null }> = {};
 
       if (leadIds.length > 0) {
         const { data: leads } = await supabase
           .from("crm_leads")
-          .select("id, company_name, contact_name, source")
+          .select("id, company_name, contact_name, source, workspace_id")
           .in("id", leadIds);
         if (leads) {
           for (const l of leads) {
-            leadsMap[l.id] = { company_name: l.company_name, contact_name: l.contact_name, source: l.source };
+            leadsMap[l.id] = { company_name: l.company_name, contact_name: l.contact_name, source: l.source, workspace_id: (l as any).workspace_id ?? null };
           }
         }
       }
@@ -186,6 +186,7 @@ export default function Atividades() {
         lead_company_name: leadsMap[a.lead_id]?.company_name || "-",
         lead_contact_name: leadsMap[a.lead_id]?.contact_name || "-",
         lead_source: leadsMap[a.lead_id]?.source || "Manual",
+        lead_workspace_id: leadsMap[a.lead_id]?.workspace_id ?? null,
       }));
 
       setActivities(enriched);
