@@ -201,12 +201,12 @@ export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, 
     if (!companyId) return;
     const { data } = await supabase
       .from("crm_client_registrations")
-      .select("id,nome_completo,cpf")
+      .select("id,nome_completo,cpf,email")
       .eq("servidor_id", companyId)
       .order("nome_completo")
       .limit(1000);
     const list: RegOpt[] = (data || [])
-      .map((c: any) => ({ id: c.id, name: c.nome_completo || "", document: c.cpf || null }))
+      .map((c: any) => ({ id: c.id, name: c.nome_completo || "", document: c.cpf || null, email: c.email || null }))
       .filter((c) => c.name);
     setRegistrations(list);
   };
