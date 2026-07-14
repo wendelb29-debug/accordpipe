@@ -2259,6 +2259,7 @@ export type Database = {
           forecast_date: string | null
           form_id: string | null
           id: string
+          is_request: boolean
           lead_status: string
           lost_reason: string | null
           notes: string | null
@@ -2266,6 +2267,8 @@ export type Database = {
           origin_stage: string | null
           origin_workspace_id: string | null
           phone: string | null
+          request_notes: string | null
+          request_title: string | null
           servidor_id: string
           source: string
           stage: string
@@ -2296,6 +2299,7 @@ export type Database = {
           forecast_date?: string | null
           form_id?: string | null
           id?: string
+          is_request?: boolean
           lead_status?: string
           lost_reason?: string | null
           notes?: string | null
@@ -2303,6 +2307,8 @@ export type Database = {
           origin_stage?: string | null
           origin_workspace_id?: string | null
           phone?: string | null
+          request_notes?: string | null
+          request_title?: string | null
           servidor_id: string
           source?: string
           stage?: string
@@ -2333,6 +2339,7 @@ export type Database = {
           forecast_date?: string | null
           form_id?: string | null
           id?: string
+          is_request?: boolean
           lead_status?: string
           lost_reason?: string | null
           notes?: string | null
@@ -2340,6 +2347,8 @@ export type Database = {
           origin_stage?: string | null
           origin_workspace_id?: string | null
           phone?: string | null
+          request_notes?: string | null
+          request_title?: string | null
           servidor_id?: string
           source?: string
           stage?: string
