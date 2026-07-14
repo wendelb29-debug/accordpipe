@@ -388,6 +388,15 @@ export default function Atividades() {
             >
               <Calendar className="h-4 w-4" />
             </Button>
+            <Button
+              variant={view === "kanban" ? "default" : "ghost"}
+              size="icon"
+              className="h-9 w-9 rounded-none"
+              onClick={() => setView("kanban")}
+              title="Kanban por workspace"
+            >
+              <Columns className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
