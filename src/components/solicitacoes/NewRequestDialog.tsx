@@ -270,10 +270,10 @@ export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, 
       const { data, error } = await supabase
         .from("crm_client_registrations")
         .insert(payload)
-        .select("id,nome_completo,cpf")
+        .select("id,nome_completo,cpf,email")
         .single();
       if (error) throw error;
-      const newOpt: RegOpt = { id: (data as any).id, name: (data as any).nome_completo || text, document: (data as any).cpf || null };
+      const newOpt: RegOpt = { id: (data as any).id, name: (data as any).nome_completo || text, document: (data as any).cpf || null, email: (data as any).email || null };
       setRegistrations((prev) => [newOpt, ...prev]);
       onDone(newOpt.name);
     } catch (err: any) {
