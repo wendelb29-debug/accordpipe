@@ -54,7 +54,7 @@ interface Props {
   onCreated: () => void;
 }
 
-interface RegOpt { id: string; name: string; document: string | null; }
+interface RegOpt { id: string; name: string; document: string | null; email: string | null; }
 interface TagOpt { id: string; name: string; color: string; }
 
 const MAX_FILE = 15 * 1024 * 1024;
