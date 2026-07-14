@@ -162,8 +162,8 @@ function EntityCombobox({ label, placeholder, value, options, onSelect, onCreate
                     <Check className={cn("mr-2 h-4 w-4", value === o.name ? "opacity-100" : "opacity-0")} />
                     <div className="flex flex-col">
                       <span className="text-sm">{o.name}</span>
-                      {o.document && (
-                        <span className="text-xs text-muted-foreground">{o.document}</span>
+                      {(o.email || o.document) && (
+                        <span className="text-xs text-muted-foreground">{o.email || o.document}</span>
                       )}
                     </div>
                   </CommandItem>
