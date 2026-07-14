@@ -78,6 +78,7 @@ const Marketing = lazy(() => import("./pages/Marketing"));
 const MarketingCampaignDetail = lazy(() => import("./pages/MarketingCampaignDetail"));
 const Closer = lazy(() => import("./pages/Closer"));
 const Sdr = lazy(() => import("./pages/Sdr"));
+const Solicitacoes = lazy(() => import("./pages/Solicitacoes"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
