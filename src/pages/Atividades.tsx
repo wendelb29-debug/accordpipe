@@ -30,8 +30,7 @@ import { CrmLead } from "@/hooks/useCrmLeads";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-const NO_WS = "__no_workspace__";
-interface WorkspaceCol { id: string; name: string; color: string; sort_order: number; }
+interface WorkspaceCol { id: string; name: string; color: string; sort_order: number; is_default?: boolean; servidor_id?: string; }
 
 const ACTIVITY_TYPE_ICONS: Record<string, any> = {
   call: PhoneCall,
