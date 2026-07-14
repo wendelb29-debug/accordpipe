@@ -24,6 +24,10 @@ import { BrandIcon } from "@/components/ui/brand-icon";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { CrmLeadDetailView } from "@/components/atendimento/CrmLeadDetailView";
 import { ActivityStatusModal } from "@/components/atendimento/ActivityStatusModal";
 import { CrmLead } from "@/hooks/useCrmLeads";
