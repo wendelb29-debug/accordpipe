@@ -442,7 +442,17 @@ export function NewRequestDialog({ open, onOpenChange, workspaces, columnsByWs, 
   return (
     <>
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        onPointerDownOutside={(e) => {
+          const t = e.target as HTMLElement | null;
+          if (t?.closest('[role="alertdialog"]')) e.preventDefault();
+        }}
+        onInteractOutside={(e) => {
+          const t = e.target as HTMLElement | null;
+          if (t?.closest('[role="alertdialog"]') || confirmOpen) e.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Nova Solicitação</DialogTitle>
         </DialogHeader>
