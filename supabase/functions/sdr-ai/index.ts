@@ -3,6 +3,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { generateText } from "npm:ai@7.0.9";
 import { createOpenAICompatible } from "npm:@ai-sdk/openai-compatible@3.0.2";
+import { requireAuth } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -163,6 +164,9 @@ function createLovableAiGatewayProvider(lovableApiKey: string) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const _auth = await requireAuth(req, corsHeaders);
+  if (_auth instanceof Response) return _auth;
 
   try {
     const body = (await req.json()) as Body;
