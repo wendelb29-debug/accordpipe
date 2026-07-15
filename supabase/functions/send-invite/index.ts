@@ -49,7 +49,7 @@ serve(async (req) => {
       .maybeSingle();
 
     let allowed =
-      invite.inviter_id === callerId ||
+      invite.inviter_user_id === callerId ||
       !!callerProfile?.is_master ||
       callerProfile?.company_id === invite.company_id;
 
