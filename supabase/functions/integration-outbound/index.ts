@@ -107,11 +107,36 @@ Deno.serve(async (req) => {
     let errorMessage: string | null = null;
 
     try {
-      const finalUrl = integration.base_url
-        ? `${integration.base_url.replace(/\/$/, "")}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`
-        : endpoint;
+      // SSRF hardening: require the integration to have a configured base_url,
+      // reject absolute URLs supplied by the caller, and confirm the resolved
+      // URL still starts with the stored base_url host.
+      if (!integration.base_url) {
+        return new Response(
+          JSON.stringify({ error: "Integration base_url is not configured" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (/^[a-z]+:\/\//i.test(endpoint) || endpoint.startsWith("//")) {
+        return new Response(
+          JSON.stringify({ error: "Absolute URLs are not allowed in endpoint" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
-      const response = await fetch(finalUrl, {
+      const baseUrl = new URL(integration.base_url);
+      const finalUrl = new URL(
+        endpoint.startsWith("/") ? endpoint.slice(1) : endpoint,
+        baseUrl.href.endsWith("/") ? baseUrl.href : baseUrl.href + "/"
+      );
+
+      if (finalUrl.origin !== baseUrl.origin) {
+        return new Response(
+          JSON.stringify({ error: "Endpoint must resolve within the integration base_url origin" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const response = await fetch(finalUrl.toString(), {
         method: method.toUpperCase(),
         headers: externalHeaders,
         body: method.toUpperCase() !== "GET" ? JSON.stringify(payload || {}) : undefined,
