@@ -14,6 +14,7 @@ serve(async (req) => {
 
   const _auth = await requireAuth(req, corsHeaders);
   if (_auth instanceof Response) return _auth;
+  const callerId = (_auth as { userId: string }).userId;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -37,6 +38,37 @@ serve(async (req) => {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Tenant boundary: caller must be the inviter, master, or an
+    // admin/CEO belonging to the invite's tenant.
+    const { data: callerProfile } = await supabase
+      .from("profiles")
+      .select("is_master, company_id")
+      .eq("user_id", callerId)
+      .maybeSingle();
+
+    let allowed =
+      invite.inviter_id === callerId ||
+      !!callerProfile?.is_master ||
+      callerProfile?.company_id === invite.company_id;
+
+    if (!allowed && invite.company_id) {
+      const { data: link } = await supabase
+        .from("user_tenants")
+        .select("id")
+        .eq("user_id", callerId)
+        .eq("tenant_id", invite.company_id)
+        .eq("status", "ativo")
+        .maybeSingle();
+      allowed = !!link;
+    }
+
+    if (!allowed) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden: caller does not belong to this invitation's tenant" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const inviteLink = `https://accordpipe.com.br/aceitar-convite?token=${encodeURIComponent(invite.token)}`;
