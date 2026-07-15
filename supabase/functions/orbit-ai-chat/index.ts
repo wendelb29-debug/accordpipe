@@ -58,6 +58,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const _auth = await requireAuth(req, corsHeaders);
+  if (_auth instanceof Response) return _auth;
+
   try {
     const { messages, context } = await req.json();
 
