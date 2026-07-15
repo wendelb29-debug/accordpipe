@@ -15,7 +15,6 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const provider = url.searchParams.get("provider") || "unknown";
     const token = url.searchParams.get("token");
-    const tenantIdParam = url.searchParams.get("tenant");
 
     const body = await req.text();
     let payload: any = {};
@@ -30,45 +29,25 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Determine event type from common gateway patterns
     const eventType =
       payload.event || payload.type || payload.event_type || payload.action || "unknown";
 
-    // Resolve tenant: prefer token-based lookup for security
-    let servidorId: string | null = null;
-
-    if (token) {
-      const { data: resolved } = await supabase.rpc("resolve_tenant_by_webhook_token", { p_token: token });
-      servidorId = resolved || null;
+    // Require a per-tenant webhook token. No fallback: without a verified
+    // token this endpoint cannot be trusted to update financial state.
+    if (!token) {
+      return new Response(
+        JSON.stringify({ error: "Missing webhook token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    // Fallback to legacy query param
-    if (!servidorId && tenantIdParam) {
-      servidorId = tenantIdParam;
-    }
-
-    // Fallback to payload metadata
-    if (!servidorId && payload.metadata?.tenant_id) {
-      servidorId = payload.metadata.tenant_id;
-    }
-
-    // Last resort: find by provider integration
-    if (!servidorId) {
-      const { data: integration } = await supabase
-        .from("fintech_integrations")
-        .select("servidor_id")
-        .eq("provider", provider)
-        .eq("is_active", true)
-        .limit(1)
-        .maybeSingle();
-
-      servidorId = integration?.servidor_id;
-    }
+    const { data: resolved } = await supabase.rpc("resolve_tenant_by_webhook_token", { p_token: token });
+    const servidorId: string | null = resolved || null;
 
     if (!servidorId) {
       return new Response(
-        JSON.stringify({ error: "Tenant not identified" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Invalid webhook token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
