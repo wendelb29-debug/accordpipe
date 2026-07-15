@@ -165,6 +165,9 @@ function createLovableAiGatewayProvider(lovableApiKey: string) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  const _auth = await requireAuth(req, corsHeaders);
+  if (_auth instanceof Response) return _auth;
+
   try {
     const body = (await req.json()) as Body;
     if (!body?.task) {
