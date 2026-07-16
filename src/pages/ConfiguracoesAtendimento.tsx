@@ -60,6 +60,11 @@ export default function ConfiguracoesAtendimento() {
 
   const equipeCards: CardItem[] = [
     {
+      id: "chatbot-teams", icon: Users, title: "Equipes do chatbot", isNew: true,
+      description: "Configure quais equipes o agente de IA poderá acionar durante uma conversa",
+      render: () => <ChatbotTeamsPanel />,
+    },
+    {
       id: "equipe", icon: Users, title: "Gerenciar equipe",
       description: "Gerencie os membros da equipe e seus acessos",
       action: { label: "Adicionar usuário", icon: Plus, onClick: () => navigate("/configuracoes/usuarios") },
