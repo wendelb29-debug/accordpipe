@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Send, LogOut, MessageSquare, Radio, Activity, Wifi, Loader2, Save, Copy, Check, RefreshCw } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -7,10 +7,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { InstanceCredentialsCard } from "./InstanceCredentialsCard";
-import { InstanceStatusCard } from "./InstanceStatusCard";
-import { UazapiWebhookSection } from "./UazapiWebhookSection";
-import type { WhatsAppProvider } from "@/hooks/useTenantWhatsAppIntegration";
+import { useTenantWhatsAppIntegration, type WhatsAppProvider } from "@/hooks/useTenantWhatsAppIntegration";
+import { WhatsAppPillNav, type WhatsAppPill } from "./whatsapp/WhatsAppPillNav";
+import { InstanceListTab } from "./whatsapp/InstanceListTab";
+import { InstanceDetailTab } from "./whatsapp/InstanceDetailTab";
+import { TemplatesTab, type WhatsAppTemplateDraft } from "./whatsapp/TemplatesTab";
+import { CreateTemplateTab } from "./whatsapp/CreateTemplateTab";
 
 interface WebhookFieldDef {
   key: string;
@@ -53,16 +55,12 @@ function buildUrl(baseUrl: string, companyId: string, eventType: string, hash: s
   return `${baseUrl}/functions/v1/zapi-webhook/${companyId}/${eventType}/${hash}`;
 }
 
-export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: string | null } = {}) {
-  const { profile } = useAuth();
-  const activeCompany = useActiveCompanyId();
-  const companyId = companyIdOverride ?? activeCompany;
-
+/** Legacy Z-API URL-per-event UI, preserved 100%. Kept as a sub-panel inside the new layout. */
+function ZapiEventUrlsPanel({ companyId }: { companyId: string | null }) {
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [notifyMe, setNotifyMe] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeProvider, setActiveProvider] = useState<WhatsAppProvider>("zapi");
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
@@ -134,7 +132,6 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
           zapi_webhook_notify_me: notifyMe,
         } as any)
         .eq("id", companyId);
-
       if (error) throw error;
 
       try {
@@ -154,10 +151,9 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
           },
         });
       } catch {
-        // Z-API sync is best-effort
+        /* best-effort */
       }
-
-      toast.success("Configurações de webhooks salvas com sucesso!");
+      toast.success("Configurações de webhooks salvas!");
     } catch (err: any) {
       toast.error("Erro ao salvar: " + (err.message || ""));
     } finally {
@@ -167,84 +163,118 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-5 w-5 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Status real da instância (provider ativo) */}
-      <InstanceStatusCard tenantId={companyId} provider={activeProvider} />
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h4 className="text-xs font-semibold uppercase tracking-widest text-primary mb-1">
+            URLs Z-API por evento
+          </h4>
+          <p className="text-xs text-muted-foreground">
+            Cada URL é exclusiva deste tenant. Cole no painel da Z-API.
+          </p>
+        </div>
+        <Button variant="outline" size="sm" className="gap-2" onClick={refreshAllUrls}>
+          <RefreshCw className="h-3.5 w-3.5" />
+          Atualizar todas
+        </Button>
+      </div>
 
-      {/* Credenciais da Instância (por tenant) */}
-      <InstanceCredentialsCard
-        tenantId={companyId}
-        provider={activeProvider}
-        onProviderChange={setActiveProvider}
-      />
-
-      {activeProvider === "zapi" && (
-        <>
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-widest text-primary mb-1">
-                Webhooks Z-API — URLs por Tenant
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Cada URL é exclusiva deste tenant. Cole no painel da Z-API.
-              </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {webhookFields.map((field) => (
+          <div key={field.key} className="space-y-1.5">
+            <Label className="text-xs font-semibold text-foreground">{field.label}</Label>
+            <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/30 px-3 py-2">
+              <div className="shrink-0">{field.icon}</div>
+              <code className="text-xs text-foreground truncate flex-1 ml-2">
+                {urls[field.key] || field.label}
+              </code>
+              <CopyButton value={urls[field.key] || ""} />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={() => refreshUrl(field.key)}
+                title="Gerar nova URL"
+              >
+                <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+              </Button>
             </div>
-            <Button variant="outline" size="sm" className="gap-2 shrink-0" onClick={refreshAllUrls}>
-              <RefreshCw className="h-3.5 w-3.5" />
-              Atualizar Todas
-            </Button>
           </div>
+        ))}
+      </div>
 
-          {/* Webhook fields grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {webhookFields.map((field) => (
-              <div key={field.key} className="space-y-2">
-                <Label className="text-sm font-semibold text-foreground">{field.label}</Label>
-                <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
-                  <div className="shrink-0">{field.icon}</div>
-                  <code className="text-xs text-foreground truncate flex-1 ml-2">
-                    {urls[field.key] || field.label}
-                  </code>
-                  <CopyButton value={urls[field.key] || ""} />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 shrink-0"
-                    onClick={() => refreshUrl(field.key)}
-                    title="Gerar nova URL"
-                  >
-                    <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
+      <div className="flex items-center gap-3 pt-1">
+        <Switch checked={notifyMe} onCheckedChange={setNotifyMe} />
+        <Label className="text-sm text-foreground cursor-pointer" onClick={() => setNotifyMe(!notifyMe)}>
+          Notificar as enviadas por mim também
+        </Label>
+      </div>
 
-          {/* Toggle */}
-          <div className="flex items-center gap-3 pt-2">
-            <Switch checked={notifyMe} onCheckedChange={setNotifyMe} />
-            <Label className="text-sm text-foreground cursor-pointer" onClick={() => setNotifyMe(!notifyMe)}>
-              Notificar as enviadas por mim também
-            </Label>
-          </div>
+      <Button onClick={handleSave} disabled={saving} className="gap-2">
+        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+        Salvar
+      </Button>
+    </div>
+  );
+}
 
-          {/* Save button */}
-          <Button onClick={handleSave} disabled={saving} className="gap-2">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Salvar Configurações
-          </Button>
-        </>
+export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: string | null } = {}) {
+  const activeCompany = useActiveCompanyId();
+  const companyId = companyIdOverride ?? activeCompany;
+
+  const [pill, setPill] = useState<WhatsAppPill>("list");
+  const [activeProvider, setActiveProvider] = useState<WhatsAppProvider>("zapi");
+  const [templates, setTemplates] = useState<WhatsAppTemplateDraft[]>([]);
+
+  const { integrations, loading, getByProvider } = useTenantWhatsAppIntegration(companyId);
+  const currentIntegration = getByProvider(activeProvider);
+  const channelName = useMemo(() => {
+    const meta = (currentIntegration?.provider_metadata || {}) as any;
+    return meta.display_name || currentIntegration?.instance_name || null;
+  }, [currentIntegration]);
+
+  return (
+    <div className="space-y-6">
+      <WhatsAppPillNav active={pill} onChange={setPill} channelName={channelName} />
+
+      {pill === "list" && (
+        <InstanceListTab
+          integrations={integrations}
+          loading={loading}
+          onOpenInstance={() => setPill("instance")}
+          onAddNew={() => setPill("instance")}
+        />
       )}
 
-      {activeProvider === "uazapi" && <UazapiWebhookSection tenantId={companyId} />}
+      {pill === "instance" && (
+        <InstanceDetailTab
+          tenantId={companyId}
+          companyId={companyId}
+          provider={activeProvider}
+          onProviderChange={setActiveProvider}
+          legacyZapiWebhookConfig={<ZapiEventUrlsPanel companyId={companyId} />}
+        />
+      )}
+
+      {pill === "templates" && (
+        <TemplatesTab templates={templates} onCreate={() => setPill("create-template")} />
+      )}
+
+      {pill === "create-template" && (
+        <CreateTemplateTab
+          onPublish={(t) => {
+            setTemplates((prev) => [t, ...prev]);
+            setPill("templates");
+          }}
+        />
+      )}
     </div>
   );
 }
