@@ -1,99 +1,103 @@
 
-# Integração uazapiGO no Accord — 5 ondas
+# Envio em Massa — Marketing (Accord)
 
-Escopo aprovado: executar as 5 ondas em sequência dentro da mesma entrega, respeitando o preâmbulo (multi-tenant, tokens só em Edge Functions, `track_source/track_id`, `excludeMessages: ["wasSentByApi"]`). Sem tocar em telas fora do escopo (kanban, contratos, assinatura, Base de Clientes existente — apenas anexos aditivos onde a onda pede).
+Novo módulo dentro do workspace **Marketing**, sem tocar no Kanban de Marketing atual, no Accord Stack ou no módulo de E-mail. Multi-tenant (isolado por `server_id`), reaproveitando instâncias WhatsApp (uazapiGO/Z-API) e contas Outlook/Gmail já conectadas.
 
-## Pré-requisitos (bloqueiam deploy)
+## Escopo funcional
 
-Preciso de dois secrets antes de qualquer chamada real à uazapiGO:
+Wizard de 4 etapas + aba **Envios** (histórico) + aba **Modelos**.
 
-- `UAZAPI_BASE_URL` — ex.: `https://<seu-subdominio>.uazapi.com` (sem barra final)
-- `UAZAPI_ADMIN_TOKEN` — admintoken do painel uazapiGO
+### Etapa 1 — Dados
+- Nome, descrição
+- Canal: `whatsapp` ou `email`
+- Sub-seleção: instância WhatsApp conectada (do tenant) OU conta Outlook/Gmail conectada (do tenant)
 
-Vou solicitar via `add_secret` no início da execução. O código é escrito e as Edge Functions ficam prontas mesmo sem os valores; só param de responder 200 até você preencher.
+### Etapa 2 — Público-alvo
+Três modos:
+1. **Upload CSV/XLSX** — parsing client-side (papaparse + xlsx), preview das colunas
+2. **Base do CRM** — filtros: pipeline (workspace), tags, classificação, DDI/DDD (WhatsApp) ou segmento/domínio (e-mail). Lista só libera após ao menos 1 filtro
+3. **Manual** — tabela editável (nome, contato, variáveis livres)
 
-## Onda 1 — Estrutura + conexão QR
+### Etapa 3 — Conteúdo
+- **WhatsApp:** lista de templates aprovados do canal (reuso do que já existe), busca, filtro por categoria/tipo, preview estilo celular, painel de mapeamento de variáveis (coluna do público ↔ valor fixo)
+- **E-mail:** editor de assunto + corpo (rich text) com variáveis `{{nome}}`, preview estilo caixa de entrada
+- Botão **Salvar modelo**
 
-**DB (migration):**
-- `public.whatsapp_instances(id, tenant_id UNIQUE, uazapi_instance_id, uazapi_token, instance_name, status, phone_number, profile_name, profile_pic_url, created_at, updated_at)`
-- RLS: `SELECT` para membros do tenant; escrita apenas via `service_role`. GRANTs conforme padrão do projeto.
-- Trigger `updated_at`.
+### Etapa 4 — Configurações
+- Velocidade: Lento / Médio (padrão) / Rápido — com aviso de risco
+- Contatos por lote + intervalo entre lotes (min)
+- Agendamento (data/hora início)
+- Janela diária de envio (hora início / fim) — pausa fora da janela
 
-**Edge Functions:**
-- `uazapi-create-instance` — usa `admintoken` (Secret), POST `/instance/init`/`/instance/create` conforme retorno, persiste token+id.
-- `uazapi-connect-instance` — POST `/instance/connect` com `token` da instância, retorna QR base64.
-- `uazapi-instance-status` — GET `/instance/status`, sincroniza tabela, retorna status atual. Ao detectar `connected`, chama internamente o setup de webhook (antecipação da Onda 3, já que o próprio prompt pede).
-- `uazapi-disconnect-instance` — POST `/instance/disconnect`.
+### Aba Envios (histórico)
+Lista campanhas com filtros por status (rascunho, agendada, em andamento, pausada, concluída, falhou), canal e data. Drill-in mostra total, entregues, falhas, respostas.
 
-**UI (nova pílula "uazapiGO" em `src/components/atendimento/tabs/WebhookConfig.tsx`):**
-- Novo componente `whatsapp/UazapiInstancePanel.tsx` com estados: sem instância → botão Conectar; `connecting` → QR + polling 3s (timeout 2min); `connected` → foto/nome/número + Desconectar.
-- Adiciona `"uazapi"` como valor extra em `WhatsAppPillNav` (não remove pílulas atuais).
+### Aba Modelos
+Lista de modelos salvos, busca por nome, filtro por canal/tipo, favoritos.
 
-## Onda 2 — Envio de texto e mídia
+## Modelo de dados (novas tabelas)
 
-**Edge Functions:**
-- `uazapi-send-text` — POST `/send/text` com `number/text/readchat/track_source=accord/track_id=<lead_id>`. Registra em `whatsapp_messages` (tabela existente).
-- `uazapi-send-media` — POST `/send/media` (`type`, `file` URL pública do Storage, `text`/`docName`).
-- `uazapi-check-number` (best-effort) — POST `/chat/check`.
+Todas com `tenant_id` (server_id) e RLS por tenant do usuário logado; GRANT completo para `authenticated` e `service_role`.
 
-**UI:**
-- No painel de chat do lead (inbox WhatsApp já existente), enviar via essas funções em vez do provider atual quando a instância uazapi for a ativa do tenant. Mantém fallback Z-API/Uazapi legado inalterado.
+```text
+mass_campaigns
+  tenant_id, name, description, channel (whatsapp|email),
+  channel_ref (instance_id ou email_account_id),
+  status (draft|scheduled|running|paused|completed|failed),
+  audience_mode (file|crm|manual), audience_snapshot jsonb,
+  content_type (template|editor), template_id, subject, body,
+  variable_mapping jsonb,
+  speed (slow|medium|fast), batch_size int, batch_interval_min int,
+  scheduled_at, daily_window_start time, daily_window_end time,
+  totals jsonb (queued/sent/failed/replied), created_by
 
-## Onda 3 — Webhook de entrada
+mass_campaign_recipients
+  campaign_id, tenant_id, name, contact (phone|email), variables jsonb,
+  status (pending|sending|sent|failed|skipped), error, sent_at
 
-**Edge Function pública `uazapi-webhook`** (`verify_jwt = false`):
-- Identifica tenant via `uazapi_instance_id`/telefone no payload.
-- Eventos: `messages` (grava em `whatsapp_messages`, cria contato/lead se novo pelo fluxo existente), `messages_update` (atualiza status), `connection` (atualiza `whatsapp_instances.status`). Demais eventos ignorados. Sempre 200. Log de payload cru na primeira execução por instância para calibrar parser.
+mass_templates
+  tenant_id, name, channel, category, type, subject, body,
+  variables jsonb, is_favorite, created_by
+```
 
-**Edge Function `uazapi-setup-webhook`** — POST `/webhook` com `events: ["messages","messages_update","connection"]`, `excludeMessages: ["wasSentByApi"]`, url da função pública. Chamada automática no `uazapi-instance-status` quando detecta `connected`.
+RLS: `SELECT/INSERT/UPDATE/DELETE` restrito a membros do tenant via `user_tenants`. Master enxerga tudo.
 
-Realtime já configurado em `whatsapp_messages` — apenas confirmar.
+## Backend (edge functions)
 
-## Onda 4 — Campanhas em massa
+- `mass-campaign-dispatcher` — worker acionado por pg_cron (a cada 1 min) que pega campanhas `running`/`scheduled` dentro da janela, respeita `batch_size`/`batch_interval_min`, envia via:
+  - WhatsApp: reusa helpers `uazapi` já existentes
+  - E-mail: reusa contas Gmail/Outlook conectadas (connector gateway ou tokens do tenant)
+- `mass-campaign-preview` — renderiza template com variáveis para preview
+- `mass-campaign-start/pause/cancel` — muda status
+- Fila em `mass_campaign_recipients` com status; retry simples em falha transitória
 
-**DB (migration):**
-- `public.whatsapp_campaigns(id, tenant_id, folder_id, name, status, scheduled_for, created_at, updated_at)` com RLS por tenant.
+## Frontend
 
-**Edge Functions:**
-- `uazapi-create-campaign` — resolve telefones dos `lead_ids`, POST `/sender/simple`, salva `folder_id`.
-- `uazapi-campaign-control` — POST `/sender/edit` com `stop|continue|delete`.
-- `uazapi-list-campaigns` — GET `/sender/listfolders`.
+Rota nova: `/marketing/envio-massa` (não altera `/marketing` atual do Kanban).
 
-**UI:** nova página `src/pages/WhatsAppCampanhas.tsx` + rota `/whatsapp/campanhas`, entrada no Sidebar dentro do grupo Atendimento. Seleção de leads reaproveitando `EntityCombobox`/filtro existente da Base; campos delay min/max, agendamento, placeholder `{{name}}`. Lista de campanhas com ações pausar/continuar/excluir.
+- Sidebar Marketing ganha sub-item "Envio em Massa" (só isso, sem mexer no Kanban)
+- Componentes:
+  - `MassCampaignWizard.tsx` (stepper 4 etapas)
+  - `steps/DadosStep.tsx`, `PublicoStep.tsx`, `ConteudoStep.tsx`, `ConfiguracoesStep.tsx`
+  - `MassCampaignsList.tsx` (histórico)
+  - `MassTemplatesTab.tsx`
+  - `PhonePreview.tsx`, `EmailPreview.tsx`
+  - `AudienceFileUpload.tsx`, `AudienceCrmFilter.tsx`, `AudienceManualTable.tsx`
+  - `VariableMappingPanel.tsx`
 
-## Onda 5 — Grupos + verificação
+Deps novas: `papaparse`, `xlsx` (se ainda não presente).
 
-**Edge Functions:**
-- `uazapi-check-numbers` — batch `/chat/check`.
-- `uazapi-group-list` — GET `/group/list`.
+## Garantias de não-regressão
 
-**UI:**
-- Passo opcional na importação de leads existente: botão "Verificar WhatsApp" que marca `whatsapp_valid` no lead (aditivo, não bloqueia importação).
-- Nova sub-pílula "Grupos" dentro da aba uazapiGO listando grupos (read-only).
+- Não altera `Marketing.tsx` (Kanban), Accord Stack, `Email.tsx`, nem tabelas `email_accounts`, `whatsapp_instances`, `crm_leads` (apenas leitura via RPC/select).
+- Nenhuma mudança em RLS existente; apenas novas tabelas.
+- Templates WhatsApp já existentes continuam servindo o Accord Stack — módulo só lê.
 
-## Segurança & convenções
+## Entrega em ondas
 
-- Todos os endpoints Edge Function validam `Authorization` do usuário logado e checam `user_tenants` para o `tenant_id` requisitado antes de ler `whatsapp_instances`.
-- `admintoken` só na função `uazapi-create-instance`; demais usam token da instância buscado com `service_role` server-side.
-- Nunca retornar `uazapi_token` ao client. Coluna nunca exposta via `SELECT` do client (RLS bloqueia leitura direta).
-- Zero chamada à uazapiGO no frontend.
-- Payloads sempre incluem `track_source: "accord"` e `track_id`.
-- Webhook sempre com `excludeMessages: ["wasSentByApi"]`.
-- CORS padrão do projeto em todas as funções.
+1. **Onda A — DB + shell UI:** migrations (tabelas, RLS, GRANT, cron), rota, sidebar item, listagem vazia.
+2. **Onda B — Wizard WhatsApp:** 4 etapas end-to-end para WhatsApp com envio real via uazapi.
+3. **Onda C — Wizard E-mail:** editor de e-mail, integração com contas conectadas, envio.
+4. **Onda D — Modelos + Histórico avançado:** aba modelos com favoritos, drill-in do histórico com KPIs.
 
-## Ordem de execução
-
-1. `add_secret` para `UAZAPI_BASE_URL` e `UAZAPI_ADMIN_TOKEN`.
-2. Migration Onda 1 (whatsapp_instances) → aguardar aprovação.
-3. Onda 1: 4 Edge Functions + `UazapiInstancePanel` + integração no `WebhookConfig`.
-4. Onda 2: 3 Edge Functions + hook do envio no inbox.
-5. Onda 3: `uazapi-webhook` público + `uazapi-setup-webhook` + auto-setup no status.
-6. Migration Onda 4 (whatsapp_campaigns) → aguardar aprovação.
-7. Onda 4: 3 Edge Functions + página `WhatsAppCampanhas` + rota + sidebar.
-8. Onda 5: 2 Edge Functions + botão de verificação na importação + sub-pílula Grupos.
-
-## Fora de escopo (confirmado)
-
-Newsletters/canais, chamadas de voz, Chatwoot, catálogo de negócios, comunidades, botões/listas/enquetes/carrossel/localização, pareamento por número (`phone`), edição/criação de grupos, `updateFieldsMap` de placeholders customizados.
-
-Confirma para eu iniciar pela solicitação dos dois secrets e a migration da Onda 1?
+Confirma pra eu começar pela Onda A? Se preferir, também posso começar direto por WhatsApp (A+B juntos) e deixar e-mail pra depois.

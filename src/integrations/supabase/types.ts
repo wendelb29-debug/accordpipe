@@ -4312,6 +4312,185 @@ export type Database = {
         }
         Relationships: []
       }
+      mass_campaign_recipients: {
+        Row: {
+          campaign_id: string
+          contact: string
+          created_at: string
+          error: string | null
+          id: string
+          name: string | null
+          sent_at: string | null
+          status: string
+          tenant_id: string
+          variables: Json
+        }
+        Insert: {
+          campaign_id: string
+          contact: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          name?: string | null
+          sent_at?: string | null
+          status?: string
+          tenant_id: string
+          variables?: Json
+        }
+        Update: {
+          campaign_id?: string
+          contact?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          name?: string | null
+          sent_at?: string | null
+          status?: string
+          tenant_id?: string
+          variables?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mass_campaign_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "mass_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mass_campaigns: {
+        Row: {
+          audience_mode: string | null
+          audience_snapshot: Json
+          batch_interval_min: number
+          batch_size: number
+          body: string | null
+          channel: string
+          channel_ref: string | null
+          content_type: string | null
+          created_at: string
+          created_by: string | null
+          daily_window_end: string | null
+          daily_window_start: string | null
+          description: string | null
+          id: string
+          last_dispatch_at: string | null
+          name: string
+          scheduled_at: string | null
+          speed: string
+          status: string
+          subject: string | null
+          template_id: string | null
+          tenant_id: string
+          totals: Json
+          updated_at: string
+          variable_mapping: Json
+        }
+        Insert: {
+          audience_mode?: string | null
+          audience_snapshot?: Json
+          batch_interval_min?: number
+          batch_size?: number
+          body?: string | null
+          channel: string
+          channel_ref?: string | null
+          content_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          daily_window_end?: string | null
+          daily_window_start?: string | null
+          description?: string | null
+          id?: string
+          last_dispatch_at?: string | null
+          name: string
+          scheduled_at?: string | null
+          speed?: string
+          status?: string
+          subject?: string | null
+          template_id?: string | null
+          tenant_id: string
+          totals?: Json
+          updated_at?: string
+          variable_mapping?: Json
+        }
+        Update: {
+          audience_mode?: string | null
+          audience_snapshot?: Json
+          batch_interval_min?: number
+          batch_size?: number
+          body?: string | null
+          channel?: string
+          channel_ref?: string | null
+          content_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          daily_window_end?: string | null
+          daily_window_start?: string | null
+          description?: string | null
+          id?: string
+          last_dispatch_at?: string | null
+          name?: string
+          scheduled_at?: string | null
+          speed?: string
+          status?: string
+          subject?: string | null
+          template_id?: string | null
+          tenant_id?: string
+          totals?: Json
+          updated_at?: string
+          variable_mapping?: Json
+        }
+        Relationships: []
+      }
+      mass_templates: {
+        Row: {
+          body: string
+          category: string | null
+          channel: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_favorite: boolean
+          name: string
+          subject: string | null
+          tenant_id: string
+          type: string | null
+          updated_at: string
+          variables: Json
+        }
+        Insert: {
+          body: string
+          category?: string | null
+          channel: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_favorite?: boolean
+          name: string
+          subject?: string | null
+          tenant_id: string
+          type?: string | null
+          updated_at?: string
+          variables?: Json
+        }
+        Update: {
+          body?: string
+          category?: string | null
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_favorite?: boolean
+          name?: string
+          subject?: string | null
+          tenant_id?: string
+          type?: string | null
+          updated_at?: string
+          variables?: Json
+        }
+        Relationships: []
+      }
       master_billing_history: {
         Row: {
           amount: number
