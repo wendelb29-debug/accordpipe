@@ -346,9 +346,15 @@ Deno.serve(async (req) => {
     console.log("[whatsapp-send] server_url:", integ.server_url);
     console.log("[whatsapp-send] has token:", !!integ.instance_token);
 
-    if (!integ.server_url || !integ.instance_token) {
+    const missing: string[] = [];
+    if (!integ.server_url) missing.push("Server URL");
+    if (!integ.instance_token) missing.push("Instance Token");
+    if (missing.length) {
       return new Response(
-        JSON.stringify({ success: false, message: "Credenciais incompletas na integração" }),
+        JSON.stringify({
+          success: false,
+          message: `Credenciais incompletas na integração — configure ${missing.join(" e ")} na aba Uazapi de Editar Tenant e salve antes de enviar.`,
+        }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
