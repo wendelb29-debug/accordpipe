@@ -39,6 +39,9 @@ export default function AccordStack() {
   const [newConvOpen, setNewConvOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<ConversationStatusFilter>("fila");
   const [uiFilter, setUiFilter] = useState<UiFilter>("Todas");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const { status: agentStatus, setOperatorStatus } = useOperatorStatus();
+  const isAgentOffline = agentStatus === "unavailable";
 
   const { pinnedIds, isPinned, togglePin } = useChatPins(companyId);
 
