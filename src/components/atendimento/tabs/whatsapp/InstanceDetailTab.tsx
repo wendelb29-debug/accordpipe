@@ -45,7 +45,7 @@ export function InstanceDetailTab({
                 provider={provider}
                 onProviderChange={onProviderChange}
               />
-              <InstanceIdentitySection integration={integration} provider={provider} save={save} />
+              {/* Onda 9: perfil real do WhatsApp foi movido para a aba "Webhooks WhatsApp (uazapiGO)" */}
             </TabsContent>
 
             <TabsContent value="webhooks" className="p-5 space-y-5 m-0">
