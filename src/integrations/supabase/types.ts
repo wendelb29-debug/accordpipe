@@ -504,40 +504,305 @@ export type Database = {
           },
         ]
       }
+      audit_log_changes: {
+        Row: {
+          audit_log_id: string
+          change_type: string
+          created_at: string
+          field_label: string | null
+          field_name: string
+          id: string
+          is_sensitive: boolean
+          new_value: Json | null
+          old_value: Json | null
+        }
+        Insert: {
+          audit_log_id: string
+          change_type?: string
+          created_at?: string
+          field_label?: string | null
+          field_name: string
+          id?: string
+          is_sensitive?: boolean
+          new_value?: Json | null
+          old_value?: Json | null
+        }
+        Update: {
+          audit_log_id?: string
+          change_type?: string
+          created_at?: string
+          field_label?: string | null
+          field_name?: string
+          id?: string
+          is_sensitive?: boolean
+          new_value?: Json | null
+          old_value?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_changes_audit_log_id_fkey"
+            columns: ["audit_log_id"]
+            isOneToOne: false
+            referencedRelation: "audit_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_log_exports: {
+        Row: {
+          created_at: string
+          exported_by: string
+          file_path: string | null
+          filters: Json
+          format: string
+          id: string
+          row_count: number
+          scope: string
+          servidor_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          exported_by: string
+          file_path?: string | null
+          filters?: Json
+          format: string
+          id?: string
+          row_count?: number
+          scope?: string
+          servidor_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          exported_by?: string
+          file_path?: string | null
+          filters?: Json
+          format?: string
+          id?: string
+          row_count?: number
+          scope?: string
+          servidor_id?: string | null
+        }
+        Relationships: []
+      }
+      audit_log_reversions: {
+        Row: {
+          created_at: string
+          id: string
+          new_log_id: string
+          original_log_id: string
+          reverted_by: string
+          servidor_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          new_log_id: string
+          original_log_id: string
+          reverted_by: string
+          servidor_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          new_log_id?: string
+          original_log_id?: string
+          reverted_by?: string
+          servidor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_reversions_new_log_id_fkey"
+            columns: ["new_log_id"]
+            isOneToOne: false
+            referencedRelation: "audit_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_log_reversions_original_log_id_fkey"
+            columns: ["original_log_id"]
+            isOneToOne: false
+            referencedRelation: "audit_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_log_steps: {
+        Row: {
+          audit_log_id: string
+          completed_at: string | null
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          input_data: Json | null
+          output_data: Json | null
+          started_at: string | null
+          status: string
+          step_name: string
+          step_order: number
+        }
+        Insert: {
+          audit_log_id: string
+          completed_at?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          input_data?: Json | null
+          output_data?: Json | null
+          started_at?: string | null
+          status?: string
+          step_name: string
+          step_order?: number
+        }
+        Update: {
+          audit_log_id?: string
+          completed_at?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          input_data?: Json | null
+          output_data?: Json | null
+          started_at?: string | null
+          status?: string
+          step_name?: string
+          step_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_steps_audit_log_id_fkey"
+            columns: ["audit_log_id"]
+            isOneToOne: false
+            referencedRelation: "audit_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
+          actor_type: string | null
+          agent_id: string | null
+          app_version: string | null
+          automation_id: string | null
+          browser: string | null
+          channel_id: string | null
+          completed_at: string | null
+          contact_id: string | null
+          conversation_id: string | null
           created_at: string
+          description: string | null
           details: Json | null
+          device_type: string | null
+          duration_ms: number | null
+          entity_id: string | null
+          entity_type: string | null
+          environment: string | null
+          error_code: string | null
+          error_message: string | null
+          event_type: string | null
           id: string
+          integration_id: string | null
           ip_address: string | null
+          ip_address_masked: string | null
+          module: string | null
+          request_id: string | null
+          resource_id: string | null
           servidor_id: string | null
+          severity: string | null
+          source: string | null
+          started_at: string | null
+          status: string | null
           target_id: string | null
           target_type: string
+          team_id: string | null
+          title: string | null
+          trace_id: string | null
           user_id: string
           user_name: string | null
         }
         Insert: {
           action: string
+          actor_type?: string | null
+          agent_id?: string | null
+          app_version?: string | null
+          automation_id?: string | null
+          browser?: string | null
+          channel_id?: string | null
+          completed_at?: string | null
+          contact_id?: string | null
+          conversation_id?: string | null
           created_at?: string
+          description?: string | null
           details?: Json | null
+          device_type?: string | null
+          duration_ms?: number | null
+          entity_id?: string | null
+          entity_type?: string | null
+          environment?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          event_type?: string | null
           id?: string
+          integration_id?: string | null
           ip_address?: string | null
+          ip_address_masked?: string | null
+          module?: string | null
+          request_id?: string | null
+          resource_id?: string | null
           servidor_id?: string | null
+          severity?: string | null
+          source?: string | null
+          started_at?: string | null
+          status?: string | null
           target_id?: string | null
           target_type: string
+          team_id?: string | null
+          title?: string | null
+          trace_id?: string | null
           user_id: string
           user_name?: string | null
         }
         Update: {
           action?: string
+          actor_type?: string | null
+          agent_id?: string | null
+          app_version?: string | null
+          automation_id?: string | null
+          browser?: string | null
+          channel_id?: string | null
+          completed_at?: string | null
+          contact_id?: string | null
+          conversation_id?: string | null
           created_at?: string
+          description?: string | null
           details?: Json | null
+          device_type?: string | null
+          duration_ms?: number | null
+          entity_id?: string | null
+          entity_type?: string | null
+          environment?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          event_type?: string | null
           id?: string
+          integration_id?: string | null
           ip_address?: string | null
+          ip_address_masked?: string | null
+          module?: string | null
+          request_id?: string | null
+          resource_id?: string | null
           servidor_id?: string | null
+          severity?: string | null
+          source?: string | null
+          started_at?: string | null
+          status?: string | null
           target_id?: string | null
           target_type?: string
+          team_id?: string | null
+          title?: string | null
+          trace_id?: string | null
           user_id?: string
           user_name?: string | null
         }
