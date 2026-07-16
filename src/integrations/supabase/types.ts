@@ -713,6 +713,323 @@ export type Database = {
           },
         ]
       }
+      chatbot_business_hours: {
+        Row: {
+          agent_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          off_hours_behavior: string
+          tenant_id: string
+          timezone: string
+          updated_at: string
+          updated_by: string | null
+          weekly_schedule: Json
+        }
+        Insert: {
+          agent_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          off_hours_behavior?: string
+          tenant_id: string
+          timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+          weekly_schedule?: Json
+        }
+        Update: {
+          agent_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          off_hours_behavior?: string
+          tenant_id?: string
+          timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+          weekly_schedule?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chatbot_business_hours_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chatbot_communication_settings: {
+        Row: {
+          agent_id: string | null
+          audio_reply_enabled: boolean
+          audio_transcribe_incoming: boolean
+          audio_voice: string | null
+          auto_reply_enabled: boolean
+          created_at: string
+          created_by: string | null
+          document_analysis_enabled: boolean
+          emoji_policy: string
+          id: string
+          image_analysis_enabled: boolean
+          max_consecutive_replies: number
+          max_data_retry_attempts: number
+          max_emojis_per_message: number
+          max_messages_before_handoff: number
+          message_grouping_enabled: boolean
+          message_grouping_window_seconds: number
+          on_limit_reached: string
+          pause_ai_on_human_reply: boolean
+          reply_delay_seconds: number
+          reply_existing_conversations: boolean
+          reply_new_conversations: boolean
+          resume_ai_after_minutes: number | null
+          resume_ai_mode: string
+          resume_ai_on_stage_id: string | null
+          resume_ai_on_tag_id: string | null
+          show_typing_indicator: boolean
+          split_interval_ms: number
+          split_long_messages: boolean
+          split_max_blocks: number
+          split_max_chars: number
+          tenant_id: string
+          transfer_intent_phrases: Json
+          typing_max_ms: number
+          typing_min_ms: number
+          typing_simulation: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          audio_reply_enabled?: boolean
+          audio_transcribe_incoming?: boolean
+          audio_voice?: string | null
+          auto_reply_enabled?: boolean
+          created_at?: string
+          created_by?: string | null
+          document_analysis_enabled?: boolean
+          emoji_policy?: string
+          id?: string
+          image_analysis_enabled?: boolean
+          max_consecutive_replies?: number
+          max_data_retry_attempts?: number
+          max_emojis_per_message?: number
+          max_messages_before_handoff?: number
+          message_grouping_enabled?: boolean
+          message_grouping_window_seconds?: number
+          on_limit_reached?: string
+          pause_ai_on_human_reply?: boolean
+          reply_delay_seconds?: number
+          reply_existing_conversations?: boolean
+          reply_new_conversations?: boolean
+          resume_ai_after_minutes?: number | null
+          resume_ai_mode?: string
+          resume_ai_on_stage_id?: string | null
+          resume_ai_on_tag_id?: string | null
+          show_typing_indicator?: boolean
+          split_interval_ms?: number
+          split_long_messages?: boolean
+          split_max_blocks?: number
+          split_max_chars?: number
+          tenant_id: string
+          transfer_intent_phrases?: Json
+          typing_max_ms?: number
+          typing_min_ms?: number
+          typing_simulation?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          audio_reply_enabled?: boolean
+          audio_transcribe_incoming?: boolean
+          audio_voice?: string | null
+          auto_reply_enabled?: boolean
+          created_at?: string
+          created_by?: string | null
+          document_analysis_enabled?: boolean
+          emoji_policy?: string
+          id?: string
+          image_analysis_enabled?: boolean
+          max_consecutive_replies?: number
+          max_data_retry_attempts?: number
+          max_emojis_per_message?: number
+          max_messages_before_handoff?: number
+          message_grouping_enabled?: boolean
+          message_grouping_window_seconds?: number
+          on_limit_reached?: string
+          pause_ai_on_human_reply?: boolean
+          reply_delay_seconds?: number
+          reply_existing_conversations?: boolean
+          reply_new_conversations?: boolean
+          resume_ai_after_minutes?: number | null
+          resume_ai_mode?: string
+          resume_ai_on_stage_id?: string | null
+          resume_ai_on_tag_id?: string | null
+          show_typing_indicator?: boolean
+          split_interval_ms?: number
+          split_long_messages?: boolean
+          split_max_blocks?: number
+          split_max_chars?: number
+          tenant_id?: string
+          transfer_intent_phrases?: Json
+          typing_max_ms?: number
+          typing_min_ms?: number
+          typing_simulation?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chatbot_communication_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chatbot_inactivity_rules: {
+        Row: {
+          agent_id: string | null
+          auto_close_after_minutes: number
+          auto_close_enabled: boolean
+          close_final_status: string
+          close_message: string
+          close_tag: string | null
+          create_followup_task: boolean
+          create_summary: boolean
+          created_at: string
+          created_by: string | null
+          first_warning_after_minutes: number
+          first_warning_enabled: boolean
+          first_warning_message: string
+          id: string
+          reopen_on_new_message: boolean
+          second_warning_after_minutes: number
+          second_warning_enabled: boolean
+          second_warning_message: string
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          auto_close_after_minutes?: number
+          auto_close_enabled?: boolean
+          close_final_status?: string
+          close_message?: string
+          close_tag?: string | null
+          create_followup_task?: boolean
+          create_summary?: boolean
+          created_at?: string
+          created_by?: string | null
+          first_warning_after_minutes?: number
+          first_warning_enabled?: boolean
+          first_warning_message?: string
+          id?: string
+          reopen_on_new_message?: boolean
+          second_warning_after_minutes?: number
+          second_warning_enabled?: boolean
+          second_warning_message?: string
+          tenant_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          auto_close_after_minutes?: number
+          auto_close_enabled?: boolean
+          close_final_status?: string
+          close_message?: string
+          close_tag?: string | null
+          create_followup_task?: boolean
+          create_summary?: boolean
+          created_at?: string
+          created_by?: string | null
+          first_warning_after_minutes?: number
+          first_warning_enabled?: boolean
+          first_warning_message?: string
+          id?: string
+          reopen_on_new_message?: boolean
+          second_warning_after_minutes?: number
+          second_warning_enabled?: boolean
+          second_warning_message?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chatbot_inactivity_rules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chatbot_message_templates: {
+        Row: {
+          agent_id: string | null
+          channels: Json
+          content: string
+          created_at: string
+          created_by: string | null
+          enabled: boolean
+          extra_config: Json
+          id: string
+          media_type: string | null
+          media_url: string | null
+          template_type: string
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          channels?: Json
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          extra_config?: Json
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          template_type: string
+          tenant_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          channels?: Json
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          extra_config?: Json
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          template_type?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chatbot_message_templates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chatbot_team_members: {
         Row: {
           created_at: string
