@@ -202,6 +202,16 @@ const App = () => (
               }
             />
             <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Analytics />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/contratos"
               element={
                 <ProtectedRoute allowedRoles={["admin", "operador", "financeiro"]}>
