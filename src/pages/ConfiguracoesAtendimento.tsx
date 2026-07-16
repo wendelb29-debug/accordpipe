@@ -27,6 +27,7 @@ import { AutomacaoHorariosPanel } from "@/components/atendimento-config/Automaca
 import { AutomacaoInatividadePanel } from "@/components/atendimento-config/AutomacaoInatividadePanel";
 import { AutomacaoHumanoPanel } from "@/components/atendimento-config/AutomacaoHumanoPanel";
 import { AutomacaoFormatacaoPanel } from "@/components/atendimento-config/AutomacaoFormatacaoPanel";
+import { TransferenciaEquipePanel } from "@/components/atendimento-config/TransferenciaEquipePanel";
 
 type TabId = "atendimento" | "equipe" | "automacao" | "sistema";
 
