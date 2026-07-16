@@ -6798,6 +6798,193 @@ export type Database = {
           },
         ]
       }
+      service_classifications: {
+        Row: {
+          color: string
+          created_at: string
+          department_ids: string[]
+          distribution_rule: Json
+          id: string
+          is_active: boolean
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          department_ids?: string[]
+          distribution_rule?: Json
+          id?: string
+          is_active?: boolean
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          department_ids?: string[]
+          distribution_rule?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_classifications_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_holidays: {
+        Row: {
+          auto_message: string | null
+          coverage: string
+          created_at: string
+          date: string
+          department_id: string | null
+          id: string
+          name: string
+          recurring: boolean
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          auto_message?: string | null
+          coverage?: string
+          created_at?: string
+          date: string
+          department_id?: string | null
+          id?: string
+          name: string
+          recurring?: boolean
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          auto_message?: string | null
+          coverage?: string
+          created_at?: string
+          date?: string
+          department_id?: string | null
+          id?: string
+          name?: string
+          recurring?: boolean
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_holidays_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_holidays_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_settings: {
+        Row: {
+          allow_audio: boolean
+          allow_emoji: boolean
+          allow_export_pdf: boolean
+          allow_files: boolean
+          allow_stickers: boolean
+          block_transfer_to_offline: boolean
+          business_hours: Json
+          created_at: string
+          delivery_mode: string
+          distribution_type: string
+          keep_history_on_transfer: boolean
+          max_active_per_agent: number
+          max_receptive_per_agent: number
+          move_to_wait_on_transfer: boolean
+          msg_closing: string | null
+          msg_greeting: string | null
+          msg_transfer: string | null
+          msg_wait: string | null
+          off_hours_message: string | null
+          require_transfer_note: boolean
+          show_agent_name: boolean
+          tenant_id: string
+          tickets_per_cycle: number
+          updated_at: string
+        }
+        Insert: {
+          allow_audio?: boolean
+          allow_emoji?: boolean
+          allow_export_pdf?: boolean
+          allow_files?: boolean
+          allow_stickers?: boolean
+          block_transfer_to_offline?: boolean
+          business_hours?: Json
+          created_at?: string
+          delivery_mode?: string
+          distribution_type?: string
+          keep_history_on_transfer?: boolean
+          max_active_per_agent?: number
+          max_receptive_per_agent?: number
+          move_to_wait_on_transfer?: boolean
+          msg_closing?: string | null
+          msg_greeting?: string | null
+          msg_transfer?: string | null
+          msg_wait?: string | null
+          off_hours_message?: string | null
+          require_transfer_note?: boolean
+          show_agent_name?: boolean
+          tenant_id: string
+          tickets_per_cycle?: number
+          updated_at?: string
+        }
+        Update: {
+          allow_audio?: boolean
+          allow_emoji?: boolean
+          allow_export_pdf?: boolean
+          allow_files?: boolean
+          allow_stickers?: boolean
+          block_transfer_to_offline?: boolean
+          business_hours?: Json
+          created_at?: string
+          delivery_mode?: string
+          distribution_type?: string
+          keep_history_on_transfer?: boolean
+          max_active_per_agent?: number
+          max_receptive_per_agent?: number
+          move_to_wait_on_transfer?: boolean
+          msg_closing?: string | null
+          msg_greeting?: string | null
+          msg_transfer?: string | null
+          msg_wait?: string | null
+          off_hours_message?: string | null
+          require_transfer_note?: boolean
+          show_agent_name?: boolean
+          tenant_id?: string
+          tickets_per_cycle?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_extras: {
         Row: {
           created_at: string
@@ -9006,6 +9193,8 @@ export type Database = {
           color: string
           company_id: string
           created_at: string
+          department_ids: string[]
+          distribution_rule: Json
           id: string
           name: string
         }
@@ -9013,6 +9202,8 @@ export type Database = {
           color?: string
           company_id: string
           created_at?: string
+          department_ids?: string[]
+          distribution_rule?: Json
           id?: string
           name: string
         }
@@ -9020,6 +9211,8 @@ export type Database = {
           color?: string
           company_id?: string
           created_at?: string
+          department_ids?: string[]
+          distribution_rule?: Json
           id?: string
           name?: string
         }
