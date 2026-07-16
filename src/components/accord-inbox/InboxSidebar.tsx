@@ -1,5 +1,6 @@
-import { Search, Plus, Users, MessageSquare, Pin, Settings, ArrowDownUp, History } from "lucide-react";
+import { Search, Plus, Users, MessageSquare, Pin, Settings, ArrowDownUp, History, Home } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { AgentPresenceMenu } from "./AgentPresenceMenu";
 import { ConversationHistoryModal } from "./ConversationHistoryModal";
@@ -99,6 +100,7 @@ export function InboxSidebar({
 }: InboxSidebarProps) {
   const filterOpts = ["Todas", "Não lidas"];
   const [historyOpen, setHistoryOpen] = useState(false);
+  const navigate = useNavigate();
 
   const counts = {
     fila: contacts.filter((c) => c.conversationStatus === "fila" || c.conversationStatus === "aguardando").length,
@@ -116,6 +118,14 @@ export function InboxSidebar({
         }}
       >
         <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => navigate("/home")}
+            title="Ir para o Início"
+            aria-label="Ir para o Início"
+            className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-muted/60 border border-border/50 text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary/10 transition-all"
+          >
+            <Home size={15} />
+          </button>
           <div className="flex-1 flex items-center gap-2 bg-muted/60 border border-border/50 rounded-xl px-3 py-2">
             <Search size={14} className="text-muted-foreground flex-shrink-0" />
             <input
