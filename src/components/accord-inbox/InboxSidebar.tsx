@@ -115,7 +115,7 @@ export function InboxSidebar({
           paddingLeft: 'max(0.75rem, env(safe-area-inset-left, 0px))',
         }}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <div className="flex-1 flex items-center gap-2 bg-muted/60 border border-border/50 rounded-xl px-3 py-2">
             <Search size={14} className="text-muted-foreground flex-shrink-0" />
             <input
@@ -125,6 +125,29 @@ export function InboxSidebar({
               onChange={(e) => onSearchChange(e.target.value)}
             />
           </div>
+          {onSortOrderChange && (
+            <button
+              onClick={() => onSortOrderChange(sortOrder === "newest" ? "oldest" : "newest")}
+              title={sortOrder === "newest" ? "Ordenar mais antigas primeiro" : "Ordenar mais recentes primeiro"}
+              aria-label="Alternar ordenação"
+              className={cn(
+                "flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl border border-border/50 transition-all",
+                sortOrder === "oldest"
+                  ? "bg-primary/10 text-primary border-primary/40"
+                  : "bg-muted/60 text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <ArrowDownUp size={15} />
+            </button>
+          )}
+          <button
+            onClick={() => setHistoryOpen(true)}
+            title="Histórico de conversas encerradas"
+            aria-label="Histórico de conversas"
+            className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-muted/60 border border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
+          >
+            <History size={15} />
+          </button>
           {isAdmin && (
             <button
               onClick={() => window.dispatchEvent(new CustomEvent("inbox:open-settings"))}
@@ -134,6 +157,7 @@ export function InboxSidebar({
               <Settings size={15} />
             </button>
           )}
+          <AgentPresenceMenu />
         </div>
 
 
