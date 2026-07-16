@@ -40,6 +40,8 @@ interface InboxSidebarProps {
   onNewConversation?: () => void;
   tenantId?: string | null;
   onAvatarsSynced?: () => void;
+  sortOrder?: "newest" | "oldest";
+  onSortOrderChange?: (v: "newest" | "oldest") => void;
 }
 
 const CHANNEL_STYLES = {
