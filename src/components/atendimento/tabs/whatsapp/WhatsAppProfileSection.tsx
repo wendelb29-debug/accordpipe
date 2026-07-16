@@ -269,7 +269,7 @@ export function WhatsAppProfileSection({ tenantId }: Props) {
                 <WifiOff className="h-3 w-3" /> Desconectado
               </Badge>
             )}
-            <Button variant="outline" size="sm" onClick={refreshFromApi} disabled={refreshing} className="gap-2">
+            <Button variant="outline" size="sm" onClick={() => refreshFromApi(false)} disabled={refreshing} className="gap-2">
               {refreshing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
               Atualizar
             </Button>
