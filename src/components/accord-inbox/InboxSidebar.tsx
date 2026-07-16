@@ -118,6 +118,14 @@ export function InboxSidebar({
         }}
       >
         <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => navigate("/home")}
+            title="Ir para o Início"
+            aria-label="Ir para o Início"
+            className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-muted/60 border border-border/50 text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary/10 transition-all"
+          >
+            <Home size={15} />
+          </button>
           <div className="flex-1 flex items-center gap-2 bg-muted/60 border border-border/50 rounded-xl px-3 py-2">
             <Search size={14} className="text-muted-foreground flex-shrink-0" />
             <input
