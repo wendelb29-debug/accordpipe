@@ -9528,6 +9528,72 @@ export type Database = {
           },
         ]
       }
+      whatsapp_templates: {
+        Row: {
+          body: string
+          buttons: Json
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          footer: string | null
+          header_media_doc_name: string | null
+          header_media_url: string | null
+          header_text: string | null
+          header_type: string
+          id: string
+          is_favorite: boolean
+          language: string
+          name: string
+          status: string
+          tenant_id: string
+          updated_at: string
+          variable_count: number
+        }
+        Insert: {
+          body?: string
+          buttons?: Json
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          footer?: string | null
+          header_media_doc_name?: string | null
+          header_media_url?: string | null
+          header_text?: string | null
+          header_type?: string
+          id?: string
+          is_favorite?: boolean
+          language?: string
+          name: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+          variable_count?: number
+        }
+        Update: {
+          body?: string
+          buttons?: Json
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          footer?: string | null
+          header_media_doc_name?: string | null
+          header_media_url?: string | null
+          header_text?: string | null
+          header_type?: string
+          id?: string
+          is_favorite?: boolean
+          language?: string
+          name?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          variable_count?: number
+        }
+        Relationships: []
+      }
       whatsapp_webhook_errors: {
         Row: {
           created_at: string
