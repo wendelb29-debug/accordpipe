@@ -148,6 +148,7 @@ const navigation = navigationSections.flatMap((s) => s.items);
 
 const configNavigation = [
   { nameKey: "nav.users", href: "/configuracoes/usuarios", icon: UsersRound, roles: ["admin", "ceo", "administrativo"] },
+  { nameKey: "Atendimento", href: "/configuracoes/atendimento", icon: Send, roles: ["admin", "ceo"] },
   { nameKey: "Auditoria", href: "/configuracoes/logs", icon: ShieldCheck, roles: ["admin", "ceo"] },
 ];
 
