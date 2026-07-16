@@ -8550,6 +8550,48 @@ export type Database = {
           },
         ]
       }
+      whatsapp_campaigns: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          folder_id: string
+          id: string
+          message_type: string | null
+          name: string
+          scheduled_for: string | null
+          status: string
+          tenant_id: string
+          total_recipients: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          folder_id: string
+          id?: string
+          message_type?: string | null
+          name: string
+          scheduled_for?: string | null
+          status?: string
+          tenant_id: string
+          total_recipients?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          folder_id?: string
+          id?: string
+          message_type?: string | null
+          name?: string
+          scheduled_for?: string | null
+          status?: string
+          tenant_id?: string
+          total_recipients?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       whatsapp_chat_pins: {
         Row: {
           company_id: string
