@@ -97,8 +97,8 @@ export function Header() {
     >
       {isMobile && <MobileSidebar />}
 
-      {/* Back arrow + Page title */}
-      <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1 sm:flex-initial sm:shrink-0">
+      {/* Back arrow + Breadcrumb */}
+      <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1 sm:flex-initial">
         <button
           onClick={handleBack}
           title={t("header.back")}
@@ -107,13 +107,42 @@ export function Header() {
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
-        {pageTitle && (
-          <div className="min-w-0">
-            <h1 className="text-sm font-bold text-foreground truncate">{pageTitle}</h1>
-            {pageSubtitle && <p className="text-[10px] text-muted-foreground truncate">{pageSubtitle}</p>}
-          </div>
-        )}
+        {(() => {
+          const segments = location.pathname.split("/").filter(Boolean);
+          if (segments.length === 0) return null;
+          const crumbs = segments.map((seg, i) => {
+            const path = "/" + segments.slice(0, i + 1).join("/");
+            const key = ROUTE_TITLE_KEYS[path];
+            const label = key
+              ? (key.startsWith("ACCORD") ? key : t(key))
+              : decodeURIComponent(seg).replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+            return { path, label };
+          });
+          return (
+            <nav aria-label="Breadcrumb" className="flex items-center gap-1 min-w-0 text-sm">
+              {crumbs.map((c, i) => {
+                const isLast = i === crumbs.length - 1;
+                return (
+                  <div key={c.path} className="flex items-center gap-1 min-w-0">
+                    {i > 0 && <span className="text-muted-foreground/50 px-0.5">/</span>}
+                    {isLast ? (
+                      <span className="font-semibold text-foreground truncate">{c.label}</span>
+                    ) : (
+                      <button
+                        onClick={() => navigate(c.path)}
+                        className="text-muted-foreground hover:text-primary transition-colors truncate"
+                      >
+                        {c.label}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </nav>
+          );
+        })()}
       </div>
+
 
       {/* Right: Clock + Theme + Search + Notifications + User */}
       <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
