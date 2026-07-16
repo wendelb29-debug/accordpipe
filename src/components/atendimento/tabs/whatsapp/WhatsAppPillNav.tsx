@@ -1,7 +1,7 @@
-import { List, Settings, FileText, Plus } from "lucide-react";
+import { List, Settings, FileText, Plus, Smartphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type WhatsAppPill = "list" | "instance" | "templates" | "create-template";
+export type WhatsAppPill = "list" | "instance" | "uazapi" | "templates" | "create-template";
 
 interface Props {
   active: WhatsAppPill;
