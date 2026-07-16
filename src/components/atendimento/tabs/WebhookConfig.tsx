@@ -11,7 +11,7 @@ import { useTenantWhatsAppIntegration, type WhatsAppProvider } from "@/hooks/use
 import { WhatsAppPillNav, type WhatsAppPill } from "./whatsapp/WhatsAppPillNav";
 import { InstanceListTab } from "./whatsapp/InstanceListTab";
 import { InstanceDetailTab } from "./whatsapp/InstanceDetailTab";
-import { TemplatesTab, type WhatsAppTemplateDraft } from "./whatsapp/TemplatesTab";
+import { TemplatesTab, type WhatsAppTemplate } from "./whatsapp/TemplatesTab";
 import { CreateTemplateTab } from "./whatsapp/CreateTemplateTab";
 import { UazapiInstancePanel } from "./whatsapp/UazapiInstancePanel";
 
@@ -232,7 +232,8 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
 
   const [pill, setPill] = useState<WhatsAppPill>("list");
   const [activeProvider, setActiveProvider] = useState<WhatsAppProvider>("zapi");
-  const [templates, setTemplates] = useState<WhatsAppTemplateDraft[]>([]);
+  const [editingTemplate, setEditingTemplate] = useState<WhatsAppTemplate | null>(null);
+  const [tplRefresh, setTplRefresh] = useState(0);
 
   const { integrations, loading, getByProvider } = useTenantWhatsAppIntegration(companyId);
   const currentIntegration = getByProvider(activeProvider);
@@ -265,15 +266,21 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
       )}
 
       {pill === "templates" && (
-        <TemplatesTab templates={templates} onCreate={() => setPill("create-template")} />
+        <TemplatesTab
+          refreshKey={tplRefresh}
+          onCreate={() => { setEditingTemplate(null); setPill("create-template"); }}
+          onEdit={(t) => { setEditingTemplate(t); setPill("create-template"); }}
+        />
       )}
 
       {pill === "uazapi" && <UazapiInstancePanel tenantId={companyId} />}
 
       {pill === "create-template" && (
         <CreateTemplateTab
-          onPublish={(t) => {
-            setTemplates((prev) => [t, ...prev]);
+          editing={editingTemplate}
+          onPublished={() => {
+            setEditingTemplate(null);
+            setTplRefresh((n) => n + 1);
             setPill("templates");
           }}
         />
