@@ -85,14 +85,33 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
     if (!open || !tenantId) return;
     (async () => {
       const sb = supabase as any;
-      const [wa, em, tpl, tags, ws] = await Promise.all([
+      const [wa, waInt, em, tpl, tags, ws] = await Promise.all([
         sb.from("whatsapp_instances").select("id,instance_name,phone_number,status").eq("tenant_id", tenantId),
+        sb.from("tenant_whatsapp_integrations")
+          .select("id,provider_type,instance_name,connected_phone,is_active,connection_status")
+          .eq("tenant_id", tenantId)
+          .eq("is_active", true),
         sb.from("email_accounts").select("id,email,provider,status").eq("tenant_id", tenantId).eq("status", "active"),
         sb.from("mass_templates").select("*").eq("tenant_id", tenantId).order("updated_at", { ascending: false }),
         sb.from("crm_tags").select("id,name").eq("server_id", tenantId).limit(200),
         sb.from("workspaces").select("id,name").eq("server_id", tenantId).limit(200),
       ]);
-      setWaInstances((wa.data as any) || []);
+      // Merge: prefer tenant_whatsapp_integrations (source of truth for active provider),
+      // fallback to whatsapp_instances rows. Normalize into a single list for the selector.
+      const fromIntegrations = ((waInt.data as any[]) || []).map((r) => ({
+        id: r.id,
+        instance_name: r.instance_name || (r.provider_type === "uazapi" ? "Uazapi" : r.provider_type === "zapi" ? "Z-API" : "WhatsApp"),
+        phone_number: r.connected_phone || null,
+        status: r.connection_status || (r.is_active ? "connected" : "disconnected"),
+      }));
+      const fromInstances = ((wa.data as any[]) || []).map((r) => ({
+        id: r.id,
+        instance_name: r.instance_name || "Instância",
+        phone_number: r.phone_number || null,
+        status: r.status || null,
+      }));
+      const merged = fromIntegrations.length ? fromIntegrations : fromInstances;
+      setWaInstances(merged);
       setEmailAccounts((em.data as any) || []);
       setTemplates((tpl.data as any) || []);
       setCrmTags((tags.data as any) || []);
