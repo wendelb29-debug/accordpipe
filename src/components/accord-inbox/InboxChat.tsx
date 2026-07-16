@@ -59,7 +59,9 @@ interface ChatMessage {
   status?: string;
   replyToMessageId?: string | null;
   reactions?: MessageReaction[];
+  origin?: "accord_api" | "whatsapp_native" | "backfill" | string;
 }
+
 
 interface ChatContact {
   id: string;
