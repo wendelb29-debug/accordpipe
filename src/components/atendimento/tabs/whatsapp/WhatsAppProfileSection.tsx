@@ -256,7 +256,7 @@ export function WhatsAppProfileSection({ tenantId }: Props) {
         {!connected && (
           <div className="rounded-md bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-200/90">
             Conecte o WhatsApp primeiro em{" "}
-            <Link to="/whatsapp-connection" className="underline font-medium">Conexão WhatsApp</Link>{" "}
+            <Link to="/configuracoes/whatsapp" className="underline font-medium">Conexão WhatsApp</Link>{" "}
             para alterar foto e nome. A uazapi exige uma sessão ativa.
           </div>
         )}
