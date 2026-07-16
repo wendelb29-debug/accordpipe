@@ -11139,6 +11139,14 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_ad_integration_secrets: {
+        Args: { _integration_id: string }
+        Returns: {
+          google_webhook_key: string
+          page_access_token: string
+          system_user_token: string
+        }[]
+      }
       get_call_responder: {
         Args: { p_contact_id: string; p_workspace_id: string }
         Returns: string
