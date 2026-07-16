@@ -8684,6 +8684,48 @@ export type Database = {
           },
         ]
       }
+      whatsapp_instances: {
+        Row: {
+          created_at: string
+          id: string
+          instance_name: string | null
+          phone_number: string | null
+          profile_name: string | null
+          profile_pic_url: string | null
+          status: string
+          tenant_id: string
+          uazapi_instance_id: string | null
+          uazapi_token: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          instance_name?: string | null
+          phone_number?: string | null
+          profile_name?: string | null
+          profile_pic_url?: string | null
+          status?: string
+          tenant_id: string
+          uazapi_instance_id?: string | null
+          uazapi_token?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          instance_name?: string | null
+          phone_number?: string | null
+          profile_name?: string | null
+          profile_pic_url?: string | null
+          status?: string
+          tenant_id?: string
+          uazapi_instance_id?: string | null
+          uazapi_token?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       whatsapp_labels: {
         Row: {
           color: string
