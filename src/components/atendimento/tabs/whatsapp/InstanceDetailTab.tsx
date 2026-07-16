@@ -83,7 +83,7 @@ export function InstanceDetailTab({
           <InstanceStatusCard tenantId={tenantId} provider={provider} />
         </div>
 
-        <InstanceSettingsPanel integration={integration} provider={provider} save={save} />
+        <InstanceSettingsPanel tenantId={tenantId} integration={integration} provider={provider} save={save} />
       </div>
     </div>
   );
