@@ -77,8 +77,6 @@ const AccordPulse = lazy(() => import("./pages/AccordPulse"));
 const Collabs = lazy(() => import("./pages/Collabs"));
 const Email = lazy(() => import("./pages/Email"));
 const EmailInbox = lazy(() => import("./pages/EmailInbox"));
-const Marketing = lazy(() => import("./pages/Marketing"));
-const MarketingCampaignDetail = lazy(() => import("./pages/MarketingCampaignDetail"));
 const Closer = lazy(() => import("./pages/Closer"));
 const Sdr = lazy(() => import("./pages/Sdr"));
 const Solicitacoes = lazy(() => import("./pages/Solicitacoes"));
@@ -438,26 +436,10 @@ const App = () => (
               }
             />
             <Route
-              path="/marketing"
-              element={
-                <ProtectedRoute allowedRoles={["admin", "ceo"]}>
-                  <AppLayout><Marketing /></AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/marketing/envio-massa"
               element={
                 <ProtectedRoute allowedRoles={["admin", "ceo"]}>
                   <AppLayout><EnvioMassa /></AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/marketing/:id"
-              element={
-                <ProtectedRoute allowedRoles={["admin", "ceo"]}>
-                  <AppLayout><MarketingCampaignDetail /></AppLayout>
                 </ProtectedRoute>
               }
             />
