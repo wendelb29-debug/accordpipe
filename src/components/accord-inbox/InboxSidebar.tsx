@@ -100,6 +100,7 @@ export function InboxSidebar({
 }: InboxSidebarProps) {
   const filterOpts = ["Todas", "Não lidas"];
   const [historyOpen, setHistoryOpen] = useState(false);
+  const navigate = useNavigate();
 
   const counts = {
     fila: contacts.filter((c) => c.conversationStatus === "fila" || c.conversationStatus === "aguardando").length,
