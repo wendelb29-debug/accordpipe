@@ -29,10 +29,9 @@ const SECTIONS: { key: SectionKey; label: string; icon: any; description: string
 export default function Analytics() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const { isMaster } = useAuth();
-  const { hasAnyPermission } = usePermissions();
+  const { isMaster, isAdmin, isCeo } = useAuth();
 
-  const canView = isMaster || hasAnyPermission(["view_audit_logs", "manage_users", "manage_tenant"]);
+  const canView = isMaster || isAdmin || isCeo;
 
   const initialSection = (params.get("section") as SectionKey) || "audit";
   const [activeSection, setActiveSection] = useState<SectionKey>(initialSection);
