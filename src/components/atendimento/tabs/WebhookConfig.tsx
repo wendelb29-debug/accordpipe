@@ -266,15 +266,21 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
       )}
 
       {pill === "templates" && (
-        <TemplatesTab templates={templates} onCreate={() => setPill("create-template")} />
+        <TemplatesTab
+          refreshKey={tplRefresh}
+          onCreate={() => { setEditingTemplate(null); setPill("create-template"); }}
+          onEdit={(t) => { setEditingTemplate(t); setPill("create-template"); }}
+        />
       )}
 
       {pill === "uazapi" && <UazapiInstancePanel tenantId={companyId} />}
 
       {pill === "create-template" && (
         <CreateTemplateTab
-          onPublish={(t) => {
-            setTemplates((prev) => [t, ...prev]);
+          editing={editingTemplate}
+          onPublished={() => {
+            setEditingTemplate(null);
+            setTplRefresh((n) => n + 1);
             setPill("templates");
           }}
         />
