@@ -186,12 +186,17 @@ export function useWhatsAppInbox() {
     if (!companyId) return;
 
     // Strict per-chat isolation: only rows explicitly tied to this contact_id.
+    // Fetch the MOST RECENT N messages (order DESC + limit) to avoid the
+    // PostgREST default 1000-row cap silently returning only the oldest slice
+    // of very long conversations. We then reverse to ASC for rendering.
+    const MESSAGES_PAGE_SIZE = 500;
     const { data, error } = await supabase
       .from("whatsapp_messages")
       .select("*")
       .eq("company_id", companyId)
       .eq("contact_id", contactId)
-      .order("created_at", { ascending: true });
+      .order("created_at", { ascending: false })
+      .limit(MESSAGES_PAGE_SIZE);
 
     if (error) {
       console.error("[inbox] Error fetching messages:", error);
@@ -199,7 +204,9 @@ export function useWhatsAppInbox() {
       return;
     }
 
-    const fetched = (data || []) as unknown as InboxMessage[];
+    const fetched = ((data || []) as unknown as InboxMessage[])
+      .slice()
+      .reverse();
 
     // Race guard: if user already navigated away, only update cache silently.
     if (selectedContactIdRef.current !== contactId) {
