@@ -95,8 +95,10 @@ export function InboxSidebar({
   contacts, selectedId, onSelect, searchTerm, onSearchChange,
   filter, onFilterChange, isAdmin, loading, statusFilter, onStatusFilterChange,
   onNewConversation, tenantId, onAvatarsSynced,
+  sortOrder = "newest", onSortOrderChange,
 }: InboxSidebarProps) {
   const filterOpts = ["Todas", "Não lidas"];
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const counts = {
     fila: contacts.filter((c) => c.conversationStatus === "fila" || c.conversationStatus === "aguardando").length,
