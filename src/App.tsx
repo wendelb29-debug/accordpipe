@@ -25,6 +25,7 @@ const CompanyDetail = lazy(() => import("./pages/CompanyDetail"));
 const Boletos = lazy(() => import("./pages/Boletos"));
 const Documentos = lazy(() => import("./pages/Documentos"));
 const Relatorios = lazy(() => import("./pages/Relatorios"));
+const Analytics = lazy(() => import("./pages/Analytics"));
 const Contratos = lazy(() => import("./pages/Contratos"));
 const Cancelamentos = lazy(() => import("./pages/Cancelamentos"));
 const Usuarios = lazy(() => import("./pages/Usuarios"));
