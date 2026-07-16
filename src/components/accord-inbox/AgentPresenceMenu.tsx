@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Circle, ChevronDown } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useOperatorStatus, type OperatorStatusValue } from "@/hooks/useOperatorStatus";
 import { useAuth } from "@/contexts/AuthContext";
@@ -77,8 +78,9 @@ export function AgentPresenceMenu({ className }: Props) {
               <button
                 key={s.value}
                 onClick={async () => {
-                  await setOperatorStatus(s.value);
+                  const ok = await setOperatorStatus(s.value);
                   setOpen(false);
+                  if (ok !== false) toast.success(`Status: ${s.label}`);
                 }}
                 disabled={updating}
                 className={cn(
