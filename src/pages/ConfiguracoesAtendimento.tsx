@@ -5,6 +5,7 @@ import {
   FolderKanban, Tag, MessageCircle, Clock, Plus,
   ShieldCheck, FileText, MessageSquareText, CalendarClock,
   Sticker, Coffee, GitBranch, CalendarDays, LinkIcon, Mail, Sparkles, BookOpen,
+  Bot, Timer, UserCog, Type, Workflow, History,
 } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,12 @@ import { TagsPanel } from "@/components/atendimento-config/TagsPanel";
 import { FeriadosPanel } from "@/components/atendimento-config/FeriadosPanel";
 import { PausasPanel } from "@/components/atendimento-config/PausasPanel";
 import { ChatbotTeamsPanel } from "@/components/atendimento-config/ChatbotTeamsPanel";
+import { AutomacaoComportamentoPanel } from "@/components/atendimento-config/AutomacaoComportamentoPanel";
+import { AutomacaoMensagensPanel } from "@/components/atendimento-config/AutomacaoMensagensPanel";
+import { AutomacaoHorariosPanel } from "@/components/atendimento-config/AutomacaoHorariosPanel";
+import { AutomacaoInatividadePanel } from "@/components/atendimento-config/AutomacaoInatividadePanel";
+import { AutomacaoHumanoPanel } from "@/components/atendimento-config/AutomacaoHumanoPanel";
+import { AutomacaoFormatacaoPanel } from "@/components/atendimento-config/AutomacaoFormatacaoPanel";
 
 type TabId = "atendimento" | "equipe" | "automacao" | "sistema";
 
