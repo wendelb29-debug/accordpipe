@@ -2,7 +2,9 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import {
   callUazapi,
   corsHeaders,
+  enforceAgentRestriction,
   getInstanceRow,
+  getUazapiSettings,
   json,
   normalizePhone,
   requireCaller,
