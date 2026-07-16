@@ -147,12 +147,24 @@ export default function AccordStack() {
   };
 
   const handleAssignToMe = async (contactId: string) => {
+    if (agentStatus !== "available") {
+      const labels: Record<string, string> = {
+        busy: "Ocupado",
+        away: "Em Pausa",
+        unavailable: "Offline",
+      };
+      toast.error(
+        `Você está ${labels[agentStatus] || "indisponível"}. Fique Online para puxar conversas da fila.`
+      );
+      return;
+    }
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       await assignContact(contactId, user.id);
       await updateConversationStatus(contactId, "em_atendimento");
     }
   };
+
 
   const handleUpdateStatus = async (contactId: string, status: string) => {
     await updateConversationStatus(contactId, status);
