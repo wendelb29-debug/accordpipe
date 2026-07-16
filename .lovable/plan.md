@@ -1,103 +1,66 @@
 
-# Envio em Massa — Marketing (Accord)
+# Configurações de Atendimento, Equipe e Automação
 
-Novo módulo dentro do workspace **Marketing**, sem tocar no Kanban de Marketing atual, no Accord Stack ou no módulo de E-mail. Multi-tenant (isolado por `server_id`), reaproveitando instâncias WhatsApp (uazapiGO/Z-API) e contas Outlook/Gmail já conectadas.
+Nova página `/configuracoes/atendimento` com 3 abas em accordion, no espírito do EZ Chat. **Não altera** o modal "Configurações WhatsApp" do Accord Stack nem a página de Usuários — apenas complementa.
 
-## Escopo funcional
+## Escopo por onda (dado o tamanho)
 
-Wizard de 4 etapas + aba **Envios** (histórico) + aba **Modelos**.
+Vou entregar em 3 ondas para caber num ciclo estável. Todas multi-tenant (`tenant_id = activeCompanyId`), RLS por tenant, e cada painel é um accordion independente.
 
-### Etapa 1 — Dados
-- Nome, descrição
-- Canal: `whatsapp` ou `email`
-- Sub-seleção: instância WhatsApp conectada (do tenant) OU conta Outlook/Gmail conectada (do tenant)
+---
 
-### Etapa 2 — Público-alvo
-Três modos:
-1. **Upload CSV/XLSX** — parsing client-side (papaparse + xlsx), preview das colunas
-2. **Base do CRM** — filtros: pipeline (workspace), tags, classificação, DDI/DDD (WhatsApp) ou segmento/domínio (e-mail). Lista só libera após ao menos 1 filtro
-3. **Manual** — tabela editável (nome, contato, variáveis livres)
+### Onda A — Fundação + Aba Atendimento (essenciais)
 
-### Etapa 3 — Conteúdo
-- **WhatsApp:** lista de templates aprovados do canal (reuso do que já existe), busca, filtro por categoria/tipo, preview estilo celular, painel de mapeamento de variáveis (coluna do público ↔ valor fixo)
-- **E-mail:** editor de assunto + corpo (rich text) com variáveis `{{nome}}`, preview estilo caixa de entrada
-- Botão **Salvar modelo**
+**Backend (1 migration):**
+- `service_settings` (singleton por tenant): distribuição, recursos do chat (toggles), transferência, mensagens automáticas (entrada/transferência/espera/finalização), horário de atendimento (JSON 7 dias) + mensagem fora do expediente.
+- `service_departments` (nome, cor, atendentes vinculados via `service_department_members`, tipo).
+- `service_classifications` e reutiliza `whatsapp_labels` já existente para tags — adiciona coluna `department_ids uuid[]` + `distribution_rule jsonb`.
+- `service_holidays` (nome, data, recorrência, department_id, mensagem, cobertura).
+- Todas com GRANT + RLS por tenant + admin/ceo/master para escrita.
 
-### Etapa 4 — Configurações
-- Velocidade: Lento / Médio (padrão) / Rápido — com aviso de risco
-- Contatos por lote + intervalo entre lotes (min)
-- Agendamento (data/hora início)
-- Janela diária de envio (hora início / fim) — pausa fora da janela
+**Frontend:**
+- Página `src/pages/ConfiguracoesAtendimento.tsx` com `<Tabs>` (Atendimento, Equipe e Recursos, Automação).
+- Aba Atendimento com `<Accordion>` de painéis:
+  1. Distribuição de atendimentos
+  2. Recursos do chat (toggles)
+  3. Transferências
+  4. Mensagens automáticas + horário de atendimento
+  5. Gerenciar departamentos
+  6. Classificações
+  7. Tags (reaproveita `whatsapp_labels`)
+  8. Feriados e datas especiais
+- Rota em `App.tsx`, item na `Sidebar.tsx` dentro do grupo Configurações.
 
-### Aba Envios (histórico)
-Lista campanhas com filtros por status (rascunho, agendada, em andamento, pausada, concluída, falhou), canal e data. Drill-in mostra total, entregues, falhas, respostas.
+### Onda B — Aba Equipe e Recursos
 
-### Aba Modelos
-Lista de modelos salvos, busca por nome, filtro por canal/tipo, favoritos.
+**Backend:**
+- Estende `user_tenants` com `service_department_ids uuid[]` e `supervisor_department_ids uuid[]` (nullable, default `{}`).
+- Reaproveita `user_roles` + `user_custom_permissions` já existentes (3 perfis padrão: Atendente, Supervisor, Administrador).
+- Novas: `service_agent_templates` (agente → templates liberados), `service_access_windows` (usuário, dias, horário), `service_stickers` (imagem, departamentos), `service_break_types` (nome, minutos). Reaproveita `whatsapp_quick_replies` já existente para atalhos.
 
-## Modelo de dados (novas tabelas)
+**Frontend:**
+- Aba com accordions: Equipe (extende listagem de usuários com colunas de departamento e status online/offline), Permissões (papéis padrão + editor de permissões por módulo/ação), Templates por atendente, Mensagens rápidas (atalho para `whatsapp_quick_replies`), Horário de acesso, Figurinhas, Tipos de pausa.
 
-Todas com `tenant_id` (server_id) e RLS por tenant do usuário logado; GRANT completo para `authenticated` e `service_role`.
+### Onda C — Aba Automação e Comunicação
 
-```text
-mass_campaigns
-  tenant_id, name, description, channel (whatsapp|email),
-  channel_ref (instance_id ou email_account_id),
-  status (draft|scheduled|running|paused|completed|failed),
-  audience_mode (file|crm|manual), audience_snapshot jsonb,
-  content_type (template|editor), template_id, subject, body,
-  variable_mapping jsonb,
-  speed (slow|medium|fast), batch_size int, batch_interval_min int,
-  scheduled_at, daily_window_start time, daily_window_end time,
-  totals jsonb (queued/sent/failed/replied), created_by
+**Backend:**
+- `flow_settings` (singleton: auto-organizar nós, permitir publicação).
+- `scheduled_messages` (protocolo, atendente, cliente, canal, mensagem, agendado_para, status).
+- `attendance_links` (tipo `generic|whatsapp`, canal/instância, departamento, contato opcional, slug único).
 
-mass_campaign_recipients
-  campaign_id, tenant_id, name, contact (phone|email), variables jsonb,
-  status (pending|sending|sent|failed|skipped), error, sent_at
+**Frontend:**
+- Aba com 3 painéis: Configurações do Flow Builder (toggles), Mensagens agendadas (lista + busca), Criar link de atendimento (form + lista com copiar).
+- Edge function pública `/attendance-link/:slug` que roteia para chat/wa.me.
 
-mass_templates
-  tenant_id, name, channel, category, type, subject, body,
-  variables jsonb, is_favorite, created_by
-```
+---
 
-RLS: `SELECT/INSERT/UPDATE/DELETE` restrito a membros do tenant via `user_tenants`. Master enxerga tudo.
+## Garantias
 
-## Backend (edge functions)
+- Não toco em `AccordStack.tsx`, no modal "Configurações WhatsApp", em `Usuarios.tsx` nem nos fluxos do Flow Builder existentes.
+- Reaproveito `whatsapp_labels` (tags), `whatsapp_quick_replies` (mensagens rápidas), `user_roles` + `user_custom_permissions` (permissões), `tenant_departments` já existentes (verifico e uso como base de "departamentos de atendimento" em vez de criar tabela nova, se o schema atual servir).
+- Cada painel salva de forma independente (botão "Salvar" próprio) — mudanças em um accordion não afetam os outros.
+- Isolamento por tenant em toda tabela e todo query.
 
-- `mass-campaign-dispatcher` — worker acionado por pg_cron (a cada 1 min) que pega campanhas `running`/`scheduled` dentro da janela, respeita `batch_size`/`batch_interval_min`, envia via:
-  - WhatsApp: reusa helpers `uazapi` já existentes
-  - E-mail: reusa contas Gmail/Outlook conectadas (connector gateway ou tokens do tenant)
-- `mass-campaign-preview` — renderiza template com variáveis para preview
-- `mass-campaign-start/pause/cancel` — muda status
-- Fila em `mass_campaign_recipients` com status; retry simples em falha transitória
+## Confirmação
 
-## Frontend
-
-Rota nova: `/marketing/envio-massa` (não altera `/marketing` atual do Kanban).
-
-- Sidebar Marketing ganha sub-item "Envio em Massa" (só isso, sem mexer no Kanban)
-- Componentes:
-  - `MassCampaignWizard.tsx` (stepper 4 etapas)
-  - `steps/DadosStep.tsx`, `PublicoStep.tsx`, `ConteudoStep.tsx`, `ConfiguracoesStep.tsx`
-  - `MassCampaignsList.tsx` (histórico)
-  - `MassTemplatesTab.tsx`
-  - `PhonePreview.tsx`, `EmailPreview.tsx`
-  - `AudienceFileUpload.tsx`, `AudienceCrmFilter.tsx`, `AudienceManualTable.tsx`
-  - `VariableMappingPanel.tsx`
-
-Deps novas: `papaparse`, `xlsx` (se ainda não presente).
-
-## Garantias de não-regressão
-
-- Não altera `Marketing.tsx` (Kanban), Accord Stack, `Email.tsx`, nem tabelas `email_accounts`, `whatsapp_instances`, `crm_leads` (apenas leitura via RPC/select).
-- Nenhuma mudança em RLS existente; apenas novas tabelas.
-- Templates WhatsApp já existentes continuam servindo o Accord Stack — módulo só lê.
-
-## Entrega em ondas
-
-1. **Onda A — DB + shell UI:** migrations (tabelas, RLS, GRANT, cron), rota, sidebar item, listagem vazia.
-2. **Onda B — Wizard WhatsApp:** 4 etapas end-to-end para WhatsApp com envio real via uazapi.
-3. **Onda C — Wizard E-mail:** editor de e-mail, integração com contas conectadas, envio.
-4. **Onda D — Modelos + Histórico avançado:** aba modelos com favoritos, drill-in do histórico com KPIs.
-
-Confirma pra eu começar pela Onda A? Se preferir, também posso começar direto por WhatsApp (A+B juntos) e deixar e-mail pra depois.
+Posso começar pela **Onda A** neste turno (migration + página + aba Atendimento funcional)? Ondas B e C entram nas próximas mensagens para manter cada entrega revisável.
