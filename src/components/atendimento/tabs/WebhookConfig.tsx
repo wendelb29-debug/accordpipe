@@ -13,6 +13,7 @@ import { InstanceListTab } from "./whatsapp/InstanceListTab";
 import { InstanceDetailTab } from "./whatsapp/InstanceDetailTab";
 import { TemplatesTab, type WhatsAppTemplateDraft } from "./whatsapp/TemplatesTab";
 import { CreateTemplateTab } from "./whatsapp/CreateTemplateTab";
+import { UazapiInstancePanel } from "./whatsapp/UazapiInstancePanel";
 
 interface WebhookFieldDef {
   key: string;
@@ -266,6 +267,8 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
       {pill === "templates" && (
         <TemplatesTab templates={templates} onCreate={() => setPill("create-template")} />
       )}
+
+      {pill === "uazapi" && <UazapiInstancePanel tenantId={companyId} />}
 
       {pill === "create-template" && (
         <CreateTemplateTab

@@ -1,7 +1,7 @@
-import { List, Settings, FileText, Plus } from "lucide-react";
+import { List, Settings, FileText, Plus, Smartphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type WhatsAppPill = "list" | "instance" | "templates" | "create-template";
+export type WhatsAppPill = "list" | "instance" | "uazapi" | "templates" | "create-template";
 
 interface Props {
   active: WhatsAppPill;
@@ -37,6 +37,7 @@ export function WhatsAppPillNav({ active, onChange, channelName }: Props) {
         <Settings className="h-4 w-4" />,
         channelName || "Instância"
       )}
+      {pill("uazapi", <Smartphone className="h-4 w-4" />, "uazapiGO")}
       {pill("templates", <FileText className="h-4 w-4" />, "Templates")}
       {pill("create-template", <Plus className="h-4 w-4" />, "Criar template")}
     </div>

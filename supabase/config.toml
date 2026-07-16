@@ -21,3 +21,5 @@ project_id = "nglwgzknqgihlbkdnflu"
     verify_jwt = false
   [functions.password-otp-verify-and-reset]
     verify_jwt = false
+  [functions.uazapi-webhook]
+    verify_jwt = false
