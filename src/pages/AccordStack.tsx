@@ -252,6 +252,8 @@ export default function AccordStack() {
           onNewConversation={() => setNewConvOpen(true)}
           tenantId={companyId}
           onAvatarsSynced={refetchContacts}
+          sortOrder={sortOrder}
+          onSortOrderChange={setSortOrder}
         />
       </div>
 
