@@ -5,7 +5,7 @@ import {
   FolderKanban, Tag, MessageCircle, Clock, Plus,
   ShieldCheck, FileText, MessageSquareText, CalendarClock,
   Sticker, Coffee, GitBranch, CalendarDays, LinkIcon, Mail, Sparkles, BookOpen,
-  Bot, Timer, UserCog, Type, Workflow, History,
+  Bot, Timer, UserCog, Type, Workflow, History, ArrowRightLeft,
 } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
