@@ -82,9 +82,9 @@ export function WhatsAppProfileSection({ tenantId }: Props) {
 
   useEffect(() => { loadInstance(); }, [loadInstance]);
 
-  const refreshFromApi = async () => {
+  const refreshFromApi = useCallback(async (silent = false) => {
     if (!tenantId) return;
-    setRefreshing(true);
+    if (!silent) setRefreshing(true);
     try {
       const { data, error } = await supabase.functions.invoke("uazapi-instance-status", {
         body: { tenant_id: tenantId },
@@ -93,13 +93,36 @@ export function WhatsAppProfileSection({ tenantId }: Props) {
       const err = (data as any)?.error;
       if (err) throw new Error(err);
       await loadInstance();
-      toast.success("Perfil atualizado com dados atuais do WhatsApp");
+      if (!silent) toast.success("Perfil atualizado com dados atuais do WhatsApp");
     } catch (e: any) {
-      toast.error("Falha ao buscar perfil atual: " + (e.message || String(e)), { duration: 12000 });
+      if (!silent) toast.error("Falha ao buscar perfil atual: " + (e.message || String(e)), { duration: 12000 });
     } finally {
-      setRefreshing(false);
+      if (!silent) setRefreshing(false);
     }
-  };
+  }, [tenantId, loadInstance]);
+
+  // Auto-sync: poll /instance/status a cada 5s enquanto desconectado (pega o
+  // momento em que o QR é escaneado) e a cada 60s quando conectado. Assim que
+  // a uazapi reporta "connected", a própria edge function grava profile_name
+  // e profile_pic_url em whatsapp_instances — aqui só precisamos recarregar.
+  useEffect(() => {
+    if (!tenantId) return;
+    const isConnected = row?.status === "connected";
+    const interval = isConnected ? 60000 : 5000;
+    const t = setInterval(() => { refreshFromApi(true); }, interval);
+    return () => clearInterval(t);
+  }, [tenantId, row?.status, refreshFromApi]);
+
+  // Toast quando detecta a transição para "connected"
+  const prevStatusRef = useRef<string | null>(null);
+  useEffect(() => {
+    const prev = prevStatusRef.current;
+    const cur = row?.status ?? null;
+    if (prev && prev !== "connected" && cur === "connected") {
+      toast.success("WhatsApp conectado — perfil sincronizado automaticamente");
+    }
+    prevStatusRef.current = cur;
+  }, [row?.status]);
 
   const connected = row?.status === "connected";
   const nameChanged = displayName.trim() !== initialDisplayName.trim();
