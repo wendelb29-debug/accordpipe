@@ -186,6 +186,40 @@ export function InstanceSettingsPanel({ tenantId, integration, provider, save }:
             onCheckedChange={setRestrictAgents}
           />
         </div>
+        {restrictAgents && (
+          <div className="mt-3 rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+            <div className="text-xs font-medium text-foreground">Atendentes autorizados</div>
+            {tenantAgents.length === 0 ? (
+              <div className="text-xs text-muted-foreground">Nenhum usuário ativo neste tenant.</div>
+            ) : (
+              <div className="flex flex-wrap gap-1.5 max-h-40 overflow-auto">
+                {tenantAgents.map((a) => {
+                  const on = allowedAgentIds.includes(a.user_id);
+                  return (
+                    <button
+                      key={a.user_id}
+                      type="button"
+                      onClick={() => toggleAgent(a.user_id)}
+                      className={`text-xs rounded-full border px-2 py-1 transition ${
+                        on
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border bg-background text-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {on && <X className="inline h-3 w-3 mr-1 -mt-0.5" />}
+                      {a.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {allowedAgentIds.length > 0 && (
+              <Badge variant="secondary" className="text-[10px]">
+                {allowedAgentIds.length} selecionado(s)
+              </Badge>
+            )}
+          </div>
+        )}
       </div>
 
       <Button onClick={handleSave} disabled={saving} className="w-full gap-2">
