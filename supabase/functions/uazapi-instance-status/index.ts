@@ -52,8 +52,9 @@ Deno.serve(async (req) => {
 
     await svc.from("whatsapp_instances").update(updates).eq("id", row.id);
 
-    // Auto-setup webhook on first connection detection.
-    if (status === "connected" && row.status !== "connected") {
+    // Auto-setup webhook on first connection detection + auto-sync chats.
+    const justConnected = status === "connected" && row.status !== "connected";
+    if (justConnected) {
       try {
         const base = Deno.env.get("SUPABASE_URL") ?? "";
         const webhookUrl = `${base}/functions/v1/uazapi-webhook`;
@@ -62,13 +63,39 @@ Deno.serve(async (req) => {
           token: row.uazapi_token,
           body: {
             url: webhookUrl,
-            events: ["messages", "messages_update", "connection"],
-            excludeMessages: ["wasSentByApi"],
+            events: [
+              "messages",
+              "messages_upsert",
+              "messages_update",
+              "chats",
+              "chats_update",
+              "chats_upsert",
+              "connection",
+            ],
             enabled: true,
           },
         });
       } catch (err) {
         console.warn("auto webhook setup failed:", err);
+      }
+    }
+
+    // Auto-sync chats: on first-connected transition, or when connected and last sync is stale (>10min).
+    if (status === "connected") {
+      const lastSyncAt = (row as any).last_chats_sync_at
+        ? new Date((row as any).last_chats_sync_at).getTime()
+        : 0;
+      const staleMs = Date.now() - lastSyncAt;
+      if (justConnected || staleMs > 10 * 60 * 1000) {
+        // fire-and-forget; do not block status response
+        (async () => {
+          try {
+            const { syncChatsForInstance } = await import("../_shared/uazapi.ts");
+            await syncChatsForInstance(tenant_id, row.uazapi_token!);
+          } catch (err) {
+            console.warn("auto sync-chats failed:", err);
+          }
+        })();
       }
     }
 

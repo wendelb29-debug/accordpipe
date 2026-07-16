@@ -10189,6 +10189,7 @@ export type Database = {
           created_at: string
           id: string
           instance_name: string | null
+          last_chats_sync_at: string | null
           phone_number: string | null
           profile_name: string | null
           profile_pic_url: string | null
@@ -10202,6 +10203,7 @@ export type Database = {
           created_at?: string
           id?: string
           instance_name?: string | null
+          last_chats_sync_at?: string | null
           phone_number?: string | null
           profile_name?: string | null
           profile_pic_url?: string | null
@@ -10215,6 +10217,7 @@ export type Database = {
           created_at?: string
           id?: string
           instance_name?: string | null
+          last_chats_sync_at?: string | null
           phone_number?: string | null
           profile_name?: string | null
           profile_pic_url?: string | null
