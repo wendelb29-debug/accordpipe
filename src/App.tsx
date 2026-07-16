@@ -239,6 +239,7 @@ const App = () => (
                   </AppLayout>
                 </ProtectedRoute>
               }
+            />
             <Route
               path="/configuracoes/atendimento"
               element={
