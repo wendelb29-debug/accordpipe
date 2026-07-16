@@ -713,6 +713,59 @@ export type Database = {
           },
         ]
       }
+      chatbot_agent_teams: {
+        Row: {
+          agent_id: string | null
+          config: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_enabled: boolean
+          position: number
+          team_id: string
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_enabled?: boolean
+          position?: number
+          team_id: string
+          tenant_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_enabled?: boolean
+          position?: number
+          team_id?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chatbot_agent_teams_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "chatbot_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chatbot_business_hours: {
         Row: {
           agent_id: string | null
@@ -794,6 +847,8 @@ export type Database = {
           split_max_blocks: number
           split_max_chars: number
           tenant_id: string
+          transfer_default_priority: string
+          transfer_enabled: boolean
           transfer_intent_phrases: Json
           typing_max_ms: number
           typing_min_ms: number
@@ -834,6 +889,8 @@ export type Database = {
           split_max_blocks?: number
           split_max_chars?: number
           tenant_id: string
+          transfer_default_priority?: string
+          transfer_enabled?: boolean
           transfer_intent_phrases?: Json
           typing_max_ms?: number
           typing_min_ms?: number
@@ -874,6 +931,8 @@ export type Database = {
           split_max_blocks?: number
           split_max_chars?: number
           tenant_id?: string
+          transfer_default_priority?: string
+          transfer_enabled?: boolean
           transfer_intent_phrases?: Json
           typing_max_ms?: number
           typing_min_ms?: number
