@@ -258,29 +258,53 @@ export default function AccordStack() {
       </div>
 
       <div className={cn("flex-1 min-w-0 min-h-0 h-full overflow-hidden flex flex-col", showListOnly && "hidden md:flex")}>
-        <InboxChat
-          contact={chatContact}
-          messages={chatMessages}
-          onSendMessage={sendMessage}
-          onReactToMessage={toggleReaction}
-          onTransfer={handleTransfer}
-          onAssignToMe={handleAssignToMe}
-          isAdmin={isAdminOrCeo}
-          companyId={companyId}
-          onToggleInfo={() => setShowInfo(!showInfo)}
-          showInfo={showInfo}
-          onCreateDemand={() => setDemandModalOpen(true)}
-          onUpdateStatus={handleUpdateStatus}
-          onBack={isMobile ? () => selectContact(null) : undefined}
-          queueCount={queueCount}
-          inServiceCount={inServiceCount}
-          onNewConversation={() => setNewConvOpen(true)}
-          onViewReport={() => navigate("/relatorios")}
-          serverUrl={activeIntegration?.server_url ?? null}
-          integrationId={activeIntegration?.id ?? null}
-          isPinned={selectedContactId ? isPinned(selectedContactId) : false}
-          onTogglePin={togglePin}
-        />
+        {isAgentOffline && !selectedContactId ? (
+          <div className="flex-1 flex items-center justify-center bg-muted/10">
+            <div className="text-center max-w-sm px-6 space-y-5">
+              <div className="h-20 w-20 mx-auto rounded-2xl bg-muted/60 flex items-center justify-center">
+                <PowerOff className="h-9 w-9 text-muted-foreground/60" />
+              </div>
+              <div className="space-y-1.5">
+                <h2 className="text-lg font-semibold text-foreground">Você está Offline</h2>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Conecte-se para começar a receber mensagens da fila deste tenant.
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <Button variant="outline" onClick={() => setOperatorStatus("busy")}>
+                  Ficar Ocupado
+                </Button>
+                <Button onClick={() => setOperatorStatus("available")}>
+                  Ficar Online
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <InboxChat
+            contact={chatContact}
+            messages={chatMessages}
+            onSendMessage={sendMessage}
+            onReactToMessage={toggleReaction}
+            onTransfer={handleTransfer}
+            onAssignToMe={handleAssignToMe}
+            isAdmin={isAdminOrCeo}
+            companyId={companyId}
+            onToggleInfo={() => setShowInfo(!showInfo)}
+            showInfo={showInfo}
+            onCreateDemand={() => setDemandModalOpen(true)}
+            onUpdateStatus={handleUpdateStatus}
+            onBack={isMobile ? () => selectContact(null) : undefined}
+            queueCount={queueCount}
+            inServiceCount={inServiceCount}
+            onNewConversation={() => setNewConvOpen(true)}
+            onViewReport={() => navigate("/relatorios")}
+            serverUrl={activeIntegration?.server_url ?? null}
+            integrationId={activeIntegration?.id ?? null}
+            isPinned={selectedContactId ? isPinned(selectedContactId) : false}
+            onTogglePin={togglePin}
+          />
+        )}
       </div>
 
       {showInfo && selectedContact && !isMobile && (
