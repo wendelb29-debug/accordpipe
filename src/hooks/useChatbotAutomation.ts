@@ -126,7 +126,7 @@ export function useCommunicationSettings() {
     };
     const { data, error } = await supabase
       .from("chatbot_communication_settings")
-      .upsert(payload, { onConflict: "tenant_id,agent_id" })
+      .upsert(payload as any, { onConflict: "tenant_id,agent_id" })
       .select()
       .maybeSingle();
     setSaving(false);
@@ -240,7 +240,7 @@ export function useMessageTemplates() {
     }));
     const { error } = await supabase
       .from("chatbot_message_templates")
-      .upsert(rows, { onConflict: "tenant_id,agent_id,template_type" });
+      .upsert(rows as any, { onConflict: "tenant_id,agent_id,template_type" });
     setSaving(false);
     if (error) {
       console.error("[useMessageTemplates] save", error);
@@ -323,7 +323,7 @@ export function useBusinessHours() {
         agent_id: null,
         updated_by: user?.id ?? null,
         created_by: hours.id ? undefined : user?.id ?? null,
-      }, { onConflict: "tenant_id,agent_id" });
+      } as any, { onConflict: "tenant_id,agent_id" });
     setSaving(false);
     if (error) {
       console.error("[useBusinessHours] save", error);
@@ -415,7 +415,7 @@ export function useInactivityRules() {
         agent_id: null,
         updated_by: user?.id ?? null,
         created_by: rules.id ? undefined : user?.id ?? null,
-      }, { onConflict: "tenant_id,agent_id" });
+      } as any, { onConflict: "tenant_id,agent_id" });
     setSaving(false);
     if (error) {
       console.error("[useInactivityRules] save", error);
