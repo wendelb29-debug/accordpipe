@@ -18,6 +18,7 @@ import { DepartamentosPanel } from "@/components/atendimento-config/Departamento
 import { ClassificacoesPanel } from "@/components/atendimento-config/ClassificacoesPanel";
 import { TagsPanel } from "@/components/atendimento-config/TagsPanel";
 import { FeriadosPanel } from "@/components/atendimento-config/FeriadosPanel";
+import { PausasPanel } from "@/components/atendimento-config/PausasPanel";
 
 type TabId = "atendimento" | "equipe" | "automacao" | "sistema";
 
@@ -91,7 +92,7 @@ export default function ConfiguracoesAtendimento() {
     {
       id: "pausas", icon: Coffee, title: "Gerenciar pausas",
       description: "Configure tipos de pausa disponíveis para a equipe de atendimento",
-      action: { label: "Criar pausa", icon: Plus, onClick: () => navigate("/atendimento") },
+      render: () => <PausasPanel />,
     },
   ];
 
