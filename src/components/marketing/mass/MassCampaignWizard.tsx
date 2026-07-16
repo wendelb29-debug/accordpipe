@@ -139,7 +139,7 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
 
   const loadCrmAudience = async () => {
     setCrmLoading(true);
-    let q = supabase.from("crm_leads").select("id,name,email,phone,whatsapp,tags,workspace_id").eq("server_id", tenantId).limit(2000);
+    let q: any = (supabase as any).from("crm_leads").select("id,name,email,phone,whatsapp,tags,workspace_id").eq("server_id", tenantId).limit(2000);
     if (crmFilter.workspace_id) q = q.eq("workspace_id", crmFilter.workspace_id);
     const { data, error } = await q;
     setCrmLoading(false);
