@@ -59,7 +59,9 @@ interface ChatMessage {
   status?: string;
   replyToMessageId?: string | null;
   reactions?: MessageReaction[];
+  origin?: "accord_api" | "whatsapp_native" | "backfill" | string;
 }
+
 
 interface ChatContact {
   id: string;
@@ -639,11 +641,19 @@ function MessageBubble({
         </div>
       )}
 
+      {isOut && msg.origin === "whatsapp_native" && (
+        <div className="mt-1 text-[10px] text-muted-foreground/80 italic flex items-center gap-1">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500/70" />
+          Respondido pelo celular
+        </div>
+      )}
+
       <ReactionsBar
         reactions={msg.reactions || []}
         currentUserId={currentUserId}
         onToggle={(e) => onReact(msg.id, e)}
       />
+
 
       {kind !== "text" && (
         <div className="flex items-center gap-1 mt-1 px-1">

@@ -156,3 +156,106 @@ export function slugifyTenant(id: string, name?: string | null): string {
 export function normalizePhone(phone: string): string {
   return String(phone || "").replace(/\D+/g, "");
 }
+
+// ===== Onda 6: helpers de persistência total =====
+
+const MEDIA_TYPES = new Set([
+  "image","video","videoplay","audio","myaudio","ptt","ptv","document","sticker",
+]);
+
+export function isMediaType(t: string | null | undefined): boolean {
+  return !!t && MEDIA_TYPES.has(String(t).toLowerCase());
+}
+
+function extFromMime(mime?: string | null, fallback = "bin"): string {
+  if (!mime) return fallback;
+  const m = mime.toLowerCase();
+  if (m.includes("jpeg")) return "jpg";
+  if (m.includes("png")) return "png";
+  if (m.includes("webp")) return "webp";
+  if (m.includes("gif")) return "gif";
+  if (m.includes("mp4")) return "mp4";
+  if (m.includes("quicktime")) return "mov";
+  if (m.includes("ogg")) return "ogg";
+  if (m.includes("mpeg") && m.includes("audio")) return "mp3";
+  if (m.includes("mp3")) return "mp3";
+  if (m.includes("wav")) return "wav";
+  if (m.includes("pdf")) return "pdf";
+  if (m.includes("msword")) return "doc";
+  if (m.includes("officedocument")) return "docx";
+  return fallback;
+}
+
+/**
+ * Baixa a mídia da uazapi e faz upload para o bucket whatsapp-media do Accord.
+ * Retorna { storagePath, publicPath, mimetype, transcription } ou lança.
+ */
+export async function fetchAndStoreUazapiMedia(params: {
+  tenantId: string;
+  externalMessageId: string;
+  instanceToken: string;
+  isAudio: boolean;
+}): Promise<{
+  storagePath: string;
+  mimetype: string | null;
+  transcription: string | null;
+}> {
+  const { tenantId, externalMessageId, instanceToken, isAudio } = params;
+  const meta: any = await callUazapi("/message/download", {
+    method: "POST",
+    token: instanceToken,
+    body: {
+      id: externalMessageId,
+      return_link: true,
+      generate_mp3: true,
+      transcribe: isAudio,
+    },
+  });
+
+  const fileUrl: string | null = meta?.fileURL ?? meta?.fileUrl ?? meta?.url ?? null;
+  const base64: string | null = meta?.base64Data ?? meta?.base64 ?? null;
+  const mimetype: string | null =
+    meta?.mimetype ?? meta?.mimeType ?? meta?.contentType ?? null;
+  const transcription: string | null =
+    meta?.transcription ?? meta?.transcript ?? null;
+
+  let bytes: Uint8Array | null = null;
+  if (fileUrl) {
+    const r = await fetch(fileUrl);
+    if (r.ok) bytes = new Uint8Array(await r.arrayBuffer());
+  }
+  if (!bytes && base64) {
+    try {
+      const clean = base64.replace(/^data:[^;]+;base64,/, "");
+      const bin = atob(clean);
+      const arr = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      bytes = arr;
+    } catch { /* ignore */ }
+  }
+  if (!bytes) throw new Error("uazapi media: no bytes to store");
+
+  const ext = extFromMime(mimetype);
+  const safeId = externalMessageId.replace(/[^A-Za-z0-9_-]/g, "_").slice(0, 128);
+  const storagePath = `${tenantId}/${safeId}.${ext}`;
+
+  const svc = serviceClient();
+  const { error: upErr } = await svc.storage
+    .from("whatsapp-media")
+    .upload(storagePath, bytes, {
+      contentType: mimetype ?? "application/octet-stream",
+      upsert: true,
+    });
+  if (upErr) throw new Error(`storage upload failed: ${upErr.message}`);
+
+  return { storagePath, mimetype, transcription };
+}
+
+/** Retorna URL assinada (7 dias) para reprodução no inbox. */
+export async function signedMediaUrl(path: string, expiresInSec = 60 * 60 * 24 * 7): Promise<string | null> {
+  const svc = serviceClient();
+  const { data, error } = await svc.storage.from("whatsapp-media").createSignedUrl(path, expiresInSec);
+  if (error) return null;
+  return data?.signedUrl ?? null;
+}
+
