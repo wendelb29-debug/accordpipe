@@ -18,7 +18,7 @@ import { toast as sonnerToast } from "sonner";
 import { BrandIdentityFields } from "@/components/empresas/BrandIdentityFields";
 import { ContractTemplateTab } from "@/components/servidores/ContractTemplateTab";
 import { WebhookConfig } from "@/components/atendimento/tabs/WebhookConfig";
-import { UazapiWebhookPage } from "@/components/atendimento/tabs/UazapiWebhookPage";
+
 import { WorkspacesTab } from "@/components/servidores/WorkspacesTab";
 import { FintechWebhooksTab } from "@/components/servidores/FintechWebhooksTab";
 import TenantUsersTab from "@/components/servidores/TenantUsersTab";
