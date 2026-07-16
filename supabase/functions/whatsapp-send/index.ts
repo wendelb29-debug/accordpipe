@@ -363,12 +363,6 @@ Deno.serve(async (req) => {
 
     if (integ.provider_type === "uazapi") {
       const instanceName = integ.instance_name || integ.instance_id || "";
-      if (!instanceName) {
-        return new Response(
-          JSON.stringify({ success: false, message: "instance_name não configurado para Uazapi" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
       if (isReaction) {
         if (reaction_mode === "remove") {
           result = { success: false, message: "Remover reação não é suportado para esta integração." };
