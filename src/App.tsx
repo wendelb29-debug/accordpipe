@@ -45,6 +45,7 @@ const AuditLogs = lazy(() => import("./pages/AuditLogs"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const Formularios = lazy(() => import("./pages/Formularios"));
+const EnvioMassa = lazy(() => import("./pages/EnvioMassa"));
 const FormPublico = lazy(() => import("./pages/FormPublico"));
 const Cadastrados = lazy(() => import("./pages/Cadastrados"));
 const Financeiro = lazy(() => import("./pages/Financeiro"));
