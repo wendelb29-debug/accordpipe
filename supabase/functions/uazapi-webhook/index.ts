@@ -211,21 +211,8 @@ Deno.serve(async (req) => {
 
     return new Response("ok", { status: 200, headers: corsHeaders });
   } catch (e: any) {
-    console.error("uazapi-webhook fatal:", e?.message ?? e);
-    // Ainda tenta salvar o payload cru em uma linha órfã para auditoria
-    try {
-      const svc = serviceClient();
-      await svc.from("whatsapp_messages").insert({
-        company_id: null as any,
-        phone: "unknown",
-        message_type: "text",
-        direction: "inbound",
-        status: "received",
-        origin: "whatsapp_native",
-        media_download_status: "not_applicable",
-        raw_payload: payload,
-      });
-    } catch { /* best effort */ }
+    console.error("uazapi-webhook fatal:", e?.message ?? e, "payload:", JSON.stringify(payload).slice(0, 2000));
     return new Response("ok", { status: 200, headers: corsHeaders });
   }
 });
+
