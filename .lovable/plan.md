@@ -1,88 +1,121 @@
-## Contexto
+# Gerenciador de Equipe — reconstrução completa
 
-O Accord já tem a página `AuditLogs.tsx` (rota `/configuracoes/logs`, 1.133 linhas) com muita coisa pronta: leitura de `audit_logs`, filtros básicos, export CSV via edge function. O pedido é **reconstruir essa aba dentro do módulo Analytics** seguindo o padrão visual/funcional do EZ Chat (referência das imagens), sem quebrar o resto do Accord.
+Reconstruir a seção **Gerenciador de Equipe** dentro da aba já existente **Equipe e Recursos** (em `/configuracoes/atendimento`), reproduzindo o layout/UX da EZ Chat com a identidade do Accord. Zero mocks; tudo persiste no Supabase com RLS por tenant e auditoria.
 
-Como o escopo é muito grande (banco novo, RLS, filtros avançados, painel lateral com diff, timeline de execução, reversão, exports XLSX/JSON/PDF, atualização automática, responsividade, permissões por perfil), vou entregar em **6 ondas**. Cada onda finaliza uma fatia utilizável antes de seguir.
+## Descoberta e reuso (feito antes de qualquer código)
 
-## Fase 0 — Descoberta (antes de codar)
+Antes de criar tabelas novas, reaproveitar o que já existe:
 
-1. Ler `AuditLogs.tsx` inteiro para reaproveitar filtros/query builder existentes.
-2. Confirmar rota final da aba dentro de Analytics — proposta: manter `/configuracoes/logs` como fica hoje **e** adicionar uma aba "Auditoria" dentro do módulo Analytics (caminho a alinhar: `/relatorios?tab=auditoria` ou aba nova). **Decisão pendente com o usuário.**
-3. Mapear componentes reutilizáveis (`DataTable`, `DateRangePicker`, `Sheet`, `Badge`, `DropdownMenu`) — não recriar.
+- `chatbot_agent_teams` + `chatbot_team_members` + `chatbot_team_rules` (equipes de agente/IA — vamos **estender**, não duplicar).
+- `tenant_departments`, `user_departments`, `profiles`, `user_roles`, `user_tenants` (usuários e departamentos reais).
+- `service_settings`, `chatbot_business_hours`, `chatbot_communication_settings` (horários, distribuição, pausas).
+- `whatsapp_instances`, `email_accounts`, `whatsapp_workspace_config` (canais conectados).
+- `audit_logs` (auditoria — Onda de Auditoria já entregou trilha imutável).
 
-## Fase 1 — Banco e imutabilidade (Onda 1)
+Nada de tabela nova de usuários. Nada de rota nova. A seção fica **dentro do painel de "Equipe e Recursos"** já existente.
 
-Migration que:
+## Onda 1 — Banco (extensão, sem duplicar)
 
-- Estende `audit_logs` (já existe) com colunas faltantes: `actor_type`, `agent_id`, `module`, `event_type`, `title`, `entity_type`, `entity_id`, `status`, `severity`, `source`, `conversation_id`, `contact_id`, `channel_id`, `team_id`, `automation_id`, `resource_id`, `integration_id`, `request_id`, `trace_id`, `started_at`, `completed_at`, `duration_ms`, `error_code`, `error_message`, `ip_address_masked`, `device_type`, `browser`, `app_version`, `environment`. Só cria as que faltarem.
-- Cria `audit_log_changes` (id, audit_log_id, field_name, field_label, old_value, new_value, change_type, is_sensitive).
-- Cria `audit_log_steps` (id, audit_log_id, step_order, step_name, status, started_at, completed_at, duration_ms, input_data, output_data, error_message).
-- Cria `audit_log_exports` (id, exported_by, filters jsonb, format, row_count, file_path, created_at).
-- Cria `audit_log_reversions` (id, original_log_id, new_log_id, reverted_by, created_at).
-- GRANTs para `authenticated` (SELECT) e `service_role` (ALL). **Sem INSERT/UPDATE/DELETE para authenticated** — append-only, escrita só via edge functions com `service_role`.
-- RLS: `SELECT` filtrado por `company_id = get_user_company_id(auth.uid())` + role check (admin/CEO/master vê tudo; gestor/supervisor por módulo; atendente somente eventos onde `actor_id = auth.uid()` ou `assigned_to`); sem policy de INSERT/UPDATE/DELETE.
-- Índices: `(company_id, created_at desc)`, `event_type`, `module`, `actor_id`, `agent_id`, `status`, `entity_type`, `entity_id`, `conversation_id`, `contact_id`, `trace_id`.
-- Trigger que bloqueia UPDATE/DELETE em `audit_logs` (função `raise 'audit_logs is append-only'`).
+Extender `chatbot_agent_teams` para virar a entidade "equipe de atendimento" completa. Novas colunas opcionais (não quebram uso atual):
 
-## Fase 2 — Shell da aba dentro de Analytics (Onda 2)
+- `description`, `icon`, `color`, `team_type` (`atendimento` | `comercial` | `suporte` | `financeiro` | `administrativo` | `custom`)
+- `status` (`active` | `inactive` | `archived`), `archived_at`, `deleted_at`
+- `distribution_method` (`round_robin` | `least_load` | `contact_owner` | `deal_owner` | `manual_priority` | `manual` | `specialty`)
+- `max_concurrent_conversations`, `queue_timeout_minutes`
+- `fallback_action` (`keep_queue` | `route_team` | `route_ai` | `create_callback` | `block` | `notify_supervisor`), `fallback_team_id`
+- `use_business_hours` (bool), `schedule_mode` (`company` | `24x7` | `custom`)
 
-- Criar `src/pages/Analytics.tsx` (ou reaproveitar `Relatorios`) com abas horizontais no estilo EZ: **Histórico de atendimentos · Indicadores · Monitoramento · Status dos atendentes · Download de Relatórios · Supervisor IA · Auditorias**. Aba "Auditorias" ativa por default para a implementação.
-- Rota: `/analytics` (ou reuso), aba controlada por `?tab=auditoria&section=audit|content-analyzes`.
-- Sub-cards colapsáveis "Análise de conteúdo" e "Auditoria" como na referência.
-- Manter `/configuracoes/logs` redirecionando para a nova aba para não quebrar links.
+Estender `chatbot_team_members`:
 
-## Fase 3 — Cabeçalho, filtros e tabela (Onda 3)
+- `member_role` (`responsible` | `supervisor` | `agent` | `observer`), `priority`, `max_concurrent`, `member_status` (`active` | `inactive`), `joined_at`
 
-Componentes em `src/components/analytics/audit/`:
+Novas tabelas (só onde não há equivalente):
 
-- `AuditToolbar.tsx` — botões Atualizar (com estados), Exportar (dropdown CSV/XLSX/JSON), menu com Atualização automática (Off / 30s / 1min / 5min), timestamp da última atualização, aviso "Há novos eventos".
-- `AuditFilters.tsx` — busca (debounce 400ms), período (presets + custom range), tipo de evento (multi), módulo (multi), origem, usuário (combobox), agente (combobox), canal, status, nível, botão "Mais filtros · N" abrindo popover com contato/conversa/equipe/recurso/automação/integração/IP/dispositivo/campo/trace/duração/tem-erro/tem-alterações; botão "Limpar filtros".
-- `AuditTable.tsx` — colunas Data/hora, Evento (ícone+título+descrição), Responsável (avatar+tipo), Módulo (badge), Entidade (link), Status (badge com ícone), Ações (menu). Ordenação server-side. Paginação server-side (20/50/100). Skeleton, estado vazio (com/sem filtros), estado de erro, estado sem permissão.
-- `useAuditLogs.ts` — hook com query builder, debounce, paginação, ordenação, auto-refresh e detecção de "novos eventos" (compara `created_at` do topo).
+- `team_channels` — vínculo equipe ↔ canal (WhatsApp/Email/etc.) + regra (`all` | `transfers_only` | `subject` | `after_hours` | `priority`)
+- `team_schedules` — dia da semana + até 2 janelas (com almoço); FK `team_id`
+- `team_specialties` — assuntos e membros associados (para distribuição por especialidade)
+- `team_member_availability` — status ao vivo (`available`/`busy`/`away`/`break`/`meeting`/`offline`) com timestamps
 
-## Fase 4 — Painel lateral de detalhes (Onda 4)
+RLS em todas: `servidor_id = get_user_company_id(auth.uid())` ou `is_master`. Escrita restrita a admin/CEO/master. Grants explícitos para `authenticated` + `service_role`. Triggers de `updated_at` e de auditoria (chamando `audit_logs` com `module='atendimento'`, `event_type='team_*'`).
 
-`src/components/analytics/audit/AuditDetailSheet.tsx`:
+## Onda 2 — Hook e serviço de dados
 
-- Sheet lateral 45% no desktop, fullscreen no mobile. URL sincronizada `?event=<id>`.
-- Cabeçalho: ícone, título, badge de status, timestamp, copiar ID, menu de ações (abrir conversa/contato/agente/automação, copiar, exportar evento).
-- Seções: Resumo · Responsável · Contexto · Alterações · Execução · Conversa e IA · Dados técnicos (colapsado).
-- **Alterações**: diff campo-a-campo (`audit_log_changes`), diff linha-a-linha para prompts longos usando `diff` (dependência pequena), mascaramento `••••••••` para `is_sensitive=true`, opção "Mostrar todos os campos".
-- **Execução**: timeline vertical a partir de `audit_log_steps`.
-- Botões "Abrir X" navegam para a rota interna preservando `?event=` e filtros na volta (salva estado no `sessionStorage`).
+Criar `src/hooks/useTeams.ts` com:
 
-## Fase 5 — Exportação e reversão (Onda 5)
+- Query paginada com filtros (status, disponibilidade, departamento, canal, tipo, texto)
+- Facets (contagens por status/departamento/canal)
+- Realtime nas 5 tabelas para atualizar cards em tempo real
+- Mutations: `createTeam`, `updateTeam`, `toggleActive`, `archive`, `restore`, `softDelete`, `duplicate`
+- `addMember`, `removeMember`, `updateMemberRole`, `updateMemberLimit`
+- `setChannels`, `setSchedule`, `setSpecialties`
+- `runDistributionTest(payload, dryRun)` — pura em client, retorna diagnóstico
 
-- Edge function `audit-export` (estende a `audit-export-csv` existente): aceita `format` ∈ {csv, xlsx, json}, `scope` ∈ {page, filtered, single}, aplica os mesmos filtros da UI via service_role, mascara campos sensíveis, grava um novo `audit_logs` com `event_type='audit.exported'` e insere em `audit_log_exports`. XLSX via `xlsx` (já usado no projeto).
-- Edge function `audit-revert`: valida permissão (admin/CEO), busca estado atual da entidade, compara com `new_value` do evento (detecta conflito → confirmação extra), aplica reversão via service_role no recurso original, cria novo `audit_logs` com `event_type='audit.reverted'` + link em `audit_log_reversions`. **Bloqueia** para mensagens, exclusões definitivas, ações financeiras, webhooks executados, eventos de segurança.
-- Modal `RevertChangeDialog.tsx` com resumo antes/depois e confirmação.
+Camada de mapeamento centralizada em `src/lib/teams/*` para não vazar SQL na UI. Toda mutation grava evento em `audit_logs` (via RPC `log_audit_event`).
 
-## Fase 6 — Emissores de eventos, permissões finais e polimento (Onda 6)
+## Onda 3 — Shell da seção + Lista + Filtros
 
-- Helper `logAudit()` em `supabase/functions/_shared/audit.ts` para uso em todas as edge functions críticas (auth, agentes, automações, canais, conversas, CRM, integrações, admin). Não substituir instrumentação existente; **acrescentar** onde faltar, sem quebrar o que já grava em `audit_logs`.
-- Instrumentar pontos-chave (não todos de uma vez — os mais visíveis: agentes CRUD, automação CRUD, transferência de atendimento, canal conectado/desconectado, permissão alterada, export).
-- Permissões por perfil no frontend (esconder "Reverter" para não-admin, esconder aba para atendente sem escopo, etc.), reforçando o que já é bloqueado por RLS.
-- Notificações via `sonner`: atualizada, erro, filtros limpos, ID copiado, export iniciado/concluído, reversão OK/erro, novos eventos.
-- Responsividade: filtros empilhados no mobile, tabela vira cards, sheet fullscreen.
-- QA final: typecheck limpo, sem console.error, verificação de RLS entre empresas.
+Reescrever `TransferenciaEquipePanel.tsx` (já existente na aba "Equipe e Recursos") como o novo Gerenciador. Não cria rota nova; substitui o conteúdo do card.
+
+Componentes:
+
+- `TeamManagerHeader` — título "Gerenciador de Equipe", descrição, busca com debounce 400ms, botão **Criar equipe** (primário).
+- `TeamManagerFilters` — chips compactos (Status, Disponibilidade, Departamento, Canal, Tipo) + "Limpar filtros".
+- `TeamsGrid` — grid responsiva de `TeamCard`.
+- `TeamCard` — ícone/cor, nome, descrição, badges (departamento, tipo, disponibilidade textual + ícone), pilha de avatares (até 4 + "+N"), badges de canais conectados, contadores (membros disponíveis, atendimentos ativos, limite), menu ⋮ com todas as ações (Abrir, Editar, Gerenciar membros, Horários, Distribuição, Testar, Duplicar, Ativar/Desativar, Arquivar, Excluir) — cada uma respeitando RBAC.
+- Estados: skeleton grid durante loading, empty state ("Nenhuma equipe criada" + CTA), erro com "Tentar novamente".
+
+Estilo: light cards, borda `border-border/60`, radius `rounded-xl`, sombras suaves, roxo Accord como primário, tipografia atual. Responsivo (grid 3/2/1 col).
+
+## Onda 4 — Wizard "Criar/Editar equipe" (6 etapas)
+
+`TeamWizardDialog` — modal grande no desktop, sheet full-screen no mobile. Stepper superior + rodapé com Cancelar/Voltar/Avançar/Salvar rascunho/Criar.
+
+Etapas:
+
+1. **Informações gerais** — nome (validação de duplicidade por tenant), descrição, cor, ícone, departamento (real, com opção "sem departamento"), tipo, switch "Equipe ativa".
+2. **Membros** — busca sobre `profiles` do tenant, seleção múltipla persistente através de páginas, badges das equipes que o usuário já compõe, alerta ao selecionar inativo. Lista de selecionados com seletor de função (Responsável/Supervisor/Atendente/Observador) e limite individual.
+3. **Canais** — lista somente canais conectados do tenant (`whatsapp_instances`, `email_accounts`, workspace configs). Switch de ativação + regra de recebimento por canal.
+4. **Horário** — radio: usar horário da empresa | 24h | específico. Modo específico: 7 dias com 1–2 janelas, fuso do tenant, checkbox "atender em feriados" com equipe de plantão.
+5. **Capacidade** — máximo por equipe, limite por membro (opcional), ação ao atingir limite (`fallback_action`), timeout de fila (min), notificação a supervisor.
+6. **Distribuição** — cards radio com os 7 métodos + config específica (drag-and-drop para prioridade manual; matriz assunto↔membro para especialidade). Fallback e observações.
+
+Validação em cada etapa antes do "Avançar". Ao concluir → cria equipe + membros + canais + horários + regras numa única transação (via RPC). Auditoria: `team_created` com payload completo.
+
+## Onda 5 — Painéis auxiliares
+
+- **Abrir equipe** (`TeamDetailSheet`) — painel lateral direito (full-screen mobile), abas: Visão geral, Membros (com indicadores reais: atendimentos ativos, tempo médio, última atividade), Disponibilidade ao vivo, Canais, Distribuição, Permissões, Histórico (últimos eventos da auditoria filtrados por `entity_type=team` e `entity_id`).
+- **Gerenciar membros rápido** (`TeamMembersDialog`) — busca + lista + adicionar/remover em lote, exigindo destino de redistribuição quando remover membro com atendimentos ativos.
+- **Perfil do membro** (`TeamMemberProfileSheet`) — dados + ações (alterar função, limite, prioridade, remover).
+- **Testar distribuição** (`DistributionTestDialog`) — formulário (canal, dia/horário simulado, assunto, prioridade, contato, membros forçados como disponíveis) + botão "Executar teste" (dry-run). Retorna: elegibilidade da equipe, filtro de horário, filtro de canal, avaliados/ignorados com motivo, escolhido, fallback usado. Toggle "Executar com dados reais" exige confirmação.
+- **Duplicar** — modal com checkboxes do que copiar; nome padrão "Cópia de …".
+- **Ativar/Desativar/Arquivar/Excluir** — confirmações com impacto real (contagem de atendimentos ativos, automações e agentes vinculados). Exclusão exige digitar o nome; usa `deleted_at` (soft delete).
+
+## Onda 6 — Realtime, permissões, auditoria, responsividade
+
+- Assinar `postgres_changes` em `chatbot_agent_teams`, `chatbot_team_members`, `team_member_availability`, `whatsapp_chats` (para contagem de atendimentos ativos) — canais únicos com cleanup em unmount.
+- RBAC end-to-end: cada ação do menu ⋮ escondida/desabilitada quando o papel não permite; validação também no backend via RLS/RPC.
+- Auditoria cobrindo todas as ações listadas nos requisitos.
+- Ajustes finos de responsividade (grid, filtros em drawer no mobile, wizard fullscreen no mobile, painéis fullscreen no mobile).
+- Acessibilidade: labels, foco em modais, navegação por teclado, status textual + ícone.
+- Verificação final: `tsgo`, console limpa, teste manual dos critérios de aceite 1–34.
+
+## O que fica fora deste plano
+
+- Não vamos criar tela de usuários. Reaproveitamos `profiles`/`user_tenants`.
+- Não vamos duplicar `tenant_departments` nem `whatsapp_instances`.
+- Não vamos criar rota nova; a seção continua vivendo em `/configuracoes/atendimento` → aba "Equipe e Recursos" → card **Gerenciador de Equipe** (substitui o painel atual `TransferenciaEquipePanel`, preservando o nome do arquivo para não quebrar imports).
+
+## Entrega por turno
+
+Cada onda entra em um turno separado. Vou pedir confirmação antes de disparar a migration (Onda 1) e depois seguir. Se preferir que eu combine ondas 3+4 num único turno para acelerar a parte visual, é só dizer.
 
 ## Detalhes técnicos
 
-- Diff textual: adicionar `diff` (~30KB) para line-diff em prompts. `jsondiffpatch` seria pesado demais — evitar.
-- XLSX: já disponível via `xlsx` (usado em `MassCampaignWizard`).
-- Auto-refresh: `useInterval` com pausa quando a aba está oculta (`document.visibilityState`) e quando o sheet de detalhes está aberto (não interromper análise).
-- URL state: `useSearchParams` para tab/section/event/página/filtros persistentes (compartilháveis).
-- Mascaramento: função `maskSensitive(value, isSensitive)` server-side no export e client-side no diff.
-- Rota antiga `/configuracoes/logs` → `<Navigate to="/analytics?tab=auditoria" />` para não quebrar bookmarks.
+- Stack: React 18 + TS + Tailwind, shadcn/ui, `@dnd-kit`, `date-fns`, Supabase JS.
+- Fonte da verdade em `chatbot_agent_teams` — reutiliza policies existentes; migration adiciona colunas + FKs + índices + triggers de auditoria.
+- Realtime via `supabase.channel(...)` **dentro de `useEffect`** com cleanup obrigatório (evita loop de reconexão).
+- Distribuição implementada como função pura em `src/lib/teams/distribution.ts` para caber no dry-run do teste; a distribuição real (produção) continua no edge/webhook de roteamento existente e chamará essa mesma função para consistência.
+- Toda mutation encapsulada em RPC `SECURITY DEFINER` com validação de tenant + role, evitando manipulação de `servidor_id` pelo cliente.
+- Auditoria: `audit_logs` recebe `module='atendimento'`, `entity_type='team'`, `entity_id=teams.id`, `event_type` específico e `details` com diff.
 
-## Riscos e trade-offs
-
-- **Instrumentação global de eventos** é o maior custo: fazer 100% "big-bang" quebraria fluxos. Onda 6 cobre só os módulos mais visíveis; o restante fica documentado como próxima iteração.
-- **Reversão universal** não é viável — implementamos apenas para tipos seguros (config de agente, automação, permissão, recurso), com bloqueio explícito nos demais.
-- **Análise de conteúdo** (card superior das imagens) fica como placeholder na Onda 2 e vira Onda futura se for prioridade.
-
-## Perguntas antes de começar
-
-1. **Rota**: cria página nova `/analytics` (com todas as sub-abas do EZ) ou encaixa a aba "Auditoria" dentro do `/relatorios` que já existe? A referência mostra 7 sub-abas — se elas não existem hoje, viram placeholders.
-2. **Instrumentação**: OK fazer só os módulos mais visíveis na Onda 6 e documentar o resto como pendente?
-3. **"Análise de conteúdo"**: fica placeholder por enquanto?
+Aguardo "seguir" para começar pela **Onda 1 (migration)**.

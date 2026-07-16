@@ -1358,25 +1358,43 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          joined_at: string
+          max_concurrent: number | null
+          member_role: string
+          member_status: string
+          priority: number
           role: string
           team_id: string
           tenant_id: string
+          updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          joined_at?: string
+          max_concurrent?: number | null
+          member_role?: string
+          member_status?: string
+          priority?: number
           role?: string
           team_id: string
           tenant_id: string
+          updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          joined_at?: string
+          max_concurrent?: number | null
+          member_role?: string
+          member_status?: string
+          priority?: number
           role?: string
           team_id?: string
           tenant_id?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -1477,69 +1495,93 @@ export type Database = {
       }
       chatbot_teams: {
         Row: {
+          archived_at: string | null
           attend_holidays: boolean
           channels: string[]
           color: string
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           department_id: string | null
           description: string | null
+          distribution_method: string
+          fallback_action: string
           fallback_team_id: string | null
           icon: string
           id: string
+          max_concurrent_conversations: number | null
           max_concurrent_per_agent: number
           max_wait_seconds: number
           name: string
           offhours_message: string | null
           priority: number
+          queue_timeout_minutes: number | null
           schedule: Json
+          schedule_mode: string
           status: string
+          team_type: string
           tenant_id: string
           timezone: string
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          archived_at?: string | null
           attend_holidays?: boolean
           channels?: string[]
           color?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           department_id?: string | null
           description?: string | null
+          distribution_method?: string
+          fallback_action?: string
           fallback_team_id?: string | null
           icon?: string
           id?: string
+          max_concurrent_conversations?: number | null
           max_concurrent_per_agent?: number
           max_wait_seconds?: number
           name: string
           offhours_message?: string | null
           priority?: number
+          queue_timeout_minutes?: number | null
           schedule?: Json
+          schedule_mode?: string
           status?: string
+          team_type?: string
           tenant_id: string
           timezone?: string
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          archived_at?: string | null
           attend_holidays?: boolean
           channels?: string[]
           color?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           department_id?: string | null
           description?: string | null
+          distribution_method?: string
+          fallback_action?: string
           fallback_team_id?: string | null
           icon?: string
           id?: string
+          max_concurrent_conversations?: number | null
           max_concurrent_per_agent?: number
           max_wait_seconds?: number
           name?: string
           offhours_message?: string | null
           priority?: number
+          queue_timeout_minutes?: number | null
           schedule?: Json
+          schedule_mode?: string
           status?: string
+          team_type?: string
           tenant_id?: string
           timezone?: string
           updated_at?: string
@@ -7992,6 +8034,146 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "system_error_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_channels: {
+        Row: {
+          channel_label: string | null
+          channel_ref_id: string | null
+          channel_type: string
+          config: Json
+          created_at: string
+          id: string
+          is_enabled: boolean
+          receive_rule: string
+          team_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          channel_label?: string | null
+          channel_ref_id?: string | null
+          channel_type: string
+          config?: Json
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          receive_rule?: string
+          team_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          channel_label?: string | null
+          channel_ref_id?: string | null
+          channel_type?: string
+          config?: Json
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          receive_rule?: string
+          team_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_channels_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "chatbot_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_channels_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_member_availability: {
+        Row: {
+          break_until: string | null
+          presence_status: string
+          since: string
+          status_reason: string | null
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          break_until?: string | null
+          presence_status?: string
+          since?: string
+          status_reason?: string | null
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          break_until?: string | null
+          presence_status?: string
+          since?: string
+          status_reason?: string | null
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_member_availability_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_specialties: {
+        Row: {
+          created_at: string
+          id: string
+          team_id: string
+          tenant_id: string
+          topic: string
+          user_id: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          team_id: string
+          tenant_id: string
+          topic: string
+          user_id: string
+          weight?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          team_id?: string
+          tenant_id?: string
+          topic?: string
+          user_id?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_specialties_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "chatbot_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_specialties_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "companies"
