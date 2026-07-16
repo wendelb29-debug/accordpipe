@@ -33,12 +33,19 @@ function ToggleRow({ icon, title, description, checked, onCheckedChange }: Toggl
 }
 
 interface Props {
+  tenantId: string | null;
   integration: TenantWhatsAppIntegration | null;
   provider: WhatsAppProvider;
   save: (provider: WhatsAppProvider, payload: Partial<TenantWhatsAppIntegration>) => Promise<any>;
 }
 
-export function InstanceSettingsPanel({ integration, provider, save }: Props) {
+interface TenantAgent {
+  user_id: string;
+  name: string;
+  email: string | null;
+}
+
+export function InstanceSettingsPanel({ tenantId, integration, provider, save }: Props) {
   const meta = (integration?.provider_metadata || {}) as any;
   const initial = meta.settings || {};
 
