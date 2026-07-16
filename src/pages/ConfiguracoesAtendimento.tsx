@@ -68,8 +68,13 @@ export default function ConfiguracoesAtendimento() {
 
   const equipeCards: CardItem[] = [
     {
+      id: "transfer-equipe", icon: ArrowRightLeft, title: "Transferência para equipe", isNew: true,
+      description: "Configure quais equipes o agente pode acionar durante uma conversa, a prioridade e o fallback",
+      render: () => <TransferenciaEquipePanel />,
+    },
+    {
       id: "chatbot-teams", icon: Users, title: "Equipes do chatbot", isNew: true,
-      description: "Configure quais equipes o agente de IA poderá acionar durante uma conversa",
+      description: "Crie, edite e gerencie as equipes que serão vinculadas ao agente acima",
       render: () => <ChatbotTeamsPanel />,
     },
     {
