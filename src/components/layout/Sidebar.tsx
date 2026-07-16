@@ -44,7 +44,7 @@ import {
   ArchiveX,
   Settings2,
   Languages,
-  Megaphone,
+  
   Bookmark,
   Handshake,
   Rocket as RocketIcon,
