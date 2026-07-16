@@ -8803,72 +8803,96 @@ export type Database = {
       whatsapp_messages: {
         Row: {
           ai_generated: boolean | null
+          chat_id: string | null
           company_id: string
-          contact_id: string
+          contact_id: string | null
           created_at: string
           delivered_at: string | null
           direction: string
           external_message_id: string | null
           id: string
+          lead_id: string | null
+          media_download_status: string
+          media_mimetype: string | null
           media_url: string | null
-          message: string
+          message: string | null
           message_type: string
           metadata: Json | null
+          origin: string
           phone: string
           pulse_campaign_id: string | null
           pulse_lead_id: string | null
           pulse_source: string | null
+          raw_payload: Json | null
           reactions: Json
           read_at: string | null
           reply_to_message_id: string | null
           sent_at: string | null
           status: string
+          transcription: string | null
+          updated_at: string
         }
         Insert: {
           ai_generated?: boolean | null
+          chat_id?: string | null
           company_id: string
-          contact_id: string
+          contact_id?: string | null
           created_at?: string
           delivered_at?: string | null
           direction?: string
           external_message_id?: string | null
           id?: string
+          lead_id?: string | null
+          media_download_status?: string
+          media_mimetype?: string | null
           media_url?: string | null
-          message: string
+          message?: string | null
           message_type?: string
           metadata?: Json | null
+          origin?: string
           phone: string
           pulse_campaign_id?: string | null
           pulse_lead_id?: string | null
           pulse_source?: string | null
+          raw_payload?: Json | null
           reactions?: Json
           read_at?: string | null
           reply_to_message_id?: string | null
           sent_at?: string | null
           status?: string
+          transcription?: string | null
+          updated_at?: string
         }
         Update: {
           ai_generated?: boolean | null
+          chat_id?: string | null
           company_id?: string
-          contact_id?: string
+          contact_id?: string | null
           created_at?: string
           delivered_at?: string | null
           direction?: string
           external_message_id?: string | null
           id?: string
+          lead_id?: string | null
+          media_download_status?: string
+          media_mimetype?: string | null
           media_url?: string | null
-          message?: string
+          message?: string | null
           message_type?: string
           metadata?: Json | null
+          origin?: string
           phone?: string
           pulse_campaign_id?: string | null
           pulse_lead_id?: string | null
           pulse_source?: string | null
+          raw_payload?: Json | null
           reactions?: Json
           read_at?: string | null
           reply_to_message_id?: string | null
           sent_at?: string | null
           status?: string
+          transcription?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
