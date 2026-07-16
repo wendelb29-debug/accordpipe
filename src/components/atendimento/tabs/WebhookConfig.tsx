@@ -13,6 +13,7 @@ import { InstanceListTab } from "./whatsapp/InstanceListTab";
 import { InstanceDetailTab } from "./whatsapp/InstanceDetailTab";
 import { TemplatesTab, type WhatsAppTemplateDraft } from "./whatsapp/TemplatesTab";
 import { CreateTemplateTab } from "./whatsapp/CreateTemplateTab";
+import { UazapiInstancePanel } from "./whatsapp/UazapiInstancePanel";
 
 interface WebhookFieldDef {
   key: string;
