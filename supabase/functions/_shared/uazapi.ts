@@ -92,20 +92,35 @@ export async function getInstanceRow(tenantId: string) {
     .eq("tenant_id", tenantId)
     .maybeSingle();
   if (error) throw error;
-  return data as
-    | {
-        id: string;
-        tenant_id: string;
-        uazapi_instance_id: string | null;
-        uazapi_token: string | null;
-        instance_name: string | null;
-        status: string;
-        phone_number: string | null;
-        profile_name: string | null;
-        profile_pic_url: string | null;
-      }
-    | null;
+  if (data) {
+    return data as any;
+  }
+  // Bootstrap from tenant_whatsapp_integrations (uazapi credentials filled
+  // manually in "Editar Tenant → Uazapi") so the profile section and status
+  // polling can operate even when the instance row was never created via
+  // uazapi-create-instance.
+  const { data: integ } = await svc
+    .from("tenant_whatsapp_integrations")
+    .select("instance_token, instance_name, instance_id, connected_phone, connection_status")
+    .eq("tenant_id", tenantId)
+    .eq("provider_type", "uazapi")
+    .maybeSingle();
+  if (!integ?.instance_token) return null;
+  const { data: created } = await svc
+    .from("whatsapp_instances")
+    .insert({
+      tenant_id: tenantId,
+      uazapi_token: integ.instance_token,
+      uazapi_instance_id: integ.instance_id ?? null,
+      instance_name: integ.instance_name ?? null,
+      phone_number: integ.connected_phone ?? null,
+      status: integ.connection_status === "connected" ? "connected" : "disconnected",
+    })
+    .select("*")
+    .maybeSingle();
+  return created as any;
 }
+
 
 export interface UazapiChannelSettings {
   allow_active: boolean;
