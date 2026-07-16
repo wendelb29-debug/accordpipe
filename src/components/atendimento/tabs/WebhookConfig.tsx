@@ -232,7 +232,8 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
 
   const [pill, setPill] = useState<WhatsAppPill>("list");
   const [activeProvider, setActiveProvider] = useState<WhatsAppProvider>("zapi");
-  const [templates, setTemplates] = useState<WhatsAppTemplateDraft[]>([]);
+  const [editingTemplate, setEditingTemplate] = useState<WhatsAppTemplate | null>(null);
+  const [tplRefresh, setTplRefresh] = useState(0);
 
   const { integrations, loading, getByProvider } = useTenantWhatsAppIntegration(companyId);
   const currentIntegration = getByProvider(activeProvider);
