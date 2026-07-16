@@ -9,10 +9,11 @@ import { TransferDialog } from "@/components/accord-inbox/TransferDialog";
 import { ContactDetailSidebar } from "@/components/accord-inbox/ContactDetailSidebar";
 import { CreateDemandModal } from "@/components/accord-inbox/CreateDemandModal";
 import { NewConversationModal } from "@/components/accord-inbox/NewConversationModal";
-import { WifiOff, User, ArrowLeft } from "lucide-react";
+import { WifiOff, User, ArrowLeft, PowerOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useOperatorStatus } from "@/hooks/useOperatorStatus";
 import { cn } from "@/lib/utils";
 
 type UiFilter = "Todas" | "Não lidas";
