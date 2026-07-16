@@ -101,6 +101,71 @@ export async function getInstanceRow(tenantId: string) {
     | null;
 }
 
+export interface UazapiChannelSettings {
+  allow_active: boolean;
+  allow_broadcast: boolean;
+  simulate_typing: boolean;
+  restrict_agents: boolean;
+  allowed_agent_ids: string[];
+  display_name: string | null;
+  default_flow: string | null;
+}
+
+/**
+ * Loads the channel configuration toggles from tenant_whatsapp_integrations
+ * (provider_metadata.settings) for the uazapi provider.
+ */
+export async function getUazapiSettings(tenantId: string): Promise<UazapiChannelSettings> {
+  const svc = serviceClient();
+  const { data } = await svc
+    .from("tenant_whatsapp_integrations")
+    .select("provider_metadata")
+    .eq("tenant_id", tenantId)
+    .eq("provider_type", "uazapi")
+    .maybeSingle();
+  const meta = (data?.provider_metadata ?? {}) as any;
+  const s = meta.settings ?? {};
+  return {
+    allow_active: !!s.allow_active,
+    allow_broadcast: !!s.allow_broadcast,
+    simulate_typing: !!s.simulate_typing,
+    restrict_agents: !!s.restrict_agents,
+    allowed_agent_ids: Array.isArray(s.allowed_agent_ids) ? s.allowed_agent_ids : [],
+    display_name: meta.display_name ?? null,
+    default_flow: meta.default_flow ?? null,
+  };
+}
+
+/**
+ * Enforces the "Restringir atendentes" toggle. When enabled, only users listed
+ * in allowed_agent_ids (or masters/tenant admins/ceos) can send messages.
+ */
+export async function enforceAgentRestriction(
+  userId: string,
+  tenantId: string,
+  settings: UazapiChannelSettings
+): Promise<Response | null> {
+  if (!settings.restrict_agents) return null;
+  if (settings.allowed_agent_ids.includes(userId)) return null;
+  const svc = serviceClient();
+  const { data: roles } = await svc
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+  const roleSet = new Set((roles ?? []).map((r: any) => r.role));
+  if (roleSet.has("master")) return null;
+  const { data: ut } = await svc
+    .from("user_tenants")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("tenant_id", tenantId)
+    .eq("status", "active")
+    .maybeSingle();
+  const tenantRole = (ut as any)?.role;
+  if (tenantRole === "admin" || tenantRole === "ceo") return null;
+  return json({ error: "forbidden_agent_not_allowed_on_channel" }, 403);
+}
+
 export interface UazapiCallOptions {
   method?: "GET" | "POST" | "PUT" | "DELETE";
   body?: unknown;
