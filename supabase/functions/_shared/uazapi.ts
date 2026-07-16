@@ -75,6 +75,12 @@ export async function requireTenantMember(
     .eq("role", "master")
     .maybeSingle();
   if (role) return null;
+  const { data: prof } = await svc
+    .from("profiles")
+    .select("is_master")
+    .eq("id", userId)
+    .maybeSingle();
+  if (prof?.is_master === true) return null;
   return json({ error: "Forbidden: not a member of this tenant" }, 403);
 }
 
