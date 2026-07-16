@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  MessageSquare, Users, Zap, Settings, ChevronDown, Send,
-  FolderKanban, Tag, MessageCircle, Zap as ZapIcon, Clock,
+  MessageSquare, Users, Zap, Settings, Send,
+  FolderKanban, Tag, MessageCircle, Clock, Plus,
   ShieldCheck, FileText, MessageSquareText, CalendarClock,
-  Sticker, Coffee, GitBranch, CalendarDays, LinkIcon, UserPlus, Mail, Sparkles,
+  Sticker, Coffee, GitBranch, CalendarDays, LinkIcon, Mail, Sparkles, BookOpen,
 } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -28,13 +28,15 @@ const TABS: { id: TabId; label: string; icon: any; isNew?: boolean }[] = [
   { id: "sistema", label: "Sistema", icon: Settings },
 ];
 
+interface CardAction { label: string; onClick: () => void; icon?: any; variant?: "primary" | "outline"; }
 interface CardItem {
   id: string;
   icon: any;
   title: string;
   description: string;
   isNew?: boolean;
-  action?: { label: string; onClick: () => void };
+  action?: CardAction;
+  secondaryAction?: CardAction;
   render?: () => React.ReactNode;
   href?: string;
 }
