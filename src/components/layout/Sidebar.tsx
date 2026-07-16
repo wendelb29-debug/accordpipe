@@ -121,6 +121,7 @@ const navigationSections = [
       { nameKey: "nav.clientBase", href: "/cadastrados", icon: UsersRound, roles: ["admin", "ceo", "administrativo"] },
       { nameKey: "nav.fintech", href: "/financeiro", icon: CircleDollarSign, roles: ["admin", "ceo", "financeiro"] },
       { nameKey: "Accord Marketing", href: "/marketing", icon: Megaphone, roles: ["admin", "ceo"] },
+      { nameKey: "Envio em Massa", href: "/marketing/envio-massa", icon: Send, roles: ["admin", "ceo"] },
       { nameKey: "nav.documents", href: "/documentos", icon: Files, roles: ["admin", "ceo", "administrativo", "financeiro"] },
       { nameKey: "nav.reports", href: "/relatorios", icon: ChartColumn, roles: ["admin", "leitura", "ceo", "administrativo", "financeiro"] },
     ],
