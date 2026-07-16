@@ -34,6 +34,16 @@ Deno.serve(async (req) => {
     const forbid = await requireTenantMember(caller.userId, tenant_id);
     if (forbid) return forbid;
 
+    const settings = await getUazapiSettings(tenant_id);
+    if (!settings.allow_broadcast) {
+      return json(
+        { error: "broadcast_disabled", message: "Transmissão em massa desabilitada para este canal." },
+        403
+      );
+    }
+    const agentBlock = await enforceAgentRestriction(caller.userId, tenant_id, settings);
+    if (agentBlock) return agentBlock;
+
     const row = await getInstanceRow(tenant_id);
     if (!row?.uazapi_token) return json({ error: "instance_not_connected" }, 400);
 
