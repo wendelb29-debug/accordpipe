@@ -34,9 +34,9 @@ export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
   const hideHeader = false;
   const isMobile = useIsMobile();
-  const isAccordStack = false;
   const isAccordStackRoute = location.pathname.startsWith("/accord-stack");
   const isCollabsRoute = location.pathname.startsWith("/collabs");
+  const isAccordStack = isAccordStackRoute;
   const isFullscreen = isAccordStackRoute || isCollabsRoute;
   const isFixedHeightRoute = isFullscreen || location.pathname.startsWith("/atendimento");
 
