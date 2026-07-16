@@ -270,6 +270,12 @@ export function InboxSidebar({
           })
         )}
       </div>
+      <ConversationHistoryModal
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        tenantId={tenantId}
+        onSelect={(id) => onSelect(id)}
+      />
     </div>
   );
 }
