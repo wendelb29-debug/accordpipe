@@ -4,7 +4,7 @@ import { AlertTriangle } from "lucide-react";
 import { InstanceCredentialsCard } from "../InstanceCredentialsCard";
 import { InstanceStatusCard } from "../InstanceStatusCard";
 import { UazapiWebhookSection } from "../UazapiWebhookSection";
-import { InstanceIdentitySection } from "./InstanceIdentitySection";
+// InstanceIdentitySection was moved to the uazapi page (Onda 9). Kept for legacy imports only.
 import { InstanceSettingsPanel } from "./InstanceSettingsPanel";
 import { WebhooksCardsSection } from "./WebhooksCardsSection";
 import { useTenantWhatsAppIntegration, type WhatsAppProvider } from "@/hooks/useTenantWhatsAppIntegration";
@@ -45,7 +45,7 @@ export function InstanceDetailTab({
                 provider={provider}
                 onProviderChange={onProviderChange}
               />
-              <InstanceIdentitySection integration={integration} provider={provider} save={save} />
+              {/* Onda 9: perfil real do WhatsApp foi movido para a aba "Webhooks WhatsApp (uazapiGO)" */}
             </TabsContent>
 
             <TabsContent value="webhooks" className="p-5 space-y-5 m-0">

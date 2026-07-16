@@ -1,13 +1,14 @@
 import { UazapiInstancePanel } from "./whatsapp/UazapiInstancePanel";
 import { UazapiWebhookSection } from "./UazapiWebhookSection";
 import { UazapiDiagnostics } from "./UazapiDiagnostics";
+import { WhatsAppProfileSection } from "./whatsapp/WhatsAppProfileSection";
 
 interface Props {
   tenantId: string | null;
 }
 
 /**
- * Onda 8 — Página dedicada da integração uazapiGO no Editar Tenant.
+ * Onda 8/9 — Página dedicada da integração uazapiGO no Editar Tenant.
  * Separada do "Webhooks Z-API" pra não confundir credenciais/URLs.
  */
 export function UazapiWebhookPage({ tenantId }: Props) {
@@ -21,6 +22,7 @@ export function UazapiWebhookPage({ tenantId }: Props) {
       </div>
 
       <UazapiInstancePanel tenantId={tenantId} />
+      <WhatsAppProfileSection tenantId={tenantId} />
       <UazapiWebhookSection tenantId={tenantId} />
       <UazapiDiagnostics tenantId={tenantId} />
     </div>
