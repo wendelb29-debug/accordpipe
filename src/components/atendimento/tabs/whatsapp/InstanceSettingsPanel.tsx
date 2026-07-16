@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { Save, Zap, Megaphone, Keyboard, Users } from "lucide-react";
+import { Save, Zap, Megaphone, Keyboard, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import type { TenantWhatsAppIntegration, WhatsAppProvider } from "@/hooks/useTenantWhatsAppIntegration";
 
 interface ToggleRowProps {
@@ -31,12 +33,19 @@ function ToggleRow({ icon, title, description, checked, onCheckedChange }: Toggl
 }
 
 interface Props {
+  tenantId: string | null;
   integration: TenantWhatsAppIntegration | null;
   provider: WhatsAppProvider;
   save: (provider: WhatsAppProvider, payload: Partial<TenantWhatsAppIntegration>) => Promise<any>;
 }
 
-export function InstanceSettingsPanel({ integration, provider, save }: Props) {
+interface TenantAgent {
+  user_id: string;
+  name: string;
+  email: string | null;
+}
+
+export function InstanceSettingsPanel({ tenantId, integration, provider, save }: Props) {
   const meta = (integration?.provider_metadata || {}) as any;
   const initial = meta.settings || {};
 
@@ -46,6 +55,10 @@ export function InstanceSettingsPanel({ integration, provider, save }: Props) {
   const [allowBroadcast, setAllowBroadcast] = useState<boolean>(!!initial.allow_broadcast);
   const [simulateTyping, setSimulateTyping] = useState<boolean>(!!initial.simulate_typing);
   const [restrictAgents, setRestrictAgents] = useState<boolean>(!!initial.restrict_agents);
+  const [allowedAgentIds, setAllowedAgentIds] = useState<string[]>(
+    Array.isArray(initial.allowed_agent_ids) ? initial.allowed_agent_ids : []
+  );
+  const [tenantAgents, setTenantAgents] = useState<TenantAgent[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -57,7 +70,31 @@ export function InstanceSettingsPanel({ integration, provider, save }: Props) {
     setAllowBroadcast(!!s.allow_broadcast);
     setSimulateTyping(!!s.simulate_typing);
     setRestrictAgents(!!s.restrict_agents);
+    setAllowedAgentIds(Array.isArray(s.allowed_agent_ids) ? s.allowed_agent_ids : []);
   }, [integration?.id]);
+
+  useEffect(() => {
+    if (!tenantId) return;
+    (async () => {
+      const { data: ut } = await supabase
+        .from("user_tenants")
+        .select("user_id")
+        .eq("tenant_id", tenantId)
+        .eq("status", "active");
+      const ids = (ut ?? []).map((r: any) => r.user_id).filter(Boolean);
+      if (ids.length === 0) return setTenantAgents([]);
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("user_id, name, email")
+        .in("user_id", ids);
+      setTenantAgents(((profs ?? []) as any[]).map((p) => ({
+        user_id: p.user_id, name: p.name || p.email || "Sem nome", email: p.email,
+      })));
+    })();
+  }, [tenantId]);
+
+  const toggleAgent = (id: string) =>
+    setAllowedAgentIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   const handleSave = async () => {
     if (!integration) {
@@ -75,6 +112,7 @@ export function InstanceSettingsPanel({ integration, provider, save }: Props) {
           allow_broadcast: allowBroadcast,
           simulate_typing: simulateTyping,
           restrict_agents: restrictAgents,
+          allowed_agent_ids: restrictAgents ? allowedAgentIds : [],
         },
       };
       await save(provider, { provider_metadata: newMeta } as any);
@@ -148,6 +186,40 @@ export function InstanceSettingsPanel({ integration, provider, save }: Props) {
             onCheckedChange={setRestrictAgents}
           />
         </div>
+        {restrictAgents && (
+          <div className="mt-3 rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+            <div className="text-xs font-medium text-foreground">Atendentes autorizados</div>
+            {tenantAgents.length === 0 ? (
+              <div className="text-xs text-muted-foreground">Nenhum usuário ativo neste tenant.</div>
+            ) : (
+              <div className="flex flex-wrap gap-1.5 max-h-40 overflow-auto">
+                {tenantAgents.map((a) => {
+                  const on = allowedAgentIds.includes(a.user_id);
+                  return (
+                    <button
+                      key={a.user_id}
+                      type="button"
+                      onClick={() => toggleAgent(a.user_id)}
+                      className={`text-xs rounded-full border px-2 py-1 transition ${
+                        on
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border bg-background text-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {on && <X className="inline h-3 w-3 mr-1 -mt-0.5" />}
+                      {a.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {allowedAgentIds.length > 0 && (
+              <Badge variant="secondary" className="text-[10px]">
+                {allowedAgentIds.length} selecionado(s)
+              </Badge>
+            )}
+          </div>
+        )}
       </div>
 
       <Button onClick={handleSave} disabled={saving} className="w-full gap-2">

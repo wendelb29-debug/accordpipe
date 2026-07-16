@@ -2,7 +2,9 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import {
   callUazapi,
   corsHeaders,
+  enforceAgentRestriction,
   getInstanceRow,
+  getUazapiSettings,
   json,
   normalizePhone,
   requireCaller,
@@ -31,6 +33,16 @@ Deno.serve(async (req) => {
     if (!tenant_id || !folder) return json({ error: "tenant_id and folder required" }, 400);
     const forbid = await requireTenantMember(caller.userId, tenant_id);
     if (forbid) return forbid;
+
+    const settings = await getUazapiSettings(tenant_id);
+    if (!settings.allow_broadcast) {
+      return json(
+        { error: "broadcast_disabled", message: "Transmissão em massa desabilitada para este canal." },
+        403
+      );
+    }
+    const agentBlock = await enforceAgentRestriction(caller.userId, tenant_id, settings);
+    if (agentBlock) return agentBlock;
 
     const row = await getInstanceRow(tenant_id);
     if (!row?.uazapi_token) return json({ error: "instance_not_connected" }, 400);
