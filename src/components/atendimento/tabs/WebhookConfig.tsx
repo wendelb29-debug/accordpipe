@@ -268,6 +268,8 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
         <TemplatesTab templates={templates} onCreate={() => setPill("create-template")} />
       )}
 
+      {pill === "uazapi" && <UazapiInstancePanel tenantId={companyId} />}
+
       {pill === "create-template" && (
         <CreateTemplateTab
           onPublish={(t) => {
