@@ -168,16 +168,16 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (loadErr || !integ) {
-      return new Response(JSON.stringify({ success: false, message: "Credenciais não encontradas" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ success: false, status: "error", message: "Credenciais não encontradas — configure a instância antes de sincronizar.", connection_status: "invalid_credentials" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     if (!integ.server_url) {
       return new Response(
-        JSON.stringify({ success: false, message: "Server URL obrigatório" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, status: "error", message: "Server URL obrigatório — preencha a URL do servidor antes de sincronizar.", connection_status: "invalid_credentials" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -185,8 +185,8 @@ Deno.serve(async (req) => {
     if (provider_type === "zapi") {
       if (!integ.instance_token) {
         return new Response(
-          JSON.stringify({ success: false, message: "Instance Token obrigatório" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ success: false, status: "error", message: "Instance Token obrigatório", connection_status: "invalid_credentials" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       const { data: comp } = await supabase
@@ -198,8 +198,8 @@ Deno.serve(async (req) => {
     } else if (provider_type === "uazapi") {
       if (!integ.instance_token) {
         return new Response(
-          JSON.stringify({ success: false, message: "Instance Token obrigatório — configure nas credenciais." }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ success: false, status: "error", message: "Instance Token obrigatório — configure nas credenciais.", connection_status: "invalid_credentials" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       result = await testUazapi(
