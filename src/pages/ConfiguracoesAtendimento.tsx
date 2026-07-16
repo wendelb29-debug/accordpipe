@@ -4,7 +4,7 @@ import {
   MessageSquare, Users, Zap, Settings, Send,
   FolderKanban, Tag, MessageCircle, Clock, Plus,
   ShieldCheck, FileText, MessageSquareText, CalendarClock,
-  Sticker, Coffee, GitBranch, CalendarDays, LinkIcon, Mail, Sparkles, BookOpen,
+  Coffee, GitBranch, CalendarDays, LinkIcon, Mail, Sparkles, BookOpen,
   Bot, Timer, UserCog, Type, Workflow, History, ArrowRightLeft,
 } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
