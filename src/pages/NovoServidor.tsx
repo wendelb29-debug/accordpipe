@@ -506,6 +506,7 @@ export default function NovoServidor() {
     { value: "workspaces", icon: LayoutGrid, label: "Workspaces", short: "Workspaces" },
     { value: "contrato", icon: FileSignature, label: "Contrato", short: "Contrato" },
     { value: "vendas", icon: Webhook, label: "Webhooks Z-API", short: "Z-API" },
+    { value: "uazapi", icon: MessageSquare, label: "Webhooks WhatsApp (uazapi)", short: "uazapi" },
     { value: "fintech", icon: CreditCard, label: "Webhooks Fintech", short: "Fintech" },
     { value: "fiscal", icon: ShieldCheck, label: "Fiscal & Certificados", short: "Fiscal" },
     { value: "usuarios", icon: Users, label: "Usuários", short: "Usuários" },
