@@ -89,26 +89,6 @@ export default function ConfiguracoesAtendimento() {
       action: { label: "Nova permissão", icon: Plus, onClick: () => navigate("/configuracoes/usuarios") },
     },
     {
-      id: "templates", icon: FileText, title: "Templates dos atendentes",
-      description: "Libere acesso à templates de mensagens aos atendentes",
-      action: { label: "Vincular template", icon: Plus, onClick: () => navigate("/atendimento") },
-    },
-    {
-      id: "atalhos", icon: MessageSquareText, title: "Gerenciar mensagens rápidas (Atalhos do chat)",
-      description: "Defina mensagens rápidas para maior agilidade durante o atendimento no chat",
-      action: { label: "Criar mensagem", icon: Plus, onClick: () => navigate("/atendimento") },
-    },
-    {
-      id: "horario-acesso", icon: Clock, title: "Customizar horário de acesso",
-      description: "Configure os dias e horários nos quais os atendentes podem se logar no sistema",
-      action: { label: "Adicionar horário", icon: Plus, onClick: () => navigate("/configuracoes/usuarios") },
-    },
-    {
-      id: "figurinhas", icon: Sticker, title: "Gerenciar figurinhas",
-      description: "Gerencie as figurinhas disponíveis para os atendentes",
-      action: { label: "Criar figurinha", icon: Plus, onClick: () => navigate("/atendimento") },
-    },
-    {
       id: "pausas", icon: Coffee, title: "Gerenciar pausas",
       description: "Configure tipos de pausa disponíveis para a equipe de atendimento",
       render: () => <PausasPanel />,
