@@ -29,7 +29,10 @@ Deno.serve(async (req) => {
       token: row.uazapi_token,
       body: {
         url: webhookUrl,
-        events: ["messages", "messages_update", "connection"],
+        // Onda 7: incluir "chats" para receber metadados (arquivado/fixado/etc).
+        events: ["messages", "messages_update", "connection", "chats"],
+        // APENAS wasSentByApi — nunca "fromMeYes"/"isGroupNo" (esses cortariam
+        // as mensagens enviadas pelo celular).
         excludeMessages: ["wasSentByApi"],
         enabled: true,
       },
