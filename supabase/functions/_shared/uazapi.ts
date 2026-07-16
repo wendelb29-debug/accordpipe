@@ -330,3 +330,93 @@ export async function signedMediaUrl(path: string, expiresInSec = 60 * 60 * 24 *
   return data?.signedUrl ?? null;
 }
 
+// ===== Sincronização de chats (compartilhada entre botão manual e auto-sync) =====
+
+function pickKey<T = any>(obj: any, keys: string[]): T | null {
+  for (const k of keys) {
+    const v = k.split(".").reduce((acc: any, part) => (acc == null ? acc : acc[part]), obj);
+    if (v !== undefined && v !== null && v !== "") return v as T;
+  }
+  return null;
+}
+
+function normalizeTs(ts: any): string | null {
+  if (!ts) return null;
+  const n = Number(ts);
+  if (!Number.isFinite(n)) return null;
+  const ms = String(ts).length <= 10 ? n * 1000 : n;
+  return new Date(ms).toISOString();
+}
+
+/**
+ * Baixa a lista de chats da uazapi (POST /chat/find) e persiste em whatsapp_chats.
+ * Usada tanto pelo botão "Sincronizar chats" quanto pelo auto-sync ao conectar.
+ */
+export async function syncChatsForInstance(
+  tenantId: string,
+  instanceToken: string,
+  opts: { hardLimit?: number; pageSize?: number } = {},
+): Promise<{ saved: number; scanned: number }> {
+  const svc = serviceClient();
+  const PAGE = opts.pageSize ?? 100;
+  const HARD_LIMIT = opts.hardLimit ?? 1000;
+  let offset = 0;
+  let saved = 0;
+
+  while (offset < HARD_LIMIT) {
+    const data: any = await callUazapi("/chat/find", {
+      method: "POST",
+      token: instanceToken,
+      body: { sort: "-wa_lastMsgTimestamp", limit: PAGE, offset },
+    });
+    const list: any[] =
+      data?.chats ?? data?.data ?? data?.result ?? (Array.isArray(data) ? data : []);
+    if (!list.length) break;
+
+    for (const c of list) {
+      const waChatId: string = String(pickKey(c, ["wa_chatid", "chatid", "id", "jid"]) ?? "");
+      if (!waChatId) continue;
+      const patch: any = {
+        tenant_id: tenantId,
+        wa_chatid: waChatId,
+        name: pickKey(c, ["name", "wa_name", "wa_contactName", "pushName"]) ?? waChatId,
+        image_url: pickKey(c, ["image", "imageUrl", "wa_image"]),
+        is_group: Boolean(pickKey(c, ["wa_isGroup", "isGroup"])) || waChatId.includes("@g.us"),
+        is_pinned: Boolean(pickKey(c, ["wa_isPinned", "isPinned"])),
+        is_archived: Boolean(pickKey(c, ["wa_archived", "archived"])),
+        unread_count: Number(pickKey(c, ["wa_unreadCount", "unreadCount"]) ?? 0),
+        last_message_text: pickKey(c, ["wa_lastMessageTextVote", "lastMessageText"]),
+        last_message_type: pickKey(c, ["wa_lastMessageType", "lastMessageType"]),
+        last_message_at: normalizeTs(pickKey(c, ["wa_lastMsgTimestamp", "lastMsgTimestamp"])),
+      };
+
+      const { data: existing } = await svc
+        .from("whatsapp_chats")
+        .select("id")
+        .eq("tenant_id", tenantId)
+        .eq("wa_chatid", waChatId)
+        .maybeSingle();
+      if (existing) {
+        await svc.from("whatsapp_chats").update(patch).eq("id", existing.id);
+      } else {
+        await svc.from("whatsapp_chats").insert(patch);
+      }
+      saved++;
+    }
+
+    if (list.length < PAGE) break;
+    offset += list.length;
+  }
+
+  // Marca último sync na instância (para throttling do auto-sync).
+  try {
+    await svc
+      .from("whatsapp_instances")
+      .update({ last_chats_sync_at: new Date().toISOString() })
+      .eq("tenant_id", tenantId);
+  } catch (_) { /* ignore */ }
+
+  return { saved, scanned: offset };
+}
+
+
