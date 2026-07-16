@@ -276,7 +276,14 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
         />
       )}
 
-      {pill === "uazapi" && <UazapiInstancePanel tenantId={companyId} />}
+      {pill === "uazapi" && (
+        <div className="space-y-6">
+          <UazapiInstancePanel tenantId={companyId} />
+          <WhatsAppProfileSection tenantId={companyId} />
+          <UazapiWebhookSection tenantId={companyId} />
+          <UazapiDiagnostics tenantId={companyId} />
+        </div>
+      )}
 
       {pill === "create-template" && (
         <CreateTemplateTab
