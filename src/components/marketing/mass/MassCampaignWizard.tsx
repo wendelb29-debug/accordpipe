@@ -84,12 +84,13 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
   useEffect(() => {
     if (!open || !tenantId) return;
     (async () => {
+      const sb = supabase as any;
       const [wa, em, tpl, tags, ws] = await Promise.all([
-        supabase.from("whatsapp_instances" as any).select("id,instance_name,phone_number,status").eq("tenant_id", tenantId),
-        supabase.from("email_accounts").select("id,email,provider,status").eq("tenant_id", tenantId).eq("status", "active"),
-        supabase.from("mass_templates" as any).select("*").eq("tenant_id", tenantId).order("updated_at", { ascending: false }),
-        supabase.from("crm_tags").select("id,name").eq("server_id", tenantId).limit(200),
-        supabase.from("workspaces").select("id,name").eq("server_id", tenantId).limit(200),
+        sb.from("whatsapp_instances").select("id,instance_name,phone_number,status").eq("tenant_id", tenantId),
+        sb.from("email_accounts").select("id,email,provider,status").eq("tenant_id", tenantId).eq("status", "active"),
+        sb.from("mass_templates").select("*").eq("tenant_id", tenantId).order("updated_at", { ascending: false }),
+        sb.from("crm_tags").select("id,name").eq("server_id", tenantId).limit(200),
+        sb.from("workspaces").select("id,name").eq("server_id", tenantId).limit(200),
       ]);
       setWaInstances((wa.data as any) || []);
       setEmailAccounts((em.data as any) || []);
