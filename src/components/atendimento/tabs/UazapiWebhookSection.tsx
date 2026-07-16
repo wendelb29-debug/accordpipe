@@ -298,6 +298,105 @@ export function UazapiWebhookSection({ tenantId }: Props) {
           </Button>
         </div>
       </CardContent>
+      <WebhookDiagnostics tenantId={tenantId} />
     </Card>
+  );
+}
+
+// ============================================================
+// Onda 7 — painel de diagnóstico do webhook uazapiGO
+// ============================================================
+function WebhookDiagnostics({ tenantId }: { tenantId: string | null }) {
+  const [loading, setLoading] = useState<null | "verify" | "errors" | "sync">(null);
+  const [config, setConfig] = useState<any>(null);
+  const [errors, setErrors] = useState<{ remote: any; remote_error: string | null; local: any[] } | null>(null);
+  const [sync, setSync] = useState<any>(null);
+
+  const invoke = async (fn: "uazapi-verify-webhook" | "uazapi-webhook-errors" | "uazapi-sync-chats", key: "verify"|"errors"|"sync") => {
+    if (!tenantId) { toast.error("Selecione um tenant"); return; }
+    setLoading(key);
+    try {
+      const { data, error } = await supabase.functions.invoke(fn, { body: { tenant_id: tenantId } });
+      if (error) throw error;
+      if (key === "verify") setConfig(data?.config ?? data);
+      if (key === "errors") setErrors({ remote: data?.remote ?? null, remote_error: data?.remote_error ?? null, local: data?.local ?? [] });
+      if (key === "sync") { setSync(data); toast.success(`Chats sincronizados: ${data?.saved ?? 0}`); }
+    } catch (e: any) {
+      toast.error("Falha: " + (e?.message || String(e)));
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  return (
+    <div className="border-t border-border/40 px-6 py-5 space-y-4">
+      <div>
+        <h3 className="text-xs font-semibold uppercase tracking-widest text-primary">
+          Diagnóstico do webhook (uazapiGO)
+        </h3>
+        <p className="text-xs text-muted-foreground mt-1">
+          Verifique se o webhook está configurado corretamente, veja erros de entrega e sincronize a lista de chats.
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant="outline" disabled={loading !== null} onClick={() => invoke("uazapi-verify-webhook", "verify")}>
+          {loading === "verify" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+          Verificar config do webhook
+        </Button>
+        <Button size="sm" variant="outline" disabled={loading !== null} onClick={() => invoke("uazapi-webhook-errors", "errors")}>
+          {loading === "errors" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+          Ver erros de entrega
+        </Button>
+        <Button size="sm" variant="outline" disabled={loading !== null} onClick={() => invoke("uazapi-sync-chats", "sync")}>
+          {loading === "sync" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+          Sincronizar chats
+        </Button>
+      </div>
+
+      {config && (
+        <div className="rounded-md border border-border/60 bg-muted/30 p-3">
+          <div className="text-xs font-semibold mb-2">Config atual (GET /webhook)</div>
+          <pre className="text-[11px] font-mono whitespace-pre-wrap break-all max-h-64 overflow-auto">
+            {JSON.stringify(config, null, 2)}
+          </pre>
+        </div>
+      )}
+
+      {errors && (
+        <div className="rounded-md border border-border/60 bg-muted/30 p-3 space-y-3">
+          <div>
+            <div className="text-xs font-semibold mb-1">Erros remotos (uazapi /webhook/errors)</div>
+            {errors.remote_error && <div className="text-[11px] text-destructive">{errors.remote_error}</div>}
+            <pre className="text-[11px] font-mono whitespace-pre-wrap break-all max-h-48 overflow-auto">
+              {JSON.stringify(errors.remote, null, 2)}
+            </pre>
+          </div>
+          <div>
+            <div className="text-xs font-semibold mb-1">Erros locais recentes ({errors.local.length})</div>
+            <div className="space-y-1 max-h-48 overflow-auto">
+              {errors.local.length === 0 && <div className="text-[11px] text-muted-foreground">Nenhum erro registrado.</div>}
+              {errors.local.map((e) => (
+                <div key={e.id} className="text-[11px] border border-border/40 rounded p-2">
+                  <div className="flex justify-between gap-2">
+                    <span className="font-medium">{e.event_type ?? "—"}</span>
+                    <span className="text-muted-foreground">{new Date(e.created_at).toLocaleString("pt-BR")}</span>
+                  </div>
+                  <div className="text-destructive mt-1 break-all">{e.error_message}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sync && (
+        <div className="rounded-md border border-border/60 bg-muted/30 p-3">
+          <div className="text-xs">
+            Sincronização concluída: <span className="font-semibold">{sync.saved}</span> chats atualizados
+            {typeof sync.scanned === "number" ? <> (varridos {sync.scanned})</> : null}.
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

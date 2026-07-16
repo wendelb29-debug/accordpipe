@@ -8634,6 +8634,60 @@ export type Database = {
           },
         ]
       }
+      whatsapp_chats: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          is_archived: boolean
+          is_group: boolean
+          is_pinned: boolean
+          last_message_at: string | null
+          last_message_text: string | null
+          last_message_type: string | null
+          lead_id: string | null
+          name: string | null
+          tenant_id: string
+          unread_count: number
+          updated_at: string
+          wa_chatid: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_archived?: boolean
+          is_group?: boolean
+          is_pinned?: boolean
+          last_message_at?: string | null
+          last_message_text?: string | null
+          last_message_type?: string | null
+          lead_id?: string | null
+          name?: string | null
+          tenant_id: string
+          unread_count?: number
+          updated_at?: string
+          wa_chatid: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_archived?: boolean
+          is_group?: boolean
+          is_pinned?: boolean
+          last_message_at?: string | null
+          last_message_text?: string | null
+          last_message_type?: string | null
+          lead_id?: string | null
+          name?: string | null
+          tenant_id?: string
+          unread_count?: number
+          updated_at?: string
+          wa_chatid?: string
+        }
+        Relationships: []
+      }
       whatsapp_contacts: {
         Row: {
           assigned_to: string | null
@@ -9101,6 +9155,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      whatsapp_webhook_errors: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_type: string | null
+          id: string
+          payload: Json | null
+          tenant_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_type?: string | null
+          id?: string
+          payload?: Json | null
+          tenant_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_type?: string | null
+          id?: string
+          payload?: Json | null
+          tenant_id?: string | null
+        }
+        Relationships: []
       }
       whatsapp_workspace_config: {
         Row: {

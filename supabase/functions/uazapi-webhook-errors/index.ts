@@ -1,3 +1,4 @@
+// Onda 7: retorna erros de entrega recentes da uazapi + últimos erros locais salvos.
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import {
   callUazapi,
@@ -6,6 +7,7 @@ import {
   json,
   requireCaller,
   requireTenantMember,
+  serviceClient,
 } from "../_shared/uazapi.ts";
 
 Deno.serve(async (req) => {
@@ -21,26 +23,25 @@ Deno.serve(async (req) => {
     const row = await getInstanceRow(tenant_id);
     if (!row?.uazapi_token) return json({ error: "instance_not_created" }, 400);
 
-    const base = Deno.env.get("SUPABASE_URL") ?? "";
-    const webhookUrl = `${base}/functions/v1/uazapi-webhook`;
+    let remote: any = null;
+    let remoteError: string | null = null;
+    try {
+      remote = await callUazapi("/webhook/errors", { method: "GET", token: row.uazapi_token });
+    } catch (e: any) {
+      remoteError = e?.message ?? String(e);
+    }
 
-    const data = await callUazapi("/webhook", {
-      method: "POST",
-      token: row.uazapi_token,
-      body: {
-        url: webhookUrl,
-        // Onda 7: incluir "chats" para receber metadados (arquivado/fixado/etc).
-        events: ["messages", "messages_update", "connection", "chats"],
-        // APENAS wasSentByApi — nunca "fromMeYes"/"isGroupNo" (esses cortariam
-        // as mensagens enviadas pelo celular).
-        excludeMessages: ["wasSentByApi"],
-        enabled: true,
-      },
-    });
+    const svc = serviceClient();
+    const { data: local } = await svc
+      .from("whatsapp_webhook_errors")
+      .select("id, event_type, error_message, created_at, payload")
+      .eq("tenant_id", tenant_id)
+      .order("created_at", { ascending: false })
+      .limit(20);
 
-    return json({ ok: true, webhook_url: webhookUrl, result: data });
+    return json({ ok: true, remote, remote_error: remoteError, local: local ?? [] });
   } catch (e: any) {
-    console.error("uazapi-setup-webhook:", e);
+    console.error("uazapi-webhook-errors:", e);
     return json({ error: e.message ?? String(e) }, 500);
   }
 });

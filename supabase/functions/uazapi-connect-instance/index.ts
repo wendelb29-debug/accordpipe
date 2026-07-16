@@ -43,6 +43,19 @@ Deno.serve(async (req) => {
       data?.instance?.paircode ??
       null;
 
+    // Onda 7: fire-and-forget sync de chats logo após conectar (rede de segurança).
+    try {
+      const base = Deno.env.get("SUPABASE_URL") ?? "";
+      const authHeader = req.headers.get("Authorization") ?? "";
+      if (base && authHeader) {
+        fetch(`${base}/functions/v1/uazapi-sync-chats`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: authHeader },
+          body: JSON.stringify({ tenant_id }),
+        }).catch(() => {});
+      }
+    } catch { /* noop */ }
+
     return json({ ok: true, qrcode, raw: data });
   } catch (e: any) {
     console.error("uazapi-connect-instance:", e);
