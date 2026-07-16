@@ -9,10 +9,11 @@ import { TransferDialog } from "@/components/accord-inbox/TransferDialog";
 import { ContactDetailSidebar } from "@/components/accord-inbox/ContactDetailSidebar";
 import { CreateDemandModal } from "@/components/accord-inbox/CreateDemandModal";
 import { NewConversationModal } from "@/components/accord-inbox/NewConversationModal";
-import { WifiOff, User, ArrowLeft } from "lucide-react";
+import { WifiOff, User, ArrowLeft, PowerOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useOperatorStatus } from "@/hooks/useOperatorStatus";
 import { cn } from "@/lib/utils";
 
 type UiFilter = "Todas" | "Não lidas";
@@ -38,6 +39,9 @@ export default function AccordStack() {
   const [newConvOpen, setNewConvOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<ConversationStatusFilter>("fila");
   const [uiFilter, setUiFilter] = useState<UiFilter>("Todas");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const { status: agentStatus, setOperatorStatus } = useOperatorStatus();
+  const isAgentOffline = agentStatus === "unavailable";
 
   const { pinnedIds, isPinned, togglePin } = useChatPins(companyId);
 
@@ -83,10 +87,10 @@ export default function AccordStack() {
       _lastAt: c.last_message_at ? new Date(c.last_message_at).getTime() : 0,
     }))
     .sort((a, b) => {
-      // Pinned first, then unread, then most-recent
+      // Pinned first, then unread, then by chosen order (recent/oldest)
       if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
       if ((a.unreadCount > 0) !== (b.unreadCount > 0)) return a.unreadCount > 0 ? -1 : 1;
-      return b._lastAt - a._lastAt;
+      return sortOrder === "newest" ? b._lastAt - a._lastAt : a._lastAt - b._lastAt;
     })
     .map(({ _lastAt, ...rest }) => rest);
 
@@ -248,33 +252,59 @@ export default function AccordStack() {
           onNewConversation={() => setNewConvOpen(true)}
           tenantId={companyId}
           onAvatarsSynced={refetchContacts}
+          sortOrder={sortOrder}
+          onSortOrderChange={setSortOrder}
         />
       </div>
 
       <div className={cn("flex-1 min-w-0 min-h-0 h-full overflow-hidden flex flex-col", showListOnly && "hidden md:flex")}>
-        <InboxChat
-          contact={chatContact}
-          messages={chatMessages}
-          onSendMessage={sendMessage}
-          onReactToMessage={toggleReaction}
-          onTransfer={handleTransfer}
-          onAssignToMe={handleAssignToMe}
-          isAdmin={isAdminOrCeo}
-          companyId={companyId}
-          onToggleInfo={() => setShowInfo(!showInfo)}
-          showInfo={showInfo}
-          onCreateDemand={() => setDemandModalOpen(true)}
-          onUpdateStatus={handleUpdateStatus}
-          onBack={isMobile ? () => selectContact(null) : undefined}
-          queueCount={queueCount}
-          inServiceCount={inServiceCount}
-          onNewConversation={() => setNewConvOpen(true)}
-          onViewReport={() => navigate("/relatorios")}
-          serverUrl={activeIntegration?.server_url ?? null}
-          integrationId={activeIntegration?.id ?? null}
-          isPinned={selectedContactId ? isPinned(selectedContactId) : false}
-          onTogglePin={togglePin}
-        />
+        {isAgentOffline && !selectedContactId ? (
+          <div className="flex-1 flex items-center justify-center bg-muted/10">
+            <div className="text-center max-w-sm px-6 space-y-5">
+              <div className="h-20 w-20 mx-auto rounded-2xl bg-muted/60 flex items-center justify-center">
+                <PowerOff className="h-9 w-9 text-muted-foreground/60" />
+              </div>
+              <div className="space-y-1.5">
+                <h2 className="text-lg font-semibold text-foreground">Você está Offline</h2>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Conecte-se para começar a receber mensagens da fila deste tenant.
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <Button variant="outline" onClick={() => setOperatorStatus("busy")}>
+                  Ficar Ocupado
+                </Button>
+                <Button onClick={() => setOperatorStatus("available")}>
+                  Ficar Online
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <InboxChat
+            contact={chatContact}
+            messages={chatMessages}
+            onSendMessage={sendMessage}
+            onReactToMessage={toggleReaction}
+            onTransfer={handleTransfer}
+            onAssignToMe={handleAssignToMe}
+            isAdmin={isAdminOrCeo}
+            companyId={companyId}
+            onToggleInfo={() => setShowInfo(!showInfo)}
+            showInfo={showInfo}
+            onCreateDemand={() => setDemandModalOpen(true)}
+            onUpdateStatus={handleUpdateStatus}
+            onBack={isMobile ? () => selectContact(null) : undefined}
+            queueCount={queueCount}
+            inServiceCount={inServiceCount}
+            onNewConversation={() => setNewConvOpen(true)}
+            onViewReport={() => navigate("/relatorios")}
+            serverUrl={activeIntegration?.server_url ?? null}
+            integrationId={activeIntegration?.id ?? null}
+            isPinned={selectedContactId ? isPinned(selectedContactId) : false}
+            onTogglePin={togglePin}
+          />
+        )}
       </div>
 
       {showInfo && selectedContact && !isMobile && (

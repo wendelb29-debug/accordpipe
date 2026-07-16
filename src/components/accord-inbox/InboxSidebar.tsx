@@ -1,6 +1,8 @@
-import { Search, Plus, Users, MessageSquare, Pin, Settings } from "lucide-react";
+import { Search, Plus, Users, MessageSquare, Pin, Settings, ArrowDownUp, History } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { AgentPresenceMenu } from "./AgentPresenceMenu";
+import { ConversationHistoryModal } from "./ConversationHistoryModal";
 
 export type ConversationStatusFilter = "fila" | "em_atendimento" | "encerrado";
 
@@ -38,6 +40,8 @@ interface InboxSidebarProps {
   onNewConversation?: () => void;
   tenantId?: string | null;
   onAvatarsSynced?: () => void;
+  sortOrder?: "newest" | "oldest";
+  onSortOrderChange?: (v: "newest" | "oldest") => void;
 }
 
 const CHANNEL_STYLES = {
@@ -91,8 +95,10 @@ export function InboxSidebar({
   contacts, selectedId, onSelect, searchTerm, onSearchChange,
   filter, onFilterChange, isAdmin, loading, statusFilter, onStatusFilterChange,
   onNewConversation, tenantId, onAvatarsSynced,
+  sortOrder = "newest", onSortOrderChange,
 }: InboxSidebarProps) {
   const filterOpts = ["Todas", "Não lidas"];
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const counts = {
     fila: contacts.filter((c) => c.conversationStatus === "fila" || c.conversationStatus === "aguardando").length,
@@ -109,7 +115,7 @@ export function InboxSidebar({
           paddingLeft: 'max(0.75rem, env(safe-area-inset-left, 0px))',
         }}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <div className="flex-1 flex items-center gap-2 bg-muted/60 border border-border/50 rounded-xl px-3 py-2">
             <Search size={14} className="text-muted-foreground flex-shrink-0" />
             <input
@@ -119,6 +125,29 @@ export function InboxSidebar({
               onChange={(e) => onSearchChange(e.target.value)}
             />
           </div>
+          {onSortOrderChange && (
+            <button
+              onClick={() => onSortOrderChange(sortOrder === "newest" ? "oldest" : "newest")}
+              title={sortOrder === "newest" ? "Ordenar mais antigas primeiro" : "Ordenar mais recentes primeiro"}
+              aria-label="Alternar ordenação"
+              className={cn(
+                "flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl border border-border/50 transition-all",
+                sortOrder === "oldest"
+                  ? "bg-primary/10 text-primary border-primary/40"
+                  : "bg-muted/60 text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <ArrowDownUp size={15} />
+            </button>
+          )}
+          <button
+            onClick={() => setHistoryOpen(true)}
+            title="Histórico de conversas encerradas"
+            aria-label="Histórico de conversas"
+            className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-muted/60 border border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
+          >
+            <History size={15} />
+          </button>
           {isAdmin && (
             <button
               onClick={() => window.dispatchEvent(new CustomEvent("inbox:open-settings"))}
@@ -128,6 +157,7 @@ export function InboxSidebar({
               <Settings size={15} />
             </button>
           )}
+          <AgentPresenceMenu />
         </div>
 
 
@@ -240,6 +270,12 @@ export function InboxSidebar({
           })
         )}
       </div>
+      <ConversationHistoryModal
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        tenantId={tenantId}
+        onSelect={(id) => onSelect(id)}
+      />
     </div>
   );
 }
