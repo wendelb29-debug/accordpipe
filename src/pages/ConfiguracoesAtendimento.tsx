@@ -19,6 +19,7 @@ import { ClassificacoesPanel } from "@/components/atendimento-config/Classificac
 import { TagsPanel } from "@/components/atendimento-config/TagsPanel";
 import { FeriadosPanel } from "@/components/atendimento-config/FeriadosPanel";
 import { PausasPanel } from "@/components/atendimento-config/PausasPanel";
+import { ChatbotTeamsPanel } from "@/components/atendimento-config/ChatbotTeamsPanel";
 
 type TabId = "atendimento" | "equipe" | "automacao" | "sistema";
 
