@@ -5,7 +5,7 @@ import {
   FolderKanban, Tag, MessageCircle, Clock, Plus,
   ShieldCheck, FileText, MessageSquareText, CalendarClock,
   Sticker, Coffee, GitBranch, CalendarDays, LinkIcon, Mail, Sparkles, BookOpen,
-  Bot, Timer, UserCog, Type, Workflow, History,
+  Bot, Timer, UserCog, Type, Workflow, History, ArrowRightLeft,
 } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,7 @@ import { AutomacaoHorariosPanel } from "@/components/atendimento-config/Automaca
 import { AutomacaoInatividadePanel } from "@/components/atendimento-config/AutomacaoInatividadePanel";
 import { AutomacaoHumanoPanel } from "@/components/atendimento-config/AutomacaoHumanoPanel";
 import { AutomacaoFormatacaoPanel } from "@/components/atendimento-config/AutomacaoFormatacaoPanel";
+import { TransferenciaEquipePanel } from "@/components/atendimento-config/TransferenciaEquipePanel";
 
 type TabId = "atendimento" | "equipe" | "automacao" | "sistema";
 
@@ -67,8 +68,13 @@ export default function ConfiguracoesAtendimento() {
 
   const equipeCards: CardItem[] = [
     {
+      id: "transfer-equipe", icon: ArrowRightLeft, title: "Transferência para equipe", isNew: true,
+      description: "Configure quais equipes o agente pode acionar durante uma conversa, a prioridade e o fallback",
+      render: () => <TransferenciaEquipePanel />,
+    },
+    {
       id: "chatbot-teams", icon: Users, title: "Equipes do chatbot", isNew: true,
-      description: "Configure quais equipes o agente de IA poderá acionar durante uma conversa",
+      description: "Crie, edite e gerencie as equipes que serão vinculadas ao agente acima",
       render: () => <ChatbotTeamsPanel />,
     },
     {
