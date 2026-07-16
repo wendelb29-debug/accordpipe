@@ -7,7 +7,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { usePermissions } from "@/hooks/usePermissions";
+
 import { AuditToolbar } from "@/components/analytics/audit/AuditToolbar";
 import { AuditTable } from "@/components/analytics/audit/AuditTable";
 import { AuditFiltersSheet } from "@/components/analytics/audit/AuditFiltersSheet";
