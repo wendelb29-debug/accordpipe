@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useWhatsAppInbox, InboxFilter } from "@/hooks/useWhatsAppInbox";
@@ -37,9 +37,41 @@ export default function AccordStack() {
   const [showInfo, setShowInfo] = useState(false);
   const [demandModalOpen, setDemandModalOpen] = useState(false);
   const [newConvOpen, setNewConvOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<ConversationStatusFilter>("fila");
+  const [statusFilter, setStatusFilter] = useState<ConversationStatusFilter>(() => {
+    if (typeof window === "undefined") return "fila";
+    return (localStorage.getItem("accord-stack:statusFilter") as ConversationStatusFilter) || "fila";
+  });
   const [uiFilter, setUiFilter] = useState<UiFilter>("Todas");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const restoredContactRef = useRef(false);
+
+  // Persist status filter
+  useEffect(() => {
+    try { localStorage.setItem("accord-stack:statusFilter", statusFilter); } catch { /* ignore */ }
+  }, [statusFilter]);
+
+  // Persist selected contact per tenant
+  useEffect(() => {
+    if (!companyId) return;
+    try {
+      const key = `accord-stack:selectedContact:${companyId}`;
+      if (selectedContactId) localStorage.setItem(key, selectedContactId);
+      else localStorage.removeItem(key);
+    } catch { /* ignore */ }
+  }, [companyId, selectedContactId]);
+
+  // Restore previously selected contact once (after contacts load for this tenant)
+  useEffect(() => {
+    if (restoredContactRef.current) return;
+    if (!companyId || loading || contacts.length === 0 || selectedContactId) return;
+    try {
+      const saved = localStorage.getItem(`accord-stack:selectedContact:${companyId}`);
+      if (saved && contacts.some((c) => c.id === saved)) {
+        selectContact(saved);
+      }
+    } catch { /* ignore */ }
+    restoredContactRef.current = true;
+  }, [companyId, loading, contacts, selectedContactId, selectContact]);
   const { status: agentStatus, setOperatorStatus } = useOperatorStatus();
   const isAgentOffline = agentStatus === "unavailable";
 
