@@ -11,7 +11,7 @@ import { useTenantWhatsAppIntegration, type WhatsAppProvider } from "@/hooks/use
 import { WhatsAppPillNav, type WhatsAppPill } from "./whatsapp/WhatsAppPillNav";
 import { InstanceListTab } from "./whatsapp/InstanceListTab";
 import { InstanceDetailTab } from "./whatsapp/InstanceDetailTab";
-import { TemplatesTab, type WhatsAppTemplateDraft } from "./whatsapp/TemplatesTab";
+import { TemplatesTab, type WhatsAppTemplate } from "./whatsapp/TemplatesTab";
 import { CreateTemplateTab } from "./whatsapp/CreateTemplateTab";
 import { UazapiInstancePanel } from "./whatsapp/UazapiInstancePanel";
 
