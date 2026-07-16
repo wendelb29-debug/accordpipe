@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  MessageSquare, Users, Zap, Settings, ChevronDown, Send,
-  FolderKanban, Tag, MessageCircle, Zap as ZapIcon, Clock,
+  MessageSquare, Users, Zap, Settings, Send,
+  FolderKanban, Tag, MessageCircle, Clock, Plus,
   ShieldCheck, FileText, MessageSquareText, CalendarClock,
-  Sticker, Coffee, GitBranch, CalendarDays, LinkIcon, UserPlus, Mail, Sparkles,
+  Sticker, Coffee, GitBranch, CalendarDays, LinkIcon, Mail, Sparkles, BookOpen,
 } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -28,13 +28,15 @@ const TABS: { id: TabId; label: string; icon: any; isNew?: boolean }[] = [
   { id: "sistema", label: "Sistema", icon: Settings },
 ];
 
+interface CardAction { label: string; onClick: () => void; icon?: any; variant?: "primary" | "outline"; }
 interface CardItem {
   id: string;
   icon: any;
   title: string;
   description: string;
   isNew?: boolean;
-  action?: { label: string; onClick: () => void };
+  action?: CardAction;
+  secondaryAction?: CardAction;
   render?: () => React.ReactNode;
   href?: string;
 }
@@ -58,38 +60,38 @@ export default function ConfiguracoesAtendimento() {
     {
       id: "equipe", icon: Users, title: "Gerenciar equipe",
       description: "Gerencie os membros da equipe e seus acessos",
-      action: { label: "Adicionar usuário", onClick: () => navigate("/configuracoes/usuarios") },
-      href: "/configuracoes/usuarios",
+      action: { label: "Adicionar usuário", icon: Plus, onClick: () => navigate("/configuracoes/usuarios") },
+      secondaryAction: { label: "Convites enviados", icon: BookOpen, onClick: () => navigate("/configuracoes/usuarios") },
     },
     {
       id: "permissoes", icon: ShieldCheck, title: "Gerenciar permissões", isNew: true,
       description: "Crie permissões e controle o que cada grupo de usuários pode ver e fazer no sistema",
-      action: { label: "Nova permissão", onClick: () => navigate("/configuracoes/usuarios") },
+      action: { label: "Nova permissão", icon: Plus, onClick: () => navigate("/configuracoes/usuarios") },
     },
     {
       id: "templates", icon: FileText, title: "Templates dos atendentes",
       description: "Libere acesso à templates de mensagens aos atendentes",
-      action: { label: "Vincular template", onClick: () => navigate("/atendimento") },
+      action: { label: "Vincular template", icon: Plus, onClick: () => navigate("/atendimento") },
     },
     {
       id: "atalhos", icon: MessageSquareText, title: "Gerenciar mensagens rápidas (Atalhos do chat)",
       description: "Defina mensagens rápidas para maior agilidade durante o atendimento no chat",
-      action: { label: "Criar mensagem", onClick: () => navigate("/atendimento") },
+      action: { label: "Criar mensagem", icon: Plus, onClick: () => navigate("/atendimento") },
     },
     {
       id: "horario-acesso", icon: Clock, title: "Customizar horário de acesso",
       description: "Configure os dias e horários nos quais os atendentes podem se logar no sistema",
-      action: { label: "Adicionar horário", onClick: () => navigate("/configuracoes/usuarios") },
+      action: { label: "Adicionar horário", icon: Plus, onClick: () => navigate("/configuracoes/usuarios") },
     },
     {
       id: "figurinhas", icon: Sticker, title: "Gerenciar figurinhas",
       description: "Gerencie as figurinhas disponíveis para os atendentes",
-      action: { label: "Criar figurinha", onClick: () => navigate("/atendimento") },
+      action: { label: "Criar figurinha", icon: Plus, onClick: () => navigate("/atendimento") },
     },
     {
       id: "pausas", icon: Coffee, title: "Gerenciar pausas",
       description: "Configure tipos de pausa disponíveis para a equipe de atendimento",
-      action: { label: "Criar pausa", onClick: () => navigate("/atendimento") },
+      action: { label: "Criar pausa", icon: Plus, onClick: () => navigate("/atendimento") },
     },
   ];
 
@@ -194,16 +196,35 @@ export default function ConfiguracoesAtendimento() {
                     </div>
                   </AccordionTrigger>
 
-                  {item.action && (
-                    <Button
-                      size="sm"
-                      onClick={(e) => { e.stopPropagation(); item.action!.onClick(); }}
-                      className="shrink-0 gap-1.5 rounded-lg"
-                    >
-                      <UserPlus className="h-3.5 w-3.5" />
-                      {item.action.label}
-                    </Button>
-                  )}
+                  {item.secondaryAction && (() => {
+                    const SIcon = item.secondaryAction.icon;
+                    return (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => { e.stopPropagation(); item.secondaryAction!.onClick(); }}
+                        className="shrink-0 gap-1.5 rounded-lg border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
+                      >
+                        {SIcon && <SIcon className="h-3.5 w-3.5" />}
+                        {item.secondaryAction.label}
+                      </Button>
+                    );
+                  })()}
+
+                  {item.action && (() => {
+                    const AIcon = item.action.icon;
+                    return (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => { e.stopPropagation(); item.action!.onClick(); }}
+                        className="shrink-0 gap-1.5 rounded-lg border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
+                      >
+                        {AIcon && <AIcon className="h-3.5 w-3.5" />}
+                        {item.action.label}
+                      </Button>
+                    );
+                  })()}
                 </div>
 
                 {expandable && (
@@ -215,22 +236,6 @@ export default function ConfiguracoesAtendimento() {
             );
           })}
         </Accordion>
-
-        {tab === "equipe" && (
-          <div className="rounded-2xl border border-dashed border-border p-6 bg-muted/20 flex items-start gap-3">
-            <Sparkles className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-            <div className="text-sm text-muted-foreground">
-              A gestão detalhada de membros, permissões e departamentos acontece em{" "}
-              <button
-                onClick={() => navigate("/configuracoes/usuarios")}
-                className="text-primary font-medium hover:underline"
-              >
-                Configurações › Usuários
-              </button>
-              . Os cartões acima são atalhos organizados no padrão do módulo de Atendimento.
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
