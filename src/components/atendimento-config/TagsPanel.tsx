@@ -20,7 +20,7 @@ export function TagsPanel() {
   const load = async () => {
     if (!activeCompanyId) return;
     setLoading(true);
-    const { data } = await supabase.from("whatsapp_labels").select("*").eq("tenant_id", activeCompanyId).order("name");
+    const { data } = await (supabase as any).from("whatsapp_labels").select("*").eq("tenant_id", activeCompanyId).order("name");
     setItems((data as any) || []); setLoading(false);
   };
   useEffect(() => { load(); }, [activeCompanyId]);
