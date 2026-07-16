@@ -1,6 +1,8 @@
-import { Search, Plus, Users, MessageSquare, Pin, Settings } from "lucide-react";
+import { Search, Plus, Users, MessageSquare, Pin, Settings, ArrowDownUp, History } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { AgentPresenceMenu } from "./AgentPresenceMenu";
+import { ConversationHistoryModal } from "./ConversationHistoryModal";
 
 export type ConversationStatusFilter = "fila" | "em_atendimento" | "encerrado";
 
