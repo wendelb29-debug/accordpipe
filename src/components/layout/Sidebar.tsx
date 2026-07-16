@@ -378,7 +378,7 @@ export function Sidebar() {
                     : "text-sidebar-foreground/30 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground/60"
                 )}
               >
-                {pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+                {pinned ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
               </button>
             </TooltipTrigger>
             <TooltipContent side="right" className="font-medium text-xs">
