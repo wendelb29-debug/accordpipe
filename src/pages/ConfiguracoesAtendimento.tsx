@@ -92,7 +92,7 @@ export default function ConfiguracoesAtendimento() {
     {
       id: "pausas", icon: Coffee, title: "Gerenciar pausas",
       description: "Configure tipos de pausa disponíveis para a equipe de atendimento",
-      action: { label: "Criar pausa", icon: Plus, onClick: () => navigate("/atendimento") },
+      render: () => <PausasPanel />,
     },
   ];
 
