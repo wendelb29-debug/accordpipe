@@ -78,8 +78,9 @@ export function AgentPresenceMenu({ className }: Props) {
               <button
                 key={s.value}
                 onClick={async () => {
-                  await setOperatorStatus(s.value);
+                  const ok = await setOperatorStatus(s.value);
                   setOpen(false);
+                  if (ok !== false) toast.success(`Status: ${s.label}`);
                 }}
                 disabled={updating}
                 className={cn(
