@@ -196,16 +196,35 @@ export default function ConfiguracoesAtendimento() {
                     </div>
                   </AccordionTrigger>
 
-                  {item.action && (
-                    <Button
-                      size="sm"
-                      onClick={(e) => { e.stopPropagation(); item.action!.onClick(); }}
-                      className="shrink-0 gap-1.5 rounded-lg"
-                    >
-                      <UserPlus className="h-3.5 w-3.5" />
-                      {item.action.label}
-                    </Button>
-                  )}
+                  {item.secondaryAction && (() => {
+                    const SIcon = item.secondaryAction.icon;
+                    return (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => { e.stopPropagation(); item.secondaryAction!.onClick(); }}
+                        className="shrink-0 gap-1.5 rounded-lg border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
+                      >
+                        {SIcon && <SIcon className="h-3.5 w-3.5" />}
+                        {item.secondaryAction.label}
+                      </Button>
+                    );
+                  })()}
+
+                  {item.action && (() => {
+                    const AIcon = item.action.icon;
+                    return (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => { e.stopPropagation(); item.action!.onClick(); }}
+                        className="shrink-0 gap-1.5 rounded-lg border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
+                      >
+                        {AIcon && <AIcon className="h-3.5 w-3.5" />}
+                        {item.action.label}
+                      </Button>
+                    );
+                  })()}
                 </div>
 
                 {expandable && (
@@ -217,22 +236,6 @@ export default function ConfiguracoesAtendimento() {
             );
           })}
         </Accordion>
-
-        {tab === "equipe" && (
-          <div className="rounded-2xl border border-dashed border-border p-6 bg-muted/20 flex items-start gap-3">
-            <Sparkles className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-            <div className="text-sm text-muted-foreground">
-              A gestão detalhada de membros, permissões e departamentos acontece em{" "}
-              <button
-                onClick={() => navigate("/configuracoes/usuarios")}
-                className="text-primary font-medium hover:underline"
-              >
-                Configurações › Usuários
-              </button>
-              . Os cartões acima são atalhos organizados no padrão do módulo de Atendimento.
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
