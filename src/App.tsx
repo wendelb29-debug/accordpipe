@@ -421,6 +421,14 @@ const App = () => (
               }
             />
             <Route
+              path="/marketing/envio-massa"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "ceo"]}>
+                  <AppLayout><EnvioMassa /></AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/marketing/:id"
               element={
                 <ProtectedRoute allowedRoles={["admin", "ceo"]}>
