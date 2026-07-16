@@ -18,6 +18,7 @@ import { toast as sonnerToast } from "sonner";
 import { BrandIdentityFields } from "@/components/empresas/BrandIdentityFields";
 import { ContractTemplateTab } from "@/components/servidores/ContractTemplateTab";
 import { WebhookConfig } from "@/components/atendimento/tabs/WebhookConfig";
+import { UazapiWebhookPage } from "@/components/atendimento/tabs/UazapiWebhookPage";
 import { WorkspacesTab } from "@/components/servidores/WorkspacesTab";
 import { FintechWebhooksTab } from "@/components/servidores/FintechWebhooksTab";
 import TenantUsersTab from "@/components/servidores/TenantUsersTab";
@@ -505,6 +506,7 @@ export default function NovoServidor() {
     { value: "workspaces", icon: LayoutGrid, label: "Workspaces", short: "Workspaces" },
     { value: "contrato", icon: FileSignature, label: "Contrato", short: "Contrato" },
     { value: "vendas", icon: Webhook, label: "Webhooks Z-API", short: "Z-API" },
+    { value: "uazapi", icon: MessageSquare, label: "Webhooks WhatsApp (uazapi)", short: "uazapi" },
     { value: "fintech", icon: CreditCard, label: "Webhooks Fintech", short: "Fintech" },
     { value: "fiscal", icon: ShieldCheck, label: "Fiscal & Certificados", short: "Fiscal" },
     { value: "usuarios", icon: Users, label: "Usuários", short: "Usuários" },
@@ -756,6 +758,14 @@ export default function NovoServidor() {
                     setNotifyMe={setWebhookNotifyMe}
                   />
                 )}
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === "uazapi" && (
+            <Card>
+              <CardContent className="pt-6">
+                <UazapiWebhookPage tenantId={editId || pendingNewId} />
               </CardContent>
             </Card>
           )}
