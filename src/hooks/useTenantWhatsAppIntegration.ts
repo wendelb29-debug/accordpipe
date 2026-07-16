@@ -161,9 +161,23 @@ export function useTenantWhatsAppIntegration(tenantId: string | null | undefined
         const { data, error } = await supabase.functions.invoke("whatsapp-test-connection", {
           body: { tenant_id: tenantId, provider_type: provider },
         });
-        if (error) throw error;
+        if (error) {
+          // Try to extract the friendly message from the HTTP error body
+          let msg = error.message || "desconhecido";
+          const ctx: any = (error as any).context;
+          if (ctx && typeof ctx.text === "function") {
+            try {
+              const raw = await ctx.text();
+              const parsed = raw ? JSON.parse(raw) : null;
+              if (parsed?.message) msg = parsed.message;
+              else if (parsed?.error) msg = parsed.error;
+            } catch { /* keep default */ }
+          }
+          toast.error("Erro no teste: " + msg);
+          return null;
+        }
         if (data?.success) {
-          toast.success("Conexão estabelecida com sucesso!");
+          toast.success(data?.message || "Conexão estabelecida com sucesso!");
         } else {
           toast.error(data?.message || "Falha na conexão");
         }
