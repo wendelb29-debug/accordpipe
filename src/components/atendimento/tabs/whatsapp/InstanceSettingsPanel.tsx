@@ -55,6 +55,10 @@ export function InstanceSettingsPanel({ tenantId, integration, provider, save }:
   const [allowBroadcast, setAllowBroadcast] = useState<boolean>(!!initial.allow_broadcast);
   const [simulateTyping, setSimulateTyping] = useState<boolean>(!!initial.simulate_typing);
   const [restrictAgents, setRestrictAgents] = useState<boolean>(!!initial.restrict_agents);
+  const [allowedAgentIds, setAllowedAgentIds] = useState<string[]>(
+    Array.isArray(initial.allowed_agent_ids) ? initial.allowed_agent_ids : []
+  );
+  const [tenantAgents, setTenantAgents] = useState<TenantAgent[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -66,7 +70,31 @@ export function InstanceSettingsPanel({ tenantId, integration, provider, save }:
     setAllowBroadcast(!!s.allow_broadcast);
     setSimulateTyping(!!s.simulate_typing);
     setRestrictAgents(!!s.restrict_agents);
+    setAllowedAgentIds(Array.isArray(s.allowed_agent_ids) ? s.allowed_agent_ids : []);
   }, [integration?.id]);
+
+  useEffect(() => {
+    if (!tenantId) return;
+    (async () => {
+      const { data: ut } = await supabase
+        .from("user_tenants")
+        .select("user_id")
+        .eq("tenant_id", tenantId)
+        .eq("status", "active");
+      const ids = (ut ?? []).map((r: any) => r.user_id).filter(Boolean);
+      if (ids.length === 0) return setTenantAgents([]);
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("user_id, name, email")
+        .in("user_id", ids);
+      setTenantAgents(((profs ?? []) as any[]).map((p) => ({
+        user_id: p.user_id, name: p.name || p.email || "Sem nome", email: p.email,
+      })));
+    })();
+  }, [tenantId]);
+
+  const toggleAgent = (id: string) =>
+    setAllowedAgentIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   const handleSave = async () => {
     if (!integration) {
@@ -84,6 +112,7 @@ export function InstanceSettingsPanel({ tenantId, integration, provider, save }:
           allow_broadcast: allowBroadcast,
           simulate_typing: simulateTyping,
           restrict_agents: restrictAgents,
+          allowed_agent_ids: restrictAgents ? allowedAgentIds : [],
         },
       };
       await save(provider, { provider_metadata: newMeta } as any);
