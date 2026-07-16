@@ -1,71 +1,71 @@
-## Escopo
 
-Transformar a aba **Equipe e Recursos** dentro de `/configuracoes/atendimento` (arquivo `src/pages/ConfiguracoesAtendimento.tsx`) num módulo real de configuração do agente/chatbot Accord, no espírito da referência EZ Chat (`/configuration?tab=tools`). Preservo layout global, rotas, tema, sidebar, header e as demais abas.
+# Automação e Comunicação — Plano em 4 Ondas
 
-Como o pedido cobre 14 tipos de recursos, construtor de condições, simuladores de teste, logs de execução, RLS, auditoria e reordenação — é grande demais para um único turno estável. Vou entregar em **4 ondas**, cada uma revisável e funcional isoladamente.
-
----
-
-## Onda 1 — Fundação de dados + Aba redesenhada + Equipes (CRUD real)
-
-**Backend (1 migration):**
-- `chatbot_teams` (nome, descrição, cor, ícone, departamento_id, status, prioridade, horário JSON, canais[], limite simultâneo, mensagem fora do expediente, equipe_fallback_id, tenant_id).
-- `chatbot_team_members` (team_id, user_id, papel: responsável/supervisor/atendente).
-- `chatbot_team_rules` (team_id, palavras-chave[], intenções[], tags[], modo transferência, mensagens antes/depois, ação fallback).
-- Reaproveita `profiles`, `user_tenants`, `tenant_departments`, `whatsapp_labels` (tags), `service_settings` (horário base).
-- GRANT + RLS por tenant, política de escrita para admin/CEO/master, auditoria via `audit_logs`.
-
-**Frontend:**
-- Reescrevo o conteúdo do tab `equipe` em `ConfiguracoesAtendimento.tsx` com o novo header (título + descrição + botões `Adicionar equipe` / `Adicionar recurso`) e as duas seções (Equipes / Recursos).
-- Lista de equipes em cards com todos os campos pedidos (contadores, status online real via `useOnlineUsers`, prioridade drag-drop com `@dnd-kit`).
-- Filtros (status/canal/departamento/disponibilidade) e ordenação.
-- Modal wizard `TeamFormDialog.tsx` com 5 etapas (Básico → Participantes → Disponibilidade → Regras → Revisão), validação Zod, salvar-rascunho.
-- Ações: ativar/desativar, editar, duplicar, excluir, ver membros.
-
-**Não faço nesta onda:** simulador de transferência, integração real do chatbot com essas equipes (isso entra na Onda 4).
+O escopo enviado é enorme (9 seções + construtor visual de automações + simulador + logs). Impossível fazer tudo em um turno sem quebrar qualidade. Proponho **4 ondas incrementais**, cada uma revisável e utilizável sozinha. **Nenhuma quebra** ao que já existe: reaproveito `service_settings`, `service_holidays`, `chatbot_teams`, `whatsapp_templates`, `whatsapp_quick_replies`, `tenant_departments`, `crm_leads`, `crm_tags` etc. Tudo multi-tenant com RLS por `tenant_id` (`company_id`).
 
 ---
 
-## Onda 2 — Recursos do agente (CRUD + condições + reordenação)
+## Onda 1 — Fundação + Comportamento Automático + Mensagens + Horários (este turno)
 
-**Backend:**
-- `chatbot_resources` (tipo enum dos 14, nome, descrição p/ IA, config jsonb, gatilhos jsonb, condições jsonb, prioridade, status, canais[], limite, fallback_resource_id, tenant_id).
-- `chatbot_resource_executions` (resource_id, conversation_id, contact_id, payload/response mascarados, status, duração, tentativas, erro).
+**Migration:**
+- `chatbot_communication_settings` (singleton por tenant + agent_id opcional): switches de resposta automática, novas/existentes, tempo antes de responder, agrupamento (janela + limite), limite de respostas seguidas, ação ao atingir limite, indicador de digitação, simulação, divisão de mensagens longas, config de emojis/áudio/imagem, pausa quando humano responde, regras de retomada da IA. JSONB para blocos complexos.
+- `chatbot_message_templates` (mensagens automáticas): tipo (welcome, agent_intro, off_hours, unavailable, transfer_*, error, closing, inactivity_1, inactivity_2), texto, canais permitidos, mídia opcional, ativado, variáveis, versão padrão.
+- `chatbot_business_hours` (7 dias, múltiplos intervalos, timezone, fora-do-horário behavior). Reaproveita `service_holidays` existente.
+- `chatbot_inactivity_rules`: dois avisos + encerramento automático (tempos, mensagens, tags, status final).
 
-**Frontend:**
-- Grid de recursos com card por tipo (14 tipos com ícone/cor próprios).
-- `ResourceFormDialog.tsx` polimórfico: renderiza subformulário conforme tipo (transferir equipe / atribuir atendente / tag / lead CRM / oportunidade / atualizar contato / atividade / agendar / mensagem / solicitar info / consultar / webhook / encerrar / chamar IA).
-- **Construtor visual de condições** reutilizável (`ConditionBuilder.tsx`) com grupos E/OU, operadores, campos do contexto (canal, equipe, horário, tag, intenção, campo do contato, status/pipeline, autenticação, inatividade).
-- Reordenação por drag-drop, ativar/desativar, duplicar, excluir.
+Todas com GRANT + RLS por tenant, escrita restrita a Master/CEO/Admin.
 
----
+**Frontend (`src/pages/ConfiguracoesAtendimento.tsx` aba "automacao"):**
+Substituo os 3 cards estáticos atuais (Flow/Agendadas/Link) por header padrão + 8 sub-seções recolhíveis exatamente como pedido:
+1. Comportamento automático — `AutomacaoComportamentoPanel.tsx`
+2. Mensagens do atendimento — `AutomacaoMensagensPanel.tsx` (editor com variáveis, preview, teste)
+3. Horários e disponibilidade — `AutomacaoHorariosPanel.tsx` (grade semanal + timezone; feriados via link para o painel existente)
+4. Inatividade e encerramento — `AutomacaoInatividadePanel.tsx`
+5. Atendimento humano — placeholder + link para configuração de Equipes (já existe)
+6. Formatação das mensagens — controles vindos de `chatbot_communication_settings`
+7. Automações personalizadas — placeholder "Em breve" nesta onda
+8. Histórico e testes — placeholder "Em breve" nesta onda
 
-## Onda 3 — Simuladores + Histórico + Auditoria
+Header da aba com **Status indicator** (Salvo/Alterando/Salvando/Erro) + botões **Testar atendimento** / **Descartar alterações** / **Salvar alterações** globais para os painéis que compartilham o mesmo registro singleton.
 
-- Modal `TransferTestDialog.tsx` (equipe): simula canal/contato/motivo/horário/mensagem → mostra elegibilidade, atendente escolhido, regra aplicada, mensagens, fallback. Não cria atendimento real.
-- Modal `ResourceTestDialog.tsx`: preenche dados de exemplo, mostra payload/resposta/tempo/status/fallback. Toggle "executar com dados reais" (default off).
-- Aba/gaveta de logs por recurso lendo `chatbot_resource_executions`, com filtros, busca, mascaramento de campos sensíveis (webhook headers, tokens).
-- Registro em `audit_logs` para toda mutação de equipe/recurso.
+Hooks: `useCommunicationSettings`, `useMessageTemplates`, `useBusinessHours`, `useInactivityRules` — cada um com dirty-state, save, discard.
 
----
-
-## Onda 4 — Execução real no chatbot
-
-- Edge function `chatbot-transfer` (usa o snapshot de equipes + regras para roteamento real: intenção → validar ativa/horário/canais/atendentes → aplicar prioridade e distribuição rodízio/menor-fila/manual → preservar histórico → notificar cliente e atendente → registrar em `chatbot_transfer_history`).
-- Edge function `chatbot-run-resource` (executa o recurso conforme tipo, respeitando confirmação/limite/fallback, mascara secrets, grava execução).
-- Integração com o loop atual do agente (`accord-ai-chat` ou onde a decisão de resposta é tomada) — apenas invoca `chatbot-run-resource` quando a IA escolhe uma ferramenta, sem alterar prompts existentes fora do necessário.
+Variáveis (`{{nome_contato}}` etc.) validadas no editor com componente `<VariableInserter>`. Substituição real acontece no runtime da IA (Onda 4).
 
 ---
 
-## Garantias
+## Onda 2 — Atendimento humano + Formatação + integração de runtime
 
-- Não toco em: `Sidebar.tsx`, `Header.tsx`, `AppLayout.tsx`, `App.tsx` (rotas), tema, outras abas (`Atendimento`, `Automação`, `Sistema`), `AccordStack`, `Usuarios.tsx`, CRM, edge functions existentes fora da Onda 4.
-- Reaproveito `profiles`/`user_tenants`/`tenant_departments`/`whatsapp_labels`/`whatsapp_quick_replies`/`crm_leads`/`kanban_columns`/`workspaces`/`service_settings` — nada é duplicado.
-- Todas as mutações são reais no Supabase, com RLS multi-tenant, GRANTs explícitos e auditoria; nada de mock ou botão ilustrativo.
-- Responsivo em desktop/tablet/mobile, estados loading/vazio/erro/sem-permissão implementados.
+- Ligar `pause_ai_on_human_reply`, `resume_rules`, indicador de digitação, divisão de mensagens e simulação de digitação no runtime do agente (`accord-ai-chat` / Pulse).
+- Ação "Devolver conversa para o agente de IA" no Inbox.
+- Detecção de intenção "quero falar com humano" com transfer para equipe (usa `chatbot_teams` da onda anterior).
+
+## Onda 3 — Automações personalizadas (construtor visual)
+
+- Tabelas `chatbot_automations` + `chatbot_automation_triggers` + `..._conditions` + `..._actions` (JSONB de nós).
+- Wizard de 6 etapas (Info → Gatilho → Condições → Ações → Exceções → Revisão).
+- Construtor de condições com grupos E/OU (reusa `ConditionBuilder` que farei em recursos).
+- 25+ gatilhos e 12+ tipos de ação (send_message, wait, branch, tag, update_contact, create_lead, create_task, transfer, pause_ai, close, notify, webhook).
+- Reordenação por drag-and-drop com `priority`.
+
+## Onda 4 — Simulador de atendimento + Histórico/Logs
+
+- Modal "Testar atendimento" full-screen com painel de diagnóstico (mensagem recebida → gatilho → condições → automação → ação → resultado), opção "usar dados reais" com confirmação.
+- Tabelas `chatbot_automation_executions` + `chatbot_automation_logs` com mascaramento de dados sensíveis, filtros por período/canal/status.
+- Integração real com edge functions de resposta (`accord-ai-chat`, `pulse-agent-runtime`).
 
 ---
 
-## Como quero prosseguir
+## Garantias transversais (todas as ondas)
 
-Confirma que posso começar pela **Onda 1** (migration + redesign da aba + CRUD real de Equipes) neste turno? As Ondas 2–4 entram em turnos seguintes para manter cada entrega revisável — cada onda é utilizável isoladamente sem quebrar o que já existe.
+- **RLS**: `tenant_id = get_user_company_id(auth.uid()) OR is_master(auth.uid())`. Escrita só para roles `admin`/`ceo`/`master` via `has_role`.
+- **Auditoria**: usa `audit_logs` existente (todos os saves gravam evento com diff).
+- **Sem quebra**: `AccordStack`, `Flow Builder`, `Usuarios.tsx`, `AccordFeedPremium`, `accord-ai-chat`, `Pulse*` intocados até a Onda 2 (quando integro runtime — só adiciono leitura, sem remover).
+- **TypeScript** sem `any`. Console limpo.
+- **Responsivo** — accordions viram cards empilhados em mobile (padrão do projeto).
+
+---
+
+## Confirma que começo pela **Onda 1** neste turno?
+
+Migration + 4 painéis funcionais (Comportamento, Mensagens, Horários, Inatividade) + header com Salvar/Descartar/Testar + placeholders para 5–8. Ondas 2–4 vêm em turnos seguintes. Cada onda entrega sozinha valor sem quebrar nada.
