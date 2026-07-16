@@ -762,6 +762,14 @@ export default function NovoServidor() {
             </Card>
           )}
 
+          {activeTab === "uazapi" && (
+            <Card>
+              <CardContent className="pt-6">
+                <UazapiWebhookPage tenantId={editId || pendingNewId} />
+              </CardContent>
+            </Card>
+          )}
+
           {activeTab === "fintech" && (
             <Card>
               <CardContent className="pt-6">
