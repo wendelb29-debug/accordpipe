@@ -556,7 +556,6 @@ export default function AccordStack() {
           }
         }}
       />
-      </div>
     </div>
   );
 }
