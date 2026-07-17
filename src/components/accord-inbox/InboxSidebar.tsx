@@ -226,7 +226,7 @@ export function InboxSidebar({
               <Settings size={15} />
             </button>
           )}
-          <AgentPresenceMenu />
+          
         </div>
       </div>
 
