@@ -88,6 +88,16 @@ async function sendZapi(serverUrl: string, instanceId: string, token: string, cl
 async function sendEmail(campaign: any, to: string, subject: string, body: string): Promise<SendResult> {
   try {
     const html = /<[a-z][\s\S]*>/i.test(body) ? body : `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;white-space:pre-wrap">${body.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>`;
+    const textAlt = body.replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<[^>]+>/g, "").replace(/\s+\n/g, "\n").trim();
+    // Cabeçalhos de entregabilidade — mass campaign é sempre broadcast, então
+    // sempre acompanha List-Unsubscribe (RFC 2369/8058).
+    const unsubUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/handle-email-unsubscribe?email=${encodeURIComponent(to)}&campaign=${encodeURIComponent(campaign.id)}`;
+    const headers = {
+      "List-Unsubscribe": `<${unsubUrl}>, <mailto:unsubscribe@accordpipe.com.br?subject=unsubscribe>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      "X-Campaign-Id": String(campaign.id),
+      "X-Campaign-Type": "mass",
+    };
     const resp = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/email-send`, {
       method: "POST",
       headers: {
@@ -100,7 +110,9 @@ async function sendEmail(campaign: any, to: string, subject: string, body: strin
         to,
         subject: subject || "(sem assunto)",
         html,
-        text: body.replace(/<[^>]+>/g, ""),
+        text: textAlt,
+        headers,
+        disableOpenTracking: true,
       }),
     });
     const raw = await resp.text();
