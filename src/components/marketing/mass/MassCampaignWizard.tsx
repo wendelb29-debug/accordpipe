@@ -63,6 +63,8 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
   const [form, setForm] = useState<FormState>(initialForm);
   const [saving, setSaving] = useState(false);
   const [manualText, setManualText] = useState("");
+  const [customVars, setCustomVars] = useState<string[]>([]);
+  const [newVar, setNewVar] = useState("");
 
   // Channel options
   const [waInstances, setWaInstances] = useState<any[]>([]);
