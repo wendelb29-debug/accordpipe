@@ -494,6 +494,15 @@ export function GroupsInbox({ tenantId }: Props) {
             )}
           </>
         )}
+
+        {infoOpen && selected && tenantId && (
+          <GroupInfoPanel
+            tenantId={tenantId}
+            chat={selected as any}
+            onClose={() => setInfoOpen(false)}
+            onUpdated={fetchGroups}
+          />
+        )}
       </div>
 
       {/* Criar novo grupo */}
