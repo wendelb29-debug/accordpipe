@@ -24,7 +24,7 @@ interface Props {
 }
 
 type Channel = "whatsapp" | "email";
-type Speed = "slow" | "medium" | "fast";
+type Speed = "slow" | "medium" | "fast" | "manual";
 
 interface AudienceRow {
   name?: string;
