@@ -15,6 +15,8 @@ import { TemplatesTab, type WhatsAppTemplate } from "./whatsapp/TemplatesTab";
 import { CreateTemplateTab } from "./whatsapp/CreateTemplateTab";
 import { UazapiInstancePanel } from "./whatsapp/UazapiInstancePanel";
 import { WhatsAppProfileSection } from "./whatsapp/WhatsAppProfileSection";
+import { BusinessProfileSection } from "./whatsapp/BusinessProfileSection";
+import { CatalogSection } from "./whatsapp/CatalogSection";
 import { UazapiWebhookSection } from "./UazapiWebhookSection";
 import { UazapiDiagnostics } from "./UazapiDiagnostics";
 import { AsyncQueuePanel } from "./AsyncQueuePanel";
@@ -281,6 +283,8 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
         <div className="space-y-6">
           <UazapiInstancePanel tenantId={companyId} />
           <WhatsAppProfileSection tenantId={companyId} />
+          <BusinessProfileSection tenantId={companyId} />
+          <CatalogSection tenantId={companyId} />
           <UazapiWebhookSection tenantId={companyId} />
           <UazapiDiagnostics tenantId={companyId} />
           <AsyncQueuePanel tenantId={companyId} />
