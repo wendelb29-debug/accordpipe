@@ -24,6 +24,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChangePasswordDialog } from "@/components/auth/ChangePasswordDialog";
+import { MinhaContaDialog } from "@/components/minha-conta/MinhaContaDialog";
 
 const ROUTE_TITLE_KEYS: Record<string, string> = {
   "/home": "nav.home",
@@ -56,6 +57,7 @@ export function Header() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [pwdDialogOpen, setPwdDialogOpen] = useState(false);
+  const [minhaContaOpen, setMinhaContaOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
@@ -247,9 +249,9 @@ export function Header() {
               </>
             )}
 
-            <DropdownMenuItem className="rounded-lg cursor-pointer gap-2.5" onClick={() => navigate("/perfil")}>
+            <DropdownMenuItem className="rounded-lg cursor-pointer gap-2.5" onClick={() => setMinhaContaOpen(true)}>
               <BrandIcon icon={UserCircle} tone="blue" size="xs" />
-              <span>{t("header.profile")}</span>
+              <span>Minha conta</span>
             </DropdownMenuItem>
             <DropdownMenuItem className="rounded-lg cursor-pointer gap-2.5" onClick={() => setPwdDialogOpen(true)}>
               <BrandIcon icon={KeyRound} tone="amber" size="xs" />
@@ -267,6 +269,7 @@ export function Header() {
         </DropdownMenu>
       </div>
       <ChangePasswordDialog open={pwdDialogOpen} onOpenChange={setPwdDialogOpen} />
+      <MinhaContaDialog open={minhaContaOpen} onOpenChange={setMinhaContaOpen} />
     </header>
   );
 }

@@ -6698,19 +6698,27 @@ export type Database = {
           cpf: string | null
           created_at: string
           email: string
+          first_name: string | null
           id: string
           is_active: boolean
           is_master: boolean
           is_trial_user: boolean
           last_assigned_at: string | null
+          last_name: string | null
+          mobile: string | null
+          mobile_country_code: string | null
           must_change_password: boolean
           name: string
+          notification_preferences: Json
+          phone: string | null
+          phone_country_code: string | null
           preferred_language: string
           signature_completed: boolean
           status: string
           tags: string[] | null
           theme: string
           trial_expires_at: string | null
+          two_factor_enabled: boolean
           updated_at: string
           user_id: string
           whatsapp: string | null
@@ -6722,19 +6730,27 @@ export type Database = {
           cpf?: string | null
           created_at?: string
           email: string
+          first_name?: string | null
           id?: string
           is_active?: boolean
           is_master?: boolean
           is_trial_user?: boolean
           last_assigned_at?: string | null
+          last_name?: string | null
+          mobile?: string | null
+          mobile_country_code?: string | null
           must_change_password?: boolean
           name: string
+          notification_preferences?: Json
+          phone?: string | null
+          phone_country_code?: string | null
           preferred_language?: string
           signature_completed?: boolean
           status?: string
           tags?: string[] | null
           theme?: string
           trial_expires_at?: string | null
+          two_factor_enabled?: boolean
           updated_at?: string
           user_id: string
           whatsapp?: string | null
@@ -6746,19 +6762,27 @@ export type Database = {
           cpf?: string | null
           created_at?: string
           email?: string
+          first_name?: string | null
           id?: string
           is_active?: boolean
           is_master?: boolean
           is_trial_user?: boolean
           last_assigned_at?: string | null
+          last_name?: string | null
+          mobile?: string | null
+          mobile_country_code?: string | null
           must_change_password?: boolean
           name?: string
+          notification_preferences?: Json
+          phone?: string | null
+          phone_country_code?: string | null
           preferred_language?: string
           signature_completed?: boolean
           status?: string
           tags?: string[] | null
           theme?: string
           trial_expires_at?: string | null
+          two_factor_enabled?: boolean
           updated_at?: string
           user_id?: string
           whatsapp?: string | null
@@ -11512,6 +11536,10 @@ export type Database = {
           valid_until: string
         }[]
       }
+      get_notification_preference: {
+        Args: { _category: string; _channel: string; _user_id: string }
+        Returns: boolean
+      }
       get_pdf_contract_servidor: {
         Args: { _contract_id: string }
         Returns: string
@@ -11662,6 +11690,10 @@ export type Database = {
           name: string
           user_id: string
         }[]
+      }
+      get_user_active_conversation_count: {
+        Args: { _user_id: string }
+        Returns: number
       }
       get_user_company_id: { Args: { _user_id: string }; Returns: string }
       get_user_invitation_by_token: {
