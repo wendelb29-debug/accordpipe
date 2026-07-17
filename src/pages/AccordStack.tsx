@@ -390,6 +390,7 @@ export default function AccordStack() {
           />
         )}
       </div>
+      )}
 
       {showInfo && selectedContact && !isMobile && (
         <ContactDetailSidebar
