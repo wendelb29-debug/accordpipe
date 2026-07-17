@@ -245,9 +245,14 @@ export function useTenantUsers() {
       if (!ids.length) return [];
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, full_name, email, avatar_url")
-        .in("id", ids);
-      return profiles ?? [];
+        .select("user_id, name, email, avatar_url")
+        .in("user_id", ids);
+      return (profiles ?? []).map((p: any) => ({
+        id: p.user_id,
+        full_name: p.name,
+        email: p.email,
+        avatar_url: p.avatar_url,
+      }));
     },
   });
 }
