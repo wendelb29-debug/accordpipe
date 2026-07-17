@@ -527,21 +527,53 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
                       </div>
                       <div>
                         {idx === 0 && <Label className="text-xs">{form.channel === "email" ? "E-mail" : "Telefone"}</Label>}
-                        <div className="relative">
-                          {form.channel === "whatsapp" && (
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm">🇧🇷</span>
-                          )}
+                        {form.channel === "whatsapp" ? (() => {
+                          const country = manualCountries[idx] || DEFAULT_COUNTRY;
+                          const digits = (row.contact || "").replace(/\D/g, "");
+                          const national = digits.startsWith(country.dial) ? digits.slice(country.dial.length) : digits;
+                          const tooShort = national.length > 0 && national.length < 8;
+                          return (
+                            <div className={`flex items-stretch h-9 rounded-md border ${tooShort ? "border-red-400/50" : "border-input"} bg-background overflow-hidden focus-within:ring-1 focus-within:ring-ring`}>
+                              <DdiPicker
+                                country={country}
+                                onChange={(c) => {
+                                  setManualCountries(prev => {
+                                    const next = [...prev];
+                                    while (next.length <= idx) next.push(DEFAULT_COUNTRY);
+                                    next[idx] = c;
+                                    return next;
+                                  });
+                                  const list = form.audience_snapshot.length === 0 ? [row] : [...form.audience_snapshot];
+                                  list[idx] = { ...list[idx], contact: `+${c.dial}${national}` };
+                                  update("audience_snapshot", list);
+                                }}
+                              />
+                              <span className="flex items-center px-2 text-sm text-muted-foreground bg-muted/40 font-mono">+{country.dial}</span>
+                              <Input
+                                inputMode="numeric"
+                                value={national}
+                                placeholder="DDD + número"
+                                className="border-0 rounded-none h-full focus-visible:ring-0 flex-1"
+                                onChange={(e) => {
+                                  const only = e.target.value.replace(/\D/g, "");
+                                  const list = form.audience_snapshot.length === 0 ? [row] : [...form.audience_snapshot];
+                                  list[idx] = { ...list[idx], contact: `+${country.dial}${only}` };
+                                  update("audience_snapshot", list);
+                                }}
+                              />
+                            </div>
+                          );
+                        })() : (
                           <Input
                             value={row.contact || ""}
-                            placeholder={form.channel === "email" ? "email@exemplo.com" : "+55"}
-                            className={form.channel === "whatsapp" ? "pl-9" : ""}
+                            placeholder="email@exemplo.com"
                             onChange={(e) => {
                               const list = form.audience_snapshot.length === 0 ? [row] : [...form.audience_snapshot];
                               list[idx] = { ...list[idx], contact: e.target.value };
                               update("audience_snapshot", list);
                             }}
                           />
-                        </div>
+                        )}
                       </div>
                       {customVars.map(v => (
                         <div key={v}>
