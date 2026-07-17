@@ -264,10 +264,21 @@ async function process(payload: any, svc: ReturnType<typeof serviceClient>) {
     };
 
     if (externalId) {
-      const { error } = await svc
+      const { data: existing, error: lookupError } = await svc
         .from("whatsapp_messages")
-        .upsert(base, { onConflict: "company_id,external_message_id", ignoreDuplicates: false });
-      if (error) console.warn("uazapi-webhook upsert error:", error.message);
+        .select("id")
+        .eq("company_id", inst.tenant_id)
+        .eq("external_message_id", externalId)
+        .maybeSingle();
+      if (lookupError) {
+        console.warn("uazapi-webhook lookup error:", lookupError.message);
+      } else if (existing?.id) {
+        const { error } = await svc.from("whatsapp_messages").update(base).eq("id", existing.id);
+        if (error) console.warn("uazapi-webhook update error:", error.message);
+      } else {
+        const { error } = await svc.from("whatsapp_messages").insert(base);
+        if (error) console.warn("uazapi-webhook insert error:", error.message);
+      }
     } else {
       const { error } = await svc.from("whatsapp_messages").insert(base);
       if (error) console.warn("uazapi-webhook insert error:", error.message);
