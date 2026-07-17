@@ -135,7 +135,6 @@ export default function ConfiguracoesAtendimento() {
 
   const sistemaCards: CardItem[] = [
     { id: "convites", icon: Mail, title: "Convites e onboarding", description: "Gerencie convites enviados e reenvio para membros pendentes", action: { label: "Convites enviados", onClick: () => navigate("/configuracoes/usuarios") } },
-    { id: "logs", icon: FileText, title: "Logs e auditoria", description: "Consulte o histórico completo de eventos administrativos", action: { label: "Abrir auditoria", onClick: () => navigate("/configuracoes/logs") } },
   ];
 
   const cardsByTab: Record<TabId, CardItem[]> = {
