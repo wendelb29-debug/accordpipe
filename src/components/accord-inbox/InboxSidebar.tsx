@@ -1,9 +1,10 @@
-import { Search, Plus, Users, MessageSquare, Pin, Settings, ArrowDownUp, History, Home, Inbox } from "lucide-react";
+import { Search, Plus, Users, Filter, Pin, Settings, ArrowDownUp, History, Home, Inbox, Headset } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { AgentPresenceMenu } from "./AgentPresenceMenu";
 import { ConversationHistoryModal } from "./ConversationHistoryModal";
+import { useTenantLogo } from "@/hooks/useTenantLogo";
 
 export type ConversationStatusFilter = "fila" | "em_atendimento" | "encerrado";
 
