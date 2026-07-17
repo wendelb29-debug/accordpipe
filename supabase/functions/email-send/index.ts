@@ -91,8 +91,18 @@ async function sendMicrosoft(account: any, draft: any, admin: any) {
   const toList = Array.isArray(draft.to) ? draft.to : (draft.to ? [draft.to] : []);
   const ccList = Array.isArray(draft.cc) ? draft.cc : (draft.cc ? [draft.cc] : []);
   const bccList = Array.isArray(draft.bcc) ? draft.bcc : (draft.bcc ? [draft.bcc] : []);
+  const replyTo = draft.replyTo || account.reply_to || null;
 
-  const message = {
+  // Microsoft Graph só aceita cabeçalhos internet cujo nome comece com "x-" ou "X-",
+  // exceto uma lista pequena permitida (List-Unsubscribe*, etc.).
+  const extra = (draft.headers && typeof draft.headers === "object") ? draft.headers : {};
+  const internetHeaders: Array<{ name: string; value: string }> = [];
+  for (const [name, value] of Object.entries(extra)) {
+    if (value == null) continue;
+    internetHeaders.push({ name: String(name), value: String(value).replace(/[\r\n]+/g, " ") });
+  }
+
+  const message: any = {
     message: {
       subject: draft.subject,
       body: {
@@ -105,6 +115,13 @@ async function sendMicrosoft(account: any, draft: any, admin: any) {
     },
     saveToSentItems: true,
   };
+  if (replyTo) {
+    const rtList = Array.isArray(replyTo) ? replyTo : [replyTo];
+    message.message.replyTo = rtList.map((addr: string) => ({ emailAddress: { address: addr } }));
+  }
+  if (internetHeaders.length) {
+    message.message.internetMessageHeaders = internetHeaders;
+  }
 
   const resp = await fetch("https://graph.microsoft.com/v1.0/me/sendMail", {
     method: "POST",
