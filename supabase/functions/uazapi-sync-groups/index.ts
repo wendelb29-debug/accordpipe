@@ -20,6 +20,7 @@ interface SyncSummary {
 async function syncTenant(
   svc: ReturnType<typeof serviceClient>,
   tenantId: string,
+  opts: { force?: boolean } = {},
 ): Promise<SyncSummary> {
   const summary: SyncSummary = {
     tenant_id: tenantId,
@@ -41,7 +42,8 @@ async function syncTenant(
   const base = getBaseUrl();
   let groups: any[] = [];
   try {
-    const res = await fetch(`${base}/group/list`, {
+    const qs = opts.force ? "?force=true" : "";
+    const res = await fetch(`${base}/group/list${qs}`, {
       method: "GET",
       headers: { token: instance.uazapi_token, Accept: "application/json" },
     });
@@ -51,6 +53,7 @@ async function syncTenant(
     summary.errors.push(`group/list: ${e?.message ?? e}`);
     return summary;
   }
+
 
   for (const g of groups) {
     try {
