@@ -10,9 +10,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { MessageSquare, Mail, ChevronLeft, ChevronRight, Loader2, AlertTriangle, Upload, Save, Star, Info, Trash2, Plus, Braces } from "lucide-react";
+import { MessageSquare, Mail, ChevronLeft, ChevronRight, Loader2, AlertTriangle, Upload, Save, Star, Info, Trash2, Plus, Braces, Paperclip, Image as ImageIcon, FileText, Mic, Video, X, Rabbit, Gauge, Zap, Hand } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
 import * as XLSX from "xlsx";
+import { COUNTRIES, DEFAULT_COUNTRY, findCountryByDial, Country } from "./countries";
+import { DdiPicker } from "./DdiPicker";
 
 interface Props {
   open: boolean;
