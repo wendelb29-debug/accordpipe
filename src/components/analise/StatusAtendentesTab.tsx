@@ -92,8 +92,8 @@ export function StatusAtendentesTab() {
         userDeptMap.set(ud.user_id, arr);
       }
 
-      // 5) profiles
-      const ids = Array.from(new Set([...memberIds, ...Array.from(opsMap.keys())]));
+      // 5) profiles — STRICT: only users linked to this tenant via user_tenants
+      const ids = memberIds;
       let profiles: any[] = [];
       if (ids.length) {
         const { data } = await supabase
