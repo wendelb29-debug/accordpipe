@@ -28,6 +28,8 @@ import { AutomacaoInatividadePanel } from "@/components/atendimento-config/Autom
 import { AutomacaoHumanoPanel } from "@/components/atendimento-config/AutomacaoHumanoPanel";
 import { AutomacaoFormatacaoPanel } from "@/components/atendimento-config/AutomacaoFormatacaoPanel";
 import { TransferenciaEquipePanel } from "@/components/atendimento-config/TransferenciaEquipePanel";
+import { AnaliseModule } from "@/components/analise/AnaliseModule";
+import { BarChart3 } from "lucide-react";
 
 type TabId = "atendimento" | "equipe" | "automacao" | "sistema";
 
