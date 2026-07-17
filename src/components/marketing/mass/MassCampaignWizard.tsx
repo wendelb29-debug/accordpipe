@@ -959,7 +959,7 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
                   <div className="flex justify-between"><span className="text-muted-foreground">Velocidade</span><span className="font-medium capitalize">{form.speed}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Lote</span><span className="font-medium">{form.batch_size} / {form.batch_interval_min}min</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Janela</span><span className="font-medium">{form.daily_window_start}–{form.daily_window_end}</span></div>
-                  {form.scheduled_at && (
+                  {scheduleEnabled && form.scheduled_at && (
                     <div className="flex justify-between"><span className="text-muted-foreground">Início</span><span className="font-medium">{new Date(form.scheduled_at).toLocaleString("pt-BR")}</span></div>
                   )}
                 </div>
