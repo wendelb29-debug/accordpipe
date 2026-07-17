@@ -57,6 +57,7 @@ export function Header() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [pwdDialogOpen, setPwdDialogOpen] = useState(false);
+  const [minhaContaOpen, setMinhaContaOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
