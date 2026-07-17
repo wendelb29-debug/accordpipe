@@ -17,6 +17,7 @@ import { UazapiInstancePanel } from "./whatsapp/UazapiInstancePanel";
 import { WhatsAppProfileSection } from "./whatsapp/WhatsAppProfileSection";
 import { UazapiWebhookSection } from "./UazapiWebhookSection";
 import { UazapiDiagnostics } from "./UazapiDiagnostics";
+import { AsyncQueuePanel } from "./AsyncQueuePanel";
 
 interface WebhookFieldDef {
   key: string;
