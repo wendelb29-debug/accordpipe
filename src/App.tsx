@@ -260,6 +260,17 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/configuracoes/entregabilidade"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "ceo", "master"]}>
+                  <AppLayout>
+                    <EmailDeliverability />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
 
 
 
