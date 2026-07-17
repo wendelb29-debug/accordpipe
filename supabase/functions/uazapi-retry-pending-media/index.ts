@@ -11,6 +11,19 @@ const AUDIO_TYPES = new Set(["audio", "myaudio", "ptt"]);
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // Onda 15: função só pode ser chamada por cron/pg_net com service-role key.
+  // Bloqueia qualquer chamada pública (evita DoS/exaustão de créditos uazapi).
+  const auth = req.headers.get("Authorization") ?? "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const expected = `Bearer ${serviceKey}`;
+  if (!serviceKey || auth !== expected) {
+    return new Response(JSON.stringify({ ok: false, error: "forbidden" }), {
+      status: 403,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const svc = serviceClient();
 
   const cutoff = new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString();
