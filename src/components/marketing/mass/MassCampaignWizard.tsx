@@ -246,7 +246,7 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nova campanha — {steps[step]}</DialogTitle>
         </DialogHeader>
@@ -555,65 +555,142 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
         )}
 
         {step === 2 && (
-          <div className="space-y-4">
-            <RadioGroup value={form.content_type} onValueChange={(v) => update("content_type", v as any)} className="grid grid-cols-2 gap-2">
-              <label className={`flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-sm ${form.content_type === "editor" ? "border-primary bg-primary/5" : "border-border"}`}>
-                <RadioGroupItem value="editor" />Criar mensagem
-              </label>
-              <label className={`flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-sm ${form.content_type === "template" ? "border-primary bg-primary/5" : "border-border"}`}>
-                <RadioGroupItem value="template" />Usar modelo salvo
-              </label>
-            </RadioGroup>
-
-            {form.content_type === "template" && (
-              <div className="space-y-2">
-                <Input value={templateSearch} onChange={e => setTemplateSearch(e.target.value)} placeholder="Buscar modelo..." />
-                <div className="max-h-40 overflow-y-auto space-y-1 border rounded-lg p-2">
-                  {filteredTemplates.length === 0 ? (
-                    <p className="text-xs text-muted-foreground p-2">Nenhum modelo para {form.channel}. Volte a "Criar mensagem" e clique em "Salvar modelo".</p>
-                  ) : filteredTemplates.map(t => (
-                    <button key={t.id} onClick={() => applyTemplate(t)} className={`w-full text-left p-2 rounded hover:bg-muted text-sm ${form.template_id === t.id ? "bg-primary/10 border border-primary" : ""}`}>
-                      <div className="flex items-center gap-2">
-                        {t.is_favorite && <Star className="w-3 h-3 fill-amber-400 text-amber-400" />}
-                        <span className="font-medium">{t.name}</span>
-                        {t.category && <Badge variant="outline" className="text-xs">{t.category}</Badge>}
-                      </div>
-                      <p className="text-xs text-muted-foreground line-clamp-1">{t.body}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {form.channel === "email" && (
+          <div className="grid grid-cols-12 gap-4">
+            {/* Coluna esquerda — Tipo de conteúdo */}
+            <div className="col-span-12 md:col-span-3 space-y-2">
               <div>
-                <Label>Assunto *</Label>
-                <Input value={form.subject} onChange={e => update("subject", e.target.value)} placeholder="Olá {{nome}}, novidade da semana" />
+                <p className="text-sm font-semibold">Tipo de conteúdo</p>
+                <p className="text-xs text-muted-foreground">Escolha como o conteúdo será enviado aos contatos</p>
               </div>
-            )}
-            <div>
-              <Label>{form.channel === "email" ? "Corpo do e-mail" : "Mensagem"} * — use {"{{"}nome{"}}"}  para variáveis</Label>
-              <Textarea value={form.body} onChange={e => update("body", e.target.value)} rows={form.channel === "email" ? 10 : 6} placeholder={form.channel === "email" ? "Olá {{nome}},\n\n..." : "Olá {{nome}}, tudo bem?"} />
-              <div className="flex justify-end mt-2">
-                <Button variant="outline" size="sm" onClick={saveAsTemplate} className="gap-2"><Save className="w-3 h-3" />Salvar modelo</Button>
-              </div>
+              <button
+                type="button"
+                onClick={() => update("content_type", "editor")}
+                className={`w-full text-left p-3 border rounded-xl transition ${form.content_type === "editor" ? "border-primary bg-primary/5 ring-1 ring-primary/40" : "border-border hover:bg-muted/40"}`}
+              >
+                <div className="flex items-start gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <Save className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">Criar mensagem</span>
+                      <Badge className="text-[10px] px-1.5 py-0 h-4 bg-primary/15 text-primary border-0">NEW</Badge>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Selecione o template a enviar e configure as variáveis e ações de botões, se necessário</p>
+                  </div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => update("content_type", "template")}
+                className={`w-full text-left p-3 border rounded-xl transition ${form.content_type === "template" ? "border-primary bg-primary/5 ring-1 ring-primary/40" : "border-border hover:bg-muted/40"}`}
+              >
+                <div className="flex items-start gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-muted text-muted-foreground flex items-center justify-center shrink-0">
+                    <Star className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1">
+                    <span className="text-sm font-medium">Usar modelo salvo</span>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Reaproveite um modelo já salvo anteriormente</p>
+                  </div>
+                </div>
+              </button>
             </div>
 
-            <div className="border rounded-lg p-4 bg-muted/30">
-              <p className="text-xs text-muted-foreground mb-2">Pré-visualização (com o 1º destinatário)</p>
-              {form.channel === "whatsapp" ? (
-                <div className="max-w-sm mx-auto bg-emerald-500/10 rounded-2xl p-3 text-sm whitespace-pre-wrap">
-                  {renderPreview(form.body, form.audience_snapshot[0]) || <span className="text-muted-foreground">Digite a mensagem...</span>}
+            {/* Coluna central — Template + editor */}
+            <div className="col-span-12 md:col-span-6 space-y-3">
+              <div>
+                <p className="text-sm font-semibold">Selecione o template</p>
+                <p className="text-xs text-muted-foreground">Canal oficial: escolha um template aprovado e mapeie as variáveis.</p>
+              </div>
+
+              {form.content_type === "template" ? (
+                <div className="space-y-2">
+                  <Input value={templateSearch} onChange={e => setTemplateSearch(e.target.value)} placeholder="Buscar modelo..." />
+                  <div className="max-h-56 overflow-y-auto space-y-1 border rounded-lg p-2">
+                    {filteredTemplates.length === 0 ? (
+                      <p className="text-xs text-muted-foreground p-2">Nenhum modelo para {form.channel}. Volte a "Criar mensagem" e clique em "Salvar modelo".</p>
+                    ) : filteredTemplates.map(t => (
+                      <button key={t.id} type="button" onClick={() => applyTemplate(t)} className={`w-full text-left p-2 rounded hover:bg-muted text-sm ${form.template_id === t.id ? "bg-primary/10 border border-primary" : ""}`}>
+                        <div className="flex items-center gap-2">
+                          {t.is_favorite && <Star className="w-3 h-3 fill-amber-400 text-amber-400" />}
+                          <span className="font-medium">{t.name}</span>
+                          {t.category && <Badge variant="outline" className="text-xs">{t.category}</Badge>}
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-1">{t.body}</p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               ) : (
-                <div className="bg-background border rounded-lg p-4 text-sm">
-                  <p className="font-semibold">{renderPreview(form.subject, form.audience_snapshot[0]) || <span className="text-muted-foreground">(sem assunto)</span>}</p>
-                  <div className="mt-2 whitespace-pre-wrap">{renderPreview(form.body, form.audience_snapshot[0]) || <span className="text-muted-foreground">Digite o corpo...</span>}</div>
-                </div>
+                <>
+                  {form.template_id ? (
+                    <div className="flex items-center justify-between border rounded-lg p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
+                          <Save className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">
+                            {templates.find(t => t.id === form.template_id)?.name || "Template selecionado"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Template selecionado</p>
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => { update("template_id", null); update("content_type", "template"); }}>
+                        Trocar template
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="border border-dashed rounded-lg p-4 text-center text-xs text-muted-foreground">
+                      Nenhum template selecionado — use "Usar modelo salvo" ou edite abaixo.
+                    </div>
+                  )}
+
+                  {form.channel === "email" && (
+                    <div>
+                      <Label>Assunto *</Label>
+                      <Input value={form.subject} onChange={e => update("subject", e.target.value)} placeholder="Olá {{nome}}, novidade da semana" />
+                    </div>
+                  )}
+                  <div>
+                    <Label>{form.channel === "email" ? "Corpo do e-mail" : "Mensagem"} * — use {"{{"}nome{"}}"}  para variáveis</Label>
+                    <Textarea value={form.body} onChange={e => update("body", e.target.value)} rows={form.channel === "email" ? 8 : 6} placeholder={form.channel === "email" ? "Olá {{nome}},\n\n..." : "Olá {{nome}}, tudo bem?"} />
+                    <div className="flex justify-end mt-2">
+                      <Button variant="outline" size="sm" onClick={saveAsTemplate} className="gap-2"><Save className="w-3 h-3" />Salvar modelo</Button>
+                    </div>
+                  </div>
+                </>
               )}
+
+              <Alert className="border-primary/30 bg-primary/5">
+                <AlertDescription className="text-xs">
+                  Sem ações de botão, a conversa é <span className="font-medium">finalizada</span> automaticamente após o envio — exceto se um atendente já estiver conduzindo a conversa.
+                </AlertDescription>
+              </Alert>
+            </div>
+
+            {/* Coluna direita — Pré-visualização */}
+            <div className="col-span-12 md:col-span-3">
+              <div className="border rounded-xl p-3 bg-muted/20 sticky top-2">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1">
+                  <Star className="w-3 h-3" /> Pré-visualização
+                </p>
+                {form.channel === "whatsapp" ? (
+                  <div className="bg-emerald-500/10 rounded-2xl p-3 text-xs whitespace-pre-wrap min-h-[120px]">
+                    {renderPreview(form.body, form.audience_snapshot[0]) || <span className="text-muted-foreground">Digite a mensagem...</span>}
+                  </div>
+                ) : (
+                  <div className="bg-background border rounded-lg p-3 text-xs">
+                    <p className="font-semibold">{renderPreview(form.subject, form.audience_snapshot[0]) || <span className="text-muted-foreground">(sem assunto)</span>}</p>
+                    <div className="mt-2 whitespace-pre-wrap">{renderPreview(form.body, form.audience_snapshot[0]) || <span className="text-muted-foreground">Digite o corpo...</span>}</div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
+
 
         {step === 3 && (
           <div className="space-y-4">
