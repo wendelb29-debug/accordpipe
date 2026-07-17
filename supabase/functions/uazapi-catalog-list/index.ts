@@ -54,8 +54,15 @@ Deno.serve(async (req) => {
       });
     } catch (e: any) {
       const status = e?.status ?? 0;
-      // 504/408/502/503: instância provavelmente sem Business/catálogo ativo. Não é erro do Accord.
-      if ([408, 502, 503, 504].includes(status)) {
+      const innerCode = e?.data?.code ?? 0;
+      const msg = String(e?.message ?? "").toLowerCase();
+      const isTimeout =
+        [408, 502, 503, 504].includes(status) ||
+        [408, 502, 503, 504].includes(innerCode) ||
+        msg.includes("timeout") ||
+        msg.includes("504") ||
+        msg.includes("aborted");
+      if (isTimeout) {
         return json({ ok: true, products: [], next_after: null, unavailable: true, reason: "uazapi_timeout" });
       }
       throw e;
