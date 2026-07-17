@@ -313,13 +313,45 @@ async function process(payload: any, svc: ReturnType<typeof serviceClient>) {
     const chatId: string = String(pick(msg, ["chatId", "chatid", "from", "key.remoteJid"]) ?? "");
     const isGroupChat = chatId.includes("@g.us") || Boolean(pick(msg, ["isGroup"]));
     const phoneDigits = normalizePhone(chatId.split("@")[0] ?? chatId);
-    const rawType: string = String(
+    // Onda 26: normalize uazapi types like "imageMessage"/"stickerMessage"/"videoMessage"
+    // down to canonical "image"/"sticker"/"video" so isMediaType() actually matches and
+    // the media-download pipeline runs. Reactions/text stay intact.
+    const rawTypeRaw: string = String(
       pick(msg, ["messageType", "type", "message.messageType"]) ?? "text",
     ).toLowerCase();
-    const text: string | null = pick(msg, [
-      "text", "body", "caption", "content", "message.conversation",
-      "message.extendedTextMessage.text",
+    const rawType: string = rawTypeRaw
+      .replace(/^extendedtextmessage$/, "text")
+      .replace(/message$/, "");
+
+    const isMedia = isMediaType(rawType);
+
+    // Onda 26: NEVER pick "content" for media messages — for images/stickers/etc. that
+    // field is the raw uazapi payload (mediaKey, directPath, mimetype, ...) and used to
+    // land in `message` as an unreadable JSON blob in the chat bubble.
+    const captionOnly = pick<any>(msg, [
+      "caption", "text", "body",
+      "message.imageMessage.caption",
+      "message.videoMessage.caption",
+      "message.documentMessage.caption",
     ]);
+    const fullText = isMedia
+      ? captionOnly
+      : pick<any>(msg, [
+          "text", "body", "caption", "content",
+          "message.conversation", "message.extendedTextMessage.text",
+        ]);
+    // Guard: only accept string values; drop objects/arrays that would stringify to JSON.
+    let text: string | null = typeof fullText === "string" ? fullText : null;
+    // Extra guard: if for any reason a raw-payload-looking string sneaks through on a
+    // media message, drop it — never render mediaKey/directPath blobs as chat text.
+    if (
+      isMedia &&
+      text &&
+      /"(mediaKey|directPath|fileSHA256|fileEncSHA256|mimetype)"\s*:/.test(text)
+    ) {
+      text = null;
+    }
+
     const senderName: string | null = pick(msg, ["senderName", "pushName", "chatName", "name"]);
     // For groups, sender JID identifies the individual participant
     const senderJid: string | null = pick(msg, [
@@ -332,7 +364,6 @@ async function process(payload: any, svc: ReturnType<typeof serviceClient>) {
     const origin: "accord_api" | "whatsapp_native" =
       fromMe && wasSentByApi ? "accord_api" : "whatsapp_native";
 
-    const isMedia = isMediaType(rawType);
     // Groups don't create individual contacts (a group isn't a person)
     const contactId = isGroupChat
       ? null
