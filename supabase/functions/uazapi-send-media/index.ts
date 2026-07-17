@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
   try {
     const caller = await requireCaller(req);
     if (caller instanceof Response) return caller;
-    const { tenant_id, lead_id, number, type, file, caption, docName } =
+    const { tenant_id, lead_id, number, type, file, caption, docName, useAsync } =
       await req.json();
     if (!tenant_id || !number || !type || !file)
       return json({ error: "tenant_id, number, type, file required" }, 400);
