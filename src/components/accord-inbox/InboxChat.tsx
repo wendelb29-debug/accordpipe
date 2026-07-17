@@ -99,6 +99,8 @@ interface InboxChatProps {
   onNewConversation?: () => void;
   onFilterQueue?: () => void;
   onViewReport?: () => void;
+  /** Real operator status used in the empty right-panel state */
+  agentStatus?: "available" | "busy" | "away" | "unavailable" | string;
   /** Uazapi/Z-API server URL for profile settings */
   serverUrl?: string | null;
   /** Active WhatsApp integration id (used to load the instance token via secure RPC) */
@@ -706,7 +708,7 @@ function AccordWatermark() {
 export function InboxChat({
   contact, messages, onSendMessage, onReactToMessage, onTransfer, onToggleInfo, showInfo, onUpdateStatus, companyId,
   onBack, queueCount = 0, inServiceCount = 0, onNewConversation, onFilterQueue, onViewReport, isAdmin,
-  serverUrl, integrationId, isPinned, onTogglePin,
+  serverUrl, integrationId, isPinned, onTogglePin, agentStatus = "available",
 }: InboxChatProps) {
   const [text, setText] = useState("");
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
@@ -1122,6 +1124,37 @@ export function InboxChat({
   };
 
   if (!contact) {
+    const statusMap: Record<string, { label: string; ring: string; dot: string; blur: string; desc: string }> = {
+      available: {
+        label: "Você está Online",
+        ring: "bg-emerald-500",
+        dot: "bg-emerald-400",
+        blur: "bg-emerald-500/20",
+        desc: "Escolha uma conversa em andamento ou inicie uma nova conversa agora mesmo. Enquanto estiver online, você receberá novos atendimentos normalmente.",
+      },
+      busy: {
+        label: "Você está Ocupado",
+        ring: "bg-amber-500",
+        dot: "bg-amber-400",
+        blur: "bg-amber-500/20",
+        desc: "Você continua atendendo as conversas em andamento, mas não receberá novos atendimentos da fila enquanto estiver ocupado.",
+      },
+      away: {
+        label: "Você está em Pausa",
+        ring: "bg-orange-500",
+        dot: "bg-orange-400",
+        blur: "bg-orange-500/20",
+        desc: "Suas conversas em andamento continuam disponíveis. Ao voltar da pausa, você passa a receber novos atendimentos novamente.",
+      },
+      unavailable: {
+        label: "Você está Offline",
+        ring: "bg-muted-foreground/60",
+        dot: "bg-muted-foreground/60",
+        blur: "bg-muted-foreground/20",
+        desc: "Conecte-se para começar a receber mensagens da fila deste tenant.",
+      },
+    };
+    const s = statusMap[agentStatus] || statusMap.available;
     return (
       <div
         className="relative overflow-hidden bg-background"
@@ -1134,23 +1167,23 @@ export function InboxChat({
         />
         <div style={{ position:'relative', zIndex:10, display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', padding:'0 24px', maxWidth: 460 }}>
           <div className="relative mb-6">
-            <div className="absolute inset-0 rounded-full bg-emerald-500/20 blur-2xl" aria-hidden />
-            <div className="relative w-24 h-24 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+            <div className={cn("absolute inset-0 rounded-full blur-2xl", s.blur)} aria-hidden />
+            <div className={cn("relative w-24 h-24 rounded-full flex items-center justify-center shadow-lg", s.ring, `shadow-${s.ring.split('-')[1]}-500/30`)}>
               <span className="w-4 h-4 rounded-full bg-white/90" />
             </div>
           </div>
           <p className="text-[18px] font-semibold text-foreground tracking-tight mb-2">
-            Você está Online
+            {s.label}
           </p>
           <p className="text-[13px] text-muted-foreground leading-relaxed mb-7 max-w-[340px]">
-            Escolha uma conversa em andamento ou inicie uma nova conversa agora mesmo. Enquanto estiver online, você receberá novos atendimentos normalmente.
+            {s.desc}
           </p>
-          {onNewConversation && (
+          {onNewConversation && agentStatus !== "unavailable" && (
             <button
               onClick={onNewConversation}
               className="inline-flex items-center gap-2 px-5 h-11 rounded-full bg-primary text-primary-foreground text-[13.5px] font-medium hover:bg-primary/90 transition-all shadow-sm shadow-primary/20"
             >
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span className={cn("w-2 h-2 rounded-full", s.dot)} />
               Iniciar nova conversa
             </button>
           )}
