@@ -131,7 +131,20 @@ export function StatusAtendentesTab() {
         .limit(50);
       setEvents((evs || []) as unknown as EventRow[]);
     })();
-  }, [tenantId]);
+  }, [tenantId, reloadKey]);
+
+  const changeStatus = async (userId: string, newStatus: string) => {
+    if (!tenantId) return;
+    const { error } = await supabase
+      .from("operator_status")
+      .upsert(
+        { user_id: userId, tenant_id: tenantId, status: newStatus, last_changed_at: new Date().toISOString() } as any,
+        { onConflict: "user_id,tenant_id" }
+      );
+    if (error) return toast.error(error.message);
+    toast.success("Status atualizado");
+    setReloadKey((k) => k + 1);
+  };
 
   const kpis = useMemo(() => {
     const c = { available: 0, busy: 0, away: 0, unavailable: 0, delayed: 0 };
