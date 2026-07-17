@@ -271,6 +271,7 @@ export function InboxSidebar({
           contacts.map((c) => {
             const isSelected = c.id === selectedId;
             const chan = c.channel ? CHANNEL_STYLES[c.channel] : null;
+            const hasUnread = (c.unreadCount || 0) > 0;
             return (
               <div
                 key={c.id}
@@ -292,26 +293,51 @@ export function InboxSidebar({
                     {c.isPinned && (
                       <Pin size={11} className="text-primary flex-shrink-0" aria-label="Fixado" />
                     )}
-                    <span className={cn("text-[13px] font-medium truncate", isSelected ? "text-primary" : "text-foreground")}>
+                    <span
+                      className={cn(
+                        "text-[13px] truncate",
+                        isSelected
+                          ? "text-primary font-medium"
+                          : hasUnread
+                          ? "text-foreground font-semibold"
+                          : "text-foreground font-medium"
+                      )}
+                    >
                       {c.name}
                     </span>
                     {c.isGroup && (
                       <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0 rounded-full flex-shrink-0">grupo</span>
                     )}
                   </div>
-                  <p className={cn("text-[11px] truncate mt-0.5", isSelected ? "text-primary/70" : "text-muted-foreground")}>
+                  <p
+                    className={cn(
+                      "text-[11px] truncate mt-0.5",
+                      isSelected
+                        ? "text-primary/70"
+                        : hasUnread
+                        ? "text-foreground font-semibold"
+                        : "text-muted-foreground"
+                    )}
+                  >
                     {c.lastMessage || c.phone}
                   </p>
                 </div>
 
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                  <span className="text-[10px] text-muted-foreground">{c.lastMessageTime}</span>
-                  {c.unreadCount ? (
+                  <span
+                    className={cn(
+                      "text-[10px]",
+                      hasUnread && !isSelected ? "text-primary font-semibold" : "text-muted-foreground"
+                    )}
+                  >
+                    {c.lastMessageTime}
+                  </span>
+                  {hasUnread ? (
                     <span
-                      className="min-w-[20px] h-[20px] inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[11px] font-bold px-1.5 shadow-sm"
+                      className="min-w-[20px] h-[20px] inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[11px] font-bold px-1.5 shadow-sm shadow-primary/30"
                       aria-label={`${c.unreadCount} mensagens não lidas`}
                     >
-                      {c.unreadCount > 99 ? "99+" : c.unreadCount}
+                      {c.unreadCount! > 99 ? "99+" : c.unreadCount}
                     </span>
                   ) : chan ? (
                     <span className={cn("text-[10px] px-1.5 py-0 rounded-full", chan.cls)}>{chan.label}</span>
