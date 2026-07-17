@@ -42,6 +42,11 @@ interface GroupChat {
   last_message_text: string | null;
   last_message_at: string | null;
   unread_count: number;
+  group_is_announce: boolean;
+  group_join_approval_required: boolean;
+  group_member_add_mode: "admin_add" | "all_member_add";
+  group_invite_link: string | null;
+  instance_is_admin: boolean;
 }
 
 interface GroupMessage {
