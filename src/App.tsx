@@ -43,6 +43,7 @@ const AccordStack = lazy(() => import("./pages/AccordStack"));
 const GestaoVendas = lazy(() => import("./pages/GestaoVendas"));
 const CrmDashboard = lazy(() => import("./pages/CrmDashboard"));
 const AuditLogs = lazy(() => import("./pages/AuditLogs"));
+const EmailDeliverability = lazy(() => import("./pages/EmailDeliverability"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const Formularios = lazy(() => import("./pages/Formularios"));
@@ -259,6 +260,17 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/configuracoes/entregabilidade"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "ceo", "master"]}>
+                  <AppLayout>
+                    <EmailDeliverability />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
 
 
 

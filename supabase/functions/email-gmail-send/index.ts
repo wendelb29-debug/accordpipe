@@ -36,7 +36,7 @@ async function getValidToken(admin: any, account: any): Promise<string> {
   return refreshed.access_token;
 }
 
-function buildRawEmail(from: string, fromName: string | null, to: string, cc: string, bcc: string, subject: string, bodyHtml: string, bodyText: string): string {
+function buildRawEmail(from: string, fromName: string | null, to: string, cc: string, bcc: string, subject: string, bodyHtml: string, bodyText: string, extraHeaders: Record<string, string> = {}, replyTo?: string): string {
   const fromHeader = fromName ? `"${fromName}" <${from}>` : from;
   const boundary = `b_${crypto.randomUUID().replace(/-/g, "")}`;
   const lines = [
@@ -45,7 +45,14 @@ function buildRawEmail(from: string, fromName: string | null, to: string, cc: st
   ];
   if (cc) lines.push(`Cc: ${cc}`);
   if (bcc) lines.push(`Bcc: ${bcc}`);
+  if (replyTo) lines.push(`Reply-To: ${replyTo}`);
   lines.push(`Subject: ${subject}`);
+  // Cabeçalhos de entregabilidade (List-Unsubscribe, etc.)
+  for (const [k, v] of Object.entries(extraHeaders)) {
+    if (v == null) continue;
+    // sanitiza para uma linha só
+    lines.push(`${k}: ${String(v).replace(/[\r\n]+/g, " ")}`);
+  }
   lines.push(`MIME-Version: 1.0`);
   lines.push(`Content-Type: multipart/alternative; boundary="${boundary}"`);
   lines.push(``);
@@ -64,7 +71,6 @@ function buildRawEmail(from: string, fromName: string | null, to: string, cc: st
   lines.push(`--${boundary}--`);
 
   const raw = lines.join("\r\n");
-  // base64url encode (handle utf-8)
   const bytes = new TextEncoder().encode(raw);
   let bin = "";
   for (const b of bytes) bin += String.fromCharCode(b);
@@ -92,7 +98,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { accountId, to, cc, bcc, subject, html, text, threadId } = await req.json();
+    const { accountId, to, cc, bcc, subject, html, text, threadId, headers: extraHeaders, replyTo } = await req.json();
     if (!accountId || !to || !subject) {
       return new Response(JSON.stringify({ error: "Missing fields" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -118,6 +124,8 @@ Deno.serve(async (req) => {
       subject,
       html || (text || "").replace(/\n/g, "<br>"),
       text || (html || "").replace(/<[^>]+>/g, ""),
+      (extraHeaders && typeof extraHeaders === "object") ? extraHeaders : {},
+      replyTo || account.reply_to || undefined,
     );
 
     const sendRes = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
