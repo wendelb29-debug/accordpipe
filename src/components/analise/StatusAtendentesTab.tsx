@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { OperatorEditDialog } from "./OperatorEditDialog";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNowStrict, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -16,7 +19,7 @@ interface OperatorRow {
   user_id: string;
   status: string;
   last_changed_at: string;
-  profile?: { full_name?: string | null; avatar_url?: string | null; email?: string | null } | null;
+  profile?: { name?: string | null; avatar_url?: string | null; email?: string | null } | null;
   departments: DeptInfo[];
 }
 
@@ -46,6 +49,8 @@ export function StatusAtendentesTab() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterUser, setFilterUser] = useState<string>("all");
   const [filterDept, setFilterDept] = useState<string>("all");
+  const [editingUser, setEditingUser] = useState<OperatorRow | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!tenantId) return;
@@ -93,7 +98,7 @@ export function StatusAtendentesTab() {
       if (ids.length) {
         const { data } = await supabase
           .from("profiles")
-          .select("id, full_name, avatar_url, email")
+          .select("user_id, name, avatar_url, email")
           .in("id", ids);
         profiles = data || [];
       }
@@ -104,7 +109,7 @@ export function StatusAtendentesTab() {
           user_id: uid,
           status: st?.status || "unavailable",
           last_changed_at: st?.last_changed_at || new Date().toISOString(),
-          profile: profiles.find((p) => p.id === uid) || null,
+          profile: profiles.find((p) => p.user_id === uid) || null,
           departments: userDeptMap.get(uid) || [],
         };
       });
@@ -114,7 +119,7 @@ export function StatusAtendentesTab() {
         const oa = order[a.status] ?? 9;
         const ob = order[b.status] ?? 9;
         if (oa !== ob) return oa - ob;
-        return (a.profile?.full_name || "").localeCompare(b.profile?.full_name || "");
+        return (a.profile?.name || "").localeCompare(b.profile?.name || "");
       });
       setOperators(rows);
 
@@ -126,7 +131,20 @@ export function StatusAtendentesTab() {
         .limit(50);
       setEvents((evs || []) as unknown as EventRow[]);
     })();
-  }, [tenantId]);
+  }, [tenantId, reloadKey]);
+
+  const changeStatus = async (userId: string, newStatus: string) => {
+    if (!tenantId) return;
+    const { error } = await supabase
+      .from("operator_status")
+      .upsert(
+        { user_id: userId, tenant_id: tenantId, status: newStatus, last_changed_at: new Date().toISOString() } as any,
+        { onConflict: "user_id,tenant_id" }
+      );
+    if (error) return toast.error(error.message);
+    toast.success("Status atualizado");
+    setReloadKey((k) => k + 1);
+  };
 
   const kpis = useMemo(() => {
     const c = { available: 0, busy: 0, away: 0, unavailable: 0, delayed: 0 };
@@ -149,9 +167,9 @@ export function StatusAtendentesTab() {
   }, [operators, filterStatus, filterUser, filterDept]);
 
   const displayName = (o: OperatorRow) =>
-    o.profile?.full_name || o.profile?.email || o.user_id.slice(0, 8);
+    o.profile?.name || o.profile?.email || o.user_id.slice(0, 8);
   const initials = (o: OperatorRow) =>
-    (o.profile?.full_name || o.profile?.email || "?")
+    (o.profile?.name || o.profile?.email || "?")
       .split(" ")
       .map((p) => p[0])
       .join("")
@@ -287,12 +305,37 @@ export function StatusAtendentesTab() {
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" title="Editar status">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        title="Editar usuário"
+                        onClick={() => setEditingUser(o)}
+                      >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" title="Transferir atendimentos">
-                        <ArrowRightLeft className="h-3.5 w-3.5" />
-                      </Button>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Alterar status">
+                            <ArrowRightLeft className="h-3.5 w-3.5" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent align="end" className="w-40 p-1">
+                          {Object.entries(STATUS_META).map(([k, v]) => (
+                            <button
+                              key={k}
+                              onClick={() => changeStatus(o.user_id, k)}
+                              className={cn(
+                                "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-muted",
+                                o.status === k && "bg-muted"
+                              )}
+                            >
+                              <span className={cn("h-1.5 w-1.5 rounded-full", v.dot)} />
+                              <span className={v.color}>{v.label}</span>
+                            </button>
+                          ))}
+                        </PopoverContent>
+                      </Popover>
                     </div>
                   </td>
                 </tr>
@@ -343,6 +386,18 @@ export function StatusAtendentesTab() {
           </tbody>
         </table>
       </div>
+
+      {editingUser && tenantId && (
+        <OperatorEditDialog
+          open={!!editingUser}
+          onOpenChange={(v) => !v && setEditingUser(null)}
+          tenantId={tenantId}
+          userId={editingUser.user_id}
+          initialName={editingUser.profile?.name || ""}
+          departments={allDepartments}
+          onSaved={() => setReloadKey((k) => k + 1)}
+        />
+      )}
     </div>
   );
 }
