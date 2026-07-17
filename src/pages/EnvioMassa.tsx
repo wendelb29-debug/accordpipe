@@ -67,6 +67,20 @@ export default function EnvioMassa() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Realtime: refresh when a campaign row changes (status/totals transitions)
+  useEffect(() => {
+    if (!activeCompanyId) return;
+    const ch = supabase
+      .channel(`mass-campaigns-${activeCompanyId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "mass_campaigns", filter: `tenant_id=eq.${activeCompanyId}` },
+        () => load(),
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [activeCompanyId, load]);
+
   const filteredCampaigns = campaigns.filter(c => !search || c.name.toLowerCase().includes(search.toLowerCase()));
   const filteredTemplates = templates.filter(t => !search || t.name.toLowerCase().includes(search.toLowerCase()));
 
