@@ -135,7 +135,7 @@ export default function EnvioMassa() {
             const st = statusLabel[c.status] || statusLabel.draft;
             const totals = c.totals || {};
             return (
-              <Card key={c.id} className="p-4 flex items-center gap-4">
+              <Card key={c.id} className="p-4 flex items-center gap-4 cursor-pointer hover:bg-muted/30 transition" onClick={() => setDetailsFor(c)}>
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                   {c.channel === "whatsapp" ? <MessageSquare className="w-5 h-5 text-emerald-400" /> : <Mail className="w-5 h-5 text-blue-400" />}
                 </div>
@@ -149,11 +149,11 @@ export default function EnvioMassa() {
                   </p>
                 </div>
                 {(c.status === "running" || c.status === "paused") && (
-                  <Button variant="ghost" size="icon" onClick={() => handleTogglePause(c)}>
+                  <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleTogglePause(c); }}>
                     {c.status === "running" ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                   </Button>
                 )}
-                <Button variant="ghost" size="icon" onClick={() => handleDelete(c.id)}><Trash2 className="w-4 h-4 text-red-400" /></Button>
+                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleDelete(c.id); }}><Trash2 className="w-4 h-4 text-red-400" /></Button>
               </Card>
             );
           })}
