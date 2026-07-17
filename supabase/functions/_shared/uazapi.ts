@@ -27,6 +27,30 @@ export function getAdminToken(): string {
   return Deno.env.get("UAZAPI_ADMIN_TOKEN") ?? "";
 }
 
+export function getUazapiWebhookUrl(): string {
+  const base = Deno.env.get("SUPABASE_URL") ?? "";
+  return `${base}/functions/v1/uazapi-webhook`;
+}
+
+export function buildUazapiWebhookPayload() {
+  return {
+    url: getUazapiWebhookUrl(),
+    // Eventos necessários para mensagens, status, conexão e metadados dos chats.
+    events: [
+      "messages",
+      "messages_upsert",
+      "messages_update",
+      "chats",
+      "chats_update",
+      "chats_upsert",
+      "connection",
+    ],
+    // Nunca excluir mensagens do celular; só evita duplicar envios feitos pela API.
+    excludeMessages: ["wasSentByApi"],
+    enabled: true,
+  };
+}
+
 export function serviceClient() {
   return createClient(
     Deno.env.get("SUPABASE_URL") ?? "",

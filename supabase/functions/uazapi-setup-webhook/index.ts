@@ -1,8 +1,10 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import {
   callUazapi,
+  buildUazapiWebhookPayload,
   corsHeaders,
   getInstanceRow,
+  getUazapiWebhookUrl,
   json,
   requireCaller,
   requireTenantMember,
@@ -21,21 +23,12 @@ Deno.serve(async (req) => {
     const row = await getInstanceRow(tenant_id);
     if (!row?.uazapi_token) return json({ error: "instance_not_created" }, 400);
 
-    const base = Deno.env.get("SUPABASE_URL") ?? "";
-    const webhookUrl = `${base}/functions/v1/uazapi-webhook`;
+    const webhookUrl = getUazapiWebhookUrl();
 
     const data = await callUazapi("/webhook", {
       method: "POST",
       token: row.uazapi_token,
-      body: {
-        url: webhookUrl,
-        // Onda 7: incluir "chats" para receber metadados (arquivado/fixado/etc).
-        events: ["messages", "messages_update", "connection", "chats"],
-        // APENAS wasSentByApi — nunca "fromMeYes"/"isGroupNo" (esses cortariam
-        // as mensagens enviadas pelo celular).
-        excludeMessages: ["wasSentByApi"],
-        enabled: true,
-      },
+      body: buildUazapiWebhookPayload(),
     });
 
     return json({ ok: true, webhook_url: webhookUrl, result: data });

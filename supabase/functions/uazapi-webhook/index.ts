@@ -114,7 +114,11 @@ async function upsertChat(
 }
 
 async function process(payload: any, svc: ReturnType<typeof serviceClient>) {
-  const eventType: string = payload?.event ?? payload?.type ?? payload?.EventType ?? "";
+  const eventType: string =
+    (typeof payload?.event === "string" ? payload.event : null) ??
+    payload?.EventType ??
+    payload?.type ??
+    "";
   // "instance" pode vir como string (id) OU como objeto — priorizar string
   const instanceIdRaw =
     (typeof payload?.instance === "string" ? payload.instance : null) ??
@@ -124,11 +128,17 @@ async function process(payload: any, svc: ReturnType<typeof serviceClient>) {
     null;
   const instanceOwnerJid: string | null =
     payload?.instance?.jid?.user ?? payload?.owner ?? null;
+  const instanceToken: string | null = payload?.token ?? payload?.instance?.token ?? null;
 
   let inst: any = null;
   if (instanceIdRaw) {
     const q = await svc.from("whatsapp_instances").select("*")
       .eq("uazapi_instance_id", String(instanceIdRaw)).maybeSingle();
+    inst = q.data;
+  }
+  if (!inst && instanceToken) {
+    const q = await svc.from("whatsapp_instances").select("*")
+      .eq("uazapi_token", String(instanceToken)).maybeSingle();
     inst = q.data;
   }
   if (!inst && instanceOwnerJid) {
@@ -144,6 +154,13 @@ async function process(payload: any, svc: ReturnType<typeof serviceClient>) {
       payload,
     });
     return;
+  }
+
+  const identityPatch: Record<string, unknown> = {};
+  if (instanceOwnerJid && !inst.phone_number) identityPatch.phone_number = String(instanceOwnerJid);
+  if (payload?.instanceName && !inst.instance_name) identityPatch.instance_name = String(payload.instanceName);
+  if (Object.keys(identityPatch).length > 0) {
+    await svc.from("whatsapp_instances").update(identityPatch).eq("id", inst.id);
   }
 
   // ---------- Connection state ----------
@@ -209,7 +226,7 @@ async function process(payload: any, svc: ReturnType<typeof serviceClient>) {
   if (eventType === "messages" || eventType === "message" || eventType === "messages_upsert") {
     const msg = payload?.message ?? payload?.data ?? payload;
     const externalId: string | null = pick(msg, [
-      "id", "messageId", "key.id", "message.id",
+      "id", "messageid", "messageId", "key.id", "message.id",
     ]);
     const fromMe: boolean = Boolean(pick(msg, ["fromMe", "key.fromMe"]));
     const wasSentByApi: boolean = Boolean(pick(msg, ["wasSentByApi", "sentByApi"]));
@@ -247,10 +264,21 @@ async function process(payload: any, svc: ReturnType<typeof serviceClient>) {
     };
 
     if (externalId) {
-      const { error } = await svc
+      const { data: existing, error: lookupError } = await svc
         .from("whatsapp_messages")
-        .upsert(base, { onConflict: "company_id,external_message_id", ignoreDuplicates: false });
-      if (error) console.warn("uazapi-webhook upsert error:", error.message);
+        .select("id")
+        .eq("company_id", inst.tenant_id)
+        .eq("external_message_id", externalId)
+        .maybeSingle();
+      if (lookupError) {
+        console.warn("uazapi-webhook lookup error:", lookupError.message);
+      } else if (existing?.id) {
+        const { error } = await svc.from("whatsapp_messages").update(base).eq("id", existing.id);
+        if (error) console.warn("uazapi-webhook update error:", error.message);
+      } else {
+        const { error } = await svc.from("whatsapp_messages").insert(base);
+        if (error) console.warn("uazapi-webhook insert error:", error.message);
+      }
     } else {
       const { error } = await svc.from("whatsapp_messages").insert(base);
       if (error) console.warn("uazapi-webhook insert error:", error.message);
