@@ -37,7 +37,7 @@ const TABS: { id: TabId; label: string; icon: any; isNew?: boolean }[] = [
   { id: "atendimento", label: "Atendimento", icon: MessageSquare, isNew: true },
   { id: "equipe", label: "Equipe e Recursos", icon: Users, isNew: true },
   { id: "automacao", label: "Automação e Comunicação", icon: Zap },
-  { id: "sistema", label: "Sistema", icon: Settings },
+  { id: "sistema", label: "Análise", icon: BarChart3, isNew: true },
 ];
 
 interface CardAction { label: string; onClick: () => void; icon?: any; variant?: "primary" | "outline"; }
