@@ -26,16 +26,18 @@ export function DepartamentosPanel() {
   const { activeCompanyId } = useAuth();
   const [items, setItems] = useState<Dept[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState<Dept | null>(null);
   const [open, setOpen] = useState(false);
 
   const load = async () => {
     if (!activeCompanyId) return;
     setLoading(true);
-    const { data } = await supabase.from("tenant_departments").select("*").eq("tenant_id", activeCompanyId).order("position");
+    const { data, error } = await supabase.from("tenant_departments").select("*").eq("tenant_id", activeCompanyId).order("position");
+    if (error) toast.error(`Falha ao carregar departamentos: ${error.message}`);
     setItems((data as any) || []); setLoading(false);
   };
-  useEffect(() => { load(); }, [activeCompanyId]);
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [activeCompanyId]);
 
   const startNew = () => { setEditing({ id: "", name: "", color: "#6366f1", icon: "🏪", routing_method: "load-balanced", is_active: true, position: items.length } as Dept); setOpen(true); };
   const startEdit = (d: Dept) => { setEditing({ ...d }); setOpen(true); };
@@ -49,10 +51,13 @@ export function DepartamentosPanel() {
 
   const save = async () => {
     if (!editing || !activeCompanyId) return;
-    const payload: any = { tenant_id: activeCompanyId, name: editing.name, description: editing.description, color: editing.color, icon: editing.icon, routing_method: editing.routing_method, auto_response_message: editing.auto_response_message, is_active: editing.is_active, position: editing.position };
+    if (!editing.name.trim()) { toast.error("Informe o nome do departamento"); return; }
+    setSaving(true);
+    const payload: any = { tenant_id: activeCompanyId, name: editing.name.trim(), description: editing.description, color: editing.color, icon: editing.icon, routing_method: editing.routing_method, auto_response_message: editing.auto_response_message, is_active: editing.is_active, position: editing.position };
     const { error } = editing.id
       ? await supabase.from("tenant_departments").update(payload).eq("id", editing.id)
       : await supabase.from("tenant_departments").insert(payload);
+    setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Salvo"); setOpen(false); setEditing(null); load();
   };
