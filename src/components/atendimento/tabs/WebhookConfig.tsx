@@ -15,6 +15,8 @@ import { TemplatesTab, type WhatsAppTemplate } from "./whatsapp/TemplatesTab";
 import { CreateTemplateTab } from "./whatsapp/CreateTemplateTab";
 import { UazapiInstancePanel } from "./whatsapp/UazapiInstancePanel";
 import { WhatsAppProfileSection } from "./whatsapp/WhatsAppProfileSection";
+import { BusinessProfileSection } from "./whatsapp/BusinessProfileSection";
+import { CatalogSection } from "./whatsapp/CatalogSection";
 import { UazapiWebhookSection } from "./UazapiWebhookSection";
 import { UazapiDiagnostics } from "./UazapiDiagnostics";
 import { AsyncQueuePanel } from "./AsyncQueuePanel";
