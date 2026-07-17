@@ -666,7 +666,7 @@ function MessageBubble({
               onClick={() => onJumpToOriginal(originalForReply.id)}
             />
           )}
-          <div className="pr-12">{linkifyText(msg.message)}</div>
+          <div className="pr-12">{linkifyText(safeMessage)}</div>
           <div className={cn(
             "absolute bottom-1 right-2 flex items-center gap-1 text-[10px] leading-none",
             isOut ? "text-primary-foreground/70" : "text-muted-foreground",
