@@ -80,17 +80,6 @@ export default function ConfiguracoesAtendimento() {
       render: () => <ChatbotTeamsPanel />,
     },
     {
-      id: "equipe", icon: Users, title: "Gerenciar equipe",
-      description: "Gerencie os membros da equipe e seus acessos",
-      action: { label: "Adicionar usuário", icon: Plus, onClick: () => navigate("/configuracoes/usuarios") },
-      secondaryAction: { label: "Convites enviados", icon: BookOpen, onClick: () => navigate("/configuracoes/usuarios") },
-    },
-    {
-      id: "permissoes", icon: ShieldCheck, title: "Gerenciar permissões", isNew: true,
-      description: "Crie permissões e controle o que cada grupo de usuários pode ver e fazer no sistema",
-      action: { label: "Nova permissão", icon: Plus, onClick: () => navigate("/configuracoes/usuarios") },
-    },
-    {
       id: "pausas", icon: Coffee, title: "Gerenciar pausas",
       description: "Configure tipos de pausa disponíveis para a equipe de atendimento",
       render: () => <PausasPanel />,
