@@ -1132,39 +1132,30 @@ export function InboxChat({
           style={{ position:'absolute', top:0, left:0, width:'100%', height:'100%', pointerEvents:'none', display:'block' }}
           aria-hidden
         />
-        <div style={{ position:'relative', zIndex:10, display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', padding:'0 24px' }}>
-          <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
-            <MessageSquare size={26} className="text-primary/70" />
-          </div>
-          <p className="text-[17px] font-bold text-foreground tracking-tight mb-1.5">
-            Selecione uma conversa
-          </p>
-          <p className="text-[13px] text-muted-foreground max-w-[220px] leading-relaxed mb-7">
-            Escolha um atendimento ao lado ou inicie uma nova conversa
-          </p>
-          <div className="grid grid-cols-3 gap-2.5 w-full max-w-[400px] mb-7">
-            {([
-              { Icon: Plus,      label: 'Nova conversa' },
-              { Icon: Filter,    label: 'Filtrar fila'  },
-              { Icon: BarChart2, label: 'Ver relatório' },
-            ]).map(({ Icon, label }) => (
-              <button key={label} className="flex flex-col items-center gap-2 bg-white/[0.04] hover:bg-primary/10 border border-white/[0.07] hover:border-primary/25 rounded-xl py-3.5 px-2 transition-all duration-150 group">
-                <Icon size={20} className="text-primary/70 group-hover:text-primary transition-colors" />
-                <span className="text-[11.5px] font-semibold text-foreground/60 group-hover:text-foreground/80 leading-tight text-center transition-colors">{label}</span>
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-5">
-            <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span className="text-[11px] text-muted-foreground/50">em atendimento</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
-              <span className="text-[11px] text-muted-foreground/50">na fila</span>
+        <div style={{ position:'relative', zIndex:10, display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', padding:'0 24px', maxWidth: 460 }}>
+          <div className="relative mb-6">
+            <div className="absolute inset-0 rounded-full bg-emerald-500/20 blur-2xl" aria-hidden />
+            <div className="relative w-24 h-24 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+              <span className="w-4 h-4 rounded-full bg-white/90" />
             </div>
           </div>
+          <p className="text-[18px] font-semibold text-foreground tracking-tight mb-2">
+            Você está Online
+          </p>
+          <p className="text-[13px] text-muted-foreground leading-relaxed mb-7 max-w-[340px]">
+            Escolha uma conversa em andamento ou inicie uma nova conversa agora mesmo. Enquanto estiver online, você receberá novos atendimentos normalmente.
+          </p>
+          {onNewConversation && (
+            <button
+              onClick={onNewConversation}
+              className="inline-flex items-center gap-2 px-5 h-11 rounded-full bg-primary text-primary-foreground text-[13.5px] font-medium hover:bg-primary/90 transition-all shadow-sm shadow-primary/20"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              Iniciar nova conversa
+            </button>
+          )}
         </div>
+
       </div>
     );
   }
