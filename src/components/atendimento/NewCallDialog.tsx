@@ -25,8 +25,15 @@ export function NewCallDialog({ open, onOpenChange, leadName, onSave }: Props) {
   const [notes, setNotes] = useState<string>("");
   const [saving, setSaving] = useState(false);
 
+  const [outcomeError, setOutcomeError] = useState(false);
+
   const handleSave = async () => {
-    if (!outcome) return;
+    if (!outcome) {
+      setOutcomeError(true);
+      toast.error("Selecione o resultado da ligação");
+      return;
+    }
+    setOutcomeError(false);
     setSaving(true);
     try {
       await onSave({
@@ -39,6 +46,7 @@ export function NewCallDialog({ open, onOpenChange, leadName, onSave }: Props) {
       setSaving(false);
     }
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
