@@ -107,9 +107,7 @@ export default function ConfiguracoesAtendimento() {
       render: () => <AutomacaoFormatacaoPanel /> },
   ];
 
-  const sistemaCards: CardItem[] = [
-    { id: "convites", icon: Mail, title: "Convites e onboarding", description: "Gerencie convites enviados e reenvio para membros pendentes" },
-  ];
+  const sistemaCards: CardItem[] = [];
 
   const cardsByTab: Record<TabId, CardItem[]> = {
     atendimento: atendimentoCards,
