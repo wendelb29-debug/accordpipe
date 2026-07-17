@@ -24,6 +24,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChangePasswordDialog } from "@/components/auth/ChangePasswordDialog";
+import { MinhaContaDialog } from "@/components/minha-conta/MinhaContaDialog";
 
 const ROUTE_TITLE_KEYS: Record<string, string> = {
   "/home": "nav.home",
