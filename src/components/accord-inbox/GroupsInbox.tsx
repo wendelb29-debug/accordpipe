@@ -417,14 +417,24 @@ export function GroupsInbox({ tenantId }: Props) {
                   <Users size={16} className="text-primary" />
                 )}
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <div className="text-sm font-semibold truncate">{selected.name || selected.wa_chatid}</div>
                 <div className="text-xs text-muted-foreground truncate">
                   {selected.participant_count} participantes
                   {selected.group_topic ? ` • ${selected.group_topic}` : ""}
                 </div>
               </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setLeaveOpen(true)}
+                title="Sair do grupo"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <LogOut size={14} className="mr-1.5" /> Sair
+              </Button>
             </div>
+
 
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2 bg-muted/10">
               {messages.length === 0 ? (
