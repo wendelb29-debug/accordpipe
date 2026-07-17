@@ -387,6 +387,7 @@ export default function AccordStack() {
             integrationId={activeIntegration?.id ?? null}
             isPinned={selectedContactId ? isPinned(selectedContactId) : false}
             onTogglePin={togglePin}
+            agentStatus={agentStatus}
           />
         )}
       </div>
