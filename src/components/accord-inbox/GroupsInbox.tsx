@@ -184,16 +184,16 @@ export function GroupsInbox({ tenantId }: Props) {
     return () => { supabase.removeChannel(ch); };
   }, [selected, tenantId]);
 
-  const handleSync = async () => {
+  const handleSync = async (force = false) => {
     if (!tenantId) return;
     setSyncing(true);
     try {
       const { data, error } = await supabase.functions.invoke("uazapi-sync-groups", {
-        body: { tenant_id: tenantId },
+        body: { tenant_id: tenantId, force },
       });
       if (error) throw error;
       toast.success(
-        `Sincronizado: ${data?.summary?.groups_processed ?? 0} grupos, ${data?.summary?.participants_upserted ?? 0} participantes`,
+        `Sincronizado${force ? " (forçado)" : ""}: ${data?.summary?.groups_processed ?? 0} grupos, ${data?.summary?.participants_upserted ?? 0} participantes`,
       );
       await fetchGroups();
     } catch (e: any) {
@@ -202,6 +202,94 @@ export function GroupsInbox({ tenantId }: Props) {
       setSyncing(false);
     }
   };
+
+  const handleCreateGroup = async () => {
+    if (!tenantId) return;
+    const name = newName.trim();
+    const participants = newParticipants
+      .split(/[\s,;\n]+/)
+      .map((p) => p.replace(/\D+/g, ""))
+      .filter((p) => p.length >= 10);
+    if (!name) return toast.error("Informe o nome do grupo");
+    if (participants.length < 1) return toast.error("Adicione pelo menos 1 participante (com DDI, ex: 5511999999999)");
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("uazapi-group-create", {
+        body: { tenant_id: tenantId, name, participants },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success("Grupo criado com sucesso");
+      setCreateOpen(false);
+      setNewName("");
+      setNewParticipants("");
+      await fetchGroups();
+    } catch (e: any) {
+      toast.error(e?.message || "Falha ao criar grupo");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handlePreviewInvite = async () => {
+    if (!tenantId || !inviteCode.trim()) return;
+    setBusy(true);
+    setInvitePreview(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("uazapi-group-join", {
+        body: { tenant_id: tenantId, invitecode: inviteCode.trim(), preview: true },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setInvitePreview((data as any)?.info ?? null);
+    } catch (e: any) {
+      toast.error(e?.message || "Convite inválido ou expirado");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleJoinGroup = async () => {
+    if (!tenantId || !inviteCode.trim()) return;
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("uazapi-group-join", {
+        body: { tenant_id: tenantId, invitecode: inviteCode.trim() },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success("Entrou no grupo com sucesso");
+      setJoinOpen(false);
+      setInviteCode("");
+      setInvitePreview(null);
+      await fetchGroups();
+    } catch (e: any) {
+      toast.error(e?.message || "Falha ao entrar no grupo");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleLeaveGroup = async () => {
+    if (!tenantId || !selected) return;
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("uazapi-group-leave", {
+        body: { tenant_id: tenantId, groupjid: selected.wa_chatid },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success("Você saiu do grupo");
+      setLeaveOpen(false);
+      setSelectedId(null);
+      await fetchGroups();
+    } catch (e: any) {
+      toast.error(e?.message || "Falha ao sair do grupo");
+    } finally {
+      setBusy(false);
+    }
+  };
+
 
   const filtered = groups.filter((g) =>
     (g.name || g.wa_chatid).toLowerCase().includes(search.toLowerCase()),
