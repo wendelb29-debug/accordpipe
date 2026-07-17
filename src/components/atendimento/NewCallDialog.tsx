@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { PhoneCall, PhoneOff, PhoneIncoming, Voicemail, Clock, MessageSquareText, Loader2 } from "lucide-react";
 
 const OUTCOMES = [
