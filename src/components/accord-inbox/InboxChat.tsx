@@ -612,6 +612,29 @@ function MessageBubble({
             </div>
           )}
         </div>
+      ) : kind === "media-placeholder" ? (
+        <div className={cn(
+          "flex items-center gap-2 rounded-2xl px-3.5 py-2.5 text-[13px] shadow-sm border",
+          isOut
+            ? "bg-primary/90 text-primary-foreground border-primary/30 rounded-br-md"
+            : "bg-card text-muted-foreground border-border/60 rounded-bl-md",
+        )}>
+          <Image size={16} className="opacity-70" />
+          <span>
+            {dlStatus === "failed"
+              ? "Mídia indisponível"
+              : normType === "sticker"
+                ? "Figurinha (carregando…)"
+                : normType === "video" || normType === "videoplay" || normType === "ptv"
+                  ? "Vídeo (carregando…)"
+                  : normType === "audio" || normType === "myaudio" || normType === "ptt"
+                    ? "Áudio (carregando…)"
+                    : normType === "document" || normType === "file" || normType === "pdf"
+                      ? (msg.fileName || "Documento")
+                      : "Mídia (carregando…)"}
+          </span>
+          <span className="ml-2 text-[10px] opacity-60">{time}</span>
+        </div>
       ) : kind === "attachment" ? (
         <div className="flex flex-col gap-1">
           {originalForReply && (
