@@ -28,6 +28,8 @@ import { AutomacaoInatividadePanel } from "@/components/atendimento-config/Autom
 import { AutomacaoHumanoPanel } from "@/components/atendimento-config/AutomacaoHumanoPanel";
 import { AutomacaoFormatacaoPanel } from "@/components/atendimento-config/AutomacaoFormatacaoPanel";
 import { TransferenciaEquipePanel } from "@/components/atendimento-config/TransferenciaEquipePanel";
+import { AnaliseModule } from "@/components/analise/AnaliseModule";
+import { BarChart3 } from "lucide-react";
 
 type TabId = "atendimento" | "equipe" | "automacao" | "sistema";
 
@@ -35,7 +37,7 @@ const TABS: { id: TabId; label: string; icon: any; isNew?: boolean }[] = [
   { id: "atendimento", label: "Atendimento", icon: MessageSquare, isNew: true },
   { id: "equipe", label: "Equipe e Recursos", icon: Users, isNew: true },
   { id: "automacao", label: "Automação e Comunicação", icon: Zap },
-  { id: "sistema", label: "Sistema", icon: Settings },
+  { id: "sistema", label: "Análise", icon: BarChart3, isNew: true },
 ];
 
 interface CardAction { label: string; onClick: () => void; icon?: any; variant?: "primary" | "outline"; }
@@ -133,7 +135,6 @@ export default function ConfiguracoesAtendimento() {
 
   const sistemaCards: CardItem[] = [
     { id: "convites", icon: Mail, title: "Convites e onboarding", description: "Gerencie convites enviados e reenvio para membros pendentes", action: { label: "Convites enviados", onClick: () => navigate("/configuracoes/usuarios") } },
-    { id: "logs", icon: FileText, title: "Logs e auditoria", description: "Consulte o histórico completo de eventos administrativos", action: { label: "Abrir auditoria", onClick: () => navigate("/configuracoes/logs") } },
   ];
 
   const cardsByTab: Record<TabId, CardItem[]> = {
@@ -185,6 +186,13 @@ export default function ConfiguracoesAtendimento() {
             );
           })}
         </div>
+
+        {/* Análise module (nova aba) */}
+        {tab === "sistema" && (
+          <div className="pb-2">
+            <AnaliseModule />
+          </div>
+        )}
 
         {/* Content cards (EZ-Chat style expandable rows) */}
         <Accordion type="multiple" className="space-y-3">
