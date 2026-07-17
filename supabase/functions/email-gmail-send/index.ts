@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { accountId, to, cc, bcc, subject, html, text, threadId } = await req.json();
+    const { accountId, to, cc, bcc, subject, html, text, threadId, headers: extraHeaders, replyTo } = await req.json();
     if (!accountId || !to || !subject) {
       return new Response(JSON.stringify({ error: "Missing fields" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -124,6 +124,8 @@ Deno.serve(async (req) => {
       subject,
       html || (text || "").replace(/\n/g, "<br>"),
       text || (html || "").replace(/<[^>]+>/g, ""),
+      (extraHeaders && typeof extraHeaders === "object") ? extraHeaders : {},
+      replyTo || account.reply_to || undefined,
     );
 
     const sendRes = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
