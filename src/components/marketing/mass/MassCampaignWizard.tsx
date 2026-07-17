@@ -103,7 +103,7 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
     if (!open || !tenantId) return;
     (async () => {
       const sb = supabase as any;
-      const [wa, waInt, em, tpl, tags, ws] = await Promise.all([
+      const [wa, waInt, em, tpl, waTpl, tags, ws] = await Promise.all([
         sb.from("whatsapp_instances").select("id,instance_name,phone_number,status").eq("tenant_id", tenantId),
         sb.from("tenant_whatsapp_integrations")
           .select("id,provider_type,instance_name,connected_phone,is_active,connection_status")
@@ -111,11 +111,10 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
           .eq("is_active", true),
         sb.from("email_accounts").select("id,email_address,display_name,provider,status").eq("servidor_id", tenantId).in("status", ["connected", "active"]),
         sb.from("mass_templates").select("*").eq("tenant_id", tenantId).order("updated_at", { ascending: false }),
+        sb.from("whatsapp_templates").select("*").eq("tenant_id", tenantId).order("updated_at", { ascending: false }),
         sb.from("crm_tags").select("id,name").eq("server_id", tenantId).limit(200),
         sb.from("workspaces").select("id,name").eq("server_id", tenantId).limit(200),
       ]);
-      // Merge: prefer tenant_whatsapp_integrations (source of truth for active provider),
-      // fallback to whatsapp_instances rows. Normalize into a single list for the selector.
       const fromIntegrations = ((waInt.data as any[]) || []).map((r) => ({
         id: r.id,
         instance_name: r.instance_name || (r.provider_type === "uazapi" ? "Uazapi" : r.provider_type === "zapi" ? "Z-API" : "WhatsApp"),
@@ -132,15 +131,44 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
       setWaInstances(merged);
       setEmailAccounts((em.data as any) || []);
       setTemplates((tpl.data as any) || []);
+      setWaTemplates((waTpl.data as any) || []);
       setCrmTags((tags.data as any) || []);
       setCrmWorkspaces((ws.data as any) || []);
     })();
   }, [open, tenantId]);
 
-  const filteredTemplates = useMemo(
-    () => templates.filter(t => t.channel === form.channel && (!templateSearch || t.name.toLowerCase().includes(templateSearch.toLowerCase()))),
-    [templates, form.channel, templateSearch]
-  );
+  const filteredTemplates = useMemo(() => {
+    const q = templateSearch.toLowerCase();
+    if (form.channel === "whatsapp") {
+      // Prefer WhatsApp official templates from "Templates" page; keep saved mass_templates too
+      const wa = waTemplates.map((t: any) => ({
+        id: `wa:${t.id}`,
+        raw_id: t.id,
+        source: "whatsapp_templates" as const,
+        name: t.name,
+        body: t.body,
+        subject: null,
+        category: t.header_type && t.header_type !== "none" ? t.header_type : null,
+        is_favorite: !!t.is_favorite,
+        header_type: t.header_type,
+        header_media_url: t.header_media_url,
+      }));
+      const mass = templates.filter(t => t.channel === "whatsapp").map((t: any) => ({
+        id: `mass:${t.id}`,
+        raw_id: t.id,
+        source: "mass_templates" as const,
+        name: t.name,
+        body: t.body,
+        subject: null,
+        category: t.category,
+        is_favorite: !!t.is_favorite,
+      }));
+      return [...wa, ...mass].filter(t => !q || t.name.toLowerCase().includes(q));
+    }
+    return templates
+      .filter(t => t.channel === "email" && (!q || t.name.toLowerCase().includes(q)))
+      .map((t: any) => ({ id: `mass:${t.id}`, raw_id: t.id, source: "mass_templates" as const, name: t.name, body: t.body, subject: t.subject, category: t.category, is_favorite: !!t.is_favorite }));
+  }, [templates, waTemplates, form.channel, templateSearch]);
 
   const parseManual = () => {
     const rows = manualText.split("\n").map(l => l.trim()).filter(Boolean).map(l => {
