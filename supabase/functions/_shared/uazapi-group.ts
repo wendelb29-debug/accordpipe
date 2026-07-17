@@ -13,6 +13,7 @@ export interface GroupEditContext {
   tenantId: string;
   groupjid: string;
   token: string;
+  body: any;
 }
 
 export async function loadGroupContext(
@@ -29,13 +30,7 @@ export async function loadGroupContext(
   if (forbid) return forbid;
   const row = await getInstanceRow(tenantId);
   if (!row?.uazapi_token) return json({ error: "instance_not_connected" }, 400);
-  // Pass body back through a Symbol/attached property so handlers can reuse it.
-  (globalThis as any).__lastBody = body;
-  return { tenantId, groupjid, token: row.uazapi_token };
-}
-
-export function lastBody<T = any>(): T {
-  return ((globalThis as any).__lastBody ?? {}) as T;
+  return { tenantId, groupjid, token: row.uazapi_token, body };
 }
 
 export async function patchChat(
@@ -51,4 +46,4 @@ export async function patchChat(
     .eq("wa_chatid", groupjid);
 }
 
-export { callUazapi, json };
+export { callUazapi, json, serviceClient };
