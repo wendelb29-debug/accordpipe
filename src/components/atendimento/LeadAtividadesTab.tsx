@@ -682,8 +682,9 @@ export function LeadAtividadesTab({
               <Button
                 size="sm"
                 onClick={handleCreate}
-                disabled={!form.title.trim() || saving}
+                disabled={saving}
                 className="text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+
               >
                 {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                 Salvar
