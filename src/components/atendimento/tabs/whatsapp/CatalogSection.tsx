@@ -60,7 +60,7 @@ export function CatalogSection({ tenantId, visible = true }: Props) {
   const [notConfigured, setNotConfigured] = useState(false);
 
   const fetchPage = useCallback(async (after: string | null) => {
-    if (!tenantId) return { products: [], next_after: null };
+    if (!tenantId) return { products: [], next_after: null, unavailable: false };
     const { data, error } = await supabase.functions.invoke("uazapi-catalog-list", {
       body: { tenant_id: tenantId, after: after ?? undefined },
     });
@@ -69,6 +69,7 @@ export function CatalogSection({ tenantId, visible = true }: Props) {
     return {
       products: ((data as any)?.products ?? []) as Product[],
       next_after: ((data as any)?.next_after ?? null) as string | null,
+      unavailable: Boolean((data as any)?.unavailable),
     };
   }, [tenantId]);
 
