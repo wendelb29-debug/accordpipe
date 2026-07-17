@@ -400,7 +400,7 @@ export function GroupsInbox({ tenantId }: Props) {
       </div>
 
       {/* Right: chat */}
-      <div className={cn("flex-1 min-w-0 min-h-0 h-full overflow-hidden flex flex-col", showListOnly && "hidden md:flex")}>
+      <div className={cn("relative flex-1 min-w-0 min-h-0 h-full overflow-hidden flex flex-col", showListOnly && "hidden md:flex")}>
         {!selected ? (
           <div className="flex-1 flex items-center justify-center text-muted-foreground">
             <div className="text-center">
