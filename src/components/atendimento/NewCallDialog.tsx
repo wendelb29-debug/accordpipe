@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { toast } from "sonner";
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { PhoneCall, PhoneOff, PhoneIncoming, Voicemail, Clock, MessageSquareText, Loader2 } from "lucide-react";
 
 const OUTCOMES = [
@@ -23,8 +25,15 @@ export function NewCallDialog({ open, onOpenChange, leadName, onSave }: Props) {
   const [notes, setNotes] = useState<string>("");
   const [saving, setSaving] = useState(false);
 
+  const [outcomeError, setOutcomeError] = useState(false);
+
   const handleSave = async () => {
-    if (!outcome) return;
+    if (!outcome) {
+      setOutcomeError(true);
+      toast.error("Selecione o resultado da ligação");
+      return;
+    }
+    setOutcomeError(false);
     setSaving(true);
     try {
       await onSave({
@@ -37,6 +46,7 @@ export function NewCallDialog({ open, onOpenChange, leadName, onSave }: Props) {
       setSaving(false);
     }
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -51,20 +61,22 @@ export function NewCallDialog({ open, onOpenChange, leadName, onSave }: Props) {
               <div className="text-[11px] font-normal text-muted-foreground">{leadName}</div>
             </div>
           </DialogTitle>
+          <DialogDescription className="sr-only">Registre o resultado, duração e anotações de uma ligação com o lead.</DialogDescription>
         </DialogHeader>
+
 
         <div className="space-y-4 mt-2">
           <div>
             <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-2 block">
               Resultado *
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className={`grid grid-cols-2 gap-2 ${outcomeError ? "p-1 rounded-lg ring-2 ring-destructive" : ""}`}>
               {OUTCOMES.map(o => {
                 const active = outcome === o.id;
                 return (
                   <button
                     key={o.id}
-                    onClick={() => setOutcome(o.id)}
+                    onClick={() => { setOutcome(o.id); if (outcomeError) setOutcomeError(false); }}
                     className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border-2 text-[12px] font-medium transition text-left ${
                       active
                         ? "border-emerald-500 bg-emerald-500/10 text-foreground"
@@ -77,7 +89,9 @@ export function NewCallDialog({ open, onOpenChange, leadName, onSave }: Props) {
                 );
               })}
             </div>
+            {outcomeError && <p className="text-[11px] text-destructive mt-1.5">Selecione um resultado para salvar</p>}
           </div>
+
 
           <div>
             <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5 block">
@@ -118,7 +132,7 @@ export function NewCallDialog({ open, onOpenChange, leadName, onSave }: Props) {
           </button>
           <button
             onClick={handleSave}
-            disabled={!outcome || saving}
+            disabled={saving}
             className="h-10 px-5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-[13px] font-bold inline-flex items-center gap-2 disabled:opacity-50 transition"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <PhoneCall className="w-4 h-4" />}

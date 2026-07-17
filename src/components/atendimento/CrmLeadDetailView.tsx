@@ -1577,7 +1577,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                   Registrar ligação
                 </button>
               </div>
-              <ActivityFilteredList activities={activities.filter((a) => a.type === "call")} loading={activitiesLoading} emptyLabel="ligações" />
+              <ActivityFilteredList activities={activities.filter((a) => a.type === "call")} loading={activitiesLoading} emptyLabel="ligação" />
             </TabsContent>
 
             {/* E-mail */}
@@ -1972,7 +1972,7 @@ function ActivityFilteredList({ activities, loading, emptyLabel }: { activities:
     );
   }
   if (activities.length === 0) {
-    const isCalls = emptyLabel === "ligações";
+    const isCalls = emptyLabel === "ligação";
     return (
       <div className="text-center py-12 text-muted-foreground max-w-md mx-auto">
         {isCalls ? (

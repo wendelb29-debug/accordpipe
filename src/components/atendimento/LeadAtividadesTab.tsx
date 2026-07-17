@@ -96,6 +96,8 @@ export function LeadAtividadesTab({
     system: true,
     email: false,
   });
+  const [titleError, setTitleError] = useState(false);
+
 
   useEffect(() => {
     fetchActivities();
@@ -156,10 +158,13 @@ export function LeadAtividadesTab({
 
   const handleCreate = async () => {
     if (!form.title.trim()) {
+      setTitleError(true);
       toast.error("Informe o título da atividade");
       return;
     }
+    setTitleError(false);
     setSaving(true);
+
     try {
       const scheduledAt = `${form.date}T${form.time}:00`;
       const metadata = {
@@ -619,14 +624,17 @@ export function LeadAtividadesTab({
             )}
 
             <div className="space-y-1">
-              <Label className="text-xs font-semibold text-primary">Título</Label>
+              <Label className="text-xs font-semibold text-primary">Título *</Label>
               <Input
-                className="h-8 text-xs"
+                className={cn("h-8 text-xs", titleError && "border-destructive focus-visible:ring-destructive")}
                 value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                onChange={(e) => { setForm({ ...form, title: e.target.value }); if (titleError) setTitleError(false); }}
                 placeholder="Ex: Reunião de apresentação"
+                aria-invalid={titleError}
               />
+              {titleError && <p className="text-[11px] text-destructive">Título é obrigatório</p>}
             </div>
+
 
             <div className="space-y-1">
               <Label className="text-xs font-semibold text-primary">Descrição</Label>
@@ -674,8 +682,9 @@ export function LeadAtividadesTab({
               <Button
                 size="sm"
                 onClick={handleCreate}
-                disabled={!form.title.trim() || saving}
+                disabled={saving}
                 className="text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+
               >
                 {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                 Salvar
