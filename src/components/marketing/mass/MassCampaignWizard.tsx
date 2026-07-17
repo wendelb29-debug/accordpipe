@@ -71,9 +71,9 @@ const initialForm: FormState = {
 
 const steps = ["Dados", "Público-alvo", "Conteúdo", "Configurações"];
 
-export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
+export function MassCampaignWizard({ open, onClose, tenantId, prefill }: Props) {
   const [step, setStep] = useState(0);
-  const [form, setForm] = useState<FormState>(initialForm);
+  const [form, setForm] = useState<FormState>({ ...initialForm, ...(prefill || {}) });
   const [saving, setSaving] = useState(false);
   const [manualText, setManualText] = useState("");
   const [customVars, setCustomVars] = useState<string[]>([]);
