@@ -54,7 +54,9 @@ export function LostReasonDialog({ open, lead, onOpenChange, onConfirm }: Props)
               </div>
             </div>
           </DialogTitle>
+          <DialogDescription className="sr-only">Escolha um motivo para marcar este lead como perdido.</DialogDescription>
         </DialogHeader>
+
 
         <div className="mt-2 space-y-1.5 max-h-[60vh] overflow-y-auto">
           {REASONS.map((r) => (
