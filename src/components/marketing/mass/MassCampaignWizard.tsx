@@ -77,13 +77,17 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
   const [manualText, setManualText] = useState("");
   const [customVars, setCustomVars] = useState<string[]>([]);
   const [newVar, setNewVar] = useState("");
+  const [manualCountries, setManualCountries] = useState<Country[]>([]);
+  const [scheduleEnabled, setScheduleEnabled] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
 
   // Channel options
   const [waInstances, setWaInstances] = useState<any[]>([]);
   const [emailAccounts, setEmailAccounts] = useState<any[]>([]);
 
-  // Templates
+  // Templates (mass + whatsapp official)
   const [templates, setTemplates] = useState<any[]>([]);
+  const [waTemplates, setWaTemplates] = useState<any[]>([]);
   const [templateSearch, setTemplateSearch] = useState("");
 
   // CRM filter
