@@ -49,6 +49,8 @@ export default function EnvioMassa() {
   const { activeCompanyId } = useAuth();
   const [tab, setTab] = useState("campanhas");
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardPrefill, setWizardPrefill] = useState<any>(null);
+  const [detailsFor, setDetailsFor] = useState<MassCampaign | null>(null);
   const [campaigns, setCampaigns] = useState<MassCampaign[]>([]);
   const [templates, setTemplates] = useState<MassTemplate[]>([]);
   const [loading, setLoading] = useState(true);
