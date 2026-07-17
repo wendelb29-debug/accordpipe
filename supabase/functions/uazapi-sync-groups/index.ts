@@ -186,10 +186,12 @@ Deno.serve(async (req) => {
   if (caller instanceof Response) return caller;
   const body = await req.json().catch(() => ({}));
   const tenantId = String(body?.tenant_id ?? "");
+  const force = Boolean(body?.force);
   if (!tenantId) return json({ error: "tenant_id required" }, 400);
   const forbid = await requireTenantMember(caller.userId, tenantId);
   if (forbid) return forbid;
 
-  const summary = await syncTenant(svc, tenantId);
+  const summary = await syncTenant(svc, tenantId, { force });
   return json({ ok: true, summary });
 });
+
