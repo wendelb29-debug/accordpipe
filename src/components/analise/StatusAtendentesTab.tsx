@@ -4,16 +4,20 @@ import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { Pencil, ArrowRightLeft, Coffee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNowStrict, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
+interface DeptInfo { id: string; name: string; color: string | null }
 
 interface OperatorRow {
   user_id: string;
   status: string;
   last_changed_at: string;
   profile?: { full_name?: string | null; avatar_url?: string | null; email?: string | null } | null;
+  departments: DeptInfo[];
 }
 
 interface EventRow {
@@ -38,16 +42,53 @@ export function StatusAtendentesTab() {
   const tenantId = useActiveCompanyId();
   const [operators, setOperators] = useState<OperatorRow[]>([]);
   const [events, setEvents] = useState<EventRow[]>([]);
+  const [allDepartments, setAllDepartments] = useState<DeptInfo[]>([]);
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterUser, setFilterUser] = useState<string>("all");
+  const [filterDept, setFilterDept] = useState<string>("all");
 
   useEffect(() => {
     if (!tenantId) return;
     (async () => {
+      // 1) Load all tenant users via user_tenants
+      const { data: memberships } = await supabase
+        .from("user_tenants")
+        .select("user_id")
+        .eq("tenant_id", tenantId);
+      const memberIds = Array.from(new Set((memberships || []).map((m: any) => m.user_id)));
+
+      // 2) Load operator_status for those users
       const { data: ops } = await supabase
         .from("operator_status")
         .select("user_id, status, last_changed_at")
         .eq("tenant_id", tenantId);
-      const rows = (ops || []) as any[];
-      const ids = rows.map((r) => r.user_id);
+      const opsMap = new Map((ops || []).map((r: any) => [r.user_id, r]));
+
+      // 3) Departments of tenant
+      const { data: depts } = await supabase
+        .from("tenant_departments")
+        .select("id, name, color")
+        .eq("tenant_id", tenantId)
+        .order("position");
+      const deptList = (depts || []) as DeptInfo[];
+      setAllDepartments(deptList);
+
+      // 4) user_departments for tenant
+      const { data: userDepts } = await supabase
+        .from("user_departments")
+        .select("user_id, department_id")
+        .eq("tenant_id", tenantId);
+      const userDeptMap = new Map<string, DeptInfo[]>();
+      for (const ud of (userDepts || []) as any[]) {
+        const d = deptList.find((x) => x.id === ud.department_id);
+        if (!d) continue;
+        const arr = userDeptMap.get(ud.user_id) || [];
+        arr.push(d);
+        userDeptMap.set(ud.user_id, arr);
+      }
+
+      // 5) profiles
+      const ids = Array.from(new Set([...memberIds, ...Array.from(opsMap.keys())]));
       let profiles: any[] = [];
       if (ids.length) {
         const { data } = await supabase
@@ -56,10 +97,26 @@ export function StatusAtendentesTab() {
           .in("id", ids);
         profiles = data || [];
       }
-      setOperators(rows.map((r) => ({
-        ...r,
-        profile: profiles.find((p) => p.id === r.user_id) || null,
-      })));
+
+      const rows: OperatorRow[] = ids.map((uid) => {
+        const st = opsMap.get(uid) as any;
+        return {
+          user_id: uid,
+          status: st?.status || "unavailable",
+          last_changed_at: st?.last_changed_at || new Date().toISOString(),
+          profile: profiles.find((p) => p.id === uid) || null,
+          departments: userDeptMap.get(uid) || [],
+        };
+      });
+      // sort: online first, then by name
+      rows.sort((a, b) => {
+        const order = { available: 0, busy: 1, away: 2, unavailable: 3 } as any;
+        const oa = order[a.status] ?? 9;
+        const ob = order[b.status] ?? 9;
+        if (oa !== ob) return oa - ob;
+        return (a.profile?.full_name || "").localeCompare(b.profile?.full_name || "");
+      });
+      setOperators(rows);
 
       const { data: evs } = await supabase
         .from("operator_status_events" as any)
@@ -81,6 +138,25 @@ export function StatusAtendentesTab() {
   }, [operators]);
 
   const activePauses = operators.filter((o) => o.status === "away");
+
+  const filtered = useMemo(() => {
+    return operators.filter((o) => {
+      if (filterStatus !== "all" && o.status !== filterStatus) return false;
+      if (filterUser !== "all" && o.user_id !== filterUser) return false;
+      if (filterDept !== "all" && !o.departments.some((d) => d.id === filterDept)) return false;
+      return true;
+    });
+  }, [operators, filterStatus, filterUser, filterDept]);
+
+  const displayName = (o: OperatorRow) =>
+    o.profile?.full_name || o.profile?.email || o.user_id.slice(0, 8);
+  const initials = (o: OperatorRow) =>
+    (o.profile?.full_name || o.profile?.email || "?")
+      .split(" ")
+      .map((p) => p[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
 
   return (
     <div className="space-y-5">
@@ -104,7 +180,7 @@ export function StatusAtendentesTab() {
             {activePauses.map((p) => (
               <li key={p.user_id} className="flex items-center gap-2 text-sm">
                 <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                {p.profile?.full_name || p.profile?.email || p.user_id.slice(0, 8)}
+                {displayName(p)}
                 <span className="text-xs text-muted-foreground ml-auto">
                   há {formatDistanceToNowStrict(new Date(p.last_changed_at), { locale: ptBR })}
                 </span>
@@ -116,17 +192,32 @@ export function StatusAtendentesTab() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3">
-        <Select disabled>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="h-8 w-[150px] text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">Todos</SelectItem></SelectContent>
+          <SelectContent>
+            <SelectItem value="all">Todos os status</SelectItem>
+            {Object.entries(STATUS_META).map(([k, v]) => (
+              <SelectItem key={k} value={k}>{v.label}</SelectItem>
+            ))}
+          </SelectContent>
         </Select>
-        <Select disabled>
-          <SelectTrigger className="h-8 w-[150px] text-xs"><SelectValue placeholder="Atendentes" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">Todos</SelectItem></SelectContent>
+        <Select value={filterUser} onValueChange={setFilterUser}>
+          <SelectTrigger className="h-8 w-[180px] text-xs"><SelectValue placeholder="Atendentes" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os atendentes</SelectItem>
+            {operators.map((o) => (
+              <SelectItem key={o.user_id} value={o.user_id}>{displayName(o)}</SelectItem>
+            ))}
+          </SelectContent>
         </Select>
-        <Select disabled>
-          <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue placeholder="Departamentos" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">Todos</SelectItem></SelectContent>
+        <Select value={filterDept} onValueChange={setFilterDept}>
+          <SelectTrigger className="h-8 w-[180px] text-xs"><SelectValue placeholder="Departamentos" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os departamentos</SelectItem>
+            {allDepartments.map((d) => (
+              <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+            ))}
+          </SelectContent>
         </Select>
         <Select disabled>
           <SelectTrigger className="h-8 w-[110px] text-xs ml-auto"><SelectValue placeholder="Mostrar 25" /></SelectTrigger>
@@ -149,9 +240,9 @@ export function StatusAtendentesTab() {
             </tr>
           </thead>
           <tbody>
-            {operators.length === 0 ? (
-              <tr><td colSpan={6} className="px-3 py-8 text-center text-muted-foreground">Nenhum atendente ativo.</td></tr>
-            ) : operators.map((o) => {
+            {filtered.length === 0 ? (
+              <tr><td colSpan={6} className="px-3 py-8 text-center text-muted-foreground">Nenhum atendente encontrado.</td></tr>
+            ) : filtered.map((o) => {
               const meta = STATUS_META[o.status] || STATUS_META.unavailable;
               return (
                 <tr key={o.user_id} className="border-t border-border hover:bg-muted/30">
@@ -163,17 +254,37 @@ export function StatusAtendentesTab() {
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-2">
-                      <span className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-semibold text-primary">
-                        {(o.profile?.full_name || o.profile?.email || "?").slice(0, 2).toUpperCase()}
-                      </span>
-                      {o.profile?.full_name || o.profile?.email || o.user_id.slice(0, 8)}
+                      <Avatar className="h-7 w-7">
+                        <AvatarImage src={o.profile?.avatar_url || undefined} alt={displayName(o)} />
+                        <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                          {initials(o)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{displayName(o)}</span>
                     </div>
                   </td>
                   <td className="px-3 py-2 text-muted-foreground">
                     {formatDistanceToNowStrict(new Date(o.last_changed_at), { locale: ptBR })}
                   </td>
                   <td className="px-3 py-2 text-muted-foreground">—</td>
-                  <td className="px-3 py-2 text-muted-foreground">—</td>
+                  <td className="px-3 py-2">
+                    {o.departments.length === 0 ? (
+                      <span className="text-muted-foreground">—</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {o.departments.map((d) => (
+                          <Badge
+                            key={d.id}
+                            variant="outline"
+                            className="text-[10px] border"
+                            style={d.color ? { color: d.color, borderColor: d.color } : undefined}
+                          >
+                            {d.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </td>
                   <td className="px-3 py-2">
                     <div className="flex justify-end gap-1">
                       <Button variant="ghost" size="icon" className="h-7 w-7" title="Editar status">
@@ -211,21 +322,24 @@ export function StatusAtendentesTab() {
               <tr><td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">
                 Nenhum evento registrado ainda.
               </td></tr>
-            ) : events.map((e) => (
-              <tr key={e.id} className="border-t border-border">
-                <td className="px-3 py-2">{e.user_id.slice(0, 8)}</td>
-                <td className="px-3 py-2">
-                  <Badge className="text-[10px] bg-primary/10 text-primary border-primary/30 border">{e.event_type}</Badge>
-                </td>
-                <td className="px-3 py-2 text-muted-foreground">{e.reason || "—"}</td>
-                <td className="px-3 py-2 tabular-nums">{formatSec(e.duration_seconds)}</td>
-                <td className="px-3 py-2 tabular-nums">{formatSec(e.delay_seconds)}</td>
-                <td className="px-3 py-2 text-muted-foreground">{format(new Date(e.started_at), "dd/MM HH:mm")}</td>
-                <td className="px-3 py-2 text-muted-foreground">
-                  {e.ended_at ? format(new Date(e.ended_at), "dd/MM HH:mm") : "—"}
-                </td>
-              </tr>
-            ))}
+            ) : events.map((e) => {
+              const op = operators.find((o) => o.user_id === e.user_id);
+              return (
+                <tr key={e.id} className="border-t border-border">
+                  <td className="px-3 py-2">{op ? displayName(op) : e.user_id.slice(0, 8)}</td>
+                  <td className="px-3 py-2">
+                    <Badge className="text-[10px] bg-primary/10 text-primary border-primary/30 border">{e.event_type}</Badge>
+                  </td>
+                  <td className="px-3 py-2 text-muted-foreground">{e.reason || "—"}</td>
+                  <td className="px-3 py-2 tabular-nums">{formatSec(e.duration_seconds)}</td>
+                  <td className="px-3 py-2 tabular-nums">{formatSec(e.delay_seconds)}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{format(new Date(e.started_at), "dd/MM HH:mm")}</td>
+                  <td className="px-3 py-2 text-muted-foreground">
+                    {e.ended_at ? format(new Date(e.ended_at), "dd/MM HH:mm") : "—"}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
