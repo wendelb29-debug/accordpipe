@@ -457,6 +457,60 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_export_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          file_path: string | null
+          file_url: string | null
+          filters: Json
+          id: string
+          period_end: string | null
+          period_start: string | null
+          report_type: string
+          requested_by: string
+          row_count: number | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          file_path?: string | null
+          file_url?: string | null
+          filters?: Json
+          id?: string
+          period_end?: string | null
+          period_start?: string | null
+          report_type: string
+          requested_by: string
+          row_count?: number | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          file_path?: string | null
+          file_url?: string | null
+          filters?: Json
+          id?: string
+          period_end?: string | null
+          period_start?: string | null
+          report_type?: string
+          requested_by?: string
+          row_count?: number | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           created_at: string
@@ -5709,6 +5763,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      operator_status_events: {
+        Row: {
+          created_at: string
+          delay_seconds: number | null
+          departments: string[] | null
+          duration_seconds: number | null
+          ended_at: string | null
+          event_type: string
+          id: string
+          metadata: Json
+          reason: string | null
+          started_at: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delay_seconds?: number | null
+          departments?: string[] | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json
+          reason?: string | null
+          started_at?: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delay_seconds?: number | null
+          departments?: string[] | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json
+          reason?: string | null
+          started_at?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       paddle_subscriptions: {
         Row: {
