@@ -61,7 +61,9 @@ export function NewCallDialog({ open, onOpenChange, leadName, onSave }: Props) {
               <div className="text-[11px] font-normal text-muted-foreground">{leadName}</div>
             </div>
           </DialogTitle>
+          <DialogDescription className="sr-only">Registre o resultado, duração e anotações de uma ligação com o lead.</DialogDescription>
         </DialogHeader>
+
 
         <div className="space-y-4 mt-2">
           <div>
