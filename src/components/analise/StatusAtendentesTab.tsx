@@ -99,7 +99,7 @@ export function StatusAtendentesTab() {
         const { data } = await supabase
           .from("profiles")
           .select("user_id, name, avatar_url, email")
-          .in("id", ids);
+          .in("user_id", ids);
         profiles = data || [];
       }
 
