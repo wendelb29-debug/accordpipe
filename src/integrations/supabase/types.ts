@@ -4030,6 +4030,42 @@ export type Database = {
         }
         Relationships: []
       }
+      email_suppression_list: {
+        Row: {
+          created_at: string
+          email: string
+          external_message_id: string | null
+          id: string
+          metadata: Json
+          reason: string
+          source: string | null
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          external_message_id?: string | null
+          id?: string
+          metadata?: Json
+          reason: string
+          source?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          external_message_id?: string | null
+          id?: string
+          metadata?: Json
+          reason?: string
+          source?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           body_html: string
