@@ -10,12 +10,14 @@ import { ContactDetailSidebar } from "@/components/accord-inbox/ContactDetailSid
 import { CreateDemandModal } from "@/components/accord-inbox/CreateDemandModal";
 import { NewConversationModal } from "@/components/accord-inbox/NewConversationModal";
 import { GroupsInbox } from "@/components/accord-inbox/GroupsInbox";
-import { WifiOff, User, ArrowLeft, PowerOff, Users, MessageCircle } from "lucide-react";
+import { WifiOff, User, ArrowLeft, PowerOff, Users, MessageCircle, Home, Headset, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useOperatorStatus } from "@/hooks/useOperatorStatus";
 import { cn } from "@/lib/utils";
+import { AgentPresenceMenu } from "@/components/accord-inbox/AgentPresenceMenu";
+import { useTenantLogo } from "@/hooks/useTenantLogo";
 
 type UiFilter = "Todas" | "Não lidas";
 
