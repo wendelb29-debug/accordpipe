@@ -98,7 +98,7 @@ export function StatusAtendentesTab() {
       if (ids.length) {
         const { data } = await supabase
           .from("profiles")
-          .select("id, full_name, avatar_url, email")
+          .select("user_id, name, avatar_url, email")
           .in("id", ids);
         profiles = data || [];
       }
