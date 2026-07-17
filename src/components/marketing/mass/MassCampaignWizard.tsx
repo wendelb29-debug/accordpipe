@@ -597,6 +597,7 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
                         onClick={() => {
                           const list = form.audience_snapshot.filter((_, i) => i !== idx);
                           update("audience_snapshot", list);
+                          setManualCountries(prev => prev.filter((_, i) => i !== idx));
                         }}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -614,6 +615,12 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
                       ? [{ name: "", contact: "", variables: {} }, { name: "", contact: "", variables: {} }]
                       : [...form.audience_snapshot, { name: "", contact: "", variables: {} }];
                     update("audience_snapshot", list);
+                    setManualCountries(prev => {
+                      const target = list.length;
+                      const next = [...prev];
+                      while (next.length < target) next.push(DEFAULT_COUNTRY);
+                      return next;
+                    });
                   }}
                 >
                   <Plus className="w-4 h-4" /> Adicionar nova linha
