@@ -70,13 +70,13 @@ export function NewCallDialog({ open, onOpenChange, leadName, onSave }: Props) {
             <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-2 block">
               Resultado *
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className={`grid grid-cols-2 gap-2 ${outcomeError ? "p-1 rounded-lg ring-2 ring-destructive" : ""}`}>
               {OUTCOMES.map(o => {
                 const active = outcome === o.id;
                 return (
                   <button
                     key={o.id}
-                    onClick={() => setOutcome(o.id)}
+                    onClick={() => { setOutcome(o.id); if (outcomeError) setOutcomeError(false); }}
                     className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border-2 text-[12px] font-medium transition text-left ${
                       active
                         ? "border-emerald-500 bg-emerald-500/10 text-foreground"
@@ -89,7 +89,9 @@ export function NewCallDialog({ open, onOpenChange, leadName, onSave }: Props) {
                 );
               })}
             </div>
+            {outcomeError && <p className="text-[11px] text-destructive mt-1.5">Selecione um resultado para salvar</p>}
           </div>
+
 
           <div>
             <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5 block">
