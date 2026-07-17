@@ -99,6 +99,8 @@ interface InboxChatProps {
   onNewConversation?: () => void;
   onFilterQueue?: () => void;
   onViewReport?: () => void;
+  /** Real operator status used in the empty right-panel state */
+  agentStatus?: "available" | "busy" | "away" | "unavailable" | string;
   /** Uazapi/Z-API server URL for profile settings */
   serverUrl?: string | null;
   /** Active WhatsApp integration id (used to load the instance token via secure RPC) */
