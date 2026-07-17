@@ -105,25 +105,10 @@ export default function ConfiguracoesAtendimento() {
     { id: "auto-formatacao", icon: Type, title: "Formatação e envio das mensagens",
       description: "Indicador de digitação, simulação, divisão de mensagens, emojis e mídias",
       render: () => <AutomacaoFormatacaoPanel /> },
-    { id: "auto-flow", icon: GitBranch, title: "Configurações do Flow Builder",
-      description: "Configure o comportamento do editor de fluxos",
-      action: { label: "Abrir Fluxos", icon: Workflow, onClick: () => navigate("/fluxos") } },
-    { id: "auto-agendadas", icon: CalendarDays, title: "Mensagens agendadas",
-      description: "Agende mensagens para serem enviadas automaticamente",
-      action: { label: "Ver agendamentos", onClick: () => navigate("/atendimento") } },
-    { id: "auto-link", icon: LinkIcon, title: "Criar Link de Atendimento",
-      description: "Gere links diretos para iniciar conversas ou atendimentos",
-      action: { label: "Criar link", icon: Plus, onClick: () => navigate("/atendimento") } },
-    { id: "auto-personalizadas", icon: Workflow, title: "Automações personalizadas",
-      description: "Construtor visual de gatilhos, condições e ações (em breve — Onda 3)",
-      action: { label: "Em breve", onClick: () => {} } },
-    { id: "auto-historico", icon: History, title: "Histórico e testes",
-      description: "Simulador de atendimento e logs de execução (em breve — Onda 4)",
-      action: { label: "Em breve", onClick: () => {} } },
   ];
 
   const sistemaCards: CardItem[] = [
-    { id: "convites", icon: Mail, title: "Convites e onboarding", description: "Gerencie convites enviados e reenvio para membros pendentes", action: { label: "Convites enviados", onClick: () => navigate("/configuracoes/usuarios") } },
+    { id: "convites", icon: Mail, title: "Convites e onboarding", description: "Gerencie convites enviados e reenvio para membros pendentes" },
   ];
 
   const cardsByTab: Record<TabId, CardItem[]> = {
