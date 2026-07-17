@@ -80,9 +80,10 @@ export function CatalogSection({ tenantId, visible = true }: Props) {
       const r = await fetchPage(null);
       setProducts(r.products);
       setNextAfter(r.next_after);
+      if ((r as any).unavailable) setNotConfigured(true);
     } catch (e: any) {
       const msg = e?.message || String(e);
-      if (/instance_not_connected|no_instance|cannot_resolve_jid/.test(msg)) {
+      if (/instance_not_connected|no_instance|cannot_resolve_jid|timeout|504|408|502|503|non-2xx/i.test(msg)) {
         setNotConfigured(true);
       } else {
         toast.error("Falha ao carregar catálogo: " + msg, { duration: 12000 });
