@@ -158,10 +158,13 @@ export function LeadAtividadesTab({
 
   const handleCreate = async () => {
     if (!form.title.trim()) {
+      setTitleError(true);
       toast.error("Informe o título da atividade");
       return;
     }
+    setTitleError(false);
     setSaving(true);
+
     try {
       const scheduledAt = `${form.date}T${form.time}:00`;
       const metadata = {
