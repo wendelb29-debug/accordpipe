@@ -787,6 +787,47 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
                   <div>
                     <Label>{form.channel === "email" ? "Corpo do e-mail" : "Mensagem"} * — use {"{{"}nome{"}}"}  para variáveis</Label>
                     <Textarea value={form.body} onChange={e => update("body", e.target.value)} rows={form.channel === "email" ? 8 : 6} placeholder={form.channel === "email" ? "Olá {{nome}},\n\n..." : "Olá {{nome}}, tudo bem?"} />
+
+                    {form.channel === "whatsapp" && (
+                      <div className="mt-2 space-y-2">
+                        {form.media ? (
+                          <div className="flex items-center justify-between gap-2 border rounded-lg p-2 bg-muted/30">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="w-9 h-9 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                {form.media.type === "image" ? <ImageIcon className="w-4 h-4" /> :
+                                 form.media.type === "video" ? <Video className="w-4 h-4" /> :
+                                 form.media.type === "audio" ? <Mic className="w-4 h-4" /> :
+                                 <FileText className="w-4 h-4" />}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-medium truncate">{form.media.filename}</p>
+                                <p className="text-[10px] text-muted-foreground uppercase">{form.media.type} · {form.media.mime}</p>
+                              </div>
+                            </div>
+                            <Button type="button" size="icon" variant="ghost" onClick={() => update("media", null)}>
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <label className="flex items-center gap-2 border border-dashed rounded-lg p-3 cursor-pointer hover:bg-muted/40 transition">
+                            <Paperclip className="w-4 h-4 text-muted-foreground" />
+                            <div className="flex-1">
+                              <p className="text-xs font-medium">Anexar arquivo (imagem, PDF, áudio, vídeo)</p>
+                              <p className="text-[10px] text-muted-foreground">Enviado junto com a mensagem — até 25MB</p>
+                            </div>
+                            {uploadingMedia && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                              disabled={uploadingMedia}
+                              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleMediaUpload(f); e.currentTarget.value = ""; }}
+                            />
+                          </label>
+                        )}
+                      </div>
+                    )}
+
                     <div className="flex justify-end mt-2">
                       <Button variant="outline" size="sm" onClick={saveAsTemplate} className="gap-2"><Save className="w-3 h-3" />Salvar modelo</Button>
                     </div>
