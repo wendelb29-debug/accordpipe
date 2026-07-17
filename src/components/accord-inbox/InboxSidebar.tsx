@@ -100,6 +100,8 @@ export function InboxSidebar({
 }: InboxSidebarProps) {
   const [historyOpen, setHistoryOpen] = useState(false);
   const navigate = useNavigate();
+  const tenantLogoUrl = useTenantLogo(tenantId ?? null);
+
 
   const counts = {
     fila: contacts.filter((c) => c.conversationStatus === "fila" || c.conversationStatus === "aguardando").length,
