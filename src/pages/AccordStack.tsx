@@ -10,14 +10,63 @@ import { ContactDetailSidebar } from "@/components/accord-inbox/ContactDetailSid
 import { CreateDemandModal } from "@/components/accord-inbox/CreateDemandModal";
 import { NewConversationModal } from "@/components/accord-inbox/NewConversationModal";
 import { GroupsInbox } from "@/components/accord-inbox/GroupsInbox";
-import { WifiOff, User, ArrowLeft, PowerOff, Users, MessageCircle } from "lucide-react";
+import { WifiOff, User, ArrowLeft, PowerOff, Users, MessageCircle, Home, Headset, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useOperatorStatus } from "@/hooks/useOperatorStatus";
 import { cn } from "@/lib/utils";
+import { AgentPresenceMenu } from "@/components/accord-inbox/AgentPresenceMenu";
+import { useTenantLogo } from "@/hooks/useTenantLogo";
 
 type UiFilter = "Todas" | "Não lidas";
+
+function AccordStackTopBar({ tenantId }: { tenantId?: string | null }) {
+  const navigate = useNavigate();
+  const tenantLogoUrl = useTenantLogo(tenantId ?? null);
+  return (
+    <div
+      className="flex items-center justify-between gap-3 h-12 px-3 border-b border-border/60 bg-background flex-shrink-0"
+      style={{ paddingTop: 'max(0px, env(safe-area-inset-top, 0px))' }}
+    >
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {tenantLogoUrl ? (
+            <img src={tenantLogoUrl} alt="Logo" className="h-6 w-auto max-w-[110px] object-contain" />
+          ) : (
+            <span className="text-[13px] font-semibold text-foreground tracking-tight">Accord</span>
+          )}
+        </div>
+        <button
+          onClick={() => navigate("/home")}
+          title="Ir para o Início"
+          aria-label="Ir para o Início"
+          className="flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+        >
+          <Home size={15} />
+        </button>
+        <div
+          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[12px] font-medium bg-primary text-primary-foreground shadow-sm"
+          aria-current="page"
+        >
+          <Headset size={13} />
+          Atendimentos
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        <button
+          onClick={() => navigate("/notificacoes")}
+          title="Notificações"
+          aria-label="Notificações"
+          className="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+        >
+          <Bell size={16} />
+        </button>
+        <AgentPresenceMenu />
+      </div>
+    </div>
+  );
+}
 
 export default function AccordStack() {
   const {
@@ -270,6 +319,9 @@ export default function AccordStack() {
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-background overflow-hidden">
+      {/* Top bar: logo + home + Atendimentos pill (left) / bell + agent status (right) */}
+      <AccordStackTopBar tenantId={companyId} />
+
       {fromDealId && (
         <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 border-b border-primary/20 flex-shrink-0">
           <button
