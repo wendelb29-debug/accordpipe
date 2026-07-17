@@ -21,6 +21,7 @@ export interface InboxContact {
   conversation_status: string;
   created_at: string;
   notes: string | null;
+  unread_count?: number | null;
 }
 
 export interface MessageReaction {
