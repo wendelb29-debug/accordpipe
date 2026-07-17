@@ -6651,6 +6651,45 @@ export type Database = {
           },
         ]
       }
+      platform_admin_access_log: {
+        Row: {
+          accessed_tenant_id: string
+          action: string
+          created_at: string
+          details: Json
+          id: string
+          ip_address: string | null
+          target_id: string | null
+          target_type: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          accessed_tenant_id: string
+          action: string
+          created_at?: string
+          details?: Json
+          id?: string
+          ip_address?: string | null
+          target_id?: string | null
+          target_type?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          accessed_tenant_id?: string
+          action?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          ip_address?: string | null
+          target_id?: string | null
+          target_type?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -11694,6 +11733,16 @@ export type Database = {
           _user_name: string
         }
         Returns: undefined
+      }
+      log_platform_admin_access: {
+        Args: {
+          _action: string
+          _details?: Json
+          _target_id?: string
+          _target_type?: string
+          _tenant_id: string
+        }
+        Returns: string
       }
       log_system_error: {
         Args: {
