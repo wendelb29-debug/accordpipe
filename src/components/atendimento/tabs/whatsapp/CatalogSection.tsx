@@ -60,7 +60,7 @@ export function CatalogSection({ tenantId, visible = true }: Props) {
   const [notConfigured, setNotConfigured] = useState(false);
 
   const fetchPage = useCallback(async (after: string | null) => {
-    if (!tenantId) return { products: [], next_after: null };
+    if (!tenantId) return { products: [], next_after: null, unavailable: false };
     const { data, error } = await supabase.functions.invoke("uazapi-catalog-list", {
       body: { tenant_id: tenantId, after: after ?? undefined },
     });
@@ -69,6 +69,7 @@ export function CatalogSection({ tenantId, visible = true }: Props) {
     return {
       products: ((data as any)?.products ?? []) as Product[],
       next_after: ((data as any)?.next_after ?? null) as string | null,
+      unavailable: Boolean((data as any)?.unavailable),
     };
   }, [tenantId]);
 
@@ -80,9 +81,10 @@ export function CatalogSection({ tenantId, visible = true }: Props) {
       const r = await fetchPage(null);
       setProducts(r.products);
       setNextAfter(r.next_after);
+      if ((r as any).unavailable) setNotConfigured(true);
     } catch (e: any) {
       const msg = e?.message || String(e);
-      if (/instance_not_connected|no_instance|cannot_resolve_jid/.test(msg)) {
+      if (/instance_not_connected|no_instance|cannot_resolve_jid|timeout|504|408|502|503|non-2xx/i.test(msg)) {
         setNotConfigured(true);
       } else {
         toast.error("Falha ao carregar catálogo: " + msg, { duration: 12000 });
