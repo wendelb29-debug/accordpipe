@@ -118,6 +118,32 @@ export function InboxSidebar({
           paddingLeft: 'max(0.75rem, env(safe-area-inset-left, 0px))',
         }}
       >
+        {/* Top brand bar: logo/Accord + home + Atendimentos pill */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {tenantLogoUrl ? (
+              <img src={tenantLogoUrl} alt="Logo" className="h-6 w-auto max-w-[90px] object-contain" />
+            ) : (
+              <span className="text-[13px] font-semibold text-foreground tracking-tight">Accord</span>
+            )}
+          </div>
+          <button
+            onClick={() => navigate("/home")}
+            title="Ir para o Início"
+            aria-label="Ir para o Início"
+            className="ml-auto flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+          >
+            <Home size={15} />
+          </button>
+          <div
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[12px] font-medium bg-primary text-primary-foreground shadow-sm"
+            aria-current="page"
+          >
+            <Headset size={13} />
+            Atendimentos
+          </div>
+        </div>
+
         {/* Duas abas grandes no topo — padrão EZ Chat com cores Accord */}
         <div className="flex items-center gap-2">
           {TOP_TABS.map((tab) => {
@@ -152,14 +178,6 @@ export function InboxSidebar({
 
         {/* Linha de busca + ações compactas */}
         <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => navigate("/home")}
-            title="Ir para o Início"
-            aria-label="Ir para o Início"
-            className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-background border border-border/60 text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary/10 transition-all"
-          >
-            <Home size={15} />
-          </button>
           <div className="flex-1 flex items-center gap-2 bg-background border border-border/60 rounded-xl px-3 py-2">
             <Search size={14} className="text-muted-foreground flex-shrink-0" />
             <input
@@ -195,7 +213,7 @@ export function InboxSidebar({
                 : "bg-background text-muted-foreground border-border/60 hover:text-foreground"
             )}
           >
-            <MessageSquare size={15} />
+            <Filter size={15} />
             {unreadTotal > 0 && filter !== "Não lidas" && (
               <span className="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold inline-flex items-center justify-center">
                 {unreadTotal > 9 ? "9+" : unreadTotal}
