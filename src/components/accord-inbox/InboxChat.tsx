@@ -708,7 +708,7 @@ function AccordWatermark() {
 export function InboxChat({
   contact, messages, onSendMessage, onReactToMessage, onTransfer, onToggleInfo, showInfo, onUpdateStatus, companyId,
   onBack, queueCount = 0, inServiceCount = 0, onNewConversation, onFilterQueue, onViewReport, isAdmin,
-  serverUrl, integrationId, isPinned, onTogglePin,
+  serverUrl, integrationId, isPinned, onTogglePin, agentStatus = "available",
 }: InboxChatProps) {
   const [text, setText] = useState("");
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
