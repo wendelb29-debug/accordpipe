@@ -21,6 +21,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   tenantId: string;
+  prefill?: Partial<FormState> & { audience_snapshot?: AudienceRow[] };
 }
 
 type Channel = "whatsapp" | "email";
