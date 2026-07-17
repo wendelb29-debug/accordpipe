@@ -1577,7 +1577,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                   Registrar ligação
                 </button>
               </div>
-              <ActivityFilteredList activities={activities.filter((a) => a.type === "call")} loading={activitiesLoading} emptyLabel="ligações" />
+              <ActivityFilteredList activities={activities.filter((a) => a.type === "call")} loading={activitiesLoading} emptyLabel="ligação" />
             </TabsContent>
 
             {/* E-mail */}
