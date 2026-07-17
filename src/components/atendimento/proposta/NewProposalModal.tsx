@@ -46,6 +46,8 @@ export function NewProposalModal({ open, onOpenChange, servidorId, onConfirm }: 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Nova Proposta</DialogTitle>
+          <DialogDescription>Escolha começar do zero ou usar um template pré-configurado.</DialogDescription>
+
         </DialogHeader>
         <RadioGroup value={mode} onValueChange={(v) => setMode(v as any)} className="space-y-2">
           <label className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition ${mode === "blank" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/40"}`}>
