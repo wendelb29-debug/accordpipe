@@ -286,6 +286,36 @@ export default function AccordStack() {
           <span className="text-xs text-muted-foreground">· você veio de uma oportunidade</span>
         </div>
       )}
+      {/* Toggle Individual / Grupos */}
+      <div className="flex items-center gap-2 px-3 pt-2 pb-1 border-b border-border/60 flex-shrink-0 bg-background">
+        <button
+          onClick={() => setChatMode("individual")}
+          className={cn(
+            "flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-colors",
+            chatMode === "individual"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground hover:bg-muted/70",
+          )}
+        >
+          <MessageCircle size={13} />
+          Individuais
+        </button>
+        <button
+          onClick={() => setChatMode("grupos")}
+          className={cn(
+            "flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-colors",
+            chatMode === "grupos"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground hover:bg-muted/70",
+          )}
+        >
+          <Users size={13} />
+          Grupos
+        </button>
+      </div>
+      {chatMode === "grupos" ? (
+        <GroupsInbox tenantId={companyId} />
+      ) : (
       <div className="flex flex-1 min-h-0 overflow-hidden">
       <div className={cn(
         "flex-shrink-0 w-full md:w-auto h-full",
