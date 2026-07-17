@@ -283,7 +283,6 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
         <div className="space-y-6">
           <UazapiInstancePanel tenantId={companyId} />
           <WhatsAppProfileSection tenantId={companyId} />
-          <WhatsAppProfileSection tenantId={companyId} />
           <BusinessProfileSection tenantId={companyId} />
           <CatalogSection tenantId={companyId} />
           <UazapiWebhookSection tenantId={companyId} />
