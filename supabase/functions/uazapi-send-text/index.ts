@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
   try {
     const caller = await requireCaller(req);
     if (caller instanceof Response) return caller;
-    const { tenant_id, lead_id, number, text } = await req.json();
+    const { tenant_id, lead_id, number, text, useAsync } = await req.json();
     if (!tenant_id || !number || !text)
       return json({ error: "tenant_id, number and text required" }, 400);
     const forbid = await requireTenantMember(caller.userId, tenant_id);
@@ -48,6 +48,7 @@ Deno.serve(async (req) => {
     };
     // "Simular digitando" — usa delay em segundos aceito pela uazapi
     if (settings.simulate_typing) body.delay = 3;
+    if (useAsync) body.async = true;
 
     const data = await callUazapi("/send/text", {
       method: "POST",

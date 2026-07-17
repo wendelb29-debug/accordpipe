@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
   try {
     const caller = await requireCaller(req);
     if (caller instanceof Response) return caller;
-    const { tenant_id, lead_id, number, type, file, caption, docName } =
+    const { tenant_id, lead_id, number, type, file, caption, docName, useAsync } =
       await req.json();
     if (!tenant_id || !number || !type || !file)
       return json({ error: "tenant_id, number, type, file required" }, 400);
@@ -62,6 +62,7 @@ Deno.serve(async (req) => {
       track_id: lead_id ?? null,
     };
     if (settings.simulate_typing) body.delay = 3;
+    if (useAsync) body.async = true;
 
     const data = await callUazapi("/send/media", {
       method: "POST",

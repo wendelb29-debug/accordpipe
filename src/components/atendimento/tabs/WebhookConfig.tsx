@@ -17,6 +17,7 @@ import { UazapiInstancePanel } from "./whatsapp/UazapiInstancePanel";
 import { WhatsAppProfileSection } from "./whatsapp/WhatsAppProfileSection";
 import { UazapiWebhookSection } from "./UazapiWebhookSection";
 import { UazapiDiagnostics } from "./UazapiDiagnostics";
+import { AsyncQueuePanel } from "./AsyncQueuePanel";
 
 interface WebhookFieldDef {
   key: string;
@@ -282,6 +283,7 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
           <WhatsAppProfileSection tenantId={companyId} />
           <UazapiWebhookSection tenantId={companyId} />
           <UazapiDiagnostics tenantId={companyId} />
+          <AsyncQueuePanel tenantId={companyId} />
         </div>
       )}
 

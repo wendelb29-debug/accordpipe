@@ -10239,10 +10239,15 @@ export type Database = {
       whatsapp_chats: {
         Row: {
           created_at: string
+          group_invite_link: string | null
+          group_is_announce: boolean
+          group_join_approval_required: boolean
+          group_member_add_mode: string
           group_owner_jid: string | null
           group_topic: string | null
           id: string
           image_url: string | null
+          instance_is_admin: boolean
           is_archived: boolean
           is_group: boolean
           is_pinned: boolean
@@ -10259,10 +10264,15 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          group_invite_link?: string | null
+          group_is_announce?: boolean
+          group_join_approval_required?: boolean
+          group_member_add_mode?: string
           group_owner_jid?: string | null
           group_topic?: string | null
           id?: string
           image_url?: string | null
+          instance_is_admin?: boolean
           is_archived?: boolean
           is_group?: boolean
           is_pinned?: boolean
@@ -10279,10 +10289,15 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          group_invite_link?: string | null
+          group_is_announce?: boolean
+          group_join_approval_required?: boolean
+          group_member_add_mode?: string
           group_owner_jid?: string | null
           group_topic?: string | null
           id?: string
           image_url?: string | null
+          instance_is_admin?: boolean
           is_archived?: boolean
           is_group?: boolean
           is_pinned?: boolean

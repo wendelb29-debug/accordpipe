@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { GroupInfoPanel } from "./GroupInfoPanel";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,6 +43,11 @@ interface GroupChat {
   last_message_text: string | null;
   last_message_at: string | null;
   unread_count: number;
+  group_is_announce: boolean;
+  group_join_approval_required: boolean;
+  group_member_add_mode: "admin_add" | "all_member_add";
+  group_invite_link: string | null;
+  instance_is_admin: boolean;
 }
 
 interface GroupMessage {
@@ -79,6 +85,7 @@ export function GroupsInbox({ tenantId }: Props) {
   const [createOpen, setCreateOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   // Create group form state
@@ -394,7 +401,7 @@ export function GroupsInbox({ tenantId }: Props) {
       </div>
 
       {/* Right: chat */}
-      <div className={cn("flex-1 min-w-0 min-h-0 h-full overflow-hidden flex flex-col", showListOnly && "hidden md:flex")}>
+      <div className={cn("relative flex-1 min-w-0 min-h-0 h-full overflow-hidden flex flex-col", showListOnly && "hidden md:flex")}>
         {!selected ? (
           <div className="flex-1 flex items-center justify-center text-muted-foreground">
             <div className="text-center">
@@ -410,20 +417,27 @@ export function GroupsInbox({ tenantId }: Props) {
                   <ArrowLeft size={16} />
                 </Button>
               )}
-              <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                {selected.image_url ? (
-                  <img src={selected.image_url} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <Users size={16} className="text-primary" />
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-semibold truncate">{selected.name || selected.wa_chatid}</div>
-                <div className="text-xs text-muted-foreground truncate">
-                  {selected.participant_count} participantes
-                  {selected.group_topic ? ` • ${selected.group_topic}` : ""}
+              <button
+                type="button"
+                onClick={() => setInfoOpen(true)}
+                className="flex items-center gap-3 min-w-0 flex-1 text-left hover:bg-muted/40 rounded-md px-1 py-1 transition-colors"
+                title="Ver informações do grupo"
+              >
+                <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {selected.image_url ? (
+                    <img src={selected.image_url} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <Users size={16} className="text-primary" />
+                  )}
                 </div>
-              </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold truncate">{selected.name || selected.wa_chatid}</div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {selected.participant_count} participantes
+                    {selected.group_topic ? ` • ${selected.group_topic}` : ""}
+                  </div>
+                </div>
+              </button>
               <Button
                 size="sm"
                 variant="ghost"
@@ -480,6 +494,15 @@ export function GroupsInbox({ tenantId }: Props) {
               </div>
             )}
           </>
+        )}
+
+        {infoOpen && selected && tenantId && (
+          <GroupInfoPanel
+            tenantId={tenantId}
+            chat={selected as any}
+            onClose={() => setInfoOpen(false)}
+            onUpdated={fetchGroups}
+          />
         )}
       </div>
 
