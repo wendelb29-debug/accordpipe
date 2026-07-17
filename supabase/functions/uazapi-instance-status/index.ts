@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import {
   callUazapi,
+  buildUazapiWebhookPayload,
   corsHeaders,
   getInstanceRow,
   json,
@@ -56,24 +57,10 @@ Deno.serve(async (req) => {
     const justConnected = status === "connected" && row.status !== "connected";
     if (justConnected) {
       try {
-        const base = Deno.env.get("SUPABASE_URL") ?? "";
-        const webhookUrl = `${base}/functions/v1/uazapi-webhook`;
         await callUazapi("/webhook", {
           method: "POST",
           token: row.uazapi_token,
-          body: {
-            url: webhookUrl,
-            events: [
-              "messages",
-              "messages_upsert",
-              "messages_update",
-              "chats",
-              "chats_update",
-              "chats_upsert",
-              "connection",
-            ],
-            enabled: true,
-          },
+          body: buildUazapiWebhookPayload(),
         });
       } catch (err) {
         console.warn("auto webhook setup failed:", err);
