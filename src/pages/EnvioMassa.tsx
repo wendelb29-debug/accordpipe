@@ -226,7 +226,7 @@ function EmptyState({ icon, title, desc, action }: { icon: React.ReactNode; titl
   );
 }
 
-function EnviosHistory({ campaigns }: { campaigns: MassCampaign[] }) {
+function EnviosHistory({ campaigns, onOpen }: { campaigns: MassCampaign[]; onOpen: (c: MassCampaign) => void }) {
   const executed = campaigns.filter(c => ["running", "paused", "completed", "failed"].includes(c.status));
   if (executed.length === 0) {
     return <div className="text-center py-16 text-muted-foreground text-sm">Nenhum envio realizado ainda.</div>;
@@ -237,7 +237,7 @@ function EnviosHistory({ campaigns }: { campaigns: MassCampaign[] }) {
         const t = c.totals || {};
         const total = (t.sent || 0) + (t.failed || 0) + (t.queued || 0);
         return (
-          <Card key={c.id} className="p-4 grid grid-cols-6 gap-4 items-center">
+          <Card key={c.id} onClick={() => onOpen(c)} className="p-4 grid grid-cols-6 gap-4 items-center cursor-pointer hover:bg-muted/30 transition">
             <div className="col-span-2">
               <p className="font-medium truncate">{c.name}</p>
               <p className="text-xs text-muted-foreground">{c.channel === "whatsapp" ? "WhatsApp" : "E-mail"}</p>
