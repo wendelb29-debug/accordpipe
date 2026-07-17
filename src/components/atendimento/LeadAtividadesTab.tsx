@@ -96,6 +96,8 @@ export function LeadAtividadesTab({
     system: true,
     email: false,
   });
+  const [titleError, setTitleError] = useState(false);
+
 
   useEffect(() => {
     fetchActivities();
