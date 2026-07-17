@@ -624,14 +624,17 @@ export function LeadAtividadesTab({
             )}
 
             <div className="space-y-1">
-              <Label className="text-xs font-semibold text-primary">Título</Label>
+              <Label className="text-xs font-semibold text-primary">Título *</Label>
               <Input
-                className="h-8 text-xs"
+                className={cn("h-8 text-xs", titleError && "border-destructive focus-visible:ring-destructive")}
                 value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                onChange={(e) => { setForm({ ...form, title: e.target.value }); if (titleError) setTitleError(false); }}
                 placeholder="Ex: Reunião de apresentação"
+                aria-invalid={titleError}
               />
+              {titleError && <p className="text-[11px] text-destructive">Título é obrigatório</p>}
             </div>
+
 
             <div className="space-y-1">
               <Label className="text-xs font-semibold text-primary">Descrição</Label>
