@@ -320,10 +320,180 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
             </div>
 
             {form.audience_mode === "manual" && (
-              <div>
-                <Label>Contatos (uma linha por contato: nome, telefone/email)</Label>
-                <Textarea value={manualText} onChange={e => setManualText(e.target.value)} rows={8} placeholder={"João Silva, 5511999999999\nMaria, maria@exemplo.com"} />
-                <Button variant="outline" size="sm" className="mt-2" onClick={parseManual}>Importar contatos</Button>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold">Para quem quer enviar?</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Adicione os contatos que receberão as mensagens. {form.channel === "email" ? "E-mail" : "Telefone"} é obrigatório.
+                  </p>
+                </div>
+
+                <Alert
+                  className="border-amber-400/30 bg-amber-500/10 cursor-pointer"
+                  onClick={async () => {
+                    try {
+                      const text = await navigator.clipboard.readText();
+                      if (!text.trim()) { toast.error("Área de transferência vazia"); return; }
+                      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                      if (lines.length < 2) { toast.error("Cole ao menos um cabeçalho e uma linha"); return; }
+                      const sep = lines[0].includes(";") ? ";" : lines[0].includes("\t") ? "\t" : ",";
+                      const headers = lines[0].split(sep).map(h => h.trim().toLowerCase());
+                      const nameIdx = headers.findIndex(h => /nome|name/.test(h));
+                      const contactIdx = headers.findIndex(h => form.channel === "email" ? /e-?mail/.test(h) : /telefone|phone|whats|celular/.test(h));
+                      const extraKeys = headers.filter((h, i) => i !== nameIdx && i !== contactIdx);
+                      const rows: AudienceRow[] = lines.slice(1).map(l => {
+                        const parts = l.split(sep).map(s => s.trim());
+                        const variables: Record<string, any> = {};
+                        headers.forEach((h, i) => { if (i !== nameIdx && i !== contactIdx) variables[h] = parts[i] || ""; });
+                        return { name: nameIdx >= 0 ? parts[nameIdx] || "" : "", contact: contactIdx >= 0 ? parts[contactIdx] || "" : parts[1] || parts[0] || "", variables };
+                      }).filter(r => r.contact);
+                      setCustomVars(prev => Array.from(new Set([...prev, ...extraKeys])));
+                      update("audience_snapshot", rows);
+                      toast.success(`${rows.length} contato(s) importado(s) da área de transferência`);
+                    } catch {
+                      toast.error("Não foi possível ler a área de transferência");
+                    }
+                  }}
+                >
+                  <Info className="w-4 h-4 text-amber-400" />
+                  <AlertDescription className="text-xs text-amber-200">
+                    Cole uma lista CSV. Com cabeçalho (ex.: <strong>Nome, {form.channel === "email" ? "Email" : "Telefone"}, CPF</strong>), as colunas extras viram variáveis automaticamente.
+                  </AlertDescription>
+                </Alert>
+
+                <div className="border border-border rounded-lg p-3 space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Braces className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-medium">Variáveis personalizadas</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {customVars.map(v => (
+                      <Badge key={v} variant="secondary" className="gap-1">
+                        {v}
+                        <button
+                          type="button"
+                          className="ml-1 text-muted-foreground hover:text-foreground"
+                          onClick={() => {
+                            setCustomVars(prev => prev.filter(x => x !== v));
+                            update("audience_snapshot", form.audience_snapshot.map(r => {
+                              const { [v]: _drop, ...rest } = r.variables || {};
+                              return { ...r, variables: rest };
+                            }));
+                          }}
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    ))}
+                    <Input
+                      value={newVar}
+                      onChange={e => setNewVar(e.target.value)}
+                      placeholder="ex.: cpf, empresa..."
+                      className="w-40 h-8 text-xs"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const k = newVar.trim().toLowerCase().replace(/\s+/g, "_");
+                          if (k && !customVars.includes(k)) setCustomVars(prev => [...prev, k]);
+                          setNewVar("");
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1"
+                      onClick={() => {
+                        const k = newVar.trim().toLowerCase().replace(/\s+/g, "_");
+                        if (k && !customVars.includes(k)) setCustomVars(prev => [...prev, k]);
+                        setNewVar("");
+                      }}
+                    >
+                      <Plus className="w-3 h-3" /> Variável
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Use no conteúdo como <code className="text-amber-400">{"{{variavel}}"}</code>. Nome e {form.channel === "email" ? "Email" : "Telefone"} já são padrão.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  {(form.audience_snapshot.length === 0 ? [{ name: "", contact: "", variables: {} } as AudienceRow] : form.audience_snapshot).map((row, idx) => (
+                    <div key={idx} className="grid gap-2 items-end" style={{ gridTemplateColumns: `1fr 1fr ${customVars.map(() => "1fr").join(" ")} auto` }}>
+                      <div>
+                        {idx === 0 && <Label className="text-xs">Nome</Label>}
+                        <Input
+                          value={row.name || ""}
+                          placeholder="Nome do contato"
+                          onChange={(e) => {
+                            const list = form.audience_snapshot.length === 0 ? [row] : [...form.audience_snapshot];
+                            list[idx] = { ...list[idx], name: e.target.value };
+                            update("audience_snapshot", list);
+                          }}
+                        />
+                      </div>
+                      <div>
+                        {idx === 0 && <Label className="text-xs">{form.channel === "email" ? "E-mail" : "Telefone"}</Label>}
+                        <div className="relative">
+                          {form.channel === "whatsapp" && (
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm">🇧🇷</span>
+                          )}
+                          <Input
+                            value={row.contact || ""}
+                            placeholder={form.channel === "email" ? "email@exemplo.com" : "+55"}
+                            className={form.channel === "whatsapp" ? "pl-9" : ""}
+                            onChange={(e) => {
+                              const list = form.audience_snapshot.length === 0 ? [row] : [...form.audience_snapshot];
+                              list[idx] = { ...list[idx], contact: e.target.value };
+                              update("audience_snapshot", list);
+                            }}
+                          />
+                        </div>
+                      </div>
+                      {customVars.map(v => (
+                        <div key={v}>
+                          {idx === 0 && <Label className="text-xs">{v}</Label>}
+                          <Input
+                            value={(row.variables || {})[v] || ""}
+                            placeholder={v}
+                            onChange={(e) => {
+                              const list = form.audience_snapshot.length === 0 ? [row] : [...form.audience_snapshot];
+                              list[idx] = { ...list[idx], variables: { ...(list[idx].variables || {}), [v]: e.target.value } };
+                              update("audience_snapshot", list);
+                            }}
+                          />
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="text-red-400 hover:text-red-500 hover:bg-red-500/10"
+                        onClick={() => {
+                          const list = form.audience_snapshot.filter((_, i) => i !== idx);
+                          update("audience_snapshot", list);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full border-dashed gap-2 border-amber-400/40 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300"
+                  onClick={() => {
+                    const list = form.audience_snapshot.length === 0
+                      ? [{ name: "", contact: "", variables: {} }, { name: "", contact: "", variables: {} }]
+                      : [...form.audience_snapshot, { name: "", contact: "", variables: {} }];
+                    update("audience_snapshot", list);
+                  }}
+                >
+                  <Plus className="w-4 h-4" /> Adicionar nova linha
+                </Button>
               </div>
             )}
 
