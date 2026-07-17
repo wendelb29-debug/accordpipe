@@ -60,6 +60,28 @@ interface ChatMessage {
   replyToMessageId?: string | null;
   reactions?: MessageReaction[];
   origin?: "accord_api" | "whatsapp_native" | "backfill" | string;
+  mediaDownloadStatus?: "pending" | "done" | "failed" | "not_applicable" | string | null;
+}
+
+// Onda 26: uazapi returns types like "imageMessage"/"stickerMessage"; strip the
+// trailing "message" so bubble logic recognizes media consistently.
+function normalizeType(t?: string | null): string {
+  const s = String(t ?? "").toLowerCase();
+  if (!s) return "text";
+  if (s === "extendedtextmessage" || s === "conversation") return "text";
+  return s.replace(/message$/, "");
+}
+const MEDIA_TYPE_SET = new Set([
+  "image","sticker","video","videoplay","audio","myaudio","ptt","ptv","voice","document","file","pdf",
+]);
+// Any content that starts with `{` or contains raw media payload keys must never
+// be rendered as chat text — that's the bug this wave fixes.
+function looksLikeRawMediaPayload(s?: string | null): boolean {
+  if (!s) return false;
+  const t = s.trim();
+  if (!t) return false;
+  if (t.startsWith("{") && /"(mediaKey|directPath|fileSHA256|fileEncSHA256|mimetype|URL)"\s*:/.test(t)) return true;
+  return false;
 }
 
 
@@ -518,22 +540,29 @@ function MessageBubble({
   const bubbleRef = useRef<HTMLDivElement>(null);
   const [actionsRect, setActionsRect] = useState<DOMRect | null>(null);
 
+  const normType = normalizeType(msg.type);
+  const isMediaKind = MEDIA_TYPE_SET.has(normType);
+  const dlStatus = msg.mediaDownloadStatus;
+  const isMediaPending = isMediaKind && !msg.mediaUrl && (dlStatus === "pending" || dlStatus === "failed" || dlStatus == null);
+
   const kind = (() => {
-    if ((msg.type === "audio" || msg.type === "voice" || msg.type === "ptt") && msg.mediaUrl) return "audio" as const;
-    if (msg.type === "image" && msg.mediaUrl) return "image" as const;
-    if (msg.type === "video" && msg.mediaUrl) return "video" as const;
-    const isMediaType = msg.type === "file" || msg.type === "document" || msg.type === "pdf";
+    if ((normType === "audio" || normType === "voice" || normType === "ptt" || normType === "myaudio") && msg.mediaUrl) return "audio" as const;
+    if ((normType === "image" || normType === "sticker") && msg.mediaUrl) return "image" as const;
+    if ((normType === "video" || normType === "videoplay" || normType === "ptv") && msg.mediaUrl) return "video" as const;
+    const isDocKind = normType === "file" || normType === "document" || normType === "pdf";
     if (msg.mediaUrl) {
       const k = classifyAttachment({ mime: msg.mimeType, fileName: msg.fileName, url: msg.mediaUrl });
       if (k === "image") return "image" as const;
       if (k === "audio") return "audio" as const;
       return "attachment" as const;
     }
-    if (isMediaType) return "attachment" as const;
+    if (isDocKind || isMediaPending) return "media-placeholder" as const;
     return "text" as const;
   })();
 
-  const hasCaption = !!msg.message && msg.message !== msg.fileName;
+  // Never render raw media payload JSON as chat text.
+  const safeMessage = looksLikeRawMediaPayload(msg.message) ? "" : msg.message;
+  const hasCaption = !!safeMessage && safeMessage !== msg.fileName;
 
   const openActions = (e: React.MouseEvent) => {
     // Don't trigger when clicking interactive children (links, audio buttons, etc.)
@@ -583,6 +612,29 @@ function MessageBubble({
             </div>
           )}
         </div>
+      ) : kind === "media-placeholder" ? (
+        <div className={cn(
+          "flex items-center gap-2 rounded-2xl px-3.5 py-2.5 text-[13px] shadow-sm border",
+          isOut
+            ? "bg-primary/90 text-primary-foreground border-primary/30 rounded-br-md"
+            : "bg-card text-muted-foreground border-border/60 rounded-bl-md",
+        )}>
+          <Image size={16} className="opacity-70" />
+          <span>
+            {dlStatus === "failed"
+              ? "Mídia indisponível"
+              : normType === "sticker"
+                ? "Figurinha (carregando…)"
+                : normType === "video" || normType === "videoplay" || normType === "ptv"
+                  ? "Vídeo (carregando…)"
+                  : normType === "audio" || normType === "myaudio" || normType === "ptt"
+                    ? "Áudio (carregando…)"
+                    : normType === "document" || normType === "file" || normType === "pdf"
+                      ? (msg.fileName || "Documento")
+                      : "Mídia (carregando…)"}
+          </span>
+          <span className="ml-2 text-[10px] opacity-60">{time}</span>
+        </div>
       ) : kind === "attachment" ? (
         <div className="flex flex-col gap-1">
           {originalForReply && (
@@ -614,7 +666,7 @@ function MessageBubble({
               onClick={() => onJumpToOriginal(originalForReply.id)}
             />
           )}
-          <div className="pr-12">{linkifyText(msg.message)}</div>
+          <div className="pr-12">{linkifyText(safeMessage)}</div>
           <div className={cn(
             "absolute bottom-1 right-2 flex items-center gap-1 text-[10px] leading-none",
             isOut ? "text-primary-foreground/70" : "text-muted-foreground",

@@ -218,6 +218,7 @@ export default function AccordStack() {
       replyToMessageId: m.reply_to_message_id || undefined,
       reactions: Array.isArray(m.reactions) ? m.reactions : [],
       origin: (m as any).origin,
+      mediaDownloadStatus: (m as any).media_download_status,
     };
 
   });
