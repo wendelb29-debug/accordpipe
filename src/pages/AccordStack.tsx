@@ -272,6 +272,9 @@ export default function AccordStack() {
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-background overflow-hidden">
+      {/* Top bar: logo + home + Atendimentos pill (left) / bell + agent status (right) */}
+      <AccordStackTopBar tenantId={companyId} />
+
       {fromDealId && (
         <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 border-b border-primary/20 flex-shrink-0">
           <button
