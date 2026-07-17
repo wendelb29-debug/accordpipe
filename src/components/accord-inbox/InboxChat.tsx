@@ -60,6 +60,28 @@ interface ChatMessage {
   replyToMessageId?: string | null;
   reactions?: MessageReaction[];
   origin?: "accord_api" | "whatsapp_native" | "backfill" | string;
+  mediaDownloadStatus?: "pending" | "done" | "failed" | "not_applicable" | string | null;
+}
+
+// Onda 26: uazapi returns types like "imageMessage"/"stickerMessage"; strip the
+// trailing "message" so bubble logic recognizes media consistently.
+function normalizeType(t?: string | null): string {
+  const s = String(t ?? "").toLowerCase();
+  if (!s) return "text";
+  if (s === "extendedtextmessage" || s === "conversation") return "text";
+  return s.replace(/message$/, "");
+}
+const MEDIA_TYPE_SET = new Set([
+  "image","sticker","video","videoplay","audio","myaudio","ptt","ptv","voice","document","file","pdf",
+]);
+// Any content that starts with `{` or contains raw media payload keys must never
+// be rendered as chat text — that's the bug this wave fixes.
+function looksLikeRawMediaPayload(s?: string | null): boolean {
+  if (!s) return false;
+  const t = s.trim();
+  if (!t) return false;
+  if (t.startsWith("{") && /"(mediaKey|directPath|fileSHA256|fileEncSHA256|mimetype|URL)"\s*:/.test(t)) return true;
+  return false;
 }
 
 
