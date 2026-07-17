@@ -249,9 +249,9 @@ export function Header() {
               </>
             )}
 
-            <DropdownMenuItem className="rounded-lg cursor-pointer gap-2.5" onClick={() => navigate("/perfil")}>
+            <DropdownMenuItem className="rounded-lg cursor-pointer gap-2.5" onClick={() => setMinhaContaOpen(true)}>
               <BrandIcon icon={UserCircle} tone="blue" size="xs" />
-              <span>{t("header.profile")}</span>
+              <span>Minha conta</span>
             </DropdownMenuItem>
             <DropdownMenuItem className="rounded-lg cursor-pointer gap-2.5" onClick={() => setPwdDialogOpen(true)}>
               <BrandIcon icon={KeyRound} tone="amber" size="xs" />
