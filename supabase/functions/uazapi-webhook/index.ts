@@ -395,6 +395,16 @@ async function process(payload: any, svc: ReturnType<typeof serviceClient>) {
         last_message: text ?? (isMedia ? `[${rawType}]` : ""),
         last_message_at: new Date().toISOString(),
       }).eq("id", contactId);
+
+      // Onda 21: increment persistent unread count only for inbound messages.
+      // Client-side reconciles/zeroes this when the user actually opens the chat.
+      if (!fromMe) {
+        try {
+          await svc.rpc("increment_contact_unread", { _contact_id: contactId });
+        } catch (e) {
+          console.warn("[webhook] increment_contact_unread failed", e);
+        }
+      }
     }
 
     // Phone discrepancy detection (non-group). Never overwrite validated data.

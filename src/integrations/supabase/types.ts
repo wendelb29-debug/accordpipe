@@ -10317,6 +10317,7 @@ export type Database = {
           notes: string | null
           phone: string
           routed_by_department: boolean
+          unread_count: number
           updated_at: string
           workspace_id: string | null
         }
@@ -10337,6 +10338,7 @@ export type Database = {
           notes?: string | null
           phone: string
           routed_by_department?: boolean
+          unread_count?: number
           updated_at?: string
           workspace_id?: string | null
         }
@@ -10357,6 +10359,7 @@ export type Database = {
           notes?: string | null
           phone?: string
           routed_by_department?: boolean
+          unread_count?: number
           updated_at?: string
           workspace_id?: string | null
         }
@@ -11831,6 +11834,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_contact_unread: {
+        Args: { _contact_id: string }
+        Returns: undefined
       }
       is_active_master_tenant: {
         Args: { _company_id: string }

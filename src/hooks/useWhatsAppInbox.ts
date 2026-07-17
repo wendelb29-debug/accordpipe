@@ -21,6 +21,7 @@ export interface InboxContact {
   conversation_status: string;
   created_at: string;
   notes: string | null;
+  unread_count?: number | null;
 }
 
 export interface MessageReaction {
@@ -165,8 +166,24 @@ export function useWhatsAppInbox() {
       return;
     }
 
-    
-    setContacts((data || []) as InboxContact[]);
+    const rows = (data || []) as InboxContact[];
+    setContacts(rows);
+    // Seed persistent unread badges from DB (source of truth = whatsapp_contacts.unread_count)
+    setUnreadByContact((prev) => {
+      const next: Record<string, number> = { ...prev };
+      for (const c of rows as any[]) {
+        const n = Number(c.unread_count || 0);
+        // Never reintroduce a badge for the conversation the user has open right now
+        if (selectedContactIdRef.current === c.id) {
+          next[c.id] = 0;
+        } else if (n > 0) {
+          next[c.id] = n;
+        } else if (next[c.id] === undefined) {
+          next[c.id] = 0;
+        }
+      }
+      return next;
+    });
     setLoading(false);
   }, [companyId, filter, user?.id]);
 
@@ -233,13 +250,18 @@ export function useWhatsAppInbox() {
   const selectContact = useCallback((contactId: string | null) => {
     setSelectedContactId(contactId);
     if (contactId) {
-      // Clear unread badge for this conversation
+      // Optimistic UI: clear unread badge immediately for this conversation
       setUnreadByContact(prev => {
         if (!prev[contactId]) return prev;
         const next = { ...prev };
-        delete next[contactId];
+        next[contactId] = 0;
         return next;
       });
+
+      // Persist zero server-side + tell uazapi to mark as read on WhatsApp.
+      // Fire-and-forget: UI already reflects the change.
+      supabase.functions.invoke("uazapi-mark-read", { body: { contact_id: contactId } })
+        .catch((e) => console.warn("[inbox] mark-read failed", e));
 
       const contact = contacts.find((item) => item.id === contactId);
       const cached = messagesCacheRef.current.get(contactId);
