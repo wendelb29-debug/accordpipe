@@ -229,7 +229,7 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
   };
 
   const applyTemplate = (t: any) => {
-    update("template_id", t.id);
+    update("template_id", t.raw_id || t.id);
     update("content_type", "template");
     update("subject", t.subject || "");
     update("body", t.body || "");
@@ -251,9 +251,55 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
     setTemplates((tpl as any) || []);
   };
 
+  const detectMediaType = (mime: string): MediaAttachment["type"] => {
+    if (mime.startsWith("image/")) return "image";
+    if (mime.startsWith("video/")) return "video";
+    if (mime.startsWith("audio/")) return "audio";
+    return "document";
+  };
+
+  const handleMediaUpload = async (file: File) => {
+    if (!file) return;
+    if (file.size > 25 * 1024 * 1024) { toast.error("Arquivo maior que 25MB"); return; }
+    setUploadingMedia(true);
+    try {
+      const ext = file.name.split(".").pop() || "bin";
+      const path = `${tenantId}/mass/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("whatsapp-template-media").upload(path, file, { contentType: file.type, upsert: false });
+      if (upErr) throw upErr;
+      const { data: signed } = await supabase.storage.from("whatsapp-template-media").createSignedUrl(path, 60 * 60 * 24 * 7);
+      update("media", {
+        url: signed?.signedUrl || "",
+        path,
+        type: detectMediaType(file.type),
+        mime: file.type,
+        filename: file.name,
+      });
+      toast.success("Mídia anexada");
+    } catch (e: any) {
+      toast.error(e.message || "Falha no upload");
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
+
+  const isValidManualRow = (row: AudienceRow): boolean => {
+    if (!row.name?.trim()) return false;
+    if (form.channel === "email") return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.contact || "");
+    const digits = (row.contact || "").replace(/\D/g, "");
+    // full number (with DDI) must have at least DDI + 8 digits (>=10 total for BR)
+    return digits.length >= 10;
+  };
+
   const canProceed = () => {
     if (step === 0) return form.name.trim().length >= 2 && !!form.channel_ref;
-    if (step === 1) return form.audience_snapshot.length > 0;
+    if (step === 1) {
+      if (form.audience_snapshot.length === 0) return false;
+      if (form.audience_mode === "manual") {
+        return form.audience_snapshot.every(isValidManualRow);
+      }
+      return true;
+    }
     if (step === 2) return form.body.trim().length > 0 && (form.channel !== "email" || form.subject.trim().length > 0);
     return true;
   };
@@ -261,7 +307,8 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
   const handleSave = async (asDraft: boolean) => {
     if (!tenantId) { toast.error("Tenant não identificado"); return; }
     setSaving(true);
-    const status = asDraft ? "draft" : form.scheduled_at ? "scheduled" : "running";
+    const scheduledAt = scheduleEnabled ? form.scheduled_at : "";
+    const status = asDraft ? "draft" : scheduledAt ? "scheduled" : "running";
     const { data: user } = await supabase.auth.getUser();
     const { data: camp, error } = await (supabase.from("mass_campaigns" as any).insert({
       tenant_id: tenantId, name: form.name, description: form.description || null,
@@ -269,8 +316,9 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
       audience_mode: form.audience_mode, audience_snapshot: form.audience_snapshot,
       content_type: form.content_type, template_id: form.template_id,
       subject: form.channel === "email" ? form.subject : null, body: form.body,
+      variable_mapping: { media: form.media || null },
       speed: form.speed, batch_size: form.batch_size, batch_interval_min: form.batch_interval_min,
-      scheduled_at: form.scheduled_at || null,
+      scheduled_at: scheduledAt || null,
       daily_window_start: form.daily_window_start || null, daily_window_end: form.daily_window_end || null,
       totals: { queued: form.audience_snapshot.length, sent: 0, failed: 0, replied: 0 },
       created_by: user.user?.id,
@@ -285,7 +333,7 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
 
     toast.success(asDraft ? "Rascunho salvo" : "Campanha criada");
     setSaving(false);
-    setForm(initialForm); setStep(0); onClose();
+    setForm(initialForm); setStep(0); setManualCountries([]); setScheduleEnabled(false); onClose();
   };
 
   return (
