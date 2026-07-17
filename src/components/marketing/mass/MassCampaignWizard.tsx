@@ -865,32 +865,103 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
 
 
         {step === 3 && (
-          <div className="space-y-4">
-            <div>
-              <Label>Velocidade de envio</Label>
-              <RadioGroup value={form.speed} onValueChange={(v) => update("speed", v as Speed)} className="grid grid-cols-3 gap-2 mt-2">
-                {[{ v: "slow", label: "Lento", desc: "menor risco" }, { v: "medium", label: "Médio", desc: "recomendado" }, { v: "fast", label: "Rápido", desc: "risco de bloqueio/spam" }].map(o => (
-                  <label key={o.v} className={`p-3 border rounded-lg cursor-pointer text-sm ${form.speed === o.v ? "border-primary bg-primary/5" : "border-border"}`}>
-                    <RadioGroupItem value={o.v} className="mr-2" />
-                    <span className="font-medium">{o.label}</span>
-                    <div className="text-xs text-muted-foreground">{o.desc}</div>
-                  </label>
-                ))}
-              </RadioGroup>
+          <div className="grid grid-cols-12 gap-6">
+            <div className="col-span-12 md:col-span-8 space-y-5">
+              <div>
+                <p className="text-sm font-semibold">Velocidade de envio</p>
+                <p className="text-xs text-muted-foreground mb-2">Escolha o ritmo dos envios — velocidades mais altas aumentam o risco de bloqueio.</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {[
+                    { v: "slow", label: "Lento", desc: "1 msg / 20–40s", icon: Rabbit, tone: "text-emerald-400" },
+                    { v: "medium", label: "Médio", desc: "1 msg / 8–15s", icon: Gauge, tone: "text-blue-400" },
+                    { v: "fast", label: "Rápido", desc: "1 msg / 3–6s", icon: Zap, tone: "text-amber-400" },
+                    { v: "manual", label: "Manual", desc: "Enviar em lotes", icon: Hand, tone: "text-purple-400" },
+                  ].map((o) => {
+                    const Icon = o.icon as any;
+                    const active = form.speed === o.v;
+                    return (
+                      <button
+                        key={o.v}
+                        type="button"
+                        onClick={() => update("speed", o.v as Speed)}
+                        className={`text-left p-3 rounded-xl border transition ${active ? "border-primary bg-primary/5 ring-1 ring-primary/40" : "border-border hover:bg-muted/40"}`}
+                      >
+                        <Icon className={`w-4 h-4 mb-1 ${o.tone}`} />
+                        <div className="text-sm font-medium">{o.label}</div>
+                        <div className="text-[11px] text-muted-foreground">{o.desc}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Contatos por lote</Label>
+                  <Input type="number" min={1} value={form.batch_size} onChange={e => update("batch_size", parseInt(e.target.value) || 1)} />
+                </div>
+                <div>
+                  <Label className="text-xs">Intervalo entre lotes (min)</Label>
+                  <Input type="number" min={1} value={form.batch_interval_min} onChange={e => update("batch_interval_min", parseInt(e.target.value) || 1)} />
+                </div>
+              </div>
+
+              <div className="border rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Agendar início</p>
+                    <p className="text-[11px] text-muted-foreground">Deixe em branco para iniciar assim que clicar em "Iniciar campanha".</p>
+                  </div>
+                  <Switch
+                    checked={!!form.scheduled_at}
+                    onCheckedChange={(v) => update("scheduled_at", v ? new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16) : "")}
+                  />
+                </div>
+                {form.scheduled_at && (
+                  <Input type="datetime-local" value={form.scheduled_at} onChange={e => update("scheduled_at", e.target.value)} />
+                )}
+              </div>
+
+              <div className="border rounded-xl p-4 space-y-3">
+                <div>
+                  <p className="text-sm font-medium">Janela diária de envio</p>
+                  <p className="text-[11px] text-muted-foreground">Fora da janela, a campanha pausa e retoma automaticamente.</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Início</Label>
+                    <Input type="time" value={form.daily_window_start} onChange={e => update("daily_window_start", e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Fim</Label>
+                    <Input type="time" value={form.daily_window_end} onChange={e => update("daily_window_end", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              <Alert>
+                <AlertTriangle className="w-4 h-4" />
+                <AlertDescription className="text-xs">
+                  Velocidades rápidas podem gerar bloqueios pela Meta. Recomendamos "Médio" para bases acima de 200 contatos.
+                </AlertDescription>
+              </Alert>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Contatos por lote</Label><Input type="number" min={1} value={form.batch_size} onChange={e => update("batch_size", parseInt(e.target.value) || 1)} /></div>
-              <div><Label>Intervalo entre lotes (min)</Label><Input type="number" min={1} value={form.batch_interval_min} onChange={e => update("batch_interval_min", parseInt(e.target.value) || 1)} /></div>
+
+            <div className="col-span-12 md:col-span-4">
+              <div className="sticky top-2 border rounded-xl p-4 bg-muted/20 space-y-3">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Resumo da campanha</p>
+                <div className="text-xs space-y-1.5">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Canal</span><span className="font-medium">{form.channel === "whatsapp" ? "WhatsApp" : "E-mail"}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Contatos</span><span className="font-medium">{form.audience_snapshot.length}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Velocidade</span><span className="font-medium capitalize">{form.speed}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Lote</span><span className="font-medium">{form.batch_size} / {form.batch_interval_min}min</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Janela</span><span className="font-medium">{form.daily_window_start}–{form.daily_window_end}</span></div>
+                  {form.scheduled_at && (
+                    <div className="flex justify-between"><span className="text-muted-foreground">Início</span><span className="font-medium">{new Date(form.scheduled_at).toLocaleString("pt-BR")}</span></div>
+                  )}
+                </div>
+              </div>
             </div>
-            <div>
-              <Label>Agendar início (opcional)</Label>
-              <Input type="datetime-local" value={form.scheduled_at} onChange={e => update("scheduled_at", e.target.value)} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Janela diária — início</Label><Input type="time" value={form.daily_window_start} onChange={e => update("daily_window_start", e.target.value)} /></div>
-              <div><Label>Janela diária — fim</Label><Input type="time" value={form.daily_window_end} onChange={e => update("daily_window_end", e.target.value)} /></div>
-            </div>
-            <Alert><AlertTriangle className="w-4 h-4" /><AlertDescription>Fora da janela diária, o envio pausa e retoma no dia seguinte automaticamente.</AlertDescription></Alert>
           </div>
         )}
 
