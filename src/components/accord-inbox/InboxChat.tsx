@@ -540,22 +540,29 @@ function MessageBubble({
   const bubbleRef = useRef<HTMLDivElement>(null);
   const [actionsRect, setActionsRect] = useState<DOMRect | null>(null);
 
+  const normType = normalizeType(msg.type);
+  const isMediaKind = MEDIA_TYPE_SET.has(normType);
+  const dlStatus = msg.mediaDownloadStatus;
+  const isMediaPending = isMediaKind && !msg.mediaUrl && (dlStatus === "pending" || dlStatus === "failed" || dlStatus == null);
+
   const kind = (() => {
-    if ((msg.type === "audio" || msg.type === "voice" || msg.type === "ptt") && msg.mediaUrl) return "audio" as const;
-    if (msg.type === "image" && msg.mediaUrl) return "image" as const;
-    if (msg.type === "video" && msg.mediaUrl) return "video" as const;
-    const isMediaType = msg.type === "file" || msg.type === "document" || msg.type === "pdf";
+    if ((normType === "audio" || normType === "voice" || normType === "ptt" || normType === "myaudio") && msg.mediaUrl) return "audio" as const;
+    if ((normType === "image" || normType === "sticker") && msg.mediaUrl) return "image" as const;
+    if ((normType === "video" || normType === "videoplay" || normType === "ptv") && msg.mediaUrl) return "video" as const;
+    const isDocKind = normType === "file" || normType === "document" || normType === "pdf";
     if (msg.mediaUrl) {
       const k = classifyAttachment({ mime: msg.mimeType, fileName: msg.fileName, url: msg.mediaUrl });
       if (k === "image") return "image" as const;
       if (k === "audio") return "audio" as const;
       return "attachment" as const;
     }
-    if (isMediaType) return "attachment" as const;
+    if (isDocKind || isMediaPending) return "media-placeholder" as const;
     return "text" as const;
   })();
 
-  const hasCaption = !!msg.message && msg.message !== msg.fileName;
+  // Never render raw media payload JSON as chat text.
+  const safeMessage = looksLikeRawMediaPayload(msg.message) ? "" : msg.message;
+  const hasCaption = !!safeMessage && safeMessage !== msg.fileName;
 
   const openActions = (e: React.MouseEvent) => {
     // Don't trigger when clicking interactive children (links, audio buttons, etc.)
