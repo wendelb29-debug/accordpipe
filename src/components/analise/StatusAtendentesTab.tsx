@@ -386,6 +386,18 @@ export function StatusAtendentesTab() {
           </tbody>
         </table>
       </div>
+
+      {editingUser && tenantId && (
+        <OperatorEditDialog
+          open={!!editingUser}
+          onOpenChange={(v) => !v && setEditingUser(null)}
+          tenantId={tenantId}
+          userId={editingUser.user_id}
+          initialName={editingUser.profile?.full_name || ""}
+          departments={allDepartments}
+          onSaved={() => setReloadKey((k) => k + 1)}
+        />
+      )}
     </div>
   );
 }
