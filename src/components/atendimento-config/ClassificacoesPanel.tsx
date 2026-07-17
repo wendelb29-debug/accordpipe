@@ -17,19 +17,22 @@ export function ClassificacoesPanel() {
   const [items, setItems] = useState<Item[]>([]);
   const [depts, setDepts] = useState<Dept[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState<Item | null>(null);
   const [open, setOpen] = useState(false);
 
   const load = async () => {
     if (!activeCompanyId) return;
     setLoading(true);
-    const [{ data: cls }, { data: d }] = await Promise.all([
+    const [clsRes, dRes] = await Promise.all([
       (supabase as any).from("service_classifications").select("*").eq("tenant_id", activeCompanyId).order("name"),
       supabase.from("tenant_departments").select("id,name").eq("tenant_id", activeCompanyId),
     ]);
-    setItems((cls as any) || []); setDepts((d as any) || []); setLoading(false);
+    if (clsRes.error) toast.error(`Falha ao carregar classificações: ${clsRes.error.message}`);
+    if (dRes.error) toast.error(`Falha ao carregar departamentos: ${dRes.error.message}`);
+    setItems((clsRes.data as any) || []); setDepts((dRes.data as any) || []); setLoading(false);
   };
-  useEffect(() => { load(); }, [activeCompanyId]);
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [activeCompanyId]);
 
   const toggleDept = (id: string) => {
     if (!editing) return;
@@ -38,11 +41,14 @@ export function ClassificacoesPanel() {
   };
 
   const save = async () => {
-    if (!editing || !activeCompanyId || !editing.name) return;
-    const payload: any = { tenant_id: activeCompanyId, name: editing.name, color: editing.color, department_ids: editing.department_ids, is_active: editing.is_active };
+    if (!editing || !activeCompanyId) return;
+    if (!editing.name.trim()) { toast.error("Informe o nome da classificação"); return; }
+    setSaving(true);
+    const payload: any = { tenant_id: activeCompanyId, name: editing.name.trim(), color: editing.color, department_ids: editing.department_ids, is_active: editing.is_active };
     const { error } = editing.id
       ? await (supabase as any).from("service_classifications").update(payload).eq("id", editing.id)
       : await (supabase as any).from("service_classifications").insert(payload);
+    setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Salvo"); setOpen(false); setEditing(null); load();
   };
@@ -51,7 +57,7 @@ export function ClassificacoesPanel() {
     if (!confirm("Excluir esta classificação?")) return;
     const { error } = await (supabase as any).from("service_classifications").delete().eq("id", id);
     if (error) return toast.error(error.message);
-    load();
+    toast.success("Classificação removida"); load();
   };
 
   if (loading) return <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />;
@@ -108,7 +114,9 @@ export function ClassificacoesPanel() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button onClick={save} disabled={!editing?.name}>Salvar</Button>
+            <Button onClick={save} disabled={!editing?.name?.trim() || saving}>
+              {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}Salvar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
