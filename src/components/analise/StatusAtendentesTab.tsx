@@ -305,12 +305,37 @@ export function StatusAtendentesTab() {
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" title="Editar status">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        title="Editar usuário"
+                        onClick={() => setEditingUser(o)}
+                      >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" title="Transferir atendimentos">
-                        <ArrowRightLeft className="h-3.5 w-3.5" />
-                      </Button>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Alterar status">
+                            <ArrowRightLeft className="h-3.5 w-3.5" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent align="end" className="w-40 p-1">
+                          {Object.entries(STATUS_META).map(([k, v]) => (
+                            <button
+                              key={k}
+                              onClick={() => changeStatus(o.user_id, k)}
+                              className={cn(
+                                "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-muted",
+                                o.status === k && "bg-muted"
+                              )}
+                            >
+                              <span className={cn("h-1.5 w-1.5 rounded-full", v.dot)} />
+                              <span className={v.color}>{v.label}</span>
+                            </button>
+                          ))}
+                        </PopoverContent>
+                      </Popover>
                     </div>
                   </td>
                 </tr>
