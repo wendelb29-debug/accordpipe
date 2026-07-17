@@ -86,10 +86,9 @@ function Avatar({ contact, size = 40 }: { contact: SidebarContact; size?: number
     </div>
   );
 }
-const STATUS_TABS: { key: ConversationStatusFilter; label: string; colorClass: string }[] = [
-  { key: "fila", label: "Fila", colorClass: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
-  { key: "em_atendimento", label: "Atend.", colorClass: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" },
-  { key: "encerrado", label: "Enc.", colorClass: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+const TOP_TABS: { key: ConversationStatusFilter; label: string }[] = [
+  { key: "em_atendimento", label: "Em Atendimento" },
+  { key: "fila", label: "Em Espera" },
 ];
 
 export function InboxSidebar({
@@ -98,7 +97,6 @@ export function InboxSidebar({
   onNewConversation, tenantId, onAvatarsSynced,
   sortOrder = "newest", onSortOrderChange,
 }: InboxSidebarProps) {
-  const filterOpts = ["Todas", "Não lidas"];
   const [historyOpen, setHistoryOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -108,29 +106,64 @@ export function InboxSidebar({
     encerrado: contacts.filter((c) => c.conversationStatus === "encerrado").length,
   };
 
+  const unreadTotal = contacts.reduce((s, c) => s + (c.unreadCount || 0), 0);
+
   return (
-    <div className="flex flex-col w-full md:w-[272px] md:min-w-[272px] md:border-r border-border/60 bg-muted/30 dark:bg-white/[0.03] h-full">
+    <div className="flex flex-col w-full md:w-[300px] md:min-w-[300px] md:border-r border-border/60 bg-muted/20 dark:bg-white/[0.02] h-full">
       <div
-        className="px-3 pb-2 space-y-2"
+        className="px-3 pt-3 pb-2 space-y-3"
         style={{
           paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))',
           paddingLeft: 'max(0.75rem, env(safe-area-inset-left, 0px))',
         }}
       >
+        {/* Duas abas grandes no topo — padrão EZ Chat com cores Accord */}
+        <div className="flex items-center gap-2">
+          {TOP_TABS.map((tab) => {
+            const active = statusFilter === tab.key;
+            const count = counts[tab.key] || 0;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => onStatusFilterChange(tab.key)}
+                className={cn(
+                  "flex-1 h-9 rounded-full text-[12.5px] font-medium inline-flex items-center justify-center gap-1.5 transition-all border",
+                  active
+                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                    : "bg-transparent text-muted-foreground border-border/60 hover:text-foreground hover:border-border"
+                )}
+              >
+                {tab.label}
+                {count > 0 && (
+                  <span
+                    className={cn(
+                      "ml-0.5 min-w-[18px] h-[18px] px-1 inline-flex items-center justify-center rounded-full text-[10px] font-semibold",
+                      active ? "bg-primary-foreground/20 text-primary-foreground" : "bg-primary/15 text-primary"
+                    )}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Linha de busca + ações compactas */}
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => navigate("/home")}
             title="Ir para o Início"
             aria-label="Ir para o Início"
-            className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-muted/60 border border-border/50 text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary/10 transition-all"
+            className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-background border border-border/60 text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary/10 transition-all"
           >
             <Home size={15} />
           </button>
-          <div className="flex-1 flex items-center gap-2 bg-muted/60 border border-border/50 rounded-xl px-3 py-2">
+          <div className="flex-1 flex items-center gap-2 bg-background border border-border/60 rounded-xl px-3 py-2">
             <Search size={14} className="text-muted-foreground flex-shrink-0" />
             <input
               className="bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground w-full"
-              placeholder="Buscar conversa, número..."
+              placeholder="Pesquisar"
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
             />
@@ -141,79 +174,64 @@ export function InboxSidebar({
               title={sortOrder === "newest" ? "Ordenar mais antigas primeiro" : "Ordenar mais recentes primeiro"}
               aria-label="Alternar ordenação"
               className={cn(
-                "flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl border border-border/50 transition-all",
+                "flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl border transition-all",
                 sortOrder === "oldest"
                   ? "bg-primary/10 text-primary border-primary/40"
-                  : "bg-muted/60 text-muted-foreground hover:text-foreground"
+                  : "bg-background text-muted-foreground border-border/60 hover:text-foreground"
               )}
             >
               <ArrowDownUp size={15} />
             </button>
           )}
           <button
+            onClick={() => onFilterChange(filter === "Não lidas" ? "Todas" : "Não lidas")}
+            title={filter === "Não lidas" ? "Mostrar todas" : "Mostrar apenas não lidas"}
+            aria-label="Filtrar não lidas"
+            className={cn(
+              "relative flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl border transition-all",
+              filter === "Não lidas"
+                ? "bg-primary/10 text-primary border-primary/40"
+                : "bg-background text-muted-foreground border-border/60 hover:text-foreground"
+            )}
+          >
+            <MessageSquare size={15} />
+            {unreadTotal > 0 && filter !== "Não lidas" && (
+              <span className="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold inline-flex items-center justify-center">
+                {unreadTotal > 9 ? "9+" : unreadTotal}
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => setHistoryOpen(true)}
             title="Histórico de conversas encerradas"
             aria-label="Histórico de conversas"
-            className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-muted/60 border border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
+            className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-background border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
           >
             <History size={15} />
           </button>
+          {onNewConversation && (
+            <button
+              onClick={onNewConversation}
+              title="Nova conversa"
+              aria-label="Nova conversa"
+              className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm"
+            >
+              <Plus size={15} />
+            </button>
+          )}
           {isAdmin && (
             <button
               onClick={() => window.dispatchEvent(new CustomEvent("inbox:open-settings"))}
               title="Configurações do WhatsApp"
-              className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-muted/60 border border-border/50 text-muted-foreground hover:text-emerald-600 hover:border-emerald-500/40 hover:bg-emerald-500/10 transition-all"
+              className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-background border border-border/60 text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary/10 transition-all"
             >
               <Settings size={15} />
             </button>
           )}
           <AgentPresenceMenu />
         </div>
-
-
-        <div className="flex gap-1">
-          {filterOpts.map((f) => (
-            <button
-              key={f}
-              onClick={() => onFilterChange(f)}
-              className={cn(
-                "px-3 py-1 rounded-full text-xs transition-all",
-                filter === f ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/60"
-              )}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
       </div>
 
-      <div className="flex border-b border-border/60 px-1">
-        {STATUS_TABS.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => onStatusFilterChange(tab.key)}
-            className={cn(
-              "flex-1 py-2.5 text-xs flex items-center justify-center gap-1.5 border-b-2 transition-all",
-              statusFilter === tab.key ? "border-primary text-primary font-medium" : "border-transparent text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {tab.label}
-            <span className={cn("rounded-full px-1.5 text-[10px] font-medium", tab.colorClass)}>
-              {counts[tab.key] || 0}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {onNewConversation && (
-        <button
-          onClick={onNewConversation}
-          className="mx-3 mt-2.5 mb-1 flex items-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 transition-all"
-        >
-          <Plus size={15} />
-          Nova conversa
-        </button>
-      )}
 
       <div className="flex-1 overflow-y-auto py-1.5 px-2">
         {loading ? (
