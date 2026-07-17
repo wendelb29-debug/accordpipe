@@ -76,6 +76,19 @@ export function GroupsInbox({ tenantId }: Props) {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [joinOpen, setJoinOpen] = useState(false);
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  // Create group form state
+  const [newName, setNewName] = useState("");
+  const [newParticipants, setNewParticipants] = useState("");
+
+  // Join by invite state
+  const [inviteCode, setInviteCode] = useState("");
+  const [invitePreview, setInvitePreview] = useState<any>(null);
+
 
   const selected = useMemo(
     () => groups.find((g) => g.id === selectedId) || null,
