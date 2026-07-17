@@ -199,9 +199,28 @@ async function processCampaign(admin: any, campaign_id: string) {
 
       let result: SendResult;
       if (campaign.channel === "email") {
-        const email = (r.contact || "").trim();
+        const email = (r.contact || "").trim().toLowerCase();
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
           await admin.from("mass_campaign_recipients").update({ status: "failed", error: "E-mail inválido" }).eq("id", r.id);
+          failed++;
+          if ((i + 1) % 5 === 0 || i === list.length - 1) {
+            await setTotals({ queued: total - sent - failed, sent, failed, replied: 0 });
+          }
+          continue;
+        }
+        // Suppression check (tenant-scoped or global)
+        const { data: suppressed } = await admin
+          .from("email_suppression_list")
+          .select("id, reason")
+          .or(`tenant_id.eq.${campaign.tenant_id},tenant_id.is.null`)
+          .ilike("email", email)
+          .limit(1)
+          .maybeSingle();
+        if (suppressed) {
+          await admin.from("mass_campaign_recipients").update({
+            status: "failed",
+            error: `Suprimido (${suppressed.reason})`,
+          }).eq("id", r.id);
           failed++;
           if ((i + 1) % 5 === 0 || i === list.length - 1) {
             await setTotals({ queued: total - sent - failed, sent, failed, replied: 0 });
