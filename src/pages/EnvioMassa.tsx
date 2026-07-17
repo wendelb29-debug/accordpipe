@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Send, MessageSquare, Mail, Search, Play, Pause, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { MassCampaignWizard } from "@/components/marketing/mass/MassCampaignWizard";
+import { CampaignDetailsDialog } from "@/components/marketing/mass/CampaignDetailsDialog";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
