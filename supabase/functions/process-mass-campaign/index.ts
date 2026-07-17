@@ -85,6 +85,34 @@ async function sendZapi(serverUrl: string, instanceId: string, token: string, cl
   }
 }
 
+async function sendEmail(campaign: any, to: string, subject: string, body: string): Promise<SendResult> {
+  try {
+    const html = /<[a-z][\s\S]*>/i.test(body) ? body : `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;white-space:pre-wrap">${body.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>`;
+    const resp = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/email-send`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        apikey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      },
+      body: JSON.stringify({
+        accountId: campaign.channel_ref,
+        to,
+        subject: subject || "(sem assunto)",
+        html,
+        text: body.replace(/<[^>]+>/g, ""),
+      }),
+    });
+    const raw = await resp.text();
+    if (!resp.ok) return { success: false, message: `Email HTTP ${resp.status}: ${raw.slice(0, 250)}` };
+    let parsed: any = {};
+    try { parsed = JSON.parse(raw); } catch {}
+    return { success: true, message: "ok", external_id: parsed?.messageId || parsed?.id };
+  } catch (e) {
+    return { success: false, message: `Email err: ${(e as Error).message}` };
+  }
+}
+
 async function processCampaign(admin: any, campaign_id: string) {
   const { data: campaign } = await admin.from("mass_campaigns").select("*").eq("id", campaign_id).single();
   if (!campaign) return;
@@ -96,7 +124,7 @@ async function processCampaign(admin: any, campaign_id: string) {
   try {
     await admin.from("mass_campaigns").update({ status: "running", last_dispatch_at: new Date().toISOString() }).eq("id", campaign_id);
 
-    if (campaign.channel !== "whatsapp") {
+    if (campaign.channel !== "whatsapp" && campaign.channel !== "email") {
       await admin.from("mass_campaigns").update({
         status: "failed",
         totals: { ...(campaign.totals || {}), error: "Canal não suportado ainda" },
