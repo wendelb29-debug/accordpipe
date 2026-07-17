@@ -313,9 +313,30 @@ export function GroupsInbox({ tenantId }: Props) {
               <Users size={16} className="text-primary" />
               Grupos ({groups.length})
             </div>
-            <Button size="sm" variant="ghost" onClick={handleSync} disabled={syncing} title="Sincronizar grupos">
-              {syncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="ghost" disabled={syncing} title="Ações de grupo" className="gap-1">
+                  {syncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                  <ChevronDown size={12} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={() => handleSync(false)} disabled={syncing}>
+                  <RefreshCw size={14} className="mr-2" /> Sincronizar
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleSync(true)} disabled={syncing}>
+                  <Zap size={14} className="mr-2" /> Sincronizar (forçado)
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setCreateOpen(true)}>
+                  <Plus size={14} className="mr-2" /> Criar novo grupo
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setJoinOpen(true)}>
+                  <LinkIcon size={14} className="mr-2" /> Entrar por convite
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
           </div>
           <div className="relative">
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
