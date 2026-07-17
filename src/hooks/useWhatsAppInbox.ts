@@ -249,13 +249,18 @@ export function useWhatsAppInbox() {
   const selectContact = useCallback((contactId: string | null) => {
     setSelectedContactId(contactId);
     if (contactId) {
-      // Clear unread badge for this conversation
+      // Optimistic UI: clear unread badge immediately for this conversation
       setUnreadByContact(prev => {
         if (!prev[contactId]) return prev;
         const next = { ...prev };
-        delete next[contactId];
+        next[contactId] = 0;
         return next;
       });
+
+      // Persist zero server-side + tell uazapi to mark as read on WhatsApp.
+      // Fire-and-forget: UI already reflects the change.
+      supabase.functions.invoke("uazapi-mark-read", { body: { contact_id: contactId } })
+        .catch((e) => console.warn("[inbox] mark-read failed", e));
 
       const contact = contacts.find((item) => item.id === contactId);
       const cached = messagesCacheRef.current.get(contactId);
