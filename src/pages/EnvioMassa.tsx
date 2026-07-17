@@ -179,15 +179,36 @@ export default function EnvioMassa() {
         </TabsContent>
 
         <TabsContent value="envios" className="mt-4">
-          <EnviosHistory campaigns={filteredCampaigns} />
+          <EnviosHistory campaigns={filteredCampaigns} onOpen={(c) => setDetailsFor(c)} />
         </TabsContent>
       </Tabs>
 
       {wizardOpen && (
         <MassCampaignWizard
           open={wizardOpen}
-          onClose={() => { setWizardOpen(false); load(); }}
+          onClose={() => { setWizardOpen(false); setWizardPrefill(null); load(); }}
           tenantId={activeCompanyId || ""}
+          prefill={wizardPrefill}
+        />
+      )}
+
+      {detailsFor && (
+        <CampaignDetailsDialog
+          open={!!detailsFor}
+          onClose={() => setDetailsFor(null)}
+          campaignId={detailsFor.id}
+          campaignName={detailsFor.name}
+          channel={detailsFor.channel}
+          onReuseSent={(rows) => {
+            setWizardPrefill({
+              name: `${detailsFor.name} — reenvio`,
+              channel: detailsFor.channel,
+              audience_mode: "manual",
+              audience_snapshot: rows,
+            });
+            setDetailsFor(null);
+            setWizardOpen(true);
+          }}
         />
       )}
     </div>
