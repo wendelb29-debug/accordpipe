@@ -189,6 +189,11 @@ export default function ConfiguracoesAtendimento() {
 
         {/* Content cards (EZ-Chat style expandable rows) */}
         <Accordion type="multiple" className="space-y-3">
+          {tab === "sistema" && (
+            <div className="pb-2">
+              <AnaliseModule />
+            </div>
+          )}
           {cardsByTab[tab].map((item) => {
             const Icon = item.icon;
             const expandable = !!item.render;
