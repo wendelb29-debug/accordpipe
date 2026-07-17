@@ -87,7 +87,9 @@ export function FeriadosPanel() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button onClick={save} disabled={!editing?.name || !editing?.date}>Salvar</Button>
+            <Button onClick={save} disabled={!editing?.name?.trim() || !editing?.date || saving}>
+              {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}Salvar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
