@@ -91,7 +91,7 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
           .select("id,provider_type,instance_name,connected_phone,is_active,connection_status")
           .eq("tenant_id", tenantId)
           .eq("is_active", true),
-        sb.from("email_accounts").select("id,email,provider,status").eq("tenant_id", tenantId).eq("status", "active"),
+        sb.from("email_accounts").select("id,email_address,display_name,provider,status").eq("servidor_id", tenantId).in("status", ["connected", "active"]),
         sb.from("mass_templates").select("*").eq("tenant_id", tenantId).order("updated_at", { ascending: false }),
         sb.from("crm_tags").select("id,name").eq("server_id", tenantId).limit(200),
         sb.from("workspaces").select("id,name").eq("server_id", tenantId).limit(200),
@@ -291,7 +291,7 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
                 <SelectContent>
                   {form.channel === "whatsapp"
                     ? waInstances.map(i => <SelectItem key={i.id} value={i.id}>{i.instance_name} {i.phone_number ? `· ${i.phone_number}` : ""} {i.status ? `(${i.status})` : ""}</SelectItem>)
-                    : emailAccounts.map(a => <SelectItem key={a.id} value={a.id}>{a.email} · {a.provider}</SelectItem>)}
+                    : emailAccounts.map(a => <SelectItem key={a.id} value={a.id}>{a.email_address || a.display_name} · {a.provider}</SelectItem>)}
                 </SelectContent>
               </Select>
               {form.channel === "whatsapp" && waInstances.length === 0 && (
