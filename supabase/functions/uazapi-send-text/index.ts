@@ -48,6 +48,7 @@ Deno.serve(async (req) => {
     };
     // "Simular digitando" — usa delay em segundos aceito pela uazapi
     if (settings.simulate_typing) body.delay = 3;
+    if (useAsync) body.async = true;
 
     const data = await callUazapi("/send/text", {
       method: "POST",
