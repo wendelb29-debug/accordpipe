@@ -146,6 +146,20 @@ export default function Email() {
 
         </div>
 
+        {/* Aviso educativo sobre entregabilidade */}
+        <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex items-start gap-3">
+          <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+          <div className="text-[12.5px] leading-relaxed text-foreground/80">
+            <strong className="text-foreground">Sobre disparos em massa pela sua conta pessoal:</strong>{" "}
+            e-mails enviados pelo Gmail/Outlook conectado usam a reputação da sua caixa pessoal.
+            Volumes altos ou marcações como spam podem afetar a entrega de todos os seus e-mails —
+            inclusive os pessoais. Para grandes volumes, recomendamos configurar um domínio próprio
+            com autenticação SPF/DKIM/DMARC (Configurações → Entregabilidade).
+          </div>
+        </div>
+
+
+
         {loading ? (
           <div className="flex items-center justify-center py-16 text-muted-foreground">
             <Loader2 className="w-5 h-5 animate-spin" />
