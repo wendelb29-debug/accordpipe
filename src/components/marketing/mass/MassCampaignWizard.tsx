@@ -331,7 +331,20 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
     }));
     if (recipients.length) await supabase.from("mass_campaign_recipients" as any).insert(recipients);
 
-    toast.success(asDraft ? "Rascunho salvo" : "Campanha criada");
+    // Dispatch processor when starting immediately
+    if (!asDraft && !scheduledAt) {
+      const { error: invErr } = await supabase.functions.invoke("process-mass-campaign", {
+        body: { campaign_id: camp.id },
+      });
+      if (invErr) {
+        toast.error(`Campanha criada, mas falha ao iniciar envio: ${invErr.message}`);
+        await supabase.from("mass_campaigns" as any).update({ status: "failed" }).eq("id", camp.id);
+      } else {
+        toast.success("Campanha iniciada — acompanhando envio");
+      }
+    } else {
+      toast.success(asDraft ? "Rascunho salvo" : "Campanha agendada");
+    }
     setSaving(false);
     setForm(initialForm); setStep(0); setManualCountries([]); setScheduleEnabled(false); onClose();
   };
