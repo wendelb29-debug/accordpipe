@@ -913,11 +913,14 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
                     <p className="text-[11px] text-muted-foreground">Deixe em branco para iniciar assim que clicar em "Iniciar campanha".</p>
                   </div>
                   <Switch
-                    checked={!!form.scheduled_at}
-                    onCheckedChange={(v) => update("scheduled_at", v ? new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16) : "")}
+                    checked={scheduleEnabled}
+                    onCheckedChange={(v) => {
+                      setScheduleEnabled(v);
+                      if (!v) update("scheduled_at", "");
+                    }}
                   />
                 </div>
-                {form.scheduled_at && (
+                {scheduleEnabled && (
                   <Input type="datetime-local" value={form.scheduled_at} onChange={e => update("scheduled_at", e.target.value)} />
                 )}
               </div>
