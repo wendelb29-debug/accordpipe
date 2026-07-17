@@ -84,6 +84,7 @@ export function GroupsInbox({ tenantId }: Props) {
   const [createOpen, setCreateOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   // Create group form state
