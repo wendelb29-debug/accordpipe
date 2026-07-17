@@ -21,6 +21,53 @@ import { useTenantLogo } from "@/hooks/useTenantLogo";
 
 type UiFilter = "Todas" | "Não lidas";
 
+function AccordStackTopBar({ tenantId }: { tenantId?: string | null }) {
+  const navigate = useNavigate();
+  const tenantLogoUrl = useTenantLogo(tenantId ?? null);
+  return (
+    <div
+      className="flex items-center justify-between gap-3 h-12 px-3 border-b border-border/60 bg-background flex-shrink-0"
+      style={{ paddingTop: 'max(0px, env(safe-area-inset-top, 0px))' }}
+    >
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {tenantLogoUrl ? (
+            <img src={tenantLogoUrl} alt="Logo" className="h-6 w-auto max-w-[110px] object-contain" />
+          ) : (
+            <span className="text-[13px] font-semibold text-foreground tracking-tight">Accord</span>
+          )}
+        </div>
+        <button
+          onClick={() => navigate("/home")}
+          title="Ir para o Início"
+          aria-label="Ir para o Início"
+          className="flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+        >
+          <Home size={15} />
+        </button>
+        <div
+          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[12px] font-medium bg-primary text-primary-foreground shadow-sm"
+          aria-current="page"
+        >
+          <Headset size={13} />
+          Atendimentos
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        <button
+          onClick={() => navigate("/notificacoes")}
+          title="Notificações"
+          aria-label="Notificações"
+          className="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+        >
+          <Bell size={16} />
+        </button>
+        <AgentPresenceMenu />
+      </div>
+    </div>
+  );
+}
+
 export default function AccordStack() {
   const {
     contacts, messages, selectedContactId, selectContact, sendMessage, toggleReaction,
