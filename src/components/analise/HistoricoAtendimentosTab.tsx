@@ -20,9 +20,6 @@ type OriginPill = "atendimento" | "api" | "chat_interno" | "testes";
 
 const ORIGIN_PILLS: { id: OriginPill; label: string; icon: any }[] = [
   { id: "atendimento", label: "Atendimento", icon: MessageSquare },
-  { id: "api", label: "API/Agendamento", icon: Bot },
-  { id: "chat_interno", label: "Chat Interno", icon: Users },
-  { id: "testes", label: "Testes", icon: TestTube2 },
 ];
 
 interface ChatRow {
