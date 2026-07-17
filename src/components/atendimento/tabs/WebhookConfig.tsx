@@ -283,6 +283,7 @@ export function WebhookConfig({ companyIdOverride }: { companyIdOverride?: strin
           <WhatsAppProfileSection tenantId={companyId} />
           <UazapiWebhookSection tenantId={companyId} />
           <UazapiDiagnostics tenantId={companyId} />
+          <AsyncQueuePanel tenantId={companyId} />
         </div>
       )}
 
