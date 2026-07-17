@@ -165,8 +165,24 @@ export function useWhatsAppInbox() {
       return;
     }
 
-    
-    setContacts((data || []) as InboxContact[]);
+    const rows = (data || []) as InboxContact[];
+    setContacts(rows);
+    // Seed persistent unread badges from DB (source of truth = whatsapp_contacts.unread_count)
+    setUnreadByContact((prev) => {
+      const next: Record<string, number> = { ...prev };
+      for (const c of rows as any[]) {
+        const n = Number(c.unread_count || 0);
+        // Never reintroduce a badge for the conversation the user has open right now
+        if (selectedContactIdRef.current === c.id) {
+          next[c.id] = 0;
+        } else if (n > 0) {
+          next[c.id] = n;
+        } else if (next[c.id] === undefined) {
+          next[c.id] = 0;
+        }
+      }
+      return next;
+    });
     setLoading(false);
   }, [companyId, filter, user?.id]);
 
