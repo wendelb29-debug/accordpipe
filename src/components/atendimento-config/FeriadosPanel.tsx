@@ -16,23 +16,28 @@ export function FeriadosPanel() {
   const { activeCompanyId } = useAuth();
   const [items, setItems] = useState<Holiday[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState<Holiday | null>(null);
   const [open, setOpen] = useState(false);
 
   const load = async () => {
     if (!activeCompanyId) return;
     setLoading(true);
-    const { data } = await (supabase as any).from("service_holidays").select("*").eq("tenant_id", activeCompanyId).order("date");
+    const { data, error } = await (supabase as any).from("service_holidays").select("*").eq("tenant_id", activeCompanyId).order("date");
+    if (error) toast.error(`Falha ao carregar feriados: ${error.message}`);
     setItems((data as any) || []); setLoading(false);
   };
-  useEffect(() => { load(); }, [activeCompanyId]);
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [activeCompanyId]);
 
   const save = async () => {
-    if (!editing || !activeCompanyId || !editing.name || !editing.date) return;
-    const payload: any = { tenant_id: activeCompanyId, name: editing.name, date: editing.date, recurring: editing.recurring, message: editing.message };
+    if (!editing || !activeCompanyId) return;
+    if (!editing.name.trim() || !editing.date) { toast.error("Nome e data são obrigatórios"); return; }
+    setSaving(true);
+    const payload: any = { tenant_id: activeCompanyId, name: editing.name.trim(), date: editing.date, recurring: editing.recurring, message: editing.message };
     const { error } = editing.id
       ? await (supabase as any).from("service_holidays").update(payload).eq("id", editing.id)
       : await (supabase as any).from("service_holidays").insert(payload);
+    setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Salvo"); setOpen(false); setEditing(null); load();
   };
@@ -41,7 +46,7 @@ export function FeriadosPanel() {
     if (!confirm("Excluir este feriado?")) return;
     const { error } = await (supabase as any).from("service_holidays").delete().eq("id", id);
     if (error) return toast.error(error.message);
-    load();
+    toast.success("Feriado removido"); load();
   };
 
   if (loading) return <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />;
