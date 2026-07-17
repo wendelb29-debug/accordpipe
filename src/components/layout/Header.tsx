@@ -269,6 +269,7 @@ export function Header() {
         </DropdownMenu>
       </div>
       <ChangePasswordDialog open={pwdDialogOpen} onOpenChange={setPwdDialogOpen} />
+      <MinhaContaDialog open={minhaContaOpen} onOpenChange={setMinhaContaOpen} />
     </header>
   );
 }
