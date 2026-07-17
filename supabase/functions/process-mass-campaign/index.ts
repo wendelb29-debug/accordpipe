@@ -132,28 +132,46 @@ async function processCampaign(admin: any, campaign_id: string) {
       return;
     }
 
-    // Resolve WhatsApp integration
-    const { data: integ } = await admin
-      .from("tenant_whatsapp_integrations")
-      .select("*")
-      .eq("tenant_id", campaign.tenant_id)
-      .order("is_active", { ascending: false })
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (!integ || !integ.server_url || !integ.instance_token) {
-      await admin.from("mass_campaigns").update({
-        status: "failed",
-        totals: { ...(campaign.totals || {}), error: "Integração de WhatsApp não configurada" },
-      }).eq("id", campaign_id);
-      return;
-    }
-
+    // Resolve WhatsApp integration (only for WhatsApp campaigns)
+    let integ: any = null;
     let clientToken: string | null = null;
-    if (integ.provider_type === "zapi") {
-      const { data: comp } = await admin.from("companies").select("zapi_client_token").eq("id", campaign.tenant_id).maybeSingle();
-      clientToken = comp?.zapi_client_token ?? null;
+    if (campaign.channel === "whatsapp") {
+      const { data: found } = await admin
+        .from("tenant_whatsapp_integrations")
+        .select("*")
+        .eq("tenant_id", campaign.tenant_id)
+        .order("is_active", { ascending: false })
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      integ = found;
+      if (!integ || !integ.server_url || !integ.instance_token) {
+        await admin.from("mass_campaigns").update({
+          status: "failed",
+          totals: { ...(campaign.totals || {}), error: "Integração de WhatsApp não configurada" },
+        }).eq("id", campaign_id);
+        return;
+      }
+      if (integ.provider_type === "zapi") {
+        const { data: comp } = await admin.from("companies").select("zapi_client_token").eq("id", campaign.tenant_id).maybeSingle();
+        clientToken = comp?.zapi_client_token ?? null;
+      }
+    } else if (campaign.channel === "email") {
+      if (!campaign.channel_ref) {
+        await admin.from("mass_campaigns").update({
+          status: "failed",
+          totals: { ...(campaign.totals || {}), error: "Conta de e-mail não configurada" },
+        }).eq("id", campaign_id);
+        return;
+      }
+      const { data: acc } = await admin.from("email_accounts").select("id, status, provider").eq("id", campaign.channel_ref).maybeSingle();
+      if (!acc) {
+        await admin.from("mass_campaigns").update({
+          status: "failed",
+          totals: { ...(campaign.totals || {}), error: "Conta de e-mail não encontrada" },
+        }).eq("id", campaign_id);
+        return;
+      }
     }
 
     const { data: recipients } = await admin
@@ -175,21 +193,39 @@ async function processCampaign(admin: any, campaign_id: string) {
       if (live?.status === "paused" || live?.status === "canceled") break;
 
       const r = list[i];
-      const phone = normalizePhone(r.contact);
-      if (!phone || phone.length < 10) {
-        await admin.from("mass_campaign_recipients").update({ status: "failed", error: "Telefone inválido" }).eq("id", r.id);
-        failed++; continue;
-      }
-      const vars = { ...(r.variables || {}), nome: r.name || r.variables?.nome || "", telefone: r.contact };
+      const vars = { ...(r.variables || {}), nome: r.name || r.variables?.nome || "", telefone: r.contact, email: r.contact };
       const text = substituteVars(campaign.body || "", vars);
+      const subject = substituteVars(campaign.subject || "", vars);
 
       let result: SendResult;
-      if (integ.provider_type === "uazapi") {
-        result = await sendUazapi(integ.server_url, integ.instance_token, phone, text, media);
-      } else if (integ.provider_type === "zapi") {
-        result = await sendZapi(integ.server_url, integ.instance_id, integ.instance_token, clientToken, phone, text);
+      if (campaign.channel === "email") {
+        const email = (r.contact || "").trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          await admin.from("mass_campaign_recipients").update({ status: "failed", error: "E-mail inválido" }).eq("id", r.id);
+          failed++;
+          if ((i + 1) % 5 === 0 || i === list.length - 1) {
+            await setTotals({ queued: total - sent - failed, sent, failed, replied: 0 });
+          }
+          continue;
+        }
+        result = await sendEmail(campaign, email, subject, text);
       } else {
-        result = { success: false, message: `Provider ${integ.provider_type} não suportado` };
+        const phone = normalizePhone(r.contact);
+        if (!phone || phone.length < 10) {
+          await admin.from("mass_campaign_recipients").update({ status: "failed", error: "Telefone inválido" }).eq("id", r.id);
+          failed++;
+          if ((i + 1) % 5 === 0 || i === list.length - 1) {
+            await setTotals({ queued: total - sent - failed, sent, failed, replied: 0 });
+          }
+          continue;
+        }
+        if (integ.provider_type === "uazapi") {
+          result = await sendUazapi(integ.server_url, integ.instance_token, phone, text, media);
+        } else if (integ.provider_type === "zapi") {
+          result = await sendZapi(integ.server_url, integ.instance_id, integ.instance_token, clientToken, phone, text);
+        } else {
+          result = { success: false, message: `Provider ${integ.provider_type} não suportado` };
+        }
       }
 
       if (result.success) {
