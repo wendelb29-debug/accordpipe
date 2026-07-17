@@ -416,20 +416,27 @@ export function GroupsInbox({ tenantId }: Props) {
                   <ArrowLeft size={16} />
                 </Button>
               )}
-              <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                {selected.image_url ? (
-                  <img src={selected.image_url} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <Users size={16} className="text-primary" />
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-semibold truncate">{selected.name || selected.wa_chatid}</div>
-                <div className="text-xs text-muted-foreground truncate">
-                  {selected.participant_count} participantes
-                  {selected.group_topic ? ` • ${selected.group_topic}` : ""}
+              <button
+                type="button"
+                onClick={() => setInfoOpen(true)}
+                className="flex items-center gap-3 min-w-0 flex-1 text-left hover:bg-muted/40 rounded-md px-1 py-1 transition-colors"
+                title="Ver informações do grupo"
+              >
+                <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {selected.image_url ? (
+                    <img src={selected.image_url} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <Users size={16} className="text-primary" />
+                  )}
                 </div>
-              </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold truncate">{selected.name || selected.wa_chatid}</div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {selected.participant_count} participantes
+                    {selected.group_topic ? ` • ${selected.group_topic}` : ""}
+                  </div>
+                </div>
+              </button>
               <Button
                 size="sm"
                 variant="ghost"
