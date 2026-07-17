@@ -2,7 +2,7 @@ import { Search, Plus, Users, Filter, Pin, Settings, ArrowDownUp, History, Home,
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { AgentPresenceMenu } from "./AgentPresenceMenu";
+
 import { ConversationHistoryModal } from "./ConversationHistoryModal";
 import { useTenantLogo } from "@/hooks/useTenantLogo";
 
@@ -226,7 +226,7 @@ export function InboxSidebar({
               <Settings size={15} />
             </button>
           )}
-          <AgentPresenceMenu />
+          
         </div>
       </div>
 
