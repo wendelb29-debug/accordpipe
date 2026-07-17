@@ -32,6 +32,14 @@ interface AudienceRow {
   variables?: Record<string, any>;
 }
 
+interface MediaAttachment {
+  url: string;
+  path: string;
+  type: "image" | "video" | "audio" | "document";
+  mime: string;
+  filename: string;
+}
+
 interface FormState {
   name: string;
   description: string;
@@ -43,6 +51,7 @@ interface FormState {
   template_id: string | null;
   subject: string;
   body: string;
+  media: MediaAttachment | null;
   speed: Speed;
   batch_size: number;
   batch_interval_min: number;
@@ -54,9 +63,9 @@ interface FormState {
 const initialForm: FormState = {
   name: "", description: "", channel: "whatsapp", channel_ref: "",
   audience_mode: "manual", audience_snapshot: [],
-  content_type: "editor", template_id: null, subject: "", body: "",
-  speed: "medium", batch_size: 20, batch_interval_min: 5,
-  scheduled_at: "", daily_window_start: "09:00", daily_window_end: "18:00",
+  content_type: "editor", template_id: null, subject: "", body: "", media: null,
+  speed: "medium", batch_size: 50, batch_interval_min: 10,
+  scheduled_at: "", daily_window_start: "00:00", daily_window_end: "23:59",
 };
 
 const steps = ["Dados", "Público-alvo", "Conteúdo", "Configurações"];
