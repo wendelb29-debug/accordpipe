@@ -49,6 +49,8 @@ export function StatusAtendentesTab() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterUser, setFilterUser] = useState<string>("all");
   const [filterDept, setFilterDept] = useState<string>("all");
+  const [editingUser, setEditingUser] = useState<OperatorRow | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!tenantId) return;
