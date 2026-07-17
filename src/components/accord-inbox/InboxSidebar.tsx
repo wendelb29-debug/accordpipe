@@ -1,4 +1,4 @@
-import { Search, Plus, Users, MessageSquare, Pin, Settings, ArrowDownUp, History, Home } from "lucide-react";
+import { Search, Plus, Users, MessageSquare, Pin, Settings, ArrowDownUp, History, Home, Inbox } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
