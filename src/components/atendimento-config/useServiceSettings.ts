@@ -53,7 +53,13 @@ export function useServiceSettings() {
   const load = useCallback(async () => {
     if (!activeCompanyId) return;
     setLoading(true);
-    const { data } = await (supabase as any).from("service_settings").select("*").eq("tenant_id", activeCompanyId).maybeSingle();
+    const { data, error } = await (supabase as any).from("service_settings").select("*").eq("tenant_id", activeCompanyId).maybeSingle();
+    if (error) {
+      toast.error(`Falha ao carregar configurações: ${error.message}`);
+      setSettings({ tenant_id: activeCompanyId, ...DEFAULTS });
+      setLoading(false);
+      return;
+    }
     setSettings(data ? { ...DEFAULTS, ...(data as any) } : { tenant_id: activeCompanyId, ...DEFAULTS });
     setLoading(false);
   }, [activeCompanyId]);
