@@ -132,7 +132,7 @@ export function NewCallDialog({ open, onOpenChange, leadName, onSave }: Props) {
           </button>
           <button
             onClick={handleSave}
-            disabled={!outcome || saving}
+            disabled={saving}
             className="h-10 px-5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-[13px] font-bold inline-flex items-center gap-2 disabled:opacity-50 transition"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <PhoneCall className="w-4 h-4" />}
