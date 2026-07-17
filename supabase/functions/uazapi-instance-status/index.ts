@@ -31,12 +31,16 @@ Deno.serve(async (req) => {
 
     const inst = data?.instance ?? {};
     const st = data?.status ?? {};
-    const connected: boolean = Boolean(st?.connected ?? inst?.connected);
-    const loggedIn: boolean = Boolean(st?.loggedIn ?? inst?.loggedIn);
+    const rawStatus: string = String(inst?.status ?? st?.status ?? "").toLowerCase();
+    const CONNECTED_STATES = ["connected", "open", "authenticated", "online", "logged_in", "loggedin", "ready"];
+    const connected: boolean =
+      Boolean(st?.connected ?? inst?.connected) || CONNECTED_STATES.includes(rawStatus);
+    const loggedIn: boolean =
+      Boolean(st?.loggedIn ?? inst?.loggedIn) || CONNECTED_STATES.includes(rawStatus);
     let status: string = row.status;
     if (connected && loggedIn) status = "connected";
-    else if (inst?.status === "hibernated") status = "hibernated";
-    else if (connected || inst?.status === "connecting") status = "connecting";
+    else if (rawStatus === "hibernated") status = "hibernated";
+    else if (connected || rawStatus === "connecting") status = "connecting";
     else status = "disconnected";
 
     const jidUser =
