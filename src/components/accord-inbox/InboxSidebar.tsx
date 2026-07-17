@@ -239,10 +239,13 @@ export function InboxSidebar({
             <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
           </div>
         ) : contacts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 gap-2 text-muted-foreground">
-            <MessageSquare size={24} className="opacity-40" />
-            <p className="text-xs">Nenhuma conversa</p>
+          <div className="flex flex-col items-center justify-center h-40 gap-3 text-muted-foreground">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <Inbox size={22} className="text-primary/70" />
+            </div>
+            <p className="text-[13px] font-medium text-foreground/70">Nenhuma conversa encontrada</p>
           </div>
+
         ) : (
           contacts.map((c) => {
             const isSelected = c.id === selectedId;
