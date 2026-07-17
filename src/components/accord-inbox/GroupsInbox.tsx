@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { GroupInfoPanel } from "./GroupInfoPanel";
 import {
   DropdownMenu,
   DropdownMenuContent,
