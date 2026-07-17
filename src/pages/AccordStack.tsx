@@ -44,6 +44,13 @@ export default function AccordStack() {
   });
   const [uiFilter, setUiFilter] = useState<UiFilter>("Todas");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [chatMode, setChatMode] = useState<"individual" | "grupos">(() => {
+    if (typeof window === "undefined") return "individual";
+    return (localStorage.getItem("accord-stack:chatMode") as "individual" | "grupos") || "individual";
+  });
+  useEffect(() => {
+    try { localStorage.setItem("accord-stack:chatMode", chatMode); } catch { /* ignore */ }
+  }, [chatMode]);
   const restoredContactRef = useRef(false);
 
   // Persist status filter
