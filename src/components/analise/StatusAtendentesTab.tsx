@@ -19,7 +19,7 @@ interface OperatorRow {
   user_id: string;
   status: string;
   last_changed_at: string;
-  profile?: { full_name?: string | null; avatar_url?: string | null; email?: string | null } | null;
+  profile?: { name?: string | null; avatar_url?: string | null; email?: string | null } | null;
   departments: DeptInfo[];
 }
 
@@ -109,7 +109,7 @@ export function StatusAtendentesTab() {
           user_id: uid,
           status: st?.status || "unavailable",
           last_changed_at: st?.last_changed_at || new Date().toISOString(),
-          profile: profiles.find((p) => p.id === uid) || null,
+          profile: profiles.find((p) => p.user_id === uid) || null,
           departments: userDeptMap.get(uid) || [],
         };
       });
@@ -119,7 +119,7 @@ export function StatusAtendentesTab() {
         const oa = order[a.status] ?? 9;
         const ob = order[b.status] ?? 9;
         if (oa !== ob) return oa - ob;
-        return (a.profile?.full_name || "").localeCompare(b.profile?.full_name || "");
+        return (a.profile?.name || "").localeCompare(b.profile?.name || "");
       });
       setOperators(rows);
 
@@ -167,9 +167,9 @@ export function StatusAtendentesTab() {
   }, [operators, filterStatus, filterUser, filterDept]);
 
   const displayName = (o: OperatorRow) =>
-    o.profile?.full_name || o.profile?.email || o.user_id.slice(0, 8);
+    o.profile?.name || o.profile?.email || o.user_id.slice(0, 8);
   const initials = (o: OperatorRow) =>
-    (o.profile?.full_name || o.profile?.email || "?")
+    (o.profile?.name || o.profile?.email || "?")
       .split(" ")
       .map((p) => p[0])
       .join("")
@@ -393,7 +393,7 @@ export function StatusAtendentesTab() {
           onOpenChange={(v) => !v && setEditingUser(null)}
           tenantId={tenantId}
           userId={editingUser.user_id}
-          initialName={editingUser.profile?.full_name || ""}
+          initialName={editingUser.profile?.name || ""}
           departments={allDepartments}
           onSaved={() => setReloadKey((k) => k + 1)}
         />
