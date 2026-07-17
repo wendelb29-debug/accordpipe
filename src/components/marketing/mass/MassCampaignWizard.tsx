@@ -10,9 +10,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { MessageSquare, Mail, ChevronLeft, ChevronRight, Loader2, AlertTriangle, Upload, Save, Star, Info, Trash2, Plus, Braces } from "lucide-react";
+import { MessageSquare, Mail, ChevronLeft, ChevronRight, Loader2, AlertTriangle, Upload, Save, Star, Info, Trash2, Plus, Braces, Paperclip, Image as ImageIcon, FileText, Mic, Video, X, Rabbit, Gauge, Zap, Hand } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
 import * as XLSX from "xlsx";
+import { COUNTRIES, DEFAULT_COUNTRY, findCountryByDial, Country } from "./countries";
+import { DdiPicker } from "./DdiPicker";
 
 interface Props {
   open: boolean;
@@ -21,12 +24,20 @@ interface Props {
 }
 
 type Channel = "whatsapp" | "email";
-type Speed = "slow" | "medium" | "fast";
+type Speed = "slow" | "medium" | "fast" | "manual";
 
 interface AudienceRow {
   name?: string;
   contact: string;
   variables?: Record<string, any>;
+}
+
+interface MediaAttachment {
+  url: string;
+  path: string;
+  type: "image" | "video" | "audio" | "document";
+  mime: string;
+  filename: string;
 }
 
 interface FormState {
@@ -40,6 +51,7 @@ interface FormState {
   template_id: string | null;
   subject: string;
   body: string;
+  media: MediaAttachment | null;
   speed: Speed;
   batch_size: number;
   batch_interval_min: number;
@@ -51,9 +63,9 @@ interface FormState {
 const initialForm: FormState = {
   name: "", description: "", channel: "whatsapp", channel_ref: "",
   audience_mode: "manual", audience_snapshot: [],
-  content_type: "editor", template_id: null, subject: "", body: "",
-  speed: "medium", batch_size: 20, batch_interval_min: 5,
-  scheduled_at: "", daily_window_start: "09:00", daily_window_end: "18:00",
+  content_type: "editor", template_id: null, subject: "", body: "", media: null,
+  speed: "medium", batch_size: 50, batch_interval_min: 10,
+  scheduled_at: "", daily_window_start: "00:00", daily_window_end: "23:59",
 };
 
 const steps = ["Dados", "Público-alvo", "Conteúdo", "Configurações"];
@@ -65,13 +77,17 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
   const [manualText, setManualText] = useState("");
   const [customVars, setCustomVars] = useState<string[]>([]);
   const [newVar, setNewVar] = useState("");
+  const [manualCountries, setManualCountries] = useState<Country[]>([]);
+  const [scheduleEnabled, setScheduleEnabled] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
 
   // Channel options
   const [waInstances, setWaInstances] = useState<any[]>([]);
   const [emailAccounts, setEmailAccounts] = useState<any[]>([]);
 
-  // Templates
+  // Templates (mass + whatsapp official)
   const [templates, setTemplates] = useState<any[]>([]);
+  const [waTemplates, setWaTemplates] = useState<any[]>([]);
   const [templateSearch, setTemplateSearch] = useState("");
 
   // CRM filter
@@ -87,7 +103,7 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
     if (!open || !tenantId) return;
     (async () => {
       const sb = supabase as any;
-      const [wa, waInt, em, tpl, tags, ws] = await Promise.all([
+      const [wa, waInt, em, tpl, waTpl, tags, ws] = await Promise.all([
         sb.from("whatsapp_instances").select("id,instance_name,phone_number,status").eq("tenant_id", tenantId),
         sb.from("tenant_whatsapp_integrations")
           .select("id,provider_type,instance_name,connected_phone,is_active,connection_status")
@@ -95,11 +111,10 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
           .eq("is_active", true),
         sb.from("email_accounts").select("id,email_address,display_name,provider,status").eq("servidor_id", tenantId).in("status", ["connected", "active"]),
         sb.from("mass_templates").select("*").eq("tenant_id", tenantId).order("updated_at", { ascending: false }),
+        sb.from("whatsapp_templates").select("*").eq("tenant_id", tenantId).order("updated_at", { ascending: false }),
         sb.from("crm_tags").select("id,name").eq("server_id", tenantId).limit(200),
         sb.from("workspaces").select("id,name").eq("server_id", tenantId).limit(200),
       ]);
-      // Merge: prefer tenant_whatsapp_integrations (source of truth for active provider),
-      // fallback to whatsapp_instances rows. Normalize into a single list for the selector.
       const fromIntegrations = ((waInt.data as any[]) || []).map((r) => ({
         id: r.id,
         instance_name: r.instance_name || (r.provider_type === "uazapi" ? "Uazapi" : r.provider_type === "zapi" ? "Z-API" : "WhatsApp"),
@@ -116,15 +131,44 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
       setWaInstances(merged);
       setEmailAccounts((em.data as any) || []);
       setTemplates((tpl.data as any) || []);
+      setWaTemplates((waTpl.data as any) || []);
       setCrmTags((tags.data as any) || []);
       setCrmWorkspaces((ws.data as any) || []);
     })();
   }, [open, tenantId]);
 
-  const filteredTemplates = useMemo(
-    () => templates.filter(t => t.channel === form.channel && (!templateSearch || t.name.toLowerCase().includes(templateSearch.toLowerCase()))),
-    [templates, form.channel, templateSearch]
-  );
+  const filteredTemplates = useMemo(() => {
+    const q = templateSearch.toLowerCase();
+    if (form.channel === "whatsapp") {
+      // Prefer WhatsApp official templates from "Templates" page; keep saved mass_templates too
+      const wa = waTemplates.map((t: any) => ({
+        id: `wa:${t.id}`,
+        raw_id: t.id,
+        source: "whatsapp_templates" as const,
+        name: t.name,
+        body: t.body,
+        subject: null,
+        category: t.header_type && t.header_type !== "none" ? t.header_type : null,
+        is_favorite: !!t.is_favorite,
+        header_type: t.header_type,
+        header_media_url: t.header_media_url,
+      }));
+      const mass = templates.filter(t => t.channel === "whatsapp").map((t: any) => ({
+        id: `mass:${t.id}`,
+        raw_id: t.id,
+        source: "mass_templates" as const,
+        name: t.name,
+        body: t.body,
+        subject: null,
+        category: t.category,
+        is_favorite: !!t.is_favorite,
+      }));
+      return [...wa, ...mass].filter(t => !q || t.name.toLowerCase().includes(q));
+    }
+    return templates
+      .filter(t => t.channel === "email" && (!q || t.name.toLowerCase().includes(q)))
+      .map((t: any) => ({ id: `mass:${t.id}`, raw_id: t.id, source: "mass_templates" as const, name: t.name, body: t.body, subject: t.subject, category: t.category, is_favorite: !!t.is_favorite }));
+  }, [templates, waTemplates, form.channel, templateSearch]);
 
   const parseManual = () => {
     const rows = manualText.split("\n").map(l => l.trim()).filter(Boolean).map(l => {
@@ -185,7 +229,7 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
   };
 
   const applyTemplate = (t: any) => {
-    update("template_id", t.id);
+    update("template_id", t.raw_id || t.id);
     update("content_type", "template");
     update("subject", t.subject || "");
     update("body", t.body || "");
@@ -207,9 +251,55 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
     setTemplates((tpl as any) || []);
   };
 
+  const detectMediaType = (mime: string): MediaAttachment["type"] => {
+    if (mime.startsWith("image/")) return "image";
+    if (mime.startsWith("video/")) return "video";
+    if (mime.startsWith("audio/")) return "audio";
+    return "document";
+  };
+
+  const handleMediaUpload = async (file: File) => {
+    if (!file) return;
+    if (file.size > 25 * 1024 * 1024) { toast.error("Arquivo maior que 25MB"); return; }
+    setUploadingMedia(true);
+    try {
+      const ext = file.name.split(".").pop() || "bin";
+      const path = `${tenantId}/mass/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("whatsapp-template-media").upload(path, file, { contentType: file.type, upsert: false });
+      if (upErr) throw upErr;
+      const { data: signed } = await supabase.storage.from("whatsapp-template-media").createSignedUrl(path, 60 * 60 * 24 * 7);
+      update("media", {
+        url: signed?.signedUrl || "",
+        path,
+        type: detectMediaType(file.type),
+        mime: file.type,
+        filename: file.name,
+      });
+      toast.success("Mídia anexada");
+    } catch (e: any) {
+      toast.error(e.message || "Falha no upload");
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
+
+  const isValidManualRow = (row: AudienceRow): boolean => {
+    if (!row.name?.trim()) return false;
+    if (form.channel === "email") return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.contact || "");
+    const digits = (row.contact || "").replace(/\D/g, "");
+    // full number (with DDI) must have at least DDI + 8 digits (>=10 total for BR)
+    return digits.length >= 10;
+  };
+
   const canProceed = () => {
     if (step === 0) return form.name.trim().length >= 2 && !!form.channel_ref;
-    if (step === 1) return form.audience_snapshot.length > 0;
+    if (step === 1) {
+      if (form.audience_snapshot.length === 0) return false;
+      if (form.audience_mode === "manual") {
+        return form.audience_snapshot.every(isValidManualRow);
+      }
+      return true;
+    }
     if (step === 2) return form.body.trim().length > 0 && (form.channel !== "email" || form.subject.trim().length > 0);
     return true;
   };
@@ -217,7 +307,8 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
   const handleSave = async (asDraft: boolean) => {
     if (!tenantId) { toast.error("Tenant não identificado"); return; }
     setSaving(true);
-    const status = asDraft ? "draft" : form.scheduled_at ? "scheduled" : "running";
+    const scheduledAt = scheduleEnabled ? form.scheduled_at : "";
+    const status = asDraft ? "draft" : scheduledAt ? "scheduled" : "running";
     const { data: user } = await supabase.auth.getUser();
     const { data: camp, error } = await (supabase.from("mass_campaigns" as any).insert({
       tenant_id: tenantId, name: form.name, description: form.description || null,
@@ -225,8 +316,9 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
       audience_mode: form.audience_mode, audience_snapshot: form.audience_snapshot,
       content_type: form.content_type, template_id: form.template_id,
       subject: form.channel === "email" ? form.subject : null, body: form.body,
+      variable_mapping: { media: form.media || null },
       speed: form.speed, batch_size: form.batch_size, batch_interval_min: form.batch_interval_min,
-      scheduled_at: form.scheduled_at || null,
+      scheduled_at: scheduledAt || null,
       daily_window_start: form.daily_window_start || null, daily_window_end: form.daily_window_end || null,
       totals: { queued: form.audience_snapshot.length, sent: 0, failed: 0, replied: 0 },
       created_by: user.user?.id,
@@ -241,7 +333,7 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
 
     toast.success(asDraft ? "Rascunho salvo" : "Campanha criada");
     setSaving(false);
-    setForm(initialForm); setStep(0); onClose();
+    setForm(initialForm); setStep(0); setManualCountries([]); setScheduleEnabled(false); onClose();
   };
 
   return (
@@ -435,21 +527,53 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
                       </div>
                       <div>
                         {idx === 0 && <Label className="text-xs">{form.channel === "email" ? "E-mail" : "Telefone"}</Label>}
-                        <div className="relative">
-                          {form.channel === "whatsapp" && (
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm">🇧🇷</span>
-                          )}
+                        {form.channel === "whatsapp" ? (() => {
+                          const country = manualCountries[idx] || DEFAULT_COUNTRY;
+                          const digits = (row.contact || "").replace(/\D/g, "");
+                          const national = digits.startsWith(country.dial) ? digits.slice(country.dial.length) : digits;
+                          const tooShort = national.length > 0 && national.length < 8;
+                          return (
+                            <div className={`flex items-stretch h-9 rounded-md border ${tooShort ? "border-red-400/50" : "border-input"} bg-background overflow-hidden focus-within:ring-1 focus-within:ring-ring`}>
+                              <DdiPicker
+                                country={country}
+                                onChange={(c) => {
+                                  setManualCountries(prev => {
+                                    const next = [...prev];
+                                    while (next.length <= idx) next.push(DEFAULT_COUNTRY);
+                                    next[idx] = c;
+                                    return next;
+                                  });
+                                  const list = form.audience_snapshot.length === 0 ? [row] : [...form.audience_snapshot];
+                                  list[idx] = { ...list[idx], contact: `+${c.dial}${national}` };
+                                  update("audience_snapshot", list);
+                                }}
+                              />
+                              <span className="flex items-center px-2 text-sm text-muted-foreground bg-muted/40 font-mono">+{country.dial}</span>
+                              <Input
+                                inputMode="numeric"
+                                value={national}
+                                placeholder="DDD + número"
+                                className="border-0 rounded-none h-full focus-visible:ring-0 flex-1"
+                                onChange={(e) => {
+                                  const only = e.target.value.replace(/\D/g, "");
+                                  const list = form.audience_snapshot.length === 0 ? [row] : [...form.audience_snapshot];
+                                  list[idx] = { ...list[idx], contact: `+${country.dial}${only}` };
+                                  update("audience_snapshot", list);
+                                }}
+                              />
+                            </div>
+                          );
+                        })() : (
                           <Input
                             value={row.contact || ""}
-                            placeholder={form.channel === "email" ? "email@exemplo.com" : "+55"}
-                            className={form.channel === "whatsapp" ? "pl-9" : ""}
+                            placeholder="email@exemplo.com"
                             onChange={(e) => {
                               const list = form.audience_snapshot.length === 0 ? [row] : [...form.audience_snapshot];
                               list[idx] = { ...list[idx], contact: e.target.value };
                               update("audience_snapshot", list);
                             }}
                           />
-                        </div>
+                        )}
                       </div>
                       {customVars.map(v => (
                         <div key={v}>
@@ -473,6 +597,7 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
                         onClick={() => {
                           const list = form.audience_snapshot.filter((_, i) => i !== idx);
                           update("audience_snapshot", list);
+                          setManualCountries(prev => prev.filter((_, i) => i !== idx));
                         }}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -490,6 +615,12 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
                       ? [{ name: "", contact: "", variables: {} }, { name: "", contact: "", variables: {} }]
                       : [...form.audience_snapshot, { name: "", contact: "", variables: {} }];
                     update("audience_snapshot", list);
+                    setManualCountries(prev => {
+                      const target = list.length;
+                      const next = [...prev];
+                      while (next.length < target) next.push(DEFAULT_COUNTRY);
+                      return next;
+                    });
                   }}
                 >
                   <Plus className="w-4 h-4" /> Adicionar nova linha
@@ -656,6 +787,47 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
                   <div>
                     <Label>{form.channel === "email" ? "Corpo do e-mail" : "Mensagem"} * — use {"{{"}nome{"}}"}  para variáveis</Label>
                     <Textarea value={form.body} onChange={e => update("body", e.target.value)} rows={form.channel === "email" ? 8 : 6} placeholder={form.channel === "email" ? "Olá {{nome}},\n\n..." : "Olá {{nome}}, tudo bem?"} />
+
+                    {form.channel === "whatsapp" && (
+                      <div className="mt-2 space-y-2">
+                        {form.media ? (
+                          <div className="flex items-center justify-between gap-2 border rounded-lg p-2 bg-muted/30">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="w-9 h-9 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                {form.media.type === "image" ? <ImageIcon className="w-4 h-4" /> :
+                                 form.media.type === "video" ? <Video className="w-4 h-4" /> :
+                                 form.media.type === "audio" ? <Mic className="w-4 h-4" /> :
+                                 <FileText className="w-4 h-4" />}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-medium truncate">{form.media.filename}</p>
+                                <p className="text-[10px] text-muted-foreground uppercase">{form.media.type} · {form.media.mime}</p>
+                              </div>
+                            </div>
+                            <Button type="button" size="icon" variant="ghost" onClick={() => update("media", null)}>
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <label className="flex items-center gap-2 border border-dashed rounded-lg p-3 cursor-pointer hover:bg-muted/40 transition">
+                            <Paperclip className="w-4 h-4 text-muted-foreground" />
+                            <div className="flex-1">
+                              <p className="text-xs font-medium">Anexar arquivo (imagem, PDF, áudio, vídeo)</p>
+                              <p className="text-[10px] text-muted-foreground">Enviado junto com a mensagem — até 25MB</p>
+                            </div>
+                            {uploadingMedia && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                              disabled={uploadingMedia}
+                              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleMediaUpload(f); e.currentTarget.value = ""; }}
+                            />
+                          </label>
+                        )}
+                      </div>
+                    )}
+
                     <div className="flex justify-end mt-2">
                       <Button variant="outline" size="sm" onClick={saveAsTemplate} className="gap-2"><Save className="w-3 h-3" />Salvar modelo</Button>
                     </div>
@@ -693,32 +865,106 @@ export function MassCampaignWizard({ open, onClose, tenantId }: Props) {
 
 
         {step === 3 && (
-          <div className="space-y-4">
-            <div>
-              <Label>Velocidade de envio</Label>
-              <RadioGroup value={form.speed} onValueChange={(v) => update("speed", v as Speed)} className="grid grid-cols-3 gap-2 mt-2">
-                {[{ v: "slow", label: "Lento", desc: "menor risco" }, { v: "medium", label: "Médio", desc: "recomendado" }, { v: "fast", label: "Rápido", desc: "risco de bloqueio/spam" }].map(o => (
-                  <label key={o.v} className={`p-3 border rounded-lg cursor-pointer text-sm ${form.speed === o.v ? "border-primary bg-primary/5" : "border-border"}`}>
-                    <RadioGroupItem value={o.v} className="mr-2" />
-                    <span className="font-medium">{o.label}</span>
-                    <div className="text-xs text-muted-foreground">{o.desc}</div>
-                  </label>
-                ))}
-              </RadioGroup>
+          <div className="grid grid-cols-12 gap-6">
+            <div className="col-span-12 md:col-span-8 space-y-5">
+              <div>
+                <p className="text-sm font-semibold">Velocidade de envio</p>
+                <p className="text-xs text-muted-foreground mb-2">Escolha o ritmo dos envios — velocidades mais altas aumentam o risco de bloqueio.</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {[
+                    { v: "slow", label: "Lento", desc: "1 msg / 20–40s", icon: Rabbit, tone: "text-emerald-400" },
+                    { v: "medium", label: "Médio", desc: "1 msg / 8–15s", icon: Gauge, tone: "text-blue-400" },
+                    { v: "fast", label: "Rápido", desc: "1 msg / 3–6s", icon: Zap, tone: "text-amber-400" },
+                    { v: "manual", label: "Manual", desc: "Enviar em lotes", icon: Hand, tone: "text-purple-400" },
+                  ].map((o) => {
+                    const Icon = o.icon as any;
+                    const active = form.speed === o.v;
+                    return (
+                      <button
+                        key={o.v}
+                        type="button"
+                        onClick={() => update("speed", o.v as Speed)}
+                        className={`text-left p-3 rounded-xl border transition ${active ? "border-primary bg-primary/5 ring-1 ring-primary/40" : "border-border hover:bg-muted/40"}`}
+                      >
+                        <Icon className={`w-4 h-4 mb-1 ${o.tone}`} />
+                        <div className="text-sm font-medium">{o.label}</div>
+                        <div className="text-[11px] text-muted-foreground">{o.desc}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Contatos por lote</Label>
+                  <Input type="number" min={1} value={form.batch_size} onChange={e => update("batch_size", parseInt(e.target.value) || 1)} />
+                </div>
+                <div>
+                  <Label className="text-xs">Intervalo entre lotes (min)</Label>
+                  <Input type="number" min={1} value={form.batch_interval_min} onChange={e => update("batch_interval_min", parseInt(e.target.value) || 1)} />
+                </div>
+              </div>
+
+              <div className="border rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Agendar início</p>
+                    <p className="text-[11px] text-muted-foreground">Deixe em branco para iniciar assim que clicar em "Iniciar campanha".</p>
+                  </div>
+                  <Switch
+                    checked={scheduleEnabled}
+                    onCheckedChange={(v) => {
+                      setScheduleEnabled(v);
+                      if (!v) update("scheduled_at", "");
+                    }}
+                  />
+                </div>
+                {scheduleEnabled && (
+                  <Input type="datetime-local" value={form.scheduled_at} onChange={e => update("scheduled_at", e.target.value)} />
+                )}
+              </div>
+
+              <div className="border rounded-xl p-4 space-y-3">
+                <div>
+                  <p className="text-sm font-medium">Janela diária de envio</p>
+                  <p className="text-[11px] text-muted-foreground">Fora da janela, a campanha pausa e retoma automaticamente.</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Início</Label>
+                    <Input type="time" value={form.daily_window_start} onChange={e => update("daily_window_start", e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Fim</Label>
+                    <Input type="time" value={form.daily_window_end} onChange={e => update("daily_window_end", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              <Alert>
+                <AlertTriangle className="w-4 h-4" />
+                <AlertDescription className="text-xs">
+                  Velocidades rápidas podem gerar bloqueios pela Meta. Recomendamos "Médio" para bases acima de 200 contatos.
+                </AlertDescription>
+              </Alert>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Contatos por lote</Label><Input type="number" min={1} value={form.batch_size} onChange={e => update("batch_size", parseInt(e.target.value) || 1)} /></div>
-              <div><Label>Intervalo entre lotes (min)</Label><Input type="number" min={1} value={form.batch_interval_min} onChange={e => update("batch_interval_min", parseInt(e.target.value) || 1)} /></div>
+
+            <div className="col-span-12 md:col-span-4">
+              <div className="sticky top-2 border rounded-xl p-4 bg-muted/20 space-y-3">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Resumo da campanha</p>
+                <div className="text-xs space-y-1.5">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Canal</span><span className="font-medium">{form.channel === "whatsapp" ? "WhatsApp" : "E-mail"}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Contatos</span><span className="font-medium">{form.audience_snapshot.length}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Velocidade</span><span className="font-medium capitalize">{form.speed}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Lote</span><span className="font-medium">{form.batch_size} / {form.batch_interval_min}min</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Janela</span><span className="font-medium">{form.daily_window_start}–{form.daily_window_end}</span></div>
+                  {scheduleEnabled && form.scheduled_at && (
+                    <div className="flex justify-between"><span className="text-muted-foreground">Início</span><span className="font-medium">{new Date(form.scheduled_at).toLocaleString("pt-BR")}</span></div>
+                  )}
+                </div>
+              </div>
             </div>
-            <div>
-              <Label>Agendar início (opcional)</Label>
-              <Input type="datetime-local" value={form.scheduled_at} onChange={e => update("scheduled_at", e.target.value)} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Janela diária — início</Label><Input type="time" value={form.daily_window_start} onChange={e => update("daily_window_start", e.target.value)} /></div>
-              <div><Label>Janela diária — fim</Label><Input type="time" value={form.daily_window_end} onChange={e => update("daily_window_end", e.target.value)} /></div>
-            </div>
-            <Alert><AlertTriangle className="w-4 h-4" /><AlertDescription>Fora da janela diária, o envio pausa e retoma no dia seguinte automaticamente.</AlertDescription></Alert>
           </div>
         )}
 
