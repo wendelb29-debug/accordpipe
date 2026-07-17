@@ -120,31 +120,8 @@ export function InboxSidebar({
           paddingLeft: 'max(0.75rem, env(safe-area-inset-left, 0px))',
         }}
       >
-        {/* Top brand bar: logo/Accord + home + Atendimentos pill */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {tenantLogoUrl ? (
-              <img src={tenantLogoUrl} alt="Logo" className="h-6 w-auto max-w-[90px] object-contain" />
-            ) : (
-              <span className="text-[13px] font-semibold text-foreground tracking-tight">Accord</span>
-            )}
-          </div>
-          <button
-            onClick={() => navigate("/home")}
-            title="Ir para o Início"
-            aria-label="Ir para o Início"
-            className="ml-auto flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
-          >
-            <Home size={15} />
-          </button>
-          <div
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[12px] font-medium bg-primary text-primary-foreground shadow-sm"
-            aria-current="page"
-          >
-            <Headset size={13} />
-            Atendimentos
-          </div>
-        </div>
+        {/* Top brand bar moved to page-level AccordStack top bar */}
+
 
         {/* Duas abas grandes no topo — padrão EZ Chat com cores Accord */}
         <div className="flex items-center gap-2">
