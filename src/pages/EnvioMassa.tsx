@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Send, MessageSquare, Mail, Search, Play, Pause, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { MassCampaignWizard } from "@/components/marketing/mass/MassCampaignWizard";
+import { CampaignDetailsDialog } from "@/components/marketing/mass/CampaignDetailsDialog";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -48,6 +49,8 @@ export default function EnvioMassa() {
   const { activeCompanyId } = useAuth();
   const [tab, setTab] = useState("campanhas");
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardPrefill, setWizardPrefill] = useState<any>(null);
+  const [detailsFor, setDetailsFor] = useState<MassCampaign | null>(null);
   const [campaigns, setCampaigns] = useState<MassCampaign[]>([]);
   const [templates, setTemplates] = useState<MassTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -132,7 +135,7 @@ export default function EnvioMassa() {
             const st = statusLabel[c.status] || statusLabel.draft;
             const totals = c.totals || {};
             return (
-              <Card key={c.id} className="p-4 flex items-center gap-4">
+              <Card key={c.id} className="p-4 flex items-center gap-4 cursor-pointer hover:bg-muted/30 transition" onClick={() => setDetailsFor(c)}>
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                   {c.channel === "whatsapp" ? <MessageSquare className="w-5 h-5 text-emerald-400" /> : <Mail className="w-5 h-5 text-blue-400" />}
                 </div>
@@ -146,11 +149,11 @@ export default function EnvioMassa() {
                   </p>
                 </div>
                 {(c.status === "running" || c.status === "paused") && (
-                  <Button variant="ghost" size="icon" onClick={() => handleTogglePause(c)}>
+                  <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleTogglePause(c); }}>
                     {c.status === "running" ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                   </Button>
                 )}
-                <Button variant="ghost" size="icon" onClick={() => handleDelete(c.id)}><Trash2 className="w-4 h-4 text-red-400" /></Button>
+                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleDelete(c.id); }}><Trash2 className="w-4 h-4 text-red-400" /></Button>
               </Card>
             );
           })}
@@ -176,15 +179,36 @@ export default function EnvioMassa() {
         </TabsContent>
 
         <TabsContent value="envios" className="mt-4">
-          <EnviosHistory campaigns={filteredCampaigns} />
+          <EnviosHistory campaigns={filteredCampaigns} onOpen={(c) => setDetailsFor(c)} />
         </TabsContent>
       </Tabs>
 
       {wizardOpen && (
         <MassCampaignWizard
           open={wizardOpen}
-          onClose={() => { setWizardOpen(false); load(); }}
+          onClose={() => { setWizardOpen(false); setWizardPrefill(null); load(); }}
           tenantId={activeCompanyId || ""}
+          prefill={wizardPrefill}
+        />
+      )}
+
+      {detailsFor && (
+        <CampaignDetailsDialog
+          open={!!detailsFor}
+          onClose={() => setDetailsFor(null)}
+          campaignId={detailsFor.id}
+          campaignName={detailsFor.name}
+          channel={detailsFor.channel}
+          onReuseSent={(rows) => {
+            setWizardPrefill({
+              name: `${detailsFor.name} — reenvio`,
+              channel: detailsFor.channel,
+              audience_mode: "manual",
+              audience_snapshot: rows,
+            });
+            setDetailsFor(null);
+            setWizardOpen(true);
+          }}
         />
       )}
     </div>
@@ -202,7 +226,7 @@ function EmptyState({ icon, title, desc, action }: { icon: React.ReactNode; titl
   );
 }
 
-function EnviosHistory({ campaigns }: { campaigns: MassCampaign[] }) {
+function EnviosHistory({ campaigns, onOpen }: { campaigns: MassCampaign[]; onOpen: (c: MassCampaign) => void }) {
   const executed = campaigns.filter(c => ["running", "paused", "completed", "failed"].includes(c.status));
   if (executed.length === 0) {
     return <div className="text-center py-16 text-muted-foreground text-sm">Nenhum envio realizado ainda.</div>;
@@ -213,7 +237,7 @@ function EnviosHistory({ campaigns }: { campaigns: MassCampaign[] }) {
         const t = c.totals || {};
         const total = (t.sent || 0) + (t.failed || 0) + (t.queued || 0);
         return (
-          <Card key={c.id} className="p-4 grid grid-cols-6 gap-4 items-center">
+          <Card key={c.id} onClick={() => onOpen(c)} className="p-4 grid grid-cols-6 gap-4 items-center cursor-pointer hover:bg-muted/30 transition">
             <div className="col-span-2">
               <p className="font-medium truncate">{c.name}</p>
               <p className="text-xs text-muted-foreground">{c.channel === "whatsapp" ? "WhatsApp" : "E-mail"}</p>
