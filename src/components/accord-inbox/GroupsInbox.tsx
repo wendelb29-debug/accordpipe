@@ -482,6 +482,118 @@ export function GroupsInbox({ tenantId }: Props) {
           </>
         )}
       </div>
+
+      {/* Criar novo grupo */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Criar novo grupo</DialogTitle>
+            <DialogDescription>
+              Informe o nome e os participantes iniciais (mínimo 1, além de você).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Nome do grupo</label>
+              <input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Ex: Suporte Comercial"
+                className="w-full mt-1 px-3 py-2 text-sm rounded-md bg-background border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Participantes (números com DDI, apenas dígitos)
+              </label>
+              <textarea
+                value={newParticipants}
+                onChange={(e) => setNewParticipants(e.target.value)}
+                rows={4}
+                placeholder="5511999999999&#10;5521988888888"
+                className="w-full mt-1 px-3 py-2 text-sm rounded-md bg-background border border-border focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Um por linha ou separados por vírgula. Ex: 5511999999999
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setCreateOpen(false)} disabled={busy}>Cancelar</Button>
+            <Button onClick={handleCreateGroup} disabled={busy}>
+              {busy && <Loader2 size={14} className="mr-2 animate-spin" />}
+              Criar grupo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Entrar por convite */}
+      <Dialog open={joinOpen} onOpenChange={(o) => { setJoinOpen(o); if (!o) { setInvitePreview(null); setInviteCode(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Entrar em grupo por convite</DialogTitle>
+            <DialogDescription>
+              Cole o link https://chat.whatsapp.com/... ou apenas o código do convite.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <input
+              value={inviteCode}
+              onChange={(e) => { setInviteCode(e.target.value); setInvitePreview(null); }}
+              placeholder="https://chat.whatsapp.com/XXXXXXXXXXXXX"
+              className="w-full px-3 py-2 text-sm rounded-md bg-background border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            {invitePreview && (
+              <div className="rounded-lg border border-border p-3 bg-muted/30 text-sm space-y-1">
+                <div className="font-semibold">{invitePreview?.Name ?? invitePreview?.name ?? "Grupo"}</div>
+                {invitePreview?.Topic && (
+                  <div className="text-xs text-muted-foreground">{invitePreview.Topic}</div>
+                )}
+                <div className="text-xs text-muted-foreground">
+                  {Array.isArray(invitePreview?.Participants) ? `${invitePreview.Participants.length} participantes` : ""}
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={() => setJoinOpen(false)} disabled={busy}>Cancelar</Button>
+            <Button variant="outline" onClick={handlePreviewInvite} disabled={busy || !inviteCode.trim()}>
+              {busy && <Loader2 size={14} className="mr-2 animate-spin" />}
+              Ver preview
+            </Button>
+            <Button onClick={handleJoinGroup} disabled={busy || !inviteCode.trim()}>
+              {busy && <Loader2 size={14} className="mr-2 animate-spin" />}
+              Entrar no grupo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sair do grupo */}
+      <AlertDialog open={leaveOpen} onOpenChange={setLeaveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sair do grupo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você será removido de "{selected?.name || selected?.wa_chatid}". Se você for o último admin, o grupo pode ser dividido.
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleLeaveGroup}
+              disabled={busy}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {busy && <Loader2 size={14} className="mr-2 animate-spin" />}
+              Sair do grupo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+
