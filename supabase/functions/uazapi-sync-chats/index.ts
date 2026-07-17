@@ -1,5 +1,6 @@
-// Onda 7: sincroniza whatsapp_chats a partir de POST /chat/find (uazapiGO).
-// Usa helper compartilhado (também chamado pelo auto-sync em uazapi-instance-status).
+// Onda 7 + Onda 19: sincroniza whatsapp_chats a partir de POST /chat/find.
+// - Chamada manual: caller autenticado do tenant.
+// - Chamada por cron (service-role): itera todos os tenants com instância ativa.
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import {
   corsHeaders,
@@ -7,12 +8,35 @@ import {
   json,
   requireCaller,
   requireTenantMember,
+  serviceClient,
   syncChatsForInstance,
 } from "../_shared/uazapi.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const isServiceRole = !!serviceRoleKey && authHeader === `Bearer ${serviceRoleKey}`;
+
+    if (isServiceRole) {
+      const svc = serviceClient();
+      const { data: instances } = await svc
+        .from("whatsapp_instances")
+        .select("tenant_id, uazapi_token")
+        .not("uazapi_token", "is", null);
+      const results: any[] = [];
+      for (const inst of instances ?? []) {
+        try {
+          const r = await syncChatsForInstance(inst.tenant_id, inst.uazapi_token);
+          results.push({ tenant_id: inst.tenant_id, ...r });
+        } catch (e: any) {
+          results.push({ tenant_id: inst.tenant_id, error: e?.message ?? String(e) });
+        }
+      }
+      return json({ ok: true, results });
+    }
+
     const caller = await requireCaller(req);
     if (caller instanceof Response) return caller;
     const { tenant_id } = await req.json();

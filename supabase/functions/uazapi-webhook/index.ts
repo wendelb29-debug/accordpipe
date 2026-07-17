@@ -222,6 +222,86 @@ async function process(payload: any, svc: ReturnType<typeof serviceClient>) {
     return;
   }
 
+  // ---------- groups: metadata upsert (nome, foto, participantes) ----------
+  if (eventType === "groups" || eventType === "group_update" || eventType === "group_upsert") {
+    const groupData = payload?.group ?? payload?.data ?? payload;
+    const list: any[] = Array.isArray(groupData) ? groupData : [groupData];
+    for (const g of list) {
+      const jid: string = String(pick(g, ["JID", "jid", "id", "wa_chatid"]) ?? "");
+      if (!jid || !jid.includes("@g.us")) continue;
+      const participants: any[] = pick<any[]>(g, ["Participants", "participants"]) ?? [];
+      const patch: any = {
+        tenant_id: inst.tenant_id,
+        wa_chatid: jid,
+        name: pick(g, ["Name", "name", "subject"]),
+        image_url: pick(g, ["image", "imageUrl", "picture", "profilePicUrl"]),
+        is_group: true,
+        group_topic: pick(g, ["Topic", "topic", "description"]),
+        group_owner_jid: pick(g, ["OwnerJID", "ownerJid", "owner"]),
+        participant_count: participants.length || Number(pick(g, ["participant_count"]) ?? 0),
+      };
+      const { data: existing } = await svc.from("whatsapp_chats").select("id")
+        .eq("tenant_id", inst.tenant_id).eq("wa_chatid", jid).maybeSingle();
+      let chatRowId = existing?.id;
+      if (existing) {
+        await svc.from("whatsapp_chats").update(patch).eq("id", existing.id);
+      } else {
+        const { data: ins } = await svc.from("whatsapp_chats").insert(patch).select("id").single();
+        chatRowId = ins?.id;
+      }
+      if (chatRowId && participants.length > 0) {
+        for (const p of participants) {
+          const pjid = String(pick(p, ["JID", "jid", "id"]) ?? "");
+          if (!pjid) continue;
+          const row = {
+            tenant_id: inst.tenant_id,
+            chat_id: chatRowId,
+            participant_jid: pjid,
+            participant_name: pick(p, ["Name", "name", "pushName"]),
+            is_admin: Boolean(pick(p, ["IsAdmin", "isAdmin", "admin"])),
+          };
+          const { data: exP } = await svc.from("whatsapp_group_participants").select("id")
+            .eq("chat_id", chatRowId).eq("participant_jid", pjid).maybeSingle();
+          if (exP) await svc.from("whatsapp_group_participants").update(row).eq("id", exP.id);
+          else await svc.from("whatsapp_group_participants").insert(row);
+        }
+      }
+    }
+    return;
+  }
+
+  // ---------- contacts: sync contact name/photo changes ----------
+  if (eventType === "contacts" || eventType === "contact_update" || eventType === "contacts_upsert") {
+    const contactData = payload?.contact ?? payload?.data ?? payload;
+    const list: any[] = Array.isArray(contactData) ? contactData : [contactData];
+    for (const c of list) {
+      const jid: string = String(pick(c, ["JID", "jid", "id", "wa_chatid"]) ?? "");
+      if (!jid) continue;
+      const patch: any = {
+        name: pick(c, ["Name", "name", "pushName", "notify"]),
+        image_url: pick(c, ["image", "imageUrl", "profilePicUrl", "picture"]),
+      };
+      // Only patch fields that were actually provided
+      const clean: any = {};
+      for (const k of Object.keys(patch)) if (patch[k]) clean[k] = patch[k];
+      if (Object.keys(clean).length === 0) continue;
+      await svc.from("whatsapp_chats").update(clean)
+        .eq("tenant_id", inst.tenant_id).eq("wa_chatid", jid);
+      // Also update whatsapp_contacts by phone when possible
+      const phone = normalizePhone(jid.split("@")[0] ?? jid);
+      if (phone) {
+        const contactPatch: any = {};
+        if (clean.name) contactPatch.name = clean.name;
+        if (clean.image_url) contactPatch.avatar_url = clean.image_url;
+        if (Object.keys(contactPatch).length > 0) {
+          await svc.from("whatsapp_contacts").update(contactPatch)
+            .eq("company_id", inst.tenant_id).eq("phone", phone);
+        }
+      }
+    }
+    return;
+  }
+
   // ---------- messages (nova mensagem, seja inbound ou outbound native) ----------
   if (eventType === "messages" || eventType === "message" || eventType === "messages_upsert") {
     const msg = payload?.message ?? payload?.data ?? payload;
@@ -231,6 +311,7 @@ async function process(payload: any, svc: ReturnType<typeof serviceClient>) {
     const fromMe: boolean = Boolean(pick(msg, ["fromMe", "key.fromMe"]));
     const wasSentByApi: boolean = Boolean(pick(msg, ["wasSentByApi", "sentByApi"]));
     const chatId: string = String(pick(msg, ["chatId", "chatid", "from", "key.remoteJid"]) ?? "");
+    const isGroupChat = chatId.includes("@g.us") || Boolean(pick(msg, ["isGroup"]));
     const phoneDigits = normalizePhone(chatId.split("@")[0] ?? chatId);
     const rawType: string = String(
       pick(msg, ["messageType", "type", "message.messageType"]) ?? "text",
@@ -240,13 +321,22 @@ async function process(payload: any, svc: ReturnType<typeof serviceClient>) {
       "message.extendedTextMessage.text",
     ]);
     const senderName: string | null = pick(msg, ["senderName", "pushName", "chatName", "name"]);
+    // For groups, sender JID identifies the individual participant
+    const senderJid: string | null = pick(msg, [
+      "sender", "senderJid", "participant", "key.participant", "author",
+    ]);
+    // Real phone behind the LID (uazapi may resolve it over time)
+    const senderPn: string | null = pick(msg, ["sender_pn", "senderPn", "key.senderPn"]);
 
     const direction: "inbound" | "outbound" = fromMe ? "outbound" : "inbound";
     const origin: "accord_api" | "whatsapp_native" =
       fromMe && wasSentByApi ? "accord_api" : "whatsapp_native";
 
     const isMedia = isMediaType(rawType);
-    const contactId = await resolveOrCreateContact(svc, inst.tenant_id, phoneDigits, senderName);
+    // Groups don't create individual contacts (a group isn't a person)
+    const contactId = isGroupChat
+      ? null
+      : await resolveOrCreateContact(svc, inst.tenant_id, phoneDigits, senderName);
 
     const base: any = {
       company_id: inst.tenant_id,
@@ -261,6 +351,8 @@ async function process(payload: any, svc: ReturnType<typeof serviceClient>) {
       status: fromMe ? "sent" : "received",
       media_download_status: isMedia ? "pending" : "not_applicable",
       raw_payload: payload,
+      sender_jid: senderJid,
+      sender_name: senderName,
     };
 
     if (externalId) {
@@ -289,11 +381,12 @@ async function process(payload: any, svc: ReturnType<typeof serviceClient>) {
       await upsertChat(svc, {
         tenantId: inst.tenant_id,
         waChatId: chatId,
-        name: senderName,
+        name: isGroupChat ? null : senderName,
         lastText: text ?? (isMedia ? `[${rawType}]` : null),
         lastType: rawType,
         lastAt: new Date().toISOString(),
         incrementUnread: !fromMe,
+        isGroup: isGroupChat,
       });
     }
 
@@ -303,6 +396,45 @@ async function process(payload: any, svc: ReturnType<typeof serviceClient>) {
         last_message_at: new Date().toISOString(),
       }).eq("id", contactId);
     }
+
+    // Phone discrepancy detection (non-group). Never overwrite validated data.
+    if (!isGroupChat && senderPn) {
+      try {
+        const resolvedDigits = normalizePhone(String(senderPn).split("@")[0]);
+        if (resolvedDigits && resolvedDigits !== phoneDigits && contactId) {
+          const { data: contactRow } = await svc.from("whatsapp_contacts")
+            .select("lead_id").eq("id", contactId).maybeSingle();
+          if (contactRow?.lead_id) {
+            const { data: lead } = await svc.from("crm_leads")
+              .select("phone").eq("id", contactRow.lead_id).maybeSingle();
+            const currentLeadPhone = String(lead?.phone ?? "").replace(/\D/g, "");
+            if (!currentLeadPhone) {
+              // Empty → safe to auto-fill
+              await svc.from("crm_leads").update({ phone: resolvedDigits })
+                .eq("id", contactRow.lead_id);
+            } else if (currentLeadPhone !== resolvedDigits) {
+              // Existing validated data → log discrepancy, do NOT overwrite
+              const { data: existingDisc } = await svc.from("whatsapp_phone_discrepancies")
+                .select("id")
+                .eq("lead_id", contactRow.lead_id)
+                .is("resolved_at", null)
+                .maybeSingle();
+              if (!existingDisc) {
+                await svc.from("whatsapp_phone_discrepancies").insert({
+                  tenant_id: inst.tenant_id,
+                  lead_id: contactRow.lead_id,
+                  phone_atual_no_lead: currentLeadPhone,
+                  phone_resolvido_pela_uazapi: resolvedDigits,
+                });
+              }
+            }
+          }
+        }
+      } catch (e: any) {
+        console.warn("phone-discrepancy check failed:", e?.message);
+      }
+    }
+
 
     // Baixa mídia em background (não bloquear a resposta 200)
     if (isMedia && externalId && inst.uazapi_token) {

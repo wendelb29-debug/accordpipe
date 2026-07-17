@@ -10239,6 +10239,8 @@ export type Database = {
       whatsapp_chats: {
         Row: {
           created_at: string
+          group_owner_jid: string | null
+          group_topic: string | null
           id: string
           image_url: string | null
           is_archived: boolean
@@ -10249,6 +10251,7 @@ export type Database = {
           last_message_type: string | null
           lead_id: string | null
           name: string | null
+          participant_count: number
           tenant_id: string
           unread_count: number
           updated_at: string
@@ -10256,6 +10259,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          group_owner_jid?: string | null
+          group_topic?: string | null
           id?: string
           image_url?: string | null
           is_archived?: boolean
@@ -10266,6 +10271,7 @@ export type Database = {
           last_message_type?: string | null
           lead_id?: string | null
           name?: string | null
+          participant_count?: number
           tenant_id: string
           unread_count?: number
           updated_at?: string
@@ -10273,6 +10279,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          group_owner_jid?: string | null
+          group_topic?: string | null
           id?: string
           image_url?: string | null
           is_archived?: boolean
@@ -10283,6 +10291,7 @@ export type Database = {
           last_message_type?: string | null
           lead_id?: string | null
           name?: string | null
+          participant_count?: number
           tenant_id?: string
           unread_count?: number
           updated_at?: string
@@ -10378,6 +10387,47 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_group_participants: {
+        Row: {
+          chat_id: string
+          created_at: string
+          id: string
+          is_admin: boolean
+          participant_jid: string
+          participant_name: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          chat_id: string
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          participant_jid: string
+          participant_name?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          chat_id?: string
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          participant_jid?: string
+          participant_name?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_group_participants_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_chats"
             referencedColumns: ["id"]
           },
         ]
@@ -10492,6 +10542,8 @@ export type Database = {
           reactions: Json
           read_at: string | null
           reply_to_message_id: string | null
+          sender_jid: string | null
+          sender_name: string | null
           sent_at: string | null
           status: string
           transcription: string | null
@@ -10523,6 +10575,8 @@ export type Database = {
           reactions?: Json
           read_at?: string | null
           reply_to_message_id?: string | null
+          sender_jid?: string | null
+          sender_name?: string | null
           sent_at?: string | null
           status?: string
           transcription?: string | null
@@ -10554,6 +10608,8 @@ export type Database = {
           reactions?: Json
           read_at?: string | null
           reply_to_message_id?: string | null
+          sender_jid?: string | null
+          sender_name?: string | null
           sent_at?: string | null
           status?: string
           transcription?: string | null
@@ -10579,6 +10635,47 @@ export type Database = {
             columns: ["reply_to_message_id"]
             isOneToOne: false
             referencedRelation: "whatsapp_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_phone_discrepancies: {
+        Row: {
+          created_at: string
+          detected_at: string
+          id: string
+          lead_id: string | null
+          phone_atual_no_lead: string | null
+          phone_resolvido_pela_uazapi: string
+          resolved_at: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          detected_at?: string
+          id?: string
+          lead_id?: string | null
+          phone_atual_no_lead?: string | null
+          phone_resolvido_pela_uazapi: string
+          resolved_at?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          detected_at?: string
+          id?: string
+          lead_id?: string | null
+          phone_atual_no_lead?: string | null
+          phone_resolvido_pela_uazapi?: string
+          resolved_at?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_phone_discrepancies_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
             referencedColumns: ["id"]
           },
         ]

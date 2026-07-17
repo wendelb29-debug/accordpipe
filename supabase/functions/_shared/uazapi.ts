@@ -35,7 +35,7 @@ export function getUazapiWebhookUrl(): string {
 export function buildUazapiWebhookPayload() {
   return {
     url: getUazapiWebhookUrl(),
-    // Eventos necessários para mensagens, status, conexão e metadados dos chats.
+    // Eventos: mensagens, status, conexão, metadados de chats, grupos e contatos.
     events: [
       "messages",
       "messages_upsert",
@@ -44,6 +44,8 @@ export function buildUazapiWebhookPayload() {
       "chats_update",
       "chats_upsert",
       "connection",
+      "groups",
+      "contacts",
     ],
     // Nunca excluir mensagens do celular; só evita duplicar envios feitos pela API.
     excludeMessages: ["wasSentByApi"],

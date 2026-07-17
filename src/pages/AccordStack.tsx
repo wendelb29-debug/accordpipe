@@ -9,7 +9,8 @@ import { TransferDialog } from "@/components/accord-inbox/TransferDialog";
 import { ContactDetailSidebar } from "@/components/accord-inbox/ContactDetailSidebar";
 import { CreateDemandModal } from "@/components/accord-inbox/CreateDemandModal";
 import { NewConversationModal } from "@/components/accord-inbox/NewConversationModal";
-import { WifiOff, User, ArrowLeft, PowerOff } from "lucide-react";
+import { GroupsInbox } from "@/components/accord-inbox/GroupsInbox";
+import { WifiOff, User, ArrowLeft, PowerOff, Users, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -43,6 +44,13 @@ export default function AccordStack() {
   });
   const [uiFilter, setUiFilter] = useState<UiFilter>("Todas");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [chatMode, setChatMode] = useState<"individual" | "grupos">(() => {
+    if (typeof window === "undefined") return "individual";
+    return (localStorage.getItem("accord-stack:chatMode") as "individual" | "grupos") || "individual";
+  });
+  useEffect(() => {
+    try { localStorage.setItem("accord-stack:chatMode", chatMode); } catch { /* ignore */ }
+  }, [chatMode]);
   const restoredContactRef = useRef(false);
 
   // Persist status filter
@@ -278,6 +286,36 @@ export default function AccordStack() {
           <span className="text-xs text-muted-foreground">· você veio de uma oportunidade</span>
         </div>
       )}
+      {/* Toggle Individual / Grupos */}
+      <div className="flex items-center gap-2 px-3 pt-2 pb-1 border-b border-border/60 flex-shrink-0 bg-background">
+        <button
+          onClick={() => setChatMode("individual")}
+          className={cn(
+            "flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-colors",
+            chatMode === "individual"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground hover:bg-muted/70",
+          )}
+        >
+          <MessageCircle size={13} />
+          Individuais
+        </button>
+        <button
+          onClick={() => setChatMode("grupos")}
+          className={cn(
+            "flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-colors",
+            chatMode === "grupos"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground hover:bg-muted/70",
+          )}
+        >
+          <Users size={13} />
+          Grupos
+        </button>
+      </div>
+      {chatMode === "grupos" ? (
+        <GroupsInbox tenantId={companyId} />
+      ) : (
       <div className="flex flex-1 min-h-0 overflow-hidden">
       <div className={cn(
         "flex-shrink-0 w-full md:w-auto h-full",
@@ -352,6 +390,8 @@ export default function AccordStack() {
           />
         )}
       </div>
+      </div>
+      )}
 
       {showInfo && selectedContact && !isMobile && (
         <ContactDetailSidebar
@@ -516,7 +556,6 @@ export default function AccordStack() {
           }
         }}
       />
-      </div>
     </div>
   );
 }

@@ -1185,7 +1185,10 @@ async function handleIncomingMessage(
 
 
   // 3. Ensure lead exists (dedup by normalized phone)
-  if (!contact.lead_id) {
+  // GUARD: never auto-create a lead when the chat is a WhatsApp group (@g.us).
+  const rawChatIndicator = String(phone || "");
+  const isGroupChat = rawChatIndicator.includes("@g.us");
+  if (!contact.lead_id && !isGroupChat) {
     let existingLead: any = null;
     for (const variant of phoneVariants) {
       const { data } = await supabase
