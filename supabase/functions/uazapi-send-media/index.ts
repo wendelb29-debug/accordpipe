@@ -62,6 +62,7 @@ Deno.serve(async (req) => {
       track_id: lead_id ?? null,
     };
     if (settings.simulate_typing) body.delay = 3;
+    if (useAsync) body.async = true;
 
     const data = await callUazapi("/send/media", {
       method: "POST",
