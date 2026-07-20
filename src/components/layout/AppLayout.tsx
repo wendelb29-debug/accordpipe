@@ -8,6 +8,7 @@ import { Header } from "./Header";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActivityReminders } from "@/hooks/useActivityReminders";
 import { useNotificationManager } from "@/hooks/useNotificationManager";
+import { usePushSubscription } from "@/hooks/usePushSubscription";
 import { AccordAIChat } from "@/components/accord-ai/AccordAIChat";
 import { useEmailNotifications } from "@/hooks/useEmailNotifications";
 import { useMultiEventNotifications } from "@/hooks/useMultiEventNotifications";
