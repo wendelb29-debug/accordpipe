@@ -45,21 +45,38 @@ async function resolveOrCreateContact(
   companyId: string,
   phoneDigits: string,
   name: string | null,
+  opts: { waChatId?: string | null; isGroup?: boolean } = {},
 ): Promise<string | null> {
   if (!phoneDigits) return null;
+  // Do NOT auto-create contacts from group messages (Wave 19/27 rule)
+  const isGroup = opts.isGroup ?? (opts.waChatId?.includes("@g.us") ?? false);
+  if (isGroup) return null;
   const { data: existing } = await svc
     .from("whatsapp_contacts")
-    .select("id")
+    .select("id, name, name_manually_edited")
     .eq("company_id", companyId)
     .eq("phone", phoneDigits)
     .maybeSingle();
-  if (existing?.id) return existing.id;
+  if (existing?.id) {
+    // Refresh last_interaction_at and name (only if not manually edited)
+    const patch: any = { last_interaction_at: new Date().toISOString() };
+    if (name && !existing.name_manually_edited && name !== existing.name) {
+      patch.name = name;
+    }
+    if (opts.waChatId) patch.wa_chatid = opts.waChatId;
+    await svc.from("whatsapp_contacts").update(patch).eq("id", existing.id);
+    return existing.id;
+  }
   const { data: created, error } = await svc
     .from("whatsapp_contacts")
     .insert({
       company_id: companyId,
       phone: phoneDigits,
       name: name || phoneDigits,
+      source: 'whatsapp_auto',
+      status: 'active',
+      wa_chatid: opts.waChatId ?? null,
+      last_interaction_at: new Date().toISOString(),
     })
     .select("id")
     .single();
@@ -69,6 +86,7 @@ async function resolveOrCreateContact(
   }
   return created?.id ?? null;
 }
+
 
 async function upsertChat(
   svc: ReturnType<typeof serviceClient>,
