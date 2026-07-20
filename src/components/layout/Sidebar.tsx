@@ -112,6 +112,7 @@ const navigationSections = [
       { nameKey: "nav.activities", href: "/atividades", icon: CalendarCheck, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
       { nameKey: "Solicitações", href: "/solicitacoes", icon: Send, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
       { nameKey: "Collabs", href: "/collabs", icon: MessagesSquare, roles: ["admin", "operador", "leitura", "ceo", "administrativo", "financeiro", "comercial"] },
+      { nameKey: "Contatos", href: "/contatos", icon: UsersRound, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
       { nameKey: "nav.email", href: "/email", icon: Mail, roles: ["admin", "operador", "ceo", "administrativo", "comercial"] },
     ],
   },

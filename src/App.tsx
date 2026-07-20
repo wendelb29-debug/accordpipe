@@ -81,6 +81,7 @@ const EmailInbox = lazy(() => import("./pages/EmailInbox"));
 const Closer = lazy(() => import("./pages/Closer"));
 const Sdr = lazy(() => import("./pages/Sdr"));
 const Solicitacoes = lazy(() => import("./pages/Solicitacoes"));
+const Contatos = lazy(() => import("./pages/Contatos"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -300,6 +301,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <Solicitacoes />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/contatos"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "operador", "ceo", "administrativo", "comercial"]}>
+                  <AppLayout>
+                    <Contatos />
                   </AppLayout>
                 </ProtectedRoute>
               }

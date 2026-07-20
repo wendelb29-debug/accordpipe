@@ -45,21 +45,38 @@ async function resolveOrCreateContact(
   companyId: string,
   phoneDigits: string,
   name: string | null,
+  opts: { waChatId?: string | null; isGroup?: boolean } = {},
 ): Promise<string | null> {
   if (!phoneDigits) return null;
+  // Do NOT auto-create contacts from group messages (Wave 19/27 rule)
+  const isGroup = opts.isGroup ?? (opts.waChatId?.includes("@g.us") ?? false);
+  if (isGroup) return null;
   const { data: existing } = await svc
     .from("whatsapp_contacts")
-    .select("id")
+    .select("id, name, name_manually_edited")
     .eq("company_id", companyId)
     .eq("phone", phoneDigits)
     .maybeSingle();
-  if (existing?.id) return existing.id;
+  if (existing?.id) {
+    // Refresh last_interaction_at and name (only if not manually edited)
+    const patch: any = { last_interaction_at: new Date().toISOString() };
+    if (name && !existing.name_manually_edited && name !== existing.name) {
+      patch.name = name;
+    }
+    if (opts.waChatId) patch.wa_chatid = opts.waChatId;
+    await svc.from("whatsapp_contacts").update(patch).eq("id", existing.id);
+    return existing.id;
+  }
   const { data: created, error } = await svc
     .from("whatsapp_contacts")
     .insert({
       company_id: companyId,
       phone: phoneDigits,
       name: name || phoneDigits,
+      source: 'whatsapp_auto',
+      status: 'active',
+      wa_chatid: opts.waChatId ?? null,
+      last_interaction_at: new Date().toISOString(),
     })
     .select("id")
     .single();
@@ -69,6 +86,7 @@ async function resolveOrCreateContact(
   }
   return created?.id ?? null;
 }
+
 
 async function upsertChat(
   svc: ReturnType<typeof serviceClient>,
@@ -287,17 +305,20 @@ async function process(payload: any, svc: ReturnType<typeof serviceClient>) {
       if (Object.keys(clean).length === 0) continue;
       await svc.from("whatsapp_chats").update(clean)
         .eq("tenant_id", inst.tenant_id).eq("wa_chatid", jid);
-      // Also update whatsapp_contacts by phone when possible
+      // Also update whatsapp_contacts by phone when possible (respect manual edits)
       const phone = normalizePhone(jid.split("@")[0] ?? jid);
-      if (phone) {
+      if (phone && !jid.includes("@g.us")) {
+        const { data: existingContact } = await svc.from("whatsapp_contacts")
+          .select("id, name_manually_edited")
+          .eq("company_id", inst.tenant_id).eq("phone", phone).maybeSingle();
         const contactPatch: any = {};
-        if (clean.name) contactPatch.name = clean.name;
+        if (clean.name && !existingContact?.name_manually_edited) contactPatch.name = clean.name;
         if (clean.image_url) contactPatch.avatar_url = clean.image_url;
-        if (Object.keys(contactPatch).length > 0) {
-          await svc.from("whatsapp_contacts").update(contactPatch)
-            .eq("company_id", inst.tenant_id).eq("phone", phone);
+        if (Object.keys(contactPatch).length > 0 && existingContact?.id) {
+          await svc.from("whatsapp_contacts").update(contactPatch).eq("id", existingContact.id);
         }
       }
+
     }
     return;
   }
@@ -367,7 +388,8 @@ async function process(payload: any, svc: ReturnType<typeof serviceClient>) {
     // Groups don't create individual contacts (a group isn't a person)
     const contactId = isGroupChat
       ? null
-      : await resolveOrCreateContact(svc, inst.tenant_id, phoneDigits, senderName);
+      : await resolveOrCreateContact(svc, inst.tenant_id, phoneDigits, senderName, { waChatId: chatId, isGroup: isGroupChat });
+
 
     const base: any = {
       company_id: inst.tenant_id,
