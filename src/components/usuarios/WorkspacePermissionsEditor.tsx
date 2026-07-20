@@ -124,6 +124,14 @@ export function WorkspacePermissionsEditor({ userId, userRole, isCeoOrMaster, on
     };
   }, [localPerms, workspaces]);
 
+  const orderedGroupIds = useMemo(() => {
+    const groupIds = groups
+      .filter((g) => groupedWorkspaces[g.id]?.length)
+      .map((g) => g.id);
+    if (groupedWorkspaces["__ungrouped__"]?.length) groupIds.push("__ungrouped__");
+    return groupIds;
+  }, [groups, groupedWorkspaces]);
+
   if (isCeoOrMaster) {
     return (
       <div className="flex items-center gap-3 p-4 rounded-xl border border-primary/20 bg-primary/5">
