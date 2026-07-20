@@ -31,6 +31,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   useEmailNotifications();
   useMultiEventNotifications(true);
   const { bannerVisible, dismissBanner } = useNotificationManager();
+  const push = usePushSubscription();
+  const showPushBanner = push.shouldShowBanner();
   const navigate = useNavigate();
   const location = useLocation();
   const hideHeader = false;
