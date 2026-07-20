@@ -2717,6 +2717,101 @@ export type Database = {
           },
         ]
       }
+      contact_groups: {
+        Row: {
+          color: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_groups_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_imports: {
+        Row: {
+          company_id: string
+          contact_group_id: string | null
+          created_at: string
+          created_by: string | null
+          error_count: number
+          errors: Json
+          file_name: string
+          id: string
+          status: string
+          success_count: number
+          total_rows: number
+        }
+        Insert: {
+          company_id: string
+          contact_group_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          error_count?: number
+          errors?: Json
+          file_name: string
+          id?: string
+          status?: string
+          success_count?: number
+          total_rows?: number
+        }
+        Update: {
+          company_id?: string
+          contact_group_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          error_count?: number
+          errors?: Json
+          file_name?: string
+          id?: string
+          status?: string
+          success_count?: number
+          total_rows?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_imports_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_imports_contact_group_id_fkey"
+            columns: ["contact_group_id"]
+            isOneToOne: false
+            referencedRelation: "contact_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contract_signatures: {
         Row: {
           contract_id: string
@@ -10320,20 +10415,26 @@ export type Database = {
           avatar_synced_at: string | null
           avatar_url: string | null
           company_id: string
+          contact_group_id: string | null
           conversation_status: string
           created_at: string
           department_id: string | null
           id: string
           labels: string[] | null
+          last_interaction_at: string | null
           last_message: string | null
           last_message_at: string | null
           lead_id: string | null
           name: string
+          name_manually_edited: boolean
           notes: string | null
           phone: string
           routed_by_department: boolean
+          source: string
+          status: string
           unread_count: number
           updated_at: string
+          wa_chatid: string | null
           workspace_id: string | null
         }
         Insert: {
@@ -10341,20 +10442,26 @@ export type Database = {
           avatar_synced_at?: string | null
           avatar_url?: string | null
           company_id: string
+          contact_group_id?: string | null
           conversation_status?: string
           created_at?: string
           department_id?: string | null
           id?: string
           labels?: string[] | null
+          last_interaction_at?: string | null
           last_message?: string | null
           last_message_at?: string | null
           lead_id?: string | null
           name: string
+          name_manually_edited?: boolean
           notes?: string | null
           phone: string
           routed_by_department?: boolean
+          source?: string
+          status?: string
           unread_count?: number
           updated_at?: string
+          wa_chatid?: string | null
           workspace_id?: string | null
         }
         Update: {
@@ -10362,20 +10469,26 @@ export type Database = {
           avatar_synced_at?: string | null
           avatar_url?: string | null
           company_id?: string
+          contact_group_id?: string | null
           conversation_status?: string
           created_at?: string
           department_id?: string | null
           id?: string
           labels?: string[] | null
+          last_interaction_at?: string | null
           last_message?: string | null
           last_message_at?: string | null
           lead_id?: string | null
           name?: string
+          name_manually_edited?: boolean
           notes?: string | null
           phone?: string
           routed_by_department?: boolean
+          source?: string
+          status?: string
           unread_count?: number
           updated_at?: string
+          wa_chatid?: string | null
           workspace_id?: string | null
         }
         Relationships: [
@@ -10384,6 +10497,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_contacts_contact_group_fk"
+            columns: ["contact_group_id"]
+            isOneToOne: false
+            referencedRelation: "contact_groups"
             referencedColumns: ["id"]
           },
           {
