@@ -62,7 +62,12 @@ export default function Contatos() {
   };
 
   return (
-    <PageContainer title="Contatos" subtitle="Registro unificado de contatos do WhatsApp">
+    <PageContainer>
+      <div>
+        <h1 className="text-2xl font-semibold text-foreground">Contatos</h1>
+        <p className="text-sm text-muted-foreground">Registro unificado de contatos do WhatsApp</p>
+      </div>
+
       <Tabs value={tab} onValueChange={setTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="contacts">Contatos</TabsTrigger>
