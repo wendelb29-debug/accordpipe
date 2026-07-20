@@ -369,7 +369,10 @@ export const DATA_SCOPE_LABELS: Record<DataScope, string> = {
 
 // Map permission to required route access
 export const ROUTE_PERMISSIONS: Record<string, string> = {
-  "/home": "view_dashboard",
+  // "/home" is the social intranet portal — open to any authenticated user
+  // with an active profile. Do NOT require view_dashboard here, otherwise
+  // newly invited users (whose role default lacks view_dashboard) get
+  // "Acesso Negado" right after accepting the invite.
   "/dashboard": "view_dashboard",
   "/atendimento": "view_pipeline",
   "/formularios": "view_forms",
