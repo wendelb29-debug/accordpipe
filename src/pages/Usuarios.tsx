@@ -693,9 +693,7 @@ export default function Usuarios() {
                     <TableRow key={user.id} className="group">
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                            <User className="h-5 w-5 text-primary" />
-                          </div>
+                          <UserAvatar userId={user.user_id} name={user.name} avatarUrl={(user as any).avatar_url} size={40} />
                           <div>
                             <div className="flex items-center gap-2">
                               <p className="font-medium text-foreground">{user.name}</p>
