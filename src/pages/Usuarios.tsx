@@ -43,6 +43,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppRole, useAuth } from "@/contexts/AuthContext";
 import { PermissionsEditor } from "@/components/usuarios/PermissionsEditor";
 import { WorkspacePermissionsEditor } from "@/components/usuarios/WorkspacePermissionsEditor";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { InviteUserDialog } from "@/components/usuarios/InviteUserDialog";
 import { DepartmentManagement } from "@/components/atendimento/DepartmentManagement";
 
