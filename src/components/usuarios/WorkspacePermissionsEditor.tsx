@@ -261,13 +261,6 @@ export function WorkspacePermissionsEditor({ userId, userRole, isCeoOrMaster, on
     return groups.find((g) => g.id === groupId)?.name || "Grupo";
   };
 
-  const orderedGroupIds = useMemo(() => {
-    const groupIds = groups
-      .filter((g) => groupedWorkspaces[g.id]?.length)
-      .map((g) => g.id);
-    if (groupedWorkspaces["__ungrouped__"]?.length) groupIds.push("__ungrouped__");
-    return groupIds;
-  }, [groups, groupedWorkspaces]);
 
   return (
     <TooltipProvider>
