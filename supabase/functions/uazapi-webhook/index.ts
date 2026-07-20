@@ -305,17 +305,20 @@ async function process(payload: any, svc: ReturnType<typeof serviceClient>) {
       if (Object.keys(clean).length === 0) continue;
       await svc.from("whatsapp_chats").update(clean)
         .eq("tenant_id", inst.tenant_id).eq("wa_chatid", jid);
-      // Also update whatsapp_contacts by phone when possible
+      // Also update whatsapp_contacts by phone when possible (respect manual edits)
       const phone = normalizePhone(jid.split("@")[0] ?? jid);
-      if (phone) {
+      if (phone && !jid.includes("@g.us")) {
+        const { data: existingContact } = await svc.from("whatsapp_contacts")
+          .select("id, name_manually_edited")
+          .eq("company_id", inst.tenant_id).eq("phone", phone).maybeSingle();
         const contactPatch: any = {};
-        if (clean.name) contactPatch.name = clean.name;
+        if (clean.name && !existingContact?.name_manually_edited) contactPatch.name = clean.name;
         if (clean.image_url) contactPatch.avatar_url = clean.image_url;
-        if (Object.keys(contactPatch).length > 0) {
-          await svc.from("whatsapp_contacts").update(contactPatch)
-            .eq("company_id", inst.tenant_id).eq("phone", phone);
+        if (Object.keys(contactPatch).length > 0 && existingContact?.id) {
+          await svc.from("whatsapp_contacts").update(contactPatch).eq("id", existingContact.id);
         }
       }
+
     }
     return;
   }
