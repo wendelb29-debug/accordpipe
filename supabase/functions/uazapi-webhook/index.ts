@@ -385,7 +385,8 @@ async function process(payload: any, svc: ReturnType<typeof serviceClient>) {
     // Groups don't create individual contacts (a group isn't a person)
     const contactId = isGroupChat
       ? null
-      : await resolveOrCreateContact(svc, inst.tenant_id, phoneDigits, senderName);
+      : await resolveOrCreateContact(svc, inst.tenant_id, phoneDigits, senderName, { waChatId: chatId, isGroup: isGroupChat });
+
 
     const base: any = {
       company_id: inst.tenant_id,
