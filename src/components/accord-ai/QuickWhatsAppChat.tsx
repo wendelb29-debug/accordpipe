@@ -162,8 +162,10 @@ export function QuickWhatsAppChat({
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm truncate">{notification.contact_name}</p>
-          <p className="text-[11px] opacity-80 truncate">{notification.contact_phone}</p>
+          <p className="font-semibold text-sm truncate">{notification.contact_name || notification.contact_phone}</p>
+          {notification.contact_name && notification.contact_name !== notification.contact_phone && (
+            <p className="text-[11px] opacity-80 truncate">{notification.contact_phone}</p>
+          )}
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <Link
