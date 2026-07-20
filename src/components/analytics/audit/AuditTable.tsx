@@ -11,6 +11,7 @@ import {
   userColor, initials, formatDuration,
 } from "./audit-helpers";
 import type { AuditLogRow, AuditSort } from "@/hooks/useAuditLogs";
+import { UserAvatar } from "@/components/ui/user-avatar";
 
 interface Props {
   rows: AuditLogRow[];
@@ -120,12 +121,7 @@ export function AuditTable({
                   {/* Responsável */}
                   <td className="px-4 py-3 align-top">
                     <div className="flex items-center gap-2.5">
-                      <div className={cn(
-                        "h-8 w-8 rounded-full bg-gradient-to-br flex items-center justify-center text-white text-xs font-semibold shrink-0",
-                        userColor(row.user_id),
-                      )}>
-                        {initials(row.user_name)}
-                      </div>
+                      <UserAvatar userId={row.user_id} name={row.user_name} size={32} />
                       <div className="min-w-0">
                         <div className="text-sm font-medium truncate">{row.user_name || "Sistema"}</div>
                         <div className="text-xs text-muted-foreground truncate">

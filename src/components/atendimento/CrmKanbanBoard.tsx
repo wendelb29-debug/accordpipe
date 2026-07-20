@@ -12,6 +12,7 @@ import { KanbanQuickActionZones } from "./KanbanQuickActionZones";
 import { TransferWorkspaceDialog } from "./TransferWorkspaceDialog";
 import { LostReasonDialog } from "./LostReasonDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -1204,12 +1205,15 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                               return (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <Avatar className={cn("h-5 w-5", isNaturalState ? "ring-1 ring-primary/20" : "ring-1 ring-primary/15")}>
-                                      {memberAvatar && <AvatarImage src={memberAvatar} alt={lead.created_by_name} />}
-                                      <AvatarFallback className="text-[7px] bg-primary/10 text-primary font-bold">
-                                        {lead.created_by_name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
-                                      </AvatarFallback>
-                                    </Avatar>
+                                    <div>
+                                      <UserAvatar
+                                        userId={lead.created_by_user_id}
+                                        name={lead.created_by_name}
+                                        avatarUrl={memberAvatar}
+                                        size={20}
+                                        className={cn(isNaturalState ? "ring-1 ring-primary/20" : "ring-1 ring-primary/15")}
+                                      />
+                                    </div>
                                   </TooltipTrigger>
                                   <TooltipContent side="bottom" className="text-[10px] font-medium">{lead.created_by_name}</TooltipContent>
                                 </Tooltip>
