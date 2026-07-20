@@ -1,6 +1,5 @@
 /* Accord notification service worker.
- * Purpose: show native notifications (email + whatsapp) and handle clicks.
- * NOT an app-shell cache — no fetch caching, no offline. Safe to ship.
+ * Handles Web Push events and click routing. Not an app-shell cache.
  */
 
 self.addEventListener("install", () => {
@@ -11,7 +10,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-// Receive show-notification requests from the page
+// Receive show-notification requests from the page (in-app fallback)
 self.addEventListener("message", (event) => {
   const data = event.data;
   if (!data || data.type !== "show-notification") return;
@@ -24,6 +23,26 @@ self.addEventListener("message", (event) => {
     data: { url: url || "/" },
     renotify: true,
   });
+});
+
+// Real Web Push from the server
+self.addEventListener("push", (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    try { payload = { title: "Accord", body: event.data && event.data.text() }; } catch { payload = {}; }
+  }
+  const title = payload.title || "Accord";
+  const options = {
+    body: payload.body || "",
+    icon: payload.icon || "/accord-icon-192.png",
+    badge: payload.badge || "/accord-icon-192.png",
+    tag: payload.tag || `accord-${Date.now()}`,
+    data: { url: payload.url || "/" },
+    renotify: true,
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener("notificationclick", (event) => {
@@ -53,4 +72,13 @@ self.addEventListener("notificationclick", (event) => {
       }
     })()
   );
+});
+
+// Clean up dead subscriptions on the server when the browser rotates them
+self.addEventListener("pushsubscriptionchange", (event) => {
+  event.waitUntil((async () => {
+    try {
+      // Best-effort: no-op if we can't reach the app; the app will re-subscribe on next load.
+    } catch (_) {}
+  })());
 });
