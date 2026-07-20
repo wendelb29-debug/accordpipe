@@ -11,6 +11,7 @@ import {
   userColor, initials, formatDuration,
 } from "./audit-helpers";
 import type { AuditLogRow, AuditSort } from "@/hooks/useAuditLogs";
+import { UserAvatar } from "@/components/ui/user-avatar";
 
 interface Props {
   rows: AuditLogRow[];
