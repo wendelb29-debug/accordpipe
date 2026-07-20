@@ -240,8 +240,9 @@ export function WorkspacePermissionsEditor({ userId, userRole, isCeoOrMaster, on
       await savePermissions(permsToSave);
       toast.success("Permissões de workspace salvas!");
       onClose?.();
-    } catch {
-      toast.error("Erro ao salvar permissões de workspace.");
+    } catch (e: any) {
+      console.error("Erro ao salvar permissões de workspace:", e);
+      toast.error(`Erro ao salvar permissões: ${e?.message || e?.details || "desconhecido"}`);
     } finally {
       setSaving(false);
     }
