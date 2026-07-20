@@ -12,6 +12,7 @@ import { KanbanQuickActionZones } from "./KanbanQuickActionZones";
 import { TransferWorkspaceDialog } from "./TransferWorkspaceDialog";
 import { LostReasonDialog } from "./LostReasonDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
