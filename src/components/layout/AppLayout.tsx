@@ -85,18 +85,19 @@ export function AppLayout({ children }: AppLayoutProps) {
           {/* Tenant billing alert banner */}
           <TenantBillingBanner />
 
-          {/* Notification activation banner */}
-          {bannerVisible && (
-            <div className="flex items-center justify-center gap-3 bg-red-500/80 text-white text-sm font-medium py-2 px-4">
+          {/* Notification activation banner (real Web Push) */}
+          {showPushBanner && (
+            <div className="flex items-center justify-center gap-3 bg-primary/90 text-primary-foreground text-sm font-medium py-2 px-4">
               <Bell className="h-4 w-4 shrink-0" />
               <span className="text-xs sm:text-sm">Ative as notificações para não perder mensagens e lembretes!</span>
               <Button
                 size="sm"
                 variant="secondary"
                 className="h-7 text-xs px-3 shrink-0"
-                onClick={() => navigate("/perfil")}
+                disabled={push.busy}
+                onClick={() => { void push.enable(); }}
               >
-                Ativar agora
+                {push.busy ? "Ativando..." : "Ativar agora"}
               </Button>
             </div>
           )}
