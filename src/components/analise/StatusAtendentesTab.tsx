@@ -272,12 +272,12 @@ export function StatusAtendentesTab() {
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-2">
-                      <Avatar className="h-7 w-7">
-                        <AvatarImage src={o.profile?.avatar_url || undefined} alt={displayName(o)} />
-                        <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
-                          {initials(o)}
-                        </AvatarFallback>
-                      </Avatar>
+                      <UserAvatar
+                        userId={o.user_id}
+                        name={displayName(o)}
+                        avatarUrl={o.profile?.avatar_url || null}
+                        size={28}
+                      />
                       <span className="font-medium">{displayName(o)}</span>
                     </div>
                   </td>
