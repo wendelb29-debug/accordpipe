@@ -187,11 +187,11 @@ export function SaveCarIndividual() {
 
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 max-w-4xl mx-auto w-full font-sans">
+    <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-6 max-w-4xl mx-auto w-full font-sans">
       {isKamillaWorkspace && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 font-medium mb-6">
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-xs sm:text-sm text-blue-800 font-medium mb-6">
           <p className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
+            <Shield className="h-4 w-4 shrink-0" />
             Configuração Kamilla ativa: scripts e botões sincronizados conforme imagem de referência.
           </p>
         </div>
@@ -324,7 +324,7 @@ export function SaveCarIndividual() {
               <h3 className="text-lg font-black text-slate-900">{isKamillaWorkspace ? "Etapa 3 — Identificação do Motivo" : step3.title}</h3>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+            <div className="flex flex-wrap gap-3 mb-6">
               {step3.branches?.map((branch) => (
                 <button
                   key={branch.id}
@@ -333,7 +333,7 @@ export function SaveCarIndividual() {
                     handleAction('branch', step3.step_key, branch.branch_content || "", branch.branch_key);
                   }}
                   className={cn(
-                    "h-12 rounded-xl text-sm font-bold transition-all border flex items-center justify-center gap-2 shadow-sm",
+                    "h-12 flex-1 min-w-[100px] rounded-xl text-sm font-bold transition-all border flex items-center justify-center gap-2 shadow-sm",
                     selectedBranchKey === branch.branch_key 
                       ? "bg-blue-600 border-blue-600 text-white translate-y-[1px]" 
                       : "bg-white border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600"
@@ -399,17 +399,17 @@ export function SaveCarIndividual() {
       </div>
 
       {/* Footer Actions */}
-      <div className="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-slate-100 gap-4">
+      <div className="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-slate-100 gap-4 mb-8 sm:mb-0">
         <Button 
           variant="ghost" 
           onClick={resetSession}
-          className="text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl"
+          className="w-full sm:w-auto text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl order-2 sm:order-1"
         >
           <RotateCcw className="h-4 w-4 mr-2" /> Limpar Atendimento
         </Button>
         
         <Button 
-          className="bg-[#0F172A] hover:bg-slate-800 text-white rounded-xl px-10 h-12 font-black shadow-lg shadow-slate-200"
+          className="w-full sm:w-auto bg-[#0F172A] hover:bg-slate-800 text-white rounded-xl px-10 h-12 font-black shadow-lg shadow-slate-200 order-1 sm:order-2"
           disabled={!currentSessionId}
           onClick={() => {
             updateSession.mutate({ id: currentSessionId!, status: 'completed' });
