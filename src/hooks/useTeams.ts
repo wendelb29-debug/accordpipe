@@ -110,7 +110,7 @@ export function useTeams() {
       // or satisfy the constraint.
       let teamId = (teamData as any).team_id;
       if (!teamId) {
-         const { data: baseTeam, error: baseError } = await supabase
+         const { data: baseTeams, error: baseError } = await supabase
            .from("chatbot_teams" as any)
            .insert([{ 
              name: teamData.name || "Nova Equipe",
@@ -119,7 +119,7 @@ export function useTeams() {
            .select()
            .single();
          if (baseError) throw baseError;
-         teamId = baseTeam.id;
+         teamId = (baseTeams as any).id;
       }
 
       const { data: team, error: teamError } = await supabase
