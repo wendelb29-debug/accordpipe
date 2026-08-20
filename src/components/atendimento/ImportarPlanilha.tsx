@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,9 +11,11 @@ import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { toast } from "sonner";
 import {
   Upload, Download, FileSpreadsheet, CheckCircle2, Loader2,
-  Users, Tag, CreditCard, AlertCircle, UserCheck,
+  Users, Tag, CreditCard, AlertCircle, UserCheck, Layout, ListChecks
 } from "lucide-react";
 import * as XLSX from "xlsx";
+import { useKanbanColumns } from "@/hooks/useKanbanColumns";
+
 
 interface ParsedLead {
   nome: string;
@@ -41,9 +43,36 @@ export function ImportarPlanilha() {
   const [headers, setHeaders] = useState<string[]>([]);
   const [fileName, setFileName] = useState("");
   const [distribMethod, setDistribMethod] = useState<DistributionMethod>("no-distribution");
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(null);
+  const [targetStage, setTargetStage] = useState<string>("novos");
+  const [workspaces, setWorkspaces] = useState<any[]>([]);
+  const { columns: kanbanStages } = useKanbanColumns(selectedWorkspaceId);
+  // Reset targetStage when workspace changes to avoid invalid stages
+  useEffect(() => {
+    if (selectedWorkspaceId && kanbanStages.length > 0) {
+      setTargetStage(kanbanStages[0].id);
+    } else {
+      setTargetStage("novos");
+    }
+  }, [selectedWorkspaceId, kanbanStages]);
+
   const [importing, setImporting] = useState(false);
+
   const [result, setResult] = useState<DistributionResult | null>(null);
   const [dragOver, setDragOver] = useState(false);
+
+  useEffect(() => {
+    const fetchWorkspaces = async () => {
+      if (!companyId) return;
+      const { data } = await supabase
+        .from("workspaces")
+        .select("id, name")
+        .eq("servidor_id", companyId)
+        .order("name");
+      if (data) setWorkspaces(data);
+    };
+    fetchWorkspaces();
+  }, [companyId]);
 
   const downloadTemplate = (format: "csv" | "xlsx") => {
     const defaultHeaders = ["Nome", "Empresa", "E-mail", "Telefone", "CPF/CNPJ", "Valor P&S", "Valor MRR", "Tags"];
@@ -216,6 +245,7 @@ export function ImportarPlanilha() {
 
         return {
           servidor_id: companyId,
+          workspace_id: selectedWorkspaceId || null,
           company_name: lead["Empresa"] || "Lead via Planilha",
           contact_name: lead["Nome"] || null,
           email: lead["E-mail"] || null,
@@ -223,7 +253,7 @@ export function ImportarPlanilha() {
           documento: lead["CPF/CNPJ"] || null,
           value_ps: Number(lead["Valor P&S"]) || 0,
           value_mrr: Number(lead["Valor MRR"]) || 0,
-          stage: "novos",
+          stage: targetStage || "novos",
           source: "Planilha",
           lead_status: "open",
           tags: lead["Tags"] ? String(lead["Tags"]).split(",").map(t => t.trim()).filter(Boolean) : [],
@@ -231,6 +261,7 @@ export function ImportarPlanilha() {
           created_by_name: userName,
         };
       });
+
 
       // Insert in batches of 50
       let imported = 0;
@@ -341,11 +372,61 @@ export function ImportarPlanilha() {
       {parsedData.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Método de Distribuição</CardTitle>
+            <CardTitle className="text-sm">Configuração da Importação</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <Layout className="h-3 w-3" /> Destino (Workspace)
+                </Label>
+                <Select value={selectedWorkspaceId || "none"} onValueChange={(v) => setSelectedWorkspaceId(v === "none" ? null : v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o Workspace" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem Workspace (Geral)</SelectItem>
+                    {workspaces.map((w) => (
+                      <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <ListChecks className="h-3 w-3" /> Etapa do Funil (Card)
+                </Label>
+                <Select value={targetStage} onValueChange={setTargetStage}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a Etapa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {/* Default stages if no dynamic ones */}
+                    {!selectedWorkspaceId || kanbanStages.length === 0 ? (
+                      <>
+                        <SelectItem value="novos">Novos</SelectItem>
+                        <SelectItem value="primeiro-contato">Primeiro Contato</SelectItem>
+                        <SelectItem value="call-negocio">Call de Negócio</SelectItem>
+                        <SelectItem value="follow-up-1">Follow-up 1</SelectItem>
+                        <SelectItem value="follow-up-2">Follow-up 2</SelectItem>
+                        <SelectItem value="contrato-fechado">Ganhos</SelectItem>
+                        <SelectItem value="lost">Perdidos</SelectItem>
+                      </>
+                    ) : (
+                      kanbanStages.map((stage) => (
+                        <SelectItem key={stage.id} value={stage.id}>{stage.name}</SelectItem>
+                      ))
+                    )}
+
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Como distribuir os leads entre operadores?</Label>
+
               <Select value={distribMethod} onValueChange={(v) => setDistribMethod(v as DistributionMethod)}>
                 <SelectTrigger>
                   <SelectValue />
