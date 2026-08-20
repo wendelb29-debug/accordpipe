@@ -252,33 +252,7 @@ export function ImportarPlanilha() {
           created_by_name: userName,
         };
       });
-        const { userId, userName } = assignLead(lead);
 
-        // Track per-operator count
-        const existing = distributionCount.get(userId);
-        if (existing) {
-          existing.count++;
-        } else {
-          distributionCount.set(userId, { name: userName, count: 1 });
-        }
-
-        return {
-          servidor_id: companyId,
-          company_name: lead["Empresa"] || "Lead via Planilha",
-          contact_name: lead["Nome"] || null,
-          email: lead["E-mail"] || null,
-          phone: lead["Telefone"] || null,
-          documento: lead["CPF/CNPJ"] || null,
-          value_ps: Number(lead["Valor P&S"]) || 0,
-          value_mrr: Number(lead["Valor MRR"]) || 0,
-          stage: "novos",
-          source: "Planilha",
-          lead_status: "open",
-          tags: lead["Tags"] ? String(lead["Tags"]).split(",").map(t => t.trim()).filter(Boolean) : [],
-          created_by_user_id: userId,
-          created_by_name: userName,
-        };
-      });
 
       // Insert in batches of 50
       let imported = 0;
