@@ -48,18 +48,18 @@ export function CloserPanel() {
   const [activeStepKey, setActiveStepKey] = useState<string>("abertura");
   const [selectedBranches, setSelectedBranches] = useState<Record<string, string>>({});
 
-  const { playbooks, scripts, createSession, logEvent, updateSession } = useCloser(
-    playbooks?.find(p => p.name.toLowerCase().includes(methodology))?.id
-  );
+  const { playbooks, scripts, createSession, logEvent, updateSession } = useCloser();
 
   const currentPlaybook = useMemo(() => 
     playbooks?.find(p => p.name.toLowerCase().includes(methodology)),
     [playbooks, methodology]
   );
 
+  const { scripts: playbookScripts } = useCloser(currentPlaybook?.id);
+
   const sortedScripts = useMemo(() => 
-    scripts?.sort((a, b) => a.sort_order - b.sort_order) || [],
-    [scripts]
+    playbookScripts?.sort((a, b) => a.sort_order - b.sort_order) || [],
+    [playbookScripts]
   );
 
   const startSession = async () => {
