@@ -341,7 +341,7 @@ export function WorkspacePermissionsEditor({ userId, userRole, isCeoOrMaster, on
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-5 text-xs text-muted-foreground px-1 border-b border-border pb-2">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground px-1 border-b border-border pb-2">
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="flex items-center gap-1 cursor-help"><Eye className="h-3.5 w-3.5" /> Visualizar</span>

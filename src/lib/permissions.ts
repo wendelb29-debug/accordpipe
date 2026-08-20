@@ -2,6 +2,7 @@ import {
   LayoutDashboard, ShoppingCart, FileText, Activity, DollarSign, 
   FolderOpen, BarChart3, FileSignature, Users, Trash2, 
   MessageSquare, UserCog, Columns3, Package, Settings, Bot,
+  Send, GraduationCap, Handshake, UsersRound,
   type LucideIcon
 } from "lucide-react";
 
@@ -259,6 +260,51 @@ export const PERMISSION_MODULES: PermissionModule[] = [
     ],
   },
 
+  // ===== Marketing =====
+  {
+    key: "marketing",
+    label: "Marketing",
+    icon: Send,
+    group: "Geral",
+    permissions: [
+      { key: "send_broadcast", label: "Envio em Massa", description: "Disparar mensagens em massa" },
+    ],
+  },
+
+  // ===== Academy =====
+  {
+    key: "academy",
+    label: "Academy",
+    icon: GraduationCap,
+    group: "Insights",
+    permissions: [
+      { key: "view_academy", label: "Visualizar Academy", description: "Acesso ao módulo de treinamento" },
+    ],
+  },
+
+  // ===== Closer / SDR =====
+  {
+    key: "closer_sdr",
+    label: "Closer & SDR",
+    icon: Handshake,
+    group: "Insights",
+    permissions: [
+      { key: "use_closer", label: "Usar Closer", description: "Acesso ao painel de apoio ao vendedor" },
+      { key: "use_sdr_os", label: "Usar SDR OS", description: "Acesso ao SDR Operating System" },
+    ],
+  },
+
+  // ===== Contatos =====
+  {
+    key: "contatos_mod",
+    label: "Contatos",
+    icon: UsersRound,
+    group: "Geral",
+    permissions: [
+      { key: "view_contacts", label: "Visualizar Contatos", description: "Ver base unificada de contatos" },
+    ],
+  },
+
   // ===== WhatsApp =====
   {
     key: "whatsapp",
@@ -394,6 +440,11 @@ export const ROUTE_PERMISSIONS: Record<string, string> = {
   "/performance": "view_performance_module",
   "/planos": "view_billing_plans",
   "/eventos": "view_events",
+  "/closer": "use_closer",
+  "/sdr": "use_sdr_os",
+  "/academy": "view_academy",
+  "/contatos": "view_contacts",
+  "/marketing/envio-massa": "send_broadcast",
 };
 
 // Legacy permission key mapping (old -> new) for backward compatibility
