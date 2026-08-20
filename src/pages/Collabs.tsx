@@ -2211,11 +2211,11 @@ export default function Collabs() {
                         )
                       ))}
                     </div>
-                    <div className="bg-white/90 backdrop-blur rounded-full px-3 py-1.5 shadow-sm border border-violet-100 flex items-center gap-1.5">
+                    <div className="bg-white/90 backdrop-blur rounded-full px-3 py-1.5 shadow-sm border border-emerald-100 flex items-center gap-1.5">
                       <span className="flex gap-0.5">
-                        <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: "0ms" }} />
-                        <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: "150ms" }} />
-                        <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce" style={{ animationDelay: "300ms" }} />
                       </span>
                       <span className="text-[11px] text-gray-600">
                         {typingUsersInActive.length === 1
@@ -2335,7 +2335,7 @@ export default function Collabs() {
                   />
                 </div>
               ) : (
-              <div className="flex items-center gap-1.5 bg-white rounded-[24px] pl-3.5 pr-2 py-1.5 shadow-[0_8px_24px_-12px_rgba(124,58,237,0.35),inset_0_0_0_1px_rgba(124,58,237,0.08)]">
+              <div className="flex items-center gap-1.5 bg-white rounded-[24px] pl-3.5 pr-2 py-1.5 shadow-[0_8px_24px_-12px_rgba(16,185,129,0.35),inset_0_0_0_1px_rgba(16,185,129,0.08)]">
                 <div className="flex gap-0.5">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -2372,13 +2372,13 @@ export default function Collabs() {
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <button onClick={() => imageInputRef.current?.click()} title="Enviar imagem" className="w-[32px] h-[32px] rounded-full flex items-center justify-center text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition">
+                  <button onClick={() => imageInputRef.current?.click()} title="Enviar imagem" className="w-[32px] h-[32px] rounded-full flex items-center justify-center text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 transition">
                     <ImageIcon className="h-[17px] w-[17px]" />
                   </button>
-                  <button onClick={() => { setShowEmoji((v) => !v); setShowMentions(false); }} title="Emojis" className={cn("w-[32px] h-[32px] rounded-full flex items-center justify-center transition", showEmoji ? "bg-violet-100 text-violet-700" : "text-gray-500 hover:bg-violet-50 hover:text-violet-600")}>
+                  <button onClick={() => { setShowEmoji((v) => !v); setShowMentions(false); }} title="Emojis" className={cn("w-[32px] h-[32px] rounded-full flex items-center justify-center transition", showEmoji ? "bg-emerald-100 text-emerald-700" : "text-gray-500 hover:bg-emerald-50 hover:text-emerald-600")}>
                     <Smile className="h-[17px] w-[17px]" />
                   </button>
-                  <button onClick={() => { setShowMentions((v) => !v); setShowEmoji(false); }} title="Mencionar" className={cn("w-[32px] h-[32px] rounded-full flex items-center justify-center transition", showMentions ? "bg-violet-100 text-violet-700" : "text-gray-500 hover:bg-violet-50 hover:text-violet-600")}>
+                  <button onClick={() => { setShowMentions((v) => !v); setShowEmoji(false); }} title="Mencionar" className={cn("w-[32px] h-[32px] rounded-full flex items-center justify-center transition", showMentions ? "bg-emerald-100 text-emerald-700" : "text-gray-500 hover:bg-emerald-50 hover:text-emerald-600")}>
                     <AtSign className="h-[17px] w-[17px]" />
                   </button>
                 </div>
@@ -2397,7 +2397,7 @@ export default function Collabs() {
                   onClick={input.trim() ? sendText : startRecording}
                   className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all"
                   style={input.trim()
-                    ? { background: "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)", color: "#fff", boxShadow: "0 8px 20px -8px rgba(124,58,237,0.6)" }
+                    ? { background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", color: "#fff", boxShadow: "0 8px 20px -8px rgba(16,185,129,0.6)" }
                     : { background: "transparent", color: "#888" }}
                   title={input.trim() ? "Enviar" : "Gravar áudio"}
                 >
