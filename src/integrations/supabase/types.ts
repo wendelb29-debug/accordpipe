@@ -1982,6 +1982,234 @@ export type Database = {
           },
         ]
       }
+      closer_playbooks: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closer_playbooks_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      closer_script_branches: {
+        Row: {
+          branch_content: string | null
+          branch_key: string
+          created_at: string | null
+          id: string
+          label: string
+          next_step_key: string | null
+          script_id: string
+          sort_order: number | null
+        }
+        Insert: {
+          branch_content?: string | null
+          branch_key: string
+          created_at?: string | null
+          id?: string
+          label: string
+          next_step_key?: string | null
+          script_id: string
+          sort_order?: number | null
+        }
+        Update: {
+          branch_content?: string | null
+          branch_key?: string
+          created_at?: string | null
+          id?: string
+          label?: string
+          next_step_key?: string | null
+          script_id?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closer_script_branches_script_id_fkey"
+            columns: ["script_id"]
+            isOneToOne: false
+            referencedRelation: "closer_scripts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      closer_scripts: {
+        Row: {
+          channel: string | null
+          content: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          playbook_id: string
+          sort_order: number | null
+          step_key: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          channel?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          playbook_id: string
+          sort_order?: number | null
+          step_key: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          channel?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          playbook_id?: string
+          sort_order?: number | null
+          step_key?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closer_scripts_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "closer_playbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      closer_session_events: {
+        Row: {
+          branch_key: string | null
+          content: string | null
+          created_at: string | null
+          event_type: string
+          id: string
+          session_id: string
+          step_key: string | null
+        }
+        Insert: {
+          branch_key?: string | null
+          content?: string | null
+          created_at?: string | null
+          event_type: string
+          id?: string
+          session_id: string
+          step_key?: string | null
+        }
+        Update: {
+          branch_key?: string | null
+          content?: string | null
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          session_id?: string
+          step_key?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closer_session_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "closer_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      closer_sessions: {
+        Row: {
+          client_name: string | null
+          client_phone: string | null
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          playbook_id: string | null
+          status: string | null
+          tenant_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          playbook_id?: string | null
+          status?: string | null
+          tenant_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          playbook_id?: string | null
+          status?: string | null
+          tenant_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closer_sessions_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "closer_playbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "closer_sessions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "closer_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cloud_drive_accounts: {
         Row: {
           created_at: string
