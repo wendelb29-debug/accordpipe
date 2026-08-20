@@ -1727,10 +1727,13 @@ export default function Collabs() {
                     <HexAvatar
                       size={44}
                       background={c.color ? `linear-gradient(135deg, ${c.color} 0%, ${c.color}cc 100%)` : hexGradientFor(c.id)}
-                      src={c.kind === "direct" && user ? (() => {
-                        const otherId = Array.from(userMap.keys()).find(uid => uid !== user.id && conversations.some(conv => conv.id === c.id));
-                        return otherId ? userMap.get(otherId)?.avatar_url : (c as any).avatar_url;
-                      })() : (c as any).avatar_url || null}
+                      src={(() => {
+                        if (c.kind === "direct" && user) {
+                          const otherId = Array.from(userMap.keys()).find(uid => uid !== user.id && conversations.some(conv => conv.id === c.id));
+                          return otherId ? userMap.get(otherId)?.avatar_url : (c as any).avatar_url;
+                        }
+                        return (c as any).avatar_url || null;
+                      })()}
                     >
                       <Icon className="h-[18px] w-[18px]" />
                     </HexAvatar>
@@ -1801,7 +1804,13 @@ export default function Collabs() {
               <HexAvatar
                 size={40}
                 background={active.color ? `linear-gradient(135deg, ${active.color} 0%, ${active.color}cc 100%)` : hexGradientFor(active.id)}
-                src={(active as any).avatar_url || null}
+                src={(() => {
+                  if (active.kind === "direct" && user) {
+                    const otherId = Array.from(userMap.keys()).find(uid => uid !== user.id && conversations.some(conv => conv.id === active.id));
+                    return otherId ? userMap.get(otherId)?.avatar_url : (active as any).avatar_url;
+                  }
+                  return (active as any).avatar_url || null;
+                })()}
               >
                 {(() => { const I = KIND_META[active.kind].Icon; return <I className="h-[18px] w-[18px]" />; })()}
               </HexAvatar>
@@ -2444,16 +2453,12 @@ export default function Collabs() {
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition group"
                   >
                     <div className="relative shrink-0">
-                      {u?.avatar_url ? (
-                        <img src={u.avatar_url} alt={name} className="w-10 h-10 rounded-full object-cover shadow-sm" />
-                      ) : (
-                        <div
-                          className="w-10 h-10 rounded-full flex items-center justify-center text-[12px] font-semibold text-white shadow-sm"
-                          style={{ background: avatarColorFor(mem.user_id) }}
-                        >
-                          {initialsOf(name)}
-                        </div>
-                      )}
+                      <HexAvatar
+                        size={40}
+                        src={u?.avatar_url}
+                        initials={initialsOf(name)}
+                        background={avatarColorFor(mem.user_id)}
+                      />
                       <span
                         className={cn(
                           "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white",
