@@ -69,7 +69,7 @@ export default function ServidoresTesteTab() {
       .select(COMPANY_SAFE_COLUMNS)
       .eq("is_trial", true)
       .is("servidor_id", null)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false }) as any;
 
     if (error) {
       console.error(error);

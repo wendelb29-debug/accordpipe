@@ -57,7 +57,7 @@ export function useCompanies() {
     setLoading(true);
     const { data, error } = await supabase
       .from("companies")
-      .select(COMPANY_SAFE_COLUMNS)
+      .select(COMPANY_SAFE_COLUMNS) as any
       .order("created_at", { ascending: false });
 
     if (error) {
