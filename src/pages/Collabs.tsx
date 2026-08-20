@@ -1720,7 +1720,7 @@ export default function Collabs() {
                     className={cn(
                       "flex items-center gap-3 px-2.5 py-2 my-0.5 rounded-xl cursor-pointer transition-all h-[64px]",
                       isActive
-                        ? "bg-emerald-50 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.30)]"
+                        ? "bg-emerald-50 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.30)] border-r-2 border-emerald-500 rounded-r-none"
                         : "hover:bg-gray-50",
                     )}
                   >
@@ -1786,10 +1786,10 @@ export default function Collabs() {
       {/* CHAT MAIN */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {!active ? (
-          <div className="relative flex-1 flex flex-col items-center justify-center text-center px-6 overflow-hidden" style={{ background: "linear-gradient(180deg, #fdfcff 0%, #f5f0fb 100%)" }}>
+          <div className="relative flex-1 flex flex-col items-center justify-center text-center px-6 overflow-hidden" style={{ background: "linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%)" }}>
             <ConstellationCanvas />
             <div className="relative z-10 flex flex-col items-center">
-              <MessageSquare className="h-14 w-14 mb-4 text-violet-300" />
+              <MessageSquare className="h-14 w-14 mb-4 text-emerald-300" />
               <div className="text-base font-semibold text-gray-800">Selecione uma conversa</div>
               <p className="text-sm mt-1 max-w-sm text-gray-500">Suas conversas, canais e collabs do tenant aparecem aqui em tempo real.</p>
             </div>
@@ -1879,7 +1879,7 @@ export default function Collabs() {
                   <Search className="h-[17px] w-[17px]" />
                 </button>
                 <div className="relative">
-                  <button onClick={() => { setInviteTab("colab"); setInviteOpen(true); }} className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors" title="Adicionar membros">
+                  <button onClick={() => { setInviteTab("colab"); setInviteOpen(true); }} className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 transition-colors" title="Adicionar membros">
                     <UserPlus className="h-[17px] w-[17px]" />
                   </button>
                   {memberCount <= 1 && active.kind !== "direct" && !emptyHintDismissed.has(active.id) && (
@@ -2012,16 +2012,18 @@ export default function Collabs() {
                     const time = formatTime(m.created_at);
 
                     return (
-                      <div key={m.id} className={cn("group/msg flex gap-2 mb-2", isSent && "flex-row-reverse")}>
+                      <div key={m.id} className={cn("group/msg flex gap-3 mb-2.5", isSent && "flex-row-reverse")}>
                         {!isSent && (
                           (() => {
                             const senderAvatar = sender?.avatar_url || (active?.kind === "direct" && active.avatar_url);
-                            return senderAvatar ? (
-                              <img src={senderAvatar} alt={senderName} className="w-8 h-8 min-w-8 rounded-full object-cover self-end shadow-sm" />
-                            ) : (
-                              <div className="w-8 h-8 min-w-8 rounded-full flex items-center justify-center text-[11px] font-medium text-white self-end shadow-sm" style={{ background: senderColor }}>
-                                {senderInitials}
-                              </div>
+                            return (
+                              <HexAvatar
+                                size={32}
+                                src={senderAvatar}
+                                initials={senderInitials}
+                                background={senderColor}
+                                className="self-end shadow-sm"
+                              />
                             );
                           })()
                         )}
@@ -2037,10 +2039,10 @@ export default function Collabs() {
                               "flex items-center gap-0.5 bg-white/95 dark:bg-zinc-900/90 backdrop-blur rounded-full shadow-md border border-black/5 dark:border-white/10 px-1 py-0.5 z-10 opacity-0 group-hover/msg:opacity-100 focus-within:opacity-100 transition-opacity",
                               isSent ? "mr-1" : "ml-1",
                             )}>
-                              <button onClick={() => setReactPickerFor(reactPickerFor === m.id ? null : m.id)} title="Reagir" className="w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-violet-600">
+                              <button onClick={() => setReactPickerFor(reactPickerFor === m.id ? null : m.id)} title="Reagir" className="w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-emerald-600">
                                 <SmilePlus className="h-[15px] w-[15px]" />
                               </button>
-                              <button onClick={() => startReply(m)} title="Responder" className="w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-violet-600">
+                              <button onClick={() => startReply(m)} title="Responder" className="w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-emerald-600">
                                 <Reply className="h-[15px] w-[15px]" />
                               </button>
                               <button
@@ -2081,10 +2083,10 @@ export default function Collabs() {
                                   className={cn(
                                     "px-4 py-2.5 text-[13.5px] leading-snug break-words relative",
                                     isSent
-                                      ? "text-white rounded-[22px] rounded-br-md shadow-[0_8px_24px_-10px_rgba(124,58,237,0.55)]"
-                                      : "bg-white/95 text-[#1a1a2e] rounded-[22px] rounded-bl-md backdrop-blur-sm shadow-[0_4px_16px_-6px_rgba(15,23,42,0.10),inset_0_0_0_1px_rgba(124,58,237,0.06)]"
+                                      ? "text-white rounded-[22px] rounded-br-md shadow-[0_8px_24px_-10px_rgba(16,185,129,0.55)]"
+                                      : "bg-white/95 text-[#1a1a2e] rounded-[22px] rounded-bl-md backdrop-blur-sm shadow-[0_4px_16px_-6px_rgba(15,23,42,0.10),inset_0_0_0_1px_rgba(16,185,129,0.06)]"
                                   )}
-                                  style={isSent ? { background: "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)" } : undefined}
+                                  style={isSent ? { background: "linear-gradient(135deg, #10b981 0%, #059669 100%)" } : undefined}
                                 >
                                   {quote && (
                                     <div className="border-l-[3px] pl-2 mb-1.5 rounded-r-md py-0.5" style={{ borderColor: isSent ? "rgba(255,255,255,0.7)" : "#7c3aed", background: isSent ? "rgba(255,255,255,0.08)" : "rgba(124,58,237,0.06)" }}>
@@ -2209,11 +2211,11 @@ export default function Collabs() {
                         )
                       ))}
                     </div>
-                    <div className="bg-white/90 backdrop-blur rounded-full px-3 py-1.5 shadow-sm border border-violet-100 flex items-center gap-1.5">
+                    <div className="bg-white/90 backdrop-blur rounded-full px-3 py-1.5 shadow-sm border border-emerald-100 flex items-center gap-1.5">
                       <span className="flex gap-0.5">
-                        <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: "0ms" }} />
-                        <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: "150ms" }} />
-                        <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce" style={{ animationDelay: "300ms" }} />
                       </span>
                       <span className="text-[11px] text-gray-600">
                         {typingUsersInActive.length === 1
@@ -2333,7 +2335,7 @@ export default function Collabs() {
                   />
                 </div>
               ) : (
-              <div className="flex items-center gap-1.5 bg-white rounded-[24px] pl-3.5 pr-2 py-1.5 shadow-[0_8px_24px_-12px_rgba(124,58,237,0.35),inset_0_0_0_1px_rgba(124,58,237,0.08)]">
+              <div className="flex items-center gap-1.5 bg-white rounded-[24px] pl-3.5 pr-2 py-1.5 shadow-[0_8px_24px_-12px_rgba(16,185,129,0.35),inset_0_0_0_1px_rgba(16,185,129,0.08)]">
                 <div className="flex gap-0.5">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -2370,13 +2372,13 @@ export default function Collabs() {
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <button onClick={() => imageInputRef.current?.click()} title="Enviar imagem" className="w-[32px] h-[32px] rounded-full flex items-center justify-center text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition">
+                  <button onClick={() => imageInputRef.current?.click()} title="Enviar imagem" className="w-[32px] h-[32px] rounded-full flex items-center justify-center text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 transition">
                     <ImageIcon className="h-[17px] w-[17px]" />
                   </button>
-                  <button onClick={() => { setShowEmoji((v) => !v); setShowMentions(false); }} title="Emojis" className={cn("w-[32px] h-[32px] rounded-full flex items-center justify-center transition", showEmoji ? "bg-violet-100 text-violet-700" : "text-gray-500 hover:bg-violet-50 hover:text-violet-600")}>
+                  <button onClick={() => { setShowEmoji((v) => !v); setShowMentions(false); }} title="Emojis" className={cn("w-[32px] h-[32px] rounded-full flex items-center justify-center transition", showEmoji ? "bg-emerald-100 text-emerald-700" : "text-gray-500 hover:bg-emerald-50 hover:text-emerald-600")}>
                     <Smile className="h-[17px] w-[17px]" />
                   </button>
-                  <button onClick={() => { setShowMentions((v) => !v); setShowEmoji(false); }} title="Mencionar" className={cn("w-[32px] h-[32px] rounded-full flex items-center justify-center transition", showMentions ? "bg-violet-100 text-violet-700" : "text-gray-500 hover:bg-violet-50 hover:text-violet-600")}>
+                  <button onClick={() => { setShowMentions((v) => !v); setShowEmoji(false); }} title="Mencionar" className={cn("w-[32px] h-[32px] rounded-full flex items-center justify-center transition", showMentions ? "bg-emerald-100 text-emerald-700" : "text-gray-500 hover:bg-emerald-50 hover:text-emerald-600")}>
                     <AtSign className="h-[17px] w-[17px]" />
                   </button>
                 </div>
@@ -2393,10 +2395,13 @@ export default function Collabs() {
                 />
                 <button
                   onClick={input.trim() ? sendText : startRecording}
-                  className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all"
-                  style={input.trim()
-                    ? { background: "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)", color: "#fff", boxShadow: "0 8px 20px -8px rgba(124,58,237,0.6)" }
-                    : { background: "transparent", color: "#888" }}
+                  className={cn(
+                    "w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all",
+                    input.trim()
+                      ? "text-white shadow-[0_8px_20px_-8px_rgba(16,185,129,0.6)]"
+                      : "text-gray-500 hover:bg-emerald-50 hover:text-emerald-600"
+                  )}
+                  style={input.trim() ? { background: "linear-gradient(135deg, #10b981 0%, #059669 100%)" } : undefined}
                   title={input.trim() ? "Enviar" : "Gravar áudio"}
                 >
                   {input.trim() ? <Send className="h-4 w-4" /> : <Mic className="h-[18px] w-[18px]" />}
