@@ -189,36 +189,11 @@ export function SaveCarIndividual() {
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 max-w-4xl mx-auto w-full font-sans">
       {isKamillaWorkspace && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 font-medium whitespace-pre-wrap">
-          <h4 className="font-black mb-2 uppercase tracking-tighter text-blue-900 border-b border-blue-200 pb-1">Scripts Kamilla</h4>
-          
-          <div className="space-y-4">
-            <div>
-              <p className="font-bold text-[10px] uppercase text-blue-600 mb-1">Etapa 1: Abertura</p>
-              <p className="italic">"Oi, [Nome], tudo bem? Sou Head na Save Car. Vi que você já foi nosso associado e queria entender rapidamente como está sua situação hoje. Você continua com o [Veículo]?"</p>
-            </div>
-
-            <div>
-              <p className="font-bold text-[10px] uppercase text-blue-600 mb-1">Etapa 2: Investigação</p>
-              <p className="italic">"Pergunto porque quero entender se o motivo que levou ao cancelamento ainda existe. Na época, o que mais pesou para você sair?"</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-blue-100">
-              <div>
-                <p className="font-bold text-[10px] uppercase text-blue-600 mb-1">Botão Continuar</p>
-                <p className="italic">"Entendi. E atualmente ele está sem proteção?"</p>
-              </div>
-              <div>
-                <p className="font-bold text-[10px] uppercase text-blue-600 mb-1">Botão Trocou</p>
-                <p className="italic">"Qual veículo você está usando atualmente? Seu veículo novo já está protegido?"</p>
-              </div>
-              <div>
-                <p className="font-bold text-[10px] uppercase text-blue-600 mb-1">Botão Vendeu</p>
-                <p className="italic text-xs">Passo 1: "Está sem veículo atualmente?"</p>
-                <p className="italic text-xs mt-1">Indicação: "Bacana! Consegue me indicar pessoas que você sabe que possuem veículo? Se elas fecharem comigo, te pago um PIX de R$ 50,00!"</p>
-              </div>
-            </div>
-          </div>
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 font-medium mb-6">
+          <p className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            Configuração Kamilla ativa: scripts e botões sincronizados conforme imagem de referência.
+          </p>
         </div>
       )}
       {/* Hero Card */}
