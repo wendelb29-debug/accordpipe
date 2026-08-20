@@ -275,9 +275,19 @@ export function Sidebar() {
             ? "bg-sidebar-primary/20 border border-sidebar-primary/35 text-sidebar-foreground"
             : "bg-sidebar-accent/40 border border-sidebar-border/60 text-sidebar-foreground/60 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground/90"
         )}
+        style={isActive && tenantBranding?.primary_color ? {
+          backgroundColor: `hsl(${hexToHsl(tenantBranding.primary_color)} / 0.2)`,
+          borderColor: `hsl(${hexToHsl(tenantBranding.primary_color)} / 0.35)`
+        } : !isActive && tenantBranding?.primary_color ? {
+          backgroundColor: `hsl(${darkenHsl(hexToHsl(tenantBranding.primary_color) || "0 0% 0%", 30)} / 0.4)`,
+          borderColor: `hsl(${darkenHsl(hexToHsl(tenantBranding.primary_color) || "0 0% 0%", 33)} / 0.6)`
+        } : undefined}
       >
         {isActive && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-sidebar-primary shadow-[0_0_8px_rgba(130,87,240,0.5)]" />
+          <div 
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-sidebar-primary shadow-[0_0_8px_rgba(130,87,240,0.5)]" 
+            style={tenantBranding?.primary_color ? { backgroundColor: tenantBranding.primary_color } : undefined}
+          />
         )}
         <div className="relative shrink-0">
           <BrandIcon
