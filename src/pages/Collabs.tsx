@@ -2395,10 +2395,13 @@ export default function Collabs() {
                 />
                 <button
                   onClick={input.trim() ? sendText : startRecording}
-                  className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all"
-                  style={input.trim()
-                    ? { background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", color: "#fff", boxShadow: "0 8px 20px -8px rgba(16,185,129,0.6)" }
-                    : { background: "transparent", color: "#888" }}
+                  className={cn(
+                    "w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all",
+                    input.trim()
+                      ? "text-white shadow-[0_8px_20px_-8px_rgba(16,185,129,0.6)]"
+                      : "text-gray-500 hover:bg-emerald-50 hover:text-emerald-600"
+                  )}
+                  style={input.trim() ? { background: "linear-gradient(135deg, #10b981 0%, #059669 100%)" } : undefined}
                   title={input.trim() ? "Enviar" : "Gravar áudio"}
                 >
                   {input.trim() ? <Send className="h-4 w-4" /> : <Mic className="h-[18px] w-[18px]" />}
