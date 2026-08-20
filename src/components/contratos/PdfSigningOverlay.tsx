@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { COMPANY_SAFE_COLUMNS } from "@/lib/safeColumns";
 import { FileSignature, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -72,7 +73,7 @@ export function PdfSigningOverlay({ contractId, pdfUrl, currentSignerId, onField
       if (contract.servidor_id) {
         const { data: company } = await supabase
           .from("companies")
-          .select("*")
+          .select(COMPANY_SAFE_COLUMNS)
           .eq("id", contract.servidor_id)
           .single();
         if (company) setServerData(company);

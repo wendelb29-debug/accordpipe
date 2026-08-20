@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { COMPANY_SAFE_COLUMNS } from "@/lib/safeColumns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -56,7 +57,7 @@ export function useCompanies() {
     setLoading(true);
     const { data, error } = await supabase
       .from("companies")
-      .select("*")
+      .select(COMPANY_SAFE_COLUMNS)
       .order("created_at", { ascending: false });
 
     if (error) {

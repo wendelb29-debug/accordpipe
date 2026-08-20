@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { COMPANY_SAFE_COLUMNS } from "@/lib/safeColumns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -231,7 +232,7 @@ ${company.responsavel || "[RESPONSÁVEL]"}`;
   ) => {
     const { data: company, error: companyError } = await supabase
       .from("companies")
-      .select("*")
+      .select(COMPANY_SAFE_COLUMNS)
       .eq("id", companyId)
       .maybeSingle();
 

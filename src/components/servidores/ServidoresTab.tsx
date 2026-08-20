@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { COMPANY_SAFE_COLUMNS } from "@/lib/safeColumns";
 import { useNavigate } from "react-router-dom";
 import {
   Plus, Search, Building2, MoreHorizontal, Pencil, Power, Users, Globe, Loader2, Palette, FileSignature, Shield, Webhook, Briefcase, ShieldCheck, Link2, Copy, Check, ChevronDown, Trash2, CreditCard, Crown, Network, AlertTriangle,
@@ -149,7 +150,7 @@ export default function ServidoresTab() {
       // Global Master sees everything; setup requests only matter for the master.
       let companiesQuery: any = supabase
         .from("companies")
-        .select("*")
+        .select(COMPANY_SAFE_COLUMNS)
         .order("created_at", { ascending: false });
 
       if (isResellerTenant && !isGlobalMaster && activeCompanyId) {
