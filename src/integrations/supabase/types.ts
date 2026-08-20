@@ -1035,47 +1035,93 @@ export type Database = {
       chatbot_agent_teams: {
         Row: {
           agent_id: string | null
+          archived_at: string | null
+          color: string | null
           config: Json
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          description: string | null
+          distribution_method: string | null
+          fallback_action: string | null
+          fallback_team_id: string | null
+          icon: string | null
           id: string
           is_enabled: boolean
+          max_concurrent_conversations: number | null
           position: number
+          queue_timeout_minutes: number | null
+          schedule_mode: string | null
+          status: string | null
           team_id: string
+          team_type: string | null
           tenant_id: string
           updated_at: string
           updated_by: string | null
+          use_business_hours: boolean | null
         }
         Insert: {
           agent_id?: string | null
+          archived_at?: string | null
+          color?: string | null
           config?: Json
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          description?: string | null
+          distribution_method?: string | null
+          fallback_action?: string | null
+          fallback_team_id?: string | null
+          icon?: string | null
           id?: string
           is_enabled?: boolean
+          max_concurrent_conversations?: number | null
           position?: number
+          queue_timeout_minutes?: number | null
+          schedule_mode?: string | null
+          status?: string | null
           team_id: string
+          team_type?: string | null
           tenant_id: string
           updated_at?: string
           updated_by?: string | null
+          use_business_hours?: boolean | null
         }
         Update: {
           agent_id?: string | null
+          archived_at?: string | null
+          color?: string | null
           config?: Json
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          description?: string | null
+          distribution_method?: string | null
+          fallback_action?: string | null
+          fallback_team_id?: string | null
+          icon?: string | null
           id?: string
           is_enabled?: boolean
+          max_concurrent_conversations?: number | null
           position?: number
+          queue_timeout_minutes?: number | null
+          schedule_mode?: string | null
+          status?: string | null
           team_id?: string
+          team_type?: string | null
           tenant_id?: string
           updated_at?: string
           updated_by?: string | null
+          use_business_hours?: boolean | null
         }
         Relationships: [
+          {
+            foreignKeyName: "chatbot_agent_teams_fallback_team_id_fkey"
+            columns: ["fallback_team_id"]
+            isOneToOne: false
+            referencedRelation: "chatbot_agent_teams"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "chatbot_agent_teams_team_id_fkey"
             columns: ["team_id"]
@@ -1932,6 +1978,234 @@ export type Database = {
             columns: ["servidor_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      closer_playbooks: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closer_playbooks_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      closer_script_branches: {
+        Row: {
+          branch_content: string | null
+          branch_key: string
+          created_at: string | null
+          id: string
+          label: string
+          next_step_key: string | null
+          script_id: string
+          sort_order: number | null
+        }
+        Insert: {
+          branch_content?: string | null
+          branch_key: string
+          created_at?: string | null
+          id?: string
+          label: string
+          next_step_key?: string | null
+          script_id: string
+          sort_order?: number | null
+        }
+        Update: {
+          branch_content?: string | null
+          branch_key?: string
+          created_at?: string | null
+          id?: string
+          label?: string
+          next_step_key?: string | null
+          script_id?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closer_script_branches_script_id_fkey"
+            columns: ["script_id"]
+            isOneToOne: false
+            referencedRelation: "closer_scripts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      closer_scripts: {
+        Row: {
+          channel: string | null
+          content: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          playbook_id: string
+          sort_order: number | null
+          step_key: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          channel?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          playbook_id: string
+          sort_order?: number | null
+          step_key: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          channel?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          playbook_id?: string
+          sort_order?: number | null
+          step_key?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closer_scripts_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "closer_playbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      closer_session_events: {
+        Row: {
+          branch_key: string | null
+          content: string | null
+          created_at: string | null
+          event_type: string
+          id: string
+          session_id: string
+          step_key: string | null
+        }
+        Insert: {
+          branch_key?: string | null
+          content?: string | null
+          created_at?: string | null
+          event_type: string
+          id?: string
+          session_id: string
+          step_key?: string | null
+        }
+        Update: {
+          branch_key?: string | null
+          content?: string | null
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          session_id?: string
+          step_key?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closer_session_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "closer_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      closer_sessions: {
+        Row: {
+          client_name: string | null
+          client_phone: string | null
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          playbook_id: string | null
+          status: string | null
+          tenant_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          playbook_id?: string | null
+          status?: string | null
+          tenant_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          playbook_id?: string | null
+          status?: string | null
+          tenant_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closer_sessions_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "closer_playbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "closer_sessions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "closer_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -8422,6 +8696,63 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "team_member_availability_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_schedules: {
+        Row: {
+          created_at: string | null
+          day_of_week: number
+          end_time_1: string | null
+          end_time_2: string | null
+          id: string
+          is_active: boolean | null
+          start_time_1: string | null
+          start_time_2: string | null
+          team_id: string
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          day_of_week: number
+          end_time_1?: string | null
+          end_time_2?: string | null
+          id?: string
+          is_active?: boolean | null
+          start_time_1?: string | null
+          start_time_2?: string | null
+          team_id: string
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          day_of_week?: number
+          end_time_1?: string | null
+          end_time_2?: string | null
+          id?: string
+          is_active?: boolean | null
+          start_time_1?: string | null
+          start_time_2?: string | null
+          team_id?: string
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_schedules_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "chatbot_agent_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_schedules_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "companies"
