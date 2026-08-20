@@ -104,20 +104,32 @@ function AtendimentoContent() {
     <div className="-m-3 lg:-m-4 flex-1 min-h-0 overflow-hidden flex flex-col">
       {backButton}
       <Tabs defaultValue="comercial" className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="mx-3 mt-0.5 mb-0 w-fit h-8">
-          <TabsTrigger value="comercial" className="gap-1.5 text-[11px] h-7 px-3">
-            <BrandIcon icon={MessageSquare} tone="emerald" size="xs" /> Pipeline Comercial
-          </TabsTrigger>
-          <TabsTrigger value="importar" className="gap-1.5 text-[11px] h-7 px-3">
-            <BrandIcon icon={FileSpreadsheet} tone="green" size="xs" /> Importar Planilha
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between mx-3 mt-0.5 mb-0">
+          <TabsList className="w-fit h-8">
+            <TabsTrigger value="comercial" className="gap-1.5 text-[11px] h-7 px-3">
+              <BrandIcon icon={MessageSquare} tone="emerald" size="xs" /> Pipeline Comercial
+            </TabsTrigger>
+            <TabsTrigger value="importar" className="gap-1.5 text-[11px] h-7 px-3">
+              <BrandIcon icon={FileSpreadsheet} tone="green" size="xs" /> Importar Planilha
+            </TabsTrigger>
+            {activeWorkspace?.name === "Kamilla" && (
+              <TabsTrigger value="closer" className="gap-1.5 text-[11px] h-7 px-3">
+                <BrandIcon icon={UserRound} tone="blue" size="xs" /> Closer
+              </TabsTrigger>
+            )}
+          </TabsList>
+        </div>
         <TabsContent value="comercial" className="flex-1 overflow-hidden mt-0">
           <CrmKanbanBoard searchTerm={crmSearch} workspaceId={selectedWsId} />
         </TabsContent>
         <TabsContent value="importar" className="flex-1 overflow-hidden mt-0">
           <ImportarPlanilha />
         </TabsContent>
+        {activeWorkspace?.name === "Kamilla" && (
+          <TabsContent value="closer" className="flex-1 overflow-hidden mt-0">
+            <CloserPanel />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
