@@ -2083,10 +2083,10 @@ export default function Collabs() {
                                   className={cn(
                                     "px-4 py-2.5 text-[13.5px] leading-snug break-words relative",
                                     isSent
-                                      ? "text-white rounded-[22px] rounded-br-md shadow-[0_8px_24px_-10px_rgba(124,58,237,0.55)]"
-                                      : "bg-white/95 text-[#1a1a2e] rounded-[22px] rounded-bl-md backdrop-blur-sm shadow-[0_4px_16px_-6px_rgba(15,23,42,0.10),inset_0_0_0_1px_rgba(124,58,237,0.06)]"
+                                      ? "text-white rounded-[22px] rounded-br-md shadow-[0_8px_24px_-10px_rgba(16,185,129,0.55)]"
+                                      : "bg-white/95 text-[#1a1a2e] rounded-[22px] rounded-bl-md backdrop-blur-sm shadow-[0_4px_16px_-6px_rgba(15,23,42,0.10),inset_0_0_0_1px_rgba(16,185,129,0.06)]"
                                   )}
-                                  style={isSent ? { background: "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)" } : undefined}
+                                  style={isSent ? { background: "linear-gradient(135deg, #10b981 0%, #059669 100%)" } : undefined}
                                 >
                                   {quote && (
                                     <div className="border-l-[3px] pl-2 mb-1.5 rounded-r-md py-0.5" style={{ borderColor: isSent ? "rgba(255,255,255,0.7)" : "#7c3aed", background: isSent ? "rgba(255,255,255,0.08)" : "rgba(124,58,237,0.06)" }}>
