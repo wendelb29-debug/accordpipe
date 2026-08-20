@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useEffect } from "react";
+import type { Database } from "@/integrations/supabase/types";
 
 export type TeamStatus = 'active' | 'inactive' | 'archived';
 export type MemberRole = 'responsible' | 'supervisor' | 'agent' | 'observer';
@@ -104,16 +105,31 @@ export function useTeams() {
       if (!profile) throw new Error("Profile not found");
 
       // 2. Create team
-      // The table expects 'team_id' (FK to chatbot_teams) and 'tenant_id'.
-      // We'll need a real team_id if we were using chatbot_teams, 
-      // but for this rebuild we might be assuming chatbot_agent_teams is the primary.
-      // Looking at types, team_id is NOT NULL. We need to ensure it's handled.
+      // chatbot_agent_teams expects team_id (FK to chatbot_teams)
+      // Since we are rebuilding, we either need to create a chatbot_teams entry first 
+      // or satisfy the constraint.
+      let teamId = (teamData as any).team_id;
+      if (!teamId) {
+         const { data: baseTeam, error: baseError } = await supabase
+           .from("chatbot_teams" as any)
+           .insert([{ 
+             name: teamData.name || "Nova Equipe",
+             tenant_id: profile.company_id 
+           }])
+           .select()
+           .single();
+         if (baseError) throw baseError;
+         teamId = baseTeam.id;
+      }
+
       const { data: team, error: teamError } = await supabase
         .from("chatbot_agent_teams")
         .insert([{ 
           ...teamData, 
           tenant_id: profile.company_id,
-          team_id: (teamData as any).team_id || crypto.randomUUID() // Fallback if missing
+          team_id: teamId,
+          is_enabled: true,
+          config: {}
         } as any])
         .select()
         .single();
@@ -123,10 +139,16 @@ export function useTeams() {
       // 3. Add members if provided
       if (members && members.length > 0) {
         const membersToInsert = members.map(m => ({
-          ...m,
+          user_id: m.user_id,
+          member_role: m.member_role || 'agent',
+          priority: m.priority || 1,
+          max_concurrent: m.max_concurrent,
+          member_status: m.member_status || 'active',
           team_id: team.id,
-          tenant_id: profile.company_id
+          tenant_id: profile.company_id,
+          role: m.member_role || 'agent' // Compatibility with existing 'role' column
         }));
+        
         const { error: memberError } = await supabase
           .from("chatbot_team_members")
           .insert(membersToInsert as any);
@@ -150,7 +172,7 @@ export function useTeams() {
     mutationFn: async ({ id, ...updates }: Partial<Team> & { id: string }) => {
       const { error } = await supabase
         .from("chatbot_agent_teams")
-        .update(updates)
+        .update(updates as any)
         .eq("id", id);
       if (error) throw error;
     },
@@ -164,7 +186,7 @@ export function useTeams() {
     mutationFn: async (id: string) => {
       const { error } = await supabase
         .from("chatbot_agent_teams")
-        .update({ deleted_at: new Date().toISOString() })
+        .update({ deleted_at: new Date().toISOString() } as any)
         .eq("id", id);
       if (error) throw error;
     },
