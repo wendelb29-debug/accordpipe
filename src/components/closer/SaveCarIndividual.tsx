@@ -318,10 +318,10 @@ export function SaveCarIndividual() {
         {step3 && (
           <div className="group rounded-[20px] border border-blue-100 bg-white p-5 sm:p-6 shadow-sm transition-all hover:shadow-md">
             <div className="flex items-center gap-3 mb-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl font-bold bg-blue-600 text-white">
-                3
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl font-bold bg-blue-50 text-blue-600 border border-blue-100">
+                <MessageSquare className="h-5 w-5" />
               </div>
-              <h3 className="text-lg font-black text-slate-900">{step3.title}</h3>
+              <h3 className="text-lg font-black text-slate-900">{isKamillaWorkspace ? "Etapa 3 — Identificação do Motivo" : step3.title}</h3>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
