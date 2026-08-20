@@ -111,41 +111,26 @@ export function SaveCarIndividual() {
       sessionId = await startSession();
     }
 
+    const text = branchKey ? getBranchContent(branchKey) : getProcessedText(content);
+
     if (sessionId) {
       logEvent.mutate({
         session_id: sessionId,
         event_type: type,
         step_key: scriptKey,
         branch_key: branchKey,
-        content: getProcessedText(content)
+        content: text
       });
     }
 
     if (type === 'whatsapp') {
       await syncToKanban();
       const phone = clientData.phone.replace(/\D/g, "");
-      const text = getProcessedText(content);
       const url = phone 
         ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
         : `https://wa.me/?text=${encodeURIComponent(text)}`;
       window.open(url, "_blank");
     }
-  };
-
-  const getProcessedText = (text: string) => {
-    if (!text) return "";
-    let processed = text
-      .replace(/\[Nome\]/g, clientData.name || "[Nome]")
-      .replace(/\[Placa\/Modelo\]/g, clientData.vehicle || "[Placa/Modelo]");
-    
-    // Tratamento especial para o script "Vendeu" que tem dois passos
-    if (text.includes("Está sem veículo atualmente?") && text.includes("Bacana!")) {
-      const parts = text.split("Bacana!");
-      if (vendeuStep === 1) return (clientData.name ? `Oi, ${clientData.name}, tudo bem? ` : "") + parts[0].trim();
-      return "Bacana!" + parts[1];
-    }
-
-    return processed;
   };
 
   const resetSession = () => {
@@ -164,8 +149,7 @@ export function SaveCarIndividual() {
   // Hardcoded logic for Kamilla workspace as requested
   const isKamillaWorkspace = activeWorkspaceId === '0123a22e-807e-424f-abfd-b3a570435f2b';
   
-  const getProcessedText = (text: string, forceCustom?: string) => {
-    if (forceCustom) return forceCustom;
+  const getProcessedText = (text: string) => {
     if (!text) return "";
     let processed = text
       .replace(/\[Nome\]/g, clientData.name || "[Nome]")
@@ -189,13 +173,17 @@ export function SaveCarIndividual() {
   };
 
   const getBranchContent = (branchKey: string) => {
+    let content = "";
     if (isKamillaWorkspace) {
-      if (branchKey === 'continua') return 'Entendi. E atualmente ele está sem proteção?';
-      if (branchKey === 'trocou') return 'Qual veículo você está usando atualmente? Seu veículo novo já está protegido?';
-      if (branchKey === 'vendeu') return 'Está sem veículo atualmente? Bacana! Consegue me indicar pessoas que você sabe que possuem veículo? Se elas fecharem comigo, te pago um PIX de R$ 50,00!';
+      if (branchKey === 'continua') content = 'Entendi. E atualmente ele está sem proteção?';
+      else if (branchKey === 'trocou') content = 'Qual veículo você está usando atualmente? Seu veículo novo já está protegido?';
+      else if (branchKey === 'vendeu') content = 'Está sem veículo atualmente? Bacana! Consegue me indicar pessoas que você sabe que possuem veículo? Se elas fecharem comigo, te pago um PIX de R$ 50,00!';
+    } else {
+      content = step3?.branches?.find(b => b.branch_key === branchKey)?.branch_content || "";
     }
-    return step3?.branches?.find(b => b.branch_key === branchKey)?.branch_content || "";
+    return getProcessedText(content);
   };
+
 
 
   return (
