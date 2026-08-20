@@ -339,7 +339,7 @@ export function Sidebar() {
         "transition-[width,background-color,border-color] duration-300 ease-in-out",
         collapsed ? "w-[60px]" : "w-[232px]"
       )}
-      style={!isMaster && tenantBranding?.primary_color ? {
+      style={!isGlobalMaster && tenantBranding?.primary_color ? {
         backgroundColor: `hsl(${darkenHsl(hexToHsl(tenantBranding.primary_color) || "224 62% 15%", 38)})`,
         borderColor: `hsl(${darkenHsl(hexToHsl(tenantBranding.primary_color) || "224 45% 18%", 33)})`
       } : undefined}
