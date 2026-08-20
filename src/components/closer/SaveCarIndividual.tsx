@@ -187,11 +187,11 @@ export function SaveCarIndividual() {
 
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 max-w-4xl mx-auto w-full font-sans">
+    <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-6 max-w-4xl mx-auto w-full font-sans">
       {isKamillaWorkspace && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 font-medium mb-6">
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-xs sm:text-sm text-blue-800 font-medium mb-6">
           <p className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
+            <Shield className="h-4 w-4 shrink-0" />
             Configuração Kamilla ativa: scripts e botões sincronizados conforme imagem de referência.
           </p>
         </div>
