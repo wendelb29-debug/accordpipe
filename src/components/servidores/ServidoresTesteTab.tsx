@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { COMPANY_SAFE_COLUMNS } from "@/lib/safeColumns";
 import {
   Search, Building2, Phone, Calendar, Clock, CheckCircle, XCircle, AlertTriangle,
   ArrowUpCircle, Lock, Unlock, Download, Eye, MoreHorizontal, Loader2,
@@ -65,7 +66,7 @@ export default function ServidoresTesteTab() {
   const fetchTrialCompanies = async () => {
     const { data, error } = await supabase
       .from("companies")
-      .select("*")
+      .select(COMPANY_SAFE_COLUMNS)
       .eq("is_trial", true)
       .is("servidor_id", null)
       .order("created_at", { ascending: false });

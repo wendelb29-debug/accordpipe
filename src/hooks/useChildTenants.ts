@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { COMPANY_SAFE_COLUMNS } from "@/lib/safeColumns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -44,7 +45,7 @@ export function useChildTenants() {
       // Get children
       const { data: childData } = await supabase
         .from("companies")
-        .select("*")
+        .select(COMPANY_SAFE_COLUMNS)
         .or(`parent_tenant_id.eq.${activeCompanyId},created_by_tenant_id.eq.${activeCompanyId}`)
         .neq("id", activeCompanyId)
         .order("created_at", { ascending: false });
