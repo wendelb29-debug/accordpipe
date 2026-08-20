@@ -47,8 +47,17 @@ export function ImportarPlanilha() {
   const [targetStage, setTargetStage] = useState<string>("novos");
   const [workspaces, setWorkspaces] = useState<any[]>([]);
   const { columns: kanbanStages } = useKanbanColumns(selectedWorkspaceId);
+  // Reset targetStage when workspace changes to avoid invalid stages
+  useEffect(() => {
+    if (selectedWorkspaceId && kanbanStages.length > 0) {
+      setTargetStage(kanbanStages[0].id);
+    } else {
+      setTargetStage("novos");
+    }
+  }, [selectedWorkspaceId, kanbanStages]);
 
   const [importing, setImporting] = useState(false);
+
   const [result, setResult] = useState<DistributionResult | null>(null);
   const [dragOver, setDragOver] = useState(false);
 
