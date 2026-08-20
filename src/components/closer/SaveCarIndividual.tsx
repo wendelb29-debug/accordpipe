@@ -161,6 +161,43 @@ export function SaveCarIndividual() {
   const step2 = sortedScripts.find(s => s.step_key === 'investigacao');
   const step3 = sortedScripts.find(s => s.step_key === 'motivo');
 
+  // Hardcoded logic for Kamilla workspace as requested
+  const isKamillaWorkspace = activeWorkspaceId === '0123a22e-807e-424f-abfd-b3a570435f2b';
+  
+  const getProcessedText = (text: string, forceCustom?: string) => {
+    if (forceCustom) return forceCustom;
+    if (!text) return "";
+    let processed = text
+      .replace(/\[Nome\]/g, clientData.name || "[Nome]")
+      .replace(/\[Placa\/Modelo\]/g, clientData.vehicle || "[Placa/Modelo]");
+    
+    // Tratamento especial para o script "Vendeu" que tem dois passos (somente se for Kamilla ou se o texto bater com o padrão)
+    if (isKamillaWorkspace && text.includes("Está sem veículo atualmente?") && text.includes("Bacana!")) {
+      const parts = text.split("Bacana!");
+      if (vendeuStep === 1) return (clientData.name ? `Oi, ${clientData.name}, tudo bem? ` : "") + parts[0].trim();
+      return "Bacana!" + parts[1];
+    }
+
+    return processed;
+  };
+
+  const getStep2Content = () => {
+    if (isKamillaWorkspace) {
+      return "Pergunto porque quero entender se o motivo que levou ao cancelamento ainda existe. Na época, o que mais pesou para você sair?";
+    }
+    return step2?.content || "";
+  };
+
+  const getBranchContent = (branchKey: string) => {
+    if (isKamillaWorkspace) {
+      if (branchKey === 'continua') return 'Entendi. E atualmente ele está sem proteção?';
+      if (branchKey === 'trocou') return 'Qual veículo você está usando atualmente? Seu veículo novo já está protegido?';
+      if (branchKey === 'vendeu') return 'Está sem veículo atualmente? Bacana! Consegue me indicar pessoas que você sabe que possuem veículo? Se elas fecharem comigo, te pago um PIX de R$ 50,00!';
+    }
+    return step3?.branches?.find(b => b.branch_key === branchKey)?.branch_content || "";
+  };
+
+
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 max-w-4xl mx-auto w-full font-sans">
       {/* Hero Card */}
