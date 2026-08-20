@@ -399,17 +399,17 @@ export function SaveCarIndividual() {
       </div>
 
       {/* Footer Actions */}
-      <div className="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-slate-100 gap-4">
+      <div className="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-slate-100 gap-4 mb-8 sm:mb-0">
         <Button 
           variant="ghost" 
           onClick={resetSession}
-          className="text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl"
+          className="w-full sm:w-auto text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl order-2 sm:order-1"
         >
           <RotateCcw className="h-4 w-4 mr-2" /> Limpar Atendimento
         </Button>
         
         <Button 
-          className="bg-[#0F172A] hover:bg-slate-800 text-white rounded-xl px-10 h-12 font-black shadow-lg shadow-slate-200"
+          className="w-full sm:w-auto bg-[#0F172A] hover:bg-slate-800 text-white rounded-xl px-10 h-12 font-black shadow-lg shadow-slate-200 order-1 sm:order-2"
           disabled={!currentSessionId}
           onClick={() => {
             updateSession.mutate({ id: currentSessionId!, status: 'completed' });
