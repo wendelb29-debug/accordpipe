@@ -710,9 +710,11 @@ export default function Collabs() {
             
             // Play notification sound for incoming messages not from current user
             if (m.sender_id !== user?.id) {
-              const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3");
-              audio.volume = 0.5;
-              audio.play().catch(() => {});
+              if (!audioRef.current) {
+                audioRef.current = new Audio("https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3");
+                audioRef.current.volume = 0.5;
+              }
+              audioRef.current.play().catch(() => {});
               
               // Browser notification
               if (Notification.permission === "granted") {
