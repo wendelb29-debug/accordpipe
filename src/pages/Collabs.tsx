@@ -1727,10 +1727,13 @@ export default function Collabs() {
                     <HexAvatar
                       size={44}
                       background={c.color ? `linear-gradient(135deg, ${c.color} 0%, ${c.color}cc 100%)` : hexGradientFor(c.id)}
-                      src={c.kind === "direct" && user ? (() => {
-                        const otherId = Array.from(userMap.keys()).find(uid => uid !== user.id && conversations.some(conv => conv.id === c.id));
-                        return otherId ? userMap.get(otherId)?.avatar_url : (c as any).avatar_url;
-                      })() : (c as any).avatar_url || null}
+                      src={(() => {
+                        if (c.kind === "direct" && user) {
+                          const otherId = Array.from(userMap.keys()).find(uid => uid !== user.id && conversations.some(conv => conv.id === c.id));
+                          return otherId ? userMap.get(otherId)?.avatar_url : (c as any).avatar_url;
+                        }
+                        return (c as any).avatar_url || null;
+                      })()}
                     >
                       <Icon className="h-[18px] w-[18px]" />
                     </HexAvatar>
@@ -1801,7 +1804,13 @@ export default function Collabs() {
               <HexAvatar
                 size={40}
                 background={active.color ? `linear-gradient(135deg, ${active.color} 0%, ${active.color}cc 100%)` : hexGradientFor(active.id)}
-                src={(active as any).avatar_url || null}
+                src={(() => {
+                  if (active.kind === "direct" && user) {
+                    const otherId = Array.from(userMap.keys()).find(uid => uid !== user.id && conversations.some(conv => conv.id === active.id));
+                    return otherId ? userMap.get(otherId)?.avatar_url : (active as any).avatar_url;
+                  }
+                  return (active as any).avatar_url || null;
+                })()}
               >
                 {(() => { const I = KIND_META[active.kind].Icon; return <I className="h-[18px] w-[18px]" />; })()}
               </HexAvatar>
