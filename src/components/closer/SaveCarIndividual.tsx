@@ -373,24 +373,18 @@ export function SaveCarIndividual() {
                   </div>
                 )}
 
-                <div className="relative rounded-[20px] bg-blue-600 p-6 text-white shadow-lg">
-                  <p className="text-sm sm:text-base leading-relaxed font-medium mb-6">
+                <div className="relative rounded-[20px] bg-[#0F172A] p-6 text-white shadow-lg overflow-hidden">
+                  <p className="text-sm sm:text-base leading-relaxed font-bold mb-6 text-center relative z-10">
                     {selectedBranchKey && getBranchContent(selectedBranchKey)}
                   </p>
                   
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center gap-3 relative z-10">
                     <Button 
                       onClick={() => handleAction('copy', step3.step_key, "", selectedBranchKey)}
-                      variant="secondary"
-                      className="bg-white/10 hover:bg-white/20 text-white border-none rounded-xl h-10 gap-2 px-6 font-bold flex-1 sm:flex-none"
+                      variant="ghost"
+                      className="hover:bg-white/10 text-white/60 hover:text-white border-none rounded-xl h-10 gap-2 px-6 font-bold"
                     >
-                      <Copy className="h-4 w-4" /> Copiar
-                    </Button>
-                    <Button 
-                      onClick={() => handleAction('whatsapp', step3.step_key, "", selectedBranchKey)}
-                      className="bg-emerald-500 hover:bg-emerald-600 text-white border-none rounded-xl h-10 gap-2 px-6 font-bold flex-1 sm:flex-none"
-                    >
-                      <MessageCircle className="h-4 w-4 fill-current" /> WhatsApp
+                      <Copy className="h-4 w-4" /> Copiar Script
                     </Button>
                   </div>
                 </div>
