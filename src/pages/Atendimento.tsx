@@ -9,7 +9,8 @@ import { WorkspaceHub } from "@/components/atendimento/WorkspaceHub";
 import { WorkspaceProvider, useWorkspaceContext } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBackNavigation } from "@/contexts/BackNavigationContext";
-import { MessageSquare, ClipboardList, FileSpreadsheet } from "lucide-react";
+import { MessageSquare, ClipboardList, FileSpreadsheet, UserRound } from "lucide-react";
+import { CloserPanel } from "@/components/closer/CloserPanel";
 
 function AtendimentoContent() {
   const [crmSearch] = useState("");
