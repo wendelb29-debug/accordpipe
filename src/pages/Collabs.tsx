@@ -1786,10 +1786,10 @@ export default function Collabs() {
       {/* CHAT MAIN */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {!active ? (
-          <div className="relative flex-1 flex flex-col items-center justify-center text-center px-6 overflow-hidden" style={{ background: "linear-gradient(180deg, #fdfcff 0%, #f5f0fb 100%)" }}>
+          <div className="relative flex-1 flex flex-col items-center justify-center text-center px-6 overflow-hidden" style={{ background: "linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%)" }}>
             <ConstellationCanvas />
             <div className="relative z-10 flex flex-col items-center">
-              <MessageSquare className="h-14 w-14 mb-4 text-violet-300" />
+              <MessageSquare className="h-14 w-14 mb-4 text-emerald-300" />
               <div className="text-base font-semibold text-gray-800">Selecione uma conversa</div>
               <p className="text-sm mt-1 max-w-sm text-gray-500">Suas conversas, canais e collabs do tenant aparecem aqui em tempo real.</p>
             </div>
@@ -2012,16 +2012,18 @@ export default function Collabs() {
                     const time = formatTime(m.created_at);
 
                     return (
-                      <div key={m.id} className={cn("group/msg flex gap-2 mb-2", isSent && "flex-row-reverse")}>
+                      <div key={m.id} className={cn("group/msg flex gap-3 mb-2.5", isSent && "flex-row-reverse")}>
                         {!isSent && (
                           (() => {
                             const senderAvatar = sender?.avatar_url || (active?.kind === "direct" && active.avatar_url);
-                            return senderAvatar ? (
-                              <img src={senderAvatar} alt={senderName} className="w-8 h-8 min-w-8 rounded-full object-cover self-end shadow-sm" />
-                            ) : (
-                              <div className="w-8 h-8 min-w-8 rounded-full flex items-center justify-center text-[11px] font-medium text-white self-end shadow-sm" style={{ background: senderColor }}>
-                                {senderInitials}
-                              </div>
+                            return (
+                              <HexAvatar
+                                size={32}
+                                src={senderAvatar}
+                                initials={senderInitials}
+                                background={senderColor}
+                                className="self-end shadow-sm"
+                              />
                             );
                           })()
                         )}
