@@ -245,10 +245,10 @@ export function SaveCarIndividual() {
           <div className="group rounded-[20px] border border-emerald-100 bg-white p-5 sm:p-6 shadow-sm transition-all hover:shadow-md">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl font-bold bg-emerald-500 text-white">
-                  1
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">
+                  <UserRound className="h-5 w-5" />
                 </div>
-                <h3 className="text-lg font-black text-slate-900">{step1.title}</h3>
+                <h3 className="text-lg font-black text-slate-900">{isKamillaWorkspace ? "Etapa 1 — Abertura" : step1.title}</h3>
               </div>
               
               <div className="flex items-center gap-2 w-full sm:w-auto">
