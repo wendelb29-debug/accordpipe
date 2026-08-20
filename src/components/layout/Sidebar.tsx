@@ -275,12 +275,9 @@ export function Sidebar() {
             ? "bg-sidebar-primary/20 border border-sidebar-primary/35 text-sidebar-foreground"
             : "bg-sidebar-accent/40 border border-sidebar-border/60 text-sidebar-foreground/60 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground/90"
         )}
-        style={isActive && tenantBranding?.primary_color ? {
-          backgroundColor: `hsl(${hexToHsl(tenantBranding.primary_color)} / 0.2)`,
-          borderColor: `hsl(${hexToHsl(tenantBranding.primary_color)} / 0.35)`
-        } : !isActive && tenantBranding?.primary_color ? {
-          backgroundColor: `hsl(${darkenHsl(hexToHsl(tenantBranding.primary_color) || "0 0% 0%", 30)} / 0.4)`,
-          borderColor: `hsl(${darkenHsl(hexToHsl(tenantBranding.primary_color) || "0 0% 0%", 33)} / 0.6)`
+        style={isActive ? {
+          backgroundColor: tenantBranding?.primary_color ? `hsl(${hexToHsl(tenantBranding.primary_color)} / 0.2)` : undefined,
+          borderColor: tenantBranding?.primary_color ? `hsl(${hexToHsl(tenantBranding.primary_color)} / 0.35)` : undefined
         } : undefined}
       >
         {isActive && (
