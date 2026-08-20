@@ -324,7 +324,7 @@ export function SaveCarIndividual() {
               <h3 className="text-lg font-black text-slate-900">{isKamillaWorkspace ? "Etapa 3 — Identificação do Motivo" : step3.title}</h3>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+            <div className="flex flex-wrap gap-3 mb-6">
               {step3.branches?.map((branch) => (
                 <button
                   key={branch.id}
@@ -333,7 +333,7 @@ export function SaveCarIndividual() {
                     handleAction('branch', step3.step_key, branch.branch_content || "", branch.branch_key);
                   }}
                   className={cn(
-                    "h-12 rounded-xl text-sm font-bold transition-all border flex items-center justify-center gap-2 shadow-sm",
+                    "h-12 flex-1 min-w-[100px] rounded-xl text-sm font-bold transition-all border flex items-center justify-center gap-2 shadow-sm",
                     selectedBranchKey === branch.branch_key 
                       ? "bg-blue-600 border-blue-600 text-white translate-y-[1px]" 
                       : "bg-white border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600"
