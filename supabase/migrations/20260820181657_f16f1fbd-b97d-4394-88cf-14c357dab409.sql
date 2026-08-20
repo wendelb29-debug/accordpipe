@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.enforce_companies_privileged_columns() FROM PUBLIC, anon, authenticated;
