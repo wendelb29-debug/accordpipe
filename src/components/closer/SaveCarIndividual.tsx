@@ -292,7 +292,7 @@ export function SaveCarIndividual() {
 
             <div className="relative rounded-2xl bg-slate-50 border border-slate-100 p-4 sm:p-5">
               <p className="text-sm sm:text-base leading-relaxed text-slate-700 italic">
-                "Pergunto porque quero entender se o motivo que levou ao cancelamento ainda existe. Na época, o que mais pesou para você sair?"
+                "{getProcessedText(getStep2Content())}"
               </p>
             </div>
           </div>
