@@ -141,7 +141,7 @@ export function SaveCarIndividual() {
     // Tratamento especial para o script "Vendeu" que tem dois passos
     if (text.includes("Está sem veículo atualmente?") && text.includes("Bacana!")) {
       const parts = text.split("Bacana!");
-      if (vendeuStep === 1) return parts[0].trim();
+      if (vendeuStep === 1) return (clientData.name ? `Oi, ${clientData.name}, tudo bem? ` : "") + parts[0].trim();
       return "Bacana!" + parts[1];
     }
 
