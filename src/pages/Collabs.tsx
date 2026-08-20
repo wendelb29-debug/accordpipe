@@ -1879,7 +1879,7 @@ export default function Collabs() {
                   <Search className="h-[17px] w-[17px]" />
                 </button>
                 <div className="relative">
-                  <button onClick={() => { setInviteTab("colab"); setInviteOpen(true); }} className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors" title="Adicionar membros">
+                  <button onClick={() => { setInviteTab("colab"); setInviteOpen(true); }} className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 transition-colors" title="Adicionar membros">
                     <UserPlus className="h-[17px] w-[17px]" />
                   </button>
                   {memberCount <= 1 && active.kind !== "direct" && !emptyHintDismissed.has(active.id) && (
@@ -2039,10 +2039,10 @@ export default function Collabs() {
                               "flex items-center gap-0.5 bg-white/95 dark:bg-zinc-900/90 backdrop-blur rounded-full shadow-md border border-black/5 dark:border-white/10 px-1 py-0.5 z-10 opacity-0 group-hover/msg:opacity-100 focus-within:opacity-100 transition-opacity",
                               isSent ? "mr-1" : "ml-1",
                             )}>
-                              <button onClick={() => setReactPickerFor(reactPickerFor === m.id ? null : m.id)} title="Reagir" className="w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-violet-600">
+                              <button onClick={() => setReactPickerFor(reactPickerFor === m.id ? null : m.id)} title="Reagir" className="w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-emerald-600">
                                 <SmilePlus className="h-[15px] w-[15px]" />
                               </button>
-                              <button onClick={() => startReply(m)} title="Responder" className="w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-violet-600">
+                              <button onClick={() => startReply(m)} title="Responder" className="w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-emerald-600">
                                 <Reply className="h-[15px] w-[15px]" />
                               </button>
                               <button
