@@ -2011,13 +2011,16 @@ export default function Collabs() {
                     return (
                       <div key={m.id} className={cn("group/msg flex gap-2 mb-2", isSent && "flex-row-reverse")}>
                         {!isSent && (
-                          sender?.avatar_url ? (
-                            <img src={sender.avatar_url} alt={senderName} className="w-8 h-8 min-w-8 rounded-full object-cover self-end shadow-sm" />
-                          ) : (
-                            <div className="w-8 h-8 min-w-8 rounded-full flex items-center justify-center text-[11px] font-medium text-white self-end shadow-sm" style={{ background: senderColor }}>
-                              {senderInitials}
-                            </div>
-                          )
+                          (() => {
+                            const senderAvatar = sender?.avatar_url || (active?.kind === "direct" && active.avatar_url);
+                            return senderAvatar ? (
+                              <img src={senderAvatar} alt={senderName} className="w-8 h-8 min-w-8 rounded-full object-cover self-end shadow-sm" />
+                            ) : (
+                              <div className="w-8 h-8 min-w-8 rounded-full flex items-center justify-center text-[11px] font-medium text-white self-end shadow-sm" style={{ background: senderColor }}>
+                                {senderInitials}
+                              </div>
+                            );
+                          })()
                         )}
                         <div className={cn("flex flex-col gap-1 max-w-[68%] min-w-0", isSent && "items-end")}>
                           {!isSent && (
