@@ -162,6 +162,12 @@ export function PermissionsEditor({ userId, isCeoOrMaster, onClose }: Permission
     if (mods.length > 0) groupedModules[group] = mods;
   }
 
+  // Handle modules that don't belong to any group in MODULE_GROUPS
+  const ungroupedMods = filteredModules.filter(m => !MODULE_GROUPS.includes(m.group as any));
+  if (ungroupedMods.length > 0) {
+    groupedModules["Outros"] = [...(groupedModules["Outros"] || []), ...ungroupedMods];
+  }
+
   const grantedCount = ALL_PERMISSION_KEYS.filter(k => localPerms[k]?.granted).length;
 
   return (

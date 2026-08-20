@@ -420,6 +420,7 @@ export const ROUTE_PERMISSIONS: Record<string, string> = {
   // newly invited users (whose role default lacks view_dashboard) get
   // "Acesso Negado" right after accepting the invite.
   "/dashboard": "view_dashboard",
+  "/crm-dashboard": "view_pipeline",
   "/atendimento": "view_pipeline",
   "/formularios": "view_forms",
   "/atividades": "view_activities",
@@ -437,6 +438,8 @@ export const ROUTE_PERMISSIONS: Record<string, string> = {
   "/empresas": "edit_clients",
   "/accord-stack": "view_conversations",
   "/configuracoes/auditoria": "view_audit_logs",
+  "/configuracoes/atendimento": "manage_integrations",
+  "/configuracoes/logs": "view_audit_logs",
   "/performance": "view_performance_module",
   "/planos": "view_billing_plans",
   "/eventos": "view_events",
@@ -445,6 +448,7 @@ export const ROUTE_PERMISSIONS: Record<string, string> = {
   "/academy": "view_academy",
   "/contatos": "view_contacts",
   "/marketing/envio-massa": "send_broadcast",
+  "/solicitacoes": "view_clients",
 };
 
 // Legacy permission key mapping (old -> new) for backward compatibility
