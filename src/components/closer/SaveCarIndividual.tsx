@@ -282,10 +282,10 @@ export function SaveCarIndividual() {
           <div className="group rounded-[20px] border border-slate-200 bg-white p-5 sm:p-6 shadow-sm transition-all hover:shadow-md">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl font-bold bg-[#0F172A] text-white">
-                  2
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl font-bold bg-slate-50 text-slate-600 border border-slate-100">
+                  <Zap className="h-5 w-5" />
                 </div>
-                <h3 className="text-lg font-black text-slate-900">{step2.title}</h3>
+                <h3 className="text-lg font-black text-slate-900">{isKamillaWorkspace ? "Etapa 2 — Investigação Consultiva" : step2.title}</h3>
               </div>
               
               <div className="flex items-center gap-2 w-full sm:w-auto">
