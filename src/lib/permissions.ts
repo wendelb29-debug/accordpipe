@@ -2,6 +2,7 @@ import {
   LayoutDashboard, ShoppingCart, FileText, Activity, DollarSign, 
   FolderOpen, BarChart3, FileSignature, Users, Trash2, 
   MessageSquare, UserCog, Columns3, Package, Settings, Bot,
+  Send, GraduationCap, Handshake, UsersRound,
   type LucideIcon
 } from "lucide-react";
 
