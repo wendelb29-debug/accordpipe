@@ -347,7 +347,7 @@ export function WorkspacePermissionsEditor({ userId, userRole, isCeoOrMaster, on
               <span className="flex items-center gap-1 cursor-help"><Eye className="h-3.5 w-3.5" /> Visualizar</span>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="text-xs max-w-[200px]">
-              Permite ver o workspace e seus dados
+              quando selecionar o olho ela poder visualizar o whorkspace mas nao conseguir fazer nenhuma ediçao
             </TooltipContent>
           </Tooltip>
           <Tooltip>
@@ -355,7 +355,7 @@ export function WorkspacePermissionsEditor({ userId, userRole, isCeoOrMaster, on
               <span className="flex items-center gap-1 cursor-help"><Settings2 className="h-3.5 w-3.5" /> Operar</span>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="text-xs max-w-[200px]">
-              Mover cards, editar dados, criar registros e interagir no workspace
+              quando selecionar a engrenagem ela poder operar no workspace
             </TooltipContent>
           </Tooltip>
           <Tooltip>
