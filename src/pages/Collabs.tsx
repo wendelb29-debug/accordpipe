@@ -382,7 +382,12 @@ export default function Collabs() {
     const m = new Map<string, MentionUser>();
     tenantUsers.forEach((u) => m.set(u.id, u));
     // Member profiles override/fill missing entries so avatars always show
-    memberProfiles.forEach((u, id) => { if (!m.has(id) || !m.get(id)?.avatar_url) m.set(id, u); });
+    memberProfiles.forEach((u, id) => { 
+      const existing = m.get(id);
+      if (!existing || (!existing.avatar_url && u.avatar_url)) {
+        m.set(id, { ...u, name: u.name || existing?.name || "Usuário" }); 
+      }
+    });
     return m;
   }, [tenantUsers, memberProfiles]);
 
