@@ -31,7 +31,7 @@ interface DistributionResult {
   perOperator: { name: string; count: number }[];
 }
 
-type DistributionMethod = "round-robin" | "tags" | "cpf-cnpj";
+type DistributionMethod = "round-robin" | "tags" | "cpf-cnpj" | "no-distribution";
 
 export function ImportarPlanilha() {
   const { profile } = useAuth();
@@ -40,7 +40,7 @@ export function ImportarPlanilha() {
   const [parsedData, setParsedData] = useState<any[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
   const [fileName, setFileName] = useState("");
-  const [distribMethod, setDistribMethod] = useState<DistributionMethod>("round-robin");
+  const [distribMethod, setDistribMethod] = useState<DistributionMethod>("no-distribution");
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<DistributionResult | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -199,6 +199,7 @@ export function ImportarPlanilha() {
           return { userId: op.user_id, userName: op.name };
         }
 
+        if (distribMethod === "no-distribution") return fallback;
         return fallback;
       };
 
@@ -258,7 +259,7 @@ export function ImportarPlanilha() {
       setResult({ total: imported, perOperator });
       setParsedData([]);
       setFileName("");
-      toast.success(`${imported} leads importados e distribuídos com sucesso!`);
+      toast.success(`${imported} leads importados com sucesso!`);
     } catch (err) {
       console.error(err);
       toast.error("Erro ao importar leads.");
@@ -272,7 +273,7 @@ export function ImportarPlanilha() {
       <div>
         <h2 className="text-lg font-bold text-foreground">Importar Leads</h2>
         <p className="text-sm text-muted-foreground">
-          Importe leads em massa via planilha CSV ou XLSX e distribua entre operadores
+          Importe leads em massa via planilha CSV ou XLSX para este workspace
         </p>
       </div>
 
@@ -350,6 +351,9 @@ export function ImportarPlanilha() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="no-distribution">
+                    <span className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5" /> Apenas Subir (Sem Distribuição)</span>
+                  </SelectItem>
                   <SelectItem value="round-robin">
                     <span className="flex items-center gap-2"><Users className="h-3.5 w-3.5" /> Partes Iguais (Round Robin)</span>
                   </SelectItem>
@@ -365,6 +369,7 @@ export function ImportarPlanilha() {
 
             <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
               <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              {distribMethod === "no-distribution" && "Os leads serão importados para o workspace atual sem serem distribuídos individualmente."}
               {distribMethod === "round-robin" && "Distribui sequencialmente entre operadores ativos, priorizando quem recebeu leads há mais tempo."}
               {distribMethod === "tags" && "Cruza as tags da planilha com as tags dos operadores. Sem correspondência = fallback round-robin."}
               {distribMethod === "cpf-cnpj" && "Se o CPF/CNPJ já existe na base, atribui ao operador original. Novo documento = fallback round-robin."}
@@ -424,7 +429,7 @@ export function ImportarPlanilha() {
               <div>
                 <p className="font-semibold text-foreground">Importação concluída!</p>
                 <p className="text-sm text-muted-foreground">
-                  {result.total} leads importados e distribuídos com sucesso.
+                  {result.total} leads importados com sucesso.
                 </p>
               </div>
             </div>
