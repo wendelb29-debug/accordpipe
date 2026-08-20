@@ -355,12 +355,7 @@ export function SaveCarIndividual() {
 
                 <div className="relative rounded-[20px] bg-blue-600 p-6 text-white shadow-lg">
                   <p className="text-sm sm:text-base leading-relaxed font-medium mb-6">
-                    {getProcessedText(
-                      selectedBranchKey === 'continua' ? 'Entendi. E atualmente ele está sem proteção?' :
-                      selectedBranchKey === 'trocou' ? 'Qual veículo você está usando atualmente? Seu veículo novo já está protegido?' :
-                      selectedBranchKey === 'vendeu' ? 'Está sem veículo atualmente? Bacana! Consegue me indicar pessoas que você sabe que possuem veículo? Se elas fecharem comigo, te pago um PIX de R$ 50,00!' :
-                      step3.branches?.find(b => b.branch_key === selectedBranchKey)?.branch_content || ""
-                    )}
+                    {selectedBranchKey && getBranchContent(selectedBranchKey)}
                   </p>
                   
                   <div className="flex items-center gap-3">
