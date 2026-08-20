@@ -2453,16 +2453,12 @@ export default function Collabs() {
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition group"
                   >
                     <div className="relative shrink-0">
-                      {u?.avatar_url ? (
-                        <img src={u.avatar_url} alt={name} className="w-10 h-10 rounded-full object-cover shadow-sm" />
-                      ) : (
-                        <div
-                          className="w-10 h-10 rounded-full flex items-center justify-center text-[12px] font-semibold text-white shadow-sm"
-                          style={{ background: avatarColorFor(mem.user_id) }}
-                        >
-                          {initialsOf(name)}
-                        </div>
-                      )}
+                      <HexAvatar
+                        size={40}
+                        src={u?.avatar_url}
+                        initials={initialsOf(name)}
+                        background={avatarColorFor(mem.user_id)}
+                      />
                       <span
                         className={cn(
                           "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white",
