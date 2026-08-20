@@ -49,14 +49,13 @@ import {
   Handshake,
   Rocket as RocketIcon,
   Send,
-
-
 } from "lucide-react";
+import { hexToHsl, darkenHsl } from "./ThemeSync";
 import { cn } from "@/lib/utils";
 import { prefetchRoute } from "@/lib/routePrefetch";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTenantLogo } from "@/hooks/useTenantLogo";
+import { useTenantLogo, useTenantBranding } from "@/hooks/useTenantLogo";
 import { useOverdueCount } from "@/hooks/useOverdueCount";
 import { useUnreadEmailCount } from "@/hooks/useUnreadEmailCount";
 
@@ -204,6 +203,7 @@ export function Sidebar() {
   const { role, signOut, profile, isMasterTenantAdmin, isGlobalMaster, isResellerTenant } = useAuth();
   const activeCompanyId = useActiveCompanyId();
   const tenantLogoUrl = useTenantLogo(activeCompanyId);
+  const tenantBranding = useTenantBranding(activeCompanyId);
   const overdueCount = useOverdueCount();
   const unreadEmailCount = useUnreadEmailCount();
   
@@ -329,9 +329,13 @@ export function Sidebar() {
       onMouseLeave={handleMouseLeave}
       className={cn(
         "fixed left-0 top-0 z-40 h-screen border-r border-sidebar-border bg-sidebar flex flex-col",
-        "transition-[width] duration-300 ease-in-out",
+        "transition-[width,background-color,border-color] duration-300 ease-in-out",
         collapsed ? "w-[60px]" : "w-[232px]"
       )}
+      style={tenantBranding?.primary_color ? {
+        backgroundColor: `hsl(${darkenHsl(hexToHsl(tenantBranding.primary_color) || "224 62% 15%", 38)})`,
+        borderColor: `hsl(${darkenHsl(hexToHsl(tenantBranding.primary_color) || "224 45% 18%", 33)})`
+      } : undefined}
     >
       {/* Logo */}
       <div className={cn(
