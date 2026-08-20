@@ -243,20 +243,27 @@ export function ImportarPlanilha() {
           distributionCount.set(userId, { name: userName, count: 1 });
         }
 
+        // Helper to find column index by name (case-insensitive)
+        const getVal = (rowData: any, fieldName: string) => {
+          const keys = Object.keys(rowData);
+          const match = keys.find(k => k.toLowerCase() === fieldName.toLowerCase());
+          return match ? rowData[match] : null;
+        };
+
         return {
           servidor_id: companyId,
           workspace_id: selectedWorkspaceId || null,
-          company_name: lead["Empresa"] || "Lead via Planilha",
-          contact_name: lead["Nome"] || null,
-          email: lead["E-mail"] || null,
-          phone: lead["Telefone"] || null,
-          documento: lead["CPF/CNPJ"] || null,
-          value_ps: Number(lead["Valor P&S"]) || 0,
-          value_mrr: Number(lead["Valor MRR"]) || 0,
+          company_name: getVal(lead, "Empresa") || getVal(lead, "Empresa") || "Lead via Planilha",
+          contact_name: getVal(lead, "Nome") || null,
+          email: getVal(lead, "E-mail") || getVal(lead, "Email") || null,
+          phone: getVal(lead, "Telefone") || getVal(lead, "WhatsApp") || getVal(lead, "Celular") || null,
+          documento: getVal(lead, "CPF/CNPJ") || getVal(lead, "Documento") || getVal(lead, "CPF") || getVal(lead, "CNPJ") || null,
+          value_ps: Number(getVal(lead, "Valor P&S")) || 0,
+          value_mrr: Number(getVal(lead, "Valor MRR")) || 0,
           stage: targetStage || "novos",
           source: "Planilha",
           lead_status: "open",
-          tags: lead["Tags"] ? String(lead["Tags"]).split(",").map(t => t.trim()).filter(Boolean) : [],
+          tags: getVal(lead, "Tags") ? String(getVal(lead, "Tags")).split(",").map(t => t.trim()).filter(Boolean) : [],
           created_by_user_id: userId,
           created_by_name: userName,
         };
