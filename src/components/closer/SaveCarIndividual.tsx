@@ -141,7 +141,7 @@ export function SaveCarIndividual() {
     // Tratamento especial para o script "Vendeu" que tem dois passos
     if (text.includes("Está sem veículo atualmente?") && text.includes("Bacana!")) {
       const parts = text.split("Bacana!");
-      if (vendeuStep === 1) return parts[0].trim();
+      if (vendeuStep === 1) return (clientData.name ? `Oi, ${clientData.name}, tudo bem? ` : "") + parts[0].trim();
       return "Bacana!" + parts[1];
     }
 
@@ -267,7 +267,7 @@ export function SaveCarIndividual() {
 
             <div className="relative rounded-2xl bg-slate-50 border border-slate-100 p-4 sm:p-5">
               <p className="text-sm sm:text-base leading-relaxed text-slate-700 italic">
-                "{getProcessedText(step2.content)}"
+                "Pergunto porque quero entender se o motivo que levou ao cancelamento ainda existe. Na época, o que mais pesou para você sair?"
               </p>
             </div>
           </div>
@@ -330,19 +330,34 @@ export function SaveCarIndividual() {
 
                 <div className="relative rounded-[20px] bg-blue-600 p-6 text-white shadow-lg">
                   <p className="text-sm sm:text-base leading-relaxed font-medium mb-6">
-                    {getProcessedText(step3.branches?.find(b => b.branch_key === selectedBranchKey)?.branch_content || "")}
+                    {getProcessedText(
+                      selectedBranchKey === 'continua' ? 'Entendi. E atualmente ele está sem proteção?' :
+                      selectedBranchKey === 'trocou' ? 'Qual veículo você está usando atualmente? Seu veículo novo já está protegido?' :
+                      selectedBranchKey === 'vendeu' ? 'Está sem veículo atualmente? Bacana! Consegue me indicar pessoas que você sabe que possuem veículo? Se elas fecharem comigo, te pago um PIX de R$ 50,00!' :
+                      step3.branches?.find(b => b.branch_key === selectedBranchKey)?.branch_content || ""
+                    )}
                   </p>
                   
                   <div className="flex items-center gap-3">
                     <Button 
-                      onClick={() => handleAction('copy', step3.step_key, step3.branches?.find(b => b.branch_key === selectedBranchKey)?.branch_content || "")}
+                      onClick={() => handleAction('copy', step3.step_key, 
+                        selectedBranchKey === 'continua' ? 'Entendi. E atualmente ele está sem proteção?' :
+                        selectedBranchKey === 'trocou' ? 'Qual veículo você está usando atualmente? Seu veículo novo já está protegido?' :
+                        selectedBranchKey === 'vendeu' ? 'Está sem veículo atualmente? Bacana! Consegue me indicar pessoas que você sabe que possuem veículo? Se elas fecharem comigo, te pago um PIX de R$ 50,00!' :
+                        step3.branches?.find(b => b.branch_key === selectedBranchKey)?.branch_content || ""
+                      )}
                       variant="secondary"
                       className="bg-white/10 hover:bg-white/20 text-white border-none rounded-xl h-10 gap-2 px-6 font-bold flex-1 sm:flex-none"
                     >
                       <Copy className="h-4 w-4" /> Copiar
                     </Button>
                     <Button 
-                      onClick={() => handleAction('whatsapp', step3.step_key, step3.branches?.find(b => b.branch_key === selectedBranchKey)?.branch_content || "")}
+                      onClick={() => handleAction('whatsapp', step3.step_key, 
+                        selectedBranchKey === 'continua' ? 'Entendi. E atualmente ele está sem proteção?' :
+                        selectedBranchKey === 'trocou' ? 'Qual veículo você está usando atualmente? Seu veículo novo já está protegido?' :
+                        selectedBranchKey === 'vendeu' ? 'Está sem veículo atualmente? Bacana! Consegue me indicar pessoas que você sabe que possuem veículo? Se elas fecharem comigo, te pago um PIX de R$ 50,00!' :
+                        step3.branches?.find(b => b.branch_key === selectedBranchKey)?.branch_content || ""
+                      )}
                       className="bg-emerald-500 hover:bg-emerald-600 text-white border-none rounded-xl h-10 gap-2 px-6 font-bold flex-1 sm:flex-none"
                     >
                       <MessageCircle className="h-4 w-4 fill-current" /> WhatsApp
