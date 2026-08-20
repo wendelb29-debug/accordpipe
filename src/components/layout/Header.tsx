@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChangePasswordDialog } from "@/components/auth/ChangePasswordDialog";
 import { MinhaContaDialog } from "@/components/minha-conta/MinhaContaDialog";
+import { UserAvatar } from "@/components/ui/user-avatar";
 
 const ROUTE_TITLE_KEYS: Record<string, string> = {
   "/home": "nav.home",
@@ -207,20 +208,13 @@ export function Header() {
                   )}
                 </div>
               ) : null}
-              <div className="flex h-9 w-9 sm:h-8 sm:w-8 items-center justify-center rounded-lg overflow-hidden text-[11px] font-semibold text-primary-foreground" style={{ background: 'linear-gradient(135deg, #2563EB, #7A3FF2)' }}>
-                {profile?.avatar_url && !avatarFailed ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt="Avatar"
-                    className="h-full w-full object-cover"
-                    onError={() => setAvatarFailed(true)}
-                  />
-                ) : profile?.name ? (
-                  <span>{profile.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}</span>
-                ) : (
-                  <User className="h-4 w-4 text-primary-foreground" />
-                )}
-              </div>
+              <UserAvatar 
+                userId={profile?.user_id} 
+                name={profile?.name} 
+                avatarUrl={profile?.avatar_url} 
+                size={isMobile ? 36 : 32}
+                className="rounded-lg shadow-sm"
+              />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-64 rounded-xl shadow-lg max-h-[80vh] overflow-y-auto">

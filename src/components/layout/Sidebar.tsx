@@ -62,6 +62,7 @@ import { useUnreadEmailCount } from "@/hooks/useUnreadEmailCount";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { BrandIcon, type BrandIconTone } from "@/components/ui/brand-icon";
 import {
   DropdownMenu,
@@ -558,6 +559,28 @@ export function Sidebar() {
             <TooltipContent side="right" className="font-medium text-xs">Sair</TooltipContent>
           )}
         </Tooltip>
+      </div>
+      {/* Perfil do Usuário */}
+      <div className={cn("shrink-0 p-3 border-t border-sidebar-border/40")}>
+        <div className="flex items-center gap-3">
+          <UserAvatar 
+            userId={profile?.user_id} 
+            name={profile?.name} 
+            avatarUrl={profile?.avatar_url} 
+            size={32}
+            className="rounded-lg"
+          />
+          {!collapsed && (
+            <div className="flex flex-col min-w-0 overflow-hidden">
+              <span className="text-xs font-semibold text-sidebar-foreground truncate">
+                {profile?.name}
+              </span>
+              <span className="text-[10px] text-sidebar-foreground/40 truncate">
+                {role ? t(`roles.${role}`) : "—"}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
     </aside>
   );
