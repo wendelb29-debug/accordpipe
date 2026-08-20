@@ -394,7 +394,7 @@ export function ImportarPlanilha() {
                   </SelectTrigger>
                   <SelectContent>
                     {/* Default stages if no dynamic ones */}
-                    {kanbanStages.length === 0 ? (
+                    {!selectedWorkspaceId || kanbanStages.length === 0 ? (
                       <>
                         <SelectItem value="novos">Novos</SelectItem>
                         <SelectItem value="primeiro-contato">Primeiro Contato</SelectItem>
@@ -409,6 +409,7 @@ export function ImportarPlanilha() {
                         <SelectItem key={stage.id} value={stage.id}>{stage.name}</SelectItem>
                       ))
                     )}
+
                   </SelectContent>
                 </Select>
               </div>
