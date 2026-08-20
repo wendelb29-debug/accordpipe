@@ -1720,7 +1720,7 @@ export default function Collabs() {
                     className={cn(
                       "flex items-center gap-3 px-2.5 py-2 my-0.5 rounded-xl cursor-pointer transition-all h-[64px]",
                       isActive
-                        ? "bg-emerald-50 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.30)]"
+                        ? "bg-emerald-50 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.30)] border-r-2 border-emerald-500 rounded-r-none"
                         : "hover:bg-gray-50",
                     )}
                   >
