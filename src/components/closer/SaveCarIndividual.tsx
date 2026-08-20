@@ -360,24 +360,14 @@ export function SaveCarIndividual() {
                   
                   <div className="flex items-center gap-3">
                     <Button 
-                      onClick={() => handleAction('copy', step3.step_key, 
-                        selectedBranchKey === 'continua' ? 'Entendi. E atualmente ele está sem proteção?' :
-                        selectedBranchKey === 'trocou' ? 'Qual veículo você está usando atualmente? Seu veículo novo já está protegido?' :
-                        selectedBranchKey === 'vendeu' ? 'Está sem veículo atualmente? Bacana! Consegue me indicar pessoas que você sabe que possuem veículo? Se elas fecharem comigo, te pago um PIX de R$ 50,00!' :
-                        step3.branches?.find(b => b.branch_key === selectedBranchKey)?.branch_content || ""
-                      )}
+                      onClick={() => handleAction('copy', step3.step_key, "", selectedBranchKey)}
                       variant="secondary"
                       className="bg-white/10 hover:bg-white/20 text-white border-none rounded-xl h-10 gap-2 px-6 font-bold flex-1 sm:flex-none"
                     >
                       <Copy className="h-4 w-4" /> Copiar
                     </Button>
                     <Button 
-                      onClick={() => handleAction('whatsapp', step3.step_key, 
-                        selectedBranchKey === 'continua' ? 'Entendi. E atualmente ele está sem proteção?' :
-                        selectedBranchKey === 'trocou' ? 'Qual veículo você está usando atualmente? Seu veículo novo já está protegido?' :
-                        selectedBranchKey === 'vendeu' ? 'Está sem veículo atualmente? Bacana! Consegue me indicar pessoas que você sabe que possuem veículo? Se elas fecharem comigo, te pago um PIX de R$ 50,00!' :
-                        step3.branches?.find(b => b.branch_key === selectedBranchKey)?.branch_content || ""
-                      )}
+                      onClick={() => handleAction('whatsapp', step3.step_key, "", selectedBranchKey)}
                       className="bg-emerald-500 hover:bg-emerald-600 text-white border-none rounded-xl h-10 gap-2 px-6 font-bold flex-1 sm:flex-none"
                     >
                       <MessageCircle className="h-4 w-4 fill-current" /> WhatsApp
