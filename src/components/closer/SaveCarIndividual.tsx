@@ -252,10 +252,14 @@ export function SaveCarIndividual() {
               </div>
               
               <div className="flex items-center gap-2 w-full sm:w-auto">
-                <CopyButton 
-                  text={getProcessedText(step1.content)} 
-                  onCopy={() => handleAction('copy', step1.step_key, step1.content)}
-                />
+                <Button 
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleAction('copy', step1.step_key, step1.content)}
+                  className="h-8 text-[10px] font-bold uppercase tracking-wider text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 gap-1.5"
+                >
+                  <Copy className="h-3.5 w-3.5" /> Copiar Script
+                </Button>
                 <Button 
                   onClick={() => handleAction('whatsapp', step1.step_key, step1.content)}
                   className="flex-1 sm:flex-none bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl h-9 gap-2 px-4 font-bold"
