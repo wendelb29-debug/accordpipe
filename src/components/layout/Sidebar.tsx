@@ -422,7 +422,14 @@ export function Sidebar() {
               "flex items-center gap-2 w-full h-9 rounded-xl border border-sidebar-primary/20 text-sidebar-primary hover:bg-sidebar-primary/10 text-xs font-semibold justify-center transition-all",
               location.pathname === "/accord-stack" && "text-sidebar-primary-foreground border-sidebar-primary shadow-[0_0_12px_rgba(122,63,242,0.3)]"
             )}
-            style={location.pathname === "/accord-stack" ? { background: 'linear-gradient(135deg, #7A3FF2, #D94FD5)' } : undefined}
+            style={location.pathname === "/accord-stack" ? { 
+              background: tenantBranding?.primary_color && (tenantBranding.accent_color || tenantBranding.secondary_color) 
+                ? `linear-gradient(135deg, ${tenantBranding.primary_color}, ${tenantBranding.accent_color || tenantBranding.secondary_color})`
+                : 'linear-gradient(135deg, #7A3FF2, #D94FD5)' 
+            } : tenantBranding?.primary_color ? {
+              color: tenantBranding.primary_color,
+              borderColor: `${tenantBranding.primary_color}33`
+            } : undefined}
           >
             <Zap className="h-3.5 w-3.5" />
             <span className="transition-opacity duration-300">ACCORD Stack</span>
