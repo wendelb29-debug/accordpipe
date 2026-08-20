@@ -37,7 +37,8 @@ export function ImportarPlanilha() {
   const { profile } = useAuth();
   const companyId = useActiveCompanyId();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [parsedData, setParsedData] = useState<ParsedLead[]>([]);
+  const [parsedData, setParsedData] = useState<any[]>([]);
+  const [headers, setHeaders] = useState<string[]>([]);
   const [fileName, setFileName] = useState("");
   const [distribMethod, setDistribMethod] = useState<DistributionMethod>("round-robin");
   const [importing, setImporting] = useState(false);
@@ -45,11 +46,11 @@ export function ImportarPlanilha() {
   const [dragOver, setDragOver] = useState(false);
 
   const downloadTemplate = (format: "csv" | "xlsx") => {
-    const headers = ["Nome", "Empresa", "E-mail", "Telefone", "CPF/CNPJ", "Valor P&S", "Valor MRR", "Tags"];
+    const defaultHeaders = ["Nome", "Empresa", "E-mail", "Telefone", "CPF/CNPJ", "Valor P&S", "Valor MRR", "Tags"];
     const sampleRow = ["João Silva", "Empresa Exemplo", "joao@email.com", "(11) 99999-0000", "123.456.789-00", "500", "150", "tag1, tag2"];
 
     if (format === "csv") {
-      const csv = [headers.join(";"), sampleRow.join(";")].join("\n");
+      const csv = [defaultHeaders.join(";"), sampleRow.join(";")].join("\n");
       const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -58,7 +59,7 @@ export function ImportarPlanilha() {
       a.click();
       URL.revokeObjectURL(url);
     } else {
-      const ws = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
+      const ws = XLSX.utils.aoa_to_sheet([defaultHeaders, sampleRow]);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Leads");
       XLSX.writeFile(wb, "modelo_importacao_leads.xlsx");
@@ -77,25 +78,26 @@ export function ImportarPlanilha() {
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-        if (rows.length < 2) {
+        if (rows.length < 1) {
           toast.error("Planilha vazia ou sem dados.");
           return;
         }
 
-        const leads: ParsedLead[] = rows.slice(1).filter(r => r.some(c => c)).map((row) => ({
-          nome: String(row[0] || "").trim(),
-          empresa: String(row[1] || "").trim(),
-          email: String(row[2] || "").trim(),
-          telefone: String(row[3] || "").trim(),
-          documento: String(row[4] || "").trim(),
-          valor_ps: Number(row[5]) || 0,
-          valor_mrr: Number(row[6]) || 0,
-          tags: String(row[7] || "").trim(),
-        }));
+        const rawHeaders = rows[0].map(h => String(h || "").trim());
+        setHeaders(rawHeaders);
+
+        const leads = rows.slice(1).filter(r => r.some(c => c)).map((row) => {
+          const leadObj: any = {};
+          rawHeaders.forEach((header, index) => {
+            leadObj[header] = row[index];
+          });
+          return leadObj;
+        });
 
         setParsedData(leads);
         toast.success(`${leads.length} leads encontrados na planilha.`);
-      } catch {
+      } catch (err) {
+        console.error("Error parsing file:", err);
         toast.error("Erro ao processar a planilha.");
       }
     };
@@ -158,7 +160,7 @@ export function ImportarPlanilha() {
       const distributionCount = new Map<string, { name: string; count: number }>();
       let rrIndex = 0;
 
-      const assignLead = (lead: ParsedLead): { userId: string; userName: string } => {
+      const assignLead = (lead: any): { userId: string; userName: string } => {
         const fallback = { userId: profile.user_id, userName: profile.name };
         if (operatorList.length === 0) return fallback;
 
@@ -171,8 +173,8 @@ export function ImportarPlanilha() {
 
         // By Tags
         if (distribMethod === "tags") {
-          const leadTags = lead.tags
-            ? lead.tags.split(",").map(t => t.trim().toLowerCase()).filter(Boolean)
+          const leadTags = lead["Tags"]
+            ? String(lead["Tags"]).split(",").map(t => t.trim().toLowerCase()).filter(Boolean)
             : [];
           if (leadTags.length > 0) {
             const matched = operatorList.find(op =>
@@ -187,8 +189,8 @@ export function ImportarPlanilha() {
         }
 
         // By CPF/CNPJ
-        if (distribMethod === "cpf-cnpj" && lead.documento) {
-          const cleanDoc = lead.documento.replace(/\D/g, "");
+        if (distribMethod === "cpf-cnpj" && lead["CPF/CNPJ"]) {
+          const cleanDoc = String(lead["CPF/CNPJ"]).replace(/\D/g, "");
           const existing = existingDocMap.get(cleanDoc);
           if (existing) return { userId: existing.user_id, userName: existing.name };
           // Fallback to round-robin if doc not found
@@ -213,17 +215,17 @@ export function ImportarPlanilha() {
 
         return {
           servidor_id: companyId,
-          company_name: lead.empresa || "Lead via Planilha",
-          contact_name: lead.nome || null,
-          email: lead.email || null,
-          phone: lead.telefone || null,
-          documento: lead.documento || null,
-          value_ps: lead.valor_ps,
-          value_mrr: lead.valor_mrr,
+          company_name: lead["Empresa"] || "Lead via Planilha",
+          contact_name: lead["Nome"] || null,
+          email: lead["E-mail"] || null,
+          phone: lead["Telefone"] || null,
+          documento: lead["CPF/CNPJ"] || null,
+          value_ps: Number(lead["Valor P&S"]) || 0,
+          value_mrr: Number(lead["Valor MRR"]) || 0,
           stage: "novos",
           source: "Planilha",
           lead_status: "open",
-          tags: lead.tags ? lead.tags.split(",").map(t => t.trim()).filter(Boolean) : [],
+          tags: lead["Tags"] ? String(lead["Tags"]).split(",").map(t => t.trim()).filter(Boolean) : [],
           created_by_user_id: userId,
           created_by_name: userName,
         };
@@ -375,25 +377,21 @@ export function ImportarPlanilha() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-xs">Nome</TableHead>
-                      <TableHead className="text-xs">Empresa</TableHead>
-                      <TableHead className="text-xs">E-mail</TableHead>
-                      <TableHead className="text-xs">Documento</TableHead>
-                      <TableHead className="text-xs text-right">P&S</TableHead>
-                      <TableHead className="text-xs text-right">MRR</TableHead>
-                      <TableHead className="text-xs">Tags</TableHead>
+                      {headers.map((header) => (
+                        <TableHead key={header} className="text-xs whitespace-nowrap">
+                          {header}
+                        </TableHead>
+                      ))}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {parsedData.slice(0, 20).map((lead, i) => (
                       <TableRow key={i}>
-                        <TableCell className="text-xs">{lead.nome || "—"}</TableCell>
-                        <TableCell className="text-xs">{lead.empresa || "—"}</TableCell>
-                        <TableCell className="text-xs">{lead.email || "—"}</TableCell>
-                        <TableCell className="text-xs font-mono">{lead.documento || "—"}</TableCell>
-                        <TableCell className="text-xs text-right">{lead.valor_ps}</TableCell>
-                        <TableCell className="text-xs text-right">{lead.valor_mrr}</TableCell>
-                        <TableCell className="text-xs">{lead.tags || "—"}</TableCell>
+                        {headers.map((header) => (
+                          <TableCell key={`${i}-${header}`} className="text-xs whitespace-nowrap">
+                            {lead[header] !== undefined && lead[header] !== null ? String(lead[header]) : "—"}
+                          </TableCell>
+                        ))}
                       </TableRow>
                     ))}
                   </TableBody>
