@@ -49,14 +49,13 @@ import {
   Handshake,
   Rocket as RocketIcon,
   Send,
-
-
 } from "lucide-react";
+import { hexToHsl, darkenHsl } from "./ThemeSync";
 import { cn } from "@/lib/utils";
 import { prefetchRoute } from "@/lib/routePrefetch";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTenantLogo } from "@/hooks/useTenantLogo";
+import { useTenantLogo, useTenantBranding } from "@/hooks/useTenantLogo";
 import { useOverdueCount } from "@/hooks/useOverdueCount";
 import { useUnreadEmailCount } from "@/hooks/useUnreadEmailCount";
 
@@ -204,6 +203,7 @@ export function Sidebar() {
   const { role, signOut, profile, isMasterTenantAdmin, isGlobalMaster, isResellerTenant } = useAuth();
   const activeCompanyId = useActiveCompanyId();
   const tenantLogoUrl = useTenantLogo(activeCompanyId);
+  const tenantBranding = useTenantBranding(activeCompanyId);
   const overdueCount = useOverdueCount();
   const unreadEmailCount = useUnreadEmailCount();
   
@@ -275,9 +275,19 @@ export function Sidebar() {
             ? "bg-sidebar-primary/20 border border-sidebar-primary/35 text-sidebar-foreground"
             : "bg-sidebar-accent/40 border border-sidebar-border/60 text-sidebar-foreground/60 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground/90"
         )}
+        style={isActive && tenantBranding?.primary_color ? {
+          backgroundColor: `hsl(${hexToHsl(tenantBranding.primary_color)} / 0.2)`,
+          borderColor: `hsl(${hexToHsl(tenantBranding.primary_color)} / 0.35)`
+        } : !isActive && tenantBranding?.primary_color ? {
+          backgroundColor: `hsl(${darkenHsl(hexToHsl(tenantBranding.primary_color) || "0 0% 0%", 30)} / 0.4)`,
+          borderColor: `hsl(${darkenHsl(hexToHsl(tenantBranding.primary_color) || "0 0% 0%", 33)} / 0.6)`
+        } : undefined}
       >
         {isActive && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-sidebar-primary shadow-[0_0_8px_rgba(130,87,240,0.5)]" />
+          <div 
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-sidebar-primary shadow-[0_0_8px_rgba(130,87,240,0.5)]" 
+            style={tenantBranding?.primary_color ? { backgroundColor: tenantBranding.primary_color } : undefined}
+          />
         )}
         <div className="relative shrink-0">
           <BrandIcon
@@ -329,9 +339,13 @@ export function Sidebar() {
       onMouseLeave={handleMouseLeave}
       className={cn(
         "fixed left-0 top-0 z-40 h-screen border-r border-sidebar-border bg-sidebar flex flex-col",
-        "transition-[width] duration-300 ease-in-out",
+        "transition-[width,background-color,border-color] duration-300 ease-in-out",
         collapsed ? "w-[60px]" : "w-[232px]"
       )}
+      style={tenantBranding?.primary_color ? {
+        backgroundColor: `hsl(${darkenHsl(hexToHsl(tenantBranding.primary_color) || "224 62% 15%", 38)})`,
+        borderColor: `hsl(${darkenHsl(hexToHsl(tenantBranding.primary_color) || "224 45% 18%", 33)})`
+      } : undefined}
     >
       {/* Logo */}
       <div className={cn(
@@ -408,7 +422,14 @@ export function Sidebar() {
               "flex items-center gap-2 w-full h-9 rounded-xl border border-sidebar-primary/20 text-sidebar-primary hover:bg-sidebar-primary/10 text-xs font-semibold justify-center transition-all",
               location.pathname === "/accord-stack" && "text-sidebar-primary-foreground border-sidebar-primary shadow-[0_0_12px_rgba(122,63,242,0.3)]"
             )}
-            style={location.pathname === "/accord-stack" ? { background: 'linear-gradient(135deg, #7A3FF2, #D94FD5)' } : undefined}
+            style={location.pathname === "/accord-stack" ? { 
+              background: tenantBranding?.primary_color && (tenantBranding.accent_color || tenantBranding.secondary_color) 
+                ? `linear-gradient(135deg, ${tenantBranding.primary_color}, ${tenantBranding.accent_color || tenantBranding.secondary_color})`
+                : 'linear-gradient(135deg, #7A3FF2, #D94FD5)' 
+            } : tenantBranding?.primary_color ? {
+              color: tenantBranding.primary_color,
+              borderColor: `${tenantBranding.primary_color}33`
+            } : undefined}
           >
             <Zap className="h-3.5 w-3.5" />
             <span className="transition-opacity duration-300">ACCORD Stack</span>

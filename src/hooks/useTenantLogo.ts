@@ -62,6 +62,46 @@ export function useTenantLogo(activeCompanyId: string | null) {
       window.removeEventListener("tenant-switched", handler);
     };
   }, [activeCompanyId]);
-
   return tenantLogoUrl;
+}
+
+export function useTenantBranding(activeCompanyId: string | null) {
+  const [branding, setBranding] = useState<{
+    primary_color: string | null;
+    secondary_color: string | null;
+    accent_color: string | null;
+    bg_color: string | null;
+    text_color: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!activeCompanyId) {
+      setBranding(null);
+      return;
+    }
+
+    const fetchBranding = async () => {
+      const { data } = await supabase
+        .from("companies")
+        .select("brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color")
+        .eq("id", activeCompanyId)
+        .single();
+
+      if (data) {
+        setBranding({
+          primary_color: data.brand_primary_color,
+          secondary_color: data.brand_secondary_color,
+          accent_color: data.brand_accent_color,
+          bg_color: data.brand_bg_color,
+          text_color: data.brand_text_color,
+        });
+      }
+    };
+
+    fetchBranding();
+    window.addEventListener("brand-colors-updated", fetchBranding);
+    return () => window.removeEventListener("brand-colors-updated", fetchBranding);
+  }, [activeCompanyId]);
+
+  return branding;
 }
