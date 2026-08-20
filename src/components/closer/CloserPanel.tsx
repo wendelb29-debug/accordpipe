@@ -1,96 +1,182 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { 
-  Phone, MessageSquare, AlertCircle, Copy, Check, Sparkles, 
-  RotateCcw, Rocket, CheckCircle2, Zap, Shield, ListChecks, MessageCircle,
-  TrendingUp, Briefcase, FileSpreadsheet, Download, Layout, ListChecks as ListChecksIcon,
-  User, Car, CheckCircle
+  Phone, MessageSquare, Copy, Check, Zap, Shield, 
+  MessageCircle, User, CheckCircle, RotateCcw, AlertCircle
 } from "lucide-react";
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { profiles, stages, scripts as discScripts, objections, followUp, type DiscKey } from "@/lib/closer/disc-data";
-import { discIcons, discPractice } from "@/lib/closer/disc-practice";
-import { DiscQuizDialog } from "@/components/closer/DiscQuizDialog";
-import { loadProfile, type SavedProfile } from "@/lib/closer/disc-quiz";
-import { bantItems, spinItems } from "@/lib/closer/metodologias";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useCloser, type Script, type ScriptBranch } from "@/hooks/useCloser";
+import { toast } from "sonner";
 
-function CopyButton({ text }: { text: string }) {
+function CopyButton({ text, onCopy }: { text: string; onCopy?: () => void }) {
   const [copied, setCopied] = useState(false);
   const handle = async () => {
-    try { await navigator.clipboard.writeText(text); } catch {
-      const ta = document.createElement("textarea");
-      ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+    try { 
+      await navigator.clipboard.writeText(text); 
+      setCopied(true); 
+      onCopy?.();
+      setTimeout(() => setCopied(false), 2000);
+      toast.success("Script copiado!");
+    } catch {
+      toast.error("Erro ao copiar script");
     }
-    setCopied(true); setTimeout(() => setCopied(false), 1000);
   };
   return (
-    <button onClick={handle} aria-label="Copiar texto"
-      className="shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-lg border border-border bg-background hover:bg-accent active:scale-95 transition">
+    <Button 
+      variant="outline" 
+      size="icon" 
+      onClick={handle}
+      className="h-8 w-8 rounded-lg"
+    >
       {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
-    </button>
+    </Button>
   );
 }
 
 export function CloserPanel() {
-  const [nome, setNome] = useState("");
-  const [veiculo, setVeiculo] = useState("");
-  const [activeTab, setActiveTab] = useState("atendimento");
+  const [methodology, setMethodology] = useState<string>("save-car");
+  const [channel, setChannel] = useState<'whatsapp' | 'call'>('whatsapp');
+  const [clientData, setClientData] = useState({
+    name: "",
+    vehicle: "",
+    phone: "",
+    notes: ""
+  });
+  
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [activeStepKey, setActiveStepKey] = useState<string>("abertura");
+  const [selectedBranches, setSelectedBranches] = useState<Record<string, string>>({});
 
-  const scripts = [
-    {
-      title: "Etapa 1 — Abertura",
-      text: `Oi, [Nome], tudo bem? Sou Head na Save Car. Vi que você já foi nosso associado, Você continua com o veículo [Placa/Modelo]?`
-    },
-    {
-      title: "Etapa 2 — Identificação",
-      text: `Entendo perfeitamente, [Nome]. A Save Car passou por uma reformulação completa e hoje somos a proteção veicular que mais cresce no Brasil, com selo ICP-Brasil e foco total na agilidade do associado.`
-    },
-    {
-      title: "Etapa 3 — Oferta de Retomada",
-      text: `Estou entrando em contato pois abrimos uma condição especial de reativação para ex-associados Save Car. Conseguimos isenção total da taxa de adesão e um desconto exclusivo na primeira mensalidade.`
+  const { playbooks, scripts, createSession, logEvent, updateSession } = useCloser(
+    playbooks?.find(p => p.name.toLowerCase().includes(methodology))?.id
+  );
+
+  const currentPlaybook = useMemo(() => 
+    playbooks?.find(p => p.name.toLowerCase().includes(methodology)),
+    [playbooks, methodology]
+  );
+
+  const sortedScripts = useMemo(() => 
+    scripts?.sort((a, b) => a.sort_order - b.sort_order) || [],
+    [scripts]
+  );
+
+  const startSession = async () => {
+    if (!currentPlaybook) return;
+    try {
+      const session = await createSession.mutateAsync({
+        playbook_id: currentPlaybook.id,
+        client_name: clientData.name,
+        client_phone: clientData.phone,
+        metadata: { vehicle: clientData.vehicle, methodology }
+      });
+      setCurrentSessionId(session.id);
+      setActiveStepKey("abertura");
+      toast.success("Atendimento iniciado");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao iniciar sessão");
     }
-  ];
-
-  const getProcessedText = (text: string) => {
-    let processed = text;
-    if (nome) processed = processed.replace(/\[Nome\]/g, nome);
-    if (veiculo) processed = processed.replace(/\[Placa\/Modelo\]/g, veiculo);
-    return processed;
   };
 
-  const openWhatsApp = (text: string) => {
-    const url = `https://wa.me/?text=${encodeURIComponent(getProcessedText(text))}`;
-    window.open(url, "_blank");
+  const handleAction = async (type: 'copy' | 'whatsapp' | 'branch', script: Script, branch?: ScriptBranch) => {
+    if (!currentSessionId) {
+      // Auto-start session if not started
+      await startSession();
+    }
+
+    if (currentSessionId) {
+      logEvent.mutate({
+        session_id: currentSessionId,
+        event_type: type,
+        step_key: script.step_key,
+        branch_key: branch?.branch_key,
+        content: getProcessedText(branch?.branch_content || script.content)
+      });
+    }
+
+    if (type === 'whatsapp') {
+      const phone = clientData.phone.replace(/\D/g, "");
+      if (!phone) {
+        toast.error("Informe o WhatsApp do associado.");
+        return;
+      }
+      const text = branch ? branch.branch_content || script.content : script.content;
+      const url = `https://wa.me/${phone}?text=${encodeURIComponent(getProcessedText(text))}`;
+      window.open(url, "_blank");
+    }
+    
+    if (type === 'branch' && branch) {
+      setSelectedBranches(prev => ({ ...prev, [script.step_key]: branch.branch_key }));
+      if (branch.next_step_key) {
+        setActiveStepKey(branch.next_step_key);
+      }
+    }
+  };
+
+  const getProcessedText = (text: string) => {
+    if (!text) return "";
+    return text
+      .replace(/\[Nome\]/g, clientData.name || "[Nome]")
+      .replace(/\[Placa\/Modelo\]/g, clientData.vehicle || "[Placa/Modelo]")
+      .replace(/\[Empresa\]/g, "Save Car")
+      .replace(/\[ValorIndicação\]/g, "R$ 50,00");
+  };
+
+  const resetSession = () => {
+    if (window.confirm("Limpar atendimento atual?")) {
+      setCurrentSessionId(null);
+      setClientData({ name: "", vehicle: "", phone: "", notes: "" });
+      setSelectedBranches({});
+      setActiveStepKey("abertura");
+    }
   };
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-background font-sans">
       {/* Header */}
-      <div className="p-4 flex items-center justify-between border-b border-border/50">
+      <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-border/50 gap-4">
         <div className="flex items-center gap-2">
-          <h1 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">Closer — Painel de Apoio ao Vendedor</h1>
+          <h1 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">Closer — Painel de Apoio</h1>
           <div className="flex items-center gap-1 rounded-full bg-slate-900 text-white px-2 py-0.5 text-[10px] font-bold">
             <Zap className="h-3 w-3 fill-current" /> SDR OS
           </div>
         </div>
-        <Button variant="ghost" size="sm" className="h-9 px-3 gap-2 rounded-xl border border-border bg-slate-900 text-white hover:bg-slate-800">
-          <Phone className="h-4 w-4 fill-current" /> Ligação
-        </Button>
+        
+        <div className="flex items-center bg-slate-100 rounded-xl p-1 w-full sm:w-auto">
+          <button 
+            onClick={() => setChannel('call')}
+            className={cn(
+              "flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2",
+              channel === 'call' ? "bg-white shadow-sm text-slate-900" : "text-slate-500"
+            )}
+          >
+            <Phone className="h-3.5 w-3.5" /> Ligação
+          </button>
+          <button 
+            onClick={() => setChannel('whatsapp')}
+            className={cn(
+              "flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2",
+              channel === 'whatsapp' ? "bg-white shadow-sm text-slate-900" : "text-slate-500"
+            )}
+          >
+            <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
+          </button>
+        </div>
       </div>
 
       {/* Sub Tabs */}
-      <div className="px-4 py-2 flex items-center gap-1 border-b border-border/50 overflow-x-auto no-scrollbar">
-        {["Atendimento", "DISC", "Metodologias", "Save Car", "iGreen"].map((t) => (
+      <div className="px-4 py-2 flex items-center gap-1 border-b border-border/50 overflow-x-auto no-scrollbar bg-slate-50/50">
+        {["Atendimento", "DISC", "Metodologias", "Save Car", "iGreen", "Objeções"].map((t) => (
           <button
             key={t}
-            onClick={() => setActiveTab(t.toLowerCase())}
+            onClick={() => setMethodology(t.toLowerCase().replace(" ", "-"))}
             className={cn(
-              "px-6 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap",
-              activeTab === t.toLowerCase() ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:text-slate-700"
+              "px-4 py-2 text-xs font-bold rounded-lg transition-colors whitespace-nowrap",
+              methodology === t.toLowerCase().replace(" ", "-") 
+                ? "bg-slate-900 text-white" 
+                : "text-slate-500 hover:text-slate-700"
             )}
           >
             {t}
@@ -99,89 +185,157 @@ export function CloserPanel() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 max-w-4xl mx-auto w-full">
-        {/* Top Action Bar */}
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="ghost" className="h-10 px-6 gap-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800">
-            <User className="h-4 w-4" /> Individual
-          </Button>
-          <Button variant="ghost" className="h-10 px-4 gap-2 rounded-xl border border-border text-slate-600 hover:bg-slate-50">
-            <FileSpreadsheet className="h-4 w-4" /> Importar Planilha
-          </Button>
-          <Button variant="ghost" className="h-10 px-4 gap-2 rounded-xl border border-border text-slate-600 hover:bg-slate-50">
-            <Layout className="h-4 w-4" /> Sorteio
-          </Button>
-          <Button variant="ghost" className="h-10 px-4 gap-2 rounded-xl border border-border text-slate-600 hover:bg-slate-50">
-            <ListChecksIcon className="h-4 w-4" /> Cadastro
-          </Button>
-        </div>
-
         {/* Hero Card */}
-        <div className="relative overflow-hidden rounded-[24px] bg-[#0F172A] p-8 text-white shadow-xl">
+        <div className="relative overflow-hidden rounded-[24px] bg-[#0F172A] p-6 sm:p-8 text-white shadow-xl">
           <div className="relative z-10">
-            <h2 className="text-3xl font-black mb-2">Recuperação de Associados</h2>
-            <p className="text-slate-300 text-lg opacity-90">Fluxo consultivo de alto impacto para contratos inativos.</p>
+            <h2 className="text-2xl sm:text-3xl font-black mb-2">Recuperação de Associados</h2>
+            <p className="text-slate-300 text-sm sm:text-base opacity-90 max-w-lg">Fluxo consultivo de alto impacto para contratos inativos.</p>
           </div>
-          <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-10">
-            <Shield className="h-32 w-32" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <CheckCircle className="h-12 w-12" />
-            </div>
+          <div className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 opacity-10">
+            <Shield className="h-24 w-24 sm:h-32 w-32" />
           </div>
         </div>
 
-        {/* Inputs */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="relative">
-            <Input
-              placeholder="Nome do associado"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              className="h-14 rounded-2xl border-border bg-card px-4 text-base focus-visible:ring-slate-900"
-            />
-          </div>
-          <div className="relative">
-            <Input
-              placeholder="Veículo anterior"
-              value={veiculo}
-              onChange={(e) => setVeiculo(e.target.value)}
-              className="h-14 rounded-2xl border-border bg-card px-4 text-base focus-visible:ring-slate-900"
-            />
-          </div>
+        {/* Client Inputs */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Input
+            placeholder="Nome do associado"
+            value={clientData.name}
+            onChange={(e) => setClientData(prev => ({ ...prev, name: e.target.value }))}
+            className="h-12 rounded-xl"
+          />
+          <Input
+            placeholder="Veículo (Placa/Modelo)"
+            value={clientData.vehicle}
+            onChange={(e) => setClientData(prev => ({ ...prev, vehicle: e.target.value }))}
+            className="h-12 rounded-xl"
+          />
+          <Input
+            placeholder="WhatsApp (com DDD)"
+            value={clientData.phone}
+            onChange={(e) => setClientData(prev => ({ ...prev, phone: e.target.value }))}
+            className="h-12 rounded-xl"
+          />
         </div>
 
-        {/* Scripts List */}
+        {/* Flow Steps */}
         <div className="space-y-4">
-          {scripts.map((script, i) => (
-            <div key={i} className="group rounded-[20px] border border-border bg-card p-6 shadow-sm transition-all hover:shadow-md">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                    <User className="h-5 w-5" />
+          {sortedScripts.map((script) => {
+            const isActive = activeStepKey === script.step_key;
+            const selectedBranchKey = selectedBranches[script.step_key];
+            
+            return (
+              <div 
+                key={script.id} 
+                className={cn(
+                  "group rounded-[20px] border p-5 sm:p-6 transition-all",
+                  isActive ? "border-slate-900 bg-white shadow-md ring-1 ring-slate-900/5" : "border-border bg-card opacity-80"
+                )}
+              >
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "flex h-10 w-10 items-center justify-center rounded-xl font-bold",
+                      isActive ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-400"
+                    )}>
+                      {script.sort_order + 1}
+                    </div>
+                    <h3 className="text-lg font-black text-slate-900">{script.title}</h3>
                   </div>
-                  <h3 className="text-lg font-black text-slate-900 dark:text-white">{script.title}</h3>
+                  
+                  {isActive && (
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <CopyButton 
+                        text={getProcessedText(script.content)} 
+                        onCopy={() => handleAction('copy', script)}
+                      />
+                      {channel === 'whatsapp' && (
+                        <Button 
+                          onClick={() => handleAction('whatsapp', script)}
+                          className="flex-1 sm:flex-none bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl h-9 gap-2 px-4 font-bold"
+                        >
+                          <MessageCircle className="h-4 w-4 fill-current" /> WhatsApp
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <Button 
-                  onClick={() => openWhatsApp(script.text)}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl h-10 gap-2 px-4 font-bold"
-                >
-                  <MessageCircle className="h-4 w-4 fill-current" /> WhatsApp
-                </Button>
-              </div>
-              
-              <div className="relative rounded-2xl bg-emerald-50/30 border border-emerald-100/50 p-5">
-                <p className="text-base leading-relaxed text-slate-700 dark:text-slate-300 pr-10">
-                  {getProcessedText(script.text)}
-                </p>
-                <div className="absolute bottom-4 right-4">
-                  <CopyButton text={getProcessedText(script.text)} />
+
+                <div className="relative rounded-2xl bg-slate-50 border border-slate-100 p-4 sm:p-5">
+                  <p className="text-sm sm:text-base leading-relaxed text-slate-700">
+                    {getProcessedText(script.content)}
+                  </p>
                 </div>
+
+                {/* Branches */}
+                {script.branches && script.branches.length > 0 && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {script.branches.map((branch) => (
+                      <button
+                        key={branch.id}
+                        onClick={() => handleAction('branch', script, branch)}
+                        className={cn(
+                          "px-4 py-2 rounded-xl text-xs font-bold transition-all border",
+                          selectedBranchKey === branch.branch_key 
+                            ? "bg-slate-900 border-slate-900 text-white" 
+                            : "bg-white border-border text-slate-600 hover:border-slate-300"
+                        )}
+                      >
+                        {branch.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Branch Content (if selected) */}
+                {selectedBranchKey && script.branches?.find(b => b.branch_key === selectedBranchKey)?.branch_content && (
+                   <div className="mt-4 p-4 rounded-xl bg-blue-50 border border-blue-100 relative group/branch">
+                      <p className="text-sm text-blue-900 pr-8">
+                        {getProcessedText(script.branches.find(b => b.branch_key === selectedBranchKey)!.branch_content!)}
+                      </p>
+                      <div className="absolute top-3 right-3 flex gap-1">
+                        <CopyButton 
+                          text={getProcessedText(script.branches.find(b => b.branch_key === selectedBranchKey)!.branch_content!)}
+                        />
+                        {channel === 'whatsapp' && (
+                          <Button 
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleAction('whatsapp', script, script.branches?.find(b => b.branch_key === selectedBranchKey))}
+                            className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                          >
+                            <MessageCircle className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                   </div>
+                )}
               </div>
-              
-              <div className="mt-4 flex items-center gap-2 text-emerald-600 font-bold text-xs uppercase tracking-wider cursor-pointer hover:opacity-80">
-                <Copy className="h-3.5 w-3.5" /> Copiar Script
-              </div>
-            </div>
-          ))}
+            );
+          })}
+        </div>
+        
+        {/* Footer Actions */}
+        <div className="flex items-center justify-between pt-6 border-t border-border/50">
+          <Button 
+            variant="ghost" 
+            onClick={resetSession}
+            className="text-slate-400 hover:text-slate-600"
+          >
+            <RotateCcw className="h-4 w-4 mr-2" /> Limpar Atendimento
+          </Button>
+          
+          <Button 
+            className="bg-slate-900 text-white rounded-xl px-8"
+            disabled={!currentSessionId}
+            onClick={() => {
+              updateSession.mutate({ id: currentSessionId!, status: 'completed' });
+              toast.success("Atendimento concluído e registrado!");
+              resetSession();
+            }}
+          >
+            Registrar e Finalizar
+          </Button>
         </div>
       </div>
     </div>
