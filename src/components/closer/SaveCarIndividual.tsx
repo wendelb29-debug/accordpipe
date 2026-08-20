@@ -188,6 +188,11 @@ export function SaveCarIndividual() {
 
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 max-w-4xl mx-auto w-full font-sans">
+      {isKamillaWorkspace && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 font-medium">
+          coloca isso na aba closer dentro do workspace kamilla somente isso e todos script poder copiar
+        </div>
+      )}
       {/* Hero Card */}
       <div className="relative overflow-hidden rounded-[24px] bg-[#0F172A] p-6 sm:p-8 text-white shadow-xl">
         <div className="relative z-10">
