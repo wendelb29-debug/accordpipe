@@ -830,7 +830,7 @@ export default function Usuarios() {
                   </DialogTitle>
                   <DialogDescription>
                     {editingUser
-                      ? "Atualize os dados do usuário."
+                      ? "chat quando eu vincular um usuario ao tenete o usuario eter acesso ao ambiente do tenet vinculado"
                       : "Preencha os dados para criar um novo usuário."}
                   </DialogDescription>
                 </DialogHeader>
