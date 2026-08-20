@@ -230,11 +230,11 @@ ${company.responsavel || "[RESPONSÁVEL]"}`;
     leadId?: string,
     options?: CreateContractOptions
   ) => {
-    const { data: company, error: companyError } = await supabase
+    const { data: company, error: companyError } = await (supabase
       .from("companies")
       .select(COMPANY_SAFE_COLUMNS)
       .eq("id", companyId)
-      .maybeSingle();
+      .maybeSingle() as any);
 
     if (companyError || !company) {
       toast.error("Empresa não encontrada");

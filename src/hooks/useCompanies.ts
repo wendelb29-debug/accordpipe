@@ -55,9 +55,9 @@ export function useCompanies() {
 
   const fetchCompanies = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await (supabase
       .from("companies")
-      .select(COMPANY_SAFE_COLUMNS)
+      .select(COMPANY_SAFE_COLUMNS) as any)
       .order("created_at", { ascending: false });
 
     if (error) {
