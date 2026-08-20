@@ -62,6 +62,7 @@ import { useUnreadEmailCount } from "@/hooks/useUnreadEmailCount";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { BrandIcon, type BrandIconTone } from "@/components/ui/brand-icon";
 import {
   DropdownMenu,
