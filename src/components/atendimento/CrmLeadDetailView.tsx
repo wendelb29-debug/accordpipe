@@ -1271,14 +1271,26 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                     <p className="text-xs text-foreground">{lead.phone || "Não informado"}</p>
                     {lead.phone?.trim() && (
-                      <button
-                        type="button"
-                        onClick={() => setWhatsAppOpen(true)}
-                        className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-medium transition-colors"
-                      >
-                        <MessageSquare className="h-3 w-3" />
-                        Enviar mensagem
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setWhatsAppOpen(true)}
+                          className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-medium transition-colors"
+                        >
+                          <MessageSquare className="h-3 w-3" />
+                          Enviar mensagem
+                        </button>
+                        <a
+                          href={`https://wa.me/${lead.phone?.replace(/\D/g, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-medium transition-colors"
+                          title="Abrir no WhatsApp Web"
+                        >
+                          <WhatsAppIcon className="h-3 w-3" />
+                          WhatsApp Web
+                        </a>
+                      </>
                     )}
                   </div>
                 </div>
