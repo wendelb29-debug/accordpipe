@@ -421,7 +421,7 @@ export const ROUTE_PERMISSIONS: Record<string, string> = {
   // "Acesso Negado" right after accepting the invite.
   "/dashboard": "view_dashboard",
   "/crm-dashboard": "view_pipeline",
-  "/atendimento": "view_pipeline",
+  "/atendimento": "view_conversations",
   "/formularios": "view_forms",
   "/atividades": "view_activities",
   "/financeiro": "view_financial",
