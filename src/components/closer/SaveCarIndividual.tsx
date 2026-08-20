@@ -189,8 +189,45 @@ export function SaveCarIndividual() {
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 max-w-4xl mx-auto w-full font-sans">
       {isKamillaWorkspace && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 font-medium">
-          coloca isso na aba closer dentro do workspace kamilla somente isso e todos script poder copiar
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 font-medium whitespace-pre-wrap">
+          você sair?
+
+etapa 3: colocar 3 botões um escrito continuar e quando clicar aparecer a resposta: Entendi. E atualmente ele está sem proteção?
+
+
+botão trocou ao clicar Qual veículo você está usando atualmente? Seu veículo novo já está protegido?em
+
+botão vendeu: passo 1 érgunta : Está sem veículo atualmente? 
+
+resposta dois indicação: Bacana! Consegue me indicar pessoas que você sabe que possuem veículo? Se elas fecharem comigo, te pago um PIX de R$ 50,00!
+
+coloca isso na aba closer  dentro do workspace kamilla somente isso e todos script poder copiar etapa 1: Oi, [Nome], tudo bem? Sou  Head na Save Car. Vi que você já foi nosso associado e queria entender rapidamente como está sua situação hoje. Você continua com o [Veículo]?
+
+etapa 2 : Pergunto porque quero entender se o motivo que levou ao cancelamento ainda existe. Na época, o que mais pesou para você sair?
+
+etapa 3: colocar 3 botões um escrito continuar e quando clicar aparecer a resposta: Entendi. E atualmente ele está sem proteção?
+
+
+botão trocou ao clicar Qual veículo você está usando atualmente? Seu veículo novo já está protegido?em
+
+botão vendeu: passo 1 érgunta : Está sem veículo atualmente? 
+
+resposta dois indicação: Bacana! Consegue me indicar pessoas que você sabe que possuem veículo? Se elas fecharem comigo, te pago um PIX de R$ 50,00!
+
+coloca isso na aba closer  dentro do workspace kamilla somente isso e todos script poder copiar etapa 1: Oi, [Nome], tudo bem? Sou  Head na Save Car. Vi que você já foi nosso associado e queria entender rapidamente como está sua situação hoje. Você continua com o [Veículo]?
+
+etapa 2 : Pergunto porque quero entender se o motivo que levou ao cancelamento ainda existe. Na época, o que mais pesou para você sair?
+
+etapa 3: colocar 3 botões um escrito continuar e quando clicar aparecer a resposta: Entendi. E atualmente ele está sem proteção?
+
+
+botão trocou ao clicar Qual veículo você está usando atualmente? Seu veículo novo já está protegido?em
+
+botão vendeu: passo 1 érgunta : Está sem veículo atualmente? 
+
+resposta dois indicação: Bacana! Consegue me indicar pessoas que você sabe que possuem veículo? Se elas fecharem comigo, te pago um PIX de R$ 50,00!
+
+coloca isso na aba closer  dentro do workspace kamilla somente isso e todos script poder copiar
         </div>
       )}
       {/* Hero Card */}
