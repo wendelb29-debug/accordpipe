@@ -158,7 +158,7 @@ export function SaveCarIndividual() {
     // Tratamento especial para o script "Vendeu" que tem dois passos (somente se for Kamilla ou se o texto bater com o padrão)
     if (isKamillaWorkspace && text.includes("Está sem veículo atualmente?") && text.includes("Bacana!")) {
       const parts = text.split("Bacana!");
-      if (vendeuStep === 1) return parts[0].trim();
+      if (vendeuStep === 1) return (clientData.name ? `Oi, ${clientData.name}, tudo bem? ` : "") + parts[0].trim();
       return "Bacana!" + parts[1];
     }
 
@@ -187,13 +187,38 @@ export function SaveCarIndividual() {
 
 
   return (
-    <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-6 max-w-4xl mx-auto w-full font-sans">
+    <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 max-w-4xl mx-auto w-full font-sans">
       {isKamillaWorkspace && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-xs sm:text-sm text-blue-800 font-medium mb-6">
-          <p className="flex items-center gap-2">
-            <Shield className="h-4 w-4 shrink-0" />
-            Configuração Kamilla ativa: scripts e botões sincronizados conforme imagem de referência.
-          </p>
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 font-medium whitespace-pre-wrap">
+          <h4 className="font-black mb-2 uppercase tracking-tighter text-blue-900 border-b border-blue-200 pb-1">Scripts Kamilla</h4>
+          
+          <div className="space-y-4">
+            <div>
+              <p className="font-bold text-[10px] uppercase text-blue-600 mb-1">Etapa 1: Abertura</p>
+              <p className="italic">"Oi, [Nome], tudo bem? Sou Head na Save Car. Vi que você já foi nosso associado e queria entender rapidamente como está sua situação hoje. Você continua com o [Veículo]?"</p>
+            </div>
+
+            <div>
+              <p className="font-bold text-[10px] uppercase text-blue-600 mb-1">Etapa 2: Investigação</p>
+              <p className="italic">"Pergunto porque quero entender se o motivo que levou ao cancelamento ainda existe. Na época, o que mais pesou para você sair?"</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-blue-100">
+              <div>
+                <p className="font-bold text-[10px] uppercase text-blue-600 mb-1">Botão Continuar</p>
+                <p className="italic">"Entendi. E atualmente ele está sem proteção?"</p>
+              </div>
+              <div>
+                <p className="font-bold text-[10px] uppercase text-blue-600 mb-1">Botão Trocou</p>
+                <p className="italic">"Qual veículo você está usando atualmente? Seu veículo novo já está protegido?"</p>
+              </div>
+              <div>
+                <p className="font-bold text-[10px] uppercase text-blue-600 mb-1">Botão Vendeu</p>
+                <p className="italic text-xs">Passo 1: "Está sem veículo atualmente?"</p>
+                <p className="italic text-xs mt-1">Indicação: "Bacana! Consegue me indicar pessoas que você sabe que possuem veículo? Se elas fecharem comigo, te pago um PIX de R$ 50,00!"</p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
       {/* Hero Card */}
@@ -245,21 +270,17 @@ export function SaveCarIndividual() {
           <div className="group rounded-[20px] border border-emerald-100 bg-white p-5 sm:p-6 shadow-sm transition-all hover:shadow-md">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">
-                  <UserRound className="h-5 w-5" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl font-bold bg-emerald-500 text-white">
+                  1
                 </div>
-                <h3 className="text-lg font-black text-slate-900">{isKamillaWorkspace ? "Etapa 1 — Abertura" : step1.title}</h3>
+                <h3 className="text-lg font-black text-slate-900">{step1.title}</h3>
               </div>
               
               <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Button 
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleAction('copy', step1.step_key, step1.content)}
-                  className="h-8 text-[10px] font-bold uppercase tracking-wider text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 gap-1.5"
-                >
-                  <Copy className="h-3.5 w-3.5" /> Copiar Script
-                </Button>
+                <CopyButton 
+                  text={getProcessedText(step1.content)} 
+                  onCopy={() => handleAction('copy', step1.step_key, step1.content)}
+                />
                 <Button 
                   onClick={() => handleAction('whatsapp', step1.step_key, step1.content)}
                   className="flex-1 sm:flex-none bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl h-9 gap-2 px-4 font-bold"
@@ -282,21 +303,17 @@ export function SaveCarIndividual() {
           <div className="group rounded-[20px] border border-slate-200 bg-white p-5 sm:p-6 shadow-sm transition-all hover:shadow-md">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl font-bold bg-slate-50 text-slate-600 border border-slate-100">
-                  <Zap className="h-5 w-5" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl font-bold bg-[#0F172A] text-white">
+                  2
                 </div>
-                <h3 className="text-lg font-black text-slate-900">{isKamillaWorkspace ? "Etapa 2 — Investigação Consultiva" : step2.title}</h3>
+                <h3 className="text-lg font-black text-slate-900">{step2.title}</h3>
               </div>
               
               <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Button 
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleAction('copy', step2.step_key, step2.content)}
-                  className="h-8 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-slate-700 hover:bg-slate-50 gap-1.5"
-                >
-                  <Copy className="h-3.5 w-3.5" /> Copiar
-                </Button>
+                <CopyButton 
+                  text={getProcessedText(step2.content)} 
+                  onCopy={() => handleAction('copy', step2.step_key, step2.content)}
+                />
                 <Button 
                   onClick={() => handleAction('whatsapp', step2.step_key, step2.content)}
                   className="flex-1 sm:flex-none bg-[#0F172A] hover:bg-slate-800 text-white rounded-xl h-9 gap-2 px-4 font-bold"
@@ -318,13 +335,13 @@ export function SaveCarIndividual() {
         {step3 && (
           <div className="group rounded-[20px] border border-blue-100 bg-white p-5 sm:p-6 shadow-sm transition-all hover:shadow-md">
             <div className="flex items-center gap-3 mb-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl font-bold bg-blue-50 text-blue-600 border border-blue-100">
-                <MessageSquare className="h-5 w-5" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl font-bold bg-blue-600 text-white">
+                3
               </div>
-              <h3 className="text-lg font-black text-slate-900">{isKamillaWorkspace ? "Etapa 3 — Identificação do Motivo" : step3.title}</h3>
+              <h3 className="text-lg font-black text-slate-900">{step3.title}</h3>
             </div>
 
-            <div className="flex flex-wrap gap-3 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
               {step3.branches?.map((branch) => (
                 <button
                   key={branch.id}
@@ -333,7 +350,7 @@ export function SaveCarIndividual() {
                     handleAction('branch', step3.step_key, branch.branch_content || "", branch.branch_key);
                   }}
                   className={cn(
-                    "h-12 flex-1 min-w-[100px] rounded-xl text-sm font-bold transition-all border flex items-center justify-center gap-2 shadow-sm",
+                    "h-12 rounded-xl text-sm font-bold transition-all border flex items-center justify-center gap-2 shadow-sm",
                     selectedBranchKey === branch.branch_key 
                       ? "bg-blue-600 border-blue-600 text-white translate-y-[1px]" 
                       : "bg-white border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600"
@@ -347,44 +364,46 @@ export function SaveCarIndividual() {
             {selectedBranchKey ? (
               <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                 {selectedBranchKey === 'vendeu' && (
-                  <div className="flex gap-2 p-1 bg-slate-50 border border-slate-200 rounded-xl w-full sm:w-fit">
+                  <div className="flex gap-2 p-1 bg-slate-100 rounded-lg w-fit">
                     <button 
                       onClick={() => setVendeuStep(1)}
                       className={cn(
-                        "flex-1 sm:flex-none px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all border",
-                        vendeuStep === 1 
-                          ? "bg-white text-slate-900 border-slate-200 shadow-sm" 
-                          : "text-slate-400 border-transparent hover:text-slate-600"
+                        "px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-tight transition-all",
+                        vendeuStep === 1 ? "bg-white text-blue-600 shadow-sm" : "text-slate-500"
                       )}
                     >
-                      Passo 1: Pergunta
+                      Passo 1
                     </button>
                     <button 
                       onClick={() => setVendeuStep(2)}
                       className={cn(
-                        "flex-1 sm:flex-none px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all border",
-                        vendeuStep === 2 
-                          ? "bg-[#0F172A] text-white border-[#0F172A] shadow-sm" 
-                          : "text-slate-400 border-transparent hover:text-slate-600"
+                        "px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-tight transition-all",
+                        vendeuStep === 2 ? "bg-white text-blue-600 shadow-sm" : "text-slate-500"
                       )}
                     >
-                      Passo 2: Indicação
+                      Passo 2
                     </button>
                   </div>
                 )}
 
-                <div className="relative rounded-[20px] bg-[#0F172A] p-6 text-white shadow-lg overflow-hidden">
-                  <p className="text-sm sm:text-base leading-relaxed font-bold mb-6 text-center relative z-10">
+                <div className="relative rounded-[20px] bg-blue-600 p-6 text-white shadow-lg">
+                  <p className="text-sm sm:text-base leading-relaxed font-medium mb-6">
                     {selectedBranchKey && getBranchContent(selectedBranchKey)}
                   </p>
                   
-                  <div className="flex items-center justify-center gap-3 relative z-10">
+                  <div className="flex items-center gap-3">
                     <Button 
                       onClick={() => handleAction('copy', step3.step_key, "", selectedBranchKey)}
-                      variant="ghost"
-                      className="hover:bg-white/10 text-white/60 hover:text-white border-none rounded-xl h-10 gap-2 px-6 font-bold"
+                      variant="secondary"
+                      className="bg-white/10 hover:bg-white/20 text-white border-none rounded-xl h-10 gap-2 px-6 font-bold flex-1 sm:flex-none"
                     >
-                      <Copy className="h-4 w-4" /> Copiar Script
+                      <Copy className="h-4 w-4" /> Copiar
+                    </Button>
+                    <Button 
+                      onClick={() => handleAction('whatsapp', step3.step_key, "", selectedBranchKey)}
+                      className="bg-emerald-500 hover:bg-emerald-600 text-white border-none rounded-xl h-10 gap-2 px-6 font-bold flex-1 sm:flex-none"
+                    >
+                      <MessageCircle className="h-4 w-4 fill-current" /> WhatsApp
                     </Button>
                   </div>
                 </div>
@@ -399,17 +418,17 @@ export function SaveCarIndividual() {
       </div>
 
       {/* Footer Actions */}
-      <div className="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-slate-100 gap-4 mb-8 sm:mb-0">
+      <div className="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-slate-100 gap-4">
         <Button 
           variant="ghost" 
           onClick={resetSession}
-          className="w-full sm:w-auto text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl order-2 sm:order-1"
+          className="text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl"
         >
           <RotateCcw className="h-4 w-4 mr-2" /> Limpar Atendimento
         </Button>
         
         <Button 
-          className="w-full sm:w-auto bg-[#0F172A] hover:bg-slate-800 text-white rounded-xl px-10 h-12 font-black shadow-lg shadow-slate-200 order-1 sm:order-2"
+          className="bg-[#0F172A] hover:bg-slate-800 text-white rounded-xl px-10 h-12 font-black shadow-lg shadow-slate-200"
           disabled={!currentSessionId}
           onClick={() => {
             updateSession.mutate({ id: currentSessionId!, status: 'completed' });
