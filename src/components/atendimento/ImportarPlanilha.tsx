@@ -46,7 +46,7 @@ export function ImportarPlanilha() {
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(null);
   const [targetStage, setTargetStage] = useState<string>("novos");
   const [workspaces, setWorkspaces] = useState<any[]>([]);
-  const { columns: kanbanStages } = useKanbanColumns(selectedWorkspaceId || companyId); // Fallback logic or specific hook usage
+  const { columns: kanbanStages } = useKanbanColumns(selectedWorkspaceId);
 
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<DistributionResult | null>(null);
