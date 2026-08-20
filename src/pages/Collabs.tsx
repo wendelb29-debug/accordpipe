@@ -319,6 +319,7 @@ export default function Collabs() {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarView, setCalendarView] = useState<"list" | "agenda">("agenda");
   const [calendarExpanded, setCalendarExpanded] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const navigate = useNavigate();
   const [showEmoji, setShowEmoji] = useState(false);
   const [showMentions, setShowMentions] = useState(false);
@@ -382,7 +383,12 @@ export default function Collabs() {
     const m = new Map<string, MentionUser>();
     tenantUsers.forEach((u) => m.set(u.id, u));
     // Member profiles override/fill missing entries so avatars always show
-    memberProfiles.forEach((u, id) => { if (!m.has(id) || !m.get(id)?.avatar_url) m.set(id, u); });
+    memberProfiles.forEach((u, id) => { 
+      const existing = m.get(id);
+      if (!existing || (!existing.avatar_url && u.avatar_url)) {
+        m.set(id, { ...u, name: u.name || existing?.name || "Usuário" }); 
+      }
+    });
     return m;
   }, [tenantUsers, memberProfiles]);
 
@@ -699,7 +705,30 @@ export default function Collabs() {
       .on("postgres_changes", { event: "*", schema: "public", table: "collab_messages", filter: `conversation_id=eq.${activeId}` }, (payload) => {
         if (payload.eventType === "INSERT") {
           const m = payload.new as any;
-          setMessages((prev) => prev.some((x) => x.id === m.id) ? prev : [...prev, { ...m, attachments: Array.isArray(m.attachments) ? m.attachments : [] }]);
+          setMessages((prev) => {
+            if (prev.some((x) => x.id === m.id)) return prev;
+            
+            // Play notification sound for incoming messages not from current user
+            if (m.sender_id !== user?.id) {
+              if (!audioRef.current) {
+                audioRef.current = new Audio("https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3");
+                audioRef.current.volume = 0.5;
+              }
+              audioRef.current.play().catch(() => {});
+              
+              // Browser notification
+              if (Notification.permission === "granted") {
+                new Notification("Nova mensagem no Collab", {
+                  body: m.content || "Você recebeu um arquivo",
+                  icon: "/favicon.ico"
+                });
+              } else if (Notification.permission !== "denied") {
+                Notification.requestPermission();
+              }
+            }
+            
+            return [...prev, { ...m, attachments: Array.isArray(m.attachments) ? m.attachments : [] }];
+          });
         } else if (payload.eventType === "DELETE") {
           setMessages((prev) => prev.filter((x) => x.id !== (payload.old as any).id));
         } else if (payload.eventType === "UPDATE") {
@@ -1698,7 +1727,10 @@ export default function Collabs() {
                     <HexAvatar
                       size={44}
                       background={c.color ? `linear-gradient(135deg, ${c.color} 0%, ${c.color}cc 100%)` : hexGradientFor(c.id)}
-                      src={(c as any).avatar_url || null}
+                      src={c.kind === "direct" && user ? (() => {
+                        const otherId = Array.from(userMap.keys()).find(uid => uid !== user.id && conversations.some(conv => conv.id === c.id));
+                        return otherId ? userMap.get(otherId)?.avatar_url : (c as any).avatar_url;
+                      })() : (c as any).avatar_url || null}
                     >
                       <Icon className="h-[18px] w-[18px]" />
                     </HexAvatar>
@@ -1982,13 +2014,16 @@ export default function Collabs() {
                     return (
                       <div key={m.id} className={cn("group/msg flex gap-2 mb-2", isSent && "flex-row-reverse")}>
                         {!isSent && (
-                          sender?.avatar_url ? (
-                            <img src={sender.avatar_url} alt={senderName} className="w-8 h-8 min-w-8 rounded-full object-cover self-end shadow-sm" />
-                          ) : (
-                            <div className="w-8 h-8 min-w-8 rounded-full flex items-center justify-center text-[11px] font-medium text-white self-end shadow-sm" style={{ background: senderColor }}>
-                              {senderInitials}
-                            </div>
-                          )
+                          (() => {
+                            const senderAvatar = sender?.avatar_url || (active?.kind === "direct" && active.avatar_url);
+                            return senderAvatar ? (
+                              <img src={senderAvatar} alt={senderName} className="w-8 h-8 min-w-8 rounded-full object-cover self-end shadow-sm" />
+                            ) : (
+                              <div className="w-8 h-8 min-w-8 rounded-full flex items-center justify-center text-[11px] font-medium text-white self-end shadow-sm" style={{ background: senderColor }}>
+                                {senderInitials}
+                              </div>
+                            );
+                          })()
                         )}
                         <div className={cn("flex flex-col gap-1 max-w-[68%] min-w-0", isSent && "items-end")}>
                           {!isSent && (
