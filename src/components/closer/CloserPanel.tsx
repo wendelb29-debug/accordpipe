@@ -129,7 +129,7 @@ export function CloserPanel() {
   const resetSession = () => {
     if (window.confirm("Limpar atendimento atual?")) {
       setCurrentSessionId(null);
-      setClientData({ name: "", vehicle: "", phone: "" });
+      setClientData({ name: "", vehicle: "", phone: "", notes: "" });
       setSelectedBranches({});
       setActiveStepKey("abertura");
     }
