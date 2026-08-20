@@ -347,24 +347,28 @@ export function SaveCarIndividual() {
             {selectedBranchKey ? (
               <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                 {selectedBranchKey === 'vendeu' && (
-                  <div className="flex gap-2 p-1 bg-slate-100 rounded-lg w-fit">
+                  <div className="flex gap-2 p-1 bg-slate-50 border border-slate-200 rounded-xl w-full sm:w-fit">
                     <button 
                       onClick={() => setVendeuStep(1)}
                       className={cn(
-                        "px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-tight transition-all",
-                        vendeuStep === 1 ? "bg-white text-blue-600 shadow-sm" : "text-slate-500"
+                        "flex-1 sm:flex-none px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all border",
+                        vendeuStep === 1 
+                          ? "bg-white text-slate-900 border-slate-200 shadow-sm" 
+                          : "text-slate-400 border-transparent hover:text-slate-600"
                       )}
                     >
-                      Passo 1
+                      Passo 1: Pergunta
                     </button>
                     <button 
                       onClick={() => setVendeuStep(2)}
                       className={cn(
-                        "px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-tight transition-all",
-                        vendeuStep === 2 ? "bg-white text-blue-600 shadow-sm" : "text-slate-500"
+                        "flex-1 sm:flex-none px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all border",
+                        vendeuStep === 2 
+                          ? "bg-[#0F172A] text-white border-[#0F172A] shadow-sm" 
+                          : "text-slate-400 border-transparent hover:text-slate-600"
                       )}
                     >
-                      Passo 2
+                      Passo 2: Indicação
                     </button>
                   </div>
                 )}
