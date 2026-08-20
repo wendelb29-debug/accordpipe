@@ -233,7 +233,30 @@ export function Sidebar() {
     }
   };
 
-  const { hasPermission } = usePermissions();
+  const { hasPermission, refetch } = usePermissions();
+
+  // Listen for permission changes to refresh sidebar items immediately
+  useEffect(() => {
+    const channel = supabase
+      .channel("sidebar_perms_sync")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_custom_permissions",
+          filter: `user_id=eq.${profile?.id}`,
+        },
+        () => {
+          refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile?.id, refetch]);
 
   const filteredNavigation = navigation.filter((item) => {
     if (role && !item.roles.includes(role)) return false;

@@ -25,6 +25,27 @@ export function usePermissions() {
     if (authLoading) { setLoading(true); return; }
     if (!user || !role) { setLoading(false); return; }
     fetchPermissions();
+
+    // Listen for custom permission changes to reactively update the UI
+    const channel = supabase
+      .channel("custom_perms_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_custom_permissions",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          fetchPermissions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, role, authLoading]);
 
   const fetchPermissions = async () => {
