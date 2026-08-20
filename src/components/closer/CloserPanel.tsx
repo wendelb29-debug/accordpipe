@@ -9,6 +9,14 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { profiles, stages, scripts as discScripts, objections, followUp, type DiscKey } from "@/lib/closer/disc-data";
+import { discIcons, discPractice } from "@/lib/closer/disc-practice";
+import { DiscQuizDialog } from "@/components/closer/DiscQuizDialog";
+import { loadProfile, type SavedProfile } from "@/lib/closer/disc-quiz";
+import { bantItems, spinItems } from "@/lib/closer/metodologias";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
