@@ -171,7 +171,10 @@ export function CloserPanel() {
         {["Atendimento", "DISC", "Metodologias", "Save Car", "iGreen", "Objeções"].map((t) => (
           <button
             key={t}
-            onClick={() => setMethodology(t.toLowerCase().replace(" ", "-"))}
+            onClick={() => {
+              setMethodology(t.toLowerCase().replace(" ", "-"));
+              if (t === "Save Car") setSaveCarTab("individual");
+            }}
             className={cn(
               "px-4 py-2 text-xs font-bold rounded-lg transition-colors whitespace-nowrap",
               methodology === t.toLowerCase().replace(" ", "-") 
@@ -184,7 +187,31 @@ export function CloserPanel() {
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 max-w-4xl mx-auto w-full">
+      {methodology === 'save-car' && (
+        <div className="px-4 py-2 flex items-center gap-1 border-b border-border/50 overflow-x-auto no-scrollbar bg-white">
+          {["Individual", "Importar Planilha", "Sorteio", "Cadência", "Accord Sales"].map((t) => (
+            <button
+              key={t}
+              onClick={() => setSaveCarTab(t.toLowerCase().replace(" ", "-"))}
+              className={cn(
+                "px-3 py-1.5 text-[10px] font-bold rounded-lg transition-colors whitespace-nowrap",
+                saveCarTab === t.toLowerCase().replace(" ", "-") 
+                  ? "bg-blue-100 text-blue-700" 
+                  : "text-slate-400 hover:text-slate-600"
+              )}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="flex-1 overflow-y-auto">
+        {methodology === 'save-car' && saveCarTab === 'individual' ? (
+          <SaveCarIndividual />
+        ) : (
+          // Existing content...
+
         {/* Hero Card */}
         <div className="relative overflow-hidden rounded-[24px] bg-[#0F172A] p-6 sm:p-8 text-white shadow-xl">
           <div className="relative z-10">
