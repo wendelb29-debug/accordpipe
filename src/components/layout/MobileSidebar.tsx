@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import accordLogo from "@/assets/accord-logo.png";
+import accordLogoIcon from "@/assets/accord-logo-icon.png";
 import {
   Home, Newspaper, LayoutDashboard, Receipt, FileText, BarChart3,
   Users, LogOut, MessageSquare, CalendarCheck, Rocket,
@@ -10,6 +11,7 @@ import {
   Zap, Headset, MessagesSquare, UsersRound, CircleDollarSign,
   Files, ChartColumn, ArchiveX, Settings2, Languages,
 } from "lucide-react";
+import { hexToHsl } from "./ThemeSync";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,11 +59,15 @@ const LANGUAGES = [
   { code: "es", label: "Español", flag: "ES" },
 ] as const;
 
+import { useTenantLogo, useTenantBranding } from "@/hooks/useTenantLogo";
+
 export function MobileSidebar() {
   const location = useLocation();
   const { t, i18n } = useTranslation();
-  const { role, signOut, profile, isGlobalMaster, isResellerTenant } = useAuth();
+  const { role, signOut, profile, isGlobalMaster, isResellerTenant, effectiveCompanyId } = useAuth();
   const { hasPermission } = usePermissions();
+  const tenantLogoUrl = useTenantLogo(effectiveCompanyId);
+  const tenantBranding = useTenantBranding(effectiveCompanyId);
   const [open, setOpen] = useState(false);
   const [configOpen, setConfigOpen] = useState(true);
   const [currentLang, setCurrentLang] = useState(() => localStorage.getItem("accord-lang") || "pt-BR");
@@ -141,8 +147,19 @@ export function MobileSidebar() {
         {/* Logo */}
         <div className="flex min-h-[56px] items-center justify-between px-5 border-b border-sidebar-border/30 shrink-0">
           <div className="flex items-center gap-2.5">
-            <img src={accordLogo} alt="ACCORD" className="h-8 w-auto" />
-            <span className="text-[15px] font-bold tracking-tight text-sidebar-foreground/90">ACCORD</span>
+            {tenantLogoUrl ? (
+              <div className="flex items-center gap-2">
+                <img src={tenantLogoUrl} alt="Tenant" className="h-8 w-auto object-contain" />
+                <span className="text-[13px] font-bold tracking-tight text-sidebar-foreground/90 truncate max-w-[150px]">
+                  {tenantBranding?.nome_fantasia || tenantBranding?.razao_social || "ACCORD"}
+                </span>
+              </div>
+            ) : (
+              <>
+                <img src={accordLogoIcon} alt="ACCORD" className="h-8 w-auto" />
+                <span className="text-[15px] font-bold tracking-tight text-sidebar-foreground/90">ACCORD</span>
+              </>
+            )}
           </div>
         </div>
 
@@ -183,8 +200,16 @@ export function MobileSidebar() {
                   to={item.href}
                   onClick={closeAndGo}
                   className={itemClass(isActive)}
+                  style={isActive && tenantBranding?.primary_color ? {
+                    backgroundColor: `hsl(${hexToHsl(tenantBranding.primary_color)} / 0.15)`,
+                  } : undefined}
                 >
-                  {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-sidebar-primary shadow-[0_0_8px_rgba(122,63,242,0.5)]" />}
+                  {isActive && (
+                    <div 
+                      className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-sidebar-primary shadow-[0_0_8px_rgba(122,63,242,0.5)]" 
+                      style={tenantBranding?.primary_color ? { backgroundColor: tenantBranding.primary_color } : undefined}
+                    />
+                  )}
                   <item.icon className={cn("h-[17px] w-[17px] shrink-0", isActive && "text-sidebar-primary")} />
                   <span className="truncate flex-1">{t(item.nameKey)}</span>
                   {badge > 0 && (
