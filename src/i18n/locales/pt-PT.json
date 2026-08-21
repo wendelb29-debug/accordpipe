@@ -106,7 +106,7 @@
     "pipeline": "Pipeline Comercial",
     "stage": "Etapa",
     "days": "dias",
-    "noActivity": "Sem atividade",
+    "noActivity": "Sem agendamento",
     "overdue": "Atrasado",
     "approved": "Aprovado",
     "company": "Empresa",
