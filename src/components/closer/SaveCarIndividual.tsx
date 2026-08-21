@@ -63,7 +63,7 @@ export function SaveCarIndividual() {
   const { scripts: playbookScripts } = useCloser(currentPlaybook?.id);
 
   const sortedScripts = useMemo(() => 
-    playbookScripts?.sort((a, b) => a.sort_order - b.sort_order) || [],
+    [...(playbookScripts || [])].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)) || [],
     [playbookScripts]
   );
 
@@ -116,15 +116,17 @@ export function SaveCarIndividual() {
       .replace(/\[Nome\]/g, clientData.name || "[Nome]")
       .replace(/\[Placa\/Modelo\]/g, clientData.vehicle || "[Placa/Modelo]")
       .replace(/\[Telefone\]/g, clientData.phone || "[Telefone]")
-      .replace(/\[Empresa\]/g, "Accord Pipe") // Default if not found
+      .replace(/\[Empresa\]/g, "Accord Pipe")
       .replace(/\[NomeVendedor\]/g, profile?.name || "[Vendedor]")
       .replace(/\[ValorIndicação\]/g, "R$ 50,00");
     
     // Split "Vendeu" script if it has both steps in one branch_content
-    if (text.includes("Está sem veículo atualmente?") && text.includes("Bacana!")) {
-      const parts = text.split("Bacana!");
-      if (vendeuStep === 1) return parts[0].trim();
-      return "Bacana!" + parts[1];
+    // Must use processed text to split correctly if substitutions happened
+    if (processed.includes("Está sem veículo atualmente?") && processed.includes("Bacana!")) {
+      const parts = processed.split("Bacana!");
+      return vendeuStep === 1 
+        ? parts[0].trim() 
+        : `Bacana!${parts.slice(1).join("Bacana!")}`;
     }
 
     return processed;
@@ -181,7 +183,7 @@ export function SaveCarIndividual() {
   const step3 = sortedScripts.find(s => s.step_key === 'motivo');
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 max-w-4xl mx-auto w-full font-sans scroll-smooth flex flex-col min-h-0">
+    <div className="w-full max-w-4xl mx-auto p-4 md:p-6 pb-12 space-y-6 font-sans">
       {/* Hero Card */}
       <div className="relative overflow-hidden rounded-[24px] bg-primary p-6 sm:p-8 text-primary-foreground shadow-xl">
         <div className="relative z-10">

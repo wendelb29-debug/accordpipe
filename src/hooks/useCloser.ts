@@ -56,14 +56,8 @@ export function useCloser(playbookId?: string) {
     queryKey: ["closer-playbooks", tenantId, activeWorkspaceId],
     queryFn: async () => {
       if (!tenantId) return [];
-      const { data, error } = await supabase
-        .from("closer_playbooks")
-        .select("*")
-        .eq("is_active", true)
-        .or(`tenant_id.eq.${tenantId},tenant_id.is.null`)
-        .order("name");
-      if (error) throw error;
-      return data as Playbook[];
+      const sorted = [...(data || [])].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+      return sorted as Playbook[];
     },
     enabled: !!tenantId,
   });
@@ -79,10 +73,17 @@ export function useCloser(playbookId?: string) {
           branches:closer_script_branches(*)
         `)
         .eq("playbook_id", playbookId)
-        .eq("is_active", true)
-        .order("sort_order");
+        .eq("is_active", true);
+      
       if (error) throw error;
-      return data as Script[];
+      
+      // Order scripts and branches by sort_order
+      const sortedScripts = [...(data || [])].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)).map(s => ({
+        ...s,
+        branches: [...(s.branches || [])].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+      }));
+      
+      return sortedScripts as Script[];
     },
     enabled: !!playbookId,
   });

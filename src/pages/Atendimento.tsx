@@ -74,7 +74,7 @@ function AtendimentoContent() {
   return (
     <div className="-m-3 lg:-m-4 flex-1 min-h-0 overflow-hidden flex flex-col">
       {backButton}
-      <Tabs defaultValue="comercial" className="flex-1 flex flex-col overflow-hidden">
+      <Tabs defaultValue="comercial" className="flex-1 min-h-0 flex flex-col overflow-hidden">
         <div className="flex items-center justify-between mx-3 mt-0.5 mb-0">
           <TabsList className="w-fit h-8">
             <TabsTrigger value="comercial" className="gap-1.5 text-[11px] h-7 px-3">
@@ -108,7 +108,14 @@ function AtendimentoContent() {
         </TabsContent>
 
         {canAccessCloser && (
-          <TabsContent value="closer" className="flex-1 overflow-hidden mt-0">
+          <TabsContent 
+            value="closer" 
+            className="
+              flex-1 min-h-0 mt-0 overflow-hidden
+              data-[state=active]:flex
+              data-[state=active]:flex-col
+            "
+          >
             <CloserPanel />
           </TabsContent>
         )}
