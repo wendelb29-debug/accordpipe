@@ -151,7 +151,8 @@ export function SaveCarIndividual() {
   const { isMasterTenantAdmin } = useAuth();
   
   // Show Kamilla scripts if it's the Kamilla workspace OR if the user is from the Master tenant
-  const showKamillaScripts = isKamillaWorkspace || isMasterTenantAdmin;
+  // isMaster check ensures users from the master tenant can see it in ANY workspace, as requested.
+  const showKamillaScripts = isKamillaWorkspace || isMasterTenantAdmin || profile?.is_master;
   
   const getProcessedText = (text: string) => {
     if (!text) return "";
