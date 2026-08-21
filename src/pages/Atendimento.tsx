@@ -14,7 +14,7 @@ import { CloserPanel } from "@/components/closer/CloserPanel";
 
 function AtendimentoContent() {
   const [crmSearch] = useState("");
-  const { role, isMaster } = useAuth();
+  const { role, isMaster, profile, activeCompanyId } = useAuth();
   const { activeWorkspaceId, workspaces, loading: wsLoading, selectWorkspace, activeWorkspace } = useWorkspaceContext();
   const [selectedWsId, setSelectedWsId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -24,20 +24,25 @@ function AtendimentoContent() {
   const canSeeCommercial = isMaster || role === "admin" || role === "operador" || role === "ceo" || role === "comercial";
   const canSeeAdmin = isMaster || role === "admin" || role === "administrativo" || role === "ceo";
 
-  // Auto-select workspace from query params (e.g. coming from Atividades drawer)
+  // Kamilla Workspace Logic
+  const KAMILLA_WORKSPACE_ID = "0123a22e-807e-424f-abfd-b3a570435f2b";
+  const isKamillaWorkspace = selectedWsId === KAMILLA_WORKSPACE_ID || activeWorkspace?.name?.trim().toLowerCase() === "kamilla";
+  
+  // Validates if user is an active member of the current tenant
+  const isActiveTenantMember = !!profile && profile.is_active && profile.company_id === activeCompanyId;
+  const canAccessKamillaTools = isKamillaWorkspace && isActiveTenantMember;
+
+  // Auto-select workspace from query params
   useEffect(() => {
     const wsParam = searchParams.get("workspace");
     if (wsParam && !selectedWsId && !wsLoading) {
       selectWorkspace(wsParam);
       setSelectedWsId(wsParam);
-      // Clean up query params after consuming
-      searchParams.delete("workspace");
       searchParams.delete("workspace");
       setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams, selectedWsId, wsLoading, selectWorkspace, setSearchParams]);
 
-  // Register back handler: when workspace is selected, go back to hub
   useEffect(() => {
     if (!selectedWsId) return;
     const unregister = pushBackHandler(() => {
@@ -47,7 +52,6 @@ function AtendimentoContent() {
     return unregister;
   }, [selectedWsId, pushBackHandler]);
 
-  // Show hub if no workspace selected yet
   if (!selectedWsId) {
     return (
       <div className="-m-3 lg:-m-4 flex-1 min-h-0 overflow-hidden flex flex-col">
@@ -61,15 +65,46 @@ function AtendimentoContent() {
     );
   }
 
-  
-
   const backButton = (
     <div className="flex items-center gap-2 px-3 pt-1 pb-0.5">
       <h2 className="text-xs font-bold text-foreground">{activeWorkspace?.name || "Workspace"}</h2>
     </div>
   );
 
-  // If user only has access to admin pipeline
+  // PRIORITY: Kamilla Workspace specialized view
+  if (canAccessKamillaTools) {
+    return (
+      <div className="-m-3 lg:-m-4 flex-1 min-h-0 overflow-hidden flex flex-col">
+        {backButton}
+        <Tabs defaultValue="comercial" className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between mx-3 mt-0.5 mb-0">
+            <TabsList className="w-fit h-8">
+              <TabsTrigger value="comercial" className="gap-1.5 text-[11px] h-7 px-3">
+                <BrandIcon icon={MessageSquare} tone="emerald" size="xs" /> Pipeline Comercial
+              </TabsTrigger>
+              <TabsTrigger value="importar" className="gap-1.5 text-[11px] h-7 px-3">
+                <BrandIcon icon={FileSpreadsheet} tone="green" size="xs" /> Importar Planilha
+              </TabsTrigger>
+              <TabsTrigger value="closer" className="gap-1.5 text-[11px] h-7 px-3">
+                <BrandIcon icon={UserRound} tone="blue" size="xs" /> Closer
+              </TabsTrigger>
+            </TabsList>
+          </div>
+          <TabsContent value="comercial" className="flex-1 overflow-hidden mt-0">
+            <CrmKanbanBoard searchTerm={crmSearch} workspaceId={selectedWsId} />
+          </TabsContent>
+          <TabsContent value="importar" className="flex-1 overflow-hidden mt-0">
+            <ImportarPlanilha />
+          </TabsContent>
+          <TabsContent value="closer" className="flex-1 overflow-hidden mt-0">
+            <CloserPanel />
+          </TabsContent>
+        </Tabs>
+      </div>
+    );
+  }
+
+  // Fallback to role-based rendering for other workspaces
   if (canSeeAdmin && !canSeeCommercial) {
     return (
       <div className="-m-3 lg:-m-4 flex-1 min-h-0 overflow-hidden flex flex-col">
@@ -79,7 +114,6 @@ function AtendimentoContent() {
     );
   }
 
-  // If user only has access to commercial
   if (canSeeCommercial && !canSeeAdmin) {
     return (
       <div className="-m-3 lg:-m-4 flex-1 min-h-0 overflow-hidden flex flex-col">
@@ -89,7 +123,6 @@ function AtendimentoContent() {
     );
   }
 
-  // Only commercial (fallback)
   if (!canSeeAdmin) {
     return (
       <div className="-m-3 lg:-m-4 flex-1 min-h-0 overflow-hidden flex flex-col">
@@ -99,7 +132,6 @@ function AtendimentoContent() {
     );
   }
 
-  // Both pipelines accessible
   return (
     <div className="-m-3 lg:-m-4 flex-1 min-h-0 overflow-hidden flex flex-col">
       {backButton}
@@ -112,11 +144,6 @@ function AtendimentoContent() {
             <TabsTrigger value="importar" className="gap-1.5 text-[11px] h-7 px-3">
               <BrandIcon icon={FileSpreadsheet} tone="green" size="xs" /> Importar Planilha
             </TabsTrigger>
-            {activeWorkspace?.name === "Kamilla" && (
-              <TabsTrigger value="closer" className="gap-1.5 text-[11px] h-7 px-3">
-                <BrandIcon icon={UserRound} tone="blue" size="xs" /> Closer
-              </TabsTrigger>
-            )}
           </TabsList>
         </div>
         <TabsContent value="comercial" className="flex-1 overflow-hidden mt-0">
@@ -125,11 +152,6 @@ function AtendimentoContent() {
         <TabsContent value="importar" className="flex-1 overflow-hidden mt-0">
           <ImportarPlanilha />
         </TabsContent>
-        {activeWorkspace?.name === "Kamilla" && (
-          <TabsContent value="closer" className="flex-1 overflow-hidden mt-0">
-            <CloserPanel />
-          </TabsContent>
-        )}
       </Tabs>
     </div>
   );
