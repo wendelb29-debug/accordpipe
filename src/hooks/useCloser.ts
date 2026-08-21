@@ -56,6 +56,13 @@ export function useCloser(playbookId?: string) {
     queryKey: ["closer-playbooks", tenantId, activeWorkspaceId],
     queryFn: async () => {
       if (!tenantId) return [];
+      const { data, error } = await supabase
+        .from("closer_playbooks")
+        .select("*")
+        .eq("is_active", true)
+        .or(`tenant_id.eq.${tenantId},tenant_id.is.null`)
+        .order("name");
+      if (error) throw error;
       const sorted = [...(data || [])].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
       return sorted as Playbook[];
     },
