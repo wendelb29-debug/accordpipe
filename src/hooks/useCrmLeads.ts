@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
@@ -91,7 +91,8 @@ export interface DynamicStage {
 export function useCrmLeads(
   pipelineType: "commercial" | "admin" = "commercial",
   workspaceId?: string | null,
-  dynamicStages?: DynamicStage[]
+  dynamicStages?: DynamicStage[],
+  filterUserId?: string | null
 ) {
   const [leads, setLeads] = useState<CrmLead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,7 +107,13 @@ export function useCrmLeads(
         ? ADMIN_STAGES
         : STAGES;
 
-  const canSeeAll = role === "admin" || role === "ceo" || profile?.is_master;
+  const isSupervisor = role === "admin" || role === "ceo" || profile?.is_master;
+
+  const effectiveFilterUserId = useMemo(() => {
+    if (filterUserId && filterUserId !== "all") return filterUserId;
+    if (!isSupervisor) return profile?.user_id || null;
+    return null; // All for supervisors
+  }, [filterUserId, isSupervisor, profile?.user_id]);
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
@@ -116,18 +123,13 @@ export function useCrmLeads(
       .select("*")
       .order("created_at", { ascending: false });
 
-
-    if (!canSeeAll && profile?.user_id) {
-      query = query.eq("created_by_user_id", profile.user_id);
+    if (effectiveFilterUserId) {
+      query = query.eq("assigned_to_user_id", effectiveFilterUserId);
     }
 
     if (workspaceId) {
-      // Inclui leads deste workspace OU leads cuja ORIGEM é este workspace
-      // (ganhos transferidos para o Cadastro), para que Ganho/Perdido/Lixeira
-      // apareçam mesmo quando a etapa atual não pertence mais a este funil.
       query = query.or(`workspace_id.eq.${workspaceId},origin_workspace_id.eq.${workspaceId}`);
     } else {
-      // Sem workspace: restringe às etapas ativas do funil (comportamento original)
       query = query.in("stage", stageIds);
     }
 
@@ -168,7 +170,6 @@ export function useCrmLeads(
     if (workspaceId) insertData.workspace_id = workspaceId;
     if (!insertData.assigned_to_user_id) insertData.assigned_to_user_id = profile?.user_id;
 
-    // Set default stage to first dynamic column if available
     if (!insertData.stage && activeStages.length > 0) {
       insertData.stage = activeStages[0].id;
     }
@@ -197,7 +198,6 @@ export function useCrmLeads(
     }
     setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...updates } : l)));
     return true;
-
   };
 
   const deleteLead = async (id: string) => {
@@ -212,7 +212,6 @@ export function useCrmLeads(
     return true;
   };
 
-
   const moveToStage = async (id: string, stage: string) => {
     const lead = leads.find((l) => l.id === id);
     const allStages = [...activeStages, ...ADMIN_STAGES];
@@ -224,7 +223,6 @@ export function useCrmLeads(
     if (success && lead) {
       const servidorId = lead.servidor_id;
 
-      // Record card_history for SLA tracking
       if (workspaceId) {
         await supabase.from("card_history").insert({
           lead_id: id,
@@ -248,7 +246,6 @@ export function useCrmLeads(
         } as any);
       }
 
-      // Check if moved to a final column in a Cadastro workspace → activate client
       if (workspaceId) {
         const { data: wsData } = await supabase
           .from("workspaces")
@@ -272,9 +269,7 @@ export function useCrmLeads(
     return success;
   };
 
-  // Activate client in Base de Clientes when Cadastro is concluded
   const activateClientFromLead = async (lead: CrmLead) => {
-    // Check for duplicate by CPF/email
     const documento = (lead as any).documento;
     if (documento) {
       const { data: existing } = await supabase
@@ -289,7 +284,6 @@ export function useCrmLeads(
       }
     }
 
-    // Update registration to active
     const { error: regErr } = await supabase
       .from("crm_client_registrations")
       .update({ client_status: "ativo", status: "aprovado", data_adesao: new Date().toISOString().split("T")[0] } as any)
@@ -301,8 +295,6 @@ export function useCrmLeads(
       return;
     }
 
-
-    // Log activity
     await supabase.from("crm_lead_activities").insert({
       lead_id: lead.id,
       servidor_id: lead.servidor_id,
@@ -316,8 +308,6 @@ export function useCrmLeads(
     toast.success("✅ Cliente ativado na Base de Clientes com sucesso!");
   };
 
-
-  // Mark as WON — destination depends on workspace config
   const markAsWonAndTransfer = async (id: string) => {
     const lead = leads.find((l) => l.id === id);
     if (!lead) return false;
@@ -334,7 +324,6 @@ export function useCrmLeads(
     const previousStage = lead.stage;
     const originWorkspaceId = lead.workspace_id;
 
-    // For 'base_clientes' we keep the current workspace/stage; otherwise we move.
     const updatePayload: any = {
       lead_status: "won",
       stage_entered_at: new Date().toISOString(),
@@ -369,8 +358,6 @@ export function useCrmLeads(
         metadata: { previous_stage: previousStage, destination_kind: dest.kind },
       } as any);
 
-
-      // Build the registration payload (used for insert AND for MERGE updates)
       const planoContratado = lead.notes?.includes("Plano:") ? lead.notes.split("Plano:")[1]?.trim().split("\n")[0] : null;
       const regPayload: Record<string, any> = {
         lead_id: id,
@@ -389,15 +376,12 @@ export function useCrmLeads(
         plano_contratado: planoContratado,
         valor_mensal: lead.value_mrr || 0,
       };
-      // For 'base_clientes', activate the client immediately
       if (dest.kind === "base_clientes") {
         regPayload.client_status = "ativo";
         regPayload.status = "concluido";
         regPayload.data_adesao = new Date().toISOString().split("T")[0];
       }
 
-      // MERGE: if a registration already exists for this lead, update only
-      // fields that are currently empty; otherwise insert.
       const { data: existingReg } = await supabase
         .from("crm_client_registrations" as any)
         .select("*")
@@ -414,7 +398,6 @@ export function useCrmLeads(
           const newHas = v !== null && v !== undefined && v !== "";
           if (curEmpty && newHas) merged[k] = v;
         }
-        // Destination-driven status is authoritative for base_clientes
         if (dest.kind === "base_clientes") {
           merged.client_status = "ativo";
           merged.status = "concluido";
@@ -471,64 +454,14 @@ export function useCrmLeads(
         }
       }
 
-  return {
-    leads,
-    loading,
-    createLead,
-    updateLead,
-    deleteLead,
-    moveToStage,
-    markAsWonAndTransfer,
-    totalLeads: leads.length,
-    totalPS: leads.reduce((sum, l) => sum + (l.value_ps || 0), 0),
-    totalMRR: leads.reduce((sum, l) => sum + (l.value_mrr || 0), 0),
-    isSupervisor,
-    refetch: fetchLeads
-  };
-}
-      if (dest.kind !== "base_clientes") {
-        const { data: adminProfiles } = await supabase
-          .from("profiles")
-          .select("user_id")
-          .eq("company_id", lead.servidor_id)
-          .eq("is_active", true);
-
-        if (adminProfiles) {
-          for (const ap of adminProfiles) {
-            const { data: roleData } = await supabase
-              .from("user_roles")
-              .select("role")
-              .eq("user_id", ap.user_id)
-              .maybeSingle();
-
-            if (roleData?.role === "administrativo" || roleData?.role === "admin") {
-              await supabase.rpc("create_notification", {
-                _user_id: ap.user_id,
-                _title: "Novo cadastro pendente",
-                _message: `A oportunidade "${lead.company_name}" foi marcada como ganha e aguarda conferência no workspace ${dest.label}. Contrato e cobrança foram gerados automaticamente.`,
-                _type: "cadastro_pendente",
-              });
-            }
-          }
-        }
-      }
-
-      // Toast per destination
       if (dest.kind === "base_clientes") {
         toast.success("🎉 Oportunidade ganha! Cliente enviado direto para a Base de Clientes.");
       } else {
         toast.success(`🎉 Oportunidade ganha! Card transferido para ${dest.label}. Contrato e cobrança gerados automaticamente.`);
       }
-
-
-
     }
     return success;
   };
-
-  const totalLeads = leads.length;
-  const totalPS = leads.reduce((s, l) => s + (l.value_ps || 0), 0);
-  const totalMRR = leads.reduce((s, l) => s + (l.value_mrr || 0), 0);
 
   const stageStats = activeStages.map((stage) => {
     const stageLeads = leads.filter((l) => l.stage === stage.id);
@@ -548,11 +481,11 @@ export function useCrmLeads(
     deleteLead,
     moveToStage,
     markAsWonAndTransfer,
-    refetch: fetchLeads,
-    totalLeads,
-    totalPS,
-    totalMRR,
+    totalLeads: leads.length,
+    totalPS: leads.reduce((s, l) => s + (l.value_ps || 0), 0),
+    totalMRR: leads.reduce((s, l) => s + (l.value_mrr || 0), 0),
+    isSupervisor,
     stageStats,
-    activeStages,
+    refetch: fetchLeads
   };
 }
