@@ -44,8 +44,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { ActivityItem } from "./LeadAtividadesTab";
-import { getLeadScheduleState } from "@/utils/leadSchedule";
+import { getLeadScheduleState, ScheduleActivity } from "@/utils/leadSchedule";
 
 
 const stageIcons: Record<string, React.ElementType> = {
@@ -184,7 +183,9 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   const [localSearch, setLocalSearch] = useState(searchTerm);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<{ id: string; name: string; color: string }[]>([]);
-  const [leadActivities, setLeadActivities] = useState<Record<string, ActivityItem[]>>({});
+  const [leadActivities, setLeadActivities] = useState<Record<string, ScheduleActivity[]>>({});
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [now, setNow] = useState(new Date());
   const [signatureStatsByLead, setSignatureStatsByLead] = useState<Record<string, { signed: number; total: number; approved: boolean }>>({});
 
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
@@ -254,43 +255,117 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
     fetchTags();
   }, [companyId]);
 
+  const refreshLeadSchedule = useCallback(async (leadId: string) => {
+    const { data, error } = await supabase
+      .from("crm_lead_activities")
+      .select("*")
+      .eq("lead_id", leadId)
+      .in("type", ["activity", "meeting", "call", "email", "internal", "whatsapp"])
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      setLeadActivities(prev => ({
+        ...prev,
+        [leadId]: data as ScheduleActivity[]
+      }));
+    }
+  }, []);
+
+  const fetchLeadActivities = useCallback(async () => {
+    if (leads.length === 0) return;
+    const leadIds = leads.map((l) => l.id);
+    const { data, error } = await supabase
+      .from("crm_lead_activities")
+      .select("*")
+      .in("lead_id", leadIds)
+      .in("type", ["activity", "meeting", "call", "email", "internal", "whatsapp"])
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      const activitiesByLead: Record<string, ScheduleActivity[]> = {};
+      data.forEach((activity: any) => {
+        if (!activitiesByLead[activity.lead_id]) {
+          activitiesByLead[activity.lead_id] = [];
+        }
+        activitiesByLead[activity.lead_id].push(activity as ScheduleActivity);
+      });
+      setLeadActivities(activitiesByLead);
+    }
+  }, [leads]);
+
   useEffect(() => {
-    const fetchLeadActivities = async () => {
-      if (leads.length === 0) return;
-      const leadIds = leads.map((l) => l.id);
-      const { data, error } = await supabase
-        .from("crm_lead_activities")
-        .select("*")
-        .in("lead_id", leadIds)
-        .in("type", ["activity", "meeting", "call", "email", "internal", "whatsapp"])
-        .order("created_at", { ascending: false });
-      
-      if (!error && data) {
-        const activitiesByLead: Record<string, ActivityItem[]> = {};
-        data.forEach((activity: any) => {
-          if (!activitiesByLead[activity.lead_id]) {
-            activitiesByLead[activity.lead_id] = [];
-          }
-          activitiesByLead[activity.lead_id].push(activity as ActivityItem);
-        });
-        setLeadActivities(activitiesByLead);
+    fetchLeadActivities();
+  }, [fetchLeadActivities]);
+
+  useEffect(() => {
+    if (!companyId || !workspaceId) return;
+
+    const channelName = `crm-kanban-activities:${companyId}:${workspaceId}`;
+    const channel = supabase.channel(channelName);
+
+    const handlePayload = (payload: any) => {
+      const leadId = payload.new?.lead_id || payload.old?.lead_id;
+      if (leadId) {
+        refreshLeadSchedule(leadId);
+      } else if (payload.eventType === 'DELETE') {
+        // If DELETE doesn't provide lead_id, refresh all just to be safe (debauced if needed)
+        fetchLeadActivities();
       }
     };
-    fetchLeadActivities();
 
-    const channel = supabase
-      .channel("crm-kanban-activities")
+    channel
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "crm_lead_activities" },
-        fetchLeadActivities
+        handlePayload
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [leads]);
+  }, [companyId, workspaceId, refreshLeadSchedule, fetchLeadActivities]);
+
+  // Handle clock-based updates
+  useEffect(() => {
+    const updateNow = () => {
+      const current = new Date();
+      setNow(current);
+
+      // Find next schedule to set a timer
+      let nextTime: number | null = null;
+      Object.values(leadActivities).forEach(activities => {
+        const state = getLeadScheduleState(activities, current);
+        if (state.state === "scheduled" && state.scheduledAt) {
+          const time = state.scheduledAt.getTime();
+          if (nextTime === null || time < nextTime) {
+            nextTime = time;
+          }
+        }
+      });
+
+      if (timerRef.current) clearTimeout(timerRef.current);
+
+      if (nextTime !== null) {
+        const delay = Math.max(0, nextTime - current.getTime() + 1000);
+        // Cap delay to avoid issues with extremely large numbers, 
+        // though usually we'd only care about things happening soon
+        if (delay < 2147483647) {
+          timerRef.current = setTimeout(updateNow, delay);
+        }
+      }
+    };
+
+    updateNow();
+
+    const onFocus = () => updateNow();
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [leadActivities]);
 
 
   useEffect(() => {
@@ -864,9 +939,8 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                   const overdueByDays = slaDays > 0
                     ? Math.max(0, Math.round(days - slaDays))
                     : 0;
-                  const scheduleState = getLeadScheduleState(leadActivities[lead.id] || []);
+                  const scheduleState = getLeadScheduleState(leadActivities[lead.id] || [], now);
                   const hasOverdue = scheduleState.state === "overdue";
-                  const overdueActCount = scheduleState.overdueCount;
                   const signatureStats = signatureStatsByLead[lead.id];
                   const isTransferredWon =
                     !!workspaceId &&
@@ -874,12 +948,11 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                     lead.workspace_id !== workspaceId &&
                     lead.origin_workspace_id === workspaceId;
 
-                  // Priority: 1) won, 2) lost, 3) trash, 4) overdue activity, 5) SLA exceeded, 6) no schedule, 7) normal
+                  // Priority: 1) won, 2) lost, 3) trash, 4) overdue activity, 5) SLA exceeded (historical), 6) no schedule, 7) normal
                   const cardStatus = getCardStatus(lead);
                   const isWon = cardStatus === "ganho";
                   const isLost = cardStatus === "perdido";
                   const isTrash = cardStatus === "lixeira";
-                  const isNaturalState = !isWon && !isLost && !isTrash && scheduleState.state === "scheduled" && !overdue;
 
                   const cardStyle = isWon
                     ? "bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-500/70 dark:border-emerald-600/60 ring-1 ring-emerald-500/30"
@@ -888,10 +961,12 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                     : isTrash
                     ? "bg-slate-100/80 dark:bg-slate-900/40 border-slate-400/70 dark:border-slate-600/60 ring-1 ring-slate-400/30 opacity-80"
                     : hasOverdue
-                    ? "bg-red-50/90 dark:bg-red-950/40 border-red-500 dark:border-red-700"
+                    ? "bg-red-50/90 dark:bg-red-950/40 border-red-500 dark:border-red-700 shadow-[0_0_15px_-3px_rgba(239,68,68,0.2)]"
                     : scheduleState.state === "none"
-                    ? "bg-amber-50/90 dark:bg-amber-950/20 border-amber-400/80 dark:border-amber-700/60"
+                    ? "bg-[#FFFBEB] dark:bg-amber-950/20 border-amber-400/80 dark:border-amber-700/60"
                     : "bg-card/95 dark:bg-[rgba(255,255,255,0.03)] border-border/40 dark:border-[rgba(255,255,255,0.07)]";
+
+                  const isNaturalState = !isWon && !isLost && !isTrash && scheduleState.state === "scheduled";
 
                   const dragDisabled = isTransferredWon || isTrash || isMobile;
 
@@ -1011,19 +1086,23 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                                     </div>
                                   </TooltipTrigger>
                                   <TooltipContent side="top" className="text-[10px] bg-destructive text-destructive-foreground border-none">
-                                    {scheduleState.nextSchedule?.metadata?.scheduled_at ? 
-                                      `Agendado para ${new Date(scheduleState.nextSchedule.metadata.scheduled_at).toLocaleString("pt-BR")}` : 
+                                    {scheduleState.scheduledAt ? 
+                                      `Atrasado: ${new Intl.DateTimeFormat("pt-BR", { 
+                                        day: "2-digit", month: "2-digit", year: "numeric", 
+                                        hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" 
+                                      }).format(scheduleState.scheduledAt)}` : 
                                       "Agendamento atrasado"}
                                   </TooltipContent>
                                 </Tooltip>
                               )}
-                              {scheduleState.state === "scheduled" && scheduleState.nextSchedule && !isWon && !isLost && !isTrash && (
+                              {scheduleState.state === "scheduled" && scheduleState.scheduledAt && !isWon && !isLost && !isTrash && (
                                 <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0">
                                   <Clock className="h-2.5 w-2.5 text-muted-foreground" />
                                   <span className="text-[8px] font-medium text-muted-foreground">
-                                    Agendado: {new Date(scheduleState.nextSchedule.metadata.scheduled_at || scheduleState.nextSchedule.metadata.scheduled_date).toLocaleString("pt-BR", {
-                                      day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"
-                                    })}
+                                    Agendado: {new Intl.DateTimeFormat("pt-BR", { 
+                                      day: "2-digit", month: "2-digit", 
+                                      hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" 
+                                    }).format(scheduleState.scheduledAt)}
                                   </span>
                                 </div>
                               )}
