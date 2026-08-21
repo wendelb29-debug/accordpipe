@@ -29,8 +29,8 @@ function AtendimentoContent() {
   // Multi-tenant check: user must belong to active tenant
   const isActiveTenantMember = !!profile && profile.is_active && profile.company_id === activeCompanyId;
   
-  // Closer Access: Permission + Tenant Check
-  const canAccessCloser = (isMaster || hasPermission("use_closer")) && isActiveTenantMember;
+  // Closer Access: Permission + Active Member Check
+  const canAccessCloser = (profile?.is_active && (isMaster || hasPermission("use_closer")));
 
   // Auto-select workspace from query params
   useEffect(() => {
