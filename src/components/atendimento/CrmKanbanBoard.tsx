@@ -1075,50 +1075,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                               )}>
                                 {lead.contact_name || lead.source}
                               </p>
-                              {hasOverdue && (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-red-100 dark:bg-red-950/60 border border-red-500/50 dark:border-red-700/60 shrink-0">
-                                      <CalendarClock className="h-3 w-3 text-red-700 dark:text-red-400" />
-                                      <span className="text-[9px] font-bold text-red-800 dark:text-red-200 uppercase">
-                                        Agendamento atrasado
-                                      </span>
-                                    </div>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="text-[10px] bg-destructive text-destructive-foreground border-none">
-                                    {scheduleState.scheduledAt ? 
-                                      `Atrasado: ${new Intl.DateTimeFormat("pt-BR", { 
-                                        day: "2-digit", month: "2-digit", year: "numeric", 
-                                        hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" 
-                                      }).format(scheduleState.scheduledAt)}` : 
-                                      "Agendamento atrasado"}
-                                  </TooltipContent>
-                                </Tooltip>
-                              )}
-                              {scheduleState.state === "scheduled" && scheduleState.scheduledAt && !isWon && !isLost && !isTrash && (
-                                <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0">
-                                  <Clock className="h-2.5 w-2.5 text-muted-foreground" />
-                                  <span className="text-[8px] font-medium text-muted-foreground">
-                                    Agendado: {new Intl.DateTimeFormat("pt-BR", { 
-                                      day: "2-digit", month: "2-digit", 
-                                      hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" 
-                                    }).format(scheduleState.scheduledAt)}
-                                  </span>
-                                </div>
-                              )}
-                              {scheduleState.state === "none" && !isWon && !isLost && !isTrash && (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800/60 shrink-0">
-                                      <AlertTriangle className="h-3 w-3 text-amber-600 dark:text-amber-500" />
-                                      <span className="text-[9px] font-bold text-amber-700 dark:text-amber-400 uppercase">
-                                        Sem agendamento
-                                      </span>
-                                    </div>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="text-[10px]">Sem agendamento</TooltipContent>
-                                </Tooltip>
-                              )}
+                              {/* Status badges removed from here, now displayed in a unified section below */}
 
                             </div>
                             {/* Company name */}
