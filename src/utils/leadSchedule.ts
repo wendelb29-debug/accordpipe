@@ -8,7 +8,6 @@ export interface LeadScheduleResult {
   overdueCount: number;
 }
 
-const PLANNED_STATUSES = ["planejada", "planned"];
 const COMPLETED_STATUSES = ["completed", "concluida", "done", "realizado", "concluído", "no_show"];
 
 export function getLeadScheduleState(activities: ActivityItem[], now: Date = new Date()): LeadScheduleResult {
@@ -18,6 +17,10 @@ export function getLeadScheduleState(activities: ActivityItem[], now: Date = new
 
   // Filter for valid open schedules only
   const openSchedules = activities.filter(activity => {
+    // Only activities with specific types are considered "scheduled"
+    const scheduledTypes = ["activity", "meeting", "call", "email", "internal", "whatsapp"];
+    if (!scheduledTypes.includes(activity.type)) return false;
+
     const meta = activity.metadata || {};
     const status = (activity.status || meta.activity_status || "").toLowerCase();
     
