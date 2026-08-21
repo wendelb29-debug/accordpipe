@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { CrmLead, STAGES, DynamicStage } from "@/hooks/useCrmLeads";
 import { useAuth } from "@/contexts/AuthContext";
-import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useWorkspaceContext } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 
 interface CrmLeadDialogProps {
