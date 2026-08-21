@@ -1176,25 +1176,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                           )}
                         </div>
 
-                        {/* Activity indicator */}
-                        {hasOverdue && scheduleState.nextSchedule && (
-                          <div className="flex items-center gap-1 mt-1.5 text-[9px] text-red-600 dark:text-red-400 font-bold bg-red-50 dark:bg-red-950/30 px-1.5 py-0.5 rounded-md border border-red-100 dark:border-red-900/50">
-                            <AlertTriangle className="h-2.5 w-2.5" />
-                            <span className="truncate">Atrasado: {new Date(scheduleState.nextSchedule.metadata.scheduled_at).toLocaleDateString("pt-BR")} às {new Date(scheduleState.nextSchedule.metadata.scheduled_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
-                          </div>
-                        )}
-                        {!hasOverdue && scheduleState.state === "scheduled" && scheduleState.nextSchedule && (
-                          <div className="flex items-center gap-1 mt-1.5 text-[9px] text-primary/70 dark:text-primary/60 font-medium bg-primary/5 px-1.5 py-0.5 rounded-md border border-primary/10">
-                            <CalendarClock className="h-2.5 w-2.5" />
-                            <span className="truncate">Agendado: {new Date(scheduleState.nextSchedule.metadata.scheduled_at).toLocaleDateString("pt-BR")} às {new Date(scheduleState.nextSchedule.metadata.scheduled_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
-                          </div>
-                        )}
-                        {scheduleState.state === "none" && !isWon && !isLost && !isTrash && (
-                          <div className="flex items-center gap-1 mt-1.5 text-[9px] text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/30 px-1.5 py-0.5 rounded-md border border-amber-100 dark:border-amber-900/50">
-                            <AlertTriangle className="h-2.5 w-2.5" />
-                            <span>Sem agendamento</span>
-                          </div>
-                        )}
+                        {/* Activity indicator removido conforme solicitação visual */}
 
 
                         {/* Footer */}
