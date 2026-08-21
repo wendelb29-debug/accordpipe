@@ -29,8 +29,8 @@ function AtendimentoContent() {
   // Multi-tenant check: user must belong to active tenant
   const isActiveTenantMember = !!profile && profile.is_active && profile.company_id === activeCompanyId;
   
-  // Closer Access: (Master OR has permission) AND Active Tenant Member
-  const canAccessCloser = (isMaster || hasPermission("use_closer")) && isActiveTenantMember;
+  // Closer Access: canAccessCloser reflects if user has permission for the module
+  const canAccessCloser = hasPermission("use_closer") && isActiveTenantMember;
 
   // Auto-select workspace from query params
   useEffect(() => {
