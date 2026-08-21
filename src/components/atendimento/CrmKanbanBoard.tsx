@@ -343,11 +343,8 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   }, [companyId, workspaceId, refreshLeadSchedule, fetchLeadActivities]);
 
   const activeWorkspaceName = useMemo(() => {
-    if (activeWorkspace?.name) return activeWorkspace.name;
-    // Fallback if context is missing but we have workspaceId
-    if (workspaceId === "0123a22e-807e-424f-abfd-b3a570435f2b") return "Kamilla";
-    return "Workspace";
-  }, [activeWorkspace, workspaceId]);
+    return activeWorkspace?.name || "Workspace";
+  }, [activeWorkspace]);
 
   // Helper to open WhatsApp with variables
   const handleOpenWhatsApp = useCallback((lead: CrmLead, script?: any) => {
