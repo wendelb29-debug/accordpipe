@@ -26,6 +26,8 @@ export interface CrmLead {
   updated_at: string;
   created_by_user_id: string | null;
   created_by_name: string | null;
+  assigned_to_user_id: string | null;
+  assigned_to_name?: string | null;
   cidade: string | null;
   estado: string | null;
   cep: string | null;
@@ -139,7 +141,7 @@ export function useCrmLeads(
     }
 
     setLoading(false);
-  }, [pipelineType, canSeeAll, profile?.user_id, workspaceId, activeStages.map(s => s.id).join(",")]);
+  }, [pipelineType, effectiveFilterUserId, workspaceId, activeStages.map(s => s.id).join(",")]);
 
   useEffect(() => {
     fetchLeads();
@@ -164,6 +166,7 @@ export function useCrmLeads(
     }
     const insertData: any = { ...lead, servidor_id: servidorId };
     if (workspaceId) insertData.workspace_id = workspaceId;
+    if (!insertData.assigned_to_user_id) insertData.assigned_to_user_id = profile?.user_id;
 
     // Set default stage to first dynamic column if available
     if (!insertData.stage && activeStages.length > 0) {
@@ -468,7 +471,21 @@ export function useCrmLeads(
         }
       }
 
-      // Notify admin users (only for cadastro/workspace flows; base_clientes is already active)
+  return {
+    leads,
+    loading,
+    createLead,
+    updateLead,
+    deleteLead,
+    moveToStage,
+    markAsWonAndTransfer,
+    totalLeads: leads.length,
+    totalPS: leads.reduce((sum, l) => sum + (l.value_ps || 0), 0),
+    totalMRR: leads.reduce((sum, l) => sum + (l.value_mrr || 0), 0),
+    isSupervisor,
+    refetch: fetchLeads
+  };
+}
       if (dest.kind !== "base_clientes") {
         const { data: adminProfiles } = await supabase
           .from("profiles")
