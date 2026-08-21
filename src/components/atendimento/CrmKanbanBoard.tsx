@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useBackNavigation } from "@/contexts/BackNavigationContext";
+import { useWorkspaceContext } from "@/contexts/WorkspaceContext";
 import {
   Clock, Users, MessageSquare, Phone, RefreshCw, FileSignature,
   MoreVertical, Trash2, Edit, Loader2,
@@ -22,6 +23,15 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { getLeadContractSignatureStats } from "@/lib/contractSigners";
 import { CrmLeadDialog } from "./CrmLeadDialog";
@@ -45,6 +55,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getLeadScheduleState, ScheduleActivity } from "@/utils/leadSchedule";
+import { normalizePhone, resolveCloserTemplate } from "@/utils/closerUtils";
+import { useCloser } from "@/hooks/useCloser";
+import { ChevronDown } from "lucide-react";
 
 
 const stageIcons: Record<string, React.ElementType> = {
@@ -105,6 +118,7 @@ const getProgressColor = (lead: CrmLead, stageId: string, hasActivity: boolean, 
 };
 
 export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps) {
+  const { activeWorkspace } = useWorkspaceContext();
   // Fetch dynamic kanban columns for this workspace
   const { dynamicStages, columns: kanbanCols, loading: colsLoading } = useKanbanColumns(workspaceId);
   const hasDynamicColumns = kanbanCols.length > 0;
@@ -151,6 +165,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   const [lostReasonOpen, setLostReasonOpen] = useState(false);
   const [pendingLead, setPendingLead] = useState<CrmLead | null>(null);
   const [trashLeads, setTrashLeads] = useState<CrmLead[]>([]);
+  const [missingDataLead, setMissingDataLead] = useState<{ lead: CrmLead; script?: any; missing: string[] } | null>(null);
   const { pushBackHandler } = useBackNavigation();
 
   // Register back handler when lead detail is open
@@ -195,6 +210,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   });
   const [filterApplying, setFilterApplying] = useState(false);
   const activeFilterCount = countActiveFilters(advancedFilters);
+  const { settings, scripts, logEvent } = useCloser();
 
   // Skeleton flash quando o filtro muda, antes de renderizar cards coloridos
   useEffect(() => {
@@ -325,6 +341,51 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
       supabase.removeChannel(channel);
     };
   }, [companyId, workspaceId, refreshLeadSchedule, fetchLeadActivities]);
+
+  const activeWorkspaceName = useMemo(() => {
+    if (activeWorkspace?.name) return activeWorkspace.name;
+    // Fallback if context is missing but we have workspaceId
+    if (workspaceId === "0123a22e-807e-424f-abfd-b3a570435f2b") return "Kamilla";
+    return "Workspace";
+  }, [activeWorkspace, workspaceId]);
+
+  // Helper to open WhatsApp with variables
+  const handleOpenWhatsApp = useCallback((lead: CrmLead, script?: any) => {
+    const phone = normalizePhone(lead.phone || "");
+    const template = script?.content || "";
+    
+    // Simple validation
+    if (!phone) {
+      toast.error("Telefone obrigatório para enviar mensagem.");
+      return;
+    }
+
+    const processedText = resolveCloserTemplate(template, {
+      lead,
+      user: profile,
+      workspaceName: activeWorkspaceName,
+    });
+
+    // Check for unresolved variables
+    const missing = [];
+    if (processedText.includes("[Nome]")) missing.push("Nome");
+    
+    if (missing.length > 0) {
+      setMissingDataLead({ lead, script, missing });
+      return;
+    }
+
+    // Register event
+    logEvent.mutate({
+      session_id: lead.id, // Reusing lead ID as session ID for simplicity in CRM context
+      event_type: "whatsapp_opened",
+      step_key: script?.step_key,
+      content: processedText
+    });
+
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(processedText)}`;
+    window.open(url, "_blank");
+  }, [profile, activeWorkspaceName, logEvent]);
 
   // Handle clock-based updates
   useEffect(() => {
@@ -1406,6 +1467,40 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
         responsaveis={teamMembers.map((m) => ({ user_id: m.user_id, name: m.name }))}
         leads={leads}
       />
+      {missingDataLead && (
+        <Dialog open={!!missingDataLead} onOpenChange={(open) => !open && setMissingDataLead(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Dados Faltantes</DialogTitle>
+              <DialogDescription>
+                Preencha os campos abaixo para completar o script antes de enviar.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              {missingDataLead.missing.map(field => (
+                <div key={field} className="space-y-2">
+                  <Label>{field}</Label>
+                  <Input 
+                    placeholder={`Informe o ${field.toLowerCase()}`}
+                    onChange={(e) => {
+                      if (field === "Nome") missingDataLead.lead.contact_name = e.target.value;
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setMissingDataLead(null)}>Cancelar</Button>
+              <Button onClick={() => {
+                const l = missingDataLead.lead;
+                const s = missingDataLead.script;
+                setMissingDataLead(null);
+                handleOpenWhatsApp(l, s);
+              }}>Enviar mesmo assim</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

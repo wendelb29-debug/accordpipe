@@ -151,6 +151,7 @@ export function useWorkspaces() {
   };
 
   const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId) || null;
+  const isAdminOrCeoFinal = isAdminOrCeo || profile?.is_master;
 
   return {
     workspaces,
@@ -161,7 +162,7 @@ export function useWorkspaces() {
     updateWorkspace,
     deleteWorkspace,
     loading,
-    isAdminOrCeo,
+    isAdminOrCeo: isAdminOrCeoFinal,
     refresh: fetchWorkspaces,
   };
 }

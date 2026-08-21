@@ -9,6 +9,7 @@ import {
   Search, ChevronLeft, BarChart3, HeadphonesIcon,
   DollarSign, Users, Cog, LayoutGrid, Sparkles, FolderOpen,
   Megaphone, UserCheck, Calculator, CreditCard, Receipt, Monitor, Rocket, Phone, Briefcase,
+  Wrench,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { WorkspaceCloserConfigDialog } from "@/components/closer/WorkspaceCloserConfigDialog";
 
 const TYPE_ICONS: Record<string, any> = {
   vendas: TrendingUp,
@@ -276,8 +278,18 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
     return (groupedByGroup[g.id]?.length ?? 0) > 0;
   });
 
+  const [configWs, setConfigWs] = useState<{ id: string; name: string } | null>(null);
+
   return (
     <div className="relative flex flex-col h-full overflow-hidden">
+      {configWs && (
+        <WorkspaceCloserConfigDialog
+          workspaceId={configWs.id}
+          workspaceName={configWs.name}
+          open={!!configWs}
+          onOpenChange={(open) => !open && setConfigWs(null)}
+        />
+      )}
       {/* Animated particle canvas background */}
       <canvas
         ref={canvasRef}
@@ -342,7 +354,11 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
                       workspace={ws}
                       cardCount={cardCounts[ws.id]?.total ?? 0}
                       onClick={() => onSelectWorkspace(ws.id)}
-                      onEdit={isAdminOrCeo ? () => {} : undefined}
+                      onEdit={isAdminOrCeo ? (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setConfigWs({ id: ws.id, name: ws.name });
+                      } : undefined}
                       onDelete={isAdminOrCeo && !ws.is_default ? () => {} : undefined}
                     />
                   ))}
@@ -364,9 +380,13 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
                     key={ws.id}
                     workspace={ws}
                     cardCount={cardCounts[ws.id]?.total ?? 0}
-                    onClick={() => onSelectWorkspace(ws.id)}
-                    onEdit={isAdminOrCeo ? () => {} : undefined}
-                    onDelete={isAdminOrCeo && !ws.is_default ? () => {} : undefined}
+                  onClick={() => onSelectWorkspace(ws.id)}
+                  onEdit={isAdminOrCeo ? (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setConfigWs({ id: ws.id, name: ws.name });
+                  } : undefined}
+                  onDelete={isAdminOrCeo && !ws.is_default ? () => {} : undefined}
                   />
                 ))}
               </div>

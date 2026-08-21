@@ -12,6 +12,7 @@ import { useBackNavigation } from "@/contexts/BackNavigationContext";
 import { MessageSquare, ClipboardList, FileSpreadsheet, UserRound } from "lucide-react";
 import { CloserPanel } from "@/components/closer/CloserPanel";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useCloser } from "@/hooks/useCloser";
 
 function AtendimentoContent() {
   const [crmSearch] = useState("");
@@ -20,6 +21,7 @@ function AtendimentoContent() {
   const [selectedWsId, setSelectedWsId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const { hasPermission } = usePermissions();
+  const { settings } = useCloser();
   const { pushBackHandler } = useBackNavigation();
 
   // Roles/Permissions logic
@@ -29,8 +31,8 @@ function AtendimentoContent() {
   // Multi-tenant check: user must belong to active tenant
   const isActiveTenantMember = !!profile && profile.is_active && profile.company_id === activeCompanyId;
   
-  // Closer Access: canAccessCloser reflects if user has permission for the module
-  const canAccessCloser = hasPermission("use_closer") && isActiveTenantMember;
+  // Closer Access: canAccessCloser reflects if user has permission for the module AND it's enabled for workspace
+  const canAccessCloser = hasPermission("use_closer") && isActiveTenantMember && settings?.closer_enabled;
 
   // Auto-select workspace from query params
   useEffect(() => {
