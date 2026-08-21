@@ -6031,6 +6031,76 @@ export type Database = {
           },
         ]
       }
+      notification_logs: {
+        Row: {
+          attempts: number
+          created_at: string | null
+          error_message: string | null
+          event_type: string
+          id: string
+          idempotency_key: string
+          lead_id: string | null
+          recipient_email: string
+          recipient_user_id: string | null
+          sent_at: string | null
+          status: string
+          tenant_id: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string | null
+          error_message?: string | null
+          event_type: string
+          id?: string
+          idempotency_key: string
+          lead_id?: string | null
+          recipient_email: string
+          recipient_user_id?: string | null
+          sent_at?: string | null
+          status?: string
+          tenant_id?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string | null
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          idempotency_key?: string
+          lead_id?: string | null
+          recipient_email?: string
+          recipient_user_id?: string | null
+          sent_at?: string | null
+          status?: string
+          tenant_id?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_logs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_preferences: {
         Row: {
           auto_release_enabled: boolean
